@@ -24,9 +24,7 @@ obj := o
 mex_ext := mexglx
 endif
 
-# need to run git-tag before building distribution, in order to get correct paths
-version :=$(shell git-describe --tag HEAD)
-
+version :=$(shell util/version.hs)
 
 m_files := $(patsubst %,$(mex_src_dir)/matlab/%.m,$(m_src))
 mex_files := $(addprefix $(build_dir)/,$(addsuffix .$(mex_ext),nsStart_aux nsRun_aux nsTerminate_aux))
