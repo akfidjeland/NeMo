@@ -1,0 +1,25 @@
+===============
+System overview
+===============
+
+The system can be designed as a language workbench [1]. This means that the
+system is organised around an abstract representation (of the network), and
+that this representation can be interfaced with through many different means. 
+
+- Network specification
+	- HaskellAPI
+	- LowLevelAPI
+	- MatlabAPI
+	- PythonAPI
+
+- Simulation backend
+	- CudaBackend
+	- MultiCoreCPU
+	- FpgaBackend
+	- ClientBackend
+
+- ClusterComputation
+
+- Visualisation
+	- NetworkConstruction
+	- NetworkSimulation

@@ -1,0 +1,67 @@
+==========================
+Client/server architecture
+==========================
+
+The simulation environment should have a separate client and server. These
+should communicate over TCP/IP, but still allow for running both on the same
+machine. 
+
+The client should be responsible for:
+
+- constructing the *logical* network as specified by the user;
+- provide the user interface (either as a GUI or as a CLI), both for network
+  construction and visualisation;
+
+The server should be responsible for:
+
+- mapping the logical network onto the available computing resources. This may
+  involve more than one machine.
+- gathering run-time statistics of the simulation and communicate these back to
+  the client.
+
+Initially the server should just be a single machine. Later, however, we want to
+allow mapping the simulation onto a cluster of machines. We should then have a
+two-tier server architecture where one master server provides the interface to
+the client and is responsible for farming work out to the other servers.
+
+This is the envisaged communication protocol for the single server model, which
+runs an Izhikevich network::
+    Client                             Server
+    
+    load user program                  wait
+    construct logical network
+    send REQ_START                -->
+    send indexing base            -->                       ; 32-bit integer
+    send 'a' array                -->                       ; XDR encoded array of double
+    send 'b' array                -->                       ; ditto
+    send 'c' array                -->
+    send 'd' array                -->
+    send 'u' array                -->
+    send 'v' array                -->
+    send synapse targets          -->                       ; array of XDR arrays of 32-bit integers
+    send synapse delays           -->                       ; ditto
+    send synapse weights          -->                       ; array of XDR arrays of double
+                                      map network onto available hardware
+                                  <-- send RSP_START
+
+    send REQ_SYNC                 -->  
+    send nsteps                   -->                       ; 32-bit integer indicating number steps to simulate for
+    send stimulus (cycles)        -->                       ; the firing stimulus for up to nsteps cycles is sent as
+    send stimulus (indices)       -->                       ; two separate arrays of the same length (possiby empty).
+                                      run simulation for required number of steps
+                                  <-- send RSP_DATA
+    							  <-- send ndata            ; 32-bit integer specifying number of firing data which are returned
+                                  <-- send the data         ; this is nsteps separate XDR arrays of 32-bit integers 
+    								                        ; containing the indices of the firing neurons
+    visualise data etc. 
+
+perform more synchronisation as appropriate, then terminate::
+
+    send REQ_STOP                 --> stop simulation
+                                  <-- send RSP_STOP
+
+Some of the data that's sent back and forth specify neuron indices. A potential
+problem arises where the host and the client system use different array indexing
+schemes. The host uses 0-based array/list indexing and the communicated indices
+are assumed to follow this convention. Any translation is thus the
+responsibility of the client.

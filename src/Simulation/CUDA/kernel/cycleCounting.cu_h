@@ -1,0 +1,30 @@
+#ifndef CYCLE_COUNTING_CU_H
+#define CYCLE_COUNTING_CU_H
+
+#define KERNEL_TIMING
+
+/* Counters are placed at different levels (main, within function, etc), and
+ * within each level we specify a start and an end counter, as well as one
+ * counter at each transition between stages we want to measure*/
+
+#define COUNTER_KERNEL_START 0
+#define COUNTER_KERNEL_INIT_LOADL1 1
+#define COUNTER_KERNEL_LOADL1_LOADFIRING 2
+#define COUNTER_KERNEL_LOADFIRING_INTEGRATE 3
+#define COUNTER_KERNEL_INTEGRATE_FIRE 4
+#define COUNTER_KERNEL_FIRE_STOREL1 5
+#define COUNTER_KERNEL_STOREL1_STOREFIRING 6
+#define COUNTER_KERNEL_END 7
+#define COUNTER_COUNT 8
+
+#define DURATION_KERNEL 0
+#define DURATION_KERNEL_INIT 1
+#define DURATION_KERNEL_LOADL1 2
+#define DURATION_KERNEL_LOADFIRING 3
+#define DURATION_KERNEL_INTEGRATE 4
+#define DURATION_KERNEL_FIRE 5
+#define DURATION_KERNEL_STOREL1 6
+#define DURATION_KERNEL_STOREFIRING 7
+#define DURATION_COUNT 8
+
+#endif

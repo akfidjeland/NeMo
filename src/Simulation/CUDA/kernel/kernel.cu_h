@@ -1,0 +1,38 @@
+#ifndef KERNEL_CU_H
+#define KERNEL_CU_H
+
+#define MAX_THREAD_BLOCKS 128
+#define THREADS_PER_BLOCK 128
+
+#define MAX_DELAY 32
+
+#define NEURON_BITS 10
+#define MAX_PARTITION_SIZE (1<<NEURON_BITS)
+
+/* If more shared memory is needed for STDP execution, reduce max partition
+ * size. This has not been tested */
+//#define MAX_PARTITION_SIZE_STDP (1<<(NEURON_BITS-1))
+#define MAX_PARTITION_SIZE_STDP (1<<(NEURON_BITS))
+
+#define PARTITION_BITS 8
+#define MAX_PARTITION_COUNT (1<<PARTITION_BITS)
+
+#define SYNAPSE_BITS (32-NEURON_BITS-PARTITION_BITS)
+#define MAX_SYNAPSES_PER_DELAY (1<<SYNAPSE_BITS)
+
+#define PARTITION_COUNT gridDim.x
+#define CURRENT_PARTITION blockIdx.x
+
+#define TRUE 1
+#define FALSE 0
+
+// neuron parameter arrays
+#define PARAM_A 0
+#define PARAM_B 1
+#define PARAM_C 2
+#define PARAM_D 3
+#define STATE_U 4
+#define STATE_V 5
+#define NVEC_COUNT 6
+
+#endif

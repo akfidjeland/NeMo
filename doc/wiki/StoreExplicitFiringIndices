@@ -1,0 +1,8 @@
+Storing explicit firing indices
+-------------------------------
+
+:commit: 2aa96da9c07c5c9d69eb0d16a6a3757ea66d0624
+:date: Tue Feb 17 12:45:09 GMT 2009
+:status: open
+
+When using both L1 and L0 firing, L0 is handled at the beginning of the kernel (using fan-in) and L1 is handled at the end of the kernel (using fan-out). In both cases we need to compute a table of explicit firing indices. We should check whether it's faster to store and load this, or just to recompute as is done currently.

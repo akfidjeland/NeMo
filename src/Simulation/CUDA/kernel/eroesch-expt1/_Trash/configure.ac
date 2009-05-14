@@ -1,0 +1,1 @@
+AC_INIT([ambrain], [1.0], [e.roesch@imperial.ac.uk])AM_INIT_AUTOMAKE([-Wall -Werror foreign])AC_PROG_CCAC_CONFIG_HEADERS([izhikevich.h Cluster.hpp Simulation.hpp])AC_CONFIG_FILES([Makefilesrc/Makefile])AC_OUTPUT

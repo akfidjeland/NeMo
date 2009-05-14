@@ -1,0 +1,10 @@
+cuda_profile.log
+*.cu.c
+*.cu.cpp
+*.o
+*.swp
+lib
+obj
+tmp
+bin
+*.linkinfo

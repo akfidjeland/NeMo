@@ -1,0 +1,1 @@
+bin_PROGRAMS = brainbrain_SOURCES = brain.cpp

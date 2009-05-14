@@ -1,0 +1,56 @@
+#ifndef CONNECTIVITY_MATRIX_CU_H
+#define CONNECTIVITY_MATRIX_CU_H
+
+//! \file connectivityMatrix.cu_h
+
+/* \brief Synapse encoding/decoding 
+ *  
+ * Synapses are encoded in 64 bits with the following data:
+ * 
+ * - weight (32b float)/decoding
+ * - target partition (bits)
+ * - target neuron (bits)
+ * - index into reverse connectiviy matrix
+ *
+ * The reverse connectivity matrix is used for STDP. Each synapse is thus
+ * stored in two places (with different data). The index is the offset within a
+ * row in the reverse matrix. The rest of the reverse addressing is already
+ * known: source partition/neuron, target partition/neuron, and delay.
+ *
+ * Reverse synapses are encoded in 32 bits with the following data:
+ *
+ * - source partition
+ * - source neuron
+ * - arrival time of latest spike
+ *
+ * \author Andreas Fidjeland
+ */
+
+#define CM_ADDRESS 0
+#define CM_WEIGHT 1
+#define CM_LTD 2
+#define CM_SUBMATRICES 3
+
+// reverse connectivity
+#define RCM_ADDRESS 0
+#define RCM_LTP 1
+#define RCM_SUBMATRICES 2
+
+__host__ uint packSynapse(uint partition, uint neuron);
+
+__device__ uint targetNeuron(uint synapse);
+__device__ uint targetPartition(uint synapse);
+
+/* re-pack synapse with updated timestamp */
+__device__ uint setTimestamp(uint synapse, uint cycle);
+__device__ uint arrivalTime(uint synapse);
+
+__host__ uint packReverseSynapse( uint sourcePartition, uint sourceNeuron, uint arrivalTime);
+
+#define INVALID_REVERSE_SYNAPSE ((uint) ~0)
+
+__device__ uint sourceNeuron(uint rsynapse);
+__device__ uint sourcePartition(uint rsynapse);
+__device__ uint forwardIdx(uint rsynapse);
+
+#endif

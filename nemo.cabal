@@ -1,0 +1,462 @@
+name:                       nemo
+version:                    0.2.5
+synopsis:                   Simulation library for spiking neural networks
+author:                     Andreas Fidjeland
+maintainer:                 Andreas Fidjeland <akf@doc.ic.ac.uk>
+cabal-version:              >= 1.2
+stability:                  alpha
+-- tested-with:             ghc-6.8
+build-type:                 Simple
+
+
+-- TODO: use autoconf to find CUDA 
+flag CUDA
+    description:            Enable support for CUDA backend
+    default:                True 
+
+flag Debug
+    description:            Enable debugging
+    default:                False
+
+flag Profile
+    description:            Enable profiling
+    default:                False
+
+flag Client
+    description:            Build client-only library
+    default:                False
+
+flag Examples
+    description:            Build stand-alone example networks
+    default:                False
+
+flag Test
+    description:            Create binary which runs all the tests
+    default:                False
+
+flag Benchmark
+    description:            Create binary which runs benchmarks
+    default:                False
+
+
+
+library
+    exposed-modules:        Network.ClientFFI
+    other-modules:          Construction.Axon,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron,
+                            Construction.Neurons,
+                            Construction.Synapse,
+                            Construction.Spiking,
+                            Construction.Topology,
+                            Network.Protocol,
+                            Network.SocketSerialisation,
+                            Simulation.Common,
+                            Simulation.STDP,
+                            Types,
+                            Util.Assocs,
+                            Util.List,
+                            Simulation.FileSerialisation,
+                            Simulation.FiringStimulus
+
+    build-depends:          array >= 0.1, base, binary >= 0.4, bytestring, mtl,
+                            containers, haskell98, network, network-bytestring, parallel
+    hs-source-dirs:         src
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+    else
+        ghc-options:        -O2 -fPIC
+
+
+executable nemo-server
+    main-is:                IzhikevichServer.hs
+    other-modules:          Network.Client,
+                            Construction.Axon,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron,
+                            Construction.Neurons,
+                            Construction.Spiking,
+                            Construction.Synapse,
+                            Construction.Topology,
+                            Network.Protocol,
+                            Network.Server,
+                            Network.SocketSerialisation
+                            Simulation.Common,
+                            Simulation.CPU,
+                            Simulation.FiringStimulus,
+                            Simulation.Queue,
+                            Simulation.Run,
+                            Simulation.SpikeQueue,
+                            Simulation.STDP,
+                            Types,
+                            Util.Assocs,
+                            Construction,
+                            Construction.Construction,
+                            Construction.Parameterisation,
+                            Construction.Randomised.Topology,
+                            Construction.Randomised.Synapse,
+                            Examples.Smallworld,
+                            NSim
+    if flag(client)
+        buildable:          False
+
+    build-depends:          random, old-time, QuickCheck
+    if !os(windows)
+        build-depends:      unix
+
+    hs-source-dirs:         src 
+    if flag(debug)
+        ghc-options:        -fno-ignore-asserts
+    if flag(CUDA)
+        other-modules:      Simulation.CUDA, 
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.Configuration,
+                            Simulation.CUDA.DeviceProperties,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Probe
+        cpp-options:        -DCUDA_ENABLED
+        extra-libraries:    cuIzhikevich cudart cutil
+        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+
+
+executable nemo-run
+    main-is:                RunNetwork.hs
+    other-modules:          Construction.Axon,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron,
+                            Construction.Neurons,
+                            Construction.Rand,
+                            Construction.Randomised.Topology,
+                            Construction.Spiking,
+                            Construction.Synapse,
+                            Construction.Topology,
+                            Network.Client,
+                            Network.Protocol,
+                            Simulation.Common,
+                            Simulation.FileSerialisation,
+                            Simulation.FiringStimulus,
+                            Simulation.Queue,
+                            Simulation.Run,
+                            Simulation.SpikeQueue,
+                            Simulation.STDP,
+                            Types,
+                            Util.Assocs
+    hs-source-dirs:         src 
+    if flag(client)
+        buildable:          False
+    if flag(debug)
+        ghc-options:        -fno-ignore-asserts
+    else
+      if flag(profile)
+        ghc-options:        -prof -auto-all -caf-all -O2
+      else
+        ghc-options:        -O2
+    if flag(CUDA)
+        other-modules:      Simulation.CUDA, 
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.Configuration,
+                            Simulation.CUDA.DeviceProperties,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Probe
+        cpp-options:        -DCUDA_ENABLED
+        extra-libraries:    cuIzhikevich cudart cutil
+        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
+
+
+
+executable runtests
+    main-is:                Test/RunTests.hs
+    other-modules:          Construction.Axon,
+                            Construction.Construction,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron, 
+                            Construction.Neurons,
+                            Construction.Parameterisation,
+                            Construction.Rand,
+                            Construction.Randomised.Topology,
+                            Construction.Spiking,
+                            Construction.Synapse,
+                            Construction.Topology,
+                            Examples.Smallworld,
+                            Examples.Random1k,
+                            Network.Client,
+                            Network.Protocol,
+                            Network.Server,
+                            Network.SocketSerialisation,
+                            NSim,
+                            Options,
+                            Simulation.Common,
+                            Simulation.CPU,
+                            Simulation.FiringStimulus,
+                            Simulation.Queue,
+                            Simulation.Run,
+                            Simulation.SpikeQueue,
+                            Simulation.STDP,
+                            Test.Comparative,
+                            Test.Construction.Axon,
+                            Test.Construction.Synapse,
+                            Test.Examples.Smallworld,
+                            Test.Examples.Random1k,
+                            Test.Examples.Ring,
+                            Test.Files,
+                            Test.Network.Client,
+                            Test.Network.ClientFFI,
+                            Test.Regression,
+                            Test.Simulation.Run,
+                            Types,
+                            Util.Assocs
+    extensions:             NoMonomorphismRestriction
+    if !flag(test)
+        buildable:          False
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+    build-depends:          HUnit, filepath, directory
+    hs-source-dirs:         src, testsuite
+    if flag(CUDA) 
+        other-modules:      Simulation.CUDA, 
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.Configuration,
+                            Simulation.CUDA.DeviceProperties,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Probe,
+                            Test.Simulation.CUDA.Mapping
+        cpp-options:        -DCUDA_ENABLED
+        extra-libraries:    cuIzhikevich cudart cutil
+        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
+
+
+executable benchmark
+    main-is:                Benchmark.hs
+    other-modules:          Construction.Axon,
+                            Construction.Construction,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron,
+                            Construction.Neurons,
+                            Construction.Parameterisation,
+                            Construction.Randomised.Topology,
+                            Construction.Spiking,
+                            Construction.Synapse,
+                            Construction.Topology,
+                            Examples.Ring,
+                            Examples.Random1k,
+                            Network.Client,
+                            Network.Protocol,
+                            Network.Server,
+                            Network.SocketSerialisation
+                            Options,
+                            Simulation.Common,
+                            Simulation.CPU,
+                            Simulation.FiringStimulus,
+                            Simulation.Queue,
+                            Simulation.Run,
+                            Simulation.SpikeQueue,
+                            Simulation.STDP,
+                            Types, Construction.Rand,
+                            Util.Assocs
+
+    if !flag(benchmark)
+        buildable:          False
+
+    hs-source-dirs:         src
+    if flag(debug)
+        ghc-options:        -fno-ignore-asserts
+    ghc-options:            -O2 -fno-monomorphism-restriction
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+    if flag(CUDA)
+        other-modules:      Simulation.CUDA,
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.Configuration,
+                            Simulation.CUDA.DeviceProperties,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Probe
+        cpp-options:        -DCUDA_ENABLED
+        extra-libraries:    cuIzhikevich cudart cutil
+        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
+
+
+executable smallworld
+    main-is:                Examples/SmallworldRun.hs
+    other-modules:          Construction.Axon,
+                            Construction.Construction,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron, 
+                            Construction.Neurons,
+                            Construction.Spiking,
+                            NSim,
+                            Options,
+                            Construction.Parameterisation,
+                            Construction.Rand,
+                            Construction.Randomised.Topology,
+                            Construction.Synapse,
+                            Construction.Topology,
+                            Examples.Smallworld,
+                            Network.Client,
+                            Network.Protocol,
+                            Network.Server,
+                            Network.SocketSerialisation
+                            Simulation.Common,
+                            Simulation.CPU,
+                            Simulation.FiringStimulus,
+                            Simulation.Queue, 
+                            Simulation.Run,
+                            Simulation.SpikeQueue, 
+                            Simulation.STDP,
+                            Types,
+                            Util.Assocs
+
+    if !flag(examples)
+        buildable:          False
+
+    ghc-options:            -fno-monomorphism-restriction
+    hs-source-dirs:         src
+    if flag(debug)
+        ghc-options:        -fno-ignore-asserts
+    else
+        ghc-options:        -O2
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+    if flag(CUDA)
+        other-modules:      Simulation.CUDA, 
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.Configuration,
+                            Simulation.CUDA.DeviceProperties,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Probe
+        cpp-options:        -DCUDA_ENABLED
+        extra-libraries:    cuIzhikevich cudart cutil
+        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
+
+executable random1k
+    main-is:                Examples/Random1kRun.hs
+    other-modules:          Construction.Axon,
+                            Construction.Construction,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron,
+                            Construction.Neurons,
+                            Construction.Parameterisation,
+                            Construction.Randomised.Topology,
+                            Construction.Spiking,
+                            Construction.Synapse,
+                            Construction.Topology,
+                            Examples.Random1k
+                            Network.Client,
+                            Network.Protocol,
+                            Network.Server,
+                            Network.SocketSerialisation
+                            NSim,
+                            Options,
+                            Simulation.Common,
+                            Simulation.CPU,
+                            Simulation.FiringStimulus,
+                            Simulation.Queue,
+                            Simulation.Run,
+                            Simulation.SpikeQueue,
+                            Simulation.STDP,
+                            Types, Construction.Rand,
+                            Util.Assocs
+
+    if !flag(examples)
+        buildable:          False
+
+    hs-source-dirs:         src
+    if flag(debug)
+        ghc-options:        -fno-ignore-asserts
+    if flag(profile)
+        ghc-options:        -prof -auto-all -caf-all -O2
+    else
+        ghc-options:        -O2
+    ghc-options:            -fno-monomorphism-restriction
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+    if flag(CUDA)
+        other-modules:      Simulation.CUDA, 
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.Configuration,
+                            Simulation.CUDA.DeviceProperties,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Probe
+        cpp-options:        -DCUDA_ENABLED
+        extra-libraries:    cuIzhikevich cudart cutil
+        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
+
+
+executable ring
+    main-is:                Examples/RingRun.hs
+    other-modules:          Construction.Axon,
+                            Construction.Construction,
+                            Construction.Izhikevich,
+                            Construction.Network,
+                            Construction.Neuron,
+                            Construction.Neurons,
+                            Construction.Parameterisation,
+                            Construction.Randomised.Topology,
+                            Construction.Spiking,
+                            Construction.Synapse,
+                            Construction.Topology,
+                            Examples.Ring,
+                            Network.Client,
+                            Network.Protocol,
+                            Network.Server,
+                            Network.SocketSerialisation
+                            NSim,
+                            Options,
+                            Simulation.Common,
+                            Simulation.CPU,
+                            Simulation.FiringStimulus,
+                            Simulation.Queue,
+                            Simulation.Run,
+                            Simulation.SpikeQueue,
+                            Simulation.STDP,
+                            Types, Construction.Rand,
+                            Util.Assocs
+
+    if !flag(examples)
+        buildable:          False
+
+    hs-source-dirs:         src
+    if flag(debug)
+        ghc-options:        -fno-ignore-asserts
+    ghc-options:            -fno-monomorphism-restriction
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+    if flag(CUDA)
+        other-modules:      Simulation.CUDA,
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.Configuration,
+                            Simulation.CUDA.DeviceProperties,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Probe
+        cpp-options:        -DCUDA_ENABLED
+        extra-libraries:    cuIzhikevich cudart cutil
+        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
