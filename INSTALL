@@ -1,0 +1,49 @@
+Requirements
+------------
+
+Common:
+
+- ghc 6.8
+- gcc
+
+Windows:
+
+- MinGW
+
+For the matlab client 'mex' is required as well.
+
+Build
+-----
+
+The user can choose to eithe build the full project (Linux only) or to build a
+smaller client library with MATLAB bindings (Linux or Windows+MinGW). 
+
+To build the full project:
+
+	./Setup.lhs configure
+	./Setup.lhs build
+
+The configure step will warn of any missing dependencies, which have to be
+installed using the systems package manager or manually from hackage.
+
+To build the client library:
+
+	./Setup.lhs configure -fclient
+	./Setup.lhs build
+
+Known problems
+--------------
+
+On Windows ghc 6.10 fails to correctly build dlls. Solution: use 6.8 instead.
+
+Installing haskell packages from hackage
+----------------------------------------
+
+All packages follow the same Cabal-based installation procedure:
+
+- Download and unpack
+- runhaskell Setup.[l]hs configure
+- runhaskell Setup.[l]hs build
+- runhaskell Setup.[l]hs install
+
+See cabal documentation for more details.

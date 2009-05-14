@@ -1,0 +1,21 @@
+=====================
+Haskell randomisation
+=====================
+
+:date: Mon Nov  3 14:18:44 GMT 2008
+:commit: 
+:submitter: akf
+:owner: akf
+:status: open
+
+The regression tests regularily fails as we move development between machines.
+There are a few possible reasons for this. One is that the RNG differs between
+the machines (we already make sure we use the same seed). Another possibility is
+that the difference is due to differences in rounding and execution order in the
+floating point computations on different machines. This is something we'll have
+to deal with at some point in any event.
+
+Todo:
+
+- check if randomisation differes between machines
+- check out possibilities for rolling own RNG

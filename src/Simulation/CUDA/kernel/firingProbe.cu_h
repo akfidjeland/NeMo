@@ -1,0 +1,14 @@
+#ifndef FIRING_PROBE_CU_H
+#define FIRING_PROBE_CU_H
+
+//#define VERBOSE
+#define INVALID_NEURON ((ushort) ~0) 
+
+/* The chunk size should be at least the warp size. Increasing the chunk size
+ * beyond the warp size will lead to slightly simpler "weaving" together of the
+ * separate per-partition firing streams, at the expense of a potentially
+ * larger buffer. The relative merits have not been measured.  */
+//#define FMEM_CHUNK_SIZE 64
+#define FMEM_CHUNK_SIZE 32
+
+#endif

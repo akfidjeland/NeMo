@@ -1,0 +1,115 @@
+======
+Issues
+======
+
+Populate this list with desired fuctionality and similar and other todo items.
+Bugs go in a separate list: BugList. For longer descriptions of issues (which
+go in a separate page), the following fields might be useful: date, commit,
+submitter, owner, status (open, closed, inprogress, etc).
+
+Client/server architecture
+--------------------------
+
+- handle result truncation properly, e.g. using nstep of 1000, run simulation
+  for 1500 steps, should not produce 2000 cycles worth of results.
+- provide cleaner separation between connection handling (Server.hs) and
+  communication (Protocol.hs)
+- add a mechanism for dealing with multiple requests - add 'busy' reply in
+  server. This requires a threaded server.
+- MultipleParallelSimulations
+- make client specify probe, i.e what subsets of neurons are currently of
+  interest. 
+- add support for specifying current stimulus in server mode (to run on server)
+
+Network specification/DSL
+-------------------------
+
+- EfficientNetworkConstruction
+- make excitatory/inhibitory a property of the neuron
+- add support for arbitrary user-specified neuron properties
+- interpret script rather than compile it.
+
+Simulation general
+------------------
+
+- report error for unknown command-line options
+
+CUDA backend
+------------
+
+- We currently have one kernel parameter for the cycle number to assign to
+  output data and one we use for buffering etc. Combine these two. 
+- For STDP, either reset the stdp counter when updating the synapses, or share
+  this counter with the main simulation counter.
+- Modify mapper to reduce number of sequential loads in L0 delivery. This is a
+  small saving, perhaps 5%.
+- In the STDP pruning step we traverse the entire forward matrix. We can speed
+  this up by recording what source neurons have modified synapses. The overall
+  cost of this step is nearly 10% of execution time for smallworld network with
+  STDP applications every 50ms.
+- For L1 spike queue, use per-partition configuration of max synapses
+- For L1 spike queue, ensure that we don't deliver garbage results. We need to
+  clear unused entries. This is best done by writing for all threads in a warp,
+  setting value to 0 if not used. Add smallworld unit test to check this.
+- When loading synapses, limit the loads on a per-neuron basis, rather than
+  using a global maximum. Cache the maximum values, as these are fixed for the
+  network.
+- instead of requiring caller to do a separate configuration step, gather stats
+  when setting up network data structures, and perform configuration when
+  writing it all to the device. This is done for L0 CM. Do the same for L1 and
+  for partition sizing.
+- Parallel loading of incoming L1 spikes 
+- StoreExplicitFiringIndices
+- For L0 STDP, when weight is 0, reduce number of reads in traversal of
+  connectivity matrices.
+- Simple code issues: add address macros CLUSTER, NEURON; replace
+  reinterpret_cast with __float_as_int
+- make sure we check for spiking during the sub-ms looping, to avoid numeric
+  overflow
+- use local RNG to get seed for device in order to make it possible to have
+  repeatable runs
+- allow the c parameter to be hard-coded. Often this will be fixed at -65.0.
+- consider removing sorting from server again.
+
+Haskell core
+------------
+
+- add simulation monad. It should be possible to draw upon random numbers 
+- make sure we correctly compute the max buffer size in allocRT. Currently this
+  is just set to a large number. Should determine how many synapses cross
+  partition bounadry. It would make sense to only allocate this after CM has
+  loaded.
+- configure max L0 connections correctly. This is currently set based on global
+  maximum.
+- merge duplicate L1 synapse. If we make sure the network is constructed such
+  that synapses with the same source and target end up in the same slot, this
+  should be sipmle.
+- add/complete time function in NSim 
+
+MatlabAPI
+---------
+
+- add support for thalamic input in the matlab interface
+- if server goes down, the client gets only the error message: an unknown error
+  occurred. This is because we don't return error strings from ClientFFI, only
+  the status. Rectify this.
+- allow users to specifiy networks with a variable number of synapses. Remember
+  to modify help comment in nsStart.m
+
+Build system
+------------
+
+- add creation of windows install (MSI), using Bamse
+- add creation of deb installer
+- simplify cabal by only creating library for the client. Why would we need a
+  server library?
+- tie the test framwork into git. require all tests to pass.
+- cmake? We should do some configuration to determine if CUDA is present
+- add tarballing to the build script
+- tie CUDA and MEX builds into the cabal build
+- use a 'client-dist' directory on the local machine 
+
+CPU backend
+-----------
+
+- make this a lot faster! We should use multiple cores. SSE might also be an idea.

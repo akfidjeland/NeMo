@@ -1,0 +1,14 @@
+dist
+.setup-config
+client-dist
+tmp
+debug
+profiling
+performance
+*.linkinfo
+haskell.mk
+*.prof
+debug_cuda.sh
+release_cuda.sh
+cc.dat
+map.log

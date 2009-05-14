@@ -1,0 +1,159 @@
+.. Note: this page is used to create user documentation for the MATLAB API
+
+========================
+Nemo v0.2.4 - Matlab API
+========================
+
+:Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
+:Organization: Department of Computing, Imperial College London
+:Date: April 2008
+
+The MATLAB API can be used to control a simulation running on a dedicated host.
+The network is constructed in MATLAB, and is then transferred to the host. The
+MATLAB client can provide stimulus to the running simulation and read back
+firing data.
+
+
+Installation
+============
+
+Windows: Unpack the zip file somewhere sensible. The pre-compiled binaries
+should just work.
+
+.. Linux: Sun RPC/XDR is required, but this is probably installed by default.  Unpack that tarball somewhere sensible and run ``make``. 
+
+Usage
+=====
+
+Ensure that the directory containing the MEX files and library files are in
+both the MATLAB path and in the system library path. The MATLAB path can be
+set either in the GUI or in the terminal::
+
+	addpath <install-dir>;
+
+The network is generated on the client side. The user should generate n-vectors
+``a``, ``b``, ``c``, ``d``, ``u``, and ``v`` that describes the neuron
+population. The connectivity is described using n-by-s matrices specifying the
+postsynaptic neuron indices and synaptic weights. The delays are described
+using an n-vector of cell arrays. Each cell corresponds to a single delay, and
+is filled with the relevant synapse indices (i.e. the column in the
+weight/postindex matrices).
+
+A simple script which connects to a server, runs for 60 s with just a single
+firing stimulus, processing the returned firing data with the function ``foo``::
+    
+    . . . code that generates the network
+     
+    nsSetHost('axel01.doc.ic.ac.uk');
+    F = 30;
+    iterations = 4;
+    nsStart(a, b, c, d, u, v, spost, sdelays, sweights, iterations, F);
+    for i=1:60
+        fired = nsRun(1000, [500 1]);
+        foo(fired);
+    end
+    nsTerminate;
+
+or simpler, if 60 seconds worth of data can be processed (and buffered) at once::
+    
+    . . . code that generates the network
+
+    nsSetHost('axel01.doc.ic.ac.uk');
+    nsStart(a, b, c, d, u, v, spost, sdelays, sweights, 4, 30);
+    fired = nsRun(60000, [500 1], 4, 30);
+    foo(fired);
+    nsTerminate;
+
+To run for 1000ms applying STDP every 50ms, do something like the following
+(perhaps with some added stimulus)::
+
+    nsSetHost('axel01.doc.ic.ac.uk');
+    nsEnableSTDP(20, 20, 1.0, 0.8);
+    F = 30;
+    iterations = 4;
+    nsStart(a, b, c, d, u, v, spost, sdelays, sweights, iterations, F);
+    for i=1:1000:50
+        fired = nsRun(1000, []);
+        foo(fired);
+        nsApplySTDP(1.0);
+    end
+    nsTerminate;
+
+.. For small networks (a few thousands of neurons), it might be interesting to run
+.. a number of networks in parallel, as otherwise the simulation backend will be
+.. severely underutilized. This can be done simply by generating a number of
+.. networks, and then simply concatenating them into a single large disjoint network::
+	
+..	handle = nsStart('axel01.doc.ic.ac.uk', 
+..		[a1, a2, a3, a4], 
+..		[b1, b2, b3, b4], 
+..		[c1, c2, c3, c4], 
+..		[d1, d2, d3, d4], 
+..		[u1, u2, u3, u4], 
+..		[v1, v2, v3, v4], 
+..		[p1, p2, p3, p4], 
+..		[d1, d2, d3, d4], 
+..		[w1, w2, w3, w4]);
+..	fstim = [500 1]
+..	fired = nsRunPar(handle, 1000, repmat(fstim, 1, 4))
+..	foo(fired);
+..	nsTerminate(handle);
+
+.. A parallel version of nsRun handles the input and output, but needs to be told
+.. the size of each network. A 1s simulation of four networks might look like this::
+
+
+.. Using this method, the user has to separate the firing data into the separate
+.. networks. An alternative pair of functions, ``nsStartPar`` and ``nsRunPar``,
+.. will be available shortly, which will do this for the user.
+
+.. On the current backend (a single Tesla C1060), anything less than 16k neurons is
+.. guaranteed to leave hardware unused. 16k neurons should *use* all hardware, but
+.. will stil underutilise it. Between 50k and 100k neurons seems a reasonable size
+.. to aim for, but there's currently no hard data regarding what size network
+.. results in the greatest throughput.
+
+
+Function reference
+==================
+
+The reference for each function is also available from within MATLAB by using
+the usual ``help`` function. 
+
+.. The function reference is extracted from the relevant m-files
+.. include:: nsSetHost.txt
+.. include:: nsSetPort.txt
+.. include:: nsStart.txt
+.. include:: nsRun.txt
+.. include:: nsTerminate.txt
+.. include:: nsEnableSTDP.txt
+.. include:: nsDisableSTDP.txt
+.. include:: nsApplySTDP.txt
+
+Limitations
+===========
+
+These limitations should be eased with time. Requests are welcome.
+
+- All synapses are assumed to have the same number of synapses.
+- Only firing data can be returned.
+
+.. - It's not possible to change the probe (neuron indices or type of data) during execution.
+
+
+Troubleshooting
+===============
+
+Calling MEX function results in warning regarding compiler version 
+------------------------------------------------------------------
+
+This problem is described in some detail here: 
+http://www.mathworks.com/support/solutions/data/1-2H64MF.html.
+One workaround mentioned there is to set the LD_PRELOAD environment variable
+before starting MATLAB. For bash::
+
+	export LD_PRELOAD=/lib/libgcc_s.so.1
+
+For csh::
+
+	setenv LD_PRELOAD /lib/libgcc_s.so.1
