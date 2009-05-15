@@ -74,7 +74,6 @@ runSim backend duration net probeIdx probeF dt fstimF outfn opts stdpConf = do
     fstim <- firingStimulus fstimF
     let stdp = applySTDP $ maybe Nothing stdpFrequency stdpConf
         stim = zip fstim stdp
-    putStrLn $ "len: " ++ (show $ length $ L.chunksOf sz $ sample duration stim)
     mapM_ (aux run) $ L.chunksOf sz $ sample duration stim
     close
     where

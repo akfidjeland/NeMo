@@ -17,6 +17,9 @@ import Test.Network.Client as TestClient (tests, test_clientSim)
 import qualified Test.Network.ClientFFI (tests, create_tests)
 import Test.Regression (testAll, createAll)
 import Test.Simulation.Run as TestRun (tests)
+#if defined(MATLAB_ENABLED)
+import Test.ClientAPI.Matlab as Matlab (tests, create_tests)
+#endif
 #if defined(CUDA_ENABLED)
 import Test.Simulation.CUDA.Mapping as Mapping (tests)
 #endif
@@ -34,6 +37,9 @@ runHUnitTests dir = runTestTT $ TestList $ [
         Mapping.tests,
 #endif
         TestClient.tests,
+#if defined(MATLAB_ENABLED)
+        Matlab.tests,
+#endif
         Test.Network.ClientFFI.tests dir
       ]
     where
@@ -41,6 +47,9 @@ runHUnitTests dir = runTestTT $ TestList $ [
 
 createHUnitTests dir = do
     mapM_ (createAll dir) regressionTests
+#if defined(MATLAB_ENABLED)
+    Matlab.create_tests
+#endif
     Test.Network.ClientFFI.create_tests dir
 
 

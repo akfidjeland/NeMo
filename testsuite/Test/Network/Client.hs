@@ -1,7 +1,7 @@
 module Test.Network.Client (tests, test_clientSim) where
 
 import Control.Concurrent
-import Control.Exception (bracket)
+import Control.Exception
 import System.IO
 import System.FilePath ((</>))
 import System.Directory (createDirectoryIfMissing)
@@ -39,6 +39,7 @@ test_clientSim = TestLabel "comparing client/server with local" $ TestCase $ do
         sim2 = \f -> runSim (RemoteHost "localhost" testPort) duration net
                         probeIdx probeF tempSubres fstim f defaultOptions Nothing
     compareSims sim1 sim2
+    throwTo serverThread $ AsyncException ThreadKilled
     where
         -- TODO: share this with several other places in the testsuite
         net = build 123456 $ smallworldOrig
@@ -49,7 +50,7 @@ test_clientSim = TestLabel "comparing client/server with local" $ TestCase $ do
         fstim = FiringList [(0, [1])]
 
 
-testPort = defaultPort + 1
+testPort = defaultPort + 2
 
 
 runServer :: IO ()
