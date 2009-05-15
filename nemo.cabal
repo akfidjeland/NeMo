@@ -9,10 +9,15 @@ stability:                  alpha
 build-type:                 Simple
 
 
--- TODO: use autoconf to find CUDA 
+-- TODO: use autoconf to find CUDA
 flag CUDA
     description:            Enable support for CUDA backend
-    default:                True 
+    default:                True
+
+-- TODO: use autoconf to find Matlab
+flag Matlab
+    description:            Enable support for Matlab client
+    default:                False
 
 flag Debug
     description:            Enable debugging
@@ -204,7 +209,6 @@ executable runtests
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
-                            Test.ClientAPI.Matlab,
                             Test.Comparative,
                             Test.Construction.Axon,
                             Test.Construction.Synapse,
@@ -225,6 +229,9 @@ executable runtests
         ghc-options:        -prof -auto-all
     build-depends:          HUnit, filepath, directory, process >= 1.0.0.0 && < 1.0.1.1
     hs-source-dirs:         src, testsuite
+    if flag(Matlab)
+        other-modules:      Test.ClientAPI.Matlab
+        cpp-options:        -DMATLAB_ENABLED
     if flag(CUDA) 
         other-modules:      Simulation.CUDA, 
                             Simulation.CUDA.Address,

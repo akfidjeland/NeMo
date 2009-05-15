@@ -24,7 +24,19 @@ To build the full project:
 	./Setup.lhs build
 
 The configure step will warn of any missing dependencies, which have to be
-installed using the systems package manager or manually from hackage.
+installed using the systems package manager or manually from hackage. See
+nemo.cabal for configuration options. These can be set by doing
+ 
+	./Setup.lhs configure --flags="profile -cuda"
+
+To enable profiling and disable cuda, or
+
+	./Setup.lhs configure -fprofile -fexamples
+
+To enable profiling and also compile the standalone example programs.
+
+CUDA support is not stritly required, but is enabled by default. Since there is
+currently no autotools or similar configuration step, you may have to disable this manually.
 
 To build the client library:
 
@@ -34,7 +46,8 @@ To build the client library:
 Known problems
 --------------
 
-On Windows ghc 6.10 fails to correctly build dlls. Solution: use 6.8 instead.
+- On Windows ghc 6.10 fails to correctly build dlls. Solution: use 6.8 instead.
+- The client Matlab library fails to build on 64-bit linux.
 
 Installing haskell packages from hackage
 ----------------------------------------
