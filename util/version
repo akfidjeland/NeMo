@@ -1,0 +1,13 @@
+#!/usr/bin/env perl
+
+# Read version number from cabal file
+
+open(CABAL, "nemo.cabal") or die "couldn't open file";
+while ($line = <CABAL>) {
+	if($line =~ m/^version:\s*(\S+)\s*/) { 
+		print $1; 
+		exit 0;
+	}
+}
+print "unknown";
+exit 1;

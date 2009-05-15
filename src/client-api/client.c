@@ -10,7 +10,7 @@ void
 Client_init(void)
 {
 	static int argc = 1;
-	static char* argv[] = { "nsimclient", NULL }, **argv_ = argv;
+	static char* argv[] = { "nemoclient", NULL }, **argv_ = argv;
     hs_init(&argc, &argv_);
 #ifdef __GLASGOW_HASKELL__
 	hs_add_root(__stginit_Client);

@@ -24,7 +24,7 @@ obj := o
 mex_ext := mexglx
 endif
 
-version :=$(shell util/version.hs)
+version :=$(shell util/version)
 
 m_files := $(patsubst %,$(mex_src_dir)/matlab/%.m,$(m_src))
 mex_files := $(addprefix $(build_dir)/,$(addsuffix .$(mex_ext),nsStart_aux nsRun_aux nsTerminate_aux))
