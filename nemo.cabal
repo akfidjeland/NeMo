@@ -204,6 +204,7 @@ executable runtests
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
+                            Test.ClientAPI.Matlab,
                             Test.Comparative,
                             Test.Construction.Axon,
                             Test.Construction.Synapse,
@@ -222,7 +223,7 @@ executable runtests
         buildable:          False
     if flag(profile)
         ghc-options:        -prof -auto-all
-    build-depends:          HUnit, filepath, directory
+    build-depends:          HUnit, filepath, directory, process >= 1.0.0.0 && < 1.0.1.1
     hs-source-dirs:         src, testsuite
     if flag(CUDA) 
         other-modules:      Simulation.CUDA, 

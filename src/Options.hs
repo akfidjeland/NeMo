@@ -130,7 +130,7 @@ defaultOptions = Options {
         optStdpAlphaD  = 0.8,
         optStdpMaxWeight = 100.0, -- for no good reason at all...
         -- backend options
-        optBackend     = CPU,
+        optBackend     = defaultBackend,
         -- network options
         optPort        = defaultPort,
         -- print options

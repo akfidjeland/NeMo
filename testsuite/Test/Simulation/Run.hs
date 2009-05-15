@@ -59,7 +59,7 @@ test_repeatedRun = comparisonTest sim sim "Two subsequent identical simulations"
 
 
 -- TODO: factor this out and make it a default simulation somewhere
-sim f = runSim CUDA duration net probeIdx probeF dt fstim f
+sim f = runSim defaultBackend duration net probeIdx probeF dt fstim f
             defaultOptions Nothing
     where
         -- TODO: factor this out and share with Test.Network.Client

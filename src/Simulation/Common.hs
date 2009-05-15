@@ -19,6 +19,14 @@ data Backend
 
 
 
+defaultBackend :: Backend
+#if defined(CUDA_ENABLED)
+defaultBackend = CUDA
+#else
+defaultBackend = CPU
+#endif
+
+
 type ProbeSet = Set.Set Idx
 
 -- | Return set of neurons to probe

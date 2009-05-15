@@ -12,7 +12,7 @@ import Construction.Izhikevich
 import Construction.Network (Network)
 import Construction.Synapse (Static)
 import Examples.Ring (ring)
-import Options (defaultOptions, optCuPartitionSz)
+import Options
 import Simulation.Common hiding (cycles)
 import Simulation.FiringStimulus
 import Simulation.Run (runSim)
@@ -58,7 +58,11 @@ testRing size impulse delay backend clusterSz = do
         fstim = FiringList [(0, [impulse])]
         -- test = checkFiring size impulse delay
         probefn = Firing :: ProbeFn IzhState
+#if defined(CUDA_ENABLED)
         opts = defaultOptions { optCuPartitionSz = clusterSz }
+#else
+        opts = defaultOptions
+#endif
     ref <- newIORef $ RingState impulse size 0
     let test = checkFiring size impulse delay ref
     runSim backend duration net All probefn 4 fstim test opts Nothing
@@ -71,11 +75,11 @@ tests = TestList [
            (TestCase $ testRing 1000 0 1 CUDA $ Just 1000),
 
         -- excercise 10 clusters
-        TestLabel "1000-sized ring on gpu using cluster size of 128"
+        TestLabel "1000-sized ring on gpu using partition size of 128"
            (TestCase $ testRing 1000 0 1 CUDA $ Just 128),
 
         -- excercise 40 clusters, requiring timeslicing of MPs
-        TestLabel "4000-sized ring on gpu using cluster size of 128, testing spikes crosing cluster boundaries"
+        TestLabel "4000-sized ring on gpu using partition size of 128, testing spikes crosing cluster boundaries"
            (TestCase $ testRing 1000 0 1 CUDA $ Just 128),
 
         TestLabel "2000-sized ring on gpu with spike injection into cluster outside cluster 0 (neuron 1500)"
