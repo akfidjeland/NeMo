@@ -45,10 +45,10 @@ initMemory
     -> Maybe STDPConf
     -> IO SimData
 initMemory net att maxProbePeriod stdp = do
-    (pcount, psizes, pitchL0, pitchL1, rt) <- allocRT net maxProbePeriod
+    (pcount, psizes, rt) <- allocRT net maxProbePeriod
     configureSTDP rt stdp
     loadAllNeurons rt net
-    loadCMatrix rt att net pitchL0 pitchL1
+    loadCMatrix rt att net
     return $ SimData pcount psizes att rt
 
 
@@ -118,10 +118,10 @@ allocOutbuf len = do
 
 
 {- | Write all connectivity data to device -}
-loadCMatrix rt att net pitchL0 pitchL1 =
+loadCMatrix rt att net =
     withForeignPtr rt $ \rtptr -> do
-    bufL0 <- allocOutbuf pitchL0
-    bufL1 <- allocOutbuf pitchL1
+    bufL0 <- allocOutbuf $ maxL0Pitch net
+    bufL1 <- allocOutbuf $ maxL1Pitch net
     forM_ (partitionAssocs net) $ \(pidx, p) -> do
         forM_ (neuronAssocs p) $ \(nidx, n) -> do
             forM_ (synapsesByDelay n) $ \(delay, ss) -> do
@@ -176,32 +176,26 @@ foreign import ccall unsafe "allocRuntimeData"
 foreign import ccall unsafe "&freeRuntimeData"
     c_freeRT :: FunPtr (Ptr CuRT -> IO ())
 
-allocRT :: CuNet n s
-        -- -> CMatrix DeviceIdx CuSynapse
-        -- -> CMatrix DeviceIdx CuSynapse
-        -> Int
-        -> IO (Int, [Int], Int, Int, ForeignPtr CuRT)
+allocRT :: CuNet n s -> Int -> IO (Int, [Int], ForeignPtr CuRT)
 allocRT net maxProbePeriod = do
     let pcount = partitionCount net
         psizes = partitionSizes net
-        pitchL0  = maxL0Width net
-        pitchL1  = maxL1Width net
     ptr <- c_allocRT
         (fromIntegral pcount)
-        (fromIntegral $ maximum psizes)
-        (fromIntegral $ maxNetworkDelay net)
+        (fromIntegral $! maximum psizes)
+        (fromIntegral $! maxNetworkDelay net)
         -- L0
-        (fromIntegral pitchL0)
+        (fromIntegral $! maxL0Pitch net)
         0
         -- L1
-        (fromIntegral pitchL1)
+        (fromIntegral $! maxL1Pitch net)
         0
         -- TODO: compute properly how large the buffers should be
         64768
         -- (fromIntegral $ l1QueueEntrySize l1cm)
         (fromIntegral maxProbePeriod)
     rt <- newForeignPtr c_freeRT ptr
-    return (pcount, psizes, pitchL0, pitchL1, rt)
+    return (pcount, psizes, rt)
 
 
 configureSTDP :: ForeignPtr CuRT -> Maybe STDPConf -> IO ()
