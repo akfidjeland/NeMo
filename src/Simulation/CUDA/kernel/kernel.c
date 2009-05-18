@@ -126,36 +126,3 @@ clockRate(struct cudaDeviceProp* prop)
 {
 	return prop->clockRate;
 }
-
-
-//! \todo texture allignment
-
-
-//! Allocate memory
-//! \todo allocate cuda memory instead
-
-
-/* For the interface we need to
- *
- * copy memory to device
- * copy memory *back* from device 
- * 		This will depend on what probing we're doing
- * invoke the kernel at regular intervals
- *
- * We'll need to maintain pointers to data structures across calls. We should
- * use something like devicememory for this purpose. All data of the same type
- * can go in the same vector. In fact use device memory to start with, just
- * casting this to void*
- */
-
-
-
-
-
-/*
-status_t 
-step_simulation()
-{
-	return SIM_SUCCESS;	
-}
-*/

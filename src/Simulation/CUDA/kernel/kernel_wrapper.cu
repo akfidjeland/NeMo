@@ -171,13 +171,8 @@ step(	ushort cycle,
 		// Run-time data
 		RTDATA rtdata)
 {
-	/* The L1 spike queues rotate among 'maxDelay' entries. We keep track of
-	 * the entry corresponding to time 0, i.e. the spikes to be delivered right
-	 * away. */
-	static int currentL1SQBase = 0;
-
 	rtdata->firingProbe->checkOverflow();
-    rtdata->step();
+	rtdata->step();
 
 	configureDevice(rtdata); // only done on first invocation
 
@@ -197,7 +192,7 @@ step(	ushort cycle,
 		addL0LTD<<<dimGrid, dimBlock>>>(
 				stdpReward,
 				maxPartitionSize,
-                rtdata->maxDelay(),
+				rtdata->maxDelay(),
 				rtdata->pitch32(),
 				rtdata->cm(CM_L0)->deviceDelayBits(),
 				rtdata->cm(CM_L0)->deviceSynapsesD(),
@@ -242,8 +237,8 @@ step(	ushort cycle,
 		step_STDP<<<dimGrid, dimBlock>>>(
 				maxPartitionSize,
 				substeps, 
-                rtdata->cycle(),
-                rtdata->maxDelay(),
+				rtdata->cycle(),
+				rtdata->maxDelay(),
 				rtdata->recentFiring->deviceData(),
 				// STDP
 				rtdata->recentArrivals->deviceData(),
@@ -254,8 +249,8 @@ step(	ushort cycle,
 				rtdata->cm(CM_L0)->arrivalBits(),
 				// neuron parameters
 				rtdata->neuronParameters->deviceData(),
-                rtdata->thalamicInput->deviceRngState(),
-                rtdata->thalamicInput->deviceSigma(),
+				rtdata->thalamicInput->deviceRngState(),
+				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
 				// L0 connectivity matrix
 				rtdata->cm(CM_L0)->deviceSynapsesD(),
@@ -264,15 +259,14 @@ step(	ushort cycle,
 				rtdata->cm(CM_L0)->submatrixSize(),
 				// L1 connectivity matrix
 				rtdata->cm(CM_L1)->deviceSynapsesD(),
-				rtdata->cm(CM_L0)->deviceDelayBits(),
+				rtdata->cm(CM_L1)->deviceDelayBits(),
 				rtdata->cm(CM_L1)->synapsePitchD(),
-				rtdata->cm(CM_L0)->submatrixSize(),
+				rtdata->cm(CM_L1)->submatrixSize(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),
 				rtdata->spikeQueue->heads(),
 				rtdata->spikeQueue->headPitch(),
-				currentL1SQBase,
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),
@@ -290,12 +284,12 @@ step(	ushort cycle,
 		step_static<<<dimGrid, dimBlock>>>(
 				maxPartitionSize,
 				substeps, 
-                rtdata->cycle(),
-                rtdata->maxDelay(),
+				rtdata->cycle(),
+				rtdata->maxDelay(),
 				rtdata->recentFiring->deviceData(),
 				rtdata->neuronParameters->deviceData(),
-                rtdata->thalamicInput->deviceRngState(),
-                rtdata->thalamicInput->deviceSigma(),
+				rtdata->thalamicInput->deviceRngState(),
+				rtdata->thalamicInput->deviceSigma(),
                 //! \todo get size directly from rtdata
 				rtdata->neuronParameters->size(),
 				// L0 connectivity matrix
@@ -313,7 +307,6 @@ step(	ushort cycle,
 				rtdata->spikeQueue->pitch(),
 				rtdata->spikeQueue->heads(),
 				rtdata->spikeQueue->headPitch(),
-				currentL1SQBase,
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),
@@ -342,10 +335,6 @@ step(	ushort cycle,
 		LOG("", "Kernel parameters: <<<%d, %d>>>\n",
 			dimGrid.x, dimBlock.x);
 		return KERNEL_INVOCATION_ERROR;
-	}
-
-	if(rtdata->maxDelay()) {
-		currentL1SQBase = (currentL1SQBase + 1) % (rtdata->maxDelay() + 1);
 	}
 
 	return KERNEL_OK;

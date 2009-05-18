@@ -31,11 +31,8 @@ __device__
 size_t
 sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
 {
-	ASSERT(src >= 0);
-	ASSERT(tgt >= 0);
 	ASSERT(src < PARTITION_COUNT);
 	ASSERT(tgt < PARTITION_COUNT);
-	ASSERT(bufferIdx >= 0);
 	ASSERT(bufferIdx <= 1);
 	return ((tgt * PARTITION_COUNT + src) * 2 + bufferIdx) * pitch;
 }
@@ -71,11 +68,8 @@ __device__
 size_t
 headOffset(size_t src, size_t tgt, size_t pitch, size_t bufferIdx)
 {
-	ASSERT(src >= 0);
-	ASSERT(tgt >= 0);
 	ASSERT(src < PARTITION_COUNT);
 	ASSERT(tgt < PARTITION_COUNT);
-	ASSERT(bufferIdx >= 0);
 	ASSERT(bufferIdx <= 1);
     return bufferIdx * PARTITION_COUNT * pitch + tgt * pitch + src;
 }

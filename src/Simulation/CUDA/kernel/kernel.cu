@@ -381,9 +381,6 @@ STDP_FN(step) (
 		size_t sqPitch, 
         unsigned int* gSpikeQueueHeads, 
         size_t sqHeadPitch,
-        int currentSQBase,
-        // current stimulus
-		//float* gExtI,
         // firing stimulus
 		uint32_t* g_fstim,
 		size_t fstimPitch,
