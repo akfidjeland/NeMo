@@ -127,11 +127,11 @@ ConnectivityMatrix::setDRow(
 	std::vector<uint> abuf(m_synapses.delayPitch(), 0);
 	std::vector<uint> wbuf(m_synapses.delayPitch(), 0);
 
+    bool setReverse = m_reverse.delayPitch() > 0;
+
 	for(size_t i=0; i<length; ++i) {
 		// see connectivityMatrix.cu_h for encoding format
-            //! \todo add back!
-#if 0
-		if(weights[i] > 0.0f) {
+		if(setReverse && weights[i] > 0.0f) { // only do STDP for excitatory synapses
 			size_t rlen = m_reverse.addSynapse(
 					targetPartition[i],
 					targetNeuron[i],
@@ -143,7 +143,6 @@ ConnectivityMatrix::setDRow(
 			arrivalBits |= 0x1 << (delay-1);
 			m_arrivalBits.setNeuron(targetPartition[i], targetNeuron[i], arrivalBits);
 		}
-#endif
 		wbuf[i] = reinterpret_cast<const uint32_t&>(weights[i]);
 		abuf[i] = packSynapse(targetPartition[i], targetNeuron[i]);
 	}

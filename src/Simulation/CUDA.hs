@@ -139,19 +139,18 @@ densifyDeviceFiring att len fired = map FiringData dense
 
 
 stepOne sim probeIdx probeF tempSubres forcedFiring currentCycle stdpApplication = do
-    let fbounds = (0, length forcedFiring-1)
-    let fstim = fstimG2D forcedFiring $ att sim
-    fsPIdxArr <- newListArray fbounds (map (cint . partitionIdx) fstim)
-    fsNIdxArr <- newListArray fbounds (map (cint . neuronIdx) fstim)
+    let flen = length forcedFiring
+        fbounds = (0, flen-1)
+        fstim = fstimG2D forcedFiring $ att sim
+    fsPIdxArr <- newListArray fbounds (map (fromIntegral . partitionIdx) fstim)
+    fsNIdxArr <- newListArray fbounds (map (fromIntegral . neuronIdx) fstim)
     withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
     withForeignPtr (rt sim)      $ \rtPtr     -> do
     kernelStatus <- c_step currentCycle
-        -- TODO: store the maximum cluster size in sim
-        (cint $ ccount sim) (cint $ maximum $ csize sim)
         (fromIntegral tempSubres)
         applySTDP stdpReward
-        (fromIntegral $ length fstim) fsPIdxPtr fsNIdxPtr
+        (fromIntegral flen) fsPIdxPtr fsNIdxPtr
         rtPtr
     when (kernelStatus /= 0) $ error "Backend error"
 
@@ -165,11 +164,7 @@ stepOne sim probeIdx probeF tempSubres forcedFiring currentCycle stdpApplication
         fstimG2Derror idx = error $ "stepOne: failed to find stimulated neuron "
                 ++ (show idx) ++ " in address lookup table"
 
+        -- TODO: just use a maybe type here instead, unwrap in KernelFFI
         (applySTDP, stdpReward) = case stdpApplication of
             STDPIgnore    -> (0, 0)
             (STDPApply r) -> (1, realToFrac r)
-
-
-
-cint :: (Integral a) => a -> CInt
-cint = fromIntegral

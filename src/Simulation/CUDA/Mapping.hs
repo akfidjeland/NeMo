@@ -16,7 +16,9 @@ module Simulation.CUDA.Mapping (
         partitionAssocs,
         maxNetworkDelay,
         maxL0Pitch,
-        maxL1Pitch
+        maxL0RPitch,
+        maxL1Pitch,
+        maxL1RPitch
 ) where
 
 import Control.Monad.Writer

@@ -40,7 +40,7 @@ extern "C" {
 
 
 
-unsigned int
+uint
 maxPartitionSize(int useSTDP)
 {
     return useSTDP == 0 ? MAX_PARTITION_SIZE : MAX_PARTITION_SIZE_STDP;
@@ -132,6 +132,7 @@ configureDevice(RTDATA rtdata)
 	if(rtdata->deviceDirty()) {
         clearAssertions();
 		rtdata->moveToDevice();
+		configureKernel(rtdata->maxPartitionSize, rtdata->maxDelay());
 		configurePartition(c_maxL0SynapsesPerDelay, 
 			rtdata->cm(CM_L0)->maxSynapsesPerDelay());
 		configurePartition(c_maxL0RevSynapsesPerDelay, 
@@ -158,9 +159,6 @@ __host__
 status_t
 step(	ushort cycle,
         //! \todo make all these unsigned
-        //! \todo just get partitionCount from RTDATA
-		int partitionCount,
-		int maxPartitionSize,
 		int substeps,
 		int applySTDP,
 		float stdpReward,
@@ -177,7 +175,7 @@ step(	ushort cycle,
 	configureDevice(rtdata); // only done on first invocation
 
 	dim3 dimBlock(THREADS_PER_BLOCK);
-	dim3 dimGrid(partitionCount);
+	dim3 dimGrid(rtdata->partitionCount);
 
 	if(rtdata->usingSTDP() && applySTDP) {
         //! \todo deal especially with the case where reward=0, can do this faster
@@ -191,7 +189,7 @@ step(	ushort cycle,
          * whole iteration throught the connectivity matrix. */
 		addL0LTD<<<dimGrid, dimBlock>>>(
 				stdpReward,
-				maxPartitionSize,
+				rtdata->maxPartitionSize,
 				rtdata->maxDelay(),
 				rtdata->pitch32(),
 				rtdata->cm(CM_L0)->deviceDelayBits(),
@@ -200,7 +198,7 @@ step(	ushort cycle,
 				rtdata->cm(CM_L0)->submatrixSize());
         addL0LTP<<<dimGrid, dimBlock>>>(
                 stdpReward,
-                maxPartitionSize,
+                rtdata->maxPartitionSize,
                 rtdata->maxDelay(),
                 rtdata->pitch32(),
                 rtdata->cm(CM_L0)->arrivalBits(),
@@ -213,7 +211,7 @@ step(	ushort cycle,
 		if(stdpReward != 0.0f) {
 			constrainL0Weights<<<dimGrid, dimBlock>>>(
 				rtdata->stdpMaxWeight(),
-				maxPartitionSize,
+				rtdata->maxPartitionSize,
                 rtdata->maxDelay(),
 				rtdata->pitch32(),
 				rtdata->cm(CM_L0)->deviceDelayBits(),
@@ -228,17 +226,13 @@ step(	ushort cycle,
 	fprintf(stdout, "cycle %u/%u\n", scycle++, rtdata->stdpCycle());
 #endif
 
-	uint32_t* d_extFiring = rtdata->setFiringStimulus(
-            extFiringCount, 
-			extFiringCIdx, 
-			extFiringNIdx);
+	uint32_t* d_extFiring = 
+		rtdata->setFiringStimulus(extFiringCount, extFiringCIdx, extFiringNIdx);
 
 	if(rtdata->usingSTDP()) {
 		step_STDP<<<dimGrid, dimBlock>>>(
-				maxPartitionSize,
 				substeps, 
 				rtdata->cycle(),
-				rtdata->maxDelay(),
 				rtdata->recentFiring->deviceData(),
 				// STDP
 				rtdata->recentArrivals->deviceData(),
@@ -282,10 +276,8 @@ step(	ushort cycle,
 				rtdata->firingProbe->deviceNextFree());
 	} else {
 		step_static<<<dimGrid, dimBlock>>>(
-				maxPartitionSize,
 				substeps, 
 				rtdata->cycle(),
-				rtdata->maxDelay(),
 				rtdata->recentFiring->deviceData(),
 				rtdata->neuronParameters->deviceData(),
 				rtdata->thalamicInput->deviceRngState(),
@@ -322,7 +314,7 @@ step(	ushort cycle,
 				rtdata->firingProbe->deviceNextFree());
 	}
 
-    if(assertionsFailed(partitionCount, cycle)) {
+    if(assertionsFailed(rtdata->partitionCount, cycle)) {
         fprintf(stderr, "checking assertions\n");
         clearAssertions();
         return KERNEL_ASSERTION_FAILURE;

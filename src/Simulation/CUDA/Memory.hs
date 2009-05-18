@@ -184,15 +184,12 @@ allocRT net maxProbePeriod = do
         (fromIntegral pcount)
         (fromIntegral $! maximum psizes)
         (fromIntegral $! maxNetworkDelay net)
-        -- L0
         (fromIntegral $! maxL0Pitch net)
-        0
-        -- L1
+        (fromIntegral $! maxL0RPitch net)
         (fromIntegral $! maxL1Pitch net)
-        0
+        (fromIntegral $! maxL1RPitch net)
         -- TODO: compute properly how large the buffers should be
-        64768
-        -- (fromIntegral $ l1QueueEntrySize l1cm)
+        64768 -- L1 queue size
         (fromIntegral maxProbePeriod)
     rt <- newForeignPtr c_freeRT ptr
     return (pcount, psizes, rt)

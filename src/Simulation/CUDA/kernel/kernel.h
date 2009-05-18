@@ -30,7 +30,7 @@ typedef int status_t;
 void configurePartitionSize(size_t clusters, const int* maxIdx);
 
 
-/*! \return the maximum partition size, for the given partition */
+/*! \return the maximum partition size, for the given configuration */
 unsigned int maxPartitionSize(int useSTDP);
 
 
@@ -174,8 +174,6 @@ enableSTDP(RTDATA rtdata,
 
 status_t
 step(	unsigned short cycle,
-		int partitionCount,
-		int maxPartitionSize,
 		int substeps,               // number of substeps per normal 1ms step
 		int applySTDP,
         float stdpReward,
@@ -183,10 +181,7 @@ step(	unsigned short cycle,
 		size_t extFiringCount,
 		const int* extFiringCIdx,   // cluster indices
 		const int* extFiringNIdx,   // neuron indices
-		// Run-time data
-		RTDATA rtdata
-		// CMATRIX l1Connectivity
-		);
+		RTDATA rtdata);
 
 
 //-----------------------------------------------------------------------------

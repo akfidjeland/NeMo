@@ -152,7 +152,7 @@ STDP_FN(fire)(
 __device__
 void
 STDP_FN(deliverL0Spikes)(
-	unsigned char maxDelay,
+	uint maxDelay,
 	int s_partitionSize,
 	size_t pitchCM, // word pitch
 	int s_maxL0Synapses,
@@ -347,11 +347,8 @@ STDP_FN(deliverL0Spikes)(
 __global__
 void
 STDP_FN(step) (
-		int maxPartitionSize, // not warp aligned
 		int substeps,
         uint32_t cycle,
-        //! \todo change the data type here!
-        unsigned char maxDelay,
 		uint32_t* g_recentFiring, 
 #ifdef STDP
 		uint32_t* g_recentArrivals,
@@ -417,11 +414,14 @@ STDP_FN(step) (
 	uint32_t s_recentArrivals[STDP_FN(MAX_PARTITION_SIZE)];
 #endif
 
-    //! \todo pre-load all parameters here
+	/* Per-kernel parameters */
+	__shared__ uint s_maxPartitionSize;
+	__shared__ uint s_maxDelay;
+
+	/* Per-partition parameters */
     //! \todo use size_t instead here
-    /* Load partition parameters */
-    __shared__ int s_neuronsPerThread;
     __shared__ int s_partitionSize;
+    __shared__ int s_neuronsPerThread;
     __shared__ int s_maxL0SynapsesPerDelay;
     __shared__ int s_maxL1SynapsesPerDelay;
 #ifdef STDP
@@ -429,17 +429,20 @@ STDP_FN(step) (
 #endif
 	__shared__ float s_substepMult;
 
-    if(threadIdx.x == 0) {
-        s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-        s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
-        s_maxL0SynapsesPerDelay = c_maxL0SynapsesPerDelay[CURRENT_PARTITION];
-        s_maxL1SynapsesPerDelay = c_maxL1SynapsesPerDelay[CURRENT_PARTITION];
+	if(threadIdx.x == 0) {
+		s_maxPartitionSize = c_maxPartitionSize;
+		s_maxDelay = c_maxDelay;
+
+		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
+		s_maxL0SynapsesPerDelay = c_maxL0SynapsesPerDelay[CURRENT_PARTITION];
+		s_maxL1SynapsesPerDelay = c_maxL1SynapsesPerDelay[CURRENT_PARTITION];
 #ifdef STDP
 		s_maxL0RevSynapsesPerDelay = c_maxL0RevSynapsesPerDelay[CURRENT_PARTITION];
 #endif
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
-    __syncthreads();
+	__syncthreads();
 
 #ifdef STDP
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_recentArrivals, s_recentArrivals);
@@ -486,23 +489,23 @@ STDP_FN(step) (
 	SET_COUNTER(COUNTER_KERNEL_LOADFIRING_INTEGRATE);
 
 	STDP_FN(deliverL0Spikes)(
-			maxDelay,
+			s_maxDelay,
 			s_partitionSize,
 			pitchL0CM,
 			s_maxL0SynapsesPerDelay,
 			//! \todo move addressing inside function
 			g_L0CM
 				+ CM_ADDRESS * sizeL0CM
-				+ CURRENT_PARTITION * maxPartitionSize * maxDelay * pitchL0CM,
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * pitchL0CM,
 			(float*) g_L0CM
 				+ CM_WEIGHT * sizeL0CM
-				+ CURRENT_PARTITION * maxPartitionSize * maxDelay * pitchL0CM,
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * pitchL0CM,
 			s_recentFiring,
 #ifdef STDP
 			s_recentArrivals,
 			(float*) g_L0CM
 				+ CM_LTD * sizeL0CM
-				+ CURRENT_PARTITION * maxPartitionSize * maxDelay * pitchL0CM,
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * pitchL0CM,
 			stdpCycle,
 #endif
 			g_firingDelaysL0 + CURRENT_PARTITION * pitch32,
@@ -545,11 +548,11 @@ STDP_FN(step) (
 	SET_COUNTER(COUNTER_KERNEL_FIRE_STOREL1);
 #ifdef STDP
 	updateLTP(
-		maxDelay,
+		s_maxDelay,
 		stdpCycle,
 		s_maxL0RevSynapsesPerDelay,
 		// reverse matrix
-		g_cm0R + CURRENT_PARTITION * maxPartitionSize * maxDelay * cm0RPitch,
+		g_cm0R + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * cm0RPitch,
 			cm0RPitch, cm0RSize,
 		g_L0CM, pitchL0CM, sizeL0CM,
 		s_firingIdx,
@@ -565,7 +568,7 @@ STDP_FN(step) (
 
 	if(gSpikeQueue) {
 		deliverL1Spikes_JIT(
-				maxDelay,
+				s_maxDelay,
                 writeBuffer(cycle),
 				s_partitionSize,
 				//! \todo need to call this differently from wrapper
@@ -573,10 +576,10 @@ STDP_FN(step) (
 				s_maxL1SynapsesPerDelay,
 				g_L1CM
 				+ CM_ADDRESS * sizeL1CM
-				+ CURRENT_PARTITION * maxPartitionSize * maxDelay * pitchL1CM,
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * pitchL1CM,
 				(float*) g_L1CM
 				+ CM_WEIGHT * sizeL1CM
-				+ CURRENT_PARTITION * maxPartitionSize * maxDelay * pitchL1CM,
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * pitchL1CM,
 				s_recentFiring,
 				//! \todo STDP
 				g_firingDelaysL1 + CURRENT_PARTITION * pitch32,

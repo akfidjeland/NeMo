@@ -133,14 +133,12 @@ foreign import ccall unsafe "syncSimulation"
 
 foreign import ccall unsafe "step"
     c_step :: CUShort          -- ^ cycle number (within current batch)
-           -> CInt             -- ^ Number of clusters
-           -> CInt             -- ^ Maximum neurons per block
            -> CInt             -- ^ Sub-ms update steps
            -> CInt             -- ^ Apply STDP? Boolean
            -> CFloat           -- ^ STDP reward
            -- External firing stimulus
            -> CSize            -- ^ Number of neurons whose firing is forced this step
-           -> Ptr CInt         -- ^ Cluster indices of neurons with forced firing
+           -> Ptr CInt         -- ^ Partition indices of neurons with forced firing
            -> Ptr CInt         -- ^ Neuron indices of neurons with forced firing
            -- Network state
            -> Ptr CuRT         -- ^ Kernel runtime data

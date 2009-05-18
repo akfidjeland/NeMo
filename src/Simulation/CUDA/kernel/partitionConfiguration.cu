@@ -16,6 +16,25 @@
 #include "kernel.cu_h"
 
 
+/* Kernel-wide configuration */
+
+__constant__ uint c_maxPartitionSize;
+__constant__ uint c_maxDelay;
+
+
+__host__
+void
+configureKernel(uint maxPartitionSize, uint maxDelay)
+{
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_maxPartitionSize, 
+				&maxPartitionSize, sizeof(uint), 0, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_maxDelay, 
+				&maxDelay, sizeof(uint), 0, cudaMemcpyHostToDevice));
+}
+
+
+/* Per-partition configuration */
+
 __constant__ int c_maxL0SynapsesPerDelay    [MAX_THREAD_BLOCKS];
 __constant__ int c_maxL0RevSynapsesPerDelay [MAX_THREAD_BLOCKS];
 __constant__ int c_maxL1SynapsesPerDelay    [MAX_THREAD_BLOCKS];
