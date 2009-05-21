@@ -132,7 +132,12 @@ configureDevice(RTDATA rtdata)
 	if(rtdata->deviceDirty()) {
         clearAssertions();
 		rtdata->moveToDevice();
-		configureKernel(rtdata->maxPartitionSize, rtdata->maxDelay());
+		configureKernel(rtdata->maxPartitionSize,
+				rtdata->maxDelay(),
+				rtdata->cm(CM_L0)->synapsePitchD(),
+				rtdata->cm(CM_L0)->submatrixSize(),
+				rtdata->cm(CM_L1)->synapsePitchD(),
+				rtdata->cm(CM_L1)->submatrixSize());
 		configurePartition(c_maxL0SynapsesPerDelay, 
 			rtdata->cm(CM_L0)->maxSynapsesPerDelay());
 		configurePartition(c_maxL0RevSynapsesPerDelay, 
@@ -249,13 +254,9 @@ step(	ushort cycle,
 				// L0 connectivity matrix
 				rtdata->cm(CM_L0)->deviceSynapsesD(),
 				rtdata->cm(CM_L0)->deviceDelayBits(),
-				rtdata->cm(CM_L0)->synapsePitchD(), // word pitch
-				rtdata->cm(CM_L0)->submatrixSize(),
 				// L1 connectivity matrix
 				rtdata->cm(CM_L1)->deviceSynapsesD(),
 				rtdata->cm(CM_L1)->deviceDelayBits(),
-				rtdata->cm(CM_L1)->synapsePitchD(),
-				rtdata->cm(CM_L1)->submatrixSize(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),
@@ -287,13 +288,9 @@ step(	ushort cycle,
 				// L0 connectivity matrix
 				rtdata->cm(CM_L0)->deviceSynapsesD(),
 				rtdata->cm(CM_L0)->deviceDelayBits(),
-				rtdata->cm(CM_L0)->synapsePitchD(), // word pitch
-				rtdata->cm(CM_L0)->submatrixSize(),
 				// L1 connectivity matrix
 				rtdata->cm(CM_L1)->deviceSynapsesD(),
 				rtdata->cm(CM_L1)->deviceDelayBits(),
-				rtdata->cm(CM_L1)->synapsePitchD(),
-				rtdata->cm(CM_L1)->submatrixSize(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),

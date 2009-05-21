@@ -20,16 +20,33 @@
 
 __constant__ uint c_maxPartitionSize;
 __constant__ uint c_maxDelay;
+__constant__ size_t c_pitchL0;
+__constant__ size_t c_sizeL0;
+__constant__ size_t c_pitchL1;
+__constant__ size_t c_sizeL1;
+
+
+#define SET_CONSTANT(symbol) CUDA_SAFE_CALL(\
+		cudaMemcpyToSymbol(c_ ## symbol, &symbol, sizeof(symbol), 0, cudaMemcpyHostToDevice)\
+	)
 
 
 __host__
 void
-configureKernel(uint maxPartitionSize, uint maxDelay)
+configureKernel(
+		uint maxPartitionSize,
+		uint maxDelay,
+		size_t pitchL0,
+		size_t sizeL0,
+		size_t pitchL1,
+		size_t sizeL1)
 {
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_maxPartitionSize, 
-				&maxPartitionSize, sizeof(uint), 0, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_maxDelay, 
-				&maxDelay, sizeof(uint), 0, cudaMemcpyHostToDevice));
+	SET_CONSTANT(maxPartitionSize);
+	SET_CONSTANT(maxDelay);
+	SET_CONSTANT(pitchL0);
+	SET_CONSTANT(sizeL0);
+	SET_CONSTANT(pitchL1);
+	SET_CONSTANT(sizeL1);
 }
 
 
