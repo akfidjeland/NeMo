@@ -392,7 +392,7 @@ STDP_FN(step) (
 		ushort2* g_fmemBuffer,
 		uint* g_fmemNextFree)
 {
-	SET_COUNTER(COUNTER_KERNEL_START);
+	SET_COUNTER(0);
 
 	/* The shared memory is allocated in fixed-sized blocks. During the
 	 * different stages of the kernel each block may be used for different
@@ -448,6 +448,7 @@ STDP_FN(step) (
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_recentArrivals, s_recentArrivals);
 	loadStdpParameters();
 #endif
+	SET_COUNTER(1);
 
     //! \todo no need to clear array here, if loading thalamic input
 	STDP_FN(setSharedArray)(s_M1KA, 0);
@@ -461,7 +462,8 @@ STDP_FN(step) (
                 g_sigma,
                 s_current);
     }
-	SET_COUNTER(COUNTER_KERNEL_INIT_LOADL1);
+
+	SET_COUNTER(2);
 
 #if 0
 	loadCurrent(s_partitionSize, s_neuronsPerThread, pitch32, gExtI, s_current);
@@ -481,12 +483,12 @@ STDP_FN(step) (
 #endif
 
 
-	SET_COUNTER(COUNTER_KERNEL_LOADL1_LOADFIRING);
+	SET_COUNTER(3);
 
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_recentFiring, s_recentFiring);
 	__syncthreads();
 
-	SET_COUNTER(COUNTER_KERNEL_LOADFIRING_INTEGRATE);
+	SET_COUNTER(4);
 
 	STDP_FN(deliverL0Spikes)(
 			s_maxDelay,
@@ -512,7 +514,7 @@ STDP_FN(step) (
 			s_current);
 	__syncthreads();
 
-	SET_COUNTER(COUNTER_KERNEL_INTEGRATE_FIRE);
+	SET_COUNTER(5);
 
 	/* We now repurpose s_firingIdx to contain the indices of the neurons which
 	 * fired just now, rather than the neurons which fired and the past and
@@ -545,7 +547,7 @@ STDP_FN(step) (
 			&s_firingCount);
 	__syncthreads();
 
-	SET_COUNTER(COUNTER_KERNEL_FIRE_STOREL1);
+	SET_COUNTER(6);
 #ifdef STDP
 	updateLTP(
 		s_maxDelay,
@@ -561,10 +563,12 @@ STDP_FN(step) (
 		g_arrivalDelays);
 #endif
 	//! \todo add another counter here
+	SET_COUNTER(7);
 
 	writeFiringOutput(fmemCycle, g_fmemNextFree, 
 			s_firingIdx, s_firingCount, g_fmemBuffer);
 
+	SET_COUNTER(8);
 
 	if(gSpikeQueue) {
 		deliverL1Spikes_JIT(
@@ -595,8 +599,6 @@ STDP_FN(step) (
 				sqHeadPitch);
 	}
 
-	SET_COUNTER(COUNTER_KERNEL_STOREL1_STOREFIRING);
-
-	SET_COUNTER(COUNTER_KERNEL_END);
+	SET_COUNTER(9);
 	WRITE_COUNTERS(g_cycleCounters, ccPitch);
 }

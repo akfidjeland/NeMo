@@ -1,6 +1,7 @@
 #include "CycleCounters.hpp"
 #include "cycleCounting.cu_h"
 #include <algorithm>
+#include <numeric>
 #include <iterator>
 #include <iostream>
 #include <iomanip>
@@ -15,15 +16,17 @@ CycleCounters::CycleCounters(size_t partitionCount, int clockRateKHz) :
 
 
 const char* durationNames[] = {
-	"kernel",
 	"init",
+	"random input",
 	"receive L1",
 	"load firing",
-	"integrate",
+	"deliver L0",
 	"fire",
-	"deliver L1",
-	"store firing"
+	"update LTP",
+	"store firing",
+	"deliver L1"
 };
+
 
 
 void
@@ -50,18 +53,15 @@ CycleCounters::printCounters(const char* filename)
 	const std::vector<unsigned long long>& cc = m_cc.copyFromDevice();
 	std::ofstream outfile;
 	outfile.open(filename);
-	unsigned long long totalCycles = cc.front();
-	unsigned long long totalMeasured = 0;
-	for(std::vector<unsigned long long>::const_iterator i=cc.begin();
-			i != std::min(cc.begin()+DURATION_COUNT, cc.end()); ++i) {
+	std::vector<unsigned long long>::const_iterator end =
+		std::min(cc.begin()+DURATION_COUNT, cc.end());
+	unsigned long long totalCycles = std::accumulate(cc.begin(), cc.end(), 0);
+	for(std::vector<unsigned long long>::const_iterator i=cc.begin(); i != end; ++i) {
 		unsigned long long cycles = *i;
-		printLine(durationNames[i-cc.begin()], cycles, 
-				totalCycles, m_clockRateKHz, outfile);
-		totalMeasured += cycles;
+		printLine(durationNames[i-cc.begin()], cycles, totalCycles, m_clockRateKHz, outfile);
 	}
 
-	printLine("measured", totalMeasured-totalCycles, totalCycles, 
-			m_clockRateKHz, outfile);
+	printLine("kernel", totalCycles, totalCycles, m_clockRateKHz, outfile);
 	outfile.close();
 }
 
