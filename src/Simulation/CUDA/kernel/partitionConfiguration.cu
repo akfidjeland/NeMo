@@ -16,37 +16,65 @@
 #include "kernel.cu_h"
 
 
-/* Kernel-wide configuration */
+/* Network-wide configuration */
 
-__constant__ uint c_maxPartitionSize;
-__constant__ uint c_maxDelay;
-__constant__ size_t c_pitchL0;
-__constant__ size_t c_sizeL0;
-__constant__ size_t c_pitchL1;
-__constant__ size_t c_sizeL1;
+#define NPARAM_maxPartitionSize 0
+#define NPARAM_maxDelay 1
+#define NPARAM_pitch32 2
+#define NPARAM_pitchL0 3
+#define NPARAM_sizeL0 4
+#define NPARAM_pitchL1 5
+#define NPARAM_sizeL1 6
+#define NPARAM_COUNT 7
+
+/* Configuration array is stored in constant memory, and is loaded in
+ * (parallel) into shared memory for each thread block */
+__constant__ uint c_networkParameters[NPARAM_COUNT];
+__shared__ uint s_networkParameters[NPARAM_COUNT];
+
+/* Some more pleasant names for the parameters */
+#define s_maxPartitionSize s_networkParameters[NPARAM_maxPartitionSize]
+#define s_maxDelay s_networkParameters[NPARAM_maxDelay]
+#define s_pitch32 s_networkParameters[NPARAM_pitch32]
+#define s_pitchL0 s_networkParameters[NPARAM_pitchL0]
+#define s_sizeL0 s_networkParameters[NPARAM_sizeL0]
+#define s_pitchL1 s_networkParameters[NPARAM_pitchL1]
+#define s_sizeL1 s_networkParameters[NPARAM_sizeL1]
 
 
-#define SET_CONSTANT(symbol) CUDA_SAFE_CALL(\
-		cudaMemcpyToSymbol(c_ ## symbol, &symbol, sizeof(symbol), 0, cudaMemcpyHostToDevice)\
-	)
-
+#define SET_CONSTANT(symbol, val) param[NPARAM_ ## symbol] = val
 
 __host__
 void
-configureKernel(
-		uint maxPartitionSize,
-		uint maxDelay,
-		size_t pitchL0,
-		size_t sizeL0,
-		size_t pitchL1,
-		size_t sizeL1)
+configureKernel(RTDATA rtdata)
 {
-	SET_CONSTANT(maxPartitionSize);
-	SET_CONSTANT(maxDelay);
-	SET_CONSTANT(pitchL0);
-	SET_CONSTANT(sizeL0);
-	SET_CONSTANT(pitchL1);
-	SET_CONSTANT(sizeL1);
+	std::vector<uint> param(NPARAM_COUNT);
+	SET_CONSTANT(maxPartitionSize, rtdata->maxPartitionSize);
+	SET_CONSTANT(maxDelay, rtdata->maxDelay());
+	SET_CONSTANT(pitch32, rtdata->pitch32());
+	SET_CONSTANT(pitchL0, rtdata->cm(CM_L0)->synapsePitchD());
+	SET_CONSTANT(sizeL0, rtdata->cm(CM_L0)->submatrixSize());
+	SET_CONSTANT(pitchL1, rtdata->cm(CM_L1)->synapsePitchD());
+	SET_CONSTANT(sizeL1, rtdata->cm(CM_L1)->submatrixSize());
+	CUDA_SAFE_CALL(
+			cudaMemcpyToSymbol(c_networkParameters,
+				&param[0], 
+				sizeof(uint)*NPARAM_COUNT, 
+				0,
+				cudaMemcpyHostToDevice));
+}
+
+
+#define LOAD_CONSTANT(symbol) s_ ## symbol = c_ ## symbol
+
+__device__
+void
+loadNetworkParameters()
+{
+	if(threadIdx.x < NPARAM_COUNT) {
+		s_networkParameters[threadIdx.x] = c_networkParameters[threadIdx.x];
+	}
+	__syncthreads();
 }
 
 

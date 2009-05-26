@@ -377,7 +377,6 @@ STDP_FN(step) (
         // firing stimulus
 		uint32_t* g_fstim,
 		size_t fstimPitch,
-		size_t pitch32,
 		// cycle counting
 #ifdef KERNEL_TIMING
 		unsigned long long* g_cycleCounters,
@@ -410,12 +409,8 @@ STDP_FN(step) (
 	uint32_t s_recentArrivals[STDP_FN(MAX_PARTITION_SIZE)];
 #endif
 
-	/* Per-kernel parameters */
-	__shared__ uint s_maxPartitionSize;
-	__shared__ uint s_maxDelay;
-
 	/* Per-partition parameters */
-    //! \todo use size_t instead here
+    //! \todo use uint instead here
     __shared__ int s_partitionSize;
     __shared__ int s_neuronsPerThread;
     __shared__ int s_maxL0SynapsesPerDelay;
@@ -424,15 +419,8 @@ STDP_FN(step) (
 	__shared__ int s_maxL0RevSynapsesPerDelay;
 #endif
 	__shared__ float s_substepMult;
-	__shared__ size_t s_pitchL0;
-	__shared__ size_t s_sizeL0;
-	__shared__ size_t s_pitchL1;
-	__shared__ size_t s_sizeL1;
 
 	if(threadIdx.x == 0) {
-		s_maxPartitionSize = c_maxPartitionSize;
-		s_maxDelay = c_maxDelay;
-
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
 		s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
 		s_maxL0SynapsesPerDelay = c_maxL0SynapsesPerDelay[CURRENT_PARTITION];
@@ -441,15 +429,13 @@ STDP_FN(step) (
 		s_maxL0RevSynapsesPerDelay = c_maxL0RevSynapsesPerDelay[CURRENT_PARTITION];
 #endif
 		s_substepMult = 1.0f / __int2float_rn(substeps);
-		s_pitchL0 = c_pitchL0;
-		s_sizeL0 = c_sizeL0;
-		s_pitchL1 = c_pitchL1;
-		s_sizeL1 = c_sizeL1;
     }
 	__syncthreads();
 
+	loadNetworkParameters();
+
 #ifdef STDP
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_recentArrivals, s_recentArrivals);
+	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, s_pitch32, g_recentArrivals, s_recentArrivals);
 	loadStdpParameters();
 #endif
 	SET_COUNTER(1);
@@ -461,17 +447,13 @@ STDP_FN(step) (
         thalamicInput(s_partitionSize,
                 s_neuronsPerThread,
                 neuronParametersSize,
-                pitch32,
+                s_pitch32,
                 g_rngState,
                 g_sigma,
                 s_current);
     }
 
 	SET_COUNTER(2);
-
-#if 0
-	loadCurrent(s_partitionSize, s_neuronsPerThread, pitch32, gExtI, s_current);
-#endif
 
 	gatherL1Spikes_JIT(
         readBuffer(cycle),
@@ -489,7 +471,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(3);
 
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_recentFiring, s_recentFiring);
+	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, s_pitch32, g_recentFiring, s_recentFiring);
 	__syncthreads();
 
 	SET_COUNTER(4);
@@ -514,7 +496,7 @@ STDP_FN(step) (
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL0,
 			stdpCycle,
 #endif
-			g_firingDelaysL0 + CURRENT_PARTITION * pitch32,
+			g_firingDelaysL0 + CURRENT_PARTITION * s_pitch32,
 			s_current);
 	__syncthreads();
 
@@ -537,7 +519,7 @@ STDP_FN(step) (
             s_partitionSize,
             s_neuronsPerThread,
 			substeps, s_substepMult,
-			fstimPitch, pitch32, 
+			fstimPitch, s_pitch32, 
 			g_neuronParameters,
 			neuronParametersSize,
 			g_fstim, s_current, 
@@ -590,7 +572,7 @@ STDP_FN(step) (
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL1,
 				s_recentFiring,
 				//! \todo STDP
-				g_firingDelaysL1 + CURRENT_PARTITION * pitch32,
+				g_firingDelaysL1 + CURRENT_PARTITION * s_pitch32,
 				(uint2*) s_M1KA, // use for s_current previously, now use for staging outgoing spikes
 				// buffers for write buffer and global heads
 				//! \todo compile-time assertions to make sure we're not overflowing here

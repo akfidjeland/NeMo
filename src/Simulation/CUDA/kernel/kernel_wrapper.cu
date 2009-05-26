@@ -23,10 +23,10 @@ extern "C" {
 #include "L1SpikeQueue.cu"
 #include "FiringProbe.hpp"
 #include "firingProbe.cu"
-#include "partitionConfiguration.cu"
 #include "RuntimeData.hpp"
 #include "CycleCounters.hpp"
 #include "ConnectivityMatrix.hpp"
+#include "partitionConfiguration.cu"
 #include "cycleCounting.cu"
 #include "ThalamicInput.hpp"
 
@@ -132,12 +132,7 @@ configureDevice(RTDATA rtdata)
 	if(rtdata->deviceDirty()) {
         clearAssertions();
 		rtdata->moveToDevice();
-		configureKernel(rtdata->maxPartitionSize,
-				rtdata->maxDelay(),
-				rtdata->cm(CM_L0)->synapsePitchD(),
-				rtdata->cm(CM_L0)->submatrixSize(),
-				rtdata->cm(CM_L1)->synapsePitchD(),
-				rtdata->cm(CM_L1)->submatrixSize());
+		configureKernel(rtdata);
 		configurePartition(c_maxL0SynapsesPerDelay, 
 			rtdata->cm(CM_L0)->maxSynapsesPerDelay());
 		configurePartition(c_maxL0RevSynapsesPerDelay, 
@@ -265,7 +260,6 @@ step(	ushort cycle,
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),
-				rtdata->pitch32(),
 				// cycle counting
 #ifdef KERNEL_TIMING
 				rtdata->cycleCounters->data(),
@@ -299,7 +293,6 @@ step(	ushort cycle,
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),
-				rtdata->pitch32(),
 				// cycle counting
 #ifdef KERNEL_TIMING
 				rtdata->cycleCounters->data(),
