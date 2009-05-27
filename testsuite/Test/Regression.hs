@@ -81,25 +81,6 @@ runRegression rtest@(RegressionTest nm _ nf fs px pf be cs rs stdp) f = do
         stdpConf = stdp >>= return . (STDPConf 20 20 1.0 0.8 1000.0) . Just
 
 
--- Run regression and dump data to file
-create_regression :: FilePath -> String -> SimulationHandler -> IO ()
-create_regression basedir testname run = do
-    filename <- testFile basedir testname
-    outfile <- openFile filename WriteMode
-    run (hPutStrLn outfile . show)
-    -- TODO: use handle or similar to ensure we always close
-    hClose outfile
-
-
-test_regression :: FilePath -> String -> SimulationHandler -> IO ()
-test_regression basedir testname run = do
-    filename <- testFile basedir testname
-    -- TODO: missing data should result in a failure
-    infile <- openFile filename ReadMode
-    run (checkResults infile)
-    hClose infile
-
-
 testFile :: FilePath -> String -> IO FilePath
 testFile basedir testname = do
     hostname <- getHostName
@@ -109,7 +90,6 @@ testFile basedir testname = do
 checkResults :: Handle -> ProbeData -> IO ()
 checkResults hdl (FiringData probeData) = do
     line <- hGetLine hdl
-    -- let testData = FiringData $ sort $ read line
     let testData = sort $ read line
     assertEqual "" testData $ sort probeData
 checkResults hdl _ = error "Non-firing data"

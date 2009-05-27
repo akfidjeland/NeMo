@@ -34,15 +34,13 @@ tests = [
         dataFile = "smallworld-gpu-1000",
         backend  = CUDA
     },
-    -- TODO: add back STDP test
-{-
+
     defaultTest {
         name     = "smallworld-gpu-1000-stdp",
         dataFile = "smallworld-gpu-1000-stdp",
         backend  = CUDA,
         stdp     = Just 50
     },
--}
 #endif
 
     defaultTest {

@@ -1,1 +1,0 @@
-Neural network simulation using Daniel's DTI connectivity matrix.Fri Aug 29 16:24:46 BST 2008----------------------------- (ebr) Created directory "eroesch-expt1"- (ebr) Installed opencv to access connectivity matrix as a pbm image- (ebr) Test code for opencv, load and display conn matrix- TODO: Access pixels of matrix separately
