@@ -354,9 +354,8 @@ STDP_FN(step) (
 		uint32_t* g_recentArrivals,
 		uint stdpCycle,
 		uint* g_cm0R,
-		size_t cm0RPitch,
-		size_t cm0RSize,
-		uint32_t* g_arrivalDelays,
+		uint32_t* g_arrivalDelaysL0,
+		//uint32_t* g_arrivalDelaysL1,
 #endif
 		// neuron state
 		float* g_neuronParameters,
@@ -387,7 +386,7 @@ STDP_FN(step) (
 		ushort2* g_fmemBuffer,
 		uint* g_fmemNextFree)
 {
-	SET_COUNTER(0);
+	SET_COUNTER(s_ccMain, 0);
 
 	/* The shared memory is allocated in fixed-sized blocks. During the
 	 * different stages of the kernel each block may be used for different
@@ -438,7 +437,7 @@ STDP_FN(step) (
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, s_pitch32, g_recentArrivals, s_recentArrivals);
 	loadStdpParameters();
 #endif
-	SET_COUNTER(1);
+	SET_COUNTER(s_ccMain, 1);
 
     //! \todo no need to clear array here, if loading thalamic input
 	STDP_FN(setSharedArray)(s_M1KA, 0);
@@ -453,7 +452,7 @@ STDP_FN(step) (
                 s_current);
     }
 
-	SET_COUNTER(2);
+	SET_COUNTER(s_ccMain, 2);
 
 	gatherL1Spikes_JIT(
         readBuffer(cycle),
@@ -469,12 +468,12 @@ STDP_FN(step) (
 #endif
 
 
-	SET_COUNTER(3);
+	SET_COUNTER(s_ccMain, 3);
 
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, s_pitch32, g_recentFiring, s_recentFiring);
 	__syncthreads();
 
-	SET_COUNTER(4);
+	SET_COUNTER(s_ccMain, 4);
 
 	STDP_FN(deliverL0Spikes)(
 			s_maxDelay,
@@ -500,7 +499,7 @@ STDP_FN(step) (
 			s_current);
 	__syncthreads();
 
-	SET_COUNTER(5);
+	SET_COUNTER(s_ccMain, 5);
 
 	/* We now repurpose s_firingIdx to contain the indices of the neurons which
 	 * fired just now, rather than the neurons which fired and the past and
@@ -533,28 +532,28 @@ STDP_FN(step) (
 			&s_firingCount);
 	__syncthreads();
 
-	SET_COUNTER(6);
+	SET_COUNTER(s_ccMain, 6);
 #ifdef STDP
 	updateLTP(
 		s_maxDelay,
 		stdpCycle,
 		s_maxL0RevSynapsesPerDelay,
 		// reverse matrix
-		g_cm0R + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * cm0RPitch,
-			cm0RPitch, cm0RSize,
+		g_cm0R + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_rpitchL0,
+		s_rpitchL0, s_rsizeL0,
 		g_L0CM, s_pitchL0, s_sizeL0,
 		s_firingIdx,
 		s_firingCount,
 		s_recentArrivals,
-		g_arrivalDelays);
+		g_arrivalDelaysL0);
 #endif
 	//! \todo add another counter here
-	SET_COUNTER(7);
+	SET_COUNTER(s_ccMain, 7);
 
 	writeFiringOutput(fmemCycle, g_fmemNextFree, 
 			s_firingIdx, s_firingCount, g_fmemBuffer);
 
-	SET_COUNTER(8);
+	SET_COUNTER(s_ccMain, 8);
 
 	if(gSpikeQueue) {
 		deliverL1Spikes_JIT(
@@ -585,6 +584,6 @@ STDP_FN(step) (
 				sqHeadPitch);
 	}
 
-	SET_COUNTER(9);
-	WRITE_COUNTERS(g_cycleCounters, ccPitch);
+	SET_COUNTER(s_ccMain, 9);
+	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

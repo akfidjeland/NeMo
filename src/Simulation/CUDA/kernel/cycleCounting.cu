@@ -1,15 +1,20 @@
 #include "cycleCounting.cu_h"
 
+/* Each kernel has a separate cycle counter */
 #ifdef KERNEL_TIMING
-__shared__ clock_t s_cycleCounters[COUNTER_COUNT];
+__shared__ clock_t s_ccMain[CC_MAIN_COUNT];
+//! \todo don't allocate this memory if STDP not enabled
+__shared__ clock_t s_ccLTP[CC_STDP_LTP_COUNT];
+__shared__ clock_t s_ccLTD[CC_STDP_LTD_COUNT];
+__shared__ clock_t s_ccConstrain[CC_STDP_CONSTRAIN_COUNT];
 #endif
 
 __device__
 void
-setCycleCounter(clock_t* s_cycleCounters, size_t counter)
+setCycleCounter(clock_t* s_cc, size_t counter)
 {
 	if(threadIdx.x == 0) {
-		s_cycleCounters[counter] = (unsigned long long) clock();
+		s_cc[counter] = (unsigned long long) clock();
 	}
 }
 
@@ -17,21 +22,21 @@ setCycleCounter(clock_t* s_cycleCounters, size_t counter)
 
 __device__
 void
-writeCycleCounters(clock_t* s_cc, unsigned long long* g_cc, size_t ccPitch)
+writeCycleCounters(clock_t* s_cc, unsigned long long* g_cc, size_t pitch, size_t count)
 {
     __syncthreads();
-	if(threadIdx.x < DURATION_COUNT-1) {
+	if(threadIdx.x < count-1) {
 		clock_t duration = s_cc[threadIdx.x+1] - s_cc[threadIdx.x];
-		atomicAdd(g_cc + blockIdx.x * ccPitch + threadIdx.x,
-			(unsigned long long) duration);
+		atomicAdd(g_cc + blockIdx.x * pitch + threadIdx.x, (unsigned long long) duration);
 	}
 }
 
 
 #ifdef KERNEL_TIMING
-#define SET_COUNTER(counter) setCycleCounter(s_cycleCounters, counter)
-#define WRITE_COUNTERS(g_cc, ccPitch) writeCycleCounters(s_cycleCounters, g_cc, ccPitch)
+//! \todo add separate methods for start and end counters?
+#define SET_COUNTER(s_cc, counter) setCycleCounter(s_cc, counter)
+#define WRITE_COUNTERS(s_cc, g_cc, ccPitch, ccCount) writeCycleCounters(s_cc, g_cc, ccPitch, ccCount)
 #else
-#define SET_COUNTER(counter)
-#define WRITE_COUNTERS(g_cc, ccPitch)
+#define SET_COUNTER(s_cc, counter)
+#define WRITE_COUNTERS(s_cc, g_cc, ccPitch, ccCount)
 #endif

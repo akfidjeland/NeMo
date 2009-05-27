@@ -188,6 +188,10 @@ step(	ushort cycle,
          * stage for clarity, but would have to pay for this by doing another
          * whole iteration throught the connectivity matrix. */
 		addL0LTD<<<dimGrid, dimBlock>>>(
+#ifdef KERNEL_TIMING
+				rtdata->cycleCounters->dataLTD(),
+				rtdata->cycleCounters->pitchLTD(),
+#endif
 				stdpReward,
 				rtdata->maxPartitionSize,
 				rtdata->maxDelay(),
@@ -197,6 +201,10 @@ step(	ushort cycle,
 				rtdata->cm(CM_L0)->synapsePitchD(),
 				rtdata->cm(CM_L0)->submatrixSize());
         addL0LTP<<<dimGrid, dimBlock>>>(
+#ifdef KERNEL_TIMING
+				rtdata->cycleCounters->dataLTP(),
+				rtdata->cycleCounters->pitchLTP(),
+#endif
                 stdpReward,
                 rtdata->maxPartitionSize,
                 rtdata->maxDelay(),
@@ -210,6 +218,10 @@ step(	ushort cycle,
                 rtdata->cm(CM_L0)->reverseSubmatrixSize());
 		if(stdpReward != 0.0f) {
 			constrainL0Weights<<<dimGrid, dimBlock>>>(
+#ifdef KERNEL_TIMING
+				rtdata->cycleCounters->dataConstrain(),
+				rtdata->cycleCounters->pitchConstrain(),
+#endif
 				rtdata->stdpMaxWeight(),
 				rtdata->maxPartitionSize,
                 rtdata->maxDelay(),
@@ -238,8 +250,6 @@ step(	ushort cycle,
 				rtdata->recentArrivals->deviceData(),
 				rtdata->stdpCycle(),
 				rtdata->cm(CM_L0)->reverseConnectivity(),
-				rtdata->cm(CM_L0)->reversePitch(),
-				rtdata->cm(CM_L0)->reverseSubmatrixSize(),
 				rtdata->cm(CM_L0)->arrivalBits(),
 				// neuron parameters
 				rtdata->neuronParameters->deviceData(),

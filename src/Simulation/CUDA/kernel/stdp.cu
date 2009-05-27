@@ -269,6 +269,10 @@ setPartitionParameters(int* s_partitionSize, int* s_neuronsPerThread)
 __global__
 void
 addL0LTD(
+#ifdef KERNEL_TIMING
+	unsigned long long* g_cc,
+	size_t ccPitch,
+#endif
     float reward,
 	int maxPartitionSize, // not warp aligned
 	int maxDelay,
@@ -280,6 +284,8 @@ addL0LTD(
 	size_t forwardPitch,
 	size_t forwardSize)
 {
+	SET_COUNTER(s_ccLTD, 0);
+
 	/* We assume that in any given modification step most synapses are *not*
 	 * updated. We therefore optmisise for read accesses rather than for
 	 * writes. With the loops, one forward (LTD) and one reverse (LTP), all
@@ -344,12 +350,18 @@ addL0LTD(
 			}
 		}
 	}
+	SET_COUNTER(s_ccLTD, 1);
+	WRITE_COUNTERS(s_ccLTD, g_cc, ccPitch, 2);
 }
 
 
 __global__
 void
 addL0LTP(
+#ifdef KERNEL_TIMING
+	unsigned long long* g_cc,
+	size_t ccPitch,
+#endif
     float reward,
 	int maxPartitionSize,
 	int maxDelay,
@@ -364,6 +376,8 @@ addL0LTP(
 	size_t cmPitchR,
 	size_t cmSizeR)
 {
+	SET_COUNTER(s_ccLTP, 0);
+
 	/* The accumulated long-term potentiation is stored in a reverse-order matrix. */
 	__shared__ int s_partitionSize;
 	__shared__ int s_neuronsPerThread;
@@ -419,6 +433,8 @@ addL0LTP(
 			}
 		}
 	}
+	SET_COUNTER(s_ccLTP, 1);
+	WRITE_COUNTERS(s_ccLTP, g_cc, ccPitch, 2);
 }
 
 
@@ -429,6 +445,10 @@ addL0LTP(
 __global__
 void
 constrainL0Weights(
+#ifdef KERNEL_TIMING
+	unsigned long long* g_cc,
+	size_t ccPitch,
+#endif
 	float maxWeight,
 	int maxPartitionSize, // not warp aligned
 	int maxDelay,
@@ -438,6 +458,7 @@ constrainL0Weights(
 	size_t forwardPitch,
 	size_t forwardSize)
 {
+	SET_COUNTER(s_ccConstrain, 0);
 	__shared__ int s_partitionSize;
 	__shared__ int s_neuronsPerThread;
 	setPartitionParameters(&s_partitionSize, &s_neuronsPerThread);
@@ -484,4 +505,6 @@ constrainL0Weights(
 			}
 		}
 	}
+	SET_COUNTER(s_ccConstrain, 1);
+	WRITE_COUNTERS(s_ccConstrain, g_cc, ccPitch, 2);
 }

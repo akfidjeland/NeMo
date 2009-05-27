@@ -3,12 +3,17 @@
 
 #define KERNEL_TIMING
 
-/* Counters are specified using numeric indices. Some care must be taken to
- * ensure that the COUNTER_COUNT specified here matches what's used in the
- * kernel, and furthermore that the counters used there match what's used when
- * reading back. */
 
-#define COUNTER_COUNT 10
-#define DURATION_COUNT (COUNTER_COUNT-1)
+/* Counters are specified using numeric indices. Some care must be taken to
+ * ensure that the counter counts specified here matches what's used in the
+ * different kernels, and furthermore that the counters used there match what's
+ * used when reading back. 
+ */
+
+#define CC_MAIN_COUNT 10
+//! \todo just make this a default
+#define CC_STDP_LTP_COUNT 2
+#define CC_STDP_LTD_COUNT 2
+#define CC_STDP_CONSTRAIN_COUNT 2
 
 #endif

@@ -37,6 +37,8 @@ Simulation general
 CUDA backend
 ------------
 
+- For cycle counting, we only report data for thread block 0. Get data from all
+  and report mean and std. deviation. 
 - We currently have one kernel parameter for the cycle number to assign to
   output data and one we use for buffering etc. Combine these two. 
 - For STDP, either reset the stdp counter when updating the synapses, or share

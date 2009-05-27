@@ -71,8 +71,7 @@ RuntimeData::RuntimeData(
 	cudaGetDevice(&device);
 	cudaGetDeviceProperties(&m_deviceProperties, device);
 
-	cycleCounters = 
-        new CycleCounters(partitionCount, m_deviceProperties.clockRate);
+	cycleCounters = new CycleCounters(partitionCount, m_deviceProperties.clockRate);
 }
 
 

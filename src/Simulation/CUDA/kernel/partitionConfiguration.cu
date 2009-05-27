@@ -25,7 +25,12 @@
 #define NPARAM_sizeL0 4
 #define NPARAM_pitchL1 5
 #define NPARAM_sizeL1 6
-#define NPARAM_COUNT 7
+// STDP parameters
+#define NPARAM_rpitchL0 7
+#define NPARAM_rsizeL0 8
+#define NPARAM_rpitchL1 9
+#define NPARAM_rsizeL1 10
+#define NPARAM_COUNT 11 
 
 /* Configuration array is stored in constant memory, and is loaded in
  * (parallel) into shared memory for each thread block */
@@ -33,13 +38,18 @@ __constant__ uint c_networkParameters[NPARAM_COUNT];
 __shared__ uint s_networkParameters[NPARAM_COUNT];
 
 /* Some more pleasant names for the parameters */
+//! \todo auto-generate
 #define s_maxPartitionSize s_networkParameters[NPARAM_maxPartitionSize]
-#define s_maxDelay s_networkParameters[NPARAM_maxDelay]
-#define s_pitch32 s_networkParameters[NPARAM_pitch32]
-#define s_pitchL0 s_networkParameters[NPARAM_pitchL0]
-#define s_sizeL0 s_networkParameters[NPARAM_sizeL0]
-#define s_pitchL1 s_networkParameters[NPARAM_pitchL1]
-#define s_sizeL1 s_networkParameters[NPARAM_sizeL1]
+#define s_maxDelay         s_networkParameters[NPARAM_maxDelay]
+#define s_pitch32          s_networkParameters[NPARAM_pitch32]
+#define s_pitchL0          s_networkParameters[NPARAM_pitchL0]
+#define s_sizeL0           s_networkParameters[NPARAM_sizeL0]
+#define s_pitchL1          s_networkParameters[NPARAM_pitchL1]
+#define s_sizeL1           s_networkParameters[NPARAM_sizeL1]
+#define s_rpitchL0         s_networkParameters[NPARAM_rpitchL0]
+#define s_rsizeL0          s_networkParameters[NPARAM_rsizeL0]
+#define s_rpitchL1         s_networkParameters[NPARAM_rpitchL1]
+#define s_rsizeL1          s_networkParameters[NPARAM_rsizeL1]
 
 
 #define SET_CONSTANT(symbol, val) param[NPARAM_ ## symbol] = val
@@ -56,6 +66,10 @@ configureKernel(RTDATA rtdata)
 	SET_CONSTANT(sizeL0, rtdata->cm(CM_L0)->submatrixSize());
 	SET_CONSTANT(pitchL1, rtdata->cm(CM_L1)->synapsePitchD());
 	SET_CONSTANT(sizeL1, rtdata->cm(CM_L1)->submatrixSize());
+	SET_CONSTANT(rpitchL0, rtdata->cm(CM_L0)->reversePitch());
+	SET_CONSTANT(rsizeL0, rtdata->cm(CM_L0)->reverseSubmatrixSize());
+	SET_CONSTANT(rpitchL1, rtdata->cm(CM_L1)->reversePitch());
+	SET_CONSTANT(rsizeL1, rtdata->cm(CM_L1)->reverseSubmatrixSize());
 	CUDA_SAFE_CALL(
 			cudaMemcpyToSymbol(c_networkParameters,
 				&param[0], 
