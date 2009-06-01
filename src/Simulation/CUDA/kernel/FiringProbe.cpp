@@ -259,8 +259,7 @@ FiringProbe::fillOutputBuffer(
 	size_t chunksPerStreamAndLoad = bufferChunks / m_partitionCount;
 	size_t bufferLoads = DIV_CEIL(maxFirings, m_hostBufferSize);
 
-	std::list<Stream> streams =
-		initStreams(chunksPerStream);
+	std::list<Stream> streams = initStreams(chunksPerStream);
 
 	uint totalFirings = 0;
 
@@ -357,8 +356,7 @@ FiringProbe::readFiring(uint** cycles, uint** pidx, uint** nidx, size_t* len)
 {
 	std::vector<uint> chunksPerStream = setStreamLength();
 	resetNextFree();
-	size_t totalChunks = 
-			std::accumulate(chunksPerStream.begin(), chunksPerStream.end(), 0);
+	size_t totalChunks = std::accumulate(chunksPerStream.begin(), chunksPerStream.end(), 0);
 	size_t maxFirings = totalChunks * FMEM_CHUNK_SIZE;
 	resizeOutputBuffer(maxFirings);
 	/* Load data, in several chunks if required */

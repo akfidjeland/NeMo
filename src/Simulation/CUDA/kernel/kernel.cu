@@ -120,7 +120,7 @@ STDP_FN(fire)(
 
 			/* s_fstim accessed using broadcast */
 			bool forceFiring = (s_fstim[s_index/32] >> (s_index % 32)) & 0x1;
-			char firing = 0;
+			uint32_t firing = 0;
 
 			if(fired || forceFiring) {
                 //! \todo could probably hard-code c and d 
@@ -128,15 +128,12 @@ STDP_FN(fire)(
 				u += g_d[g_index];
 				firing = 0x1;
 				DEBUG_MSG("%d fired\n", s_index);
-				/* update table of explicit firing. This only works on compute
-				 * capability >=1.2 due to use of shared memory atomics */
 				int idxEntry = atomicAdd(s_nextIdxEntry, 1);
 				s_firingIdx[idxEntry] = (uint16_t) s_index;
 			}
-
 			/* We need the (updated) recent firing history for L1 spike
-			 * delivery, but won't update this further, so we can write back to
-			 * global memory */
+			 * delivery later, but won't update this further, so we can write
+			 * back to global memory now. */
 			s_recentFiring[s_index] = (s_recentFiring[s_index] << 1) | firing;
 			g_recentFiring[g_index] = s_recentFiring[s_index];
 #ifdef STDP
@@ -212,7 +209,6 @@ STDP_FN(deliverL0Spikes)(
 			s_arrivalBits[nextFree] = arrivals;
 		}
 		__syncthreads();
-
 		/* We now have the indices of the firing of THREADS_PER_BLOCK
 		 * presynaptic neurons */
 		for(int i=0; i<s_firingCount; ++i) {
@@ -324,6 +320,11 @@ STDP_FN(deliverL0Spikes)(
                     }
                     __syncthreads();
                 }
+                /* We need a barrier *outside* the loop to avoid threads
+                 * reaching the barrier (inside the loop), then having thread 0
+                 * race ahead and changing s_delayBlocks before all threads
+                 * have left the loop. */
+                __syncthreads();
 			}
 		}
 	}
@@ -547,7 +548,6 @@ STDP_FN(step) (
 		s_recentArrivals,
 		g_arrivalDelaysL0);
 #endif
-	//! \todo add another counter here
 	SET_COUNTER(s_ccMain, 7);
 
 	writeFiringOutput(fmemCycle, g_fmemNextFree, 
