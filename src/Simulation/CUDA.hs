@@ -115,8 +115,6 @@ stepMulti sim steps pidx pfn dt fstim stdpApp = do
         _ -> error $ "CUDA.stepMulti: unsupported probe: " ++ show pfn
 
 
-
-
 densifyDeviceFiring :: ATT -> Int -> [(Time, DeviceIdx)] -> [ProbeData]
 densifyDeviceFiring att len fired = map FiringData dense
     where

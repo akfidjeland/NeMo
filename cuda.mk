@@ -38,12 +38,13 @@ SRCDIR := src/Simulation/CUDA/kernel/
 ROOTDIR := dist/build/cuda
 
 CU_MAIN = kernel_wrapper.cu
+
+# CUDA source files which are #included in main kernel source file
 CU_INC = kernel.cu L1SpikeQueue.cu firingProbe.cu partitionConfiguration.cu cycleCounting.cu error.cu connectivityMatrix.cu stdp.cu thalamicInput.cu
 
 # CUDA source files (compiled with cudacc)
 # CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN) $(CU_INC))
 CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN))
-# CUDA source files #included in main source file
 CUINC       := $(addprefix $(SRCDIR),$(CU_INC))
 CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringProbe.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp)
 CFILES		:= $(addprefix $(SRCDIR),kernel.c)
@@ -52,7 +53,6 @@ CFILES		:= $(addprefix $(SRCDIR),kernel.c)
 STATIC_LIB := libcuIzhikevich.a
 
 EXTINCLUDES := -I/usr/include -I$(CUDA_SDK_PATH)/common/inc
-#EXTLIBS := -L/usr/lib 
 
 
 

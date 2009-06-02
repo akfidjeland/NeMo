@@ -34,7 +34,7 @@ readFiring rtdata = do
     cycles <- readArr cyclesPtr nfired
     pidx <- readArr pidxPtr nfired
     nidx <- readArr nidxPtr nfired
-    return $ (fromIntegral nfired, zipWith3 fired cycles pidx nidx)
+    return $! (fromIntegral nfired, zipWith3 fired cycles pidx nidx)
     where
         fired c p n = (fromIntegral c, (fromIntegral p, fromIntegral n))
         readArr ptr len = do

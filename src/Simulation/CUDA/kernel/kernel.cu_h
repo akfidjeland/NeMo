@@ -11,8 +11,8 @@
 
 /* If more shared memory is needed for STDP execution, reduce max partition
  * size. This has not been tested */
-//#define MAX_PARTITION_SIZE_STDP (1<<(NEURON_BITS-1))
-#define MAX_PARTITION_SIZE_STDP (1<<(NEURON_BITS))
+#define MAX_PARTITION_SIZE_STDP (1<<(NEURON_BITS-1))
+//#define MAX_PARTITION_SIZE_STDP (1<<(NEURON_BITS))
 
 #define PARTITION_BITS 8
 #define MAX_PARTITION_COUNT (1<<PARTITION_BITS)

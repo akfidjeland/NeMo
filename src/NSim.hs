@@ -49,26 +49,8 @@ initRng (Just seed) = setStdGen $ mkStdGen $ fromInteger seed
 
 
 
--- TODO: make this work:
-{-
-time :: IO a -> String -> IO a
-time func msg = do
-    putStr $ msg ++ "..."
-    start <- getCPUTime
-    r <- func
-    end <- getCPUTime
-    let t = elapsed start end
-    putStrLn $ msg ++ " done (" ++ show t ++ ")"
-    return r
-    where
-        -- Return number of elapsed seconds since start
-        elapsed start end = (end - start) `div` 1000000000000
--}
-
-
 -- TODO: migrate to Simulation.Run
 runSimulation seed backend duration net tempSubres fstimF probeIdx probeFn opts = do
-    -- net' <- time $ buildNetwork seed net
     startConstruct <- getCPUTime
     net' <- buildNetwork seed net
     hPutStrLn stderr "Building simulation..."

@@ -406,7 +406,7 @@ STDP_FN(step) (
 	__shared__ int s_firingCount;
 
 #ifdef STDP
-	uint32_t s_recentArrivals[STDP_FN(MAX_PARTITION_SIZE)];
+	__shared__ uint32_t s_recentArrivals[STDP_FN(MAX_PARTITION_SIZE)];
 #endif
 
 	/* Per-partition parameters */
