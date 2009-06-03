@@ -1,4 +1,6 @@
 #include "L1SpikeQueue.hpp"
+#include <stdlib.h>
+#include <stdio.h>
 #include <cutil.h>
 #include <assert.h>
 
@@ -13,11 +15,10 @@ L1SpikeQueue::L1SpikeQueue(
 {
 	if(partitionCount != 1 && entrySize != 0) {
 		{
-			// const size_t height = partitionCount * partitionCount * (maxDelay+1);
-            /* We need a double buffer here, so we can read and write concurrently. */
+			/* We need a double buffer here, so we can read and write concurrently. */
 			const size_t height = partitionCount * partitionCount * 2;
 			const size_t width  = entrySize * sizeof(uint2);
-			size_t bpitch;
+			size_t bpitch = 0;
 			CUDA_SAFE_CALL(cudaMallocPitch(
 						(void**)&m_data, &bpitch, width, height));
 			cudaMemset2D(m_data, bpitch, 0x0, bpitch, height);
@@ -31,7 +32,7 @@ L1SpikeQueue::L1SpikeQueue(
 			const size_t width  = partitionCount * sizeof(unsigned int);
 			size_t bpitch;
 			CUDA_SAFE_CALL(cudaMallocPitch((void**)&m_heads,
-				&bpitch, width, height));
+						&bpitch, width, height));
 			assert(bpitch != 0);
 			cudaMemset2D(m_heads, bpitch, 0x0, bpitch, height);
 			m_headPitch = bpitch / sizeof(unsigned int);
