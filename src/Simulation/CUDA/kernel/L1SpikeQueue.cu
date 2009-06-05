@@ -208,6 +208,72 @@ updateCurrent(
 }
 
 
+/*! Update current buffer with incoming spikes */
+__device__
+void
+updateCurrent2(
+		uint readBufferIdx, // double buffer index
+		uint sourcePartition,
+		uint32_t spikeIdx,   // index of spike for current thread
+		uint32_t spikeCount, // number of spikes to delivered for current buffer 
+		uint2* g_sq,
+		size_t sqPitch,
+		float* s_current)
+{
+#define BANKS 16
+	//! \todo remove hard-coding
+	//! \todo do this for all threads
+	__shared__ uint s_committing[BANKS];
+	if(threadIdx.x < BANKS) {
+		s_committing[threadIdx.x] = 0;
+	}
+	__syncthreads();
+
+	//! \todo conditional load from global memory
+
+	uint targetPartition = CURRENT_PARTITION;
+	size_t base = sbBase(sqPitch, sourcePartition, targetPartition, readBufferIdx);
+	//! \todo load by 32-bit values
+	uint2 spike = g_sq[base + spikeIdx];
+
+	/* We don't need to clear the data from the spike buffer,
+	 * as long as the head is cleared. \see loadAndClearBufferHeads */
+	float weight = __int_as_float(spike.y);
+	uint target = targetNeuron(spike.x);
+
+	bool spiked = weight != 0.0f && spikeIdx < spikeCount;
+
+	uint commitNo;
+	if(spiked) {
+		// serialise commits for each shared memory bank to avoid race condition
+		commitNo = atomicAdd(s_committing + (target % BANKS), 1);
+	}
+
+	/* In the worst case *every* spike has the same target. Determine the
+	 * maximum number of threads that need to be serialised. */
+	//! \todo use reduction to find the maximum here
+	__shared__ uint s_maxCommit;
+	if(threadIdx.x == 0) {
+		s_maxCommit = 0;
+		for(uint i=0; i<BANKS; ++i) {
+			s_maxCommit = max(s_maxCommit, s_committing[i]);
+		}
+	}
+	__syncthreads();
+
+	for(uint commit=0; commit <= s_maxCommit; ++commit) {
+		if(spiked && commitNo == commit) {
+			s_current[targetNeuron(spike.x)] += weight;
+			ASSERT(targetNeuron(spike.x) < MAX_PARTITION_SIZE);
+			DEBUG_MSG("Receiving L1 current %f from %d-?? to %d-%d\n",
+					weight, sourceNeuron(spike.x), targetPartition, targetNeuron(spike.x));
+		}
+		__syncthreads();
+	}
+	__syncthreads();
+}
+
+
 
 /*! Load all incoming spikes from L1 connetivity into current accumulator */
 __device__
@@ -226,11 +292,22 @@ gatherL1Spikes_JIT(
 		for(uint src=0; src<PARTITION_COUNT; ++src) {
 			uint parallelLoads = DIV_CEIL(s_heads[src], THREADS_PER_BLOCK);
 			for(uint load=0; load<parallelLoads; ++load) {
+#if 0
 				if(load * THREADS_PER_BLOCK + threadIdx.x < s_heads[src]) {
 					//! \todo apply load argument here instead
 					updateCurrent(readBufferIdx, src, g_sq, sqPitch, load, s_current);
 				}
 				__syncthreads();
+#else
+                uint spikeIdx = load * THREADS_PER_BLOCK + threadIdx.x;
+                updateCurrent2(readBufferIdx,
+                        src,
+                        spikeIdx,
+                        s_heads[src],
+                        g_sq,
+                        sqPitch,
+                        s_current);
+#endif
 			}
         }
 	}
