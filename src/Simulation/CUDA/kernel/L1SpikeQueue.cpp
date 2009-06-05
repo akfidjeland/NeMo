@@ -27,7 +27,6 @@ L1SpikeQueue::L1SpikeQueue(
 		}
 
 		{
-			//const size_t height = partitionCount * (maxDelay+1);
 			const size_t height = partitionCount * 2;
 			const size_t width  = partitionCount * sizeof(unsigned int);
 			size_t bpitch;

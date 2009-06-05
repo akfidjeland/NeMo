@@ -60,9 +60,11 @@ CycleCounters::printCounterSet(
 		std::ofstream& outfile)
 {
 	const std::vector<unsigned long long>& cc = cc_in.copyFromDevice();
-	std::vector<unsigned long long>::const_iterator end =
-		std::min(cc.begin()+counters-1, cc.end());
-	unsigned long long totalCycles = std::accumulate(cc.begin(), cc.end(), 0);
+	//! \todo average over all partitions
+	/* The data return by copyFromDevice is the raw device data, including any
+	 * padding. Using cc.end() would therefore read too far */ 
+	std::vector<unsigned long long>::const_iterator end = cc.begin() + counters-1;
+	unsigned long long totalCycles = std::accumulate(cc.begin(), end, 0);
 
 	printLine(setName, totalCycles, totalCycles, m_clockRateKHz, outfile);
 	outfile << std::endl;
