@@ -94,7 +94,7 @@ loadAndClearBufferHeads(
 	int sourcePartition = threadIdx.x;
 	if(sourcePartition < PARTITION_COUNT) {
 		size_t offset = headOffset(sourcePartition, CURRENT_PARTITION, pitch, bufferIdx);
-		//! \todo could use atomicExch here instead. Not sure which is faster?
+		//! \todo could use atomicExch here instead. Not sure which is faster.
 		s_heads[sourcePartition] = g_heads[offset];
 		g_heads[offset] = 0;
 	}
@@ -164,9 +164,7 @@ flushAllSpikeBuffers(
 	//! \todo factor out function to flush all
 	/* Now flush all buffers which still have data in them */
 	for(int targetPartition=0; targetPartition<PARTITION_COUNT; ++targetPartition) {
-		// DEBUG_THREAD_MSG(0, "Flushing remaining buffers");
-		//! \todo could load the sizes in paralell here, without using atomics
-
+		//! \todo could load the sizes in parallel here, without using atomics
 		flushSpikeBuffer(
             writeBufferIdx,
 			s_outheads[targetPartition],
@@ -433,8 +431,12 @@ deliverL1Spikes_JIT(
 				__shared__ uint s_flushCount;
 				__shared__ uint s_flushPartition[BUFFER_COUNT];
 				do {
+					/* ensure loop condition is not changed while threads are
+					 * in different loop iterations */
+					__syncthreads();
 
-					/* Write one batch of data to output buffers, up to the limit of the buffer */
+					/* Write one batch of data to output buffers, up to the
+					 * limit of the buffer */
 					if(doCommit && bufferIdx < BUFFER_SZ) {
 						//! \todo do some compression here to avoid race conditions later
 						s_outbuf[targetPartition(target) * BUFFER_SZ + bufferIdx] =
@@ -484,8 +486,8 @@ deliverL1Spikes_JIT(
 							s_heads[targetPartition] += BUFFER_SZ;
 						}
 					}
-					__syncthreads();
 				} while(s_flushCount);
+				__syncthreads(); // ensure every thread has left the loop, before re-entering it
 			}
 		}
 	}

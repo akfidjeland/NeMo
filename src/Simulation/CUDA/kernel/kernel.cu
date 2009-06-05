@@ -467,6 +467,7 @@ STDP_FN(step) (
 #else
         s_M1KB); // only part of s_M1KB is used
 #endif
+    __syncthreads();
 
 
 	SET_COUNTER(s_ccMain, 3);
