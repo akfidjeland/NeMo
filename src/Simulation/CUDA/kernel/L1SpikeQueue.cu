@@ -184,19 +184,20 @@ __device__
 void
 updateCurrent(
 		uint readBufferIdx,
-		int sourcePartition,
+		uint sourcePartition,
 		uint2* g_sq,
 		size_t sqPitch,
-		int load,
+		uint load,
 		float* s_current)
 {
-	int targetPartition = CURRENT_PARTITION;
-    size_t base = sbBase(sqPitch, sourcePartition, targetPartition, readBufferIdx);
-    size_t offset = + load * THREADS_PER_BLOCK + threadIdx.x;
+	uint targetPartition = CURRENT_PARTITION;
+	size_t base = sbBase(sqPitch, sourcePartition, targetPartition, readBufferIdx);
+	size_t offset = + load * THREADS_PER_BLOCK + threadIdx.x;
 	uint2 spike = g_sq[base + offset];
 	/* We don't need to clear the data from the spike buffer,
-	 * as long as the head is cleared. \see loadBufferHeads */
+	 * as long as the head is cleared. \see loadAndClearBufferHeads */
 	float weight = __int_as_float(spike.y);
+
 	if(weight != 0.0f) {
 		//! \todo there's a race condition here! schedule writes as for L0
 		s_current[targetNeuron(spike.x)] += weight;
@@ -215,16 +216,16 @@ gatherL1Spikes_JIT(
 		uint readBufferIdx,
 		uint2* g_sq,
 		size_t sqPitch,
-		unsigned int* g_heads,
+		uint* g_heads,
         size_t headPitch,
 		float* s_current,
         uint32_t* s_heads)
 {
 	if(g_sq != NULL) {
 		loadAndClearBufferHeads(g_heads, s_heads, headPitch, readBufferIdx);
-		for(int src=0; src<PARTITION_COUNT; ++src) {
-			int parallelLoads = DIV_CEIL(s_heads[src], THREADS_PER_BLOCK);
-			for(int load=0; load<parallelLoads; ++load) {
+		for(uint src=0; src<PARTITION_COUNT; ++src) {
+			uint parallelLoads = DIV_CEIL(s_heads[src], THREADS_PER_BLOCK);
+			for(uint load=0; load<parallelLoads; ++load) {
 				if(load * THREADS_PER_BLOCK + threadIdx.x < s_heads[src]) {
 					//! \todo apply load argument here instead
 					updateCurrent(readBufferIdx, src, g_sq, sqPitch, load, s_current);
@@ -241,12 +242,11 @@ gatherL1Spikes_JIT(
 __device__
 void
 deliverL1Spikes_JIT(
-	//! \todo char?!
-	unsigned char maxDelay,
+	uint maxDelay,
 	uint writeBufferIdx,
-	int s_partitionSize,
-	size_t pitchCM, // word pitch
-	int s_maxL1Synapses,
+	uint s_partitionSize,
+	uint pitchCM, // word pitch
+	uint s_maxL1Synapses,
 	//inputs
 	uint* g_saddress,
 	float* g_sweights,
@@ -263,7 +263,7 @@ deliverL1Spikes_JIT(
     uint2* s_outbuf,        // 16 words of buffer per target partition
 	uint2* g_sq,
 	size_t sqPitch,
-	unsigned int* g_heads,
+	uint* g_heads,
     size_t headPitch)
 {
 	DEBUG_MSG("Begin deliver L1\n");
@@ -271,7 +271,7 @@ deliverL1Spikes_JIT(
 	 * cluster. It should be possible to reduce this for rows with few entries.
 	 * Perhaps better to just save the number of chunks in constant memory. It
 	 * would depend on the chunk size, though. */
-	__shared__ int s_chunkCount;
+	__shared__ uint s_chunkCount;
 
 	/* L1 spikes are delivered via a global memory buffer. Writes to these
 	 * buffers may be quite scattered. To reduce the impact of non-coalesced
@@ -295,9 +295,9 @@ deliverL1Spikes_JIT(
 		s_outheads[i*THREADS_PER_BLOCK + threadIdx.x] = 0;
 	}
 
-	__shared__ int s_synapsesPerDelay;
-	__shared__ int s_chunksPerDelay;
-	__shared__ int s_delaysPerChunk;
+	__shared__ uint s_synapsesPerDelay;
+	__shared__ uint s_chunksPerDelay;
+	__shared__ uint s_delaysPerChunk;
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
 		s_synapsesPerDelay = ALIGN(s_maxL1Synapses, warpSize);
@@ -309,7 +309,7 @@ deliverL1Spikes_JIT(
 
 	for(int preOffset=0; preOffset < s_partitionSize; preOffset += THREADS_PER_BLOCK) {
 
-		__shared__ int s_firingCount;
+		__shared__ uint s_firingCount;
 		//! \todo make this a re-usable chunk of memory
 		__shared__ uint16_t s_firingIdx[THREADS_PER_BLOCK];
 		__shared__ uint32_t s_arrivalBits[THREADS_PER_BLOCK];

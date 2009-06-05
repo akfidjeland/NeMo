@@ -58,9 +58,9 @@ __device__
 void
 STDP_FN(fire)(
 	bool hasExternalInput,
-    int s_partitionSize,
-    int s_neuronsPerThread,
-	int substeps,
+	uint s_partitionSize,
+	uint s_neuronsPerThread,
+	uint substeps,
 	float substepMult, // substepMul * substeps = 1
 	size_t fstimPitch,
 	size_t pitch32,
@@ -77,7 +77,7 @@ STDP_FN(fire)(
 	uint32_t* g_recentArrivals,
 #endif
 	uint16_t* s_firingIdx,
-	int* s_nextIdxEntry)
+	uint* s_nextIdxEntry)
 {
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
@@ -403,20 +403,19 @@ STDP_FN(step) (
 
 	uint32_t* s_recentFiring = s_M1KB;
 	uint16_t* s_firingIdx = s_M512;
-	__shared__ int s_firingCount;
+	__shared__ uint s_firingCount;
 
 #ifdef STDP
 	__shared__ uint32_t s_recentArrivals[STDP_FN(MAX_PARTITION_SIZE)];
 #endif
 
 	/* Per-partition parameters */
-    //! \todo use uint instead here
-    __shared__ int s_partitionSize;
-    __shared__ int s_neuronsPerThread;
-    __shared__ int s_maxL0SynapsesPerDelay;
-    __shared__ int s_maxL1SynapsesPerDelay;
+	__shared__ uint s_partitionSize;
+	__shared__ uint s_neuronsPerThread;
+	__shared__ uint s_maxL0SynapsesPerDelay;
+	__shared__ uint s_maxL1SynapsesPerDelay;
 #ifdef STDP
-	__shared__ int s_maxL0RevSynapsesPerDelay;
+	__shared__ uint s_maxL0RevSynapsesPerDelay;
 #endif
 	__shared__ float s_substepMult;
 
