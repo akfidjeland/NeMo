@@ -124,7 +124,7 @@ flushSpikeBuffer(
 	// uint* s_outbuf32 = (uint*) s_outbuf64;
 	// uint* g_sq32 = (uint*) g_sq64;
 
-	if(threadIdx.x < count * 2) {
+	if(threadIdx.x < count) {
 		//! \todo simplify addressing once old L1CM is removed
 		size_t base = sbBase(sqPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
 		//uint data = s_outbuf32[targetPartition * BUFFER_SZ * 2 + threadIdx.x];
@@ -248,6 +248,7 @@ updateCurrent2(
 		// serialise commits for each shared memory bank to avoid race condition
 		commitNo = atomicAdd(s_committing + (target % BANKS), 1);
 	}
+	__syncthreads();
 
 	/* In the worst case *every* spike has the same target. Determine the
 	 * maximum number of threads that need to be serialised. */
@@ -266,7 +267,7 @@ updateCurrent2(
 			s_current[targetNeuron(spike.x)] += weight;
 			ASSERT(targetNeuron(spike.x) < MAX_PARTITION_SIZE);
 			DEBUG_MSG("Receiving L1 current %f from %d-?? to %d-%d\n",
-					weight, sourceNeuron(spike.x), targetPartition, targetNeuron(spike.x));
+					weight, sourcePartition, targetPartition, targetNeuron(spike.x));
 		}
 		__syncthreads();
 	}
@@ -518,15 +519,16 @@ deliverL1Spikes_JIT(
 						//! \todo do some compression here to avoid race conditions later
 						s_outbuf[targetPartition(target) * BUFFER_SZ + bufferIdx] =
 							make_uint2(target, __float_as_int(weight));
-							DEBUG_MSG("Buffering L1 current %f for synapse"
-									"%u-?? -> %u-%u (after unknown delay)\n",
-									weight, CURRENT_PARTITION,
-									targetPartition(target), targetNeuron(target));
+						doCommit = false;
+						DEBUG_MSG("Buffering L1 current %f for synapse"
+								"%u-?? -> %u-%u (after unknown delay)\n",
+								weight, CURRENT_PARTITION,
+								targetPartition(target), targetNeuron(target));
 					} else {
-						bufferIdx -= BUFFER_SZ;
+						bufferIdx -= BUFFER_SZ; // prepare to write to buffer on subsequent loop iteration
 					}
 
-					/* Determine how many buffers are now full and needs flushing */
+					/* Determine how many buffers are now full and need flushing */
 					if(threadIdx.x == 0) {
 						s_flushCount = 0;
 					}
@@ -558,6 +560,7 @@ deliverL1Spikes_JIT(
 								s_heads,
 								s_outbuf,
 								g_sq, sqPitch);
+						__syncthreads();
 						//! \todo could add all in parallel?
 						if(threadIdx.x == 0) {
 							s_heads[targetPartition] += BUFFER_SZ;
