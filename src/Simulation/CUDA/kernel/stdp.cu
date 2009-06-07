@@ -3,7 +3,6 @@
 
 #include "log.hpp"
 
-
 /* STDP parameters
  *
  * The STDP parameters apply to all neurons in a network. One might, however,
@@ -20,7 +19,6 @@
  *   postsynaptic firing for which STDP has an effect.
  * - alpha is a multiplier for the exponential
  */
-
 
 __constant__ int c_stdpTauP;
 __constant__ int c_stdpTauD;
@@ -102,8 +100,8 @@ __device__
 void
 updateLTP(
 	uint maxDelay,
-	int currentTime,
-	int s_maxL0SynapsesR,
+	uint currentTime,
+	uint s_maxL0SynapsesR,
 	// reverse connectivity
 	uint* g_cmR, size_t cmPitchR, size_t cmSizeR,
 	// forward connectivity
@@ -111,8 +109,7 @@ updateLTP(
 	uint16_t* s_firingIdx,
 	int s_firingCount,
 	uint32_t* s_recentArrivals,
-	uint32_t* g_arrivalDelays
-	)
+	uint32_t* g_arrivalDelays)
 {
 	/*! \note This is the maximum number of chunks required for this whole
 	 * cluster. It should be possible to reduce this for rows with few
@@ -217,6 +214,7 @@ updateLTP(
 			}
 			__syncthreads();
 		}
+        __syncthreads();
 	}
 }
 
@@ -256,7 +254,7 @@ setDelayBits(
 
 __device__
 void
-setPartitionParameters(int* s_partitionSize, int* s_neuronsPerThread)
+setPartitionParameters(uint* s_partitionSize, uint* s_neuronsPerThread)
 {
     if(threadIdx.x == 0) {
         *s_partitionSize = c_partitionSize[CURRENT_PARTITION];
@@ -266,98 +264,65 @@ setPartitionParameters(int* s_partitionSize, int* s_neuronsPerThread)
 }
 
 
+
 __global__
 void
-addL0LTD(
-#ifdef KERNEL_TIMING
-	unsigned long long* g_cc,
-	size_t ccPitch,
-#endif
-    float reward,
-	int maxPartitionSize, // not warp aligned
-	int maxDelay,
-	// inputs
-	size_t pitch32,
-	uint32_t* g_delayBits,
-	// forward connectivity
-	uint* g_cm,
-	size_t forwardPitch,
-	size_t forwardSize)
+clearSTDPAccumulator(
+		uint maxPartitionSize,
+		uint maxDelay,
+		// Delay bits
+		uint32_t* g_delayBits,
+		size_t pitch32,
+		// Accumulator
+		float* g_acc,		//! \note caller should point to correct part of multi-dimensional matrix
+		size_t pitch,
+		size_t size)
 {
-	SET_COUNTER(s_ccLTD, 0);
+	//! \todo add timing of this kernel as well
 
-	/* We assume that in any given modification step most synapses are *not*
-	 * updated. We therefore optmisise for read accesses rather than for
-	 * writes. With the loops, one forward (LTD) and one reverse (LTP), all
-	 * reads are coalesced. Furthermore LTD writes are coalesced. Since we do
-	 * two separate updates we need to use global atomics to avoid race
-	 * conditions. */
+	__shared__ uint s_partitionSize;
+	__shared__ uint s_neuronsPerThread;
 
-	__shared__ int s_partitionSize;
-	__shared__ int s_neuronsPerThread;
 	setPartitionParameters(&s_partitionSize, &s_neuronsPerThread);
 
 	/* Pre-load all delay bits, since all of it will be needed */
 	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
 
-	//! \todo factor out common bits here
-#ifdef __DEVICE_EMULATION__
-	uint* g_postsynaptic = g_cm + CM_ADDRESS * forwardSize
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * forwardPitch;
-#endif
-	float* g_weights = (float*) g_cm + CM_WEIGHT * forwardSize
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * forwardPitch;
-	uint* g_ltd = g_cm + CM_LTD * forwardSize
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * forwardPitch;
+	//! \todo time this without loading delay bits 
+	for(uint presynaptic=0; presynaptic<s_partitionSize; ++presynaptic) {
 
-	//! \todo experiment with either atomics or manual operations
-	for(int presynaptic=0; presynaptic<s_partitionSize; ++presynaptic) {
-		// compute the delays for which we have synapses
-
-		//! \todo share this memory with other functions
 		__shared__ uint s_delayBlocks;
 		__shared__ uint32_t s_delays[MAX_DELAY];
 
 		setDelayBits(s_delayBits[presynaptic], &s_delayBlocks, s_delays);
-#ifdef __DEVICE_EMULATION__
-		//! \todo return error instead here
-		assert(forwardPitch <= THREADS_PER_BLOCK);
-#endif
 
-		//! \todo deal with several delays in parallel as in L0 delivery (see also constrainWeights)
+		ASSERT(pitch <= THREADS_PER_BLOCK);
+
+		//! \todo deal with several delays in parallel as in L0 delivery (see also addL0LTD)
 		//! \todo deal with multiple chunks per delay
-		/*! \todo count how many neurons are affected. Perhaps we could use bit
-		 * vector to indicate which parts to load. */
-		for(int delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
-			int delay = s_delays[delayIdx];
+		for(uint delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
+			uint delay = s_delays[delayIdx];
 			//! \todo make this work even if there are more threads than delays
-			if(threadIdx.x < forwardPitch) {
-				size_t g_offset = (presynaptic * maxDelay + delay) * forwardPitch + threadIdx.x;
-				float ltd = __int_as_float(atomicExch(g_ltd + g_offset, 0));
-                //! \todo could do just a write rather than exchange, if reward = 0
-				if(ltd != 0.0f && reward != 0.0f) {
-					/* Once weight is 0, stay there */
-					float oldWeight = g_weights[g_offset];
-					if(oldWeight != 0.0f) {
-						g_weights[g_offset] = oldWeight + ltd * reward;
-#ifdef __DEVICE_EMULATION__
-						int postsynaptic = targetNeuron(g_postsynaptic[g_offset]);
-						DEBUG_MSG("stdp %+f for synapse %u -> %u\n", ltd, presynaptic, postsynaptic);
-#endif
-					}
-				}
+			if(threadIdx.x < pitch) {
+				size_t g_offset = (presynaptic * maxDelay + delay) * pitch + threadIdx.x;
+				g_acc[g_offset] = 0;
 			}
 		}
 	}
-	SET_COUNTER(s_ccLTD, 1);
-	WRITE_COUNTERS(s_ccLTD, g_cc, ccPitch, 2);
 }
 
 
+/* Re-order long-term potentiation from the reverse order (by postsynaptic)
+ * used in the accumulation array, to the forward order (by presynaptic) used
+ * in the synaptic weight matrix. 
+ *
+ * prefix r: reverse matrix
+ * prefix f: forward matrix
+ */
 __global__
 void
-addL0LTP(
+reorderL0LTP(
 #ifdef KERNEL_TIMING
 	unsigned long long* g_cc,
 	size_t ccPitch,
@@ -368,22 +333,22 @@ addL0LTP(
 	size_t pitch32,
 	uint32_t* g_delayBits,
 	// forward connectivity
-	uint* g_cmF,
-	size_t cmPitchF,
-	size_t cmSizeF,
+	uint* gf_cm,
+	size_t f_pitch,
+	size_t f_size,
 	// reverse connectivity
-	uint* g_cmR,
-	size_t cmPitchR,
-	size_t cmSizeR)
+	uint* gr_cm,
+	size_t r_pitch,
+	size_t r_size)
 {
-	SET_COUNTER(s_ccLTP, 0);
+	SET_COUNTER(s_ccReorderSTDP, 0);
 
 	/* The accumulated long-term potentiation is stored in a reverse-order matrix. */
 	__shared__ int s_partitionSize;
 	__shared__ int s_neuronsPerThread;
-    if(threadIdx.x == 0) {
-        s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-        s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
+	if(threadIdx.x == 0) {
+		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
 
@@ -391,120 +356,140 @@ addL0LTP(
 	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
 
-	//! \todo factor out common bits here
-	uint* g_raddress = g_cmR + RCM_ADDRESS * cmSizeR
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * cmPitchR;
-	uint* g_ltp = g_cmR + RCM_LTP * cmSizeR
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * cmPitchR;
-	float* g_weights = (float*) g_cmF + CM_WEIGHT * cmSizeF
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * cmPitchF;
+	size_t poffset = CURRENT_PARTITION * maxPartitionSize * maxDelay;
+	uint* g_raddress =       gr_cm + RCM_ADDRESS * r_size + poffset * r_pitch;
+	float* gr_ltp = (float*) gr_cm + RCM_LTP     * r_size + poffset * r_pitch;
+	float* gf_ltp = (float*) gf_cm + CM_FLTP     * f_size + poffset * f_pitch;
 
-	// load reverse delay bits
-	for(int postsynaptic=0; postsynaptic < s_partitionSize; ++postsynaptic) {
+	for(uint postsynaptic=0; postsynaptic < s_partitionSize; ++postsynaptic) {
 
 		__shared__ uint s_delayBlocks;
 		__shared__ uint32_t s_delays[MAX_DELAY];
 		setDelayBits(s_delayBits[postsynaptic], &s_delayBlocks, s_delays);
-#ifdef __DEVICE_EMULATION__
-		//! \todo return error instead here
-		assert(cmPitchR <= THREADS_PER_BLOCK);
-#endif
+
+		ASSERT(r_pitch <= THREADS_PER_BLOCK);
+
 		for(int delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
+
 			int delay = s_delays[delayIdx];
 			//! \todo make this work even if there are more threads than delays
-			if(threadIdx.x < cmPitchR) {
-				size_t g_offset = (postsynaptic * maxDelay + delay) * cmPitchR + threadIdx.x;
-				uint rsynapse = g_raddress[g_offset];
+			if(threadIdx.x < r_pitch) {
+				size_t gr_offset = (postsynaptic * maxDelay + delay) * r_pitch + threadIdx.x;
+				uint rsynapse = g_raddress[gr_offset];
 				if(rsynapse != INVALID_REVERSE_SYNAPSE) {
-					float ltp = __int_as_float(atomicExch(g_ltp + g_offset, 0));
-                    //! \todo could do just a write rather than exchange, if reward = 0
-					if(ltp != 0.0f && reward != 0.0f) {
-						uint synapseIdx = forwardIdx(rsynapse);
-						size_t weightOffset =
-							(sourceNeuron(rsynapse) * maxDelay + delay) * cmPitchF + synapseIdx;
-						float weight = g_weights[weightOffset];
-						if(weight != 0.0f) { // Once weight is 0, stay there
-							g_weights[weightOffset] = weight + ltp * reward;
-							DEBUG_MSG("stdp %+f for synapse %u -> %u\n",
-								ltp * reward, sourceNeuron(rsynapse), postsynaptic);
-						}
+
+					float ltp = gr_ltp[gr_offset];
+
+					if(ltp != 0.0f) {
+
+						size_t gf_offset 
+								= (sourceNeuron(rsynapse) * maxDelay + delay) * f_pitch 
+								+ forwardIdx(rsynapse);
+
+						gf_ltp[gf_offset] = ltp;
+						gr_ltp[gr_offset] = 0;
+
+						DEBUG_MSG("stdp %+f for synapse %u -> %u\n",
+							ltp, sourceNeuron(rsynapse), postsynaptic);
 					}
 				}
 			}
 		}
 	}
-	SET_COUNTER(s_ccLTP, 1);
-	WRITE_COUNTERS(s_ccLTP, g_cc, ccPitch, 2);
+
+	SET_COUNTER(s_ccReorderSTDP, 1);
+	WRITE_COUNTERS(s_ccReorderSTDP, g_cc, ccPitch, 2);
 }
 
 
 
-/* Check every excitatory synapse, making sure it doesn't stray outside limits.
- * This must be done after updates based on LTP and LTD to avoid synapses
- * changing from excitatory to inhibitory, and from going to extremes. */
 __global__
 void
-constrainL0Weights(
+applyL0STDP(
 #ifdef KERNEL_TIMING
 	unsigned long long* g_cc,
 	size_t ccPitch,
 #endif
+	float reward,
 	float maxWeight,
 	int maxPartitionSize, // not warp aligned
 	int maxDelay,
 	size_t pitch32,
 	uint32_t* g_delayBits,
 	uint* g_cm,
-	size_t forwardPitch,
-	size_t forwardSize)
+	size_t pitch,
+	size_t size)
 {
-	SET_COUNTER(s_ccConstrain, 0);
-	__shared__ int s_partitionSize;
-	__shared__ int s_neuronsPerThread;
+	SET_COUNTER(s_ccApplySTDP, 0);
+
+	__shared__ uint s_partitionSize;
+	__shared__ uint s_neuronsPerThread;
 	setPartitionParameters(&s_partitionSize, &s_neuronsPerThread);
 
 	/* Pre-load all delay bits, since all of it will be needed */
 	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
 
+	size_t partitionOffset = CURRENT_PARTITION * maxPartitionSize * maxDelay * pitch;
 #ifdef __DEVICE_EMULATION__
-	uint* g_postsynaptic = g_cm + CM_ADDRESS * forwardSize
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * forwardPitch;
+	uint* g_postsynaptic =      g_cm + CM_ADDRESS * size + partitionOffset;
 #endif
-	float* g_weights = (float*) g_cm + CM_WEIGHT * forwardSize
-					+ CURRENT_PARTITION * maxPartitionSize * maxDelay * forwardPitch;
+	float* g_weights = (float*) g_cm + CM_WEIGHT  * size + partitionOffset;
+	float* g_ltp     = (float*) g_cm + CM_FLTP    * size + partitionOffset;
+	float* g_ltd     = (float*) g_cm + CM_LTD     * size + partitionOffset;
 
-	for(int presynaptic=0; presynaptic<s_partitionSize; ++presynaptic) {
+	for(uint presynaptic=0; presynaptic<s_partitionSize; ++presynaptic) {
 
 		__shared__ uint s_delayBlocks;
 		__shared__ uint32_t s_delays[MAX_DELAY];
 
 		setDelayBits(s_delayBits[presynaptic], &s_delayBlocks, s_delays);
-#ifdef __DEVICE_EMULATION__
-		//! \todo return error instead here
-		assert(forwardPitch <= THREADS_PER_BLOCK);
-#endif
+		ASSERT(pitch <= THREADS_PER_BLOCK);
 
-		//! \todo deal with several delays in parallel as in L0 delivery (see also addL0LTD)
+		//! \todo deal with several delays in parallel as in L0 delivery
 		//! \todo deal with multiple chunks per delay
-		/*! \todo count how many neurons are affected. Perhaps we could use bit
-		 * vector to indicate which parts to load. */
-		for(int delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
-			int delay = s_delays[delayIdx];
+		for(uint delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
+			uint delay = s_delays[delayIdx];
+
 			//! \todo make this work even if there are more threads than delays
-			if(threadIdx.x < forwardPitch) {
-				size_t g_offset = (presynaptic * maxDelay + delay) * forwardPitch + threadIdx.x;
-				float oldWeight = g_weights[g_offset];
-				float newWeight = fmin(maxWeight, fmax(oldWeight, 0.0f));
-				/* Only modify excitatory synapses */
-				if(oldWeight > 0.0f && oldWeight != newWeight) {
-					g_weights[g_offset] = newWeight;
-					DEBUG_MSG("stdp, limited synapse %u -> %u to %f\n",
-						presynaptic, targetNeuron(g_postsynaptic[g_offset]), newWeight);
+			if(threadIdx.x < pitch) {
+
+				size_t g_offset 
+					= (presynaptic * maxDelay + delay) * pitch 
+					+ threadIdx.x;
+
+				float ltp = g_ltp[g_offset];
+				float ltd = g_ltd[g_offset];
+				float wdiff = reward * (ltp + ltd);
+
+				if(wdiff != 0.0f) {
+
+					float wold = g_weights[g_offset];
+					float wnew = fmin(maxWeight, fmax(wold + wdiff, 0.0f));
+
+					/* Only modify excitatory synapses. Also, don't modify
+					 * weight once it has reached 0. */
+					//! \todo for synapses with zero weight, don't write to accumulator in the first place
+					if(wold > 0.0f && wold != wnew) {
+						g_weights[g_offset] = wnew;
+						DEBUG_MSG("stdp, updated synapse %u -> %u to %f\n",
+							presynaptic, targetNeuron(g_postsynaptic[g_offset]), wnew);
+						//! \todo use separate trace for each partition
+						//! \todo record diff to global memory trace here
+					}
 				}
+
+				if(ltp != 0.0f) {
+					g_ltp[g_offset] = 0.0f;
+				}
+
+				if(ltd != 0.0f) {
+					g_ltd[g_offset] = 0.0f;
+				}
+
 			}
 		}
 	}
-	SET_COUNTER(s_ccConstrain, 1);
-	WRITE_COUNTERS(s_ccConstrain, g_cc, ccPitch, 2);
+	SET_COUNTER(s_ccApplySTDP, 1);
+	WRITE_COUNTERS(s_ccApplySTDP, g_cc, ccPitch, 2);
 }

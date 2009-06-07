@@ -4,9 +4,8 @@
 #ifdef KERNEL_TIMING
 __shared__ clock_t s_ccMain[CC_MAIN_COUNT];
 //! \todo don't allocate this memory if STDP not enabled
-__shared__ clock_t s_ccLTP[CC_STDP_LTP_COUNT];
-__shared__ clock_t s_ccLTD[CC_STDP_LTD_COUNT];
-__shared__ clock_t s_ccConstrain[CC_STDP_CONSTRAIN_COUNT];
+__shared__ clock_t s_ccReorderSTDP[CC_STDP_REORDER_COUNT];
+__shared__ clock_t s_ccApplySTDP[CC_STDP_APPLY_COUNT];
 #endif
 
 __device__

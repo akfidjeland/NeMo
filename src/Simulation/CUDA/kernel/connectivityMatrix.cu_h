@@ -26,10 +26,12 @@
  * \author Andreas Fidjeland
  */
 
+// forward connetivity matrices
 #define CM_ADDRESS 0
 #define CM_WEIGHT 1
 #define CM_LTD 2
-#define CM_SUBMATRICES 3
+#define CM_FLTP 3 // LTP accumulation in forward order
+#define CM_SUBMATRICES 4
 
 // reverse connectivity
 #define RCM_ADDRESS 0

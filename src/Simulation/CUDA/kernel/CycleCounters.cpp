@@ -10,9 +10,8 @@
 
 CycleCounters::CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpEnabled) :
 	m_ccMain(partitionCount, CC_MAIN_COUNT-1, true),
-	m_ccLTP(partitionCount, 1, stdpEnabled),
-	m_ccLTD(partitionCount, 1, stdpEnabled),
-	m_ccConstrain(partitionCount, 1, stdpEnabled),
+	m_ccReorderSTDP(partitionCount, 1, stdpEnabled),
+	m_ccApplySTDP(partitionCount, 1, stdpEnabled),
 	m_partitionCount(partitionCount),
 	m_clockRateKHz(clockRateKHz),
 	m_stdpEnabled(stdpEnabled)
@@ -63,19 +62,19 @@ CycleCounters::printCounterSet(
 	//! \todo average over all partitions
 	/* The data return by copyFromDevice is the raw device data, including any
 	 * padding. Using cc.end() would therefore read too far */ 
-	std::vector<unsigned long long>::const_iterator end = cc.begin() + counters-1;
+	std::vector<unsigned long long>::const_iterator end = cc.begin() + counters;
 	unsigned long long totalCycles = std::accumulate(cc.begin(), end, 0);
 
 	printLine(setName, totalCycles, totalCycles, m_clockRateKHz, outfile);
 	outfile << std::endl;
 
-	for(std::vector<unsigned long long>::const_iterator i=cc.begin(); i != end; ++i) {
-		unsigned long long cycles = *i;
-		printLine(names[i-cc.begin()], cycles, totalCycles, m_clockRateKHz, outfile);
-	}
-
-	if(cc.begin() != end)
+	if(names != NULL) {
+		for(std::vector<unsigned long long>::const_iterator i=cc.begin(); i != end; ++i) {
+			unsigned long long cycles = *i;
+			printLine(names[i-cc.begin()], cycles, totalCycles, m_clockRateKHz, outfile);
+		}
 		outfile << std::endl;
+	}
 }
 
 
@@ -85,11 +84,10 @@ CycleCounters::printCounters(const char* filename)
 {
 	std::ofstream outfile;
 	outfile.open(filename);
-	printCounterSet(m_ccMain, CC_MAIN_COUNT, "Main", durationNames, outfile);
+	printCounterSet(m_ccMain, CC_MAIN_COUNT-1, "Main", durationNames, outfile);
 	if(m_stdpEnabled) {
-		printCounterSet(m_ccLTP, 1, "STDP (LTP)", NULL, outfile);
-		printCounterSet(m_ccLTD, 1, "STDP (LTD)", NULL, outfile);
-		printCounterSet(m_ccConstrain, 1, "STDP (constrain)", NULL, outfile);
+		printCounterSet(m_ccReorderSTDP, 1, "STDP (reorder)", NULL, outfile);
+		printCounterSet(m_ccApplySTDP, 1, "STDP (apply)", NULL, outfile);
 	}
 	outfile.close();
 }

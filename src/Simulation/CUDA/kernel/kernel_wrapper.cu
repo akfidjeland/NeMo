@@ -177,66 +177,70 @@ step(	ushort cycle,
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(rtdata->partitionCount);
 
-	if(rtdata->usingSTDP() && applySTDP) {
-        //! \todo deal especially with the case where reward=0, can do this faster
-
-        /* Potentation and depression are handled separately due to different
-         * traversal order. However, the order here is important; We want to
-         * clamp the weight values at some maximum and minimum, and these can
-         * only be set once both potentiation and depression have been
-         * considered (done in LTP). We *could* do this clamping in a separate
-         * stage for clarity, but would have to pay for this by doing another
-         * whole iteration throught the connectivity matrix. */
-		addL0LTD<<<dimGrid, dimBlock>>>(
-#ifdef KERNEL_TIMING
-				rtdata->cycleCounters->dataLTD(),
-				rtdata->cycleCounters->pitchLTD(),
-#endif
-				stdpReward,
-				rtdata->maxPartitionSize,
-				rtdata->maxDelay(),
-				rtdata->pitch32(),
-				rtdata->cm(CM_L0)->deviceDelayBits(),
-				rtdata->cm(CM_L0)->deviceSynapsesD(),
-				rtdata->cm(CM_L0)->synapsePitchD(),
-				rtdata->cm(CM_L0)->submatrixSize());
-        addL0LTP<<<dimGrid, dimBlock>>>(
-#ifdef KERNEL_TIMING
-				rtdata->cycleCounters->dataLTP(),
-				rtdata->cycleCounters->pitchLTP(),
-#endif
-                stdpReward,
-                rtdata->maxPartitionSize,
-                rtdata->maxDelay(),
-                rtdata->pitch32(),
-                rtdata->cm(CM_L0)->arrivalBits(),
-                rtdata->cm(CM_L0)->deviceSynapsesD(),
-                rtdata->cm(CM_L0)->synapsePitchD(),
-                rtdata->cm(CM_L0)->submatrixSize(),
-                rtdata->cm(CM_L0)->reverseConnectivity(),
-                rtdata->cm(CM_L0)->reversePitch(),
-                rtdata->cm(CM_L0)->reverseSubmatrixSize());
-		if(stdpReward != 0.0f) {
-			constrainL0Weights<<<dimGrid, dimBlock>>>(
-#ifdef KERNEL_TIMING
-				rtdata->cycleCounters->dataConstrain(),
-				rtdata->cycleCounters->pitchConstrain(),
-#endif
-				rtdata->stdpMaxWeight(),
-				rtdata->maxPartitionSize,
-                rtdata->maxDelay(),
-				rtdata->pitch32(),
-				rtdata->cm(CM_L0)->deviceDelayBits(),
-				rtdata->cm(CM_L0)->deviceSynapsesD(),
-				rtdata->cm(CM_L0)->synapsePitchD(),
-				rtdata->cm(CM_L0)->submatrixSize());
-		}
-	}
-
 #ifdef VERBOSE
 	static uint scycle = 0;
 	fprintf(stdout, "cycle %u/%u\n", scycle++, rtdata->stdpCycle());
 #endif
+
+	//! \todo factor out the whole STDP computation
+	if(rtdata->usingSTDP() && applySTDP) {
+		if(stdpReward == 0.0f) {
+			// LTP (reverse)
+			clearSTDPAccumulator<<<dimGrid, dimBlock>>>(
+					rtdata->maxPartitionSize,
+					rtdata->maxDelay(),
+					rtdata->cm(CM_L0)->arrivalBits(),
+					rtdata->pitch32(),
+					(float*) rtdata->cm(CM_L0)->reverseConnectivity() + RCM_LTP * rtdata->cm(CM_L0)->submatrixSize(),
+					rtdata->cm(CM_L0)->reversePitch(),
+					rtdata->cm(CM_L0)->reverseSubmatrixSize());
+
+			// LTD (forward)
+			clearSTDPAccumulator<<<dimGrid, dimBlock>>>(
+					rtdata->maxPartitionSize,
+					rtdata->maxDelay(),
+					//! \todo consistent naming (with arrivalBits)
+					rtdata->cm(CM_L0)->deviceDelayBits(),
+					rtdata->pitch32(),
+					//! \todo consistent naming (with reverseConnectivity)
+					(float*) rtdata->cm(CM_L0)->deviceSynapsesD() + CM_LTD * rtdata->cm(CM_L0)->submatrixSize(),
+					//! \todo consistent naming (with reversePitch)
+					rtdata->cm(CM_L0)->synapsePitchD(),
+					rtdata->cm(CM_L0)->submatrixSize());
+			} else  {
+				reorderL0LTP<<<dimGrid, dimBlock>>>(
+#ifdef KERNEL_TIMING
+						rtdata->cycleCounters->dataReorderSTDP(),
+						rtdata->cycleCounters->pitchReorderSTDP(),
+#endif
+						stdpReward,
+						rtdata->maxPartitionSize,
+						rtdata->maxDelay(),
+						rtdata->pitch32(),
+						rtdata->cm(CM_L0)->arrivalBits(),
+						rtdata->cm(CM_L0)->deviceSynapsesD(),
+						rtdata->cm(CM_L0)->synapsePitchD(),
+						rtdata->cm(CM_L0)->submatrixSize(),
+						rtdata->cm(CM_L0)->reverseConnectivity(),
+						rtdata->cm(CM_L0)->reversePitch(),
+						rtdata->cm(CM_L0)->reverseSubmatrixSize());
+
+				applyL0STDP<<<dimGrid, dimBlock>>>(
+#ifdef KERNEL_TIMING
+						rtdata->cycleCounters->dataApplySTDP(),
+						rtdata->cycleCounters->pitchApplySTDP(),
+#endif
+						stdpReward,
+						rtdata->stdpMaxWeight(),
+						rtdata->maxPartitionSize,
+						rtdata->maxDelay(),
+						rtdata->pitch32(),
+						rtdata->cm(CM_L0)->deviceDelayBits(),
+						rtdata->cm(CM_L0)->deviceSynapsesD(),
+						rtdata->cm(CM_L0)->synapsePitchD(),
+						rtdata->cm(CM_L0)->submatrixSize());
+			}
+	}
 
 	uint32_t* d_extFiring = 
 		rtdata->setFiringStimulus(extFiringCount, extFiringCIdx, extFiringNIdx);

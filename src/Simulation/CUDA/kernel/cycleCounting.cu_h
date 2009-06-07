@@ -12,8 +12,7 @@
 
 #define CC_MAIN_COUNT 10
 //! \todo just make this a default
-#define CC_STDP_LTP_COUNT 2
-#define CC_STDP_LTD_COUNT 2
-#define CC_STDP_CONSTRAIN_COUNT 2
+#define CC_STDP_REORDER_COUNT 2
+#define CC_STDP_APPLY_COUNT 2
 
 #endif
