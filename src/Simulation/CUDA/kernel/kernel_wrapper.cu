@@ -154,13 +154,82 @@ configureDevice(RTDATA rtdata)
 
 
 
+
+/*! Clear STDP accumulators for a connectivity matrix */
+__host__
+void
+clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
+{
+	// LTP (reverse order)
+	clearSTDPAccumulator_<<<dimGrid, dimBlock>>>(
+			rtdata->maxPartitionSize,
+			rtdata->maxDelay(),
+			rtdata->cm(cmIdx)->arrivalBits(),
+			rtdata->pitch32(),
+			(float*) rtdata->cm(cmIdx)->reverseConnectivity() + RCM_LTP * rtdata->cm(cmIdx)->submatrixSize(),
+			rtdata->cm(cmIdx)->reversePitch(),
+			rtdata->cm(cmIdx)->reverseSubmatrixSize());
+
+	// LTD (forward order)
+	clearSTDPAccumulator_<<<dimGrid, dimBlock>>>(
+			rtdata->maxPartitionSize,
+			rtdata->maxDelay(),
+			//! \todo consistent naming (with arrivalBits)
+			rtdata->cm(cmIdx)->deviceDelayBits(),
+			rtdata->pitch32(),
+			//! \todo consistent naming (with reverseConnectivity)
+			(float*) rtdata->cm(cmIdx)->deviceSynapsesD() + CM_LTD * rtdata->cm(cmIdx)->submatrixSize(),
+			//! \todo consistent naming (with reversePitch)
+			rtdata->cm(cmIdx)->synapsePitchD(),
+			rtdata->cm(cmIdx)->submatrixSize());
+}
+
+
+
+__host__
+void
+applySTDP(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx, float reward)
+{
+	reorderLTP_<<<dimGrid, dimBlock>>>(
+#ifdef KERNEL_TIMING
+			rtdata->cycleCounters->dataReorderSTDP(),
+			rtdata->cycleCounters->pitchReorderSTDP(),
+#endif
+			rtdata->maxPartitionSize,
+			rtdata->maxDelay(),
+			rtdata->pitch32(),
+			rtdata->cm(cmIdx)->arrivalBits(),
+			rtdata->cm(cmIdx)->deviceSynapsesD(),
+			rtdata->cm(cmIdx)->synapsePitchD(),
+			rtdata->cm(cmIdx)->submatrixSize(),
+			rtdata->cm(cmIdx)->reverseConnectivity(),
+			rtdata->cm(cmIdx)->reversePitch(),
+			rtdata->cm(cmIdx)->reverseSubmatrixSize());
+
+	applySTDP_<<<dimGrid, dimBlock>>>(
+#ifdef KERNEL_TIMING
+			rtdata->cycleCounters->dataApplySTDP(),
+			rtdata->cycleCounters->pitchApplySTDP(),
+#endif
+			reward,
+			rtdata->stdpMaxWeight(),
+			rtdata->maxPartitionSize,
+			rtdata->maxDelay(),
+			rtdata->pitch32(),
+			rtdata->cm(cmIdx)->deviceDelayBits(),
+			rtdata->cm(cmIdx)->deviceSynapsesD(),
+			rtdata->cm(cmIdx)->synapsePitchD(),
+			rtdata->cm(cmIdx)->submatrixSize());
+}
+
+
 /*! Wrapper for the __global__ call that performs a single simulation step */
 __host__
 status_t
 step(	ushort cycle,
         //! \todo make all these unsigned
 		int substeps,
-		int applySTDP,
+		int doApplySTDP,
 		float stdpReward,
 		// External firing (sparse)
 		size_t extFiringCount,
@@ -182,64 +251,12 @@ step(	ushort cycle,
 	fprintf(stdout, "cycle %u/%u\n", scycle++, rtdata->stdpCycle());
 #endif
 
-	//! \todo factor out the whole STDP computation
-	if(rtdata->usingSTDP() && applySTDP) {
+	if(rtdata->usingSTDP() && doApplySTDP) {
 		if(stdpReward == 0.0f) {
-			// LTP (reverse)
-			clearSTDPAccumulator<<<dimGrid, dimBlock>>>(
-					rtdata->maxPartitionSize,
-					rtdata->maxDelay(),
-					rtdata->cm(CM_L0)->arrivalBits(),
-					rtdata->pitch32(),
-					(float*) rtdata->cm(CM_L0)->reverseConnectivity() + RCM_LTP * rtdata->cm(CM_L0)->submatrixSize(),
-					rtdata->cm(CM_L0)->reversePitch(),
-					rtdata->cm(CM_L0)->reverseSubmatrixSize());
-
-			// LTD (forward)
-			clearSTDPAccumulator<<<dimGrid, dimBlock>>>(
-					rtdata->maxPartitionSize,
-					rtdata->maxDelay(),
-					//! \todo consistent naming (with arrivalBits)
-					rtdata->cm(CM_L0)->deviceDelayBits(),
-					rtdata->pitch32(),
-					//! \todo consistent naming (with reverseConnectivity)
-					(float*) rtdata->cm(CM_L0)->deviceSynapsesD() + CM_LTD * rtdata->cm(CM_L0)->submatrixSize(),
-					//! \todo consistent naming (with reversePitch)
-					rtdata->cm(CM_L0)->synapsePitchD(),
-					rtdata->cm(CM_L0)->submatrixSize());
-			} else  {
-				reorderL0LTP<<<dimGrid, dimBlock>>>(
-#ifdef KERNEL_TIMING
-						rtdata->cycleCounters->dataReorderSTDP(),
-						rtdata->cycleCounters->pitchReorderSTDP(),
-#endif
-						stdpReward,
-						rtdata->maxPartitionSize,
-						rtdata->maxDelay(),
-						rtdata->pitch32(),
-						rtdata->cm(CM_L0)->arrivalBits(),
-						rtdata->cm(CM_L0)->deviceSynapsesD(),
-						rtdata->cm(CM_L0)->synapsePitchD(),
-						rtdata->cm(CM_L0)->submatrixSize(),
-						rtdata->cm(CM_L0)->reverseConnectivity(),
-						rtdata->cm(CM_L0)->reversePitch(),
-						rtdata->cm(CM_L0)->reverseSubmatrixSize());
-
-				applyL0STDP<<<dimGrid, dimBlock>>>(
-#ifdef KERNEL_TIMING
-						rtdata->cycleCounters->dataApplySTDP(),
-						rtdata->cycleCounters->pitchApplySTDP(),
-#endif
-						stdpReward,
-						rtdata->stdpMaxWeight(),
-						rtdata->maxPartitionSize,
-						rtdata->maxDelay(),
-						rtdata->pitch32(),
-						rtdata->cm(CM_L0)->deviceDelayBits(),
-						rtdata->cm(CM_L0)->deviceSynapsesD(),
-						rtdata->cm(CM_L0)->synapsePitchD(),
-						rtdata->cm(CM_L0)->submatrixSize());
-			}
+			clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L0);
+		} else  {
+			applySTDP(dimGrid, dimBlock, rtdata, CM_L0, stdpReward);
+		}
 	}
 
 	uint32_t* d_extFiring = 
@@ -255,6 +272,7 @@ step(	ushort cycle,
 				rtdata->stdpCycle(),
 				rtdata->cm(CM_L0)->reverseConnectivity(),
 				rtdata->cm(CM_L0)->arrivalBits(),
+				rtdata->cm(CM_L1)->arrivalBits(),
 				// neuron parameters
 				rtdata->neuronParameters->deviceData(),
 				rtdata->thalamicInput->deviceRngState(),

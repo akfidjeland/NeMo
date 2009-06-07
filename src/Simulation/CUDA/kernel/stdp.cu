@@ -267,7 +267,7 @@ setPartitionParameters(uint* s_partitionSize, uint* s_neuronsPerThread)
 
 __global__
 void
-clearSTDPAccumulator(
+clearSTDPAccumulator_(
 		uint maxPartitionSize,
 		uint maxDelay,
 		// Delay bits
@@ -322,12 +322,11 @@ clearSTDPAccumulator(
  */
 __global__
 void
-reorderL0LTP(
+reorderLTP_(
 #ifdef KERNEL_TIMING
 	unsigned long long* g_cc,
 	size_t ccPitch,
 #endif
-    float reward,
 	int maxPartitionSize,
 	int maxDelay,
 	size_t pitch32,
@@ -403,9 +402,13 @@ reorderL0LTP(
 
 
 
+
+/*! Apply STDP, i.e. modify synapses using the accumulated LTP and LTD statistics, 
+ * modulated by reward. Synapse weights are limited to [0, maxWeight]. Synapses
+ * which are already 0, are not potentiated */
 __global__
 void
-applyL0STDP(
+applySTDP_(
 #ifdef KERNEL_TIMING
 	unsigned long long* g_cc,
 	size_t ccPitch,
