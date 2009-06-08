@@ -282,6 +282,8 @@ STDP_FN(deliverL0Spikes)(
 						//! \todo check for off-by-one errors here
 						int dt = __ffs(s_recentFiring[postsynaptic]);
 
+						/*! \todo perhaps we should only apply depression once,
+						 * for first incoming of postsynaptic firing? */
 						//! \todo make sure we only modify excitatory
 						if(s_recentFiring[postsynaptic] && abs(dt) < s_stdpTauD) {
 							g_ltd[synapseAddress] -= depression(dt);
@@ -356,7 +358,7 @@ STDP_FN(step) (
 		uint stdpCycle,
 		uint* g_cm0R,
 		uint32_t* g_arrivalDelaysL0,
-		//uint32_t* g_arrivalDelaysL1,
+		uint32_t* g_arrivalDelaysL1,
 #endif
 		// neuron state
 		float* g_neuronParameters,

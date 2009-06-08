@@ -188,7 +188,12 @@ clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
 
 __host__
 void
-applySTDP(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx, float reward)
+applySTDP(dim3 dimGrid,
+		dim3 dimBlock,
+		RTDATA rtdata,
+		uint cmIdx,
+		float reward,
+		bool trace)
 {
 	reorderLTP_<<<dimGrid, dimBlock>>>(
 #ifdef KERNEL_TIMING
@@ -206,6 +211,10 @@ applySTDP(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx, float reward)
 			rtdata->cm(cmIdx)->reversePitch(),
 			rtdata->cm(cmIdx)->reverseSubmatrixSize());
 
+	if(trace) {
+		rtdata->cm(cmIdx)->clearSTDPTrace();
+	}
+
 	applySTDP_<<<dimGrid, dimBlock>>>(
 #ifdef KERNEL_TIMING
 			rtdata->cycleCounters->dataApplySTDP(),
@@ -219,7 +228,8 @@ applySTDP(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx, float reward)
 			rtdata->cm(cmIdx)->deviceDelayBits(),
 			rtdata->cm(cmIdx)->deviceSynapsesD(),
 			rtdata->cm(cmIdx)->synapsePitchD(),
-			rtdata->cm(cmIdx)->submatrixSize());
+			rtdata->cm(cmIdx)->submatrixSize(),
+			trace);
 }
 
 
@@ -255,7 +265,7 @@ step(	ushort cycle,
 		if(stdpReward == 0.0f) {
 			clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L0);
 		} else  {
-			applySTDP(dimGrid, dimBlock, rtdata, CM_L0, stdpReward);
+			applySTDP(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);
 		}
 	}
 

@@ -107,6 +107,7 @@ updateLTP(
 	// forward connectivity
 	uint* g_cmF, size_t cmPitchF, size_t cmSizeF,
 	uint16_t* s_firingIdx,
+	//! \todo change to uint?
 	int s_firingCount,
 	uint32_t* s_recentArrivals,
 	uint32_t* g_arrivalDelays)
@@ -115,6 +116,7 @@ updateLTP(
 	 * cluster. It should be possible to reduce this for rows with few
 	 * entries. Perhaps better to just save the number of chunks in
 	 * constant memory. It would depend on the chunk size, though. */
+	//! \todo change to uint
 	__shared__ int s_chunkCount;
 	__shared__ int s_synapsesPerDelay;
 	__shared__ int s_delaysPerChunk;
@@ -421,7 +423,8 @@ applySTDP_(
 	uint32_t* g_delayBits,
 	uint* g_cm,
 	size_t pitch,
-	size_t size)
+	size_t size,
+	bool recordTrace)
 {
 	SET_COUNTER(s_ccApplySTDP, 0);
 
@@ -437,9 +440,10 @@ applySTDP_(
 #ifdef __DEVICE_EMULATION__
 	uint* g_postsynaptic =      g_cm + CM_ADDRESS * size + partitionOffset;
 #endif
-	float* g_weights = (float*) g_cm + CM_WEIGHT  * size + partitionOffset;
-	float* g_ltp     = (float*) g_cm + CM_FLTP    * size + partitionOffset;
-	float* g_ltd     = (float*) g_cm + CM_LTD     * size + partitionOffset;
+	float* g_weights = (float*) g_cm + CM_WEIGHT     * size + partitionOffset;
+	float* g_ltp     = (float*) g_cm + CM_FLTP       * size + partitionOffset;
+	float* g_ltd     = (float*) g_cm + CM_LTD        * size + partitionOffset;
+	uint* g_trace    =          g_cm + CM_STDP_TRACE * size + partitionOffset;
 
 	for(uint presynaptic=0; presynaptic<s_partitionSize; ++presynaptic) {
 
@@ -463,22 +467,24 @@ applySTDP_(
 
 				float ltp = g_ltp[g_offset];
 				float ltd = g_ltd[g_offset];
-				float wdiff = reward * (ltp + ltd);
+				float w_diff = reward * (ltp + ltd);
 
-				if(wdiff != 0.0f) {
+				if(w_diff != 0.0f) {
 
-					float wold = g_weights[g_offset];
-					float wnew = fmin(maxWeight, fmax(wold + wdiff, 0.0f));
+					float w_old = g_weights[g_offset];
+					float w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
 
 					/* Only modify excitatory synapses. Also, don't modify
 					 * weight once it has reached 0. */
 					//! \todo for synapses with zero weight, don't write to accumulator in the first place
-					if(wold > 0.0f && wold != wnew) {
-						g_weights[g_offset] = wnew;
+					if(w_old > 0.0f && w_old != w_new) {
+						g_weights[g_offset] = w_new;
 						DEBUG_MSG("stdp, updated synapse %u -> %u to %f\n",
-							presynaptic, targetNeuron(g_postsynaptic[g_offset]), wnew);
-						//! \todo use separate trace for each partition
-						//! \todo record diff to global memory trace here
+							presynaptic, targetNeuron(g_postsynaptic[g_offset]), w_new);
+
+						if(recordTrace) {
+							g_trace[g_offset] = __float_as_int(w_new);
+						}
 					}
 				}
 

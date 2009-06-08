@@ -27,7 +27,7 @@ typedef int status_t;
 
 /*! Set per-partition configuration parameter specifying the number of neurons
  * in that partition. */
-void configurePartitionSize(size_t clusters, const int* maxIdx);
+void configurePartitionSize(size_t clusters, const unsigned int* maxIdx);
 
 
 /*! \return the maximum partition size, for the given configuration */

@@ -24,7 +24,7 @@ setConfigArray flags cast configure = do
 
 
 foreign import ccall unsafe "configurePartitionSize"
-    c_configurePartitionSize :: CSize -> Ptr CInt -> IO ()
+    c_configurePartitionSize :: CSize -> Ptr CUInt -> IO ()
 
 configurePartitionSize :: CuNet n s -> IO ()
 configurePartitionSize net =

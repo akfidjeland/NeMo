@@ -64,6 +64,9 @@ struct SMatrix
 		/*! Copy entire host buffer to the device */
 		void copyToDevice();
 
+		/*! Copy single submatrix from device to host. Return pointer to data */
+		void copyToHost(size_t submatrix);
+
 		/*! Clear the host buffer */
 		void clearHostBuffer();
 
@@ -75,9 +78,18 @@ struct SMatrix
 
         T* deviceData() const;
 
-		/*! Set default value (in host buffer) for specific submatrix (the
-		 * default is 0) */
+		/*! Set default value (in host buffer) for specific submatrix */
 		void fillHostBuffer(const T& val, size_t submatrix=0);
+
+		/*! Set default value (in device buffer) for specific submatrix */
+		void fillDeviceBuffer(const T& val, size_t submatrix=0);
+
+		/*! Look up data on the host */
+		const T& h_lookup(size_t sourcePartition,
+				size_t sourceNeuron,
+				size_t delay,
+				size_t synapseIndex,
+				size_t submatrix=0) const;
 
 	private :
 
@@ -92,6 +104,8 @@ struct SMatrix
 		size_t m_partitionCount;
 
 		size_t m_maxPartitionSize;
+
+        size_t m_maxSynapsesPerDelay;
 
         size_t m_maxDelay;
 

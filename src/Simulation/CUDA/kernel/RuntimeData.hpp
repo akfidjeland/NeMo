@@ -80,8 +80,8 @@ struct RuntimeData
 
 	bool usingSTDP() const;
 
-	//! \see enableStdp
-	void enableStdp(int tauP, int tauD, 
+	//! \see ::enableSTDP
+	void enableSTDP(int tauP, int tauD,
 			float alphaP, float alphaD, float maxWeight);
 
     float stdpMaxWeight() const;

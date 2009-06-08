@@ -15,7 +15,8 @@ SMatrix<T>::SMatrix(
 	m_deviceData(NULL),
 	m_partitionCount(partitionCount),
 	m_maxPartitionSize(maxPartitionSize),
-    m_maxDelay(maxDelay),
+	m_maxSynapsesPerDelay(maxSynapsesPerDelay),
+	m_maxDelay(maxDelay),
 	m_pitch(0),
 	m_submatrixCount(submatrixCount)
 {
@@ -92,7 +93,7 @@ void
 SMatrix<T>::copyToDevice()
 {
     assert(m_submatrixCount * size() <= m_hostData.size());
-    //! \todo add back exceptions
+    //! \todo add back exceptions (requires CUDA 2.2)
 #if 0
 	if(size() > m_hostData.size()) {
 		throw std::logic_error("Attempt to copy Insuffient host data to device");
@@ -105,6 +106,32 @@ SMatrix<T>::copyToDevice()
 				&m_hostData[0],
 				bytes(),
 				cudaMemcpyHostToDevice));
+}
+
+
+
+
+template<typename T>
+void
+SMatrix<T>::copyToHost(size_t submatrix)
+{
+    assert(!m_hostData.empty());
+    //! \todo add assertions
+    //if(m_hostData.empty()) {
+    //    throw std::logic_error("Attempt to copy from device to empty host vector");
+    //}
+    //! \todo add bounds testing
+    assert(submatrix < m_submatrixCount);
+    size_t pitch = m_pitch * sizeof(T);
+    T* hostData = &m_hostData[submatrix * size()];
+    //CUDA_SAFE_CALL( // nvcc chokes with "closing brace of template definition not found" if CUDA_SAFE_CALL is used
+            cudaMemcpy2D(
+                hostData, pitch,
+                m_deviceData + submatrix * size(), pitch,
+                pitch,  // width
+                m_partitionCount * m_maxPartitionSize * m_maxDelay,
+                cudaMemcpyDeviceToHost //)
+                );
 }
 
 
@@ -150,6 +177,16 @@ SMatrix<T>::offset(
             + sourceNeuron * m_maxDelay * delayPitch()
             + (delay-1) * delayPitch()
             + synapseIndex;
+}
+
+
+
+template<typename T>
+const T&
+SMatrix<T>::h_lookup(size_t srcp,
+        size_t srcn, size_t delay, size_t sidx, size_t submatrix) const
+{
+    return m_hostData[offset(srcp, srcn, delay, sidx, submatrix)];
 }
 
 
@@ -209,8 +246,23 @@ SMatrix<T>::addSynapse(
 
 template<typename T>
 void
-SMatrix<T>::fillHostBuffer(const T& val, size_t submatrix)
+SMatrix<T>::fillHostBuffer(const T& value, size_t submatrix)
 {
 	typename std::vector<T>::iterator b = m_hostData.begin() + submatrix * size();
-	std::fill(b, b + size(), val);
+	std::fill(b, b + size(), value);
+}
+
+
+template<typename T>
+void
+SMatrix<T>::fillDeviceBuffer(const T& value, size_t submatrix)
+{
+    CUDA_SAFE_CALL(
+        cudaMemset2D(
+            m_deviceData + submatrix * size(),
+            m_pitch,
+            value,
+            m_maxSynapsesPerDelay,
+            m_partitionCount * m_maxPartitionSize * m_maxDelay);
+    );
 }

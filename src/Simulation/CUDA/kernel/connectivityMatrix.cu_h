@@ -29,13 +29,14 @@
 // forward connetivity matrices
 #define CM_ADDRESS 0
 #define CM_WEIGHT 1
-#define CM_LTD 2
-#define CM_FLTP 3 // LTP accumulation in forward order
-#define CM_SUBMATRICES 4
+#define CM_LTD 2           // LTD accumulation in forward order
+#define CM_FLTP 3          // LTP accumulation in forward order
+#define CM_STDP_TRACE 4    // recording of every synapse (weight) with modifications
+#define CM_SUBMATRICES 5
 
 // reverse connectivity
 #define RCM_ADDRESS 0
-#define RCM_LTP 1
+#define RCM_LTP 1          // LTP accumulation in reverse order
 #define RCM_SUBMATRICES 2
 
 __host__ uint packSynapse(uint partition, uint neuron);

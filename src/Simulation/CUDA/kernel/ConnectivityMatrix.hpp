@@ -20,12 +20,12 @@ struct ConnectivityMatrix
 
 		/* Set row in delay-partitioned matrix */
 		void setDRow(
-				unsigned int sourcePartition,
-				unsigned int sourceNeuron,
-				unsigned int delay,
+				uint sourcePartition,
+				uint sourceNeuron,
+				uint delay,
 				const float* weights,
-				const unsigned int* targetPartition,
-				const unsigned int* targetNeuron,
+				const uint* targetPartition,
+				const uint* targetNeuron,
 				size_t length);
 
 		/* Copy data to device and clear host buffers */
@@ -42,7 +42,7 @@ struct ConnectivityMatrix
 
 		uint32_t* deviceDelayBits() const;
 
-		const std::vector<int>& maxSynapsesPerDelay() const;
+		const std::vector<uint>& maxSynapsesPerDelay() const;
 
 		/* REVERSE CONNECTIVITY */
 
@@ -57,7 +57,13 @@ struct ConnectivityMatrix
 
 		uint32_t* arrivalBits() const;
 
-		const std::vector<int>& maxReverseSynapsesPerDelay() const;
+		const std::vector<uint>& maxReverseSynapsesPerDelay() const;
+
+		/*! Clear device data structure for tracing STDP. This should be done
+		 * before every STDP application, if the trace will be used later. */
+		void clearSTDPTrace();
+
+		void printSTDPTrace();
 
 	private:
 
@@ -77,8 +83,8 @@ struct ConnectivityMatrix
 
 		/* As we fill the matrix, we accumulate per-partition statistics which
 		 * can be used for later configuration */
-		std::vector<int> m_maxSynapsesPerDelay;
-		std::vector<int> m_maxReverseSynapsesPerDelay;
+		std::vector<uint> m_maxSynapsesPerDelay;
+		std::vector<uint> m_maxReverseSynapsesPerDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and (dynamic) spike arrival time */

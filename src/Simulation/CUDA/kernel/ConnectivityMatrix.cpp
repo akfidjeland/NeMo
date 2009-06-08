@@ -100,12 +100,12 @@ ConnectivityMatrix::reversePitch() const
 /* Set row in delay-partitioned matrix */
 void
 ConnectivityMatrix::setDRow(
-        unsigned int sourcePartition,
-        unsigned int sourceNeuron,
-        unsigned int delay,
+        uint sourcePartition,
+        uint sourceNeuron,
+        uint delay,
         const float* weights,
-        const unsigned int* targetPartition,
-        const unsigned int* targetNeuron,
+        const uint* targetPartition,
+        const uint* targetNeuron,
         size_t length)
 {
     if(length == 0)
@@ -138,7 +138,7 @@ ConnectivityMatrix::setDRow(
 					delay,
 					packReverseSynapse(sourcePartition, sourceNeuron, i));
 			m_maxReverseSynapsesPerDelay[targetPartition[i]] =
-				std::max(m_maxReverseSynapsesPerDelay[targetPartition[i]], (int) rlen);
+				std::max(m_maxReverseSynapsesPerDelay[targetPartition[i]], (uint) rlen);
 			uint32_t arrivalBits = m_arrivalBits.getNeuron(targetPartition[i], targetNeuron[i]);
 			arrivalBits |= 0x1 << (delay-1);
 			m_arrivalBits.setNeuron(targetPartition[i], targetNeuron[i], arrivalBits);
@@ -156,7 +156,7 @@ ConnectivityMatrix::setDRow(
 
 	m_maxDelay = std::max(m_maxDelay, delay);
 	m_maxSynapsesPerDelay[sourcePartition] =
-		std::max(m_maxSynapsesPerDelay[sourcePartition], (int) length);
+		std::max(m_maxSynapsesPerDelay[sourcePartition], (uint) length);
 }
 
 
@@ -164,22 +164,69 @@ void
 ConnectivityMatrix::moveToDevice()
 {
 	m_delayBits.moveToDevice();
-	m_synapses.moveToDevice();
+	/* The forward connectivity is retained as the address and weight data are
+	 * needed if we do STDP tracing (along with the trace matrix itself). */
+	m_synapses.copyToDevice();
 	m_arrivalBits.moveToDevice();
 	m_reverse.moveToDevice();
 }
 
 
 
-const std::vector<int>&
+const std::vector<uint>&
 ConnectivityMatrix::maxSynapsesPerDelay() const
 {
 	return m_maxSynapsesPerDelay;
 }
 
 
-const std::vector<int>&
+const std::vector<uint>&
 ConnectivityMatrix::maxReverseSynapsesPerDelay() const
 {
 	return m_maxReverseSynapsesPerDelay;
+}
+
+
+
+void
+ConnectivityMatrix::clearSTDPTrace()
+{
+    m_synapses.fillDeviceBuffer(0, CM_STDP_TRACE);
+}
+
+//! \todo use this type in connectivityMatrix.cu
+typedef union
+{
+    uint32_t dword_value;
+    float float_value;
+} synapse_t;
+
+
+void
+ConnectivityMatrix::printSTDPTrace()
+{
+    m_synapses.copyToHost(CM_STDP_TRACE);
+    for(uint sourcePartition=0; sourcePartition<m_partitionCount; ++sourcePartition) {
+        //! \todo could speed up traversal by using delay bits and max pitch
+        for(uint sourceNeuron=0; sourceNeuron<m_maxPartitionSize; ++sourceNeuron) {
+            for(uint delay=1; delay<=m_maxDelay; ++delay) {
+                size_t pitch = m_synapses.delayPitch();
+                //for(uint synapseIdx=0; synapseIdx<m_maxSynapsesPerDelay[sourcePartition]; ++synapseIdx)
+                for(uint synapseIdx=0; synapseIdx<pitch; ++synapseIdx) 
+                {
+                    synapse_t w_tmp;
+                    w_tmp.dword_value = m_synapses.h_lookup(sourcePartition, sourceNeuron, delay,
+                            synapseIdx, CM_STDP_TRACE);
+                    float w = w_tmp.float_value;
+                    if(w != 0.0f) {
+                        uint synapse = m_synapses.h_lookup(sourcePartition,
+                                        sourceNeuron, delay, synapseIdx, CM_ADDRESS);
+                        fprintf(stderr, "STDP: weight[%u-%u -> %u-%u] = %f\n",
+                                sourcePartition, sourceNeuron,
+                                targetPartition(synapse), targetNeuron(synapse), w);
+                    }
+                }
+            }
+        }
+    }
 }

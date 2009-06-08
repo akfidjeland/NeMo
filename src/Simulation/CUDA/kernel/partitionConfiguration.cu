@@ -94,35 +94,35 @@ loadNetworkParameters()
 
 /* Per-partition configuration */
 
-__constant__ int c_maxL0SynapsesPerDelay    [MAX_THREAD_BLOCKS];
-__constant__ int c_maxL0RevSynapsesPerDelay [MAX_THREAD_BLOCKS];
-__constant__ int c_maxL1SynapsesPerDelay    [MAX_THREAD_BLOCKS];
-__constant__ int c_maxL1RevSynapsesPerDelay [MAX_THREAD_BLOCKS];
+__constant__ uint c_maxL0SynapsesPerDelay    [MAX_THREAD_BLOCKS];
+__constant__ uint c_maxL0RevSynapsesPerDelay [MAX_THREAD_BLOCKS];
+__constant__ uint c_maxL1SynapsesPerDelay    [MAX_THREAD_BLOCKS];
+__constant__ uint c_maxL1RevSynapsesPerDelay [MAX_THREAD_BLOCKS];
 
 template<class T>
 __host__
 void
-configurePartition(const T& symbol, const std::vector<int>& values)
+configurePartition(const T& symbol, const std::vector<uint>& values)
 {
 	std::vector<int> buf(MAX_THREAD_BLOCKS, 0);
 	std::copy(values.begin(), values.end(), buf.begin());
 	CUDA_SAFE_CALL(
 		cudaMemcpyToSymbol(
 			symbol, &buf[0],
-			MAX_THREAD_BLOCKS*sizeof(int),
+			MAX_THREAD_BLOCKS*sizeof(uint),
 			0, cudaMemcpyHostToDevice));
 }
 
 
-__constant__ int c_partitionSize[MAX_THREAD_BLOCKS];
+__constant__ uint c_partitionSize[MAX_THREAD_BLOCKS];
 
 __host__
 void
-configurePartitionSize(size_t n, const int* d_partitionSize)
+configurePartitionSize(size_t n, const uint* d_partitionSize)
 {
 	CUDA_SAFE_CALL(
 		cudaMemcpyToSymbol(
 			c_partitionSize, d_partitionSize,
-			MAX_THREAD_BLOCKS*sizeof(int), 
+			MAX_THREAD_BLOCKS*sizeof(uint), 
 			0, cudaMemcpyHostToDevice));
 }

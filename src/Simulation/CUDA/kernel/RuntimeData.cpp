@@ -289,7 +289,7 @@ RuntimeData::usingSTDP() const
 /* We just store the parameters here for the time being. The kernel is
  * configured on first launch */ 
 void
-RuntimeData::enableStdp(int tauP, int tauD,
+RuntimeData::enableSTDP(int tauP, int tauD,
 		float alphaP, float alphaD, float maxWeight)
 {
 	m_usingSTDP = true;
@@ -461,5 +461,5 @@ void
 enableSTDP(RTDATA rtdata, int tauP, int tauD,
 		float alphaP, float alphaD, float maxWeight)
 {
-	rtdata->enableStdp(tauP, tauD, alphaP, alphaD, maxWeight);
+	rtdata->enableSTDP(tauP, tauD, alphaP, alphaD, maxWeight);
 }

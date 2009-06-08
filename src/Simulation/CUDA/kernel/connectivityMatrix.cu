@@ -28,7 +28,7 @@ packSynapse(uint partition, uint neuron)
 }
 
 
-__device__
+__host__ __device__
 uint
 targetNeuron(uint synapse)
 {
@@ -36,7 +36,7 @@ targetNeuron(uint synapse)
 }
 
 
-__device__
+__host__ __device__
 uint
 targetPartition(uint synapse)
 {
