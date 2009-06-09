@@ -28,6 +28,7 @@
 
 // forward connetivity matrices
 #define CM_ADDRESS 0
+#define CM_TIMESTAMP 0
 #define CM_WEIGHT 1
 #define CM_LTD 2           // LTD accumulation in forward order
 #define CM_FLTP 3          // LTP accumulation in forward order

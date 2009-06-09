@@ -101,14 +101,13 @@ void
 updateLTP(
 	uint maxDelay,
 	uint currentTime,
-	uint s_maxL0SynapsesR,
+	uint sr_maxL0Synapses,
 	// reverse connectivity
-	uint* g_cmR, size_t cmPitchR, size_t cmSizeR,
+	uint* gr_cm, size_t r_pitch, size_t r_size,
 	// forward connectivity
-	uint* g_cmF, size_t cmPitchF, size_t cmSizeF,
+	uint* gf_cm, size_t f_pitch, size_t f_size,
 	uint16_t* s_firingIdx,
-	//! \todo change to uint?
-	int s_firingCount,
+	uint s_firingCount,
 	uint32_t* s_recentArrivals,
 	uint32_t* g_arrivalDelays)
 {
@@ -122,12 +121,13 @@ updateLTP(
 	__shared__ int s_delaysPerChunk;
 	__shared__ int s_chunksPerDelay;
 
-	float* g_ltp = (float*) (g_cmR + RCM_LTP * cmSizeR);
+	float* gr_ltp = (float*) (gr_cm + RCM_LTP * r_size);
+	uint* gf_timestamp = gf_cm + CM_TIMESTAMP * f_size;
 
 	//! \todo factor this out and share with integrate step
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
-		s_synapsesPerDelay = ALIGN(s_maxL0SynapsesR, warpSize);
+		s_synapsesPerDelay = ALIGN(sr_maxL0Synapses, warpSize);
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
 	}
@@ -135,13 +135,14 @@ updateLTP(
 
 	for(int i=0; i<s_firingCount; ++i) {
 
-		int postsynaptic = s_firingIdx[i];
+		uint postsynaptic = s_firingIdx[i];
 
 		__shared__ uint s_delayBlocks;
 		__shared__ uint32_t s_arrivals[MAX_DELAY];
 
 		if(s_recentArrivals[postsynaptic]) {
 
+			//! \todo store reverse matrix in non-delay specific form
 			//! \todo factor this out and share with integrate step
 			if(threadIdx.x == 0) {
 				s_delayBlocks = 0;
@@ -162,20 +163,20 @@ updateLTP(
 			}
 			__syncthreads();
 
-			for(int chunk=0; chunk < s_chunkCount; ++chunk) {
+			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
-				int delayEntry = s_delaysPerChunk == 0 ?
+				uint delayEntry = s_delaysPerChunk == 0 ?
 					chunk / s_chunksPerDelay :
 					chunk * s_delaysPerChunk + threadIdx.x / s_synapsesPerDelay;
 				uint32_t delay = s_arrivals[delayEntry];
 				/* Offset /within/ a delay block */
-				int synapseIdxR = s_delaysPerChunk == 0 ?
+				uint r_sidx = s_delaysPerChunk == 0 ?
 					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
 					(threadIdx.x % s_synapsesPerDelay);
 
 				// reverse matrix *only* contains excitatory neurons
 				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdxR < s_maxL0SynapsesR 
+				if(r_sidx < sr_maxL0Synapses 
 						&& delayEntry < s_delayBlocks
 #ifdef __DEVICE_EMULATION__
 						// warp size is 1, so rounding to warp size not as expected
@@ -183,33 +184,26 @@ updateLTP(
 #endif
 					)
 				{
+					size_t r_address = (postsynaptic * maxDelay + delay) * r_pitch + r_sidx;
+					uint r_sdata = gr_cm[r_address];
 
-					size_t synapseAddressR = 
-						postsynaptic * maxDelay * cmPitchR
-						+ delay * cmPitchR
-						+ synapseIdxR;
-
-					uint sdataR = g_cmR[synapseAddressR];
-
-					if(sdataR != INVALID_REVERSE_SYNAPSE) {
+					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
 						/* The delivery time of the last spike on this synapse is
 						 * recorded in the forward matrix. */
-						uint synapseIdxF = forwardIdx(sdataR);
+						//! \todo for L1 we need to double buffer the time stamps
+						size_t f_address 
+							= (sourceNeuron(r_sdata) * maxDelay + delay) * f_pitch 
+							+ forwardIdx(r_sdata);
+						int dt = currentTime - (int) arrivalTime(gf_timestamp[f_address]);
 
-						size_t forwardAddress = 
-							sourceNeuron(sdataR) * maxDelay * cmPitchF
-							+ delay * cmPitchF
-							+ synapseIdxF;
-
-						uint sdataF = g_cmF[forwardAddress];
-
-						int dt = currentTime - arrivalTime(sdataF);
-						//assert(dt > 0);
+						/* If the presynaptic neuron fired several times, we'll visit the same */
+						//! \todo offset dt by one
+						ASSERT(dt >= 0);
 						if(dt < s_stdpTauP) {
-							g_ltp[synapseAddressR] += potentiation(dt);
+							gr_ltp[r_address] += potentiation(dt);
 							DEBUG_MSG("ltp +%f for synapse %u -> %u after delay of %u\n",
-									potentiation(dt), sourceNeuron(sdataR), postsynaptic, dt);
+									potentiation(dt), sourceNeuron(r_sdata), postsynaptic, dt);
 						}
 					}
 				}
@@ -345,8 +339,8 @@ reorderLTP_(
 	SET_COUNTER(s_ccReorderSTDP, 0);
 
 	/* The accumulated long-term potentiation is stored in a reverse-order matrix. */
-	__shared__ int s_partitionSize;
-	__shared__ int s_neuronsPerThread;
+	__shared__ uint s_partitionSize;
+	__shared__ uint s_neuronsPerThread;
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
 		s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
@@ -456,6 +450,7 @@ applySTDP_(
 		//! \todo deal with several delays in parallel as in L0 delivery
 		//! \todo deal with multiple chunks per delay
 		for(uint delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
+
 			uint delay = s_delays[delayIdx];
 
 			//! \todo make this work even if there are more threads than delays
