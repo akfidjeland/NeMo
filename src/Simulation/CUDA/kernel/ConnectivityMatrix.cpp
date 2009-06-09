@@ -230,3 +230,20 @@ ConnectivityMatrix::printSTDPTrace()
         }
     }
 }
+
+
+
+void
+ConnectivityMatrix::df_clear(size_t plane)
+{
+	//! \todo bounds checking
+	m_synapses.fillDeviceBuffer(0, plane);
+}
+
+
+void
+ConnectivityMatrix::dr_clear(size_t plane)
+{
+	//! \todo bounds checking
+	m_reverse.fillDeviceBuffer(0, plane);
+}

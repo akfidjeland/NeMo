@@ -261,55 +261,6 @@ setPartitionParameters(uint* s_partitionSize, uint* s_neuronsPerThread)
 
 
 
-__global__
-void
-clearSTDPAccumulator_(
-		uint maxPartitionSize,
-		uint maxDelay,
-		// Delay bits
-		uint32_t* g_delayBits,
-		size_t pitch32,
-		// Accumulator
-		float* g_acc,		//! \note caller should point to correct part of multi-dimensional matrix
-		size_t pitch,
-		size_t size)
-{
-	//! \todo add timing of this kernel as well
-
-	__shared__ uint s_partitionSize;
-	__shared__ uint s_neuronsPerThread;
-
-	setPartitionParameters(&s_partitionSize, &s_neuronsPerThread);
-
-	/* Pre-load all delay bits, since all of it will be needed */
-	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
-
-	//! \todo time this without loading delay bits 
-	for(uint presynaptic=0; presynaptic<s_partitionSize; ++presynaptic) {
-
-		__shared__ uint s_delayBlocks;
-		__shared__ uint32_t s_delays[MAX_DELAY];
-
-		setDelayBits(s_delayBits[presynaptic], &s_delayBlocks, s_delays);
-
-		ASSERT(pitch <= THREADS_PER_BLOCK);
-
-		//! \todo deal with several delays in parallel as in L0 delivery (see also addL0LTD)
-		//! \todo deal with multiple chunks per delay
-		for(uint delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
-			uint delay = s_delays[delayIdx];
-			//! \todo make this work even if there are more threads than delays
-			if(threadIdx.x < pitch) {
-				size_t g_offset = (presynaptic * maxDelay + delay) * pitch + threadIdx.x;
-				g_acc[g_offset] = 0;
-			}
-		}
-		__syncthreads();
-	}
-}
-
-
 /* Re-order long-term potentiation from the reverse order (by postsynaptic)
  * used in the accumulation array, to the forward order (by presynaptic) used
  * in the synaptic weight matrix. 

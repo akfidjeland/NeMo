@@ -160,28 +160,9 @@ __host__
 void
 clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
 {
-	// LTP (reverse order)
-	clearSTDPAccumulator_<<<dimGrid, dimBlock>>>(
-			rtdata->maxPartitionSize,
-			rtdata->maxDelay(),
-			rtdata->cm(cmIdx)->arrivalBits(),
-			rtdata->pitch32(),
-			(float*) rtdata->cm(cmIdx)->reverseConnectivity() + RCM_LTP * rtdata->cm(cmIdx)->submatrixSize(),
-			rtdata->cm(cmIdx)->reversePitch(),
-			rtdata->cm(cmIdx)->reverseSubmatrixSize());
-
-	// LTD (forward order)
-	clearSTDPAccumulator_<<<dimGrid, dimBlock>>>(
-			rtdata->maxPartitionSize,
-			rtdata->maxDelay(),
-			//! \todo consistent naming (with arrivalBits)
-			rtdata->cm(cmIdx)->deviceDelayBits(),
-			rtdata->pitch32(),
-			//! \todo consistent naming (with reverseConnectivity)
-			(float*) rtdata->cm(cmIdx)->deviceSynapsesD() + CM_LTD * rtdata->cm(cmIdx)->submatrixSize(),
-			//! \todo consistent naming (with reversePitch)
-			rtdata->cm(cmIdx)->synapsePitchD(),
-			rtdata->cm(cmIdx)->submatrixSize());
+	rtdata->cm(cmIdx)->df_clear(CM_LTD);
+	rtdata->cm(cmIdx)->df_clear(CM_FLTP);
+	rtdata->cm(cmIdx)->dr_clear(RCM_LTP);
 }
 
 

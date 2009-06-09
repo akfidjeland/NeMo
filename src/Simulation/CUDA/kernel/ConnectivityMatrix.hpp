@@ -52,12 +52,18 @@ struct ConnectivityMatrix
 		/*! \return row pitch in words for reverse matrix */
 		size_t reversePitch() const;
 
-		/*! \return number of words (includeing padding) for each reverse submatrix */
+		/*! \return number of words (including padding) for each reverse submatrix */
 		size_t reverseSubmatrixSize() const;
 
 		uint32_t* arrivalBits() const;
 
 		const std::vector<uint>& maxReverseSynapsesPerDelay() const;
+
+		/*! Clear one plane of forward matrix on the device */
+		void df_clear(size_t submatrix);
+
+		/*! Clear one plane of reverse matrix on the device */
+		void dr_clear(size_t submatrix);
 
 		/*! Clear device data structure for tracing STDP. This should be done
 		 * before every STDP application, if the trace will be used later. */
