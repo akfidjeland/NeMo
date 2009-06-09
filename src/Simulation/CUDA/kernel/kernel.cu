@@ -506,7 +506,7 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 5);
 
 	/* We now repurpose s_firingIdx to contain the indices of the neurons which
-	 * fired just now, rather than the neurons which fired and the past and
+	 * fired just now, rather than the neurons which fired in the past and
 	 * whose spikes are only now reaching. It's ok to leave the existing
 	 * garbage, as we keep track of the end of the new valid firing.
 	 *
@@ -516,7 +516,6 @@ STDP_FN(step) (
 	}
 	__syncthreads();
 
-//! \todo use more sensible CPP macros here, to postfix functions
 	STDP_FN(fire)(
 			g_fstim != 0,
             s_partitionSize,
@@ -542,10 +541,10 @@ STDP_FN(step) (
 		s_maxDelay,
 		stdpCycle,
 		s_maxL0RevSynapsesPerDelay,
-		// reverse matrix
 		g_cm0R + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_rpitchL0,
-		s_rpitchL0, s_rsizeL0,
-		g_L0CM, s_pitchL0, s_sizeL0,
+			s_rpitchL0, s_rsizeL0,
+		g_L0CM + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL0,
+			s_pitchL0, s_sizeL0,
 		s_firingIdx,
 		s_firingCount,
 		s_recentArrivals,
