@@ -86,6 +86,13 @@ struct SMatrix
 				size_t synapseIndex,
 				size_t plane=0) const;
 
+		/*! Look up data on the device. This can be very slow. */
+		T d_lookup(size_t sourcePartition,
+				size_t sourceNeuron,
+				size_t delay,
+				size_t synapseIndex,
+				size_t plane=0) const;
+
 	private :
 
 		/*! \return number of bytes of data for all sub-matrices, including padding */

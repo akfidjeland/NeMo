@@ -181,6 +181,21 @@ SMatrix<T>::h_lookup(size_t srcp,
 }
 
 
+
+template<typename T>
+T
+SMatrix<T>::d_lookup(size_t srcp,
+        size_t srcn, size_t delay, size_t sidx, size_t plane) const
+{
+	T out;
+	CUDA_SAFE_CALL(cudaMemcpy(&out,
+			m_deviceData + offset(srcp, srcn, delay, sidx, plane),
+			sizeof(out),
+			cudaMemcpyDeviceToHost));
+	return out;
+}
+
+
 template<typename T>
 size_t
 SMatrix<T>::lenOffset(
