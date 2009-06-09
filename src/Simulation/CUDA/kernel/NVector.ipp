@@ -109,7 +109,7 @@ void
 NVector<T>::moveToDevice()
 {
 	copyToDevice();
-	clearHostBuffer();
+	m_hostData.clear();
 }
 
 
@@ -129,14 +129,6 @@ NVector<T>::copyToDevice()
 				&m_hostData[0],
 				bytes(),
 				cudaMemcpyHostToDevice));
-}
-
-
-template<typename T>
-void
-NVector<T>::clearHostBuffer()
-{
-	m_hostData.clear();
 }
 
 

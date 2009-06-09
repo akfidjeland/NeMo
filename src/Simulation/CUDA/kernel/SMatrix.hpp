@@ -4,7 +4,7 @@
 
 #include <vector>
 
-/*! \brief Sparse synaptic matrix 
+/*! \brief Sparse synapse matrix 
  *
  * Matrix containing per-synapse data. This is a template class and can thus be
  * used for different purposes.
@@ -24,11 +24,11 @@ struct SMatrix
 	public :
 
 		/*! 
-		 * \param submatrixCount
-		 * 		Several submatrices of the same dimensions can be allocated
-		 * 		back-to-back with the distance between them retrurned by
-		 * 		size(). This reduces the number of parameters that need to be
-		 * 		passed to the kernel.
+		 * \param planeCount
+		 * 		Several planes of the same dimensions can be allocated
+		 * 		back-to-back with the distance between them returned by size().
+		 * 		This reduces the number of parameters that need to be passed to
+		 * 		the kernel.
 		 * \param allocHostData
 		 * 		If true, allocate data on the host-side. If the data structure
 		 * 		is only used internally in the kernel, this is wasteful.
@@ -38,7 +38,7 @@ struct SMatrix
 				size_t maxDelay,
                 size_t maxSynapsesPerDelay,
 				bool allocHostData,
-				size_t submatrixCount=1);
+				size_t planeCount=1);
 
 		~SMatrix();
 
@@ -59,37 +59,32 @@ struct SMatrix
                 size_t sourceNeuron,
                 size_t delay,
                 const std::vector<T>& data,
-				size_t submatrix=0);
+				size_t plane=0);
 
 		/*! Copy entire host buffer to the device */
 		void copyToDevice();
 
-		/*! Copy single submatrix from device to host. Return pointer to data */
-		void copyToHost(size_t submatrix);
-
-		/*! Clear the host buffer */
-		void clearHostBuffer();
+		/*! Copy single plane from device to host. */
+		void copyToHost(size_t plane);
 
         /*! Copy entire host buffer to device and clear it (host-side) */
         void moveToDevice();
 
-		/*! \return number of words of data in each submatrix, including padding */
+		/*! \return number of words of data in each plane, including padding */
 		size_t size() const;
 
-        T* deviceData() const;
+        T* d_data() const;
 
-		/*! Set default value (in host buffer) for specific submatrix */
-		void fillHostBuffer(const T& val, size_t submatrix=0);
-
-		/*! Set default value (in device buffer) for specific submatrix */
-		void fillDeviceBuffer(const T& val, size_t submatrix=0);
+		/*! Fill plane with value */
+		void h_fill(const T& val, size_t plane=0);
+		void d_fill(const T& val, size_t plane=0);
 
 		/*! Look up data on the host */
 		const T& h_lookup(size_t sourcePartition,
 				size_t sourceNeuron,
 				size_t delay,
 				size_t synapseIndex,
-				size_t submatrix=0) const;
+				size_t plane=0) const;
 
 	private :
 
@@ -111,21 +106,21 @@ struct SMatrix
 
 		size_t m_pitch;
 
-		size_t m_submatrixCount;
+		size_t m_planeCount;
 
-        /*! \return word offset */
-        size_t offset(
-                size_t sourcePartition,
-                size_t sourceNeuron,
-                size_t delay,
-                size_t synapseIndex,
-				size_t submatrix=0) const;
+		/*! \return word offset */
+		size_t offset(
+				size_t sourcePartition,
+				size_t sourceNeuron,
+				size_t delay,
+				size_t synapseIndex,
+				size_t plane=0) const;
 
-        /*! \return word offset into length array */
-        size_t lenOffset(
-                size_t sourcePartition,
-                size_t sourceNeuron,
-                size_t delay) const;
+		/*! \return word offset into length array */
+		size_t lenOffset(
+				size_t sourcePartition,
+				size_t sourceNeuron,
+				size_t delay) const;
 };
 
 

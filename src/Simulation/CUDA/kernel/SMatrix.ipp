@@ -11,17 +11,17 @@ SMatrix<T>::SMatrix(
 			size_t maxDelay,
             size_t maxSynapsesPerDelay,
 			bool allocHostData,
-			size_t submatrixCount) :
+			size_t planeCount) :
 	m_deviceData(NULL),
 	m_partitionCount(partitionCount),
 	m_maxPartitionSize(maxPartitionSize),
 	m_maxSynapsesPerDelay(maxSynapsesPerDelay),
 	m_maxDelay(maxDelay),
 	m_pitch(0),
-	m_submatrixCount(submatrixCount)
+	m_planeCount(planeCount)
 {
 	size_t width = maxSynapsesPerDelay;
-	size_t height = submatrixCount * partitionCount * maxPartitionSize * maxDelay;
+	size_t height = planeCount * partitionCount * maxPartitionSize * maxDelay;
 	size_t bytePitch = 0;
 	CUDA_SAFE_CALL(
 			cudaMallocPitch((void**)&m_deviceData, 
@@ -63,7 +63,7 @@ SMatrix<T>::size() const
 
 template<typename T>
 T*
-SMatrix<T>::deviceData() const
+SMatrix<T>::d_data() const
 {
     return m_deviceData;
 }
@@ -74,7 +74,7 @@ template<typename T>
 size_t
 SMatrix<T>::bytes() const
 {
-	return m_submatrixCount * size() * sizeof(T);
+	return m_planeCount * size() * sizeof(T);
 }
 
 
@@ -92,7 +92,7 @@ template<typename T>
 void
 SMatrix<T>::copyToDevice()
 {
-    assert(m_submatrixCount * size() <= m_hostData.size());
+    assert(m_planeCount * size() <= m_hostData.size());
     //! \todo add back exceptions (requires CUDA 2.2)
 #if 0
 	if(size() > m_hostData.size()) {
@@ -113,7 +113,7 @@ SMatrix<T>::copyToDevice()
 
 template<typename T>
 void
-SMatrix<T>::copyToHost(size_t submatrix)
+SMatrix<T>::copyToHost(size_t plane)
 {
     assert(!m_hostData.empty());
     //! \todo add assertions
@@ -121,13 +121,13 @@ SMatrix<T>::copyToHost(size_t submatrix)
     //    throw std::logic_error("Attempt to copy from device to empty host vector");
     //}
     //! \todo add bounds testing
-    assert(submatrix < m_submatrixCount);
+    assert(plane < m_planeCount);
     size_t pitch = m_pitch * sizeof(T);
-    T* hostData = &m_hostData[submatrix * size()];
+    T* hostData = &m_hostData[plane * size()];
     //CUDA_SAFE_CALL( // nvcc chokes with "closing brace of template definition not found" if CUDA_SAFE_CALL is used
             cudaMemcpy2D(
                 hostData, pitch,
-                m_deviceData + submatrix * size(), pitch,
+                m_deviceData + plane * size(), pitch,
                 pitch,  // width
                 m_partitionCount * m_maxPartitionSize * m_maxDelay,
                 cudaMemcpyDeviceToHost //)
@@ -138,19 +138,10 @@ SMatrix<T>::copyToHost(size_t submatrix)
 
 template<typename T>
 void
-SMatrix<T>::clearHostBuffer()
-{
-	m_hostData.clear();
-}
-
-
-
-template<typename T>
-void
 SMatrix<T>::moveToDevice()
 {
     copyToDevice();
-    clearHostBuffer();
+	m_hostData.clear();
 }
 
 
@@ -162,17 +153,17 @@ SMatrix<T>::offset(
 		size_t sourceNeuron,
 		size_t delay,
         size_t synapseIndex,
-		size_t submatrix) const
+		size_t plane) const
 {
     assert(sourcePartition < m_partitionCount);
     assert(sourceNeuron < m_maxPartitionSize);
     assert(delay <= m_maxDelay);
     assert(delay >= 1);
     assert(synapseIndex < delayPitch());
-	assert(submatrix < m_submatrixCount);
+	assert(plane < m_planeCount);
     //! \todo refactor
     //! \todo have this call a method which we share with the kernel as well
-    return submatrix * size()
+    return plane * size()
 			+ sourcePartition * m_maxPartitionSize * m_maxDelay * delayPitch()
             + sourceNeuron * m_maxDelay * delayPitch()
             + (delay-1) * delayPitch()
@@ -184,9 +175,9 @@ SMatrix<T>::offset(
 template<typename T>
 const T&
 SMatrix<T>::h_lookup(size_t srcp,
-        size_t srcn, size_t delay, size_t sidx, size_t submatrix) const
+        size_t srcn, size_t delay, size_t sidx, size_t plane) const
 {
-    return m_hostData[offset(srcp, srcn, delay, sidx, submatrix)];
+    return m_hostData[offset(srcp, srcn, delay, sidx, plane)];
 }
 
 
@@ -218,10 +209,10 @@ SMatrix<T>::setDelayRow(
 		size_t sourceNeuron,
 		size_t delay,
         const std::vector<T>& data,
-		size_t submatrix)
+		size_t plane)
 {
 	std::copy(data.begin(), data.end(), m_hostData.begin() 
-            + offset(sourcePartition, sourceNeuron, delay, 0, submatrix));
+            + offset(sourcePartition, sourceNeuron, delay, 0, plane));
     m_rowLength[lenOffset(sourcePartition, sourceNeuron, delay)] = data.size();
 }
 
@@ -246,20 +237,20 @@ SMatrix<T>::addSynapse(
 
 template<typename T>
 void
-SMatrix<T>::fillHostBuffer(const T& value, size_t submatrix)
+SMatrix<T>::h_fill(const T& value, size_t plane)
 {
-	typename std::vector<T>::iterator b = m_hostData.begin() + submatrix * size();
+	typename std::vector<T>::iterator b = m_hostData.begin() + plane * size();
 	std::fill(b, b + size(), value);
 }
 
 
 template<typename T>
 void
-SMatrix<T>::fillDeviceBuffer(const T& value, size_t submatrix)
+SMatrix<T>::d_fill(const T& value, size_t plane)
 {
     CUDA_SAFE_CALL(
         cudaMemset2D(
-            m_deviceData + submatrix * size(),
+            m_deviceData + plane * size(),
             m_pitch,
             value,
             m_maxSynapsesPerDelay,

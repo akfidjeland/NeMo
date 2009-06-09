@@ -58,14 +58,12 @@ class NVector
 
 		const std::vector<T>& copyFromDevice();
 
-		/*! Copy entire host buffer to devie and clear it (host-side) */
+		/*! Copy entire host buffer to device and deallocote host memory */
 		void moveToDevice();
 		
 		/*! Copy entire host buffer to the device */
 		void copyToDevice();
 		
-		void clearHostBuffer();
-
 		/*! Set row of data (in host buffer) for a single partition */ 
 		//! \todo change parameter order, with vector first
 		void setPartition(size_t partitionIdx, const T* arr, size_t length, size_t subvector=0);

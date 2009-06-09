@@ -34,7 +34,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	m_arrivalBits(partitionCount, maxPartitionSize, true)
 {
 	//! \todo this initialisation only needed as long as we use delay-specific reverse connectivity
-	m_rsynapses.fillHostBuffer(INVALID_REVERSE_SYNAPSE, RCM_ADDRESS);
+	m_rsynapses.h_fill(INVALID_REVERSE_SYNAPSE, RCM_ADDRESS);
 }
 
 
@@ -57,14 +57,14 @@ ConnectivityMatrix::dr_delayBits() const
 uint*
 ConnectivityMatrix::df_synapses() const
 {
-	return m_fsynapses.deviceData();
+	return m_fsynapses.d_data();
 }
 
 
 uint*
 ConnectivityMatrix::dr_synapses() const
 {
-	return m_rsynapses.deviceData();
+	return m_rsynapses.d_data();
 }
 
 
@@ -228,14 +228,12 @@ ConnectivityMatrix::printSTDPTrace()
 void
 ConnectivityMatrix::df_clear(size_t plane)
 {
-	//! \todo bounds checking
-	m_fsynapses.fillDeviceBuffer(0, plane);
+	m_fsynapses.d_fill(0, plane);
 }
 
 
 void
 ConnectivityMatrix::dr_clear(size_t plane)
 {
-	//! \todo bounds checking
-	m_rsynapses.fillDeviceBuffer(0, plane);
+	m_rsynapses.d_fill(0, plane);
 }
