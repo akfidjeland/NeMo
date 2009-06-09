@@ -305,6 +305,7 @@ clearSTDPAccumulator_(
 				g_acc[g_offset] = 0;
 			}
 		}
+		__syncthreads();
 	}
 }
 
@@ -390,6 +391,7 @@ reorderLTP_(
 				}
 			}
 		}
+		__syncthreads();
 	}
 
 	SET_COUNTER(s_ccReorderSTDP, 1);
@@ -429,6 +431,7 @@ applySTDP_(
 	/* Pre-load all delay bits, since all of it will be needed */
 	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
 	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
+	__syncthreads();
 
 	size_t partitionOffset = CURRENT_PARTITION * maxPartitionSize * maxDelay * pitch;
 #ifdef __DEVICE_EMULATION__
@@ -493,6 +496,7 @@ applySTDP_(
 
 			}
 		}
+		__syncthreads();
 	}
 	SET_COUNTER(s_ccApplySTDP, 1);
 	WRITE_COUNTERS(s_ccApplySTDP, g_cc, ccPitch, 2);

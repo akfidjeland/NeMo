@@ -136,6 +136,7 @@ STDP_FN(fire)(
 			 * back to global memory now. */
 			s_recentFiring[s_index] = (s_recentFiring[s_index] << 1) | firing;
 			g_recentFiring[g_index] = s_recentFiring[s_index];
+			//! \todo should we keep *updated* s_recentArrivals for LTP?
 #ifdef STDP
 			g_recentArrivals[g_index] = s_recentArrivals[s_index] << 1;
 #endif
@@ -549,12 +550,13 @@ STDP_FN(step) (
 		s_firingCount,
 		s_recentArrivals,
 		g_arrivalDelaysL0);
+	__syncthreads();
 #endif
 	SET_COUNTER(s_ccMain, 7);
 
 	writeFiringOutput(fmemCycle, g_fmemNextFree, 
 			s_firingIdx, s_firingCount, g_fmemBuffer);
-
+	__syncthreads();
 	SET_COUNTER(s_ccMain, 8);
 
 	if(gSpikeQueue) {
