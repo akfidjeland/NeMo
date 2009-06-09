@@ -61,15 +61,15 @@ configureKernel(RTDATA rtdata)
 	std::vector<uint> param(NPARAM_COUNT);
 	SET_CONSTANT(maxPartitionSize, rtdata->maxPartitionSize);
 	SET_CONSTANT(maxDelay, rtdata->maxDelay());
-	SET_CONSTANT(pitch32, rtdata->pitch32());
-	SET_CONSTANT(pitchL0, rtdata->cm(CM_L0)->synapsePitchD());
-	SET_CONSTANT(sizeL0, rtdata->cm(CM_L0)->submatrixSize());
-	SET_CONSTANT(pitchL1, rtdata->cm(CM_L1)->synapsePitchD());
-	SET_CONSTANT(sizeL1, rtdata->cm(CM_L1)->submatrixSize());
-	SET_CONSTANT(rpitchL0, rtdata->cm(CM_L0)->reversePitch());
-	SET_CONSTANT(rsizeL0, rtdata->cm(CM_L0)->reverseSubmatrixSize());
-	SET_CONSTANT(rpitchL1, rtdata->cm(CM_L1)->reversePitch());
-	SET_CONSTANT(rsizeL1, rtdata->cm(CM_L1)->reverseSubmatrixSize());
+	SET_CONSTANT(pitch32,  rtdata->pitch32());
+	SET_CONSTANT(pitchL0,  rtdata->cm(CM_L0)->df_pitch());
+	SET_CONSTANT(sizeL0,   rtdata->cm(CM_L0)->df_planeSize());
+	SET_CONSTANT(pitchL1,  rtdata->cm(CM_L1)->df_pitch());
+	SET_CONSTANT(sizeL1,   rtdata->cm(CM_L1)->df_planeSize());
+	SET_CONSTANT(rpitchL0, rtdata->cm(CM_L0)->dr_pitch());
+	SET_CONSTANT(rsizeL0,  rtdata->cm(CM_L0)->dr_planeSize());
+	SET_CONSTANT(rpitchL1, rtdata->cm(CM_L1)->dr_pitch());
+	SET_CONSTANT(rsizeL1,  rtdata->cm(CM_L1)->dr_planeSize());
 	CUDA_SAFE_CALL(
 			cudaMemcpyToSymbol(c_networkParameters,
 				&param[0], 

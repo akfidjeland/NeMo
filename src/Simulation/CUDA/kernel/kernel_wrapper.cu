@@ -134,13 +134,13 @@ configureDevice(RTDATA rtdata)
 		rtdata->moveToDevice();
 		configureKernel(rtdata);
 		configurePartition(c_maxL0SynapsesPerDelay, 
-			rtdata->cm(CM_L0)->maxSynapsesPerDelay());
+			rtdata->cm(CM_L0)->f_maxSynapsesPerDelay());
 		configurePartition(c_maxL0RevSynapsesPerDelay, 
-			rtdata->cm(CM_L0)->maxReverseSynapsesPerDelay());
+			rtdata->cm(CM_L0)->r_maxSynapsesPerDelay());
 		configurePartition(c_maxL1SynapsesPerDelay,
-			rtdata->cm(CM_L1)->maxSynapsesPerDelay());
+			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
 		configurePartition(c_maxL1RevSynapsesPerDelay,
-			rtdata->cm(CM_L1)->maxReverseSynapsesPerDelay());
+			rtdata->cm(CM_L1)->r_maxSynapsesPerDelay());
 		if(rtdata->usingSTDP()) {
 			configureStdp(
 				rtdata->m_stdpTauP,
@@ -184,16 +184,16 @@ applySTDP(dim3 dimGrid,
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
 			rtdata->pitch32(),
-			rtdata->cm(cmIdx)->arrivalBits(),
-			rtdata->cm(cmIdx)->deviceSynapsesD(),
-			rtdata->cm(cmIdx)->synapsePitchD(),
-			rtdata->cm(cmIdx)->submatrixSize(),
-			rtdata->cm(cmIdx)->reverseConnectivity(),
-			rtdata->cm(cmIdx)->reversePitch(),
-			rtdata->cm(cmIdx)->reverseSubmatrixSize());
+			rtdata->cm(cmIdx)->dr_delayBits(),
+			rtdata->cm(cmIdx)->df_synapses(),
+			rtdata->cm(cmIdx)->df_pitch(),
+			rtdata->cm(cmIdx)->df_planeSize(),
+			rtdata->cm(cmIdx)->dr_synapses(),
+			rtdata->cm(cmIdx)->dr_pitch(),
+			rtdata->cm(cmIdx)->dr_planeSize());
 
 	if(trace) {
-		rtdata->cm(cmIdx)->clearSTDPTrace();
+		rtdata->cm(cmIdx)->df_clear(CM_STDP_TRACE);
 	}
 
 	applySTDP_<<<dimGrid, dimBlock>>>(
@@ -206,10 +206,10 @@ applySTDP(dim3 dimGrid,
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
 			rtdata->pitch32(),
-			rtdata->cm(cmIdx)->deviceDelayBits(),
-			rtdata->cm(cmIdx)->deviceSynapsesD(),
-			rtdata->cm(cmIdx)->synapsePitchD(),
-			rtdata->cm(cmIdx)->submatrixSize(),
+			rtdata->cm(cmIdx)->df_delayBits(),
+			rtdata->cm(cmIdx)->df_synapses(),
+			rtdata->cm(cmIdx)->df_pitch(),
+			rtdata->cm(cmIdx)->df_planeSize(),
 			trace);
 }
 
@@ -261,20 +261,20 @@ step(	ushort cycle,
 				// STDP
 				rtdata->recentArrivals->deviceData(),
 				rtdata->stdpCycle(),
-				rtdata->cm(CM_L0)->reverseConnectivity(),
-				rtdata->cm(CM_L0)->arrivalBits(),
-				rtdata->cm(CM_L1)->arrivalBits(),
+				rtdata->cm(CM_L0)->dr_synapses(),
+				rtdata->cm(CM_L0)->dr_delayBits(),
+				rtdata->cm(CM_L1)->dr_delayBits(),
 				// neuron parameters
 				rtdata->neuronParameters->deviceData(),
 				rtdata->thalamicInput->deviceRngState(),
 				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
 				// L0 connectivity matrix
-				rtdata->cm(CM_L0)->deviceSynapsesD(),
-				rtdata->cm(CM_L0)->deviceDelayBits(),
+				rtdata->cm(CM_L0)->df_synapses(),
+				rtdata->cm(CM_L0)->df_delayBits(),
 				// L1 connectivity matrix
-				rtdata->cm(CM_L1)->deviceSynapsesD(),
-				rtdata->cm(CM_L1)->deviceDelayBits(),
+				rtdata->cm(CM_L1)->df_synapses(),
+				rtdata->cm(CM_L1)->df_delayBits(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),
@@ -303,11 +303,11 @@ step(	ushort cycle,
                 //! \todo get size directly from rtdata
 				rtdata->neuronParameters->size(),
 				// L0 connectivity matrix
-				rtdata->cm(CM_L0)->deviceSynapsesD(),
-				rtdata->cm(CM_L0)->deviceDelayBits(),
+				rtdata->cm(CM_L0)->df_synapses(),
+				rtdata->cm(CM_L0)->df_delayBits(),
 				// L1 connectivity matrix
-				rtdata->cm(CM_L1)->deviceSynapsesD(),
-				rtdata->cm(CM_L1)->deviceDelayBits(),
+				rtdata->cm(CM_L1)->df_synapses(),
+				rtdata->cm(CM_L1)->df_delayBits(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),

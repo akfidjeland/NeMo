@@ -396,7 +396,7 @@ setCMDRow(RTDATA rtdata,
         unsigned int* h_targetNeuron,
         size_t length)
 {
-    rtdata->cm(cmIdx)->setDRow(
+    rtdata->cm(cmIdx)->setRow(
         sourcePartition,
         sourceNeuron,
         delay,
