@@ -100,12 +100,9 @@ __device__
 void
 updateLTP(
 	uint maxDelay,
-	uint currentTime,
+	uint32_t* s_recentFiring,
 	uint sr_maxL0Synapses,
-	// reverse connectivity
 	uint* gr_cm, size_t r_pitch, size_t r_size,
-	// forward connectivity
-	uint* gf_cm, size_t f_pitch, size_t f_size,
 	uint16_t* s_firingIdx,
 	uint s_firingCount,
 	uint32_t* s_recentArrivals,
@@ -122,7 +119,6 @@ updateLTP(
 	__shared__ int s_chunksPerDelay;
 
 	float* gr_ltp = (float*) (gr_cm + RCM_STDP_LTP * r_size);
-	uint* gf_timestamp = gf_cm + FCM_TIMESTAMP * f_size;
 
 	//! \todo factor this out and share with integrate step
 	if(threadIdx.x == 0) {
@@ -168,7 +164,8 @@ updateLTP(
 				uint delayEntry = s_delaysPerChunk == 0 ?
 					chunk / s_chunksPerDelay :
 					chunk * s_delaysPerChunk + threadIdx.x / s_synapsesPerDelay;
-				uint32_t delay = s_arrivals[delayEntry];
+				uint32_t delay = s_arrivals[delayEntry] + 1;
+
 				/* Offset /within/ a delay block */
 				uint r_sidx = s_delaysPerChunk == 0 ?
 					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
@@ -184,26 +181,29 @@ updateLTP(
 #endif
 					)
 				{
-					size_t r_address = (postsynaptic * maxDelay + delay) * r_pitch + r_sidx;
+					size_t r_address = (postsynaptic * maxDelay + delay-1) * r_pitch + r_sidx;
 					uint r_sdata = gr_cm[r_address];
 
 					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
-						/* The delivery time of the last spike on this synapse is
-						 * recorded in the forward matrix. */
-						//! \todo for L1 we need to double buffer the time stamps
-						size_t f_address 
-							= (sourceNeuron(r_sdata) * maxDelay + delay) * f_pitch 
-							+ forwardIdx(r_sdata);
-						int dt = currentTime - (int) arrivalTime(gf_timestamp[f_address]);
+						/*! \todo deal with this differently for L1 (use double
+						 * buffered firing bits, consider caching
+						 * s_recentFiring) */
+						uint presynaptic = sourceNeuron(r_sdata);
 
-						/* If the presynaptic neuron fired several times, we'll visit the same */
-						//! \todo offset dt by one
-						ASSERT(dt >= 0);
-						if(dt < s_stdpTauP) {
-							gr_ltp[r_address] += potentiation(dt);
-							DEBUG_MSG("ltp +%f for synapse %u -> %u after delay of %u\n",
-									potentiation(dt), sourceNeuron(r_sdata), postsynaptic, dt);
+						/* Ignore any firing whose spikes have not had a chance
+						 * to reach postsynaptic, as well as any firing in the
+						 * presynaptic which happened in /this/ cycle. */
+						int preFired = __ffs((s_recentFiring[presynaptic] >> 1) & ((~0) << delay));
+
+						if(preFired) {
+							int dt = preFired - delay;
+							ASSERT(dt > 0);
+							if(dt < s_stdpTauP) {
+								gr_ltp[r_address] += potentiation(dt);
+								DEBUG_MSG("ltp +%f for synapse %u -> %u after delay of %u\n",
+										potentiation(dt), presynaptic, postsynaptic, dt);
+							}
 						}
 					}
 				}

@@ -80,8 +80,6 @@ struct RuntimeData
 
     uint32_t cycle() const;
 
-	uint stdpCycle() const;
-
 	bool usingSTDP() const;
 
 	//! \see ::enableSTDP
@@ -104,11 +102,6 @@ struct RuntimeData
 
 		// see kernel.h for enumeration of connectivity matrices
 		std::vector<struct ConnectivityMatrix*> m_cm;
-
-		/* For STDP we also need to keep track of the most recent spike
-		 * delivery, and thus need to know the cycle number. This is just
-		 * relative to the last synapse update, and is not a global counter. */
-        uint32_t m_stdpCycle;
 
         cudaDeviceProp m_deviceProperties;
 

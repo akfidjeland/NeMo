@@ -1,10 +1,6 @@
 #include "kernel.cu_h"
 #include "connectivityMatrix.cu_h"
 
-// format forward synapse: time - partition - neuron
-// format reverse synapse: forward address - partition - neuron
-
-
 #define NEURON_MASK (~(~0 << NEURON_BITS))
 #define PARTITION_MASK (~(~0 << PARTITION_BITS))
 #define FSYNAPSE_MASK (~(~0 << SYNAPSE_BITS))
@@ -19,11 +15,10 @@
 
 __host__
 uint
-packSynapse(uint partition, uint neuron)
+f_packSynapse(uint partition, uint neuron)
 {
     assert(!(partition & ~PARTITION_MASK));
     assert(!(neuron & ~NEURON_MASK));
-	// leave timestamp field at 0
     return (partition << PARTITION_SHIFT) | neuron;
 }
 
@@ -44,44 +39,18 @@ targetPartition(uint synapse)
 }
 
 
-__device__
-uint
-lastSpikeArrival(uint2 synapse)
-{
-    return synapse.x >> ARRIVAL_SHIFT;
-}
-
-
-__device__
-uint
-setTimestamp(uint synapse, uint cycle)
-{
-	return ((cycle & ARRIVAL_MASK) << ARRIVAL_SHIFT)
-		| (synapse & ~(ARRIVAL_MASK << ARRIVAL_SHIFT));
-}
-
-
-__device__
-uint
-arrivalTime(uint synapse)
-{
-	return (synapse >> ARRIVAL_SHIFT) & ARRIVAL_MASK;
-}
-
-
 __host__
 uint
-packReverseSynapse(
+r_packSynapse(
         uint sourcePartition,
         uint sourceNeuron,
-        uint arrivalTime)
+        uint sourceSynapse)
 {
     assert(!(sourcePartition & ~PARTITION_MASK));
     assert(!(sourceNeuron & ~NEURON_MASK));
-    /* The arrival time can wrap around */
-    return ((arrivalTime & FSYNAPSE_MASK) << FSYNAPSE_SHIFT) 
-            | (sourcePartition << PARTITION_SHIFT) 
-            | sourceNeuron;
+    return (  (sourceSynapse & FSYNAPSE_MASK) << FSYNAPSE_SHIFT)
+            | (sourcePartition                << PARTITION_SHIFT)
+            |  sourceNeuron;
 }
 
 

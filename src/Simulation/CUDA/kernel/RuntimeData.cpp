@@ -31,7 +31,6 @@ RuntimeData::RuntimeData(
 	partitionCount(partitionCount),
     m_maxDelay(maxDelay),
 	m_cm(CM_COUNT, (ConnectivityMatrix*) NULL),
-	m_stdpCycle(maxDelay + 1),
 	m_pitch32(0),
 	m_deviceDirty(true),
 	m_usingSTDP(false),
@@ -234,7 +233,6 @@ void
 RuntimeData::step()
 {
     m_cycle += 1;
-	m_stdpCycle += 1;
 }
 
 
@@ -279,13 +277,6 @@ RuntimeData::setStart()
 //-----------------------------------------------------------------------------
 // STDP
 //-----------------------------------------------------------------------------
-
-
-uint
-RuntimeData::stdpCycle() const
-{
-	return m_stdpCycle;
-}
 
 
 bool

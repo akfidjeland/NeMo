@@ -161,7 +161,6 @@ STDP_FN(deliverL0Spikes)(
 #ifdef STDP
 	uint32_t* s_recentIncoming,
 	float* g_ltd,
-	uint stdpCycle,
 #endif
 	uint32_t* g_firingDelays,
 	float* s_current)
@@ -279,7 +278,6 @@ STDP_FN(deliverL0Spikes)(
 					if(weight != 0.0f) {
                         doCommit = true;
 #ifdef STDP
-						g_saddress[synapseAddress] = setTimestamp(sdata, stdpCycle);
 						//! \todo check for off-by-one errors here
 						int dt = __ffs(s_recentFiring[postsynaptic]);
 
@@ -356,7 +354,6 @@ STDP_FN(step) (
 		uint32_t* g_recentFiring, 
 #ifdef STDP
 		uint32_t* g_recentArrivals,
-		uint stdpCycle,
 		uint* gr0_cm,
 		uint32_t* gr0_delays,
 		uint32_t* gr1_delays,
@@ -496,7 +493,6 @@ STDP_FN(step) (
 			(float*) gf0_cm
 				+ FCM_STDP_LTD * sf0_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
-			stdpCycle,
 #endif
 			gf0_delays + CURRENT_PARTITION * s_pitch32,
 			s_current);
@@ -538,12 +534,10 @@ STDP_FN(step) (
 #ifdef STDP
 	updateLTP(
 		s_maxDelay,
-		stdpCycle,
+		s_recentFiring,
 		sr0_maxSynapsesPerDelay,
 		gr0_cm + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sr0_pitch,
 			sr0_pitch, sr0_size,
-		gf0_cm + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
-			sf0_pitch, sf0_size,
 		s_firingIdx,
 		s_firingCount,
 		s_recentArrivals,

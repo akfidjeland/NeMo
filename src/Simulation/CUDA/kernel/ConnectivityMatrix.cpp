@@ -105,9 +105,9 @@ ConnectivityMatrix::setRow(
         const float* weights,
         const uint* targetPartition,
         const uint* targetNeuron,
-        size_t length)
+        size_t f_length)
 {
-    if(length == 0)
+    if(f_length == 0)
         return;
 
 	if(sourcePartition >= m_partitionCount) {
@@ -128,22 +128,22 @@ ConnectivityMatrix::setRow(
 
     bool setReverse = m_rsynapses.delayPitch() > 0;
 
-	for(size_t i=0; i<length; ++i) {
+	for(size_t i=0; i<f_length; ++i) {
 		// see connectivityMatrix.cu_h for encoding format
 		if(setReverse && weights[i] > 0.0f) { // only do STDP for excitatory synapses
-			size_t rlen = m_rsynapses.addSynapse(
+			size_t r_length = m_rsynapses.addSynapse(
 					targetPartition[i],
 					targetNeuron[i],
 					delay,
-					packReverseSynapse(sourcePartition, sourceNeuron, i));
+					r_packSynapse(sourcePartition, sourceNeuron, i));
 			m_maxReverseSynapsesPerDelay[targetPartition[i]] =
-				std::max(m_maxReverseSynapsesPerDelay[targetPartition[i]], (uint) rlen);
+				std::max(m_maxReverseSynapsesPerDelay[targetPartition[i]], (uint) r_length);
 			uint32_t arrivalBits = m_arrivalBits.getNeuron(targetPartition[i], targetNeuron[i]);
 			arrivalBits |= 0x1 << (delay-1);
 			m_arrivalBits.setNeuron(targetPartition[i], targetNeuron[i], arrivalBits);
 		}
 		wbuf[i] = reinterpret_cast<const uint32_t&>(weights[i]);
-		abuf[i] = packSynapse(targetPartition[i], targetNeuron[i]);
+		abuf[i] = f_packSynapse(targetPartition[i], targetNeuron[i]);
 	}
 
 	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, abuf, FCM_ADDRESS);
@@ -155,7 +155,7 @@ ConnectivityMatrix::setRow(
 
 	m_maxDelay = std::max(m_maxDelay, delay);
 	m_maxSynapsesPerDelay[sourcePartition] =
-		std::max(m_maxSynapsesPerDelay[sourcePartition], (uint) length);
+		std::max(m_maxSynapsesPerDelay[sourcePartition], (uint) f_length);
 }
 
 

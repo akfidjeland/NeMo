@@ -241,7 +241,7 @@ step(	ushort cycle,
 
 #ifdef VERBOSE
 	static uint scycle = 0;
-	fprintf(stdout, "cycle %u/%u\n", scycle++, rtdata->stdpCycle());
+	fprintf(stdout, "cycle %u\n", scycle++);
 #endif
 
 	if(rtdata->usingSTDP() && doApplySTDP) {
@@ -268,7 +268,6 @@ step(	ushort cycle,
 				rtdata->recentFiring->deviceData(),
 				// STDP
 				rtdata->recentArrivals->deviceData(),
-				rtdata->stdpCycle(),
 				rtdata->cm(CM_L0)->dr_synapses(),
 				rtdata->cm(CM_L0)->dr_delayBits(),
 				rtdata->cm(CM_L1)->dr_delayBits(),

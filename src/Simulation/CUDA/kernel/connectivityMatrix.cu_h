@@ -3,11 +3,15 @@
 
 //! \file connectivityMatrix.cu_h
 
-/* \brief Synapse encoding/decoding */
+/* \brief Synapse encoding/decoding
+ *
+ * Forward synapse: target partition / target neuron
+ * Reverse synapse: source synapse / source partition / source neuron
+ */
+
 
 // planes of forward connectivity matrix
 #define FCM_ADDRESS 0        // target partition and neuron
-#define FCM_TIMESTAMP 0      // arrival time of latest spike (packed along with address)
 #define FCM_WEIGHT 1         // float packed as int
 #define FCM_STDP_LTD 2       // long-term depression accumulator
 #define FCM_STDP_LTP 3       // long-term potentiation accumulator (temporary only)
@@ -19,16 +23,12 @@
 #define RCM_STDP_LTP 1       // long-term potentiation accumulator
 #define RCM_SUBMATRICES 2
 
-__host__ uint packSynapse(uint partition, uint neuron);
+__host__ uint f_packSynapse(uint partition, uint neuron);
 
 __device__ uint targetNeuron(uint synapse);
 __device__ uint targetPartition(uint synapse);
 
-/* re-pack synapse with updated timestamp */
-__device__ uint setTimestamp(uint synapse, uint cycle);
-__device__ uint arrivalTime(uint synapse);
-
-__host__ uint packReverseSynapse( uint sourcePartition, uint sourceNeuron, uint arrivalTime);
+__host__ uint r_packSynapse(uint sourcePartition, uint sourceNeuron, uint sourceSynapse);
 
 #define INVALID_REVERSE_SYNAPSE ((uint) ~0)
 
