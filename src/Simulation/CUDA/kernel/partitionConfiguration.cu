@@ -19,18 +19,17 @@
 /* Network-wide configuration */
 
 #define NPARAM_maxPartitionSize 0
-#define NPARAM_maxDelay 1
-#define NPARAM_pitch32 2
-#define NPARAM_pitchL0 3
-#define NPARAM_sizeL0 4
-#define NPARAM_pitchL1 5
-#define NPARAM_sizeL1 6
-// STDP parameters
-#define NPARAM_rpitchL0 7
-#define NPARAM_rsizeL0 8
-#define NPARAM_rpitchL1 9
-#define NPARAM_rsizeL1 10
-#define NPARAM_COUNT 11 
+#define NPARAM_maxDelay         1
+#define NPARAM_pitch32          2
+#define NPARAM_f0_pitch         3
+#define NPARAM_f0_size          4
+#define NPARAM_f1_pitch         5
+#define NPARAM_f1_size          6
+#define NPARAM_r0_pitch         7
+#define NPARAM_r0_size          8
+#define NPARAM_r1_pitch         9
+#define NPARAM_r1_size         10
+#define NPARAM_COUNT           11 
 
 /* Configuration array is stored in constant memory, and is loaded in
  * (parallel) into shared memory for each thread block */
@@ -42,14 +41,14 @@ __shared__ uint s_networkParameters[NPARAM_COUNT];
 #define s_maxPartitionSize s_networkParameters[NPARAM_maxPartitionSize]
 #define s_maxDelay         s_networkParameters[NPARAM_maxDelay]
 #define s_pitch32          s_networkParameters[NPARAM_pitch32]
-#define s_pitchL0          s_networkParameters[NPARAM_pitchL0]
-#define s_sizeL0           s_networkParameters[NPARAM_sizeL0]
-#define s_pitchL1          s_networkParameters[NPARAM_pitchL1]
-#define s_sizeL1           s_networkParameters[NPARAM_sizeL1]
-#define s_rpitchL0         s_networkParameters[NPARAM_rpitchL0]
-#define s_rsizeL0          s_networkParameters[NPARAM_rsizeL0]
-#define s_rpitchL1         s_networkParameters[NPARAM_rpitchL1]
-#define s_rsizeL1          s_networkParameters[NPARAM_rsizeL1]
+#define sf0_pitch          s_networkParameters[NPARAM_f0_pitch]
+#define sf0_size           s_networkParameters[NPARAM_f0_size]
+#define sf1_pitch          s_networkParameters[NPARAM_f1_pitch]
+#define sf1_size           s_networkParameters[NPARAM_f1_size]
+#define sr0_pitch          s_networkParameters[NPARAM_r0_pitch]
+#define sr0_size           s_networkParameters[NPARAM_r0_size]
+#define sr1_pitch          s_networkParameters[NPARAM_r1_pitch]
+#define sr1_size           s_networkParameters[NPARAM_r1_size]
 
 
 #define SET_CONSTANT(symbol, val) param[NPARAM_ ## symbol] = val
@@ -60,16 +59,16 @@ configureKernel(RTDATA rtdata)
 {
 	std::vector<uint> param(NPARAM_COUNT);
 	SET_CONSTANT(maxPartitionSize, rtdata->maxPartitionSize);
-	SET_CONSTANT(maxDelay, rtdata->maxDelay());
-	SET_CONSTANT(pitch32,  rtdata->pitch32());
-	SET_CONSTANT(pitchL0,  rtdata->cm(CM_L0)->df_pitch());
-	SET_CONSTANT(sizeL0,   rtdata->cm(CM_L0)->df_planeSize());
-	SET_CONSTANT(pitchL1,  rtdata->cm(CM_L1)->df_pitch());
-	SET_CONSTANT(sizeL1,   rtdata->cm(CM_L1)->df_planeSize());
-	SET_CONSTANT(rpitchL0, rtdata->cm(CM_L0)->dr_pitch());
-	SET_CONSTANT(rsizeL0,  rtdata->cm(CM_L0)->dr_planeSize());
-	SET_CONSTANT(rpitchL1, rtdata->cm(CM_L1)->dr_pitch());
-	SET_CONSTANT(rsizeL1,  rtdata->cm(CM_L1)->dr_planeSize());
+	SET_CONSTANT(maxDelay,  rtdata->maxDelay());
+	SET_CONSTANT(pitch32,   rtdata->pitch32());
+	SET_CONSTANT(f0_pitch,  rtdata->cm(CM_L0)->df_pitch());
+	SET_CONSTANT(f0_size,   rtdata->cm(CM_L0)->df_planeSize());
+	SET_CONSTANT(f1_pitch,  rtdata->cm(CM_L1)->df_pitch());
+	SET_CONSTANT(f1_size,   rtdata->cm(CM_L1)->df_planeSize());
+	SET_CONSTANT(r0_pitch,  rtdata->cm(CM_L0)->dr_pitch());
+	SET_CONSTANT(r0_size,   rtdata->cm(CM_L0)->dr_planeSize());
+	SET_CONSTANT(r1_pitch,  rtdata->cm(CM_L1)->dr_pitch());
+	SET_CONSTANT(r1_size,   rtdata->cm(CM_L1)->dr_planeSize());
 	CUDA_SAFE_CALL(
 			cudaMemcpyToSymbol(c_networkParameters,
 				&param[0], 
@@ -78,8 +77,6 @@ configureKernel(RTDATA rtdata)
 				cudaMemcpyHostToDevice));
 }
 
-
-#define LOAD_CONSTANT(symbol) s_ ## symbol = c_ ## symbol
 
 __device__
 void

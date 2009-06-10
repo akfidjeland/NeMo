@@ -357,9 +357,9 @@ STDP_FN(step) (
 #ifdef STDP
 		uint32_t* g_recentArrivals,
 		uint stdpCycle,
-		uint* g_cm0R,
-		uint32_t* g_arrivalDelaysL0,
-		uint32_t* g_arrivalDelaysL1,
+		uint* gr0_cm,
+		uint32_t* gr0_delays,
+		uint32_t* gr1_delays,
 #endif
 		// neuron state
 		float* g_neuronParameters,
@@ -367,11 +367,11 @@ STDP_FN(step) (
         float* g_sigma,
 		size_t neuronParametersSize,
         // L0 synapses
-		uint* g_L0CM,
-		uint32_t* g_firingDelaysL0,
+		uint* gf0_cm,
+		uint32_t* gf0_delays,
 		// L1 connectivity matrix
-		uint* g_L1CM,
-		uint32_t* g_firingDelaysL1,
+		uint* gf1_cm,
+		uint32_t* gf1_delays,
 		// L1 spike queue
 		uint2* gSpikeQueue, 
 		size_t sqPitch, 
@@ -482,24 +482,24 @@ STDP_FN(step) (
 	STDP_FN(deliverL0Spikes)(
 			s_maxDelay,
 			s_partitionSize,
-			s_pitchL0,
+			sf0_pitch,
 			s_maxL0SynapsesPerDelay,
 			//! \todo move addressing inside function
-			g_L0CM
-				+ CM_ADDRESS * s_sizeL0
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL0,
-			(float*) g_L0CM
-				+ CM_WEIGHT * s_sizeL0
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL0,
+			gf0_cm
+				+ CM_ADDRESS * sf0_size
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
+			(float*) gf0_cm
+				+ CM_WEIGHT * sf0_size
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
 			s_recentFiring,
 #ifdef STDP
 			s_recentArrivals,
-			(float*) g_L0CM
-				+ CM_LTD * s_sizeL0
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL0,
+			(float*) gf0_cm
+				+ CM_LTD * sf0_size
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
 			stdpCycle,
 #endif
-			g_firingDelaysL0 + CURRENT_PARTITION * s_pitch32,
+			gf0_delays + CURRENT_PARTITION * s_pitch32,
 			s_current);
 	__syncthreads();
 
@@ -541,14 +541,14 @@ STDP_FN(step) (
 		s_maxDelay,
 		stdpCycle,
 		s_maxL0RevSynapsesPerDelay,
-		g_cm0R + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_rpitchL0,
-			s_rpitchL0, s_rsizeL0,
-		g_L0CM + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL0,
-			s_pitchL0, s_sizeL0,
+		gr0_cm + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sr0_pitch,
+			sr0_pitch, sr0_size,
+		gf0_cm + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
+			sf0_pitch, sf0_size,
 		s_firingIdx,
 		s_firingCount,
 		s_recentArrivals,
-		g_arrivalDelaysL0);
+		gr0_delays);
 	__syncthreads();
 #endif
 	SET_COUNTER(s_ccMain, 7);
@@ -564,17 +564,16 @@ STDP_FN(step) (
                 writeBuffer(cycle),
 				s_partitionSize,
 				//! \todo need to call this differently from wrapper
-				s_pitchL1,
+				sf1_pitch,
 				s_maxL1SynapsesPerDelay,
-				g_L1CM
-				+ CM_ADDRESS * s_sizeL1
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL1,
-				(float*) g_L1CM
-				+ CM_WEIGHT * s_sizeL1
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * s_pitchL1,
+				gf1_cm
+				+ CM_ADDRESS * sf1_size
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf1_pitch,
+				(float*) gf1_cm
+				+ CM_WEIGHT * sf1_size
+				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf1_pitch,
 				s_recentFiring,
-				//! \todo STDP
-				g_firingDelaysL1 + CURRENT_PARTITION * s_pitch32,
+				gf1_delays + CURRENT_PARTITION * s_pitch32,
 				(uint2*) s_M1KA, // use for s_current previously, now use for staging outgoing spikes
 				// buffers for write buffer and global heads
 				//! \todo compile-time assertions to make sure we're not overflowing here
