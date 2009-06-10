@@ -267,7 +267,6 @@ step(	ushort cycle,
 				rtdata->cycle(),
 				rtdata->recentFiring->deviceData(),
 				// STDP
-				rtdata->recentArrivals->deviceData(),
 				rtdata->cm(CM_L0)->dr_synapses(),
 				rtdata->cm(CM_L0)->dr_delayBits(),
 				rtdata->cm(CM_L1)->dr_delayBits(),

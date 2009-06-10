@@ -41,7 +41,6 @@ RuntimeData::RuntimeData(
 	firingProbe = new FiringProbe(partitionCount, maxPartitionSize, maxReadPeriod);
 
 	recentFiring = new NVector<uint32_t>(partitionCount, maxPartitionSize, false);
-	recentArrivals = new NVector<uint32_t>(partitionCount, maxPartitionSize, false);
 	neuronParameters = new NVector<float>(partitionCount, maxPartitionSize, true, NVEC_COUNT);
 
 	firingStimulus = new NVector<uint32_t>(
@@ -82,7 +81,6 @@ RuntimeData::~RuntimeData()
 	delete spikeQueue;
 	delete firingProbe;
 	delete recentFiring;
-	delete recentArrivals;
 	delete neuronParameters;
 	delete firingStimulus;
     delete thalamicInput;
@@ -224,7 +222,6 @@ RuntimeData::setPitch()
 {
     m_pitch32 = neuronParameters->wordPitch();
     checkPitch(m_pitch32, recentFiring->wordPitch());
-    checkPitch(m_pitch32, recentArrivals->wordPitch());
     checkPitch(m_pitch32, thalamicInput->wordPitch());
 }
 

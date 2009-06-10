@@ -43,7 +43,6 @@ struct RuntimeData
 	struct FiringProbe* firingProbe;
 
 	NVector<uint32_t>* recentFiring;
-	NVector<uint32_t>* recentArrivals;
 
 	NVector<float>* neuronParameters;
 

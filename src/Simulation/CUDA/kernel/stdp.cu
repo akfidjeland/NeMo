@@ -105,7 +105,6 @@ updateLTP(
 	uint* gr_cm, size_t r_pitch, size_t r_size,
 	uint16_t* s_firingIdx,
 	uint s_firingCount,
-	uint32_t* s_recentArrivals,
 	uint32_t* g_arrivalDelays)
 {
 	/*! \note This is the maximum number of chunks required for this whole
@@ -136,81 +135,77 @@ updateLTP(
 		__shared__ uint s_delayBlocks;
 		__shared__ uint32_t s_arrivals[MAX_DELAY];
 
-		if(s_recentArrivals[postsynaptic]) {
+		//! \todo store reverse matrix in non-delay specific form
+		//! \todo factor this out and share with integrate step
+		if(threadIdx.x == 0) {
+			s_delayBlocks = 0;
 
-			//! \todo store reverse matrix in non-delay specific form
-			//! \todo factor this out and share with integrate step
-			if(threadIdx.x == 0) {
-				s_delayBlocks = 0;
-
-				/* It's probably not worthwhile pre-loading arrival delays, since
-				 * only a few of the loaded values will be used */
-				//! \todo could pre-load in one go for all the ones that did fire, though
-				uint32_t arrivalBits = g_arrivalDelays[postsynaptic];
-				while(arrivalBits) {
-					int arrivalDelay = __ffs(arrivalBits) - 1;
-					s_arrivals[s_delayBlocks] = arrivalDelay;
-					arrivalBits &= ~(0x1 << arrivalDelay);
-					s_delayBlocks += 1;
-				}
-				s_chunkCount = s_delaysPerChunk == 0 ?
-					s_delayBlocks * s_chunksPerDelay :  // >= 1 chunk(s) per delay
-					DIV_CEIL(s_delayBlocks, s_delaysPerChunk);  // multiple delays per chunk
+			/* It's probably not worthwhile pre-loading arrival delays, since
+			 * only a few of the loaded values will be used */
+			//! \todo could pre-load in one go for all the ones that did fire, though
+			uint32_t arrivalBits = g_arrivalDelays[postsynaptic];
+			while(arrivalBits) {
+				int arrivalDelay = __ffs(arrivalBits) - 1;
+				s_arrivals[s_delayBlocks] = arrivalDelay;
+				arrivalBits &= ~(0x1 << arrivalDelay);
+				s_delayBlocks += 1;
 			}
-			__syncthreads();
+			s_chunkCount = s_delaysPerChunk == 0 ?
+				s_delayBlocks * s_chunksPerDelay :  // >= 1 chunk(s) per delay
+				DIV_CEIL(s_delayBlocks, s_delaysPerChunk);  // multiple delays per chunk
+		}
+		__syncthreads();
 
-			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
+		for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
-				uint delayEntry = s_delaysPerChunk == 0 ?
-					chunk / s_chunksPerDelay :
-					chunk * s_delaysPerChunk + threadIdx.x / s_synapsesPerDelay;
-				uint32_t delay = s_arrivals[delayEntry] + 1;
+			uint delayEntry = s_delaysPerChunk == 0 ?
+				chunk / s_chunksPerDelay :
+				chunk * s_delaysPerChunk + threadIdx.x / s_synapsesPerDelay;
+			uint32_t delay = s_arrivals[delayEntry] + 1;
 
-				/* Offset /within/ a delay block */
-				uint r_sidx = s_delaysPerChunk == 0 ?
-					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
-					(threadIdx.x % s_synapsesPerDelay);
+			/* Offset /within/ a delay block */
+			uint r_sidx = s_delaysPerChunk == 0 ?
+				(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
+				(threadIdx.x % s_synapsesPerDelay);
 
-				// reverse matrix *only* contains excitatory neurons
-				//! \todo consider using per-neuron maximum here instead
-				if(r_sidx < sr_maxL0Synapses 
-						&& delayEntry < s_delayBlocks
+			// reverse matrix *only* contains excitatory neurons
+			//! \todo consider using per-neuron maximum here instead
+			if(r_sidx < sr_maxL0Synapses 
+					&& delayEntry < s_delayBlocks
 #ifdef __DEVICE_EMULATION__
-						// warp size is 1, so rounding to warp size not as expected
-						&& threadIdx.x < s_synapsesPerDelay * s_delaysPerChunk
+					// warp size is 1, so rounding to warp size not as expected
+					&& threadIdx.x < s_synapsesPerDelay * s_delaysPerChunk
 #endif
-					)
-				{
-					size_t r_address = (postsynaptic * maxDelay + delay-1) * r_pitch + r_sidx;
-					uint r_sdata = gr_cm[r_address];
+			  )
+			{
+				size_t r_address = (postsynaptic * maxDelay + delay-1) * r_pitch + r_sidx;
+				uint r_sdata = gr_cm[r_address];
 
-					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
+				if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
-						/*! \todo deal with this differently for L1 (use double
-						 * buffered firing bits, consider caching
-						 * s_recentFiring) */
-						uint presynaptic = sourceNeuron(r_sdata);
+					/*! \todo deal with this differently for L1 (use double
+					 * buffered firing bits, consider caching
+					 * s_recentFiring) */
+					uint presynaptic = sourceNeuron(r_sdata);
 
-						/* Ignore any firing whose spikes have not had a chance
-						 * to reach postsynaptic, as well as any firing in the
-						 * presynaptic which happened in /this/ cycle. */
-						int preFired = __ffs((s_recentFiring[presynaptic] >> 1) & ((~0) << delay));
+					/* Ignore any firing whose spikes have not had a chance
+					 * to reach postsynaptic, as well as any firing in the
+					 * presynaptic which happened in /this/ cycle. */
+					int preFired = __ffs((s_recentFiring[presynaptic] >> 1) & ((~0) << delay));
 
-						if(preFired) {
-							int dt = preFired - delay;
-							ASSERT(dt > 0);
-							if(dt < s_stdpTauP) {
-								gr_ltp[r_address] += potentiation(dt);
-								DEBUG_MSG("ltp +%f for synapse %u -> %u after delay of %u\n",
-										potentiation(dt), presynaptic, postsynaptic, dt);
-							}
+					if(preFired) {
+						int dt = preFired - delay;
+						ASSERT(dt > 0);
+						if(dt < s_stdpTauP) {
+							gr_ltp[r_address] += potentiation(dt);
+							DEBUG_MSG("ltp +%f for synapse %u -> %u after delay of %u\n",
+									potentiation(dt), presynaptic, postsynaptic, dt);
 						}
 					}
 				}
 			}
-			__syncthreads();
 		}
-        __syncthreads();
+		__syncthreads();
 	}
 }
 

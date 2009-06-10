@@ -72,10 +72,6 @@ STDP_FN(fire)(
 	// buffers
 	uint32_t* s_recentFiring,
 	uint32_t* g_recentFiring,
-#ifdef STDP
-	uint32_t* s_recentArrivals,
-	uint32_t* g_recentArrivals,
-#endif
 	uint16_t* s_firingIdx,
 	uint* s_nextIdxEntry)
 {
@@ -131,15 +127,12 @@ STDP_FN(fire)(
 				int idxEntry = atomicAdd(s_nextIdxEntry, 1);
 				s_firingIdx[idxEntry] = (uint16_t) s_index;
 			}
+			//! \todo undo the updating of local firing. We don't care about the ones that fired just now
 			/* We need the (updated) recent firing history for L1 spike
 			 * delivery later, but won't update this further, so we can write
 			 * back to global memory now. */
 			s_recentFiring[s_index] = (s_recentFiring[s_index] << 1) | firing;
 			g_recentFiring[g_index] = s_recentFiring[s_index];
-			//! \todo should we keep *updated* s_recentArrivals for LTP?
-#ifdef STDP
-			g_recentArrivals[g_index] = s_recentArrivals[s_index] << 1;
-#endif
 			g_v[g_index] = v;
 			g_u[g_index] = u;
 		}
@@ -159,7 +152,6 @@ STDP_FN(deliverL0Spikes)(
 	float* g_sweights,
 	uint32_t* s_recentFiring,
 #ifdef STDP
-	uint32_t* s_recentIncoming,
 	float* g_ltd,
 #endif
 	uint32_t* g_firingDelays,
@@ -315,9 +307,6 @@ STDP_FN(deliverL0Spikes)(
                                 " (thread %u, i=%d, chunk=%d)\n",
 							    weight, presynaptic, postsynaptic, 
                                 delay, threadIdx.x, i, chunk);
-#ifdef STDP
-						s_recentIncoming[postsynaptic] |= 0x1;
-#endif
                     }
                     __syncthreads();
                 }
@@ -353,7 +342,6 @@ STDP_FN(step) (
         uint32_t cycle,
 		uint32_t* g_recentFiring, 
 #ifdef STDP
-		uint32_t* g_recentArrivals,
 		uint* gr0_cm,
 		uint32_t* gr0_delays,
 		uint32_t* gr1_delays,
@@ -397,16 +385,9 @@ STDP_FN(step) (
 	__shared__ uint32_t s_M1KB[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint16_t s_M512[STDP_FN(MAX_PARTITION_SIZE)];
 
-	/* The above memory allocation leaves slightly less than 1kB for kernel
-	 * parameters, individual shared variables etc */
-
 	uint32_t* s_recentFiring = s_M1KB;
 	uint16_t* s_firingIdx = s_M512;
 	__shared__ uint s_firingCount;
-
-#ifdef STDP
-	__shared__ uint32_t s_recentArrivals[STDP_FN(MAX_PARTITION_SIZE)];
-#endif
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -433,7 +414,6 @@ STDP_FN(step) (
 	loadNetworkParameters();
 
 #ifdef STDP
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, s_pitch32, g_recentArrivals, s_recentArrivals);
 	loadStdpParameters();
 #endif
 	SET_COUNTER(s_ccMain, 1);
@@ -489,7 +469,6 @@ STDP_FN(step) (
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
 			s_recentFiring,
 #ifdef STDP
-			s_recentArrivals,
 			(float*) gf0_cm
 				+ FCM_STDP_LTD * sf0_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
@@ -522,10 +501,6 @@ STDP_FN(step) (
 			g_fstim, s_current, 
 			s_recentFiring, 
 			g_recentFiring, 
-#ifdef STDP
-			s_recentArrivals,
-			g_recentArrivals,
-#endif
 			s_firingIdx,
 			&s_firingCount);
 	__syncthreads();
@@ -540,7 +515,6 @@ STDP_FN(step) (
 			sr0_pitch, sr0_size,
 		s_firingIdx,
 		s_firingCount,
-		s_recentArrivals,
 		gr0_delays);
 	__syncthreads();
 #endif
