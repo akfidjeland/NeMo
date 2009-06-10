@@ -35,6 +35,10 @@ struct RuntimeData
 	 * device */
 	bool deviceDirty() const;
 
+	/*! \return true if there are *any* L1 connections, i.e. connections
+	 * crossing partition boundaries */
+	bool haveL1Connections() const;
+
 	struct L1SpikeQueue* spikeQueue;
 	struct FiringProbe* firingProbe;
 
@@ -125,6 +129,8 @@ struct RuntimeData
 
         struct timeval m_start; // set before first step
         struct timeval m_end;   // set after every step
+
+		bool m_haveL1Connections;
 
 		// no need for getters for a single use
 		friend void configureDevice(RuntimeData*);

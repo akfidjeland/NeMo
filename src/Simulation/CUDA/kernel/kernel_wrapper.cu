@@ -247,8 +247,14 @@ step(	ushort cycle,
 	if(rtdata->usingSTDP() && doApplySTDP) {
 		if(stdpReward == 0.0f) {
 			clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L0);
+			if(rtdata->haveL1Connections()) {
+				clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L1);
+			}
 		} else  {
 			applySTDP(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);
+			if(rtdata->haveL1Connections()) {
+				applySTDP(dimGrid, dimBlock, rtdata, CM_L1, stdpReward, false);
+			}
 		}
 	}
 

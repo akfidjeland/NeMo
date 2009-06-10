@@ -34,7 +34,8 @@ RuntimeData::RuntimeData(
 	m_stdpCycle(maxDelay + 1),
 	m_pitch32(0),
 	m_deviceDirty(true),
-	m_usingSTDP(false)
+	m_usingSTDP(false),
+	m_haveL1Connections(partitionCount != 1 && l1SQEntrySize != 0)
 {
 	// spikeQueue = new L1SpikeQueue(partitionCount, maxDelay, l1SQEntrySize);
 	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize);
@@ -59,7 +60,8 @@ RuntimeData::RuntimeData(
             maxL0SynapsesPerDelay,
 			maxL0RevSynapsesPerDelay);
 
-	m_cm[CM_L1] = new ConnectivityMatrix(partitionCount,
+	m_cm[CM_L1] = new ConnectivityMatrix(
+			partitionCount,
 			maxPartitionSize,
 			maxDelay,
 			maxL1SynapsesPerDelay,
@@ -123,6 +125,13 @@ bool
 RuntimeData::deviceDirty() const
 {
 	return m_deviceDirty;
+}
+
+
+bool
+RuntimeData::haveL1Connections() const
+{
+	return m_haveL1Connections;
 }
 
 
