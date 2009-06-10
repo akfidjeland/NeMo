@@ -269,6 +269,6 @@ SMatrix<T>::d_fill(const T& value, size_t plane)
             m_pitch,
             value,
             m_maxSynapsesPerDelay,
-            m_partitionCount * m_maxPartitionSize * m_maxDelay);
+            m_partitionCount * m_maxPartitionSize * m_maxDelay)
     );
 }

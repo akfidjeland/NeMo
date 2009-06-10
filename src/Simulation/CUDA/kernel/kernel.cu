@@ -414,20 +414,20 @@ STDP_FN(step) (
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
 	__shared__ uint s_neuronsPerThread;
-	__shared__ uint s_maxL0SynapsesPerDelay;
-	__shared__ uint s_maxL1SynapsesPerDelay;
+	__shared__ uint sf0_maxSynapsesPerDelay;
+	__shared__ uint sf1_maxSynapsesPerDelay;
 #ifdef STDP
-	__shared__ uint s_maxL0RevSynapsesPerDelay;
+	__shared__ uint sr0_maxSynapsesPerDelay;
 #endif
 	__shared__ float s_substepMult;
 
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
 		s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
-		s_maxL0SynapsesPerDelay = c_maxL0SynapsesPerDelay[CURRENT_PARTITION];
-		s_maxL1SynapsesPerDelay = c_maxL1SynapsesPerDelay[CURRENT_PARTITION];
+		sf0_maxSynapsesPerDelay = cf0_maxSynapsesPerDelay[CURRENT_PARTITION];
+		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
 #ifdef STDP
-		s_maxL0RevSynapsesPerDelay = c_maxL0RevSynapsesPerDelay[CURRENT_PARTITION];
+		sr0_maxSynapsesPerDelay = cr0_maxSynapsesPerDelay[CURRENT_PARTITION];
 #endif
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
@@ -482,7 +482,7 @@ STDP_FN(step) (
 			s_maxDelay,
 			s_partitionSize,
 			sf0_pitch,
-			s_maxL0SynapsesPerDelay,
+			sf0_maxSynapsesPerDelay,
 			//! \todo move addressing inside function
 			gf0_cm
 				+ FCM_ADDRESS * sf0_size
@@ -539,7 +539,7 @@ STDP_FN(step) (
 	updateLTP(
 		s_maxDelay,
 		stdpCycle,
-		s_maxL0RevSynapsesPerDelay,
+		sr0_maxSynapsesPerDelay,
 		gr0_cm + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sr0_pitch,
 			sr0_pitch, sr0_size,
 		gf0_cm + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
@@ -564,7 +564,7 @@ STDP_FN(step) (
 				s_partitionSize,
 				//! \todo need to call this differently from wrapper
 				sf1_pitch,
-				s_maxL1SynapsesPerDelay,
+				sf1_maxSynapsesPerDelay,
 				gf1_cm
 				+ FCM_ADDRESS * sf1_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf1_pitch,

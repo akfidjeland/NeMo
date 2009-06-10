@@ -133,13 +133,13 @@ configureDevice(RTDATA rtdata)
         clearAssertions();
 		rtdata->moveToDevice();
 		configureKernel(rtdata);
-		configurePartition(c_maxL0SynapsesPerDelay, 
+		configurePartition(cf0_maxSynapsesPerDelay,
 			rtdata->cm(CM_L0)->f_maxSynapsesPerDelay());
-		configurePartition(c_maxL0RevSynapsesPerDelay, 
+		configurePartition(cr0_maxSynapsesPerDelay,
 			rtdata->cm(CM_L0)->r_maxSynapsesPerDelay());
-		configurePartition(c_maxL1SynapsesPerDelay,
+		configurePartition(cf1_maxSynapsesPerDelay,
 			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
-		configurePartition(c_maxL1RevSynapsesPerDelay,
+		configurePartition(cr1_maxSynapsesPerDelay,
 			rtdata->cm(CM_L1)->r_maxSynapsesPerDelay());
 		if(rtdata->usingSTDP()) {
 			configureStdp(
