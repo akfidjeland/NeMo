@@ -398,7 +398,6 @@ STDP_FN(step) (
 
 	__shared__ uint32_t s_M1KA[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint32_t s_M1KB[STDP_FN(MAX_PARTITION_SIZE)];
-	//__shared__ uint32_t s_M1KC[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint16_t s_M512[STDP_FN(MAX_PARTITION_SIZE)];
 
 	/* The above memory allocation leaves slightly less than 1kB for kernel
@@ -486,16 +485,16 @@ STDP_FN(step) (
 			s_maxL0SynapsesPerDelay,
 			//! \todo move addressing inside function
 			gf0_cm
-				+ CM_ADDRESS * sf0_size
+				+ FCM_ADDRESS * sf0_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
 			(float*) gf0_cm
-				+ CM_WEIGHT * sf0_size
+				+ FCM_WEIGHT * sf0_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
 			s_recentFiring,
 #ifdef STDP
 			s_recentArrivals,
 			(float*) gf0_cm
-				+ CM_LTD * sf0_size
+				+ FCM_STDP_LTD * sf0_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
 			stdpCycle,
 #endif
@@ -567,10 +566,10 @@ STDP_FN(step) (
 				sf1_pitch,
 				s_maxL1SynapsesPerDelay,
 				gf1_cm
-				+ CM_ADDRESS * sf1_size
+				+ FCM_ADDRESS * sf1_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf1_pitch,
 				(float*) gf1_cm
-				+ CM_WEIGHT * sf1_size
+				+ FCM_WEIGHT * sf1_size
 				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf1_pitch,
 				s_recentFiring,
 				gf1_delays + CURRENT_PARTITION * s_pitch32,

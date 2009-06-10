@@ -160,10 +160,10 @@ __host__
 void
 clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
 {
-	rtdata->cm(cmIdx)->df_clear(CM_LTD);
-	rtdata->cm(cmIdx)->df_clear(CM_FLTP);
-	rtdata->cm(cmIdx)->dr_clear(RCM_LTP);
+	rtdata->cm(cmIdx)->df_clear(FCM_STDP_LTD);
+	rtdata->cm(cmIdx)->dr_clear(RCM_STDP_LTP);
 }
+
 
 
 
@@ -193,7 +193,7 @@ applySTDP(dim3 dimGrid,
 			rtdata->cm(cmIdx)->dr_planeSize());
 
 	if(trace) {
-		rtdata->cm(cmIdx)->df_clear(CM_STDP_TRACE);
+		rtdata->cm(cmIdx)->df_clear(FCM_STDP_TRACE);
 	}
 
 	applySTDP_<<<dimGrid, dimBlock>>>(
@@ -211,6 +211,8 @@ applySTDP(dim3 dimGrid,
 			rtdata->cm(cmIdx)->df_pitch(),
 			rtdata->cm(cmIdx)->df_planeSize(),
 			trace);
+
+	rtdata->cm(cmIdx)->df_clear(FCM_STDP_LTP);
 }
 
 

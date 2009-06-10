@@ -18,7 +18,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 			maxDelay,
 			maxSynapsesPerDelay,
 			true,
-			CM_SUBMATRICES),
+			FCM_SUBMATRICES),
     m_delayBits(partitionCount, maxPartitionSize, true),
     m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
@@ -146,8 +146,8 @@ ConnectivityMatrix::setRow(
 		abuf[i] = packSynapse(targetPartition[i], targetNeuron[i]);
 	}
 
-	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, abuf, CM_ADDRESS);
-	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, wbuf, CM_WEIGHT);
+	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, abuf, FCM_ADDRESS);
+	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, wbuf, FCM_WEIGHT);
 
 	uint32_t delayBits = m_delayBits.getNeuron(sourcePartition, sourceNeuron);
 	delayBits |= 0x1 << (delay-1);
@@ -197,7 +197,7 @@ typedef union
 void
 ConnectivityMatrix::printSTDPTrace()
 {
-    m_fsynapses.copyToHost(CM_STDP_TRACE);
+    m_fsynapses.copyToHost(FCM_STDP_TRACE);
     for(uint sourcePartition=0; sourcePartition<m_partitionCount; ++sourcePartition) {
         //! \todo could speed up traversal by using delay bits and max pitch
         for(uint sourceNeuron=0; sourceNeuron<m_maxPartitionSize; ++sourceNeuron) {
@@ -208,11 +208,11 @@ ConnectivityMatrix::printSTDPTrace()
                 {
                     synapse_t w_tmp;
                     w_tmp.dword_value = m_fsynapses.h_lookup(sourcePartition, sourceNeuron, delay,
-                            synapseIdx, CM_STDP_TRACE);
+                            synapseIdx, FCM_STDP_TRACE);
                     float w = w_tmp.float_value;
                     if(w != 0.0f) {
                         uint synapse = m_fsynapses.h_lookup(sourcePartition,
-                                        sourceNeuron, delay, synapseIdx, CM_ADDRESS);
+                                        sourceNeuron, delay, synapseIdx, FCM_ADDRESS);
                         fprintf(stderr, "STDP: weight[%u-%u -> %u-%u] = %f\n",
                                 sourcePartition, sourceNeuron,
                                 targetPartition(synapse), targetNeuron(synapse), w);

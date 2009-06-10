@@ -3,41 +3,20 @@
 
 //! \file connectivityMatrix.cu_h
 
-/* \brief Synapse encoding/decoding 
- *  
- * Synapses are encoded in 64 bits with the following data:
- * 
- * - weight (32b float)/decoding
- * - target partition (bits)
- * - target neuron (bits)
- * - index into reverse connectiviy matrix
- *
- * The reverse connectivity matrix is used for STDP. Each synapse is thus
- * stored in two places (with different data). The index is the offset within a
- * row in the reverse matrix. The rest of the reverse addressing is already
- * known: source partition/neuron, target partition/neuron, and delay.
- *
- * Reverse synapses are encoded in 32 bits with the following data:
- *
- * - source partition
- * - source neuron
- * - arrival time of latest spike
- *
- * \author Andreas Fidjeland
- */
+/* \brief Synapse encoding/decoding */
 
-// forward connetivity matrices
-#define CM_ADDRESS 0
-#define CM_TIMESTAMP 0
-#define CM_WEIGHT 1
-#define CM_LTD 2           // LTD accumulation in forward order
-#define CM_FLTP 3          // LTP accumulation in forward order
-#define CM_STDP_TRACE 4    // recording of every synapse (weight) with modifications
-#define CM_SUBMATRICES 5
+// planes of forward connectivity matrix
+#define FCM_ADDRESS 0        // target partition and neuron
+#define FCM_TIMESTAMP 0      // arrival time of latest spike (packed along with address)
+#define FCM_WEIGHT 1         // float packed as int
+#define FCM_STDP_LTD 2       // long-term depression accumulator
+#define FCM_STDP_LTP 3       // long-term potentiation accumulator (temporary only)
+#define FCM_STDP_TRACE 4     // recording of every synapse (weight) with modifications
+#define FCM_SUBMATRICES 5
 
-// reverse connectivity
-#define RCM_ADDRESS 0
-#define RCM_LTP 1          // LTP accumulation in reverse order
+// planes of reverse connectivity matrix
+#define RCM_ADDRESS 0        // source partition, neuron and synapse index 
+#define RCM_STDP_LTP 1       // long-term potentiation accumulator
 #define RCM_SUBMATRICES 2
 
 __host__ uint packSynapse(uint partition, uint neuron);

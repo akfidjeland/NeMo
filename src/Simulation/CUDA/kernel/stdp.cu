@@ -121,8 +121,8 @@ updateLTP(
 	__shared__ int s_delaysPerChunk;
 	__shared__ int s_chunksPerDelay;
 
-	float* gr_ltp = (float*) (gr_cm + RCM_LTP * r_size);
-	uint* gf_timestamp = gf_cm + CM_TIMESTAMP * f_size;
+	float* gr_ltp = (float*) (gr_cm + RCM_STDP_LTP * r_size);
+	uint* gf_timestamp = gf_cm + FCM_TIMESTAMP * f_size;
 
 	//! \todo factor this out and share with integrate step
 	if(threadIdx.x == 0) {
@@ -305,8 +305,8 @@ reorderLTP_(
 
 	size_t poffset = CURRENT_PARTITION * maxPartitionSize * maxDelay;
 	uint* g_raddress =       gr_cm + RCM_ADDRESS * r_size + poffset * r_pitch;
-	float* gr_ltp = (float*) gr_cm + RCM_LTP     * r_size + poffset * r_pitch;
-	float* gf_ltp = (float*) gf_cm + CM_FLTP     * f_size + poffset * f_pitch;
+	float* gr_ltp = (float*) gr_cm + RCM_STDP_LTP     * r_size + poffset * r_pitch;
+	float* gf_ltp = (float*) gf_cm + FCM_STDP_LTP     * f_size + poffset * f_pitch;
 
 	for(uint postsynaptic=0; postsynaptic < s_partitionSize; ++postsynaptic) {
 
@@ -386,12 +386,12 @@ applySTDP_(
 
 	size_t partitionOffset = CURRENT_PARTITION * maxPartitionSize * maxDelay * pitch;
 #ifdef __DEVICE_EMULATION__
-	uint* g_postsynaptic =      g_cm + CM_ADDRESS * size + partitionOffset;
+	uint* g_postsynaptic =      g_cm + FCM_ADDRESS * size + partitionOffset;
 #endif
-	float* g_weights = (float*) g_cm + CM_WEIGHT     * size + partitionOffset;
-	float* g_ltp     = (float*) g_cm + CM_FLTP       * size + partitionOffset;
-	float* g_ltd     = (float*) g_cm + CM_LTD        * size + partitionOffset;
-	uint* g_trace    =          g_cm + CM_STDP_TRACE * size + partitionOffset;
+	float* g_weights = (float*) g_cm + FCM_WEIGHT     * size + partitionOffset;
+	float* g_ltp     = (float*) g_cm + FCM_STDP_LTP   * size + partitionOffset;
+	float* g_ltd     = (float*) g_cm + FCM_STDP_LTD   * size + partitionOffset;
+	uint* g_trace    =          g_cm + FCM_STDP_TRACE * size + partitionOffset;
 
 	for(uint presynaptic=0; presynaptic<s_partitionSize; ++presynaptic) {
 
