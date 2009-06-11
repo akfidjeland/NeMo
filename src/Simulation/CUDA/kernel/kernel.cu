@@ -138,6 +138,51 @@ STDP_FN(fire)(
 }
 
 
+
+/* Add current to current accumulation buffer 
+ *
+ * Since multiple spikes may terminate at the same postsynaptic neuron, some
+ * care must be taken to avoid a race condition in the current update.
+ *
+ * We only deal with a single delay at a time, to avoid race condition
+ * resulting from multiple synapses terminating at the same postsynaptic
+ * neuron. Within a single delay, there should be no race conditions, if the
+ * mapper has done its job
+ * 
+ * It's possible to do this using mutexes based on shared memory atomics.
+ * However, this was found to be slightly slower (12% overhead vs 10% overhead
+ * wrt no work-around for race condition) and makes use of a sizable amount of
+ * precious shared memory for the mutex data.  */
+
+/*! \todo we can increase the amount of parallel execution here by identifying
+ * (at map time) delay blocks which have no potential race conditions. We can
+ * thus assign a "commit number" to each delay block and do these in parallel */
+__device__
+void
+STDP_FN(commitCurrent_)(
+		bool doCommit,
+		uint delayEntry,
+		uint s_delayBlocks,
+		uint presynaptic,
+		uint postsynaptic,
+		float weight,
+		float* s_current)
+{
+	for(uint commit=0; commit < s_delayBlocks; ++commit) {
+		if(delayEntry == commit && doCommit) {
+			s_current[postsynaptic] += weight; 
+			DEBUG_MSG("L0 current %f for synapse %u -> %u after delay %d" ,
+					weight, presynaptic, postsynaptic, delay);
+		}
+		__syncthreads();
+	}
+	/* We need a barrier *outside* the loop to avoid threads
+	 * reaching the barrier (inside the loop), then having thread 0
+	 * race ahead and changing s_delayBlocks before all threads
+	 * have left the loop. */
+	__syncthreads();
+}
+
 __device__
 void
 STDP_FN(deliverL0Spikes_)(
@@ -234,14 +279,14 @@ STDP_FN(deliverL0Spikes_)(
 			 *    we process multiple delays in parallel 
 			 */
 
-			for(int chunk=0; chunk < s_chunkCount; ++chunk) {
+			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
-				int delayEntry = s_delaysPerChunk == 0 ?
+				uint delayEntry = s_delaysPerChunk == 0 ?
 					chunk / s_chunksPerDelay :
 					threadIdx.x / s_synapsesPerDelay;
 				uint32_t delay = s_arrivals[delayEntry];
 				/* Offset /within/ a delay block */
-				int synapseIdx = s_delaysPerChunk == 0 ?
+				uint synapseIdx = s_delaysPerChunk == 0 ?
 					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
 					(threadIdx.x % s_synapsesPerDelay);
 
@@ -274,37 +319,8 @@ STDP_FN(deliverL0Spikes_)(
 					}
 				}
 
-				//! \todo factor out commit loop
-                /* Only deal with a single delay at a time, to avoid race
-                 * condition resulting from multiple synapses terminating at
-                 * the same postsynaptic neuron. Within a single delay, there
-                 * should be no race conditions, if the mapper has done its job
-                 * 
-                 * It's possible to do this using mutexes based on shared
-                 * memory atomics. However, this was found to be slightly
-                 * slower (12% overhead vs 10% overhead wrt no work-around for
-                 * race condition) and makes use of a sizable amount of
-                 * precious shared memory for the mutex data.  */
-
-                /*! \todo we can increase the amount of parallel execution here
-                 * by identifying (at map time) delay blocks which have no
-                 * potential race conditions. We can thus assign a "commit
-                 * number" to each delay block and do these in parallel */
-                for(int commit=0; commit < s_delayBlocks; ++commit) {
-                    if(delayEntry == commit && doCommit) {
-                        s_current[postsynaptic] += weight; 
-						DEBUG_MSG("L0 current %f for synapse %u -> %u after delay %d" 
-                                " (thread %u, i=%d, chunk=%d)\n",
-							    weight, presynaptic, postsynaptic, 
-                                delay, threadIdx.x, i, chunk);
-                    }
-                    __syncthreads();
-                }
-                /* We need a barrier *outside* the loop to avoid threads
-                 * reaching the barrier (inside the loop), then having thread 0
-                 * race ahead and changing s_delayBlocks before all threads
-                 * have left the loop. */
-                __syncthreads();
+				STDP_FN(commitCurrent_)(doCommit, delayEntry, s_delayBlocks, 
+						presynaptic, postsynaptic, weight, s_current);
 			}
 		}
 	}
