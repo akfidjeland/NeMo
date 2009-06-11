@@ -28,8 +28,6 @@ STDP_FN(setSharedArray)(uint32_t* s_mem, uint32_t val)
 
 
 
-/* Load firing data for d most recent simulation cycles for all neurons */
-//! \todo generalise to deal with longer delays than 32.
 __device__
 void
 STDP_FN(loadSharedArray)(
@@ -186,7 +184,6 @@ STDP_FN(deliverL0Spikes)(
 		}
 		__syncthreads();
 
-		//! \todo load s_recentFiring here, write result to smem array
 		int candidate = preOffset + threadIdx.x;
 
         /* It might seem a good idea to load firing delays from global memory *
@@ -450,7 +447,10 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 3);
 
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, s_pitch32, g_recentFiring, s_recentFiring);
+	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread,
+			s_pitch32,
+			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
+			s_recentFiring);
 	__syncthreads();
 
 	SET_COUNTER(s_ccMain, 4);
@@ -488,7 +488,7 @@ STDP_FN(step) (
 			neuronParametersSize,
 			g_fstim, s_current, 
 			s_recentFiring, 
-			g_recentFiring, 
+			g_recentFiring + writeBuffer(cycle) * PARTITION_COUNT * s_pitch32,
 			s_firingIdx,
 			&s_firingCount);
 	__syncthreads();

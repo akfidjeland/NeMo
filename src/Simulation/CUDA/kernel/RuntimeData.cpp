@@ -40,7 +40,7 @@ RuntimeData::RuntimeData(
 	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize);
 	firingProbe = new FiringProbe(partitionCount, maxPartitionSize, maxReadPeriod);
 
-	recentFiring = new NVector<uint32_t>(partitionCount, maxPartitionSize, false);
+	recentFiring = new NVector<uint32_t>(partitionCount, maxPartitionSize, false, 2);
 	neuronParameters = new NVector<float>(partitionCount, maxPartitionSize, true, NVEC_COUNT);
 
 	firingStimulus = new NVector<uint32_t>(
