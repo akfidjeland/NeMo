@@ -140,7 +140,7 @@ STDP_FN(fire)(
 
 __device__
 void
-STDP_FN(deliverL0Spikes)(
+STDP_FN(deliverL0Spikes_)(
 	uint maxDelay,
 	uint partitionSize,
 	uint sf0_maxSynapses,
@@ -266,21 +266,13 @@ STDP_FN(deliverL0Spikes)(
 					if(weight != 0.0f) {
                         doCommit = true;
 #ifdef STDP
-						//! \todo check for off-by-one errors here
-						int dt = __ffs(s_recentFiring[postsynaptic]);
-
-						/*! \todo perhaps we should only apply depression once,
-						 * for first incoming of postsynaptic firing? */
-						//! \todo make sure we only modify excitatory
-						if(s_recentFiring[postsynaptic] && abs(dt) < s_stdpTauD) {
-							gf0_ltd[synapseAddress] -= depression(dt);
-							DEBUG_MSG("ltd: %+f for synapse %u -> %u after delay of %u\n",
-								depression(dt), presynaptic, postsynaptic, dt);
-						}
+						depressSynapse(presynaptic, postsynaptic, delay, 
+								s_recentFiring, synapseAddress, gf0_ltd);
 #endif
 					}
 				}
 
+				//! \todo factor out commit loop
                 /* Only deal with a single delay at a time, to avoid race
                  * condition resulting from multiple synapses terminating at
                  * the same postsynaptic neuron. Within a single delay, there
@@ -314,6 +306,7 @@ STDP_FN(deliverL0Spikes)(
 			}
 		}
 	}
+	__syncthreads();
 }
 
 
@@ -459,7 +452,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 4);
 
-	STDP_FN(deliverL0Spikes)(
+	STDP_FN(deliverL0Spikes_)(
 			s_maxDelay,
 			s_partitionSize,
 			sf0_maxSynapsesPerDelay,
@@ -467,7 +460,6 @@ STDP_FN(step) (
 			s_recentFiring,
 			gf0_delays + CURRENT_PARTITION * s_pitch32,
 			s_current);
-	__syncthreads();
 
 	SET_COUNTER(s_ccMain, 5);
 

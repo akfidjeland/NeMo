@@ -94,6 +94,54 @@ potentiation(int dt)
 }
 
 
+/* Depress synapse if the postsynaptic neuron fired shortly before the spike
+ * arrived. 
+ *
+ * If two spikes arrive at the postsynaptic neuron after it fired, only the
+ * first spike arrival results in depression. To determine if the current spike
+ * is the first, consider the firing bits for the presynaptic neuron (one bit
+ * per past cycle):
+ *
+ *            |--dt---| |--delay--|
+ * XXXXXXXXXXXPPPPPPPPPSFFFFFFFFFFF
+ * 31      23      15      7      0
+ * 
+ * where 
+ *	X: cycles not of interest as spikes would have reach postsynaptic before
+ *	   last firing
+ *	P: past spikes which would have reached after postsynaptic firing and
+ *	   before current spike.
+ *	S: current spike
+ *	F: future spikes which are in flight but have not yet reached. They will be
+ *	   ignored (for depression) when they arrive.
+ *
+ * Only 'P' and 'S' cycles are of interest.
+ */
+__device__
+void
+depressSynapse(
+		uint presynaptic,
+		uint postsynaptic,
+		uint delay,
+		uint32_t* s_recentFiring,
+		size_t f0_offset, // of synapse
+		float* gf0_ltd)
+{
+	int dt = __ffs(s_recentFiring[postsynaptic]);
+
+	//! \todo make sure we only modify excitatory
+	if(s_recentFiring[postsynaptic] && abs(dt) < s_stdpTauD) {
+		uint32_t p_bits = (~((~0) << dt)) << (delay+1); // see above figure
+		uint32_t preSpikes = s_recentFiring[presynaptic];
+		if(!(preSpikes & p_bits)) {
+			gf0_ltd[f0_offset] -= depression(dt);
+			DEBUG_MSG("ltd: %+f for synapse %u -> %u after delay of %u\n",
+					depression(dt), presynaptic, postsynaptic, dt);
+		}
+	}
+}
+
+
 /*! Process each firing neuron, potentiating synapses with spikes reaching the
  * fired neuron shortly before firing. */
 __device__
