@@ -322,12 +322,9 @@ void
 deliverL1Spikes_JIT(
 	uint maxDelay,
 	uint writeBufferIdx,
-	uint s_partitionSize,
-	uint pitchCM, // word pitch
-	uint s_maxL1Synapses,
-	//inputs
-	uint* g_saddress,
-	float* g_sweights,
+	uint partitionSize,
+	uint sf1_maxSynapses,
+	uint* gf1_cm, uint f1_pitch, uint f1_size,
 	uint32_t* s_recentFiring,
 	//! \todo STDP support
 #ifdef STDP
@@ -344,7 +341,9 @@ deliverL1Spikes_JIT(
 	uint* g_heads,
     size_t headPitch)
 {
-	DEBUG_MSG("Begin deliver L1\n");
+	uint*  gf1_address =          gf1_cm + FCM_ADDRESS * f1_size;
+	float* gf1_weights = (float*) gf1_cm + FCM_WEIGHT  * f1_size;
+
 	/*! \note This is the maximum number of chunks required for this whole
 	 * cluster. It should be possible to reduce this for rows with few entries.
 	 * Perhaps better to just save the number of chunks in constant memory. It
@@ -378,14 +377,14 @@ deliverL1Spikes_JIT(
 	__shared__ uint s_delaysPerChunk;
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
-		s_synapsesPerDelay = ALIGN(s_maxL1Synapses, warpSize);
+		s_synapsesPerDelay = ALIGN(sf1_maxSynapses, warpSize);
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
 	}
 	__syncthreads();
 
 
-	for(int preOffset=0; preOffset < s_partitionSize; preOffset += THREADS_PER_BLOCK) {
+	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
 		__shared__ uint s_firingCount;
 		//! \todo make this a re-usable chunk of memory
@@ -400,7 +399,7 @@ deliverL1Spikes_JIT(
 		//! \todo load s_recentFiring here, write result to smem array
 		int candidate = preOffset + threadIdx.x;
 		uint32_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
-		if(arrivals && candidate < s_partitionSize) {
+		if(arrivals && candidate < partitionSize) {
 			int nextFree = atomicAdd(&s_firingCount, 1);
 			s_firingIdx[nextFree] = candidate;
 			s_arrivalBits[nextFree] = arrivals;
@@ -459,17 +458,16 @@ deliverL1Spikes_JIT(
 				bool doCommit = false;
 
 				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < s_maxL1Synapses && delayEntry < s_delayBlocks
+				if(synapseIdx < sf1_maxSynapses && delayEntry < s_delayBlocks
 #ifdef __DEVICE_EMULATION__
 						// warp size is 1, so rounding to warp size not as expected
 						&& threadIdx.x < s_synapsesPerDelay * s_delaysPerChunk
 #endif
 				  ) {
-					size_t synapseAddress = presynaptic * maxDelay * pitchCM
-						+ delay * pitchCM
-						+ synapseIdx;
-					weight = g_sweights[synapseAddress];
-					target = g_saddress[synapseAddress];
+					size_t synapseAddress =
+						(presynaptic * maxDelay + delay) * f1_pitch + synapseIdx;
+					weight = gf1_weights[synapseAddress];
+					target = gf1_address[synapseAddress];
 
 					if(weight != 0.0f) {
 						doCommit = true;

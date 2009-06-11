@@ -144,19 +144,19 @@ __device__
 void
 STDP_FN(deliverL0Spikes)(
 	uint maxDelay,
-	int s_partitionSize,
-	size_t pitchCM, // word pitch
-	int s_maxL0Synapses,
-	//inputs
-	uint* g_saddress,
-	float* g_sweights,
+	uint partitionSize,
+	uint sf0_maxSynapses,
+	uint* gf0_cm, uint f0_pitch, uint f0_size,
 	uint32_t* s_recentFiring,
-#ifdef STDP
-	float* g_ltd,
-#endif
 	uint32_t* g_firingDelays,
 	float* s_current)
 {
+	uint*  gf0_address =          gf0_cm + FCM_ADDRESS  * f0_size;
+	float* gf0_weight  = (float*) gf0_cm + FCM_WEIGHT   * f0_size;
+#ifdef STDP
+	float* gf0_ltd     = (float*) gf0_cm + FCM_STDP_LTD * f0_size;
+#endif
+
 	/*! \note This is the maximum number of chunks required for this whole
 	 * cluster. It should be possible to reduce this for rows with few entries.
 	 * Perhaps better to just save the number of chunks in constant memory. It
@@ -168,13 +168,13 @@ STDP_FN(deliverL0Spikes)(
 
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
-		s_synapsesPerDelay = ALIGN(s_maxL0Synapses, warpSize);
+		s_synapsesPerDelay = ALIGN(sf0_maxSynapses, warpSize);
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
 	}
 	__syncthreads();
 
-	for(int preOffset=0; preOffset < s_partitionSize; preOffset += THREADS_PER_BLOCK) {
+	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
 		__shared__ int s_firingCount;
 		//! \todo make this a re-usable chunk of memory
@@ -195,7 +195,7 @@ STDP_FN(deliverL0Spikes)(
          * execution time (when not firing) by 68%. It's not clear why this is
         * so. */ 
 		uint32_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
-		if(arrivals && candidate < s_partitionSize) {
+		if(arrivals && candidate < partitionSize) {
 			int nextFree = atomicAdd(&s_firingCount, 1);
 			s_firingIdx[nextFree] = candidate;
 			s_arrivalBits[nextFree] = arrivals;
@@ -253,18 +253,17 @@ STDP_FN(deliverL0Spikes)(
                 bool doCommit = false;
 
 				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < s_maxL0Synapses && delayEntry < s_delayBlocks
+				if(synapseIdx < sf0_maxSynapses && delayEntry < s_delayBlocks
 #ifdef __DEVICE_EMULATION__	
 						// warp size is 1, so rounding to warp size not as expected
 						&& threadIdx.x < s_synapsesPerDelay * s_delaysPerChunk
 #endif
 				) {
 
-					size_t synapseAddress = presynaptic * maxDelay * pitchCM
-					                  + delay * pitchCM
-					                  + synapseIdx;
-					weight = g_sweights[synapseAddress];
-					uint sdata = g_saddress[synapseAddress];
+					size_t synapseAddress = 
+						(presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
+					weight = gf0_weight[synapseAddress];
+					uint sdata = gf0_address[synapseAddress];
 					postsynaptic = targetNeuron(sdata);
 
 					if(weight != 0.0f) {
@@ -277,7 +276,7 @@ STDP_FN(deliverL0Spikes)(
 						 * for first incoming of postsynaptic firing? */
 						//! \todo make sure we only modify excitatory
 						if(s_recentFiring[postsynaptic] && abs(dt) < s_stdpTauD) {
-							g_ltd[synapseAddress] -= depression(dt);
+							gf0_ltd[synapseAddress] -= depression(dt);
 							DEBUG_MSG("ltd: %+f for synapse %u -> %u after delay of %u\n",
 								depression(dt), presynaptic, postsynaptic, dt);
 						}
@@ -341,22 +340,19 @@ STDP_FN(step) (
 		int substeps,
         uint32_t cycle,
 		uint32_t* g_recentFiring, 
-#ifdef STDP
-		uint* gr0_cm,
-		uint32_t* gr0_delays,
-		uint32_t* gr1_delays,
-#endif
 		// neuron state
 		float* g_neuronParameters,
         unsigned* g_rngState,
+		//! \todo combine with g_neuronParameters
         float* g_sigma,
 		size_t neuronParametersSize,
-        // L0 synapses
-		uint* gf0_cm,
-		uint32_t* gf0_delays,
-		// L1 connectivity matrix
-		uint* gf1_cm,
-		uint32_t* gf1_delays,
+		// connectivity
+		uint* gf0_cm, uint32_t* gf0_delays,
+		uint* gf1_cm, uint32_t* gf1_delays,
+#ifdef STDP
+		uint* gr0_cm, uint32_t* gr0_delays,
+		              uint32_t* gr1_delays,
+#endif
 		// L1 spike queue
 		uint2* gSpikeQueue, 
 		size_t sqPitch, 
@@ -365,8 +361,8 @@ STDP_FN(step) (
         // firing stimulus
 		uint32_t* g_fstim,
 		size_t fstimPitch,
-		// cycle counting
 #ifdef KERNEL_TIMING
+		// cycle counting
 		unsigned long long* g_cycleCounters,
 		size_t ccPitch,
 #endif
@@ -377,10 +373,14 @@ STDP_FN(step) (
 {
 	SET_COUNTER(s_ccMain, 0);
 
+	/* Within a connection matrix plane, partitionRow is the row offset of the
+	 * current partition. The offset in /words/ differ between forward/reverse
+	 * and level 0/1 as they have different row pitches */
+	size_t partitionRow = CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay;
+
 	/* The shared memory is allocated in fixed-sized blocks. During the
 	 * different stages of the kernel each block may be used for different
 	 * purposes. */
-
 	__shared__ uint32_t s_M1KA[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint32_t s_M1KB[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint16_t s_M512[STDP_FN(MAX_PARTITION_SIZE)];
@@ -458,21 +458,9 @@ STDP_FN(step) (
 	STDP_FN(deliverL0Spikes)(
 			s_maxDelay,
 			s_partitionSize,
-			sf0_pitch,
 			sf0_maxSynapsesPerDelay,
-			//! \todo move addressing inside function
-			gf0_cm
-				+ FCM_ADDRESS * sf0_size
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
-			(float*) gf0_cm
-				+ FCM_WEIGHT * sf0_size
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
+			gf0_cm + partitionRow * sf0_pitch, sf0_pitch, sf0_size,
 			s_recentFiring,
-#ifdef STDP
-			(float*) gf0_cm
-				+ FCM_STDP_LTD * sf0_size
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf0_pitch,
-#endif
 			gf0_delays + CURRENT_PARTITION * s_pitch32,
 			s_current);
 	__syncthreads();
@@ -504,15 +492,14 @@ STDP_FN(step) (
 			s_firingIdx,
 			&s_firingCount);
 	__syncthreads();
-
 	SET_COUNTER(s_ccMain, 6);
+
 #ifdef STDP
 	updateLTP(
 		s_maxDelay,
 		s_recentFiring,
 		sr0_maxSynapsesPerDelay,
-		gr0_cm + CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sr0_pitch,
-			sr0_pitch, sr0_size,
+		gr0_cm + partitionRow * sr0_pitch, sr0_pitch, sr0_size,
 		s_firingIdx,
 		s_firingCount,
 		gr0_delays);
@@ -531,21 +518,12 @@ STDP_FN(step) (
                 writeBuffer(cycle),
 				s_partitionSize,
 				//! \todo need to call this differently from wrapper
-				sf1_pitch,
 				sf1_maxSynapsesPerDelay,
-				gf1_cm
-				+ FCM_ADDRESS * sf1_size
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf1_pitch,
-				(float*) gf1_cm
-				+ FCM_WEIGHT * sf1_size
-				+ CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay * sf1_pitch,
+				gf1_cm + partitionRow * sf1_pitch, sf1_pitch, sf1_size,
 				s_recentFiring,
 				gf1_delays + CURRENT_PARTITION * s_pitch32,
-				(uint2*) s_M1KA, // use for s_current previously, now use for staging outgoing spikes
-				// buffers for write buffer and global heads
+				(uint2*) s_M1KA, // used for s_current previously, now use for staging outgoing spikes
 				//! \todo compile-time assertions to make sure we're not overflowing here
-				//s_M512,
-				//s_M512+256,
 				//! \todo fix naming!
 				gSpikeQueue,
 				sqPitch,

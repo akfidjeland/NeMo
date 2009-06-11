@@ -266,10 +266,6 @@ step(	ushort cycle,
 				substeps, 
 				rtdata->cycle(),
 				rtdata->recentFiring->deviceData(),
-				// STDP
-				rtdata->cm(CM_L0)->dr_synapses(),
-				rtdata->cm(CM_L0)->dr_delayBits(),
-				rtdata->cm(CM_L1)->dr_delayBits(),
 				// neuron parameters
 				rtdata->neuronParameters->deviceData(),
 				rtdata->thalamicInput->deviceRngState(),
@@ -281,6 +277,10 @@ step(	ushort cycle,
 				// L1 connectivity matrix
 				rtdata->cm(CM_L1)->df_synapses(),
 				rtdata->cm(CM_L1)->df_delayBits(),
+				// STDP
+				rtdata->cm(CM_L0)->dr_synapses(),
+				rtdata->cm(CM_L0)->dr_delayBits(),
+				rtdata->cm(CM_L1)->dr_delayBits(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),
