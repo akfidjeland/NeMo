@@ -373,11 +373,6 @@ STDP_FN(step) (
 {
 	SET_COUNTER(s_ccMain, 0);
 
-	/* Within a connection matrix plane, partitionRow is the row offset of the
-	 * current partition. The offset in /words/ differ between forward/reverse
-	 * and level 0/1 as they have different row pitches */
-	size_t partitionRow = CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay;
-
 	/* The shared memory is allocated in fixed-sized blocks. During the
 	 * different stages of the kernel each block may be used for different
 	 * purposes. */
@@ -416,6 +411,11 @@ STDP_FN(step) (
 #ifdef STDP
 	loadStdpParameters();
 #endif
+	/* Within a connection matrix plane, partitionRow is the row offset of the
+	 * current partition. The offset in /words/ differ between forward/reverse
+	 * and level 0/1 as they have different row pitches */
+	size_t partitionRow = CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay;
+
 	SET_COUNTER(s_ccMain, 1);
 
     //! \todo no need to clear array here, if loading thalamic input
