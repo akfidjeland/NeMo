@@ -430,19 +430,21 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 2);
 
-	gatherL1Spikes_JIT(
-        readBuffer(cycle),
-		gSpikeQueue,
-		sqPitch,
-		gSpikeQueueHeads,
-		sqHeadPitch,
-		s_current,
+	bool haveL1 = gSpikeQueue != NULL;
+	if(haveL1) {
+		gatherL1Spikes_JIT_(
+				readBuffer(cycle),
+				gSpikeQueue,
+				sqPitch,
+				gSpikeQueueHeads,
+				sqHeadPitch,
+				s_current,
 #if MAX_THREAD_BLOCKS > STDP_FN(MAX_PARTITION_SIZE)
 #error "Need to use larger memory buffer for spike queue heads"
 #else
-        s_M1KB); // only part of s_M1KB is used
+				s_M1KB); // only part of s_M1KB is used
 #endif
-    __syncthreads();
+	}
 
 
 	SET_COUNTER(s_ccMain, 3);
@@ -512,7 +514,7 @@ STDP_FN(step) (
 	__syncthreads();
 	SET_COUNTER(s_ccMain, 8);
 
-	if(gSpikeQueue) {
+	if(haveL1) {
 		deliverL1Spikes_JIT(
 				s_maxDelay,
                 writeBuffer(cycle),

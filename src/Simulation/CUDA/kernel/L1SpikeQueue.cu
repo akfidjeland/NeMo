@@ -177,41 +177,10 @@ flushAllSpikeBuffers(
 
 
 
-
-
 /*! Update current buffer with incoming spikes */
 __device__
 void
 updateCurrent(
-		uint readBufferIdx,
-		uint sourcePartition,
-		uint2* g_sq,
-		size_t sqPitch,
-		uint load,
-		float* s_current)
-{
-	uint targetPartition = CURRENT_PARTITION;
-	size_t base = sbBase(sqPitch, sourcePartition, targetPartition, readBufferIdx);
-	size_t offset = + load * THREADS_PER_BLOCK + threadIdx.x;
-	uint2 spike = g_sq[base + offset];
-	/* We don't need to clear the data from the spike buffer,
-	 * as long as the head is cleared. \see loadAndClearBufferHeads */
-	float weight = __int_as_float(spike.y);
-
-	if(weight != 0.0f) {
-		//! \todo there's a race condition here! schedule writes as for L0
-		s_current[targetNeuron(spike.x)] += weight;
-		ASSERT(targetNeuron(spike.x) < MAX_PARTITION_SIZE);
-		DEBUG_MSG("Receiving L1 current %f from %d-?? to %d-%d\n",
-			weight, sourceNeuron(spike.x), targetPartition, targetNeuron(spike.x));
-	}
-}
-
-
-/*! Update current buffer with incoming spikes */
-__device__
-void
-updateCurrent2(
 		uint readBufferIdx, // double buffer index
 		uint sourcePartition,
 		uint32_t spikeIdx,   // index of spike for current thread
@@ -279,7 +248,7 @@ updateCurrent2(
 /*! Load all incoming spikes from L1 connetivity into current accumulator */
 __device__
 void
-gatherL1Spikes_JIT(
+gatherL1Spikes_JIT_(
 		uint readBufferIdx,
 		uint2* g_sq,
 		size_t sqPitch,
@@ -288,30 +257,16 @@ gatherL1Spikes_JIT(
 		float* s_current,
         uint32_t* s_heads)
 {
-	if(g_sq != NULL) {
-		loadAndClearBufferHeads(g_heads, s_heads, headPitch, readBufferIdx);
-		for(uint src=0; src<PARTITION_COUNT; ++src) {
-			uint parallelLoads = DIV_CEIL(s_heads[src], THREADS_PER_BLOCK);
-			for(uint load=0; load<parallelLoads; ++load) {
-#if 0
-				if(load * THREADS_PER_BLOCK + threadIdx.x < s_heads[src]) {
-					//! \todo apply load argument here instead
-					updateCurrent(readBufferIdx, src, g_sq, sqPitch, load, s_current);
-				}
-				__syncthreads();
-#else
-                uint spikeIdx = load * THREADS_PER_BLOCK + threadIdx.x;
-                updateCurrent2(readBufferIdx,
-                        src,
-                        spikeIdx,
-                        s_heads[src],
-                        g_sq,
-                        sqPitch,
-                        s_current);
-#endif
-			}
-        }
+	loadAndClearBufferHeads(g_heads, s_heads, headPitch, readBufferIdx);
+	for(uint src=0; src<PARTITION_COUNT; ++src) {
+		uint parallelLoads = DIV_CEIL(s_heads[src], THREADS_PER_BLOCK);
+		for(uint load=0; load<parallelLoads; ++load) {
+			uint spikeIdx = load * THREADS_PER_BLOCK + threadIdx.x;
+			updateCurrent(readBufferIdx, src, spikeIdx, s_heads[src],
+					g_sq, sqPitch, s_current);
+		}
 	}
+	__syncthreads();
 }
 
 
