@@ -348,7 +348,7 @@ STDP_FN(step) (
 		uint* gf1_cm, uint32_t* gf1_delays,
 #ifdef STDP
 		uint* gr0_cm, uint32_t* gr0_delays,
-		              uint32_t* gr1_delays,
+		uint* gr1_cm, uint32_t* gr1_delays,
 #endif
 		// L1 spike queue
 		uint2* gSpikeQueue, 
@@ -388,6 +388,7 @@ STDP_FN(step) (
 	__shared__ uint sf1_maxSynapsesPerDelay;
 #ifdef STDP
 	__shared__ uint sr0_maxSynapsesPerDelay;
+	__shared__ uint sr1_maxSynapsesPerDelay;
 #endif
 	__shared__ float s_substepMult;
 
@@ -398,6 +399,7 @@ STDP_FN(step) (
 		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
 #ifdef STDP
 		sr0_maxSynapsesPerDelay = cr0_maxSynapsesPerDelay[CURRENT_PARTITION];
+		sr1_maxSynapsesPerDelay = cr1_maxSynapsesPerDelay[CURRENT_PARTITION];
 #endif
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
@@ -497,22 +499,34 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 6);
 
 #ifdef STDP
-	updateLTP(
+	updateLTP_(
 		s_maxDelay,
-		s_recentFiring,
+		s_recentFiring, 1,
 		sr0_maxSynapsesPerDelay,
 		gr0_cm + partitionRow * sr0_pitch, sr0_pitch, sr0_size,
 		s_firingIdx,
 		s_firingCount,
 		gr0_delays);
-	__syncthreads();
 #endif
 	SET_COUNTER(s_ccMain, 7);
+#ifdef STDP
+	if(haveL1) {
+		updateLTP_(
+				s_maxDelay,
+				g_recentFiring + writeBuffer(cycle) * PARTITION_COUNT * s_pitch32, 0,
+				sr1_maxSynapsesPerDelay,
+				gr1_cm + partitionRow * sr1_pitch, sr1_pitch, sr1_size,
+				s_firingIdx,
+				s_firingCount,
+				gr1_delays);
+	}
+#endif
+	SET_COUNTER(s_ccMain, 8);
 
 	writeFiringOutput(fmemCycle, g_fmemNextFree, 
 			s_firingIdx, s_firingCount, g_fmemBuffer);
 	__syncthreads();
-	SET_COUNTER(s_ccMain, 8);
+	SET_COUNTER(s_ccMain, 9);
 
 	if(haveL1) {
 		deliverL1Spikes_JIT(
@@ -533,6 +547,6 @@ STDP_FN(step) (
 				sqHeadPitch);
 	}
 
-	SET_COUNTER(s_ccMain, 9);
+	SET_COUNTER(s_ccMain, 10);
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

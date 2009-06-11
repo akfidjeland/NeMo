@@ -271,15 +271,17 @@ step(	ushort cycle,
 				rtdata->thalamicInput->deviceRngState(),
 				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
-				// L0 connectivity matrix
+				// L0 forward connectivity
 				rtdata->cm(CM_L0)->df_synapses(),
 				rtdata->cm(CM_L0)->df_delayBits(),
-				// L1 connectivity matrix
+				// L1 forward connectivity 
 				rtdata->cm(CM_L1)->df_synapses(),
 				rtdata->cm(CM_L1)->df_delayBits(),
-				// STDP
+				// L0 reverse connectivity
 				rtdata->cm(CM_L0)->dr_synapses(),
 				rtdata->cm(CM_L0)->dr_delayBits(),
+				// L1 reverse connectivity
+				rtdata->cm(CM_L1)->dr_synapses(),
 				rtdata->cm(CM_L1)->dr_delayBits(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),

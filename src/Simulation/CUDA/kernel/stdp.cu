@@ -98,10 +98,11 @@ potentiation(int dt)
  * fired neuron shortly before firing. */
 __device__
 void
-updateLTP(
+updateLTP_(
 	uint maxDelay,
-	uint32_t* s_recentFiring,
-	uint sr_maxL0Synapses,
+	uint32_t* recentFiring,
+	uint rfshift, // how much to shift recent firing bits
+	uint r_maxSynapses,
 	uint* gr_cm, size_t r_pitch, size_t r_size,
 	uint16_t* s_firingIdx,
 	uint s_firingCount,
@@ -122,7 +123,7 @@ updateLTP(
 	//! \todo factor this out and share with integrate step
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
-		s_synapsesPerDelay = ALIGN(sr_maxL0Synapses, warpSize);
+		s_synapsesPerDelay = ALIGN(r_maxSynapses, warpSize);
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
 	}
@@ -170,7 +171,7 @@ updateLTP(
 
 			// reverse matrix *only* contains excitatory neurons
 			//! \todo consider using per-neuron maximum here instead
-			if(r_sidx < sr_maxL0Synapses 
+			if(r_sidx < r_maxSynapses 
 					&& delayEntry < s_delayBlocks
 #ifdef __DEVICE_EMULATION__
 					// warp size is 1, so rounding to warp size not as expected
@@ -183,15 +184,18 @@ updateLTP(
 
 				if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
-					/*! \todo deal with this differently for L1 (use double
-					 * buffered firing bits, consider caching
-					 * s_recentFiring) */
-					uint presynaptic = sourceNeuron(r_sdata);
-
 					/* Ignore any firing whose spikes have not had a chance
 					 * to reach postsynaptic, as well as any firing in the
 					 * presynaptic which happened in /this/ cycle. */
-					int preFired = __ffs((s_recentFiring[presynaptic] >> 1) & ((~0) << delay));
+
+					/* For L0 LTP, recentFiring is in shared memory so access
+					 * if cheap. For L1, recentFiring is in a global memory
+					 * double buffer. Accesses are both expensive and
+					 * non-coalesced. */
+
+					//! \todo consider using a cache for L1
+					uint presynaptic = sourceNeuron(r_sdata);
+					int preFired = __ffs((recentFiring[presynaptic] >> rfshift) & ((~0) << delay));
 
 					if(preFired) {
 						int dt = preFired - delay;
@@ -207,6 +211,7 @@ updateLTP(
 		}
 		__syncthreads();
 	}
+	__syncthreads();
 }
 
 
