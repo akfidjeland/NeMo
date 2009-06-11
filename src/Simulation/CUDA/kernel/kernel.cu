@@ -264,10 +264,12 @@ STDP_FN(deliverL0Spikes_)(
 					postsynaptic = targetNeuron(sdata);
 
 					if(weight != 0.0f) {
-                        doCommit = true;
+						doCommit = true;
 #ifdef STDP
-						depressSynapse(presynaptic, postsynaptic, delay, 
-								s_recentFiring, synapseAddress, gf0_ltd);
+						if(weight > 0.0f) {
+							depressSynapse(presynaptic, postsynaptic, delay,
+									s_recentFiring, synapseAddress, gf0_ltd);
+						}
 #endif
 					}
 				}

@@ -95,7 +95,7 @@ potentiation(int dt)
 
 
 /* Depress synapse if the postsynaptic neuron fired shortly before the spike
- * arrived. 
+ * arrived.
  *
  * If two spikes arrive at the postsynaptic neuron after it fired, only the
  * first spike arrival results in depression. To determine if the current spike
@@ -105,8 +105,8 @@ potentiation(int dt)
  *            |--dt---| |--delay--|
  * XXXXXXXXXXXPPPPPPPPPSFFFFFFFFFFF
  * 31      23      15      7      0
- * 
- * where 
+ *
+ * where
  *	X: cycles not of interest as spikes would have reach postsynaptic before
  *	   last firing
  *	P: past spikes which would have reached after postsynaptic firing and
@@ -129,7 +129,6 @@ depressSynapse(
 {
 	int dt = __ffs(s_recentFiring[postsynaptic]);
 
-	//! \todo make sure we only modify excitatory
 	if(s_recentFiring[postsynaptic] && abs(dt) < s_stdpTauD) {
 		uint32_t p_bits = (~((~0) << dt)) << (delay+1); // see above figure
 		uint32_t preSpikes = s_recentFiring[presynaptic];
