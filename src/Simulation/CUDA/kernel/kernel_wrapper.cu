@@ -20,7 +20,6 @@ extern "C" {
 #include "log.hpp"
 #include "L1SpikeQueue.hpp"
 #include "connectivityMatrix.cu"
-#include "L1SpikeQueue.cu"
 #include "FiringProbe.hpp"
 #include "firingProbe.cu"
 #include "RuntimeData.hpp"
@@ -64,6 +63,28 @@ activeNeuron(int chunk, int s_partitionSize)
 }
 
 
+//=============================================================================
+// Double buffering
+//=============================================================================
+
+/* The current cycle indicates which half of the double buffer is for reading
+ * and which is for writing */
+__device__
+uint
+readBuffer(uint cycle)
+{
+    return (cycle & 0x1) ^ 0x1;
+}
+
+
+__device__
+uint
+writeBuffer(uint cycle)
+{
+    return cycle & 0x1;
+}
+
+
 
 //=============================================================================
 // Firing 
@@ -95,6 +116,23 @@ loadExternalFiring(
 
 
 
+__device__
+void
+loadSharedArray(
+        int s_partitionSize,
+        int s_neuronsPerThread,
+        size_t pitch32,
+		uint32_t* g_arr,
+        uint32_t* s_arr)
+{
+	for(int i=0; i < s_neuronsPerThread; ++i) {
+		if(activeNeuron(i, s_partitionSize)){
+			s_arr[threadIdx.x + i*THREADS_PER_BLOCK] =
+				g_arr[mul24(blockIdx.x, pitch32) + threadIdx.x + i*THREADS_PER_BLOCK];
+		}
+	}
+}
+
 //=============================================================================
 // Current buffer
 //=============================================================================
@@ -105,9 +143,14 @@ loadExternalFiring(
 
 /* We need two versions of some device functions... */
 #include "thalamicInput.cu"
+#include "spike.cu"
+#include "spikeBuffer.cu"
+#include "stdp.cu" // only used if STDP enabled
 #define STDP
+#include "L1SpikeQueue.cu"
 #include "kernel.cu"
 #undef STDP
+#include "L1SpikeQueue.cu"
 #include "kernel.cu"
 
 /* Force all asynchronously launced kernels to complete before returning */

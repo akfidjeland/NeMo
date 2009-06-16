@@ -6,185 +6,31 @@
 #   include <stdio.h>
 #endif
 
-
-/* The current cycle indicates which half of the double buffer is for reading
- * and which is for writing */
-__device__
-uint
-readBuffer(uint cycle)
-{
-    return (cycle & 0x1) ^ 0x1;
-}
-
-
-__device__
-uint
-writeBuffer(uint cycle)
-{
-    return cycle & 0x1;
-}
-
-
-/*! \return word offset to beginning of spike buffer for a particular partition
- * pair */
-__device__
-size_t
-sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
-{
-	ASSERT(src < PARTITION_COUNT);
-	ASSERT(tgt < PARTITION_COUNT);
-	ASSERT(bufferIdx <= 1);
-	return ((tgt * PARTITION_COUNT + src) * 2 + bufferIdx) * pitch;
-}
-
-
-
-//! \todo fix these constants
-
-#define BUFFER_SZ 16
-//! \todo modify L1 delivery to handle more buffers than threads
-//#define BUFFER_COUNT MAX_PARTITION_COUNT
-#define BUFFER_COUNT THREADS_PER_BLOCK
-
-
-
-/*! Each possible source buffer has a counter (the 'buffer head') specifying
- * how many spikes are due for delivery. The buffer heads is a 2D matrix with
- * one row for each target partition
- *
- * The buffer head matrix is written to during spike scatter and read from
- * during spike gather. Since the accesses in these two cases are in different
- * order, so one access will necessarily be non-coalesced. It does not matter
- * which it is.
- *
- * \todo it would be possible to set the row pitch such that the non-coalesced
- * access avoids bank conflicts. It would still be non-coalesced, though.
- */
-
-
-/*! \return the offset into the global memory buffer head matrix for a
- * particular partition pair */
-__device__
-size_t
-headOffset(size_t src, size_t tgt, size_t pitch, size_t bufferIdx)
-{
-	ASSERT(src < PARTITION_COUNT);
-	ASSERT(tgt < PARTITION_COUNT);
-	ASSERT(bufferIdx <= 1);
-    return bufferIdx * PARTITION_COUNT * pitch + tgt * pitch + src;
-}
-
-
-
-/*! Load and clear all the buffer heads when processing incoming spikes in the
- * target partition. The buffer heads need to be cleared so that the buffer is
- * ready to be filled again. Any synapses in the buffer is left there as
- * garbage. */
-__device__
-void
-loadAndClearBufferHeads(
-        uint32_t* g_heads,
-        uint32_t* s_heads,
-        size_t pitch,
-        size_t bufferIdx)
-{
-#if MAX_THREAD_BLOCKS > THREADS_PER_BLOCK
-#error	"Need to rewrite loadL1Current to load spike queue heads in several loads"
+#undef STDP_FN
+#ifdef STDP
+#define STDP_FN(f) f ## _STDP
+#else
+#define STDP_FN(f) f ## _static
 #endif
-	int sourcePartition = threadIdx.x;
-	if(sourcePartition < PARTITION_COUNT) {
-		size_t offset = headOffset(sourcePartition, CURRENT_PARTITION, pitch, bufferIdx);
-		//! \todo could use atomicExch here instead. Not sure which is faster.
-		s_heads[sourcePartition] = g_heads[offset];
-		g_heads[offset] = 0;
-	}
-	__syncthreads();
-}
 
-
-
-
-/* Flush spike buffer (up to maxSlot) for a single partition.
- *
- * \todo write 4B values instead of 8B
- */
-__device__
-void
-flushSpikeBuffer(
-	uint writeBufferIdx,
-	uint count,
-	int targetPartition,
-	uint* s_heads,
-	uint2* s_outbuf64,
-	uint2* g_sq64,
-	size_t sqPitch)
-{
-	/* We only have one warp's worth of data here. To improve bandwidth
-	 * utilisation write 4B per thread rather than 8B. */
-	// uint* s_outbuf32 = (uint*) s_outbuf64;
-	// uint* g_sq32 = (uint*) g_sq64;
-
-	if(threadIdx.x < count) {
-		//! \todo simplify addressing once old L1CM is removed
-		size_t base = sbBase(sqPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
-		//uint data = s_outbuf32[targetPartition * BUFFER_SZ * 2 + threadIdx.x];
-		uint2 data = s_outbuf64[targetPartition * BUFFER_SZ + threadIdx.x];
-		//g_sq32[2 * (base + s_heads[targetPartition]) + threadIdx.x] = data;
-		g_sq64[base + s_heads[targetPartition] + threadIdx.x] = data;
-		DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u (after unknown delay)\n",
-			__int_as_float(data.y), CURRENT_PARTITION,
-			targetPartition, targetNeuron(data.x));
-	}
-}
-
-
-/*! Flush all spike buffers */
-__device__
-void
-flushAllSpikeBuffers(
-	uint writeBufferIdx,
-	size_t headPitch,
-	uint32_t* g_heads,
-	uint32_t* s_heads,
-	uint* s_outheads,
-	uint2* s_outbuf,
-	uint2* g_sq,
-	size_t sqPitch)
-{
-	/* Determine global buffer offsets in parallel, and at the same time flush
-	 * the buffer head to global memory. The head buffer is repurposed to now
-	 * contain the offset into the buffer entry */
-	uint targetPartition = threadIdx.x;
-	if(targetPartition < PARTITION_COUNT) {
-		size_t offset = headOffset(CURRENT_PARTITION, targetPartition, headPitch, writeBufferIdx);
-		g_heads[offset] = s_heads[targetPartition] + s_outheads[targetPartition];
-	}
-	__syncthreads();
-
-	//! \todo factor out function to flush all
-	/* Now flush all buffers which still have data in them */
-	for(int targetPartition=0; targetPartition<PARTITION_COUNT; ++targetPartition) {
-		//! \todo could load the sizes in parallel here, without using atomics
-		flushSpikeBuffer(
-            writeBufferIdx,
-			s_outheads[targetPartition],
-			targetPartition,
-			s_heads,
-			s_outbuf,
-			g_sq, sqPitch);
-	}
-}
 
 
 
 /*! Update current buffer with incoming spikes */
 __device__
 void
-updateCurrent(
+STDP_FN(updateCurrent)(
 		uint readBufferIdx, // double buffer index
 		uint sourcePartition,
 		uint32_t spikeIdx,   // index of spike for current thread
 		uint32_t spikeCount, // number of spikes to delivered for current buffer 
+#ifdef STDP
+		float* gf1_ltd,
+		size_t f1_pitch,
+		uint32_t* g_recentFiring,
+		uint32_t* s_recentFiring,
+		size_t pitch32,
+#endif
 		uint2* g_sq,
 		size_t sqPitch,
 		float* s_current)
@@ -207,8 +53,8 @@ updateCurrent(
 
 	/* We don't need to clear the data from the spike buffer,
 	 * as long as the head is cleared. \see loadAndClearBufferHeads */
-	float weight = __int_as_float(spike.y);
-	uint target = targetNeuron(spike.x);
+	float weight = spikeWeight(spike);
+	uint target = spikeTargetNeuron(spike);
 
 	bool spiked = weight != 0.0f && spikeIdx < spikeCount;
 
@@ -216,6 +62,22 @@ updateCurrent(
 	if(spiked) {
 		// serialise commits for each shared memory bank to avoid race condition
 		commitNo = atomicAdd(s_committing + (target % BANKS), 1);
+#ifdef STDP
+		if(weight > 0.0f) {
+			size_t f1_poffset = sourcePartition * s_maxPartitionSize * s_maxDelay * f1_pitch;
+			size_t f1_noffset = (spikeSourceNeuron(spike) * s_maxDelay + spikeDelay(spike)) * f1_pitch;
+			depressSynapse(
+					sourcePartition,
+					spikeSourceNeuron(spike), 
+					targetPartition,
+					target, 
+					spikeDelay(spike) + 1,
+					g_recentFiring + sourcePartition * pitch32,  // source
+					s_recentFiring,                              // target
+					f1_noffset + spikeSourceSynapse(spike),
+					gf1_ltd + f1_poffset);
+		}
+#endif
 	}
 	__syncthreads();
 
@@ -231,8 +93,10 @@ updateCurrent(
 	}
 	__syncthreads();
 
+	//! \todo share commit loop with L1 delivery?
 	for(uint commit=0; commit <= s_maxCommit; ++commit) {
 		if(spiked && commitNo == commit) {
+			//! \todo use target from earlier
 			s_current[targetNeuron(spike.x)] += weight;
 			ASSERT(targetNeuron(spike.x) < MAX_PARTITION_SIZE);
 			DEBUG_MSG("Receiving L1 current %f from %d-?? to %d-%d\n",
@@ -245,24 +109,39 @@ updateCurrent(
 
 
 
-/*! Load all incoming spikes from L1 connetivity into current accumulator */
+/*! Load all incoming spikes from L1 connectivity into current accumulator */
 __device__
 void
-gatherL1Spikes_JIT_(
+STDP_FN(gatherL1Spikes_JIT_)(
+#ifdef STDP
+		float* gf1_ltd,
+		size_t f1_pitch,
+		uint32_t* g_recentFiring,
+		uint32_t* s_recentFiring,
+		size_t pitch32,
+#endif
 		uint readBufferIdx,
 		uint2* g_sq,
 		size_t sqPitch,
 		uint* g_heads,
         size_t headPitch,
-		float* s_current,
-        uint32_t* s_heads)
+		float* s_current)
 {
+	//! \todo share this memory with other code, perhaps as a special p_buffer.
+	__shared__ uint s_heads[MAX_PARTITION_COUNT];
+
 	loadAndClearBufferHeads(g_heads, s_heads, headPitch, readBufferIdx);
 	for(uint src=0; src<PARTITION_COUNT; ++src) {
 		uint parallelLoads = DIV_CEIL(s_heads[src], THREADS_PER_BLOCK);
 		for(uint load=0; load<parallelLoads; ++load) {
 			uint spikeIdx = load * THREADS_PER_BLOCK + threadIdx.x;
-			updateCurrent(readBufferIdx, src, spikeIdx, s_heads[src],
+			STDP_FN(updateCurrent)(readBufferIdx, src, spikeIdx, s_heads[src],
+#ifdef STDP
+					gf1_ltd, f1_pitch,
+					g_recentFiring,
+					s_recentFiring,
+					pitch32,
+#endif
 					g_sq, sqPitch, s_current);
 		}
 	}
@@ -274,19 +153,13 @@ gatherL1Spikes_JIT_(
  * out or use a code generator to avoid repetition */
 __device__
 void
-deliverL1Spikes_JIT(
+STDP_FN(deliverL1Spikes_JIT)(
 	uint maxDelay,
 	uint writeBufferIdx,
 	uint partitionSize,
 	uint sf1_maxSynapses,
 	uint* gf1_cm, uint f1_pitch, uint f1_size,
 	uint32_t* s_recentFiring,
-	//! \todo STDP support
-#ifdef STDP
-	//uint32_t* s_recentIncoming,
-	//float* g_ltd,
-	//uint stdpCycle,
-#endif
 	uint32_t* g_firingDelays,
 	// L1 spike queue
     //! \todo allow more than 32 partitions (by splitting L1CM)
@@ -396,20 +269,20 @@ deliverL1Spikes_JIT(
 			 *    we process multiple delays in parallel
 			 */
 
-			for(int chunk=0; chunk < s_chunkCount; ++chunk) {
+			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
-				int delayEntry = s_delaysPerChunk == 0 ?
+				uint delayEntry = s_delaysPerChunk == 0 ?
 					chunk / s_chunksPerDelay :
 					threadIdx.x / s_synapsesPerDelay;
 				uint32_t delay = s_arrivals[delayEntry];
 				/* Offset /within/ a delay block */
-				int synapseIdx = s_delaysPerChunk == 0 ?
+				uint synapseIdx = s_delaysPerChunk == 0 ?
 					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
 					(threadIdx.x % s_synapsesPerDelay);
 
 				float weight;
 				uint target;
-				int bufferIdx = 0; // relative to beginning of output buffer slot
+				uint bufferIdx = 0; // relative to beginning of output buffer slot
 				bool doCommit = false;
 
 				//! \todo consider using per-neuron maximum here instead
@@ -471,7 +344,12 @@ deliverL1Spikes_JIT(
 					if(doCommit && bufferIdx < BUFFER_SZ) {
 						//! \todo do some compression here to avoid race conditions later
 						s_outbuf[targetPartition(target) * BUFFER_SZ + bufferIdx] =
-							make_uint2(target, __float_as_int(weight));
+							STDP_FN(packSpike)(
+									presynaptic,
+									delay,
+									synapseIdx,
+									targetNeuron(target),
+									weight);
 						doCommit = false;
 						DEBUG_MSG("Buffering L1 current %f for synapse"
 								"%u-?? -> %u-%u (after unknown delay)\n",

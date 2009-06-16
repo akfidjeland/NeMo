@@ -50,6 +50,7 @@ configureStdp(int tauP, int tauD, float alphaP, float alphaD)
 /* In the kernel we load the parameters into shared memory. These variables can
  * then be accessed using broadcast */
 
+//! \todo move into vector as other parameters
 __shared__ int s_stdpTauP;
 __shared__ int s_stdpTauD;
 __shared__ float s_stdpTauInvP;
@@ -100,60 +101,148 @@ potentiation(int dt)
  * If two spikes arrive at the postsynaptic neuron after it fired, only the
  * first spike arrival results in depression. To determine if the current spike
  * is the first, consider the firing bits for the presynaptic neuron (one bit
- * per past cycle):
+ * per past cycle, LSb is /previous/ cycle, i.e. delay 1):
  *
- *            |--dt---| |--delay--|
- * XXXXXXXXXXXPPPPPPPPPSFFFFFFFFFFF
+ *             |--dt---||--delay--|
+ * XXXXXXXXXXXXPPPPPPPPPSFFFFFFFFFF
  * 31      23      15      7      0
  *
  * where
- *	X: cycles not of interest as spikes would have reach postsynaptic before
+ *	X: cycles not of interest as spikes would have reached postsynaptic before
  *	   last firing
- *	P: past spikes which would have reached after postsynaptic firing and
- *	   before current spike.
- *	S: current spike
- *	F: future spikes which are in flight but have not yet reached. They will be
- *	   ignored (for depression) when they arrive.
+ *	P: (P)ast spikes which would have reached after postsynaptic firing and
+ *	   before current spike, and thus could cause depression.
+ *	S: current (S)pike
+ *	F: (F)uture spikes which are in flight but have not yet reached. They will be
+ *	   ignored (as far as depression is concerned) when they arrive unless the
+ *	   postsynaptic neuron does not fire again.
  *
  * Only 'P' and 'S' cycles are of interest.
  */
 __device__
 void
 depressSynapse(
-		uint presynaptic,
-		uint postsynaptic,
+		uint sourcePartition,         // used for debugging only
+		uint sourceNeuron,
+		uint targetPartition,         // used for debugging only
+		uint targetNeuron,
 		uint delay,
-		uint32_t* s_recentFiring,
-		size_t f0_offset, // of synapse
-		float* gf0_ltd)
+		//! \todo just pass in the bits directly? At least for target
+		uint32_t* sourceRecentFiring, // L0: shared, L1: global (set to correct partition)
+		uint32_t* targetRecentFiring,
+		size_t f_offset,              // of synapse, within partition
+		float* gf_ltd)                // set to correct partition
 {
-	int dt = __ffs(s_recentFiring[postsynaptic]);
+	//! \todo move s_stdpTauD into dt
+	int dt = __ffs(targetRecentFiring[targetNeuron]);
 
-	if(s_recentFiring[postsynaptic] && abs(dt) < s_stdpTauD) {
-		uint32_t p_bits = (~((~0) << dt)) << (delay+1); // see above figure
-		uint32_t preSpikes = s_recentFiring[presynaptic];
+	if(targetRecentFiring[targetNeuron] && abs(dt) < s_stdpTauD) {
+		uint32_t p_bits = (~((~0) << dt)) << delay; // see above figure
+		uint32_t preSpikes = sourceRecentFiring[sourceNeuron];
 		if(!(preSpikes & p_bits)) {
-			gf0_ltd[f0_offset] -= depression(dt);
-			DEBUG_MSG("ltd: %+f for synapse %u -> %u after delay of %u\n",
-					depression(dt), presynaptic, postsynaptic, dt);
+			gf_ltd[f_offset] -= depression(dt);
+			DEBUG_MSG("ltd: %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
+					depression(dt),
+					sourcePartition, sourceNeuron,
+					targetPartition, targetNeuron,
+					dt, delay);
 		}
 	}
 }
 
 
+
+/* Potentiate synapse if the postsynaptic neuron fired shortly after a spike
+ * arrived.
+ *
+ * To determine if potentiation should take place we can inspect the firing
+ * history of both the presynaptic and postsynaptic neuron.
+ *
+ * Consider the firing bits for the presynaptic neuron:
+ *
+ *    |----stdp_max----||--delay--|
+ * XXXPPPPPPPPPPPPPPPPPPFFFFFFFFFFF
+ *
+ * where
+ *  I: firings whose spikes are still (I)n flight.
+ *  D: firings whose spikes have been (D)elivered and which fall within the STDP
+ *     window. Only the most recent of these, if any, is of interest.
+ *  X: firings where spike arrival would fall outside STDP window.
+ *
+ * and for the postsynaptic:
+ *                        |--dt--|
+ * XXXXXXXXXXXXXXXXXXXXXXXPPPPPPPPF
+ *
+ * where
+ *  F: current postsynaptic firing
+ *  P: any previous firings occuring /after/ last spike arrival, which would
+ *     have caused a previous potentiation of this synapse.
+ *  X: firings before last spike arrival, not of interest.
+ *
+ * If the postsynaptic neuron fires twice following a spike arrival the
+ * relevant synapse(s) are only potentiated based on the delay between the last
+ * spike arrival before the postsynaptic firing
+ *
+ */
+__device__
+void
+potentiateSynapse(
+		uint r_synapse,
+		uint targetNeuron,
+		uint rfshift,
+		uint delay,
+		uint32_t* sourceRecentFiring, // L0: shared memory; L1: global memory
+		uint32_t* s_targetRecentFiring,
+		size_t r_offset,
+		float* gr_ltp)
+{
+	// did presynaptic produce spikes which reached before current firing?
+	// did the postsynaptic already fire following that spike
+
+
+	//! \todo move s_stdpTau into the mask here.
+	// most recent firing which has reached postsynaptic
+	int preFired = __ffs((sourceRecentFiring[sourceNeuron(r_synapse)] >> rfshift)
+	             & ((~0) << delay));
+
+	if(preFired) {
+		int dt = preFired - delay;
+		ASSERT(dt > 0);
+		if(dt < s_stdpTauP) {
+			/* did this postsynaptic fire in the last dt cycles, i.e. after the
+			 * last incoming spike? */
+			uint32_t p_mask = ~((~0) << dt) << 1; // see above figure
+			bool alreadyPotentiated = s_targetRecentFiring[targetNeuron] & p_mask;
+			if(!alreadyPotentiated) {
+				gr_ltp[r_offset] += potentiation(dt);
+				DEBUG_MSG("ltp %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
+						potentiation(dt),
+						sourcePartition(r_synapse), sourceNeuron(r_synapse),
+						CURRENT_PARTITION, targetNeuron, dt, delay);
+			}
+		}
+	}
+
+}
+
+
 /*! Process each firing neuron, potentiating synapses with spikes reaching the
  * fired neuron shortly before firing. */
+//! \todo fold this into 'fire' loop
 __device__
 void
 updateLTP_(
+	bool isL1, // hack to work out how to address recent firing bits
 	uint maxDelay,
-	uint32_t* recentFiring,
+	uint32_t* sourceRecentFiring,
+	uint32_t* s_targetRecentFiring,
+	size_t pitch32,
 	uint rfshift, // how much to shift recent firing bits
 	uint r_maxSynapses,
 	uint* gr_cm, size_t r_pitch, size_t r_size,
 	uint16_t* s_firingIdx,
 	uint s_firingCount,
-	uint32_t* g_arrivalDelays)
+	uint32_t* g_arrivalDelays) // for target partition
 {
 	/*! \note This is the maximum number of chunks required for this whole
 	 * cluster. It should be possible to reduce this for rows with few
@@ -226,11 +315,13 @@ updateLTP_(
 #endif
 			  )
 			{
+				//! \todo move this inside potentiateSynapse as well
 				size_t r_address = (postsynaptic * maxDelay + delay-1) * r_pitch + r_sidx;
 				uint r_sdata = gr_cm[r_address];
 
 				if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
+					//! \todo tidy!
 					/* Ignore any firing whose spikes have not had a chance
 					 * to reach postsynaptic, as well as any firing in the
 					 * presynaptic which happened in /this/ cycle. */
@@ -241,18 +332,17 @@ updateLTP_(
 					 * non-coalesced. */
 
 					//! \todo consider using a cache for L1
-					uint presynaptic = sourceNeuron(r_sdata);
-					int preFired = __ffs((recentFiring[presynaptic] >> rfshift) & ((~0) << delay));
 
-					if(preFired) {
-						int dt = preFired - delay;
-						ASSERT(dt > 0);
-						if(dt < s_stdpTauP) {
-							gr_ltp[r_address] += potentiation(dt);
-							DEBUG_MSG("ltp +%f for synapse %u -> %u after delay of %u\n",
-									potentiation(dt), presynaptic, postsynaptic, dt);
-						}
-					}
+					potentiateSynapse(
+							r_sdata,
+							postsynaptic,
+							rfshift,
+							delay,
+							isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch32
+								 : sourceRecentFiring,
+							s_targetRecentFiring,	
+							r_address,
+							gr_ltp);
 				}
 			}
 		}
@@ -348,12 +438,14 @@ reorderLTP_(
 
 	/* Pre-load all delay bits, since all of it will be needed */
 	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
+	loadSharedArray(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
 
+	//! \todo fold all into poffset, as forward addressing does its own partition addressing
 	size_t poffset = CURRENT_PARTITION * maxPartitionSize * maxDelay;
-	uint* g_raddress =       gr_cm + RCM_ADDRESS * r_size + poffset * r_pitch;
-	float* gr_ltp = (float*) gr_cm + RCM_STDP_LTP     * r_size + poffset * r_pitch;
-	float* gf_ltp = (float*) gf_cm + FCM_STDP_LTP     * f_size + poffset * f_pitch;
+	uint* g_raddress =       gr_cm + RCM_ADDRESS  * r_size + poffset * r_pitch;
+	float* gr_ltp = (float*) gr_cm + RCM_STDP_LTP * r_size + poffset * r_pitch;
+
+	float* gf_ltp = (float*) gf_cm + FCM_STDP_LTP * f_size; 
 
 	for(uint postsynaptic=0; postsynaptic < s_partitionSize; ++postsynaptic) {
 
@@ -376,15 +468,18 @@ reorderLTP_(
 
 					if(ltp != 0.0f) {
 
-						size_t gf_offset 
-								= (sourceNeuron(rsynapse) * maxDelay + delay) * f_pitch 
-								+ forwardIdx(rsynapse);
+						//! \todo refactor
+						size_t gf_offset
+								= sourcePartition(rsynapse) * maxPartitionSize * maxDelay * f_pitch // partition 
+								+ (sourceNeuron(rsynapse) * maxDelay + delay) * f_pitch              // neuron
+								+ forwardIdx(rsynapse);                                              // synapse
 
 						gf_ltp[gf_offset] = ltp;
 						gr_ltp[gr_offset] = 0;
 
-						DEBUG_MSG("stdp %+f for synapse %u -> %u\n",
-							ltp, sourceNeuron(rsynapse), postsynaptic);
+						DEBUG_MSG("stdp %+f for synapse %u -> %u\n", ltp,
+							sourcePartition(rsynapse), sourceNeuron(rsynapse),
+							CURRENT_PARTITION, postsynaptic);
 					}
 				}
 			}
@@ -428,7 +523,7 @@ applySTDP_(
 
 	/* Pre-load all delay bits, since all of it will be needed */
 	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
+	loadSharedArray(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
 	__syncthreads();
 
 	size_t partitionOffset = CURRENT_PARTITION * maxPartitionSize * maxDelay * pitch;
@@ -474,9 +569,14 @@ applySTDP_(
 					 * weight once it has reached 0. */
 					//! \todo for synapses with zero weight, don't write to accumulator in the first place
 					if(w_old > 0.0f && w_old != w_new) {
+
 						g_weights[g_offset] = w_new;
-						DEBUG_MSG("stdp, updated synapse %u -> %u to %f\n",
-							presynaptic, targetNeuron(g_postsynaptic[g_offset]), w_new);
+
+						DEBUG_MSG("stdp, updated synapse %u-%u -> %u-%u to %f (%f %f)\n",
+							CURRENT_PARTITION, presynaptic,
+							targetPartition(g_postsynaptic[g_offset]),
+							targetNeuron(g_postsynaptic[g_offset]),
+							w_new, ltp, ltd);
 
 						if(recordTrace) {
 							g_trace[g_offset] = __float_as_int(w_new);

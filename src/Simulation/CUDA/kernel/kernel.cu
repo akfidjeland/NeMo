@@ -28,28 +28,6 @@ STDP_FN(setSharedArray)(uint32_t* s_mem, uint32_t val)
 
 
 
-__device__
-void
-STDP_FN(loadSharedArray)(
-        int s_partitionSize,
-        int s_neuronsPerThread,
-        size_t pitch32,
-		uint32_t* g_arr,
-        uint32_t* s_arr)
-{
-	for(int i=0; i < s_neuronsPerThread; ++i) {
-		if(activeNeuron(i, s_partitionSize)){
-			s_arr[threadIdx.x + i*THREADS_PER_BLOCK] =
-				g_arr[mul24(blockIdx.x, pitch32) + threadIdx.x + i*THREADS_PER_BLOCK];
-		}
-	}
-}
-
-
-#ifdef STDP
-#include "stdp.cu"
-#endif
-
 
 
 __device__
@@ -139,7 +117,7 @@ STDP_FN(fire)(
 
 
 
-/* Add current to current accumulation buffer 
+/* Add current to current accumulation buffer
  *
  * Since multiple spikes may terminate at the same postsynaptic neuron, some
  * care must be taken to avoid a race condition in the current update.
@@ -148,7 +126,7 @@ STDP_FN(fire)(
  * resulting from multiple synapses terminating at the same postsynaptic
  * neuron. Within a single delay, there should be no race conditions, if the
  * mapper has done its job
- * 
+ *
  * It's possible to do this using mutexes based on shared memory atomics.
  * However, this was found to be slightly slower (12% overhead vs 10% overhead
  * wrt no work-around for race condition) and makes use of a sizable amount of
@@ -312,8 +290,11 @@ STDP_FN(deliverL0Spikes_)(
 						doCommit = true;
 #ifdef STDP
 						if(weight > 0.0f) {
-							depressSynapse(presynaptic, postsynaptic, delay,
-									s_recentFiring, synapseAddress, gf0_ltd);
+							depressSynapse(
+									CURRENT_PARTITION, presynaptic,
+									CURRENT_PARTITION, postsynaptic, delay+1,
+									s_recentFiring, s_recentFiring,
+									synapseAddress, gf0_ltd);
 						}
 #endif
 					}
@@ -443,30 +424,31 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 2);
 
+	loadSharedArray(s_partitionSize, s_neuronsPerThread,
+			s_pitch32,
+			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
+			s_recentFiring);
+	__syncthreads();
+
+	SET_COUNTER(s_ccMain, 3);
+
 	bool haveL1 = gSpikeQueue != NULL;
 	if(haveL1) {
-		gatherL1Spikes_JIT_(
+		STDP_FN(gatherL1Spikes_JIT_)(
+#ifdef STDP
+				(float*) gf1_cm + FCM_STDP_LTD * sf1_size,
+				sf1_pitch,
+				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
+				s_recentFiring,
+				s_pitch32,
+#endif
 				readBuffer(cycle),
 				gSpikeQueue,
 				sqPitch,
 				gSpikeQueueHeads,
 				sqHeadPitch,
-				s_current,
-#if MAX_THREAD_BLOCKS > STDP_FN(MAX_PARTITION_SIZE)
-#error "Need to use larger memory buffer for spike queue heads"
-#else
-				s_M1KB); // only part of s_M1KB is used
-#endif
+				s_current);
 	}
-
-
-	SET_COUNTER(s_ccMain, 3);
-
-	STDP_FN(loadSharedArray)(s_partitionSize, s_neuronsPerThread,
-			s_pitch32,
-			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
-			s_recentFiring);
-	__syncthreads();
 
 	SET_COUNTER(s_ccMain, 4);
 
@@ -510,25 +492,31 @@ STDP_FN(step) (
 
 #ifdef STDP
 	updateLTP_(
+		false,
 		s_maxDelay,
-		s_recentFiring, 1,
+		s_recentFiring,
+		s_recentFiring,
+		s_pitch32, 1,
 		sr0_maxSynapsesPerDelay,
 		gr0_cm + partitionRow * sr0_pitch, sr0_pitch, sr0_size,
 		s_firingIdx,
 		s_firingCount,
-		gr0_delays);
+		gr0_delays + CURRENT_PARTITION * s_pitch32);
 #endif
 	SET_COUNTER(s_ccMain, 7);
 #ifdef STDP
 	if(haveL1) {
 		updateLTP_(
+				true,
 				s_maxDelay,
-				g_recentFiring + writeBuffer(cycle) * PARTITION_COUNT * s_pitch32, 0,
+				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
+				s_recentFiring,
+				s_pitch32, 0,
 				sr1_maxSynapsesPerDelay,
 				gr1_cm + partitionRow * sr1_pitch, sr1_pitch, sr1_size,
 				s_firingIdx,
 				s_firingCount,
-				gr1_delays);
+				gr1_delays + CURRENT_PARTITION * s_pitch32);
 	}
 #endif
 	SET_COUNTER(s_ccMain, 8);
@@ -539,7 +527,7 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 9);
 
 	if(haveL1) {
-		deliverL1Spikes_JIT(
+		STDP_FN(deliverL1Spikes_JIT)(
 				s_maxDelay,
                 writeBuffer(cycle),
 				s_partitionSize,

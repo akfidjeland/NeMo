@@ -4,7 +4,8 @@
 #define MAX_THREAD_BLOCKS 128
 #define THREADS_PER_BLOCK 128
 
-#define MAX_DELAY 32
+#define DELAY_BITS 5
+#define MAX_DELAY (1<<5)
 
 #define NEURON_BITS 10
 #define MAX_PARTITION_SIZE (1<<NEURON_BITS)
@@ -15,6 +16,7 @@
 #define PARTITION_BITS 8
 #define MAX_PARTITION_COUNT (1<<PARTITION_BITS)
 
+//! \todo move some of this to connectivityMatrix
 #define SYNAPSE_BITS (32-NEURON_BITS-PARTITION_BITS)
 #define MAX_SYNAPSES_PER_DELAY (1<<SYNAPSE_BITS)
 
