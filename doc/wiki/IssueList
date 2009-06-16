@@ -72,6 +72,13 @@ CUDA backend
   repeatable runs
 - allow the c parameter to be hard-coded. Often this will be fixed at -65.0.
 - consider removing sorting from server again.
+- The firing buffer read (device->host) could be improved. In the average case
+  it should be possible to do just a single read containing both the buffer
+  headers and the data, where the read size is based on an estimate of the
+  firing rate. This could even be adapted dynamically.
+- It should be possible to recover from a firing output buffer overflow. The
+  device needs to be able to detect the overflow, though, and then just stop
+  writing.
 
 Haskell core
 ------------

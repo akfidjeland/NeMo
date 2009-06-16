@@ -39,6 +39,7 @@ writeFiringOutput(
 				chunksToWrite * PARTITION_COUNT * FMEM_CHUNK_SIZE);
 		s_loopIterations = (firingCount + THREADS_PER_BLOCK - 1)/ THREADS_PER_BLOCK;
 		s_maxWriteOffset = ALIGN(firingCount, FMEM_CHUNK_SIZE);
+		//! \todo check for buffer overflow
 	}
 	__syncthreads();
 

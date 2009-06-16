@@ -4,70 +4,13 @@
 #include <numeric>
 #include <cutil.h>
 #include <assert.h>
-//! \todo remove this again
-#include <stdio.h>
+#include <stdexcept>
+#include <sstream>
 
 #include "FiringProbe.hpp"
 #include "util.h"
 #include "log.hpp"
 
-
-
-/*! Allocate the host-side buffer for staging data between host and output
- * buffers. This intermediate stage is needed since on the device buffer the
- * data from different partitions are interleaved.
- *
- * The host buffer uses pinned memory since this is the main run-time buffer
- * receiving data from the host and high memory bandwidth is therefore highly
- * desirable. 
- *
- * Since the buffer uses pinned memory -- which is scarce -- the buffer should
- * ideally be small. On the other hand issuing a memory read from the device is
- * costly. We therefore aim to make this buffer large enough that in the
- * average case a single read operation is sufficient. This can be set based on
- * 1) a maximum read rate and 2) an maximum firing rate we want to process with
- * a single read. 
- *
- * \param partitionPitch
- * 		number of words between two consecutive chunks in a single partition's
- * 		stream 
- * \param maxReadPeriod
- * 		maximum number of cycles between each device read
- * \param commonFiringPeriod
- * 		maximum average number of cycles between each neuron firing for which
- * 		reading back the device memory can be done in a single operation. 
- * \param len
- * 		(output) length (in words) of the allocated array
- *
- * \return
- * 		pointer to allocated data
- */
-ushort2*
-allocHostBuffer(
-		size_t partitionCount,
-		size_t partitionSize,
-		size_t partitionPitch,
-		uint maxReadPeriod,
-		uint commonFiringPeriod,
-		size_t* len)
-{
-	const size_t avgFiringsPerRead = 
-		partitionCount * partitionSize * maxReadPeriod / commonFiringPeriod;
-
-	/* We set the buffer size to be large enough to guranteed be large enough
-	 * for one cycle's worth of firing. The only reason for doing this is to
-	 * simplify unit tests. */
-	const size_t maxFiringsPerCycle = partitionCount * partitionSize;
-
-	const size_t bufferSize = std::max(avgFiringsPerRead, maxFiringsPerCycle); 
-
-	/* The buffer size should be alligned to partition pitch boundary */
-	*len = ALIGN(bufferSize, partitionPitch);
-
-	ushort2* arr;
-	CUDA_SAFE_CALL(cudaMallocHost((void**) &arr, *len * sizeof(ushort2)));
-	return arr;
-}
 
 
 
@@ -88,7 +31,6 @@ FiringProbe::FiringProbe(
 	size_t height = maxReadPeriod * m_partitionCount * maxPartitionFirings / width;
 
 	size_t bpitch;
-	//fprintf(stderr, "Firing device memory: %u x %u\n", height, width);
 	CUDA_SAFE_CALL(cudaMallocPitch((void**)(&m_deviceBuffer), &bpitch, width, height));
 
 	/* kernel relies on hard-coded pitch... */
@@ -99,13 +41,16 @@ FiringProbe::FiringProbe(
 	CUDA_SAFE_CALL(cudaMalloc((void**) &m_deviceNextFree, m_partitionCount*sizeof(uint)));
 	resetNextFree();
 
-	m_hostBuffer = allocHostBuffer(
-			m_partitionCount,
-			partitionSize,
-			m_ppitch,
-			maxReadPeriod,
-			30, // approx 30Hz at 1ms precision
-			&m_hostBufferSize);
+	/* Allocate the host-side buffer for staging data between host and output
+	 * buffers. This intermediate stage is needed since on the device buffer
+	 * the data from different partitions are interleaved.
+	 *
+	 * The host buffer uses pinned memory since this is the main run-time
+	 * buffer receiving data from the host and high memory bandwidth is
+	 * therefore highly desirable.  */
+	const size_t bufferSize = m_partitionCount * partitionSize * maxReadPeriod;
+	m_hostBufferSize = ALIGN(bufferSize, m_ppitch);
+	CUDA_SAFE_CALL(cudaMallocHost((void**) &m_hostBuffer, m_hostBufferSize * sizeof(ushort2)));
 }
 
 
@@ -300,10 +245,20 @@ FiringProbe::setStreamLength()
 	std::vector<uint> ret(m_partitionCount);
 	CUDA_SAFE_CALL(cudaMemcpy(&ret[0], m_deviceNextFree, 
 				m_partitionCount*sizeof(uint), cudaMemcpyDeviceToHost));
-	// ret now contains per-stream max offsets	
+	// ret now contains per-stream max offsets
 	
 	for(std::vector<uint>::iterator i=ret.begin(); i!=ret.end(); ++i) {
 		size_t maxOffset = *i;
+		if(maxOffset >= m_hostBufferSize) {
+			/* The device firing output buffer has overflowed. We might have
+			 * corrupted our own memory, so we abort */
+			//! \todo have the device check for overflow
+			std::stringstream err;
+			err << "Device buffer overflow: partition " << i-ret.begin()
+				<< " has written " << maxOffset << " words to buffer of size "
+				<< m_hostBufferSize << std::endl;
+			throw std::runtime_error(err.str());
+		}
 		*i = maxOffset / FMEM_CHUNK_SIZE / m_partitionCount;
 	}
 
