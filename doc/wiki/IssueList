@@ -39,10 +39,8 @@ CUDA backend
 
 - For cycle counting, we only report data for thread block 0. Get data from all
   and report mean and std. deviation. 
-- We currently have one kernel parameter for the cycle number to assign to
-  output data and one we use for buffering etc. Combine these two. 
-- For STDP, either reset the stdp counter when updating the synapses, or share
-  this counter with the main simulation counter.
+- Extend max delay to 64, at least when STDP is enabled. The history needs to
+  be long enough to hold delay+dt.
 - Modify mapper to reduce number of sequential loads in L0 delivery. This is a
   small saving, perhaps 5%.
 - In the STDP pruning step we traverse the entire forward matrix. We can speed
@@ -62,14 +60,8 @@ CUDA backend
   for partition sizing.
 - Parallel loading of incoming L1 spikes 
 - StoreExplicitFiringIndices
-- For L0 STDP, when weight is 0, reduce number of reads in traversal of
-  connectivity matrices.
 - Simple code issues: add address macros CLUSTER, NEURON; replace
   reinterpret_cast with __float_as_int
-- make sure we check for spiking during the sub-ms looping, to avoid numeric
-  overflow
-- use local RNG to get seed for device in order to make it possible to have
-  repeatable runs
 - allow the c parameter to be hard-coded. Often this will be fixed at -65.0.
 - consider removing sorting from server again.
 - The firing buffer read (device->host) could be improved. In the average case

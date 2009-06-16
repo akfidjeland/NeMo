@@ -203,7 +203,20 @@ potentiateSynapse(
 	//! \todo move s_stdpTau into the mask here.
 	// most recent firing which has reached postsynaptic
 	int preFired = __ffs((sourceRecentFiring[sourceNeuron(r_synapse)] >> rfshift)
+	             & 0x80000000        // hack to get consistent results (*)
 	             & ((~0) << delay));
+
+	/* (*) By the time we deal with LTP we have lost one cycle of history for
+	 * the recent firing of the source partition when doing L0. For L1 we read
+	 * the recent firing from global memory, so we get 32 cycles worth of
+	 * history. For L0 we read from shared memory, which has already been
+	 * updated to reflect firing that took place /this/ cycle, so we only get
+	 * 31 cycles worth of relevant history. We could, of course, read firing
+	 * from global memory in both cases. However, in any event we're short of
+	 * history and will loose STDP applications when dt+delay > 32. Untill this
+	 * is fixed, the above hack which truncates the history for L1 delivery as
+	 * well ensures we get consistent results when modifying the partition
+	 * size.  */
 
 	if(preFired) {
 		int dt = preFired - delay;
