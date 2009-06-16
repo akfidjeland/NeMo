@@ -140,7 +140,9 @@ depressSynapse(
 		uint32_t p_bits = (~((~0) << dt)) << delay; // see above figure
 		uint32_t preSpikes = sourceRecentFiring[sourceNeuron];
 		if(!(preSpikes & p_bits)) {
+
 			gf_ltd[f_offset] -= depression(dt);
+
 			DEBUG_MSG("ltd: %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
 					depression(dt),
 					sourcePartition, sourceNeuron,
@@ -196,10 +198,6 @@ potentiateSynapse(
 		size_t r_offset,
 		float* gr_ltp)
 {
-	// did presynaptic produce spikes which reached before current firing?
-	// did the postsynaptic already fire following that spike
-
-
 	//! \todo move s_stdpTau into the mask here.
 	// most recent firing which has reached postsynaptic
 	int preFired = __ffs((sourceRecentFiring[sourceNeuron(r_synapse)] >> rfshift)
@@ -227,7 +225,9 @@ potentiateSynapse(
 			uint32_t p_mask = ~((~0) << dt) << 1; // see above figure
 			bool alreadyPotentiated = s_targetRecentFiring[targetNeuron] & p_mask;
 			if(!alreadyPotentiated) {
+
 				gr_ltp[r_offset] += potentiation(dt);
+
 				DEBUG_MSG("ltp %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
 						potentiation(dt),
 						sourcePartition(r_synapse), sourceNeuron(r_synapse),
@@ -540,8 +540,9 @@ applySTDP_(
 	__syncthreads();
 
 	size_t partitionOffset = CURRENT_PARTITION * maxPartitionSize * maxDelay * pitch;
-#ifdef __DEVICE_EMULATION__
-	uint* g_postsynaptic =      g_cm + FCM_ADDRESS * size + partitionOffset;
+
+#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
+	uint* g_postsynaptic =      g_cm + FCM_ADDRESS    * size + partitionOffset;
 #endif
 	float* g_weights = (float*) g_cm + FCM_WEIGHT     * size + partitionOffset;
 	float* g_ltp     = (float*) g_cm + FCM_STDP_LTP   * size + partitionOffset;
@@ -578,10 +579,7 @@ applySTDP_(
 					float w_old = g_weights[g_offset];
 					float w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
 
-					/* Only modify excitatory synapses. Also, don't modify
-					 * weight once it has reached 0. */
-					//! \todo for synapses with zero weight, don't write to accumulator in the first place
-					if(w_old > 0.0f && w_old != w_new) {
+					if(w_old != w_new) {
 
 						g_weights[g_offset] = w_new;
 
