@@ -53,12 +53,28 @@ matlabRun :: [String] -> IO [String]
 matlabRun commands = do
     (cmd, out, _, _) <- runInteractiveProcess "matlab" ["-nosplash", "-nodesktop"] Nothing Nothing
     matlabOutput out -- skip the initial crud
-    results <- mapM (exec cmd out) commands
+    results <- forM commands $ exec cmd out False
     exec_ cmd "quit"
     return $ results
-    where
-        exec_ cmd s = hPutStrLn cmd s >> hFlush cmd      -- ignore output
-        exec cmd out s = exec_ cmd s >> matlabOutput out -- return output
+
+
+{- Execute Matlab command, ignoring output and errors -}
+exec_ cmdH cmdS = hPutStrLn cmdH cmdS >> hFlush cmdH
+
+
+{- Execute Matlab command, and return string, optionally outputting commands
+ - and return string -}
+exec cmdH outH verbose cmdS = do
+    when verbose $ putStrLn cmdS
+    exec_ cmdH cmdS
+    outS <- matlabOutput outH
+    when (matlabError outS) $ fail outS
+    when verbose $ putStr outS
+    return outS
+
+
+matlabError :: String -> Bool
+matlabError = isPrefixOf "???"
 
 
 {- Read matlab outupt until the next prompt -}
@@ -83,7 +99,7 @@ ml_runSmallworld = [
         "nsDisableSTDP;",
         "[a, b, c, d, u, v, post, delays, weights] = smallworld(34, 12345);",
         "nsStart(a, b, c, d, u, v, post, delays, weights, 4, 1);",
-        "[f, t] = nsRun(1000, [1, 1]);",
+        "[f, t] = nsRun(1000, [1, 1])",
         "nsTerminate;"
     ]
 
@@ -132,7 +148,6 @@ runServer = do
     let logfile = logdir </> "test_matlabAPI.log"
     bracket (openFile logfile WriteMode) hClose $ \hdl -> do
     serveSimulation hdl testPort False
-    -- serveSimulation stdout testPort False
         (\net tr -> initSim CPU
                     (net :: Network (IzhNeuron FT) Static)
                     All
