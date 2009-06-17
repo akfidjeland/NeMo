@@ -7,10 +7,13 @@ module Simulation.CUDA (
 
 import System.IO
 
+import qualified Control.Exception as E (catch)
 import Control.Monad
+import Control.Monad.Error
 import Control.Monad.Writer (runWriter)
 import Data.Array.Storable (withStorableArray)
 import Data.Array.MArray (newArray, newListArray)
+import Data.Either
 import Data.List (insert, groupBy, zipWith4, foldl')
 import Data.Maybe (fromMaybe, isJust)
 import Foreign.C.Types
@@ -112,9 +115,10 @@ stepMulti sim steps pidx pfn dt fstim stdpApp = do
         Just ProbeFiringCount -> do
             nfired <- readFiringCount $ rt sim
             return $ [FiringCount nfired]
-        _ -> error $ "CUDA.stepMulti: unsupported probe: " ++ show pfn
+        _ -> fail $ "CUDA.stepMulti: unsupported probe: " ++ show pfn
 
 
+-- TODO: error handling: propagate errors to caller, as in stepOne below
 densifyDeviceFiring :: ATT -> Int -> [(Time, DeviceIdx)] -> [ProbeData]
 densifyDeviceFiring att len fired = map FiringData dense
     where
@@ -136,10 +140,17 @@ densifyDeviceFiring att len fired = map FiringData dense
         dense = A.densify 0 len [] grouped'
 
 
-stepOne sim probeIdx probeF tempSubres forcedFiring currentCycle stdpApplication = do
-    let flen = length forcedFiring
+
+{- Run possibly failing computation, and propagate any errors with additional
+ - prefix -}
+rethrow :: (Monad m) => String -> (a -> Either String b) -> a -> m b
+rethrow prefix f x = either (fail . (++) (prefix ++ ": ")) return (f x)
+
+
+stepOne sim probeIdx probeF tempSubres fstim currentCycle stdpApplication = do
+    let flen = length fstim
         fbounds = (0, flen-1)
-        fstim = fstimG2D forcedFiring $ att sim
+    fstim <- forM fstim $ rethrow "firing stimulus" $ deviceIdxM (att sim)
     fsPIdxArr <- newListArray fbounds (map (fromIntegral . partitionIdx) fstim)
     fsNIdxArr <- newListArray fbounds (map (fromIntegral . neuronIdx) fstim)
     withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
@@ -150,17 +161,9 @@ stepOne sim probeIdx probeF tempSubres forcedFiring currentCycle stdpApplication
         applySTDP stdpReward
         (fromIntegral flen) fsPIdxPtr fsNIdxPtr
         rtPtr
-    when (kernelStatus /= 0) $ error "Backend error"
+    when (kernelStatus /= 0) $ fail "Backend error"
 
     where
-
-        {- The user-provided stimulus is expressed in global neuron indices,
-         - rather than device-specific indices -}
-        fstimG2D fs att = map (fstimG2Dlookup att) fs
-        fstimG2Dlookup att idx =
-                fromMaybe (fstimG2Derror idx) $ deviceIdxM att idx
-        fstimG2Derror idx = error $ "stepOne: failed to find stimulated neuron "
-                ++ (show idx) ++ " in address lookup table"
 
         -- TODO: just use a maybe type here instead, unwrap in KernelFFI
         (applySTDP, stdpReward) = case stdpApplication of

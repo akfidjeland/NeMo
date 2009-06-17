@@ -66,18 +66,18 @@ globalIdx :: ATT -> DeviceIdx -> Idx
 globalIdx att idx = (d2g att) ! idx
 
 globalIdxM :: (Monad m) => ATT -> DeviceIdx -> m Idx
-globalIdxM att = idxLookup "globalIdx" $ d2g att
+globalIdxM att = idxLookup "device" $ d2g att
 
 
 deviceIdx :: ATT -> Idx -> DeviceIdx
 deviceIdx att idx = (g2d att) ! idx
 
 deviceIdxM :: (Monad m) => ATT -> Idx -> m DeviceIdx
-deviceIdxM att = idxLookup "deviceIdx" $ g2d att
+deviceIdxM att = idxLookup "global" $ g2d att
 
 
 -- | Safe array lookup
-idxLookup name arr idx =
+idxLookup from arr idx =
     if inRange (bounds arr) idx
         then return $ arr ! idx
-        else error $ name ++ ": index not found " ++ show idx
+        else fail $ "invalid " ++ from ++ " index (" ++ show idx ++ ")"

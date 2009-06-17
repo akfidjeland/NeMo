@@ -76,7 +76,8 @@ procRequests mastersock hdl verbose initfn = do
     logMsg hdl clientaddr "Server.hs: client connected"
     (catch
         (procSim connsock hdl clientaddr verbose initfn)
-        (\e -> logMsg hdl clientaddr $ "Server.hs: exception caught, simulation terminated" ++ show e))
+        (\e -> logMsg hdl clientaddr $
+            "Server.hs: exception caught, simulation terminated\n\t" ++ show e))
     sClose connsock
     procRequests mastersock hdl verbose initfn
 
