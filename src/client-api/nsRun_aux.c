@@ -77,6 +77,18 @@ getFiringStimulus(const mxArray* arr,
 
 
 
+/*! Return annotated error while freeing up haskell-allocated error string */
+void
+error(const char* prefix, char* hs_errorMsg)
+{
+	size_t len = strlen(hs_errorMsg) + strlen(prefix) + 1;
+	char* mx_errorMsg = mxMalloc(len);
+	snprintf(mx_errorMsg, len, "%s%s", prefix, hs_errorMsg);
+	free(hs_errorMsg);
+	mexErrMsgTxt(mx_errorMsg);
+}
+
+
 /*! nsStep
  * 		run simulation for a fixed number of cycles and read back firing data.
  *
@@ -119,17 +131,17 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	uint applySTDP = getScalarInt(prhs[3]);
 	double stdpReward = mxGetScalar(prhs[4]);
 	
-    /*! \todo get and check error status */ 
-	uint32_t elapsed = 0; /* computation time on server in milliseconds */
+	uint32_t elapsed = 0;      /* computation time on server in milliseconds */
+	char* hs_errorMsg = NULL;  /* allocated on haskell side */
     bool success = hs_runSimulation(sockfd, nsteps,
                 applySTDP, stdpReward,
 				firingStimulusCycles, firingStimulusIdx, firingStimulusLen, 
-				&firingCycles, &firingIdx, &firingLen, &elapsed);
-    if(!success) {
+				&firingCycles, &firingIdx, &firingLen, &elapsed, &hs_errorMsg);
+	if(!success) {
 		free(firingCycles);
 		free(firingIdx);
-        mexErrMsgTxt("An error occured when synchronising data with the server");
-    }
+		error("server error: ", hs_errorMsg);
+	}
 
 	if((plhs[0] = mxCreateNumericMatrix(firingLen, 2, mxUINT32_CLASS, mxREAL)) == NULL) { 
 		free(firingCycles);

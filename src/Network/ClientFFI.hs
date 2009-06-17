@@ -96,15 +96,17 @@ foreign export ccall hs_runSimulation
     -> Ptr CInt         -- ^ firing stimulus (indices)
     -> CInt             -- ^ firing stimulus (length)
     -> Ptr (Ptr CInt)   -- ^ firing (cycles), allocated by caller
-    -> Ptr (Ptr CInt)   -- ^ firing (indices), allocate by caller
+    -> Ptr (Ptr CInt)   -- ^ firing (indices), allocated by caller
     -> Ptr CInt         -- ^ firing (length)
     -> Ptr CInt         -- ^ elapsed time (milliseconds)
+    -> Ptr (Ptr CChar)  -- ^ pointer to error if call failed (caller should free)
     -> IO Bool
-hs_runSimulation fd nsteps applySTDP stdpReward fscycles fsidx fslen fcycles fidx flen elapsed = do
+hs_runSimulation fd nsteps applySTDP stdpReward
+        fscycles fsidx fslen fcycles fidx flen elapsed errMsg = do
     sock <- socketFD fd
     let nsteps' = fromIntegral nsteps
     fstim <- foreignToFlat fscycles fsidx fslen
-    handle (\_ -> return False) $ do
+    handle (\err -> newCString (show err) >>= poke errMsg >> return False) $ do
     (firing, elapsed') <- runSimulation sock nsteps' (flatToSparse fstim) stdpApplication
     (fcycles', fidx', flen') <-
         flatToForeign $ sparseToFlat $ denseToSparse firing
