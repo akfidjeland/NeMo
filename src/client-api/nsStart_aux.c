@@ -25,6 +25,16 @@
 #endif
 
 
+void
+connectionError(const char* call,
+		const char* hostname,
+		unsigned short portno,
+		const char* errorMsg)
+{
+	mexPrintf("Error in '%s' %s:%u\n", call, hostname, portno);
+	mexErrMsgTxt(errorMsg);
+}
+
 
 /*! \return socket file descriptor. Crash program on errors. */
 int
@@ -42,22 +52,19 @@ connectSocket(const char* hostname, unsigned short portno)
 	sprintf(port, "%u", portno);
 	if((status = getaddrinfo(hostname, port, &hints, &servinfo)) == -1) 
 	{
-		mexWarnMsgTxt("getaddrinfo:");
-		mexErrMsgTxt(gai_strerror(status));
+		connectionError("getaddrinfo", hostname, portno, gai_strerror(status));
 	}
 
 	int sockfd;
 	if((sockfd = socket(servinfo->ai_family, 
 					servinfo->ai_socktype, 
 					servinfo->ai_protocol)) == -1){
-		mexWarnMsgTxt("socket: ");
-		mexErrMsgTxt(strerror(errno));
+		connectionError("socket", hostname, portno, strerror(errno));
 	}
 
 	if((status = connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen)) == -1) {
 		/* errno may indicate "no error" here, at least when used through MEX */
-		mexWarnMsgTxt("connect: ");
-		mexErrMsgTxt(strerror(errno));
+		connectionError("connect", hostname, portno, strerror(errno));
 	}
 
 	freeaddrinfo(servinfo);
