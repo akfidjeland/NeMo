@@ -69,6 +69,7 @@ runSimulation sock nsteps fstim stdp = do
     rsp <- recvResponse sock
     case rsp of
         RspData d elapsed -> return (d, elapsed)
+        RspError msg      -> fail $ "runSimulation: " ++ msg
         _                 -> fail "runSimulation: unexpected response"
 
 
@@ -153,7 +154,7 @@ data ServerResponse
         = RspStart
         -- ^ dense firing data + number of milliseconds of simulation
         | RspData [[Idx]] Int
-        | RspError
+        | RspError String
         | RspReady
         | RspBusy
 
@@ -164,7 +165,7 @@ instance Binary ServerResponse where
 putRsp :: ServerResponse -> Put
 putRsp RspStart = putWord8 0
 putRsp (RspData firing elapsed) = putWord8 1 >> put firing >> put elapsed
-putRsp RspError = putWord8 2
+putRsp (RspError err) = putWord8 2 >> put err
 putRsp RspReady = putWord8 3
 putRsp RspBusy = putWord8 4
 
@@ -174,6 +175,6 @@ getRsp = do
     case tag of
         0 -> return RspStart
         1 -> liftM2 RspData get get
-        2 -> return RspError
+        2 -> liftM RspError get
         3 -> return RspReady
         4 -> return RspBusy

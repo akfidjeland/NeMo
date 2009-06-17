@@ -2,6 +2,7 @@ module Network.Server (serveSimulation) where
 
 -- Based on example in Real World Haskell, Chapter 27
 
+import Control.Exception (try)
 import Control.Parallel.Strategies (NFData)
 import Data.Binary (Binary)
 import Data.List (sort)
@@ -75,7 +76,7 @@ procRequests mastersock hdl verbose initfn = do
     (connsock, clientaddr) <- accept mastersock
     logMsg hdl clientaddr "Server.hs: client connected"
     (catch
-        (procSim connsock hdl clientaddr verbose initfn)
+        (procSim connsock verbose initfn (logMsg hdl clientaddr))
         (\e -> logMsg hdl clientaddr $
             "Server.hs: exception caught, simulation terminated\n\t" ++ show e))
     sClose connsock
@@ -85,37 +86,41 @@ procRequests mastersock hdl verbose initfn = do
 
 -- TODO: add back verbosity
 -- | Process potential simulation request
-procSim sock hdl clientaddr _ initfn = do
+procSim sock _ initfn log = do
     -- TODO: remove runfn from Protocol
     -- TODO: catch protocol errors here, esp invalid request
     ret <- startSimulationHost sock initfn
     case ret of
         Nothing     -> return ()
-        -- TODO: pack hdl, clientaddr, and verbose into a log closure
-        Just sim -> procSimReq sock hdl clientaddr sim
+        Just sim -> procSimReq sock sim log
 
 
 -- | Process user requests during running simulation
-procSimReq sock hdl clientaddr sim = do
+-- TODO: move some of this to Protocol.hs
+procSimReq sock sim log = do
     req <- recvCommand sock
     case req of
         (CmdSync nsteps fstim applySTDP) -> do
-            procSynReq sock nsteps sim fstim applySTDP
-            procSimReq sock hdl clientaddr sim
+            try (procSynReq nsteps sim fstim applySTDP) >>= either
+                (\err -> do
+                    sendResponse sock $ RspError $ show err
+                    log $ "Server.hs: error: " ++ show err
+                    stop sim)
+                (\(probed, elapsed) -> do
+                    sendResponse sock $ RspData probed elapsed
+                    procSimReq sock sim log)
         CmdStop  -> stop sim
         (CmdError c) -> do
-            logMsg hdl clientaddr $
-                "Server.hs: invalid simulation request: " ++ show c
+            log $ "Server.hs: invalid simulation request: " ++ show c
             stop sim
     where
         stop sim = do
             closeSim sim
-            logMsg hdl clientaddr "Server.hs: stopping simulation"
+            log "Server.hs: stopping simulation"
 
 
 
--- TODO: move some of this to Protocol.hs
-procSynReq sock nsteps sim sparseFstim applySTDP = do
+procSynReq nsteps sim sparseFstim applySTDP = do
     -- We should do this by whatever increments are requested by the step
     -- TODO: should deal with nsteps that don't work out exactly
     resetTimer sim
@@ -124,7 +129,7 @@ procSynReq sock nsteps sim sparseFstim applySTDP = do
     putStrLn $ "Simulated " ++ (show nsteps) ++ " steps in " ++ (show e) ++ "ms"
     let probed = concat probed1
     assert ((length probed) == nsteps) $ do
-    sendResponse sock $ RspData (map getFiring probed) (fromIntegral e)
+    return (map getFiring probed, fromIntegral e)
     where
         sz = stepSize sim
         fstim = L.chunksOf sz $ A.densify 0 nsteps [] sparseFstim
