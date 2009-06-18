@@ -91,11 +91,7 @@ MatlabAPI
 ---------
 
 - add support for thalamic input in the matlab interface
-- if server goes down, the client gets only the error message: an unknown error
-  occurred. This is because we don't return error strings from ClientFFI, only
-  the status. Rectify this.
-- allow users to specifiy networks with a variable number of synapses. Remember
-  to modify help comment in nsStart.m
+- add support for per-synapse specification of STDP
 
 Build system
 ------------

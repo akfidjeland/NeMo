@@ -11,8 +11,8 @@
 %
 % The connectivity is specified using the three N-by-M matrices SPOST, SWEIGHT
 % and SDELAY. N is again the number of neurons in the network and M is the
-% number of synapses per neuron. Each neuron is expected to have the same
-% number of synapses, although this will be changed in future versions. 
+% maximum number of synapses per neuron. If a neuron has less than M outgoing
+% synapses, invalid synapses should point to neuron 0.
 %
 % The simulation is discrete-time, so delays are rounded to integer values.
 %
@@ -87,8 +87,8 @@ end
 % Check whether postsynaptic indices are out-of-bounds 
 function checkPosts(posts, maxIdx)
 
-	if ~all(all(posts > 0)) 
-		oob = posts(find(posts <= 0));
+	if ~all(all(posts >= 0))
+		oob = posts(find(posts < 0));
 		oob(1:min(10,size(oob,1)))
 		error('Postsynaptic index matrix contains out-of-bounds members (too low). The first 10 are shown above')
 	end

@@ -50,15 +50,14 @@ connectSocket(const char* hostname, unsigned short portno)
 	struct addrinfo* servinfo;
 	char port[5]; /* ... for up to 2^16 ports, as per TCP spec */
 	sprintf(port, "%u", portno);
-	if((status = getaddrinfo(hostname, port, &hints, &servinfo)) == -1) 
-	{
+	if((status = getaddrinfo(hostname, port, &hints, &servinfo)) == -1) {
 		connectionError("getaddrinfo", hostname, portno, gai_strerror(status));
 	}
 
 	int sockfd;
 	if((sockfd = socket(servinfo->ai_family, 
 					servinfo->ai_socktype, 
-					servinfo->ai_protocol)) == -1){
+					servinfo->ai_protocol)) == -1) {
 		connectionError("socket", hostname, portno, strerror(errno));
 	}
 

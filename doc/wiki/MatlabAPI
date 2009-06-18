@@ -1,12 +1,12 @@
 .. Note: this page is used to create user documentation for the MATLAB API
 
 ========================
-Nemo v0.2.4 - Matlab API
+Nemo v0.2.5 - Matlab API
 ========================
 
 :Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
 :Organization: Department of Computing, Imperial College London
-:Date: April 2008
+:Date: June 2008
 
 The MATLAB API can be used to control a simulation running on a dedicated host.
 The network is constructed in MATLAB, and is then transferred to the host. The
@@ -19,8 +19,6 @@ Installation
 
 Windows: Unpack the zip file somewhere sensible. The pre-compiled binaries
 should just work.
-
-.. Linux: Sun RPC/XDR is required, but this is probably installed by default.  Unpack that tarball somewhere sensible and run ``make``. 
 
 Usage
 =====
@@ -72,8 +70,8 @@ To run for 1000ms applying STDP every 50ms, do something like the following
     F = 30;
     iterations = 4;
     nsStart(a, b, c, d, u, v, spost, sdelays, sweights, iterations, F);
-    for i=1:1000:50
-        fired = nsRun(1000, []);
+    for i=1:50:1000
+        fired = nsRun(50, []);
         foo(fired);
         nsApplySTDP(1.0);
     end
@@ -130,17 +128,6 @@ the usual ``help`` function.
 .. include:: nsDisableSTDP.txt
 .. include:: nsApplySTDP.txt
 
-Limitations
-===========
-
-These limitations should be eased with time. Requests are welcome.
-
-- All synapses are assumed to have the same number of synapses.
-- Only firing data can be returned.
-
-.. - It's not possible to change the probe (neuron indices or type of data) during execution.
-
-
 Troubleshooting
 ===============
 
@@ -157,3 +144,17 @@ before starting MATLAB. For bash::
 For csh::
 
 	setenv LD_PRELOAD /lib/libgcc_s.so.1
+
+Running the client on a 64-bit machine fails
+--------------------------------------------
+
+This is a known issue with the build process. No 64-bit client code is
+available, so run on a 32-bit machine for the time being.
+
+Matlab fails with ``Invalid MEX-file``  ``libnemoclient.so: cannot open shared object file: No such file or directory.``
+------------------------------------------------------------------------------------------------------------------------
+
+Check that the directory containing the library files are in the system library
+path. E.g. using bash::
+
+    export LD_LIBRARY_PATH=/path/to/nemo

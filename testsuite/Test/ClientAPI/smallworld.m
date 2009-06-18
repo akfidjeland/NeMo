@@ -67,7 +67,7 @@ for i=Ne+1:N
    for j=1:M
       post(i,j) = (cc-1)*R+ceil(rand*R); % focal
       % post(i,j) = ceil(rand*Ne); % diffuse
-	  delays(i,j) = Dinhb;
+      delays(i,j) = Dinhb;
    end
 end
 

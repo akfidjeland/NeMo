@@ -221,17 +221,31 @@ peekAxon source i m t d w = go i (i+m)
             | otherwise = do
                 s  <- peekSynapse i source t d w
                 ss <- go (i+1) end
-                return $! (s:ss)
+                case s of
+                    Nothing -> return $! ss -- don't assume all null synapses at end of row
+                    Just s  -> return $! (s:ss)
 
+
+{- | Synapses pointing to the null neuron are considered inactive -}
+nullNeuron = -1
 
 {- | Get a single synapse out of c-array -}
-peekSynapse :: Int -> Idx -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> IO (Synapse Static)
+peekSynapse
+    :: Int
+    -> Idx
+    -> Ptr CInt
+    -> Ptr CInt
+    -> Ptr CDouble
+    -> IO (Maybe (Synapse Static))
 peekSynapse i source t_arr d_arr w_arr = do
     target <- peekElemOff t_arr i
     delay  <- peekElemOff d_arr i
     weight <- peekElemOff w_arr i
-    return $! Synapse source (fromIntegral target) (fromIntegral delay)
-            $! Static (realToFrac weight)
+    if target == nullNeuron
+        then return $! Nothing
+        else return $! Just $!
+                Synapse source (fromIntegral target) (fromIntegral delay) $!
+                    Static (realToFrac weight)
 
 
 foreign export ccall hs_defaultPort :: IO CUShort
