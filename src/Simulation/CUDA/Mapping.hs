@@ -152,15 +152,16 @@ mkRPitch stdp pcount psize =
 
 
 
-{- Increment either L0 or L1 reverse -}
+{- Increment either L0 or L1 reverse pitch -}
 accRPitch :: ATT -> DeviceIdx -> (RPitch t, RPitch t) -> Synapse s -> ST t ()
 accRPitch att src@(srcp,_) (l0r, l1r) s =
     if isL0
-        then inc l0r src d
-        else inc l1r src d
+        then inc l0r tgt d
+        else inc l1r tgt d
     where
-        d   = delay s
-        isL0 = (==srcp) $! partitionIdx $! deviceIdx att $! target s
+        d = delay s
+        tgt = deviceIdx att $! target s
+        isL0 = (==srcp) $! partitionIdx $! tgt
         inc ss (p,n) d = readArray ss i >>= writeArray ss i . (+1)
             where i = (p,n,d)
 

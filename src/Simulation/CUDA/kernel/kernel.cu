@@ -103,7 +103,7 @@ STDP_FN(fire)(
 				int idxEntry = atomicAdd(s_nextIdxEntry, 1);
 				s_firingIdx[idxEntry] = (uint16_t) s_index;
 			}
-			//! \todo undo the updating of local firing. We don't care about the ones that fired just now
+
 			/* We need the (updated) recent firing history for L1 spike
 			 * delivery later, but won't update this further, so we can write
 			 * back to global memory now. */
@@ -149,8 +149,8 @@ STDP_FN(commitCurrent_)(
 	for(uint commit=0; commit < s_delayBlocks; ++commit) {
 		if(delayEntry == commit && doCommit) {
 			s_current[postsynaptic] += weight; 
-			DEBUG_MSG("L0 current %f for synapse %u -> %u after delay %d" ,
-					weight, presynaptic, postsynaptic, delay);
+			DEBUG_MSG("L0 current %f for synapse %u -> %u" ,
+					weight, presynaptic, postsynaptic);
 		}
 		__syncthreads();
 	}
