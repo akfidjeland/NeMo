@@ -6,6 +6,7 @@ module Construction.Network (
         Network(..),
         -- * Query
         size,
+        synapseCount,
         indices,
         idxBounds,
         synapses,
@@ -47,6 +48,11 @@ data Network n s = Network {
 {- | Return number of neurons in the network -}
 size :: Network n s -> Int
 size = Neurons.size . neurons
+
+
+{- | Return total number of synapses in the network -}
+synapseCount :: Network n s -> Int
+synapseCount = Neurons.synapseCount . neurons
 
 
 {- | Return indices of all valid neurons -}

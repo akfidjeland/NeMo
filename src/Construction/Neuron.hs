@@ -9,6 +9,7 @@ module Construction.Neuron (
     neuron,
     synapses,
     synapsesByDelay,
+    synapseCount,
     connect,
     connectMany,
     disconnect,
@@ -84,6 +85,10 @@ synapses src n = Axon.synapses src $ axon n
 
 synapsesByDelay :: Neuron n s -> [(Delay, [(Idx, s)])]
 synapsesByDelay = Axon.synapsesByDelay . axon
+
+
+synapseCount :: Neuron n s -> Int
+synapseCount = Axon.size . axon
 
 
 {- | Add a single synapse to a neuron -}

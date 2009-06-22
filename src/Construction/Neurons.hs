@@ -10,6 +10,7 @@ module Construction.Neurons (
         indices,
         idxBounds,
         synapses,
+        synapseCount,
         maxDelay,
         -- * Modification
         addSynapse,
@@ -44,6 +45,11 @@ synapsesOf ns ix = maybe [] (Neuron.synapses ix) $ Map.lookup ix ns
 {- | Return number of neurons -}
 size :: Neurons n s -> Int
 size = Map.size
+
+
+{- | Return number of synapses -}
+synapseCount :: Neurons n s -> Int
+synapseCount = Map.fold ((+) . Neuron.synapseCount) 0
 
 
 {- | Return list of all neuron indices -}
