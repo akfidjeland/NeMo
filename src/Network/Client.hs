@@ -26,7 +26,7 @@ initSim :: (Binary n, Binary s, NFData n, NFData s)
     -> Int            -- ^ port number
     -> Network n s
     -> TemporalResolution
-    -> Maybe STDPConf
+    -> STDPConf
     -> IO Simulation
 initSim hostname port net dt stdpConf = do
     sock <- openSocket hostname (show port)

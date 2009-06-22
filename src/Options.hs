@@ -4,321 +4,215 @@
  - a subset of these, or use some different default. -}
 
 module Options (
-    getOptions,
-    -- * Option groups
-    allOptions,
-    defaultOptions,
+    -- * General option processing
+    startOptProcessing,
+    processOptGroup,
+    endOptProcessing,
+    -- * Option definition
+    OptionGroup(..),
+    withDefault,
+    OptDescr(..),
+    ArgDescr(..),
     -- * Common options
-    commonOptions,
-    -- * Verbosity
-    verbosityOptions,
         optVerbose,
-    -- * Load/store options
-    loadOptions,
-        optLoadNet,
-    storeOptions,
-        optStoreNet,
-    -- * Backend options
-    serverBackendOptions,
-    backendOptions,
-        optBackend,
-    -- * Simulation options
-    simOptions,
-        optDuration,
         optSeed,
-        optTempSubres,
-    stdpOptions,  -- extract all STDP options
-    -- * Network options
+    -- * Load/store options
     networkOptions,
-        optPort,
-    -- * CUDA-specific options
-#if defined(CUDA_ENABLED)
-    cudaOptions,
-        optCuPartitionSz,
-        optCuProbeDevice,
-#endif
-    -- * Print options
-    printOptions,
         optDumpNeurons,
-        optDumpMatrix
+        optDumpMatrix,
+        optStoreNet,
+        optLoadNet,
+    NetworkSource(..)
 ) where
 
 
+import Control.Monad.Error
+import Data.Either
 import Data.Maybe
-import System.Environment (getArgs)
+import Data.List (intercalate)
+import Data.IORef
+import System.Environment (getArgs, getProgName)
 import System.Console.GetOpt
 import System.Exit
 import System.IO (hPutStrLn, stderr)
 
 import Types
-import Simulation.Common
-import Simulation.STDP
-import Network.Protocol (defaultPort)
 
 
--- | Parse command line options
-getOptions
-    :: String               -- ^ name of binary (for help)
-    -> Options              -- ^ default options
-    -> [OptDescr (Options -> IO Options)]
-    -> IO Options
-getOptions progname defaultOptions options = do
+data OptionGroup g = OptionGroup {
+        groupName :: String,
+        defaults :: g,
+        descr    :: [OptDescr (g -> Either String g)]
+    }
+
+
+optionGroupUsage :: OptionGroup g -> String
+optionGroupUsage group = usageInfo (groupName group) (descr group)
+
+
+{- | Annotate option description string with a default value -}
+withDefault :: (Show a) => a -> String -> String
+withDefault def descr = descr ++ " (default: " ++ show def ++ ")"
+
+
+{- Initialise data for option processing. The processing takes place in one of
+ - two modes. In help printing mode, usage for all options are printed, but no
+ - parsing takes place. In parsing mode options are parsed and written to
+ - option group data -}
+startOptProcessing = do
     args <- getArgs
-    let (actions, nonOpts, args', msgs) = getOpt' Permute options args
+    ref <- newIORef args
+    -- always process common options
+    commonOpts <- processOptGroup commonOptions $ Just ref
+    if optShowHelp commonOpts
+        then do
+            -- reprocess common options in help mode
+            processOptGroup commonOptions Nothing
+            return (Nothing, commonOpts)
+        else return (Just ref, commonOpts)
+
+
+{- Either parse options or print help message for the group -}
+processOptGroup :: OptionGroup g -> Maybe (IORef [String]) -> IO g
+processOptGroup group argref = do
+    maybe
+        (do putStrLn $ optionGroupUsage group
+            return $ defaults group) -- for type checking, won't be used
+        (parseOptGroup group)
+        argref
+
+
+{- Parse options from a group -}
+parseOptGroup :: OptionGroup g -> IORef [String] -> IO g
+parseOptGroup group argref = do
+    args <- readIORef argref
+    let (actions, nonOpts, args', msgs) = getOpt' Permute (descr group) args
+    writeIORef argref args'
     if null msgs
         then do
-            opt <- foldl (>>=) (return defaultOptions) actions
-            if optShowHelp opt
-                then showHelp progname options
-                else return opt
+            let opts = foldl (>>=) (return (defaults group)) actions
+            either die return opts
         else do
-            mapM (hPutStrLn stderr) msgs
-            hPutStrLn stderr $
-                "Run " ++ progname ++ " --help for summary of options"
+            hPutStrLn stderr "an error occurred"
+            mapM_ (hPutStrLn stderr) msgs
+            exitWith $ ExitFailure 1
+    where
+        die msg = do
+            hPutStrLn stderr msg
             exitWith $ ExitFailure 1
 
 
+{- | Print error message and terminate if there where unknown errors on the
+ - command-line -}
+handleUnknownOpts :: IORef [String] -> IO ()
+handleUnknownOpts args = do
+    unknown <- readIORef args
+    if null unknown
+        then return ()
+        else do
+            progname <- getProgName
+            hPutStrLn stderr $ "Unknown " ++ pluralise (length unknown) "option"
+                ++ ":\n\t" ++ intercalate "\n\t" unknown
+                ++ "\nRun " ++ progname ++ " --help for summary of options"
+            exitWith $ ExitFailure 1
+    where
+        pluralise 1 str = str
+        pluralise _ str = str ++ "s"
 
-data Options = Options {
-        optShowHelp    :: Bool,
-        -- verbosity
-        optVerbose     :: Bool,
-        -- load/store options
-        optLoadNet     :: Maybe String,
-        optStoreNet    :: Maybe String,
-        -- simulation options
-        optDuration    :: Duration,
-        optSeed        :: Maybe Integer,
-        optTempSubres  :: TemporalResolution,
-        optStdpActive  :: Bool,
-        optStdpFrequency :: Maybe Int,
-        optStdpTauP    :: Int,
-        optStdpTauD    :: Int,
-        optStdpAlphaP  :: Double,
-        optStdpAlphaD  :: Double,
-        -- TODO: may want to use Maybe here, and default to max in network
-        optStdpMaxWeight :: Double,
-        optBackend     :: Backend,
-        -- network options
-        optPort        :: Int,
-        -- print options
-        optDumpNeurons :: Bool,
-        optDumpMatrix  :: Bool,
-        -- cuda backend options
-        optCuPartitionSz :: Maybe Int,
-        optCuProbeDevice :: Bool
+
+{- | If we're in help printing mode, terminate program. Otherwise report any
+ - errors regarding unknown options -}
+endOptProcessing :: Maybe (IORef [String]) -> IO ()
+endOptProcessing =
+    maybe
+        (exitWith $ ExitSuccess) -- should have printed all help by now
+        handleUnknownOpts
+
+
+commonOptions = OptionGroup "Common options" commonDefaults commonDescr
+
+data CommonOptions = CommonOptions {
+        optVerbose  :: Bool,
+        optShowHelp :: Bool,
+        optSeed     :: Maybe Integer
+
+    }
+
+commonDefaults = CommonOptions {
+        optVerbose  = False,
+        optShowHelp = False,
+        optSeed     = Nothing
     }
 
 
-defaultOptions :: Options
-defaultOptions = Options {
-        optShowHelp    = False,
-        -- verbosity
-        optVerbose     = False,
-        -- load/store options
-        optStoreNet    = Nothing,
-        optLoadNet     = Nothing,
-        -- simulation options
-        optDuration    = Forever,
-        optSeed        = Nothing,
-        optTempSubres  = 4,
-        optStdpActive  = False,
-        optStdpFrequency = Nothing,
-        optStdpTauP    = 20,
-        optStdpTauD    = 20,
-        optStdpAlphaP  = 1.0,
-        optStdpAlphaD  = 0.8,
-        optStdpMaxWeight = 100.0, -- for no good reason at all...
-        -- backend options
-        optBackend     = defaultBackend,
-        -- network options
-        optPort        = defaultPort,
-        -- print options
-        optDumpNeurons = False,
-        optDumpMatrix  = False,
-        -- CUDA backend options
-        optCuPartitionSz = Nothing,
-        optCuProbeDevice = True
-    }
-
-
-
--- TODO: add headers for each group when printing help
--- TODO: fill in the binary name here!
-allOptions :: [OptDescr (Options -> IO Options)]
-allOptions =
-    commonOptions ++
-    loadOptions ++
-    storeOptions ++
-    simOptions ++
-    networkOptions ++
-#if defined(CUDA_ENABLED)
-    cudaOptions ++
-#endif
-    printOptions
-
-
-
--- Add default to option description
-withDefault :: (Show a) => (Options -> a) -> String -> String
-withDefault opt descr = descr ++ " (default: " ++ show (opt defaultOptions) ++ ")"
-
-
-
-commonOptions = [
+commonDescr = [
         Option ['h'] ["help"]
             (NoArg (\o -> return o { optShowHelp = True }))
-            "show command-line options"
-    ]
+            "show command-line options",
 
-
-verbosityOptions :: [OptDescr (Options -> IO Options)]
-verbosityOptions = [
         Option ['v'] ["verbose"]
             (NoArg (\o -> return o { optVerbose = True }))
-            "more than usually verbose output"
-    ]
-
-storeOptions = [
-        Option [] ["store-network"]
-            (ReqArg (\a o -> return o { optStoreNet = Just a }) "FILE")
-            "write network to file"
-    ]
-
-loadOptions = [
-        Option [] ["load-network"]
-            (ReqArg (\a o -> return o { optLoadNet = Just a }) "FILE")
-            "load network from file"
-    ]
-
-
-serverBackendOptions :: [OptDescr (Options -> IO Options)]
-serverBackendOptions = [
-#if defined(CUDA_ENABLED)
-        Option [] ["gpu"]
-            (NoArg (\o -> return o { optBackend=CUDA }))
-            (withDefault ((==CUDA) . optBackend) "use GPU backend for simulation, if present"),
-#endif
-
-        Option [] ["cpu"]
-            (NoArg (\o -> return o { optBackend=CPU }))
-            (withDefault ((==CPU) . optBackend) "use CPU backend for simulation")
-    ]
-#if defined(CUDA_ENABLED)
-    ++ cudaOptions
-#endif
-
-
-backendOptions :: [OptDescr (Options -> IO Options)]
-backendOptions = [
-        Option [] ["remote"]
-            (ReqArg getRemote "HOSTNAME[:PORT]")
-            ("run simulation remotely on the specified server")
-    ]
-    ++ serverBackendOptions
-
-
--- format host:port
-getRemote arg opts = return opts { optBackend = RemoteHost hostname port }
-    where
-        (hostname, port') = break (==':') arg
-        port = if length port' > 1
-            then read $ tail port'
-            else defaultPort
-
-
-
-simOptions = [
-
-        Option ['t'] ["time"]    (ReqArg readDuration "INT")
-            "duration of simulation in cycles (at 1ms resolution)",
+            "more than usually verbose output",
 
         Option ['s'] ["seed"]    (ReqArg readSeed "INT")
-            "seed for random number generation (default: system time)",
-
-        Option [] ["temporal-subresolution"]
-            (ReqArg (\a o -> return o { optTempSubres = read a }) "INT")
-            (withDefault optTempSubres "number of substeps per normal time step"),
-
-        Option [] ["stdp"]
-            (NoArg (\o -> return o { optStdpActive = True }))
-            "Enable STDP",
-
-        Option [] ["stdp-frequency"]
-            (ReqArg (\a o -> return o { optStdpFrequency = Just (read a) }) "INT")
-             "frequency with which STDP should be applied (default: never)",
-
-        Option [] ["stdp-a+"]
-            (ReqArg (\a o -> return o { optStdpAlphaP = read a }) "FLOAT")
-             (withDefault optStdpAlphaP "multiplier for synapse potentiation"),
-
-        Option [] ["stdp-a-"]
-            (ReqArg (\a o -> return o { optStdpAlphaD = read a }) "FLOAT")
-             (withDefault optStdpAlphaD "multiplier for synapse depression"),
-
-        Option [] ["stdp-t+"]
-            (ReqArg (\a o -> return o { optStdpTauP = read a }) "INT")
-             (withDefault optStdpTauP "Max temporal window for synapse potentiation"),
-
-        Option [] ["stdp-t-"]
-            (ReqArg (\a o -> return o { optStdpTauD = read a }) "INT")
-             (withDefault optStdpTauD "Max temporal window for synapse depression"),
-
-        Option [] ["stdp-max-weight"]
-            (ReqArg (\a o -> return o { optStdpMaxWeight = read a }) "FLOAT")
-             (withDefault optStdpMaxWeight "Set maximum weight for plastic synapses")
+            "seed for random number generation (default: system time)"
     ]
-
-
-liftOpt6 c f1 f2 f3 f4 f5 f6 o = c (f1 o) (f2 o) (f3 o) (f4 o) (f5 o) (f6 o)
-
--- Extract STPD configuration from option structure
-stdpOptions :: Options -> Maybe STDPConf
-stdpOptions opts
-    | optStdpActive opts = Just $ liftOpt6 STDPConf optStdpTauP optStdpTauD
-                optStdpAlphaP optStdpAlphaD
-                optStdpMaxWeight optStdpFrequency opts
-    | otherwise = Nothing
-
-
-printOptions = [
-
-        Option ['C'] ["connectivity"]
-            (NoArg (\o -> return o { optDumpMatrix=True }))
-            "instead of simulating, just dump the connectivity matrix",
-
-        Option ['N'] ["neurons"]
-            (NoArg (\o -> return o { optDumpNeurons=True }))
-            "instead of simulating, just dump the list of neurons"
-    ]
-
-
-networkOptions = [
-
-        Option [] ["port"]
-            (ReqArg (\a o -> return o { optPort = read a }) "INT")
-            "port number for client/server communication"
-    ]
-
-
-
-#if defined(CUDA_ENABLED)
-cudaOptions = [
-        Option [] ["cuda-partition-size"]
-            (ReqArg (\a o -> return o { optCuPartitionSz = Just $ read a }) "INT")
-            (withDefault optCuPartitionSz "partition size for mapping onto CUDA MPs"),
-
-        Option [] ["cuda-no-probe"]
-            (NoArg (\o -> return o { optCuProbeDevice = False }))
-            "don't read back probe data"
-    ]
-#endif
-
-showHelp progname options = do
-    putStr $ usageInfo ("\nusage: " ++ progname ++ " [OPTIONS]\n\nOptions:") options
-    exitWith ExitSuccess
-
-
-readDuration arg opt = return opt { optDuration = Until $ read arg }
 
 readSeed arg opt = return opt { optSeed = Just $ read arg }
+
+
+
+data NetworkOptions = NetworkOptions {
+        optDumpNeurons :: Bool,
+        optDumpMatrix  :: Bool,
+        optLoadNet     :: Maybe String,
+        optStoreNet    :: Maybe String
+    }
+
+
+networkDefaults = NetworkOptions {
+        optDumpNeurons = False,
+        optDumpMatrix  = False,
+        optLoadNet     = Nothing,
+        optStoreNet    = Nothing
+    }
+
+
+{- We can load network from file and also write to a file. It makes little
+ - sense to load a network from file only to write it back to another file, so
+ - we operate in one of two modes: -}
+data NetworkSource
+    = FromFile  -- ^ require network to be specified in file
+    | FromCode  -- ^ get network internally, allow dump to file
+
+
+networkOptions :: NetworkSource -> OptionGroup NetworkOptions
+networkOptions io =
+    OptionGroup "Output options" networkDefaults (networkDescr io)
+
+
+networkDescr io = baseOpts ++ case io of
+                                FromFile -> loadOpts
+                                FromCode -> storeOpts
+    where
+        baseOpts = [
+            Option ['C'] ["connectivity"]
+                (NoArg (\o -> return o { optDumpMatrix=True }))
+                "instead of simulating, just dump the connectivity matrix",
+
+            Option ['N'] ["neurons"]
+                (NoArg (\o -> return o { optDumpNeurons=True }))
+                "instead of simulating, just dump the list of neurons"
+          ]
+
+        loadOpts = [
+            Option [] ["load-network"]
+                (ReqArg (\a o -> return o { optLoadNet = Just a }) "FILE")
+                "load network from file"
+          ]
+
+        storeOpts = [
+            Option [] ["store-network"]
+                (ReqArg (\a o -> return o { optStoreNet = Just a }) "FILE")
+                "write network to file"
+          ]

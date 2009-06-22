@@ -17,6 +17,7 @@ import qualified Data.Map as Map (fromList)
 import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Marshal.Array
+import Foreign.Marshal.Utils (toBool)
 import Foreign.Ptr
 import Foreign.Storable
 import Network.Socket
@@ -68,9 +69,7 @@ hs_startSimulation fd n spn tsr
     return True
     where
         -- TODO: might want to control regular STDP application from the host
-        stdpConf
-            | useSTDP == 0 = Nothing
-            | otherwise   = Just $ STDPConf
+        stdpConf = STDPConf (toBool useSTDP)
                     (fromIntegral tp) (fromIntegral td)
                     (realToFrac ap) (realToFrac ad)
                     (realToFrac mw) Nothing

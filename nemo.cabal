@@ -58,12 +58,13 @@ library
                             Network.Protocol,
                             Network.SocketSerialisation,
                             Simulation.Common,
+                            Simulation.FileSerialisation,
+                            Simulation.FiringStimulus,
+                            Simulation.Options,
                             Simulation.STDP,
                             Types,
                             Util.Assocs,
-                            Util.List,
-                            Simulation.FileSerialisation,
-                            Simulation.FiringStimulus
+                            Util.List
 
     build-depends:          array >= 0.1, base, binary >= 0.4, bytestring, mtl,
                             containers, haskell98, network, network-bytestring, parallel
@@ -92,6 +93,7 @@ executable nemo-server
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Queue,
+                            Simulation.Options,
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
@@ -102,8 +104,7 @@ executable nemo-server
                             Construction.Parameterisation,
                             Construction.Randomised.Topology,
                             Construction.Randomised.Synapse,
-                            Examples.Smallworld,
-                            NSim
+                            Examples.Smallworld
     if flag(client)
         buildable:          False
 
@@ -122,6 +123,7 @@ executable nemo-server
                             Simulation.CUDA.KernelFFI,
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Options,
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
@@ -172,6 +174,7 @@ executable nemo-run
                             Simulation.CUDA.KernelFFI,
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Options,
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
@@ -200,11 +203,11 @@ executable runtests
                             Network.Protocol,
                             Network.Server,
                             Network.SocketSerialisation,
-                            NSim,
                             Options,
                             Simulation.Common,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
+                            Simulation.Options,
                             Simulation.Queue,
                             Simulation.Run,
                             Simulation.SpikeQueue,
@@ -240,6 +243,7 @@ executable runtests
                             Simulation.CUDA.KernelFFI,
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Options,
                             Simulation.CUDA.Probe,
                             Test.Simulation.CUDA.Mapping
         cpp-options:        -DCUDA_ENABLED
@@ -271,6 +275,7 @@ executable benchmark
                             Simulation.Common,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
+                            Simulation.Options,
                             Simulation.Queue,
                             Simulation.Run,
                             Simulation.SpikeQueue,
@@ -295,6 +300,7 @@ executable benchmark
                             Simulation.CUDA.KernelFFI,
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Options,
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
@@ -326,6 +332,7 @@ executable smallworld
                             Simulation.Common,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
+                            Simulation.Options,
                             Simulation.Queue, 
                             Simulation.Run,
                             Simulation.SpikeQueue, 
@@ -352,6 +359,7 @@ executable smallworld
                             Simulation.CUDA.KernelFFI,
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Options,
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
@@ -381,6 +389,7 @@ executable random1k
                             Simulation.Common,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
+                            Simulation.Options,
                             Simulation.Queue,
                             Simulation.Run,
                             Simulation.SpikeQueue,
@@ -409,6 +418,7 @@ executable random1k
                             Simulation.CUDA.KernelFFI,
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Options,
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
@@ -439,6 +449,7 @@ executable ring
                             Simulation.Common,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
+                            Simulation.Options,
                             Simulation.Queue,
                             Simulation.Run,
                             Simulation.SpikeQueue,
@@ -463,6 +474,7 @@ executable ring
                             Simulation.CUDA.KernelFFI,
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
+                            Simulation.CUDA.Options,
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil

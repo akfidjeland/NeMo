@@ -8,26 +8,40 @@ import Construction.Synapse (Static)
 import Network.Protocol (defaultPort)
 import Network.Server (serveSimulation)
 import Simulation.Run (chooseBackend, initSim)
+import Simulation.CUDA.Options (cudaOptions)
+import Simulation.Options (simOptions, optBackend, BackendOptions(..))
 import Options
 import Types
 
 
+
+data ServerOptions = ServerOptions {
+        optPort :: Int
+    }
+
+serverOptions = OptionGroup "Server options" (ServerOptions defaultPort) optionDescr
+
+optionDescr = [
+        Option [] ["port"]
+            (ReqArg (\a o -> return o { optPort = read a }) "INT")
+            "port number for client/server communication"
+    ]
+
 main = do
-    opts <- getOptions "nsim-server" defaultOptions $
-            commonOptions ++
-            verbosityOptions ++
-            serverBackendOptions ++
-            networkOptions
-    backend <- chooseBackend (optBackend opts)
-    let verbose = optVerbose opts
-    -- bracket (openFile "/var/log/nsim.log" WriteMode) hClose $ \hdl -> do
+    (args, commonOpts) <- startOptProcessing
+    serverOpts  <- processOptGroup serverOptions args
+    simOpts     <- processOptGroup (simOptions ServerBackends) args
+    cudaOpts    <- processOptGroup cudaOptions args
+    endOptProcessing args
+    backend <- chooseBackend $ optBackend simOpts
+    let verbose = optVerbose commonOpts
     serveSimulation
         stdout
-        (show $ optPort opts)
+        (show $ optPort serverOpts)
         verbose
         -- TODO: get probe etc, from host as well
-        (\net tr stdp -> initSim backend
+        (\net tr stdp -> initSim simOpts
                     (net :: Network (IzhNeuron FT) Static)
                     All
                     (Firing :: ProbeFn IzhState)
-                    tr verbose opts stdp)
+                    verbose cudaOpts stdp)

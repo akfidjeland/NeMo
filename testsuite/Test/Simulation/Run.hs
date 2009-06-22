@@ -12,11 +12,14 @@ import Construction.Izhikevich
 import Construction.Network
 import Construction.Synapse
 import Examples.Smallworld (smallworldOrig)
-import Options (defaultOptions)
 import Simulation.Common
+import Options (defaults)
+import Simulation.CUDA.Options (cudaOptions)
 import Simulation.FiringStimulus
 import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
+import Simulation.Options (simOptions, BackendOptions(..), optDuration)
 import Simulation.Run
+import Simulation.STDP (stdpOptions)
 import Types
 
 import Test.Files
@@ -59,13 +62,12 @@ test_repeatedRun = comparisonTest sim sim "Two subsequent identical simulations"
 
 
 -- TODO: factor this out and make it a default simulation somewhere
-sim f = runSim defaultBackend duration net probeIdx probeF dt fstim f
-            defaultOptions Nothing
+sim f = runSim simOpts net probeIdx probeF fstim f
+            (defaults cudaOptions) (defaults stdpOptions)
     where
         -- TODO: factor this out and share with Test.Network.Client
         net = build 123456 $ smallworldOrig
-        dt = 4
-        duration = Until 1000
         probeIdx = All
         probeF = Firing :: ProbeFn IzhState
         fstim = FiringList [(0, [1])]
+        simOpts = (defaults $ simOptions ClientBackends) { optDuration = Until 1000 }

@@ -9,7 +9,7 @@ module Simulation.CUDA.Memory (
 ) where
 
 
-import Control.Monad (zipWithM_, forM_)
+import Control.Monad (zipWithM_, forM_, when)
 import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
 import Foreign.C.Types (CSize, CFloat, CUInt)
@@ -42,7 +42,7 @@ initMemory
     :: CuNet (IzhNeuron FT) Static
     -> ATT
     -> Int
-    -> Maybe STDPConf
+    -> STDPConf
     -> IO SimData
 initMemory net att maxProbePeriod stdp = do
     (pcount, psizes, rt) <- allocRT net maxProbePeriod
@@ -195,10 +195,10 @@ allocRT net maxProbePeriod = do
     return (pcount, psizes, rt)
 
 
-configureSTDP :: ForeignPtr CuRT -> Maybe STDPConf -> IO ()
-configureSTDP _ Nothing = return ()
-configureSTDP rt (Just conf) =
-    enableSTDP rt
-        (stdpTauP conf) (stdpTauD conf)
-        (stdpAlphaP conf) (stdpAlphaD conf)
-        (stdpMaxWeight conf)
+configureSTDP :: ForeignPtr CuRT -> STDPConf -> IO ()
+configureSTDP rt conf =
+    when (stdpEnabled conf) $
+        enableSTDP rt
+            (stdpTauP conf) (stdpTauD conf)
+            (stdpAlphaP conf) (stdpAlphaD conf)
+            (stdpMaxWeight conf)

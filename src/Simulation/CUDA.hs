@@ -64,11 +64,11 @@ initSim
     -> TemporalResolution
     -> Bool
     -> Maybe Int            -- ^ cluster size which mapper should be forced to use
-    -> Maybe STDPConf
+    -> STDPConf
     -> IO Simulation
 initSim net probeIdx probeF dt verbose partitionSize stdpConf = do
     -- TODO: select device?
-    let usingSTDP = isJust stdpConf
+    let usingSTDP = stdpEnabled stdpConf
         ((cuNet, att), mapLog) = runWriter $ mapNetwork net usingSTDP partitionSize
     when (not $ null mapLog) $ writeFile "map.log" mapLog
     -- TODO: should we free this memory?

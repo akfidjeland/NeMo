@@ -5,10 +5,13 @@ import Test.HUnit
 import Construction.Construction
 import Construction.Izhikevich
 import Examples.Smallworld
-import Options
+import Options (defaults)
+import Simulation.CUDA.Options
 import Simulation.Common
 import Simulation.FiringStimulus
+import Simulation.Options (SimulationOptions(..))
 import Simulation.Run
+import Simulation.STDP (stdpOptions)
 import Types
 
 import Test.Comparative (comparisonTest)
@@ -31,8 +34,9 @@ testClusterSize sz1 sz2 = comparisonTest (sim sz1) (sim sz2) lbl
             ++ show sz1 ++ " vs " ++ show sz2
 
 
-sim sz f = runSim CUDA duration net probeIdx probeF dt fstim f
-            (defaultOptions { optCuPartitionSz = Just sz }) Nothing
+sim sz f = runSim (SimulationOptions duration dt CUDA) net probeIdx probeF fstim f
+            ((defaults cudaOptions) { optPartitionSize = Just sz })
+            (defaults stdpOptions)
     where
         -- TODO: factor this out and share with Test.Network.Client
         net = build 123456 $ smallworldOrig

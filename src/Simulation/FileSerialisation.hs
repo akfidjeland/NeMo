@@ -54,7 +54,7 @@ decodeFile expectedMagic path = do
             foundMagic <- sequence $ replicate (length expectedMagic) (hGetChar hdl)
             if foundMagic == expectedMagic
                 then return ()
-                else fail $ "Wrong magic number found when decoding file, expected " 
+                else fail $ "Wrong magic number found when decoding file, expected "
                     ++ expectedMagic ++ ", found " ++ foundMagic
 
 

@@ -11,15 +11,14 @@ import Control.Monad (mapM, mapM_, when)
 import Data.Maybe (isJust)
 import System.IO (hPutStrLn, stderr)
 
-#if defined(CUDA_ENABLED)
-import Options (optCuPartitionSz, optCuProbeDevice)
-#endif
 import Simulation.FiringStimulus (firingStimulus)
 import Simulation.Common
 import qualified Simulation.CPU as CPU
 #if defined(CUDA_ENABLED)
 import qualified Simulation.CUDA as CUDA
+import Simulation.CUDA.Options
 #endif
+import Simulation.Options
 import Simulation.STDP
 import qualified Network.Client as Remote (initSim)
 import qualified Util.List as L (chunksOf)
@@ -45,41 +44,49 @@ chooseBackend CUDA =
 
 
 -- | Get backend-specific step function
-initSim reqBackend net probeIdx probeF dt verbose opts stdpConf = do
-    backend <- chooseBackend reqBackend
+initSim simOpts net probeIdx probeF verbose opts stdpConf = do
+    backend <- chooseBackend $ optBackend simOpts
     case backend of
         -- TODO: add temporal resolution to CPU simulation
         CPU -> do
-            when (isJust stdpConf) $
+            when (stdpEnabled stdpConf) $
                 error "STDP not supported for CPU backend"
             CPU.initSim net probeIdx probeF
 #if defined(CUDA_ENABLED)
         CUDA -> CUDA.initSim net probeIdx
-            (if optCuProbeDevice opts then Just probeF else Nothing)
+            -- TODO: move option handling inside CUDA.hs
+            (if optProbeDevice opts then Just probeF else Nothing)
             dt verbose
-            (optCuPartitionSz opts)
+            (optPartitionSize opts)
             stdpConf
 #endif
         (RemoteHost hostname port) ->
                Remote.initSim hostname port net dt stdpConf
+    where
+        dt = optTempSubres simOpts
 
 
 
 -- | Run full simulation using the appropriate backend
-runSim backend duration net probeIdx probeF dt fstimF outfn opts stdpConf = do
+runSim simOpts net probeIdx probeF fstimF outfn opts stdpConf = do
     -- TODO: don't pass stdp conf to init
     (Simulation sz run elapsed _ close) <-
-        initSim backend net probeIdx probeF dt False opts stdpConf
+        initSim simOpts net probeIdx probeF False opts stdpConf
     let cs = cycles duration
     fstim <- firingStimulus fstimF
-    let stdp = applySTDP $ maybe Nothing stdpFrequency stdpConf
+    -- let stdp = applySTDP $ maybe Nothing stdpFrequency stdpConf
+    let stdp = applySTDP stdpConf
         stim = zip fstim stdp
     mapM_ (aux run) $ L.chunksOf sz $ sample duration stim
     close
     where
+        duration = optDuration simOpts
         aux run stim = do
             let (fstim, stdp) = unzip stim
             run fstim stdp >>= mapM_ outfn
 
-        applySTDP Nothing = repeat STDPIgnore
-        applySTDP (Just freq) = cycle $ (replicate (freq-1) STDPIgnore) ++ [STDPApply 1.0]
+        -- TODO: move to Simulation STDP?
+        applySTDP conf = maybe
+            (repeat STDPIgnore)
+            (\freq -> cycle $ (replicate  (freq-1) STDPIgnore) ++ [STDPApply 1.0])
+            (stdpFrequency conf)

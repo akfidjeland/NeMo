@@ -34,7 +34,7 @@ startSimulation
     => Socket
     -> Network n s
     -> TemporalResolution
-    -> Maybe STDPConf
+    -> STDPConf
     -> IO ()
 startSimulation sock net tr stdpConf = do
     sendRequest sock (ReqStart net tr stdpConf)
@@ -87,7 +87,7 @@ recvRequest :: (Binary n, Binary s, NFData n, NFData s) => Socket -> IO (ClientR
 recvRequest = recvSerialised
 
 data ClientRequest n s
-        = ReqStart !(Network n s) TemporalResolution (Maybe STDPConf)
+        = ReqStart !(Network n s) TemporalResolution STDPConf
         -- = ReqStart (Network n s) TemporalResolution (Maybe STDPConf)
         | ReqPing
         | ReqError Word8

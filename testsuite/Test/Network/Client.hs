@@ -14,10 +14,13 @@ import Construction.Synapse
 import Examples.Smallworld (smallworldOrig)
 import Network.Protocol
 import Network.Server
-import Options (defaultOptions)
+import Options (defaults)
 import Simulation.Common
+import Simulation.CUDA.Options (cudaOptions)
 import Simulation.FiringStimulus
+import Simulation.Options
 import Simulation.Run
+import Simulation.STDP (stdpOptions)
 import Types
 
 import Test.Comparative (compareSims)
@@ -34,20 +37,20 @@ test_clientSim = TestLabel "comparing client/server with local" $ TestCase $ do
     serverThread <- forkIO runServer
     yield
     let
-        sim1 = \f -> runSim CPU duration net probeIdx probeF tempSubres
-                        fstim f defaultOptions Nothing
-        sim2 = \f -> runSim (RemoteHost "localhost" testPort) duration net
-                        probeIdx probeF tempSubres fstim f defaultOptions Nothing
+        sim1 = \f -> runSim (simOpts CPU 4) net probeIdx probeF
+                        fstim f (defaults cudaOptions) (defaults stdpOptions)
+        sim2 = \f -> runSim (simOpts (RemoteHost "localhost" testPort) 4) net
+                        probeIdx probeF fstim f
+                            (defaults cudaOptions) (defaults stdpOptions)
     compareSims sim1 sim2
     throwTo serverThread $ AsyncException ThreadKilled
     where
         -- TODO: share this with several other places in the testsuite
         net = build 123456 $ smallworldOrig
-        tempSubres = 4
-        duration = Until 1000
         probeIdx = All
         probeF = Firing :: ProbeFn IzhState
         fstim = FiringList [(0, [1])]
+
 
 
 testPort = defaultPort + 2
@@ -64,8 +67,15 @@ runServer = do
         (show $ testPort)
         False
         -- TODO: get probe etc, from host as well
-        (\net tr -> initSim CPU
+        (\net dt -> initSim (simOpts CPU dt)
                     (net :: Network (IzhNeuron FT) Static)
                     All
                     (Firing :: ProbeFn IzhState)
-                    tr False defaultOptions)
+                    False (defaults cudaOptions))
+
+simOpts backend dt =
+    (defaults $ simOptions ClientBackends) {
+        optDuration   = Until 1000,
+        optBackend    = backend,
+        optTempSubres = dt
+    }

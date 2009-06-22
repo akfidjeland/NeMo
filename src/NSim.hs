@@ -1,4 +1,6 @@
-module NSim (execute,
+module NSim (
+    execute,
+    executeFile,
     Gen,
     mkRSynapse, mkSynapse,
     module Types,
@@ -14,6 +16,7 @@ import Data.Maybe
 import Test.QuickCheck (Gen)
 import System.Random (mkStdGen, setStdGen)
 import CPUTime (getCPUTime)
+import System.Exit (exitWith, ExitCode(..))
 import System.Time (getClockTime, ClockTime(..))
 import System.IO (hPutStrLn, stderr)
 
@@ -25,8 +28,11 @@ import Construction.Randomised.Synapse
 import Construction.Synapse
 import Options
 import Simulation.Common
-import Simulation.FileSerialisation (encodeSimFile)
+import Simulation.CUDA.Options
+import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
 import Simulation.Run
+import Simulation.STDP (stdpOptions)
+import Simulation.Options (simOptions, optBackend, BackendOptions(..))
 import Types
 
 
@@ -50,7 +56,7 @@ initRng (Just seed) = setStdGen $ mkStdGen $ fromInteger seed
 
 
 -- TODO: migrate to Simulation.Run
-runSimulation seed backend duration net tempSubres fstimF probeIdx probeFn opts = do
+runSimulation seed simOpts net fstimF probeIdx probeFn stdpOpts cudaOpts = do
     startConstruct <- getCPUTime
     net' <- buildNetwork seed net
     hPutStrLn stderr "Building simulation..."
@@ -60,7 +66,7 @@ runSimulation seed backend duration net tempSubres fstimF probeIdx probeFn opts 
     hPutStrLn stderr $ "Building done (" ++ show(elapsed startConstruct endConstruct) ++ "s)"
     start <- getCPUTime
     -- TODO: use only a single probe function parameter
-    runSim backend duration net' probeIdx probeFn tempSubres fstimF (putStrLn . show) opts (stdpOptions opts)
+    runSim simOpts net' probeIdx probeFn fstimF (putStrLn . show) cudaOpts stdpOpts
     end <- getCPUTime
     hPutStrLn stderr $ "Simulation done (" ++ show(elapsed start end) ++ "s)"
     where
@@ -69,31 +75,53 @@ runSimulation seed backend duration net tempSubres fstimF probeIdx probeFn opts 
 
 
 
--- TODO: generalise to other neuron types. Requires making backends general.
-execute progname net fstim probeidx probefn = do
-    opts <- getOptions progname defaultOptions $
-            commonOptions ++
-            verbosityOptions ++
-            storeOptions ++
-            backendOptions ++
-            simOptions ++
-            printOptions
+{- Process externally defined network according to command-line options
+ - (default to run forever). -}
+execute net fstim probeidx probefn = do
+    (args, commonOpts) <- startOptProcessing
+    cudaOpts    <- processOptGroup cudaOptions args
+    networkOpts <- processOptGroup (networkOptions FromCode) args
+    stdpOpts    <- processOptGroup stdpOptions args
+    simOpts     <- processOptGroup (simOptions ClientBackends) args
+    endOptProcessing args
+    initRng $ optSeed commonOpts -- RNG for stimlulus
+    processOutputOptions commonOpts networkOpts net
     -- TODO: use a single RNG? Currently one for build and one for stimulus
-    initRng $ optSeed opts -- RNG for stimlulus
-    execute_ opts net fstim probeidx probefn
+    execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstim probeidx probefn
 
 
-execute_ opts net fstimF probeidx probefn
-    | optStoreNet opts /= Nothing = do
-        net' <- buildNetwork (optSeed opts) net
-        encodeSimFile (fromJust $ optStoreNet opts) net' fstimF
-    | optDumpNeurons opts = buildNetwork (optSeed opts) net >>= printNeurons
-    | optDumpMatrix opts  = buildNetwork (optSeed opts) net >>= printConnections
-    | otherwise           = runSimulation
-                                (optSeed opts)
-                                (optBackend opts)
-                                (optDuration opts)
-                                net (optTempSubres opts)
-                                fstimF
-                                probeidx probefn
-                                opts
+
+{- Process network provided from file according to command-line options -}
+executeFile = do
+    (args, commonOpts) <- startOptProcessing
+    cudaOpts    <- processOptGroup cudaOptions args
+    networkOpts <- processOptGroup (networkOptions FromFile) args
+    stdpOpts    <- processOptGroup stdpOptions args
+    simOpts     <- processOptGroup (simOptions ClientBackends)  args
+    endOptProcessing args
+    initRng $ optSeed commonOpts -- RNG for stimlulus
+    let filename = fromMaybe (error "no file specified") $ optLoadNet networkOpts
+    hPutStrLn stderr $ "Loading file from " ++ filename
+    (net', fstim) <- decodeSimFile filename
+    let net = return net' -- wrap in Gen
+    processOutputOptions commonOpts networkOpts net
+    execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstim All Firing
+
+
+
+{- | If requested, print network and terminate. Otherwise do nothing -}
+processOutputOptions commonOpts networkOpts net
+    | optDumpNeurons networkOpts = net' >>= printNeurons >> exitWith ExitSuccess
+    | optDumpMatrix networkOpts  = net' >>= printConnections >> exitWith ExitSuccess
+    | otherwise                 = return Nothing
+    where
+        net' = buildNetwork (optSeed commonOpts) net
+
+
+execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts
+    net fstimF probeidx probefn
+    | optStoreNet networkOpts /= Nothing = do
+        net' <- buildNetwork (optSeed commonOpts) net
+        encodeSimFile (fromJust $ optStoreNet networkOpts) net' fstimF
+    | otherwise = runSimulation (optSeed commonOpts) simOpts net fstimF
+                                probeidx probefn stdpOpts cudaOpts

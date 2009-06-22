@@ -15,10 +15,11 @@ data Backend
         | CUDA                  -- ^ CUDA-enabled GPU
 #endif
         | RemoteHost String Int -- ^ some other machine on specified port
-    deriving (Eq)
+    deriving (Eq, Show)
 
 
 
+-- TODO: remove
 defaultBackend :: Backend
 #if defined(CUDA_ENABLED)
 defaultBackend = CUDA
@@ -72,8 +73,9 @@ data Simulation = Simulation {
 
 type SimulationInit n s
     = Network n s
+    -- TODO: remove  temporal resolution, put everything into simulation options
     -> TemporalResolution   -- sub-step resolution
-    -> Maybe STDPConf
+    -> STDPConf
     -> IO Simulation
 
 -- TODO: rename, this is really multiple steps handled in one go.
