@@ -43,11 +43,6 @@ mergeProbeFs :: (NeuronProbe p n f) => [p] -> n f -> [f]
 mergeProbeFs ps n = map (\p -> probeFn p n) ps
 
 
-
-
-
--- TODO: rename this 'Neuron', and rename typeclass 'Spiking'
--- Make Neuron Izhikevich StdSynapse an instance of Spiking
 data Neuron n s = Neuron {
         ndata :: n,
         -- TODO: use IArray

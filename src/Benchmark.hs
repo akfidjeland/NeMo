@@ -43,33 +43,6 @@ exSynapse src tgt = Synapse src tgt 1 $! Static 0.25
 inSynapse src tgt = Synapse src tgt 1 $ Static (-0.5)
 -- inSynapse src tgt r = StdSynapse src tgt ((-1.0)*r) 1
 
-
--------------------------------------------------------------------------------
--- Benchmark generation: local
--------------------------------------------------------------------------------
-
-localClusters seed c m = Network ns t
-    where
-        -- random number generator which is threaded through the whole program
-        r = mkStdGen seed
-        sz = 1024
-        n = c * sz
-        ns = Map.fromList $ take n $ rneurons 0 m r
-        -- the topology is not used after construction
-        t = Node 0
-
--- Produce an infinite list of neurons
-rneurons idx m r = (neuron' idx m r1) : (rneurons (idx+1) m r2)
-    where
-        (r1, r2) = split r
-
-neuron' idx m r =
-    if isExcitatory idx
-        then (idx, excitatory idx m r)
-        else (idx, inhibitory idx m r)
-
-
-
 -- excitatory neuron
 exN r = mkNeuron2 0.02 b (v + 15*r^2) (8.0-6.0*r^2) u v thalamic
     where
@@ -77,19 +50,6 @@ exN r = mkNeuron2 0.02 b (v + 15*r^2) (8.0-6.0*r^2) u v thalamic
         u = b * v
         v = -65.0
         thalamic = mkThalamic 5.0 r
-
-excitatory pre m r = n `seq` neuron n ss
-    where
-        (nr, r2) = random r
-        n = exN nr
-        base = pre - (pre `mod` 1024)
-        ss = exSS pre base m r2
-
--- exSS pre base r2 = zipWith (exSynapse pre) [base..base+1023] $ randoms r2
-exSS pre base m r2 = ss `using` rnf
-    where
-        -- ss = map (exSynapse pre) [base..base+1023]
-        ss = map (exSynapse pre) $ take m $ randomRs (base, base+1023) r2
 
 
 -- inhibitory neuron
@@ -101,65 +61,71 @@ inN r = mkNeuron2 (0.02 + 0.08*r) b c 2.0 u v thalamic
         v = -65.0
         thalamic = mkThalamic 2.0 r
 
--- create a single inhibitory neuron based
--- inhibitory pre r = n `seq` (n, ss `using` rnf)
-inhibitory pre m r = n `seq` neuron n ss
-    where
-        n = inN nr
-        base = pre - (pre `mod` 1024)
-        (nr, r2) = random r
-        -- ss = zipWith (inSynapse pre) [base..base+1023] $ randoms r2
-        -- ss = map (inSynapse pre) [base..base+1023]
-        ss = map (inSynapse pre) $ take m $ randomRs (base, base+1023) r
-
 
 
 -------------------------------------------------------------------------------
--- Benchmark: uniform
+-- Benchmark: clustered
 -------------------------------------------------------------------------------
 
-uniformNetwork seed c m = Network ns t
+
+clusteredNetwork seed cc m p = Network ns t
     where
-        -- random number generator which is threaded through the whole program
-        r = mkStdGen seed
-        sz = 1024
-        n = c * sz
-        ns = Map.fromList $ take n $ uniformNeurons 0 n m r
-        -- the topology is not used after construction
-        t = Node 0
+        r  = mkStdGen seed -- thread RNG through whole program
+        cs = 1024
+        n  = cc * cs
+        ns = Map.fromList $ take n $
+                clusteredNeurons (exN, exSynapse) (inN, inSynapse) 0 cc cs m p r
+        t  = Node 0 -- the topology is not used after construction
 
 
--- Produce an infinite list of uniformly connected neurons
-uniformNeurons idx n m r = (uniformNeuron idx n m r1) : (uniformNeurons (idx+1) n m r2)
-    where (r1, r2) = split r
+{- Return an infinite list of neurons which are clustered -}
+clusteredNeurons ex_gen in_gen idx cc cs m p r = h : t
+    where
+        (r1, r2) = split r
+        h = clusteredNeuron  ex_gen in_gen  idx    cc cs m p r1
+        t = clusteredNeurons ex_gen in_gen (idx+1) cc cs m p r2
 
 
--- Produce a single uniformly connected neuron
--- TODO: share with local
-uniformNeuron idx n m r =
+-- TODO: share with other generators
+clusteredNeuron (ex_ngen, ex_sgen) (in_ngen, in_sgen) idx cc cs m p r =
     if isExcitatory idx
-        then (idx, uniformExcitatory idx n m r)
-        else (idx, uniformInhibitory idx n m r)
+        then (idx, clusteredNeuron' ex_ngen ex_sgen idx cc cs m p r)
+        else (idx, clusteredNeuron' in_ngen in_sgen idx cc cs m p r)
+    where
+        isExcitatory idx = idx `mod` cs < (cs * 8 `div` 10)
 
 
-uniformExcitatory pre n m r = n `seq` neuron state ss
+{- Generate a neuron with some local and some global connections. -}
+clusteredNeuron'
+    :: (FT -> IzhNeuron FT)    -- ^ function that generates neuron
+    -> (Idx -> Idx -> Synapse Static)
+                               -- ^ function that generates synapse
+    -> Idx                     -- ^ presynaptic index
+    -> Int                     -- ^ cluster count
+    -> Int                     -- ^ cluster size
+    -> Int                     -- ^ synapses per neuron
+    -> Float                   -- ^ probability of local connection
+    -> StdGen                  -- ^ random number generator
+    -> Neuron (IzhNeuron FT) Static
+clusteredNeuron' ngen sgen pre cc cs m p r = state `seq` neuron state ss
     where
         (nr, r2) = random r
-        state = exN nr
-        ss = uniformExSS pre 0 (n-1) m r2
+        state = ngen nr
+        ss = map (sgen pre) $ clusteredTargets pre cc cs m p r2
 
 
--- TODO: merge with caller
-uniformExSS pre base max m r2 = ss `using` rnf
+{- Produce a list of postsynaptic neurons where a proportion 'p' is selected
+ - from the local cluster (of the given size), whereas the rest are taken from
+ - the whole neuron collection -}
+-- clusteredTargets pre cc cs n m p r = l0 `seq` l1 `seq` l0 ++ l1
+clusteredTargets pre cc cs m p r = l0 ++ l1
     where
-        ss = map (exSynapse pre) $ take m $ randomRs (base, max) r2
-
-
-uniformInhibitory pre n m r = n `seq` neuron state ss
-    where
-        state = inN nr
-        (nr, r2) = random r
-        ss = map (inSynapse pre) $ take m $ randomRs (0, n-1) r
+        (r1, r2) = split r
+        base = pre - (pre `mod` cs)
+        l0_count = round $ (realToFrac m) * p
+        l1_count = m - l0_count
+        l0 = take l0_count $ randomRs (base, base+cs-1) r1
+        l1 = take l1_count $ randomRs (0, cc*cs-1) r2
 
 
 -------------------------------------------------------------------------------
@@ -229,20 +195,10 @@ data Benchmark = Benchmark {
 
 
 
--- Local clusters network
-localBenchmark n m = Benchmark {
-        bmName  = "local",
-        bmNet = localClusters 123456 n m,
-        bmFStim = NoFiring,
-        bmCycles = 10000
-    }
-
-
--- Uniformly connected network
-uniformBenchmark n m = Benchmark {
-        bmName = "uniform",
+clusteredBenchmark n m p = Benchmark {
+        bmName = "clustered-" ++ show p,
         -- TODO: get seed from options
-        bmNet = uniformNetwork 123456 n m,
+        bmNet = clusteredNetwork 123456 n m p,
         bmFStim = NoFiring,
         -- TODO: get cycles from options
         bmCycles = 10000
@@ -358,22 +314,25 @@ step3 run stim = do
 data BenchmarkOptions = BenchmarkOptions {
         optN           :: Int,
         optM           :: Int,
+        optP           :: Float,
         -- TODO: control cycles as well
-        optBM          :: Int -> Int -> Benchmark,
+        optBM          :: Int -> Int -> Float -> Benchmark,
         optPrintHeader :: Bool
     }
 
 benchmarkDefaults = BenchmarkOptions {
         optN           = 1,
         optM           = 100,
+        optP           = 0.9,
         -- optBM          = localBenchmark,
-        optBM          = uniformBenchmark,
+        --optBM          = uniformBenchmark,
+        optBM          = clusteredBenchmark,
         optPrintHeader = False
     }
 
 
 createBenchmark :: BenchmarkOptions -> Benchmark
-createBenchmark o = (optBM o) (optN o) (optM o)
+createBenchmark o = (optBM o) (optN o) (optM o) (optP o)
 
 
 benchmarkDescr = [
@@ -384,6 +343,11 @@ benchmarkDescr = [
         Option ['n'] ["neurons"]
             (ReqArg (\a o -> return o { optN = read a }) "INT")
             "Number of neurons (thousands)",
+
+        Option ['p'] ["local-probability"]
+            -- TODO: range-check
+            (ReqArg (\a o -> return o { optP = read a }) "FLOAT")
+            "Probability of local connections",
 
         Option [] ["print-header"]
             (NoArg (\o -> return o { optPrintHeader=True }))
