@@ -51,7 +51,7 @@ main = do
         d  = optRingDelay opts
         fstim = take n $ iterate (+sz) 999
     hPutStrLn stderr $ (show n) ++ " network of size " ++ (show sz)
-    execute "ring"
+    execute
         (nrings n sz d)
         (FiringList [(0, fstim)]) All
         (Firing :: ProbeFn IzhState)

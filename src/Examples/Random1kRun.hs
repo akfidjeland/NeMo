@@ -11,7 +11,6 @@ main = do
     let ne = 800
     let ni = 200
     execute
-        "random1k"
         (random1k ne ni)
         NoFiring
         All (Firing :: ProbeFn IzhState)

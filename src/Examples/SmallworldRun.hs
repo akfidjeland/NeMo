@@ -87,7 +87,6 @@ main = do
     let (actions, _, _) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return defaultOptions) actions
     execute
-        "smallworld"
         (smallworld
             (optClusterCount opts)
             (optClusterSize opts)
