@@ -82,7 +82,7 @@ runRegression rtest@(RegressionTest nm _ nf fs px pf be cs rs stdp) f = do
     runSim simOpts net px pf fs f (defaults cudaOptions) stdpConf
     where
         stdpConf = STDPConf (isJust stdp) 20 20 1.0 0.8 1000.0 stdp
-        simOpts  = (defaults $ simOptions ClientBackends) {
+        simOpts  = (defaults $ simOptions LocalBackends) {
                 optBackend = be,
                 optDuration = Until cs
             }

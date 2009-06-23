@@ -16,8 +16,8 @@ import Types
 
 
 data BackendOptions
-        = ClientBackends -- ^ all backends
-        | ServerBackends -- ^ all backends except remote (don't forward connections)
+        = AllBackends
+        | LocalBackends -- ^ all except remote (don't forward connections)
     deriving (Eq)
 
 simOptions backends =
@@ -44,9 +44,9 @@ simDefaults = SimulationOptions {
     }
 
 
-simDescr backend = common ++ if backend == ClientBackends then client else []
+simDescr backend = local ++ if backend == AllBackends then remote else []
     where
-        common = [
+        local = [
 
             Option ['t'] ["time"]    (ReqArg readDuration "INT")
                 "duration of simulation in cycles (at 1ms resolution)",
@@ -69,7 +69,7 @@ simDescr backend = common ++ if backend == ClientBackends then client else []
                     "use CPU backend for simulation")
           ]
 
-        client = [
+        remote = [
             Option [] ["remote"]
                 (ReqArg getRemote "HOSTNAME[:PORT]")
                 ("run simulation remotely on the specified server")

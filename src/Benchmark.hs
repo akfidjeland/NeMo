@@ -337,7 +337,7 @@ benchmarkOptions = OptionGroup "Benchmark options" benchmarkDefaults benchmarkDe
 
 main = do
     (args, commonOpts) <- startOptProcessing
-    simOpts <- processOptGroup (simOptions ServerBackends) args
+    simOpts <- processOptGroup (simOptions LocalBackends) args
     bmOpts  <- processOptGroup benchmarkOptions args
     endOptProcessing args
     when (optPrintHeader bmOpts) $ do

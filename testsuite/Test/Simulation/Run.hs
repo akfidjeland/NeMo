@@ -70,4 +70,4 @@ sim f = runSim simOpts net probeIdx probeF fstim f
         probeIdx = All
         probeF = Firing :: ProbeFn IzhState
         fstim = FiringList [(0, [1])]
-        simOpts = (defaults $ simOptions ClientBackends) { optDuration = Until 1000 }
+        simOpts = (defaults $ simOptions LocalBackends) { optDuration = Until 1000 }

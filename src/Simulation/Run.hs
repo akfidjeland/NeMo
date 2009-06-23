@@ -44,7 +44,7 @@ chooseBackend CUDA =
 
 
 -- | Get backend-specific step function
-initSim simOpts net probeIdx probeF verbose opts stdpConf = do
+initSim simOpts net probeIdx probeF verbose cudaOpts stdpConf = do
     backend <- chooseBackend $ optBackend simOpts
     case backend of
         -- TODO: add temporal resolution to CPU simulation
@@ -55,9 +55,9 @@ initSim simOpts net probeIdx probeF verbose opts stdpConf = do
 #if defined(CUDA_ENABLED)
         CUDA -> CUDA.initSim net probeIdx
             -- TODO: move option handling inside CUDA.hs
-            (if optProbeDevice opts then Just probeF else Nothing)
+            (if optProbeDevice cudaOpts then Just probeF else Nothing)
             dt verbose
-            (optPartitionSize opts)
+            (optPartitionSize cudaOpts)
             stdpConf
 #endif
         (RemoteHost hostname port) ->

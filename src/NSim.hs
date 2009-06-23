@@ -82,7 +82,7 @@ execute net fstim probeidx probefn = do
     cudaOpts    <- processOptGroup cudaOptions args
     networkOpts <- processOptGroup (networkOptions FromCode) args
     stdpOpts    <- processOptGroup stdpOptions args
-    simOpts     <- processOptGroup (simOptions ClientBackends) args
+    simOpts     <- processOptGroup (simOptions AllBackends) args
     endOptProcessing args
     initRng $ optSeed commonOpts -- RNG for stimlulus
     processOutputOptions commonOpts networkOpts net
@@ -97,7 +97,7 @@ executeFile = do
     cudaOpts    <- processOptGroup cudaOptions args
     networkOpts <- processOptGroup (networkOptions FromFile) args
     stdpOpts    <- processOptGroup stdpOptions args
-    simOpts     <- processOptGroup (simOptions ClientBackends)  args
+    simOpts     <- processOptGroup (simOptions AllBackends)  args
     endOptProcessing args
     initRng $ optSeed commonOpts -- RNG for stimlulus
     let filename = fromMaybe (error "no file specified") $ optLoadNet networkOpts

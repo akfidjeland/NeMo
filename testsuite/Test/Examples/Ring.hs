@@ -69,7 +69,7 @@ testRing size impulse delay backend partitionSize = do
     let test = checkFiring size impulse delay ref
     runSim simOpts net All probefn fstim test opts (defaults stdpOptions)
     where
-        simOpts = (defaults $ simOptions ClientBackends) {
+        simOpts = (defaults $ simOptions LocalBackends) {
                 optBackend = backend,
                 optDuration = Until $ size * 2
             }

@@ -74,7 +74,7 @@ runServer = do
                     False (defaults cudaOptions))
 
 simOpts backend dt =
-    (defaults $ simOptions ClientBackends) {
+    (defaults $ simOptions AllBackends) {
         optDuration   = Until 1000,
         optBackend    = backend,
         optTempSubres = dt

@@ -30,7 +30,7 @@ optionDescr = [
 main = do
     (args, commonOpts) <- startOptProcessing
     serverOpts  <- processOptGroup serverOptions args
-    simOpts     <- processOptGroup (simOptions ServerBackends) args
+    simOpts     <- processOptGroup (simOptions LocalBackends) args
     cudaOpts    <- processOptGroup cudaOptions args
     endOptProcessing args
     backend <- chooseBackend $ optBackend simOpts
