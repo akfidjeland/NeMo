@@ -5,6 +5,7 @@ module Construction (
     module Construction.Network,
     module Construction.Randomised.Synapse,
     module Construction.Synapse,
+    module Construction.Topology,
     module Construction.Parameterisation) where
 
 -- TODO: create separate randomised unit
@@ -14,4 +15,5 @@ import Construction.Construction
 import Construction.Network hiding (synapses)
 import Construction.Randomised.Synapse
 import Construction.Synapse
+import Construction.Topology
 import Construction.Parameterisation
