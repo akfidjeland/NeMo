@@ -28,7 +28,24 @@ import qualified Util.List as L (chunksOf)
 
 
 -------------------------------------------------------------------------------
--- Benchmark generation
+-- Benchmark generation: common
+-------------------------------------------------------------------------------
+
+-- TODO: remove hard-coding here
+isExcitatory idx = idx `mod` 1024 < 820
+
+-- TODO: randomise delays here!
+exSynapse src tgt = Synapse src tgt 1 $! Static 0.25
+-- exSynapse src tgt r = w `seq` StdSynapse src tgt w 1
+    -- where w = 0.5 * r
+
+-- TODO: randomise weights here!
+inSynapse src tgt = Synapse src tgt 1 $ Static (-0.5)
+-- inSynapse src tgt r = StdSynapse src tgt ((-1.0)*r) 1
+
+
+-------------------------------------------------------------------------------
+-- Benchmark generation: local
 -------------------------------------------------------------------------------
 
 localClusters seed c m = Network ns t
@@ -50,9 +67,7 @@ neuron' idx m r =
     if isExcitatory idx
         then (idx, excitatory idx m r)
         else (idx, inhibitory idx m r)
-    where
-        -- TODO: remove hard-coding here
-        isExcitatory idx = idx `mod` 1024 < 820
+
 
 
 -- excitatory neuron
@@ -76,11 +91,6 @@ exSS pre base m r2 = ss `using` rnf
         -- ss = map (exSynapse pre) [base..base+1023]
         ss = map (exSynapse pre) $ take m $ randomRs (base, base+1023) r2
 
--- TODO: randomise delays here!
-exSynapse src tgt = Synapse src tgt 1 $! Static 0.25
--- exSynapse src tgt r = w `seq` StdSynapse src tgt w 1
-    -- where w = 0.5 * r
-
 
 -- inhibitory neuron
 inN r = mkNeuron2 (0.02 + 0.08*r) b c 2.0 u v thalamic
@@ -103,8 +113,54 @@ inhibitory pre m r = n `seq` neuron n ss
         ss = map (inSynapse pre) $ take m $ randomRs (base, base+1023) r
 
 
-inSynapse src tgt = Synapse src tgt 1 $ Static (-0.5)
--- inSynapse src tgt r = StdSynapse src tgt ((-1.0)*r) 1
+
+-------------------------------------------------------------------------------
+-- Benchmark: uniform
+-------------------------------------------------------------------------------
+
+uniformNetwork seed c m = Network ns t
+    where
+        -- random number generator which is threaded through the whole program
+        r = mkStdGen seed
+        sz = 1024
+        n = c * sz
+        ns = Map.fromList $ take n $ uniformNeurons 0 n m r
+        -- the topology is not used after construction
+        t = Node 0
+
+
+-- Produce an infinite list of uniformly connected neurons
+uniformNeurons idx n m r = (uniformNeuron idx n m r1) : (uniformNeurons (idx+1) n m r2)
+    where (r1, r2) = split r
+
+
+-- Produce a single uniformly connected neuron
+-- TODO: share with local
+uniformNeuron idx n m r =
+    if isExcitatory idx
+        then (idx, uniformExcitatory idx n m r)
+        else (idx, uniformInhibitory idx n m r)
+
+
+uniformExcitatory pre n m r = n `seq` neuron state ss
+    where
+        (nr, r2) = random r
+        state = exN nr
+        ss = uniformExSS pre 0 (n-1) m r2
+
+
+-- TODO: merge with caller
+uniformExSS pre base max m r2 = ss `using` rnf
+    where
+        ss = map (exSynapse pre) $ take m $ randomRs (base, max) r2
+
+
+uniformInhibitory pre n m r = n `seq` neuron state ss
+    where
+        state = inN nr
+        (nr, r2) = random r
+        ss = map (inSynapse pre) $ take m $ randomRs (0, n-1) r
+
 
 -------------------------------------------------------------------------------
 -- Run-time statistics
@@ -181,6 +237,16 @@ localBenchmark n m = Benchmark {
         bmCycles = 10000
     }
 
+
+-- Uniformly connected network
+uniformBenchmark n m = Benchmark {
+        bmName = "uniform",
+        -- TODO: get seed from options
+        bmNet = uniformNetwork 123456 n m,
+        bmFStim = NoFiring,
+        -- TODO: get cycles from options
+        bmCycles = 10000
+    }
 
 
 data Run = Timing | Data deriving (Eq)
@@ -300,7 +366,8 @@ data BenchmarkOptions = BenchmarkOptions {
 benchmarkDefaults = BenchmarkOptions {
         optN           = 1,
         optM           = 100,
-        optBM          = localBenchmark,
+        -- optBM          = localBenchmark,
+        optBM          = uniformBenchmark,
         optPrintHeader = False
     }
 
