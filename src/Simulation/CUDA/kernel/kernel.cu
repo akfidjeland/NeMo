@@ -62,6 +62,7 @@ STDP_FN(fire)(
 	 * firing loop. However, as it is it's typically no more than a single
 	 * warp's worth of data, so saving this shared memory will have an adverse
 	 * effect on global memory usgage */
+	//! \todo make  this reuasable memory
 	__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
 	loadExternalFiring(hasExternalInput, s_partitionSize,
         fstimPitch, g_fstim, s_fstim);
@@ -170,7 +171,10 @@ STDP_FN(deliverL0Spikes_)(
 	uint* gf0_cm, uint f0_pitch, uint f0_size,
 	uint32_t* s_recentFiring,
 	uint32_t* g_firingDelays,
-	float* s_current)
+	float* s_current,
+	uint16_t* s_firingIdx,
+	uint32_t* s_arrivalBits,
+	uint32_t* s_arrivals)
 {
 	uint*  gf0_address =          gf0_cm + FCM_ADDRESS  * f0_size;
 	float* gf0_weight  = (float*) gf0_cm + FCM_WEIGHT   * f0_size;
@@ -198,10 +202,6 @@ STDP_FN(deliverL0Spikes_)(
 	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
 		__shared__ int s_firingCount;
-		//! \todo make this a re-usable chunk of memory
-		__shared__ uint16_t s_firingIdx[THREADS_PER_BLOCK];
-		__shared__ uint32_t s_arrivalBits[THREADS_PER_BLOCK];
-
 		if(threadIdx.x == 0) {
 			s_firingCount = 0;
 		}
@@ -209,11 +209,11 @@ STDP_FN(deliverL0Spikes_)(
 
 		int candidate = preOffset + threadIdx.x;
 
-        /* It might seem a good idea to load firing delays from global memory *
-         * inside the if-clause, so as to avoid memory traffic when little
-         * firing occurs.  In practice, however, this was found to increase
-         * execution time (when not firing) by 68%. It's not clear why this is
-        * so. */ 
+		/* It might seem a good idea to load firing delays from global memory *
+		 * inside the if-clause, so as to avoid memory traffic when little
+		 * firing occurs.  In practice, however, this was found to increase
+		 * execution time (when not firing) by 68%. It's not clear why this is
+		 * so. */ 
 		uint32_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
 		if(arrivals && candidate < partitionSize) {
 			int nextFree = atomicAdd(&s_firingCount, 1);
@@ -228,11 +228,11 @@ STDP_FN(deliverL0Spikes_)(
 			int presynaptic = s_firingIdx[i];
 
 			__shared__ uint s_delayBlocks;
-			__shared__ uint32_t s_arrivals[MAX_DELAY];
 			if(threadIdx.x == 0) {
 				s_delayBlocks = 0;
 				uint32_t arrivalBits = s_arrivalBits[i];
 
+				//! \todo can do this in parallel?
 				while(arrivalBits) {
 
 					int arrivalDelay = __ffs(arrivalBits) - 1;
@@ -256,7 +256,6 @@ STDP_FN(deliverL0Spikes_)(
 			 * 2) if the delay pitch is less than or equal to half the block size
 			 *    we process multiple delays in parallel 
 			 */
-
 			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
 				uint delayEntry = s_delaysPerChunk == 0 ?
@@ -268,9 +267,9 @@ STDP_FN(deliverL0Spikes_)(
 					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
 					(threadIdx.x % s_synapsesPerDelay);
 
-                float weight;
-                uint postsynaptic;
-                bool doCommit = false;
+				float weight;
+				uint postsynaptic;
+				bool doCommit = false;
 
 				//! \todo consider using per-neuron maximum here instead
 				if(synapseIdx < sf0_maxSynapses && delayEntry < s_delayBlocks
@@ -365,13 +364,22 @@ STDP_FN(step) (
 	/* The shared memory is allocated in fixed-sized blocks. During the
 	 * different stages of the kernel each block may be used for different
 	 * purposes. */
+
+	/* Per-neuron buffers */
 	__shared__ uint32_t s_M1KA[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint32_t s_M1KB[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint16_t s_M512[STDP_FN(MAX_PARTITION_SIZE)];
 
+	/* Per-thread buffers */
+	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
+	__shared__ uint32_t s_T32[THREADS_PER_BLOCK];
+
+	/* Per-delay buffers */
+	__shared__ uint32_t s_D32[MAX_DELAY];
+
 	uint32_t* s_recentFiring = s_M1KB;
+	//! \todo we could probably get away with per-thread storage here, by reorganising kernel
 	uint16_t* s_firingIdx = s_M512;
-	__shared__ uint s_firingCount;
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -459,16 +467,11 @@ STDP_FN(step) (
 			gf0_cm + partitionRow * sf0_pitch, sf0_pitch, sf0_size,
 			s_recentFiring,
 			gf0_delays + CURRENT_PARTITION * s_pitch32,
-			s_current);
+			s_current, s_T16, s_T32, s_D32);
 
 	SET_COUNTER(s_ccMain, 5);
 
-	/* We now repurpose s_firingIdx to contain the indices of the neurons which
-	 * fired just now, rather than the neurons which fired in the past and
-	 * whose spikes are only now reaching. It's ok to leave the existing
-	 * garbage, as we keep track of the end of the new valid firing.
-	 *
-	 * We likewise repurpose the firing count variable */
+	__shared__ uint s_firingCount;
 	if(threadIdx.x == 0) {
 		s_firingCount = 0;
 	}
@@ -542,7 +545,8 @@ STDP_FN(step) (
 				gSpikeQueue,
 				sqPitch,
 				gSpikeQueueHeads,
-				sqHeadPitch);
+				sqHeadPitch,
+				s_T16, s_T32, s_D32);
 	}
 
 	SET_COUNTER(s_ccMain, 10);

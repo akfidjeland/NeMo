@@ -163,11 +163,14 @@ STDP_FN(deliverL1Spikes_JIT)(
 	uint32_t* g_firingDelays,
 	// L1 spike queue
     //! \todo allow more than 32 partitions (by splitting L1CM)
-    uint2* s_outbuf,        // 16 words of buffer per target partition
+	uint2* s_outbuf,        // 16 words of buffer per target partition
 	uint2* g_sq,
 	size_t sqPitch,
 	uint* g_heads,
-    size_t headPitch)
+	size_t headPitch,
+	uint16_t* s_firingIdx,
+	uint32_t* s_arrivalBits,
+	uint32_t* s_arrivals)
 {
 	uint*  gf1_address =          gf1_cm + FCM_ADDRESS * f1_size;
 	float* gf1_weights = (float*) gf1_cm + FCM_WEIGHT  * f1_size;
@@ -215,9 +218,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
 		__shared__ uint s_firingCount;
-		//! \todo make this a re-usable chunk of memory
-		__shared__ uint16_t s_firingIdx[THREADS_PER_BLOCK];
-		__shared__ uint32_t s_arrivalBits[THREADS_PER_BLOCK];
 
 		if(threadIdx.x == 0) {
 			s_firingCount = 0;
@@ -241,7 +241,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 			int presynaptic = s_firingIdx[i];
 
 			__shared__ uint s_delayBlocks;
-			__shared__ uint32_t s_arrivals[MAX_DELAY];
 			if(threadIdx.x == 0) {
 				s_delayBlocks = 0;
 				uint32_t arrivalBits = s_arrivalBits[i];
