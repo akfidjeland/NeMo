@@ -21,7 +21,7 @@ void
 STDP_FN(setSharedArray)(uint32_t* s_mem, uint32_t val)
 {
 	// the compiler should unroll this
-	for(int i=0; i<STDP_FN(MAX_PARTITION_SIZE)/THREADS_PER_BLOCK; ++i) {
+	for(int i=0; i<DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), THREADS_PER_BLOCK); ++i) {
 		s_mem[i*THREADS_PER_BLOCK + threadIdx.x] = val;
 	}
 }
@@ -282,6 +282,10 @@ STDP_FN(deliverL0Spikes_)(
 					size_t synapseAddress = 
 						(presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
 					weight = gf0_weight[synapseAddress];
+
+					//! \todo only load address if it will actually be used.
+					//For benchmarks this made little difference, presumable
+					//because all neurons have same number of synapses. Experiment!
 					uint sdata = gf0_address[synapseAddress];
 					postsynaptic = targetNeuron(sdata);
 
