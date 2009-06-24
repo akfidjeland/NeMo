@@ -21,8 +21,8 @@ CycleCounters::CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpE
 const char* durationNames[] = {
 	"init",
 	"random input",
-	"L1 gather",
 	"load firing",
+	"L1 gather",
 	"deliver L0",
 	"fire",
 	"L0 LTP",
@@ -64,7 +64,7 @@ CycleCounters::printCounterSet(
 	/* The data return by copyFromDevice is the raw device data, including any
 	 * padding. Using cc.end() would therefore read too far */ 
 	std::vector<unsigned long long>::const_iterator end = cc.begin() + counters;
-	unsigned long long totalCycles = std::accumulate(cc.begin(), end, 0);
+	unsigned long long totalCycles = std::accumulate(cc.begin(), end, 0l);
 
 	printLine(setName, totalCycles, totalCycles, m_clockRateKHz, outfile);
 	outfile << std::endl;

@@ -32,7 +32,7 @@ struct CycleCounters
 
 		size_t m_partitionCount;
 
-		int m_clockRateKHz;
+		unsigned long long m_clockRateKHz;
 
 		bool m_stdpEnabled;
 
