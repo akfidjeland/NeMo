@@ -1,6 +1,17 @@
+/* For L1 delivery spikes are delivered via global memory. To reduce the number
+ * of non-coalesced global memory accesses, we first stage outgoing buffers in
+ * shared memory.
+ *
+ * At the very least one buffer is made available for each potential target
+ * partition. To load-balance, multiple buffers may be allocated to the same
+ * target partition, especially if the number of partitions is small */
 
-/*! \return word offset to beginning of spike buffer for a particular partition
- * pair */
+
+
+
+/*! \return
+ *      word offset to beginning of global memory spike buffer for a particular
+ *      partition pair */
 __device__
 size_t
 sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
@@ -12,14 +23,91 @@ sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
 }
 
 
-
-
-//! \todo fix these constants
-
 #define BUFFER_SZ 16
-//! \todo modify L1 delivery to handle more buffers than threads
-//#define BUFFER_COUNT MAX_PARTITION_COUNT
-#define BUFFER_COUNT THREADS_PER_BLOCK
+/*! Max partition size used because this is the size of the buffer as allocated
+ * in kernel.cu:step. This is very brittle and will probably break.
+ *
+ * \todo use a c++ template to make this a compile time constant that depends
+ * on total buffer size. */
+#define MAX_BUFFER_COUNT (MAX_PARTITION_SIZE/(BUFFER_SZ*2)) // 2 since we use uint2
+
+
+__device__
+uint
+buffersPerPartition()
+{
+	return MAX_BUFFER_COUNT / PARTITION_COUNT;
+}
+
+
+
+/* Due to rounding some buffers at the end may be invalid */
+__device__
+uint
+bufferCount()
+{
+	return buffersPerPartition() * PARTITION_COUNT;
+}
+
+
+
+
+/*! \todo modify L1 delivery to handle more partitions than buffers. The L1 CM
+ * needs to be split to do this. */
+
+
+__device__
+uint
+outputBufferIdx(uint targetPartition, uint buffersPerPartition)
+{
+    ASSERT(targetPartition < PARTITION_COUNT);
+    uint idx
+        = targetPartition * buffersPerPartition
+        + threadIdx.x % buffersPerPartition;
+    ASSERT(idx < bufferCount());
+    return idx;
+}
+
+
+__device__
+uint
+bufferPartition(uint buffer, uint buffersPerPartition)
+{
+	//! \todo tidy!
+    //uint buffersPerPartition = MAX_BUFFER_COUNT / PARTITION_COUNT;
+    return buffer / buffersPerPartition;
+}
+
+
+
+
+
+
+//! \todo generalise this function, to have static size and type
+//! \todo move this somewhere else
+template<int SIZE>
+__device__
+void
+s_clear(uint* s_buf)
+{
+    /* Loop should be unrolled by compiler in most cases */
+    for(uint i=0; i < DIV_CEIL(SIZE, THREADS_PER_BLOCK); ++i) {
+        size_t idx = i*THREADS_PER_BLOCK + threadIdx.x;
+        if(idx < SIZE) {
+            s_buf[idx] = 0;
+        }
+    }
+}
+
+
+template<int SIZE>
+__device__
+void
+s_clear_(uint* s_buf)
+{
+    s_clear<SIZE>(s_buf);
+    __syncthreads();
+}
 
 
 
@@ -38,7 +126,15 @@ sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
 
 
 /*! \return the offset into the global memory buffer head matrix for a
- * particular partition pair */
+ * particular partition pair
+ * 
+ * \param src Source partition
+ * \param tgt Target partition
+ * \param pitch
+ *		Pitch of global memory spike buffer
+ * \param bufferIdx
+ *		Index of double buffer (0 or 1)
+ */
 __device__
 size_t
 headOffset(size_t src, size_t tgt, size_t pitch, size_t bufferIdx)
@@ -81,34 +177,55 @@ loadAndClearBufferHeads(
 
 /* Flush spike buffer (up to maxSlot) for a single partition.
  *
+ * \param count
+ *		Number of entries from the output buffer to flush
+ *
  * \todo write 4B values instead of 8B
  */
 __device__
 void
 flushSpikeBuffer(
 	uint writeBufferIdx,
+    uint outbufferIdx,
+	uint buffersPerPartition,
 	uint count,
-	int targetPartition,
 	uint* s_heads,
 	uint2* s_outbuf64,
-	uint2* g_sq64,
+	uint2* g_sb64,
 	size_t sqPitch)
 {
-	/* We only have one warp's worth of data here. To improve bandwidth
-	 * utilisation write 4B per thread rather than 8B. */
-	// uint* s_outbuf32 = (uint*) s_outbuf64;
-	// uint* g_sq32 = (uint*) g_sq64;
+	if(count > 0) {
 
-	if(threadIdx.x < count) {
-		//! \todo simplify addressing once old L1CM is removed
-		size_t base = sbBase(sqPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
-		//uint data = s_outbuf32[targetPartition * BUFFER_SZ * 2 + threadIdx.x];
-		uint2 data = s_outbuf64[targetPartition * BUFFER_SZ + threadIdx.x];
-		//g_sq32[2 * (base + s_heads[targetPartition]) + threadIdx.x] = data;
-		g_sq64[base + s_heads[targetPartition] + threadIdx.x] = data;
-		DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u (after unknown delay)\n",
-			__int_as_float(data.y), CURRENT_PARTITION,
-			targetPartition, targetNeuron(data.x));
+		/* We only have one warp's worth of data here. To improve bandwidth
+		 * utilisation write 4B per thread rather than 8B. */
+		// uint* s_outbuf32 = (uint*) s_outbuf64;
+		// uint* g_sb32 = (uint*) g_sb64;
+		__shared__ uint g_offset; /* ... into global buffer */
+
+		uint targetPartition = bufferPartition(outbufferIdx, buffersPerPartition);
+
+		/* Several output buffers may write to the same global buffer, so we
+		 * need atomic update. */
+		if(threadIdx.x == 0) {
+			g_offset = atomicAdd(s_heads + targetPartition, count);
+		}
+		__syncthreads();
+
+		if(threadIdx.x < count) {
+			DEBUG_THREAD_MSG(0, "Flushing buffer %u\n", outbufferIdx);
+
+			size_t base = sbBase(sqPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
+			//uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + threadIdx.x];
+			uint2 data = s_outbuf64[outbufferIdx * BUFFER_SZ + threadIdx.x];
+
+			//g_sb32[2 * (base + g_offset) + threadIdx.x] = data;
+			g_sb64[base + g_offset + threadIdx.x] = data;
+			DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u (after unknown delay)"
+					"(%u+%u+%u)\n",
+					__int_as_float(data.y), CURRENT_PARTITION,
+					targetPartition, targetNeuron(data.x),
+					base, g_offset, threadIdx.x);
+		}
 	}
 }
 
@@ -117,6 +234,7 @@ flushSpikeBuffer(
 __device__
 void
 flushAllSpikeBuffers(
+	uint buffersPerPartition,
 	uint writeBufferIdx,
 	size_t headPitch,
 	uint32_t* g_heads,
@@ -126,27 +244,32 @@ flushAllSpikeBuffers(
 	uint2* g_sq,
 	size_t sqPitch)
 {
-	/* Determine global buffer offsets in parallel, and at the same time flush
-	 * the buffer head to global memory. The head buffer is repurposed to now
-	 * contain the offset into the buffer entry */
-	uint targetPartition = threadIdx.x;
-	if(targetPartition < PARTITION_COUNT) {
-		size_t offset = headOffset(CURRENT_PARTITION, targetPartition, headPitch, writeBufferIdx);
-		g_heads[offset] = s_heads[targetPartition] + s_outheads[targetPartition];
-	}
-	__syncthreads();
+	uint bcount = bufferCount();
 
-	//! \todo factor out function to flush all
-	/* Now flush all buffers which still have data in them */
-	for(int targetPartition=0; targetPartition<PARTITION_COUNT; ++targetPartition) {
-		//! \todo could load the sizes in parallel here, without using atomics
+	/* Flush all buffers which still have data in them */
+	for(uint bufferIdx=0; bufferIdx < bcount; ++bufferIdx) {
 		flushSpikeBuffer(
-            writeBufferIdx,
-			s_outheads[targetPartition],
-			targetPartition,
+			writeBufferIdx,
+			bufferIdx,
+			buffersPerPartition,
+			s_outheads[bufferIdx],
 			s_heads,
 			s_outbuf,
 			g_sq, sqPitch);
 	}
-}
 
+	/* Now that all buffers have been flushed, s_heads should contain the total
+	 * number of spikes written to the global buffer. This needs to be written
+	 * to the global memory head buffer so that the target partition knows how
+	 * many spikes are valid */
+	//! \todo factor out function
+	__syncthreads(); /* ensure s_heads is up to date */
+	uint bufferIdx = threadIdx.x;
+	ASSERT(MAX_BUFFER_COUNT <= THREADS_PER_BLOCK);
+	if(bufferIdx < bcount) {
+		uint targetPartition = bufferPartition(bufferIdx, buffersPerPartition);
+		size_t g_offset = headOffset(CURRENT_PARTITION, targetPartition, headPitch, writeBufferIdx);
+		//! \todo only write if the buffer contains anything
+		g_heads[g_offset] = s_heads[targetPartition];
+	}
+}

@@ -183,34 +183,50 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 	/* L1 spikes are delivered via a global memory buffer. Writes to these
 	 * buffers may be quite scattered. To reduce the impact of non-coalesced
-	 * writes we therefore stage synaptic data in shared memory before writing
-	 * it to global memory.
-	 *
-	 * We therefore have two buffer heads to keep track of: one for the global
-	 * per target-partition spike buffer (which may be filled from several
-     * presynaptic neurons here), and one for the local per target-partition
-     * buffer. The latter is the 'outbuffer', while the former is just
-     * 'buffer'.  */
+	 * writes we stage spike data in shared memory before writing it to global
+	 * memory.
+	 */
+
+	/* In global memory there is one buffer per source-target partition pair */
+	//! \todo reuse this memory
+	__shared__ uint s_gheads[MAX_PARTITION_COUNT];
+
+	/* For the output buffers, multiple buffers may be dedicated to the same
+	 * global buffer. This is to avoid a sequential bottleneck when we have
+	 * only a small number of partitions */
 
 	/*! \todo use one of the general-purpose chunks of shared memory */
-	/* Can't pack these into one array of uint2's, since we need to do atomic
-	 * operations */
-	__shared__ uint s_heads[BUFFER_COUNT];
-	__shared__ uint s_outheads[BUFFER_COUNT];
-	//! \todo factor out method here, using a template function
-	for(int i=0; i < BUFFER_COUNT/THREADS_PER_BLOCK; ++i) {
-		s_heads[i*THREADS_PER_BLOCK + threadIdx.x] = 0;
-		s_outheads[i*THREADS_PER_BLOCK + threadIdx.x] = 0;
-	}
+	__shared__ uint s_sheads[MAX_BUFFER_COUNT];
+
+	/* For both s_gheads and s_sheads, the data are small enough that uint2
+	 * would work. However, we need to perform atomic operations, and therefore
+	 * need 32-bit data */
+
+	/* Since spikes are delivered just-in-time, the buffer is only written to
+	 * during one cycle. The buffer is thus cleared before each delivery, and
+	 * there's no need to load global buffer heads in the source partition. */
+	s_clear<MAX_PARTITION_COUNT>(s_gheads);
+	s_clear<MAX_BUFFER_COUNT>(s_sheads);
+
+	/* Depending on the number of partitions, not all output buffers may be in
+	 * use due to rounding effects */
+	__shared__ uint s_bufferCount;
+	__shared__ uint s_buffersPerPartition;
 
 	__shared__ uint s_synapsesPerDelay;
 	__shared__ uint s_chunksPerDelay;
 	__shared__ uint s_delaysPerChunk;
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
+#ifdef __DEVICE_EMULATION__
+		s_synapsesPerDelay = ALIGN(sf1_maxSynapses, 32);
+#else
 		s_synapsesPerDelay = ALIGN(sf1_maxSynapses, warpSize);
+#endif
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
+		s_buffersPerPartition = buffersPerPartition();
+		s_bufferCount = bufferCount();
 	}
 	__syncthreads();
 
@@ -267,7 +283,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 			 * 2) if the delay pitch is less than or equal to half the block size
 			 *    we process multiple delays in parallel
 			 */
-
 			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
 				uint delayEntry = s_delaysPerChunk == 0 ?
@@ -281,25 +296,23 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 				float weight;
 				uint target;
-				uint bufferIdx = 0; // relative to beginning of output buffer slot
+				uint bufferOffset = 0; // relative to beginning of output buffer slot
+				uint bufferIdx = 0;
 				bool doCommit = false;
 
 				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < sf1_maxSynapses && delayEntry < s_delayBlocks
-#ifdef __DEVICE_EMULATION__
-						// warp size is 1, so rounding to warp size not as expected
-						&& threadIdx.x < s_synapsesPerDelay * s_delaysPerChunk
-#endif
-				  ) {
+				if(synapseIdx < sf1_maxSynapses && delayEntry < s_delayBlocks) {
 					size_t synapseAddress =
 						(presynaptic * maxDelay + delay) * f1_pitch + synapseIdx;
 					weight = gf1_weights[synapseAddress];
-					target = gf1_address[synapseAddress];
 
 					if(weight != 0.0f) {
 						doCommit = true;
-						bufferIdx = atomicAdd(s_outheads + targetPartition(target), 1);
-						//! \todo deal with STDP here
+						target = gf1_address[synapseAddress];
+						bufferIdx =
+							outputBufferIdx(targetPartition(target),
+								s_buffersPerPartition);
+						bufferOffset = atomicAdd(s_sheads + bufferIdx, 1);
 					}
 				}
 
@@ -325,14 +338,10 @@ STDP_FN(deliverL1Spikes_JIT)(
 				 * therefore need to interleave the filling of the output
 				 * buffer with its flushing */
 
-				//! \todo could use warp vote here, if some care is taken
-				/* The number of buffers is exactly the warp size, so we
-				 * can use a single warp vote to determine if we need to
-				 * flush anything */
-				//! \todo make this compile-time assertion
 				//! \todo factor out
 				__shared__ uint s_flushCount;
-				__shared__ uint s_flushPartition[BUFFER_COUNT];
+				//! \todo use shared memory for this
+				__shared__ uint s_flushPartition[MAX_BUFFER_COUNT];
 				do {
 					/* ensure loop condition is not changed while threads are
 					 * in different loop iterations */
@@ -340,9 +349,9 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 					/* Write one batch of data to output buffers, up to the
 					 * limit of the buffer */
-					if(doCommit && bufferIdx < BUFFER_SZ) {
+					if(doCommit && bufferOffset < BUFFER_SZ) {
 						//! \todo do some compression here to avoid race conditions later
-						s_outbuf[targetPartition(target) * BUFFER_SZ + bufferIdx] =
+						s_outbuf[bufferIdx * BUFFER_SZ + bufferOffset] =
 							STDP_FN(packSpike)(
 									presynaptic,
 									delay,
@@ -350,12 +359,13 @@ STDP_FN(deliverL1Spikes_JIT)(
 									targetNeuron(target),
 									weight);
 						doCommit = false;
-						DEBUG_MSG("Buffering L1 current %f for synapse"
-								"%u-?? -> %u-%u (after unknown delay)\n",
+						DEBUG_MSG("Buffering L1 current %f for synapse "
+								"%u-?? -> %u-%u (after unknown delay, buffer %u[%u])\n",
 								weight, CURRENT_PARTITION,
-								targetPartition(target), targetNeuron(target));
+								targetPartition(target), targetNeuron(target),
+								bufferIdx, bufferOffset);
 					} else {
-						bufferIdx -= BUFFER_SZ; // prepare to write to buffer on subsequent loop iteration
+						bufferOffset -= BUFFER_SZ; // prepare to write to buffer on subsequent loop iteration
 					}
 
 					/* Determine how many buffers are now full and need flushing */
@@ -366,13 +376,13 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 					//! \todo factor out
 					{
-						ASSERT(BUFFER_COUNT <= THREADS_PER_BLOCK);
-						int targetPartition = threadIdx.x;
-						if(targetPartition < BUFFER_COUNT) {
-							if(s_outheads[targetPartition] >= BUFFER_SZ) {
-								s_outheads[targetPartition] -= BUFFER_SZ;
-								uint next = atomicInc(&s_flushCount, BUFFER_COUNT);
-								s_flushPartition[next] = targetPartition;
+						ASSERT(MAX_BUFFER_COUNT <= THREADS_PER_BLOCK);
+						uint bufferIdx = threadIdx.x;
+						if(bufferIdx < s_bufferCount) {
+							if(s_sheads[bufferIdx] >= BUFFER_SZ) {
+								s_sheads[bufferIdx] -= BUFFER_SZ;
+								uint next = atomicInc(&s_flushCount, MAX_BUFFER_COUNT);
+								s_flushPartition[next] = bufferIdx;
 							}
 						}
 						__syncthreads();
@@ -380,29 +390,27 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 					/* Flush buffers */
 					/*! \todo could potentially flush multiple buffers in one go here */
-					for(int flush_i=0; flush_i < s_flushCount; ++flush_i) {
-						int targetPartition = s_flushPartition[flush_i];
-						DEBUG_THREAD_MSG(0, "Flushing buffer %d\n", targetPartition);
+					for(uint flush_i=0; flush_i < s_flushCount; ++flush_i) {
 						flushSpikeBuffer(
                                 writeBufferIdx,
+								s_flushPartition[flush_i],
+								s_buffersPerPartition,
 								BUFFER_SZ, // flush whole buffer
-								targetPartition,
-								s_heads,
+								s_gheads,
 								s_outbuf,
 								g_sq, sqPitch);
 						__syncthreads();
-						//! \todo could add all in parallel?
-						if(threadIdx.x == 0) {
-							s_heads[targetPartition] += BUFFER_SZ;
-						}
 					}
 				} while(s_flushCount);
-				__syncthreads(); // ensure every thread has left the loop, before re-entering it
+				/* ensure every thread has left the loop, before re-entering it */
+				__syncthreads();
 			}
 		}
 	}
 
-	flushAllSpikeBuffers(writeBufferIdx, headPitch, g_heads, s_heads, s_outheads, s_outbuf, g_sq, sqPitch);
-	DEBUG_MSG("End deliver L1\n");
+	flushAllSpikeBuffers(
+			s_buffersPerPartition,
+			writeBufferIdx,
+			headPitch, g_heads, s_gheads, s_sheads, s_outbuf, g_sq, sqPitch);
 }
 

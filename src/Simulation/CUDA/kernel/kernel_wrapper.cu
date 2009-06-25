@@ -256,6 +256,12 @@ applySTDP(dim3 dimGrid,
 			trace);
 
 	rtdata->cm(cmIdx)->df_clear(FCM_STDP_LTP);
+
+#if 0
+	if(trace) {
+		rtdata->cm(cmIdx)->printSTDPTrace();
+	}
+#endif
 }
 
 
