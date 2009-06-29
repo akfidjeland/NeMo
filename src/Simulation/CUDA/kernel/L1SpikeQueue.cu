@@ -401,7 +401,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 								s_gheads,
 								s_outbuf,
 								g_sq, sqPitch);
-						__syncthreads();
 					}
 				} while(s_flushCount);
 				/* ensure every thread has left the loop, before re-entering it */

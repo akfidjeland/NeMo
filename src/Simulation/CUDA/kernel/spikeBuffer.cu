@@ -202,32 +202,29 @@ flushSpikeBuffer(
 {
 	/* We only have one warp's worth of data here. To improve bandwidth
 	 * utilisation write 4B per thread rather than 8B. */
-	//uint* s_outbuf32 = (uint*) s_outbuf64;
-	//uint* g_sb32 = (uint*) g_sb64;
+	uint* s_outbuf32 = (uint*) s_outbuf64;
+	uint* g_sb32 = (uint*) g_sb64;
 
 	__shared__ uint g_offset[BUFFERS_PER_BLOCK]; /* ... into global buffer */
 
 	uint t_buf = threadIdx.x / THREADS_PER_BUFFER;
 	uint t_offset = threadIdx.x % THREADS_PER_BUFFER;
-	bool validEntry = validBuffer && t_offset < count;
 
 	uint targetPartition = bufferPartition(outbufferIdx, buffersPerPartition);
 
 	/* Several output buffers may write to the same global buffer, so we
 	 * need atomic update. */
-	if(t_offset == 0 && validEntry) {
+	if(t_offset == 0 && validBuffer) {
 		g_offset[t_buf] = atomicAdd(s_heads + targetPartition, count);
 	}
 	__syncthreads();
 
-	if(validEntry) {
+	if(validBuffer && t_offset < count*2) {
 
 		size_t base = sbBase(sbPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
-		//uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset];
-		uint2 data = s_outbuf64[outbufferIdx * BUFFER_SZ + t_offset];
+		uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset];
 
-		//g_sb32[2 * (base + g_offset[t_buf]) + t_offset] = data;
-		g_sb64[base + g_offset[t_buf] + t_offset] = data;
+		g_sb32[2 * (base + g_offset[t_buf]) + t_offset] = data;
 		DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u"
 				"(after unknown delay)\n",
 				__int_as_float(data.y), CURRENT_PARTITION,
