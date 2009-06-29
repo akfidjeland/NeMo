@@ -37,7 +37,7 @@
 #if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
 
 /* Log message in device emulation regardless of thread */
-#define DEBUG_MSG(...) fprintf(stdout, __VA_ARGS__)
+#define DEBUG_MSG(...) fprintf(stderr, __VA_ARGS__)
 
 /* Log message in device emulation only for specific thread */
 #define DEBUG_THREAD_MSG(tix, ...)                                            \

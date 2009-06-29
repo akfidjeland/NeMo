@@ -31,6 +31,11 @@ sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
  * on total buffer size. */
 #define MAX_BUFFER_COUNT (MAX_PARTITION_SIZE/(BUFFER_SZ*2)) // 2 since we use uint2
 
+/* We can flush multiple buffers per block for better global memory bandwidth
+ * utilisation */
+#define THREADS_PER_BUFFER (BUFFER_SZ*2)
+#define BUFFERS_PER_BLOCK (THREADS_PER_BLOCK / THREADS_PER_BUFFER)
+
 
 __device__
 uint
@@ -185,47 +190,48 @@ loadAndClearBufferHeads(
 __device__
 void
 flushSpikeBuffer(
+	bool validBuffer,
+	uint outbufferIdx,
 	uint writeBufferIdx,
-    uint outbufferIdx,
 	uint buffersPerPartition,
 	uint count,
 	uint* s_heads,
 	uint2* s_outbuf64,
 	uint2* g_sb64,
-	size_t sqPitch)
+	size_t sbPitch)
 {
-	if(count > 0) {
+	/* We only have one warp's worth of data here. To improve bandwidth
+	 * utilisation write 4B per thread rather than 8B. */
+	//uint* s_outbuf32 = (uint*) s_outbuf64;
+	//uint* g_sb32 = (uint*) g_sb64;
 
-		/* We only have one warp's worth of data here. To improve bandwidth
-		 * utilisation write 4B per thread rather than 8B. */
-		// uint* s_outbuf32 = (uint*) s_outbuf64;
-		// uint* g_sb32 = (uint*) g_sb64;
-		__shared__ uint g_offset; /* ... into global buffer */
+	__shared__ uint g_offset[BUFFERS_PER_BLOCK]; /* ... into global buffer */
 
-		uint targetPartition = bufferPartition(outbufferIdx, buffersPerPartition);
+	uint t_buf = threadIdx.x / THREADS_PER_BUFFER;
+	uint t_offset = threadIdx.x % THREADS_PER_BUFFER;
+	bool validEntry = validBuffer && t_offset < count;
 
-		/* Several output buffers may write to the same global buffer, so we
-		 * need atomic update. */
-		if(threadIdx.x == 0) {
-			g_offset = atomicAdd(s_heads + targetPartition, count);
-		}
-		__syncthreads();
+	uint targetPartition = bufferPartition(outbufferIdx, buffersPerPartition);
 
-		if(threadIdx.x < count) {
-			DEBUG_THREAD_MSG(0, "Flushing buffer %u\n", outbufferIdx);
+	/* Several output buffers may write to the same global buffer, so we
+	 * need atomic update. */
+	if(t_offset == 0 && validEntry) {
+		g_offset[t_buf] = atomicAdd(s_heads + targetPartition, count);
+	}
+	__syncthreads();
 
-			size_t base = sbBase(sqPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
-			//uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + threadIdx.x];
-			uint2 data = s_outbuf64[outbufferIdx * BUFFER_SZ + threadIdx.x];
+	if(validEntry) {
 
-			//g_sb32[2 * (base + g_offset) + threadIdx.x] = data;
-			g_sb64[base + g_offset + threadIdx.x] = data;
-			DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u (after unknown delay)"
-					"(%u+%u+%u)\n",
-					__int_as_float(data.y), CURRENT_PARTITION,
-					targetPartition, targetNeuron(data.x),
-					base, g_offset, threadIdx.x);
-		}
+		size_t base = sbBase(sbPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
+		//uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset];
+		uint2 data = s_outbuf64[outbufferIdx * BUFFER_SZ + t_offset];
+
+		//g_sb32[2 * (base + g_offset[t_buf]) + t_offset] = data;
+		g_sb64[base + g_offset[t_buf] + t_offset] = data;
+		DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u"
+				"(after unknown delay)\n",
+				__int_as_float(data.y), CURRENT_PARTITION,
+				targetPartition, targetNeuron(data.x));
 	}
 }
 
@@ -242,20 +248,22 @@ flushAllSpikeBuffers(
 	uint* s_outheads,
 	uint2* s_outbuf,
 	uint2* g_sq,
-	size_t sqPitch)
+	size_t sbPitch)
 {
 	uint bcount = bufferCount();
 
 	/* Flush all buffers which still have data in them */
-	for(uint bufferIdx=0; bufferIdx < bcount; ++bufferIdx) {
+	for(uint flush_i=0; flush_i < bcount; flush_i += BUFFERS_PER_BLOCK) {
+		uint bufferIdx = flush_i + threadIdx.x / THREADS_PER_BUFFER;
 		flushSpikeBuffer(
-			writeBufferIdx,
+			bufferIdx < bcount,
 			bufferIdx,
+			writeBufferIdx,
 			buffersPerPartition,
 			s_outheads[bufferIdx],
 			s_heads,
 			s_outbuf,
-			g_sq, sqPitch);
+			g_sq, sbPitch);
 	}
 
 	/* Now that all buffers have been flushed, s_heads should contain the total

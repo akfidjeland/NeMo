@@ -360,8 +360,8 @@ STDP_FN(deliverL1Spikes_JIT)(
 									weight);
 						doCommit = false;
 						DEBUG_MSG("Buffering L1 current %f for synapse "
-								"%u-?? -> %u-%u (after unknown delay, buffer %u[%u])\n",
-								weight, CURRENT_PARTITION,
+								"%u-%u -> %u-%u (after unknown delay, buffer %u[%u])\n",
+								weight, CURRENT_PARTITION, presynaptic,
 								targetPartition(target), targetNeuron(target),
 								bufferIdx, bufferOffset);
 					} else {
@@ -389,11 +389,13 @@ STDP_FN(deliverL1Spikes_JIT)(
 					}
 
 					/* Flush buffers */
-					/*! \todo could potentially flush multiple buffers in one go here */
-					for(uint flush_i=0; flush_i < s_flushCount; ++flush_i) {
+					for(uint flush_i=0; flush_i < s_flushCount; flush_i += BUFFERS_PER_BLOCK) {
+						uint i = flush_i + threadIdx.x / THREADS_PER_BUFFER;
+						bool validBuffer = i < s_flushCount;
 						flushSpikeBuffer(
-                                writeBufferIdx,
-								s_flushPartition[flush_i],
+								validBuffer,
+								s_flushPartition[i],
+								writeBufferIdx,
 								s_buffersPerPartition,
 								BUFFER_SZ, // flush whole buffer
 								s_gheads,

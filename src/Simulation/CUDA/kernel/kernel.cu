@@ -150,7 +150,7 @@ STDP_FN(commitCurrent_)(
 	for(uint commit=0; commit < s_delayBlocks; ++commit) {
 		if(delayEntry == commit && doCommit) {
 			s_current[postsynaptic] += weight; 
-			DEBUG_MSG("L0 current %f for synapse %u -> %u" ,
+			DEBUG_MSG("L0 current %f for synapse %u -> %u\n" ,
 					weight, presynaptic, postsynaptic);
 		}
 		__syncthreads();
