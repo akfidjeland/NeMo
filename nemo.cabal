@@ -127,7 +127,7 @@ executable nemo-server
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
     if flag(profile)
         ghc-options:        -prof -auto-all
@@ -178,7 +178,7 @@ executable nemo-run
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
 
 
@@ -248,7 +248,7 @@ executable runtests
                             Test.Simulation.CUDA.Mapping
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
 
 
@@ -304,7 +304,7 @@ executable benchmark
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
 
 
@@ -363,7 +363,7 @@ executable smallworld
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
 
 executable random1k
@@ -422,7 +422,7 @@ executable random1k
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include
 
 
@@ -478,5 +478,5 @@ executable ring
                             Simulation.CUDA.Probe
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /opt/cuda/lib /opt/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
+        extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /opt/cuda/include

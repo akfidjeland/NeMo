@@ -33,7 +33,7 @@
 #
 ################################################################################
 
-CUDA_SDK_PATH := /opt/NVIDIA_CUDA_SDK
+CUDA_SDK_PATH := ext/NVIDIA_CUDA_SDK
 SRCDIR := src/Simulation/CUDA/kernel/
 ROOTDIR := dist/build/cuda
 
