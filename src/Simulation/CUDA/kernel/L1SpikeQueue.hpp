@@ -14,7 +14,7 @@ struct L1SpikeQueue
 		 * \param entrySize
 		 * 		Maximum number of synapses connecting any pair of partitions
 		 */
-		L1SpikeQueue(size_t partitionCount, size_t entrySize);
+		L1SpikeQueue(size_t partitionCount, size_t entrySize, size_t l1pitch);
 
 		~L1SpikeQueue();
 

@@ -43,6 +43,7 @@ nrings n sz d = cluster (replicate n $ ring sz d) []
 
 
 main = do
+    -- TODO: option processing
     args <- getArgs
     let (actions, _, _) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return defaultOptions) actions

@@ -36,8 +36,7 @@ RuntimeData::RuntimeData(
 	m_usingSTDP(false),
 	m_haveL1Connections(partitionCount != 1 && l1SQEntrySize != 0)
 {
-	// spikeQueue = new L1SpikeQueue(partitionCount, maxDelay, l1SQEntrySize);
-	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize);
+	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize, maxL1SynapsesPerDelay);
 	firingProbe = new FiringProbe(partitionCount, maxPartitionSize, maxReadPeriod);
 
 	recentFiring = new NVector<uint32_t>(partitionCount, maxPartitionSize, false, 2);

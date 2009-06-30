@@ -7,13 +7,14 @@
 
 L1SpikeQueue::L1SpikeQueue(
         size_t partitionCount,
-		size_t entrySize) :
+		size_t entrySize,
+		size_t l1pitch) :
 	m_data(NULL),
 	m_pitch(0),
 	m_heads(NULL),
 	m_headPitch(0)
 {
-	if(partitionCount != 1 && entrySize != 0) {
+	if(partitionCount != 1 && entrySize != 0 && l1pitch != 0) {
 		{
 			/* We need a double buffer here, so we can read and write concurrently. */
 			const size_t height = partitionCount * partitionCount * 2;
