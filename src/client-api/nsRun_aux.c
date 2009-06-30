@@ -128,7 +128,7 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	uint32_t* firingIdx = NULL;
 	unsigned int firingLen; 
 
-	uint applySTDP = getScalarInt(prhs[3]);
+	unsigned int applySTDP = getScalarInt(prhs[3]);
 	double stdpReward = mxGetScalar(prhs[4]);
 	
 	uint32_t elapsed = 0;      /* computation time on server in milliseconds */

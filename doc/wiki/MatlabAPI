@@ -1,7 +1,7 @@
 .. Note: this page is used to create user documentation for the MATLAB API
 
 ========================
-Nemo v0.2.5 - Matlab API
+Nemo v0.3 - Matlab API
 ========================
 
 :Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
@@ -66,8 +66,8 @@ To run for 1000ms applying STDP every 50ms, do something like the following
 (perhaps with some added stimulus)::
 
     nsSetHost('axel01.doc.ic.ac.uk');
-    nsEnableSTDP(20, 20, 1.0, 0.8);
     F = 30;
+    nsEnableSTDP(20, 20, 1.0, 0.8, F);
     iterations = 4;
     nsStart(a, b, c, d, u, v, spost, sdelays, sweights, iterations, F);
     for i=1:50:1000

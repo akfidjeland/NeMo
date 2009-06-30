@@ -96,10 +96,10 @@ MatlabAPI
 Build system
 ------------
 
+- in Makefile, have cuda build check configuration in dist to determine whether
+  or not to build the kernel library
 - add creation of windows install (MSI), using Bamse
 - add creation of deb installer
-- simplify cabal by only creating library for the client. Why would we need a
-  server library?
 - tie the test framwork into git. require all tests to pass.
 - cmake? We should do some configuration to determine if CUDA is present
 - add tarballing to the build script

@@ -19,7 +19,7 @@ import Simulation.FiringStimulus
 import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
 import Simulation.Options (simOptions, BackendOptions(..), optDuration)
 import Simulation.Run
-import Simulation.STDP (stdpOptions)
+import Simulation.STDP.Options (stdpOptions)
 import Types
 
 import Test.Files

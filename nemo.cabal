@@ -1,5 +1,5 @@
 name:                       nemo
-version:                    0.2.5
+version:                    0.3
 synopsis:                   Simulation library for spiking neural networks
 author:                     Andreas Fidjeland
 maintainer:                 Andreas Fidjeland <akf@doc.ic.ac.uk>
@@ -60,7 +60,6 @@ library
                             Simulation.Common,
                             Simulation.FileSerialisation,
                             Simulation.FiringStimulus,
-                            Simulation.Options,
                             Simulation.STDP,
                             Types,
                             Util.Assocs,
@@ -212,6 +211,7 @@ executable runtests
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
+                            Simulation.STDP.Options,
                             Test.Comparative,
                             Test.Construction.Axon,
                             Test.Construction.Synapse,
@@ -280,6 +280,7 @@ executable benchmark
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
+                            Simulation.STDP.Options,
                             Types, Construction.Rand,
                             Util.Assocs
 
@@ -337,6 +338,7 @@ executable smallworld
                             Simulation.Run,
                             Simulation.SpikeQueue, 
                             Simulation.STDP,
+                            Simulation.STDP.Options,
                             Types,
                             Util.Assocs
 
@@ -394,6 +396,7 @@ executable random1k
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
+                            Simulation.STDP.Options,
                             Types, Construction.Rand,
                             Util.Assocs
 
@@ -454,6 +457,7 @@ executable ring
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
+                            Simulation.STDP.Options,
                             Types, Construction.Rand,
                             Util.Assocs
 

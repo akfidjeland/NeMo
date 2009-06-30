@@ -11,7 +11,7 @@ import Simulation.Common
 import Simulation.FiringStimulus
 import Simulation.Options (SimulationOptions(..))
 import Simulation.Run
-import Simulation.STDP (stdpOptions)
+import Simulation.STDP.Options (stdpOptions)
 import Types
 
 import Test.Comparative (comparisonTest)

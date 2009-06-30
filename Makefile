@@ -1,7 +1,7 @@
 HASKELL_BUILD_DIR := dist/build
 CUDA_LIB := dist/build/cuda/lib/libcuIzhikevich.a
 
-# Build haskell via make to allow parallel build using the -j flag. This is
+# Build haskell via 'make' to allow parallel build using the -j flag. This is
 # passed on to the recursive make call. Cabal doesn't support building specific
 # flags. Selecting targets is done via ./Setup.lhs configure.
 all: cuda haskell.mk

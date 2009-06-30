@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Print the help comments from m-file. This script assumes the relevant comment
 # block starts on the first line, which is followed by a blank line, followed
 # by a synopsis.

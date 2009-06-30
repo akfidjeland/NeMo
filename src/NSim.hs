@@ -31,7 +31,7 @@ import Simulation.Common
 import Simulation.CUDA.Options
 import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
 import Simulation.Run
-import Simulation.STDP (stdpOptions)
+import Simulation.STDP.Options (stdpOptions)
 import Simulation.Options (simOptions, optBackend, BackendOptions(..))
 import Types
 

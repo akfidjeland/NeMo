@@ -24,7 +24,7 @@ obj := o
 mex_ext := mexglx
 endif
 
-version :=$(shell util/version)
+ version :=$(shell util/version)
 
 m_files := $(patsubst %,$(mex_src_dir)/matlab/%.m,$(m_src))
 mex_files := $(addprefix $(build_dir)/,$(addsuffix .$(mex_ext),nsStart_aux nsRun_aux nsTerminate_aux))
@@ -137,9 +137,13 @@ matlab_dist := nemo-client-glx-$(strip $(version))
 endif
 .PHONY: matlab-dist
 matlab-dist: $(mex_files) $(client_so) $(m_files) $(doc_dir)/manual.pdf
+ifneq ($(OSTYPE),msys)
 	rm -f $(client_dist)/matlab/latest
+endif
 	mkdir -p $(client_dist)/matlab/$(matlab_dist)
+ifneq ($(OSTYPE),msys)
 	(cd $(client_dist)/matlab; ln -s $(matlab_dist) latest; cd ../..)
+endif
 	cp --target-directory $(client_dist)/matlab/$(matlab_dist) $^
 	(cd $(client_dist)/matlab; zip -r $(matlab_dist).zip $(matlab_dist); cd ../..)
 	

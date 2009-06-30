@@ -18,7 +18,7 @@ import Simulation.CUDA.Options (cudaOptions, optPartitionSize)
 import Simulation.FiringStimulus
 import Simulation.Options (simOptions, optDuration, optBackend, BackendOptions(..))
 import Simulation.Run (runSim)
-import Simulation.STDP (stdpOptions)
+import Simulation.STDP.Options (stdpOptions)
 import Types
 
 

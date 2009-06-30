@@ -20,7 +20,7 @@ import Simulation.CUDA.Options (cudaOptions)
 import Simulation.FiringStimulus
 import Simulation.Options
 import Simulation.Run
-import Simulation.STDP (stdpOptions)
+import Simulation.STDP.Options (stdpOptions)
 import Types
 
 import Test.Comparative (compareSims)
