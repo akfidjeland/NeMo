@@ -164,8 +164,8 @@ void
 enableSTDP(RTDATA rtdata,
 		int tauP,
 		int tauD,
-		float alphaP,
-		float alphaD,
+		float* potentiation, // len: tauP
+		float* depression, // len: tauD
 		float maxWeight);
 
 //-----------------------------------------------------------------------------

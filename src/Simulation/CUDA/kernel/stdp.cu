@@ -22,10 +22,9 @@
 
 __constant__ int c_stdpTauP;
 __constant__ int c_stdpTauD;
-__constant__ float c_stdpTauInvP;
-__constant__ float c_stdpTauInvD;
-__constant__ float c_stdpAlphaP;
-__constant__ float c_stdpAlphaD;
+
+__constant__ float c_depression[MAX_STDP_DELAY];
+__constant__ float c_potentiation[MAX_STDP_DELAY];
 
 
 #define SET_STDP_PARAMETER(symbol, val) CUDA_SAFE_CALL(\
@@ -34,16 +33,22 @@ __constant__ float c_stdpAlphaD;
 
 __host__
 void
-configureStdp(int tauP, int tauD, float alphaP, float alphaD)
+configureSTDP(int tauP, int tauD,
+		std::vector<float>& h_prefire,
+		std::vector<float>& h_postfire)
 {
-    float tauInvP = (float) (1.0 / (double) tauP);
-    float tauInvD = (float) (1.0 / (double) tauD);
     SET_STDP_PARAMETER(c_stdpTauP, tauP);
     SET_STDP_PARAMETER(c_stdpTauD, tauD);
-    SET_STDP_PARAMETER(c_stdpTauInvP, tauInvP);
-    SET_STDP_PARAMETER(c_stdpTauInvD, tauInvD);
-    SET_STDP_PARAMETER(c_stdpAlphaP, alphaP);
-    SET_STDP_PARAMETER(c_stdpAlphaD, alphaD);
+
+	cudaMemcpyToSymbol(c_potentiation,
+			&h_prefire[0],
+			sizeof(float)*MAX_STDP_DELAY,
+			0, cudaMemcpyHostToDevice);
+
+	cudaMemcpyToSymbol(c_depression,
+			&h_postfire[0],
+			sizeof(float)*MAX_STDP_DELAY,
+			0, cudaMemcpyHostToDevice);
 }
 
 
@@ -53,13 +58,13 @@ configureStdp(int tauP, int tauD, float alphaP, float alphaD)
 //! \todo move into vector as other parameters
 __shared__ int s_stdpTauP;
 __shared__ int s_stdpTauD;
-__shared__ float s_stdpTauInvP;
-__shared__ float s_stdpTauInvD;
-__shared__ float s_stdpAlphaP;
-__shared__ float s_stdpAlphaD;
 
 
 #define LOAD_STDP_PARAMETER(symbol) s_ ## symbol = c_ ## symbol
+
+__shared__ float s_potentiation[MAX_STDP_DELAY];
+__shared__ float s_depression[MAX_STDP_DELAY];
+
 
 __device__
 void
@@ -69,11 +74,13 @@ loadStdpParameters()
     if(threadIdx.x == 0) {
         LOAD_STDP_PARAMETER(stdpTauP);
         LOAD_STDP_PARAMETER(stdpTauD);
-        LOAD_STDP_PARAMETER(stdpTauInvP);
-        LOAD_STDP_PARAMETER(stdpTauInvD);
-        LOAD_STDP_PARAMETER(stdpAlphaP);
-        LOAD_STDP_PARAMETER(stdpAlphaD);
     }
+	ASSERT(MAX_STDP_DELAY <= THREADS_PER_BLOCK);
+	int dt = threadIdx.x;
+	if(dt < MAX_STDP_DELAY) {
+		s_potentiation[dt] = c_potentiation[dt];
+		s_depression[dt] = c_depression[dt];
+	}
     __syncthreads();
 }
 
@@ -83,7 +90,8 @@ __device__
 float
 depression(int dt)
 {
-	return s_stdpAlphaD * exp(__int2float_rn(-dt)*s_stdpTauInvD);
+	//! \todo ensure dt always of the right sign
+	return s_depression[abs(dt)];
 }
 
 
@@ -91,8 +99,9 @@ __device__
 float
 potentiation(int dt)
 {
-	return s_stdpAlphaP * exp(__int2float_rn(-dt)*s_stdpTauInvP);
+	return s_potentiation[abs(dt)];
 }
+
 
 
 /* Depress synapse if the postsynaptic neuron fired shortly before the spike
@@ -141,7 +150,7 @@ depressSynapse(
 		uint32_t preSpikes = sourceRecentFiring[sourceNeuron];
 		if(!(preSpikes & p_bits)) {
 
-			gf_ltd[f_offset] -= depression(dt);
+			gf_ltd[f_offset] += depression(dt);
 
 			DEBUG_MSG("ltd: %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
 					depression(dt),

@@ -44,8 +44,8 @@ foreign export ccall hs_startSimulation
     -> CInt             -- ^ bool: use STDP?
     -> CInt             -- ^ STDP tau (max time) for potentiation
     -> CInt             -- ^ STDP tau (max time) for depression
-    -> CDouble          -- ^ STDP alpha for potentiation
-    -> CDouble          -- ^ STDP alpha for depression
+    -> Ptr CDouble      -- ^ lookup table for potentiation
+    -> Ptr CDouble      -- ^ lookup table for depression
     -> CDouble          -- ^ STDP max weight
 
     -> Ptr CDouble      -- ^ a
@@ -59,20 +59,24 @@ foreign export ccall hs_startSimulation
     -> Ptr CDouble      -- ^ syanapse weights
     -> IO Bool
 hs_startSimulation fd n spn tsr
-        useSTDP tp td ap ad mw
+        useSTDP tp td pot dep mw
         a b c d u v sidx sdelay sweight = do
+    potLUT <- peekArray (fromIntegral tp) pot
+    depLUT <- peekArray (fromIntegral td) dep
     net <- createNetwork n spn a b c d u v sidx sdelay sweight
     sock <- socketFD fd
     handle (\_ -> return False) $ do
-    -- TODO: get STDP configuration here instead
-    startSimulation sock net (fromIntegral tsr) stdpConf
+    startSimulation sock net (fromIntegral tsr) (stdpConf potLUT depLUT)
     return True
     where
         -- TODO: might want to control regular STDP application from the host
-        stdpConf = STDPConf (toBool useSTDP)
-                    (fromIntegral tp) (fromIntegral td)
-                    (realToFrac ap) (realToFrac ad)
-                    (realToFrac mw) Nothing
+        stdpConf potLUT depLUT = STDPConf {
+                stdpEnabled      = toBool useSTDP,
+                stdpPotentiation = map realToFrac potLUT,
+                stdpDepression   = map realToFrac depLUT,
+                stdpMaxWeight    = (realToFrac mw),
+                stdpFrequency    = Nothing
+            }
 
 
 

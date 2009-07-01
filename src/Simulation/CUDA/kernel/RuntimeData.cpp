@@ -286,13 +286,30 @@ RuntimeData::usingSTDP() const
  * configured on first launch */ 
 void
 RuntimeData::enableSTDP(int tauP, int tauD,
-		float alphaP, float alphaD, float maxWeight)
+		float* potentiation,
+		float* depression,
+		float maxWeight)
 {
 	m_usingSTDP = true;
 	m_stdpTauP = tauP;
 	m_stdpTauD = tauD;
-	m_stdpAlphaP = alphaP;
-	m_stdpAlphaD = alphaD;
+
+	//! \todo do more sensible error reporting here
+	m_stdpPotentiation.resize(MAX_STDP_DELAY, 0.0f);
+	if(tauP > MAX_STDP_DELAY) {
+		fprintf(stderr, "Time window for potentiation (%u) exceeds CUDA backend maximum (%u)\n",
+			tauP, MAX_STDP_DELAY);
+		tauP = MAX_STDP_DELAY;
+	}
+	std::copy(potentiation, potentiation+tauP, m_stdpPotentiation.begin());
+
+	m_stdpDepression.resize(MAX_STDP_DELAY, 0.0f);
+	if(tauD > MAX_STDP_DELAY) {
+		fprintf(stderr, "Time window for depression (%u) exceeds CUDA backend maximum (%u)\n",
+			tauD, MAX_STDP_DELAY);
+		tauP = MAX_STDP_DELAY;
+	}
+	std::copy(depression, depression+tauD, m_stdpDepression.begin());
 	m_stdpMaxWeight = maxWeight;
 }
 
@@ -454,8 +471,11 @@ readFiring(RTDATA rtdata,
 
 
 void
-enableSTDP(RTDATA rtdata, int tauP, int tauD,
-		float alphaP, float alphaD, float maxWeight)
+enableSTDP(RTDATA rtdata,
+		int tauP, int tauD,
+		float* potentiation,
+		float* depression,
+		float maxWeight)
 {
-	rtdata->enableSTDP(tauP, tauD, alphaP, alphaD, maxWeight);
+	rtdata->enableSTDP(tauP, tauD, potentiation, depression, maxWeight);
 }

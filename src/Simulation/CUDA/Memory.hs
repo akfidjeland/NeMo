@@ -199,6 +199,6 @@ configureSTDP :: ForeignPtr CuRT -> STDPConf -> IO ()
 configureSTDP rt conf =
     when (stdpEnabled conf) $
         enableSTDP rt
-            (stdpTauP conf) (stdpTauD conf)
-            (stdpAlphaP conf) (stdpAlphaD conf)
+            (map realToFrac $ stdpPotentiation conf)
+            (map realToFrac $ stdpDepression conf)
             (stdpMaxWeight conf)

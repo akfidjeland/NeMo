@@ -44,17 +44,13 @@ function nsStart(a, b, c, d, u, v, postIdx, delays, weights, dt, F)
 	end;
 
     global NS_STDP_ACTIVE;
-    global NS_STDP_TAU_P;
-    global NS_STDP_TAU_D;
-    global NS_STDP_ALPHA_P;
-    global NS_STDP_ALPHA_D;
+    global NS_STDP_PRE_FIRE;
+    global NS_STDP_POST_FIRE;
     global NS_STDP_MAX_WEIGHT;
     if ~isa(NS_STDP_ACTIVE, 'int32')
         NS_STDP_ACTIVE = int32(0);
-        NS_STDP_TAU_P = int32(0);
-        NS_STDP_TAU_D = int32(0);
-        NS_STDP_ALPHA_P = 0;
-        NS_STDP_ALPHA_D = 0;
+        NS_STDP_PRE_FIRE = [];
+        NS_STDP_POST_FIRE = [];
         NS_STDP_MAX_WEIGHT = 0;
     end;
 
@@ -75,10 +71,8 @@ function nsStart(a, b, c, d, u, v, postIdx, delays, weights, dt, F)
 		NS_SIMULATION_HOST, NS_SIMULATION_PORT, ...
 		a, b, c, d, u, v, sp, sd, sw, dt, ...
         NS_STDP_ACTIVE, ...
-        NS_STDP_TAU_P, ...
-        NS_STDP_TAU_D, ...
-        NS_STDP_ALPHA_P, ...
-        NS_STDP_ALPHA_D, ...
+        NS_STDP_PRE_FIRE, ...
+        NS_STDP_POST_FIRE, ...
         NS_STDP_MAX_WEIGHT));
 end
 

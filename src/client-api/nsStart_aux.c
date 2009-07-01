@@ -232,8 +232,8 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	startRTS();
 
-	if(nrhs != 18) {
-		mexErrMsgTxt("Must have 18 arguments. Usage: nsStart(hostname, port, a, b, c, d, u, v, postIdx, delays, weights, temp_subres, stdp_active, tau_p, tau_d, alpha_p, alpha_d, maxWeight)");
+	if(nrhs != 16) {
+		mexErrMsgTxt("Must have 18 arguments. Usage: nsStart(hostname, port, a, b, c, d, u, v, postIdx, delays, weights, temp_subres, stdp_active, stdp_prefire, stdp_postfire, maxWeight)");
 	}
 
 	if(nlhs != 1) {
@@ -266,14 +266,16 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	mxFree(hostname);
 
 	int usingSTDP = getScalarInt(prhs[12], "using STDP");
-	int tau_p = getScalarInt(prhs[13], "tau_p (STDP)");
-	int tau_d = getScalarInt(prhs[14], "tau_p (STDP)");
-	double alpha_p = mxGetScalar(prhs[15]);
-	double alpha_d = mxGetScalar(prhs[16]);
-	double maxWeight = mxGetScalar(prhs[17]);
+
+	int prefire_len = 0;
+	int postfire_len = 0;
+
+	double* prefire  = getDoubleArr(prhs[13], &prefire_len, "prefire", "none");
+	double* postfire = getDoubleArr(prhs[14], &postfire_len, "prefire", "none");
+	double maxWeight = mxGetScalar(prhs[15]);
 
 	bool success = hs_startSimulation(sockfd, nlen, sstride, tempSubres,
-			usingSTDP, tau_p, tau_d, alpha_p, alpha_d, maxWeight,
+			usingSTDP, prefire_len, postfire_len, prefire, postfire, maxWeight,
 			a, b, c, d, u, v, postIdx, delays, weights);
     if(!success) {
         mexErrMsgTxt("An unknown error occurred");

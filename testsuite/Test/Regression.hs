@@ -25,6 +25,7 @@ import Simulation.FiringStimulus
 import Simulation.Options (simOptions, optBackend, optDuration, BackendOptions(..))
 import Simulation.Run (runSim)
 import Simulation.STDP
+import Simulation.STDP.Options (stdpOptions)
 import Types
 
 
@@ -81,7 +82,11 @@ runRegression rtest@(RegressionTest nm _ nf fs px pf be cs rs stdp) f = do
     setStdGen $ mkStdGen $ rs -- for stimulus
     runSim simOpts net px pf fs f (defaults cudaOptions) stdpConf
     where
-        stdpConf = STDPConf (isJust stdp) 20 20 1.0 0.8 1000.0 stdp
+        stdpConf = (defaults stdpOptions) {
+                        stdpEnabled = isJust stdp,
+                        stdpMaxWeight = 1000.0,
+                        stdpFrequency = stdp
+                    }
         simOpts  = (defaults $ simOptions LocalBackends) {
                 optBackend = be,
                 optDuration = Until cs

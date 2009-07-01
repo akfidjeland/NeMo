@@ -83,7 +83,9 @@ struct RuntimeData
 
 	//! \see ::enableSTDP
 	void enableSTDP(int tauP, int tauD,
-			float alphaP, float alphaD, float maxWeight);
+			float* potentiation,
+			float* depression,
+			float maxWeight);
 
     float stdpMaxWeight() const;
 
@@ -113,10 +115,11 @@ struct RuntimeData
 
 		bool m_usingSTDP;
 
+		//! \todo remote tau parameters, can be inferred from vectors
 		int m_stdpTauP;
 		int m_stdpTauD;
-		float m_stdpAlphaP;
-		float m_stdpAlphaD;
+		std::vector<float> m_stdpPotentiation;
+		std::vector<float> m_stdpDepression;
 		float m_stdpMaxWeight;
 
         struct timeval m_start; // set before first step

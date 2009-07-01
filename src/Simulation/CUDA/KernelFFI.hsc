@@ -25,6 +25,7 @@ import Data.Array.Storable (StorableArray, withStorableArray)
 import Foreign.C.Types
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import Foreign.Marshal.Utils (fromBool)
+import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr
 
 import Simulation.CUDA.Address
@@ -151,19 +152,23 @@ foreign import ccall unsafe "step"
 
 foreign import ccall unsafe "enableSTDP" c_enableSTDP
     :: Ptr CuRT
-    -> CInt     -- ^ tau_p : maximum time for potentiation
-    -> CInt     -- ^ tau_d : maximum time for depression
-    -> CFloat   -- ^ alpha_p: multiplier for potentiation
-    -> CFloat   -- ^ alpha_d: multiplier for depression
+    -> CInt       -- ^ p_len : maximum time for potentiation
+    -> CInt       -- ^ d_len : maximum time for depression
+    -> Ptr CFloat -- ^ lookup-table values (dt -> float) for potentiation, length: p_len
+    -> Ptr CFloat -- ^ lookup-table values (dt -> float) for depression, length: d_len
     -> CFloat   -- ^ max weight: limit for excitatory synapses
     -> IO ()
 
-enableSTDP rt tauP tauD alphaP alphaD maxWeight =
-    withForeignPtr rt $ \rtptr ->
-    c_enableSTDP rtptr
-        (fromIntegral tauP) (fromIntegral tauD)
-        (realToFrac alphaP) (realToFrac alphaD)
+enableSTDP rt potentiationLUT depressionLUT maxWeight = do
+    let p_len = fromIntegral $ length potentiationLUT
+    let d_len = fromIntegral $ length depressionLUT
+    withForeignPtr rt         $ \rtptr -> do
+    withArray potentiationLUT $ \p_ptr -> do
+    withArray depressionLUT   $ \d_ptr -> do
+    c_enableSTDP rtptr p_len d_len
+        p_ptr d_ptr
         (realToFrac maxWeight)
+
 
 
 

@@ -185,11 +185,11 @@ configureDevice(RTDATA rtdata)
 		configurePartition(cr1_maxSynapsesPerDelay,
 			rtdata->cm(CM_L1)->r_maxSynapsesPerDelay());
 		if(rtdata->usingSTDP()) {
-			configureStdp(
+			configureSTDP(
 				rtdata->m_stdpTauP,
 				rtdata->m_stdpTauD,
-				rtdata->m_stdpAlphaP,
-				rtdata->m_stdpAlphaD);
+				rtdata->m_stdpPotentiation,
+				rtdata->m_stdpDepression);
 		}
         rtdata->setStart();
 	}

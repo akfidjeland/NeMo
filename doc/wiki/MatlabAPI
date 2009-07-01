@@ -64,7 +64,7 @@ To run for 1000ms applying STDP every 50ms, do something like the following
 
     nsSetHost('axel01.doc.ic.ac.uk');
     F = 30;
-    nsEnableSTDP(20, 20, 1.0, 0.8, F);
+    nsEnableSTDP(potentiation(1.0, 20), depression(0.8, 20), F);
     iterations = 4;
     nsStart(a, b, c, d, u, v, spost, sdelays, sweights, iterations, F);
     for i=1:50:1000
@@ -73,6 +73,9 @@ To run for 1000ms applying STDP every 50ms, do something like the following
         nsApplySTDP(1.0);
     end
     nsTerminate;
+
+The functions ``potentiation`` and ``depression`` produce the lookup-tables
+that define the STDP function. See ``nsEnableSTDP`` for expexted format. 
 
 .. For small networks (a few thousands of neurons), it might be interesting to run
 .. a number of networks in parallel, as otherwise the simulation backend will be
