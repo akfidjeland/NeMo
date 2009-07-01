@@ -102,7 +102,10 @@ size = length . concat . Map.elems . smap
 
 
 maxDelay :: Axon s -> Delay
-maxDelay = fst . Map.findMax . smap
+maxDelay (Axon ss) =
+    if Map.null ss
+        then 0
+        else fst $ Map.findMax $ ss
 
 
 {- | Add a synapse -}
