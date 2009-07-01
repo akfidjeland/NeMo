@@ -102,11 +102,16 @@ end
 
 
 
-% Check whether all delays are positive
+% Check whether all delays are positive and within max
 function checkDelays(delays)
 	if ~all(all(delays >= 1))
 		oob = delays(find(delays < 1));
 		oob(1:min(10,size(oob,1)))
 		error('Delay matrix contains out-of-bounds members (<1). The first 10 are shown above')
+	end
+	if ~all(all(delays < 32))
+		oob = delays(find(delays >= 32));
+		oob(1:min(10,size(oob,1)))
+		error('Delay matrix contains out-of-bounds members (>=32). The first 10 are shown above')
 	end
 end
