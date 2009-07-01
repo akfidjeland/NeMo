@@ -71,6 +71,9 @@ CUDA backend
 - It should be possible to recover from a firing output buffer overflow. The
   device needs to be able to detect the overflow, though, and then just stop
   writing.
+- If we use a very large amount of memory the CUDA backend will fail with a
+  non-descript error (in SMatrix ctor), produce some sensible error message
+- Add reporting of memory usage
 
 Haskell core
 ------------

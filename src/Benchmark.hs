@@ -62,7 +62,6 @@ inN r = mkNeuron2 (0.02 + 0.08*r) b c 2.0 u v thalamic
         thalamic = mkThalamic 2.0 r
 
 
-
 -------------------------------------------------------------------------------
 -- Benchmark: clustered
 -------------------------------------------------------------------------------
@@ -125,7 +124,12 @@ clusteredTargets pre cc cs m p r = l0 ++ l1
         l0_count = round $ (realToFrac m) * p
         l1_count = m - l0_count
         l0 = take l0_count $ randomRs (base, base+cs-1) r1
-        l1 = take l1_count $ randomRs (0, cc*cs-1) r2
+        {- The L1 conections should /not/ point to current cluster -}
+        -- l1 = take l1_count $ randomRs (0, cc*cs-1) r2
+        l1 = if cc > 1
+                then take l1_count $ map adjust $ randomRs (0, (cc-1)*cs-1) r2
+                else []
+        adjust i = if i >= base then i+cs else i
 
 
 -------------------------------------------------------------------------------
@@ -211,26 +215,22 @@ data Run = Timing | Data deriving (Eq)
 cudaOpts run = (defaults cudaOptions) { optProbeDevice = (run == Data) }
 
 
-runBenchmark :: SimulationOptions -> Benchmark -> IO ()
-runBenchmark simOpts bm = do
+runBenchmark :: SimulationOptions -> STDPConf -> Benchmark -> IO ()
+runBenchmark simOpts stdpOpts bm = do
     -- TODO: average over multiple runs
     let net = bmNet bm `using` rnf
         rts0 = initRTS net
-    rts1 <- runBenchmarkTiming simOpts net bm rts0
+    rts1 <- runBenchmarkTiming simOpts stdpOpts net bm rts0
     hPutStrLn stderr $ show rts1 -- intermediate results
-    rts2 <- runBenchmarkData simOpts net bm rts1
+    rts2 <- runBenchmarkData simOpts stdpOpts net bm rts1
     putStrLn $ rtsCvs (bmName bm) rts2
     let throughput = (rtsSpikes rts2) * 1000 `div` (rtsElapsed rts2)
     hPutStrLn stderr $ "Throughput: " ++ show (throughput `div` 1000000) ++ "M"
 
-runBenchmarkTiming simOpts net bm rts = do
-    -- TODO: don't read data back!
+runBenchmarkTiming simOpts stdpOpts net bm rts = do
     (Simulation sz run elapsed resetTimer close) <-
-        -- TODO: add STDP configuration
         initSim simOpts net All (Firing :: ProbeFn IzhState) False 
-            (cudaOpts Timing) (defaults stdpOptions)
-        -- initSim simOpts net All (Firing :: ProbeFn IzhState) False 
-        --    (cudaOpts Timing) (defaults stdpOptions)
+            (cudaOpts Timing) stdpOpts
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
     let stim = take initCycles $ map (\f -> (f, STDPIgnore)) fstim
@@ -254,9 +254,10 @@ runBenchmarkTiming simOpts net bm rts = do
 
 initCycles = 1000
 
-runBenchmarkData simOpts net bm rts = do
+runBenchmarkData simOpts stdpOpts net bm rts = do
     (Simulation sz run elapsed resetTimer close) <-
-        initSim simOpts net All (Firing :: ProbeFn IzhState) False (cudaOpts Data) (defaults stdpOptions)
+        initSim simOpts net All (Firing :: ProbeFn IzhState) False 
+            (cudaOpts Data) stdpOpts
     -- TODO: factor out stimulus
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
@@ -316,7 +317,6 @@ data BenchmarkOptions = BenchmarkOptions {
         optM           :: Int,
         optP           :: Float,
         -- TODO: control cycles as well
-        optBM          :: Int -> Int -> Float -> Benchmark,
         optPrintHeader :: Bool
     }
 
@@ -324,19 +324,16 @@ benchmarkDefaults = BenchmarkOptions {
         optN           = 1,
         optM           = 100,
         optP           = 0.9,
-        -- optBM          = localBenchmark,
-        --optBM          = uniformBenchmark,
-        optBM          = clusteredBenchmark,
         optPrintHeader = False
     }
 
 
 createBenchmark :: BenchmarkOptions -> Benchmark
-createBenchmark o = (optBM o) (optN o) (optM o) (optP o)
+createBenchmark o = clusteredBenchmark (optN o) (optM o) (optP o)
 
 
 benchmarkDescr = [
-        Option ['M'] ["synapses"]
+        Option ['m'] ["synapses"]
             (ReqArg (\a' o -> optRead "synapses" a' >>= \a -> return o{ optM = a }) "INT")
             "Number of synapses per neuron",
 
@@ -349,7 +346,7 @@ benchmarkDescr = [
             (ReqArg (\a o -> return o { optP = read a }) "FLOAT")
             "Probability of local connections",
 
-        Option [] ["print-header"]
+        Option ['H'] ["print-header"]
             (NoArg (\o -> return o { optPrintHeader=True }))
             "Print header for runtime statistics"
     ]
@@ -363,17 +360,13 @@ optRead optName s =
 benchmarkOptions = OptionGroup "Benchmark options" benchmarkDefaults benchmarkDescr
 
 
-
-
-
 main = do
     (args, commonOpts) <- startOptProcessing
     simOpts <- processOptGroup (simOptions LocalBackends) args
     bmOpts  <- processOptGroup benchmarkOptions args
+    stdpOpts<- processOptGroup stdpOptions args
     endOptProcessing args
     when (optPrintHeader bmOpts) $ do
         putStrLn rtsCvsHeader
         exitWith ExitSuccess
-    -- TODO: select benchmark from command-line
-    -- TODO: control printing of header from the command-line
-    runBenchmark simOpts (createBenchmark bmOpts)
+    runBenchmark simOpts stdpOpts (createBenchmark bmOpts)

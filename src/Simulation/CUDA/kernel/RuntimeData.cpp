@@ -47,8 +47,8 @@ RuntimeData::RuntimeData(
 			DIV_CEIL(maxPartitionSize, 32),
 			false);
 
-    //! \todo seed properly from outside function
-    thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
+	//! \todo seed properly from outside function
+	thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
 
 	m_cm[CM_L0] = new ConnectivityMatrix(
             partitionCount,

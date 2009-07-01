@@ -32,10 +32,7 @@ set either in the GUI or in the terminal::
 The network is generated on the client side. The user should generate n-vectors
 ``a``, ``b``, ``c``, ``d``, ``u``, and ``v`` that describes the neuron
 population. The connectivity is described using n-by-s matrices specifying the
-postsynaptic neuron indices and synaptic weights. The delays are described
-using an n-vector of cell arrays. Each cell corresponds to a single delay, and
-is filled with the relevant synapse indices (i.e. the column in the
-weight/postindex matrices).
+postsynaptic neuron indices, synaptic weights, and delays.
 
 A simple script which connects to a server, runs for 60 s with just a single
 firing stimulus, processing the returned firing data with the function ``foo``::

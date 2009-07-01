@@ -33,6 +33,8 @@ SMatrix<T>::SMatrix(
 
 	/* Set all space including padding to fixed value. This is important as
 	 * some warps may read beyond the end of these arrays. */
+	/*! \todo this may fail if we have allocated an inordinate amount of space
+	 * for synapses. Report this error. */
 	CUDA_SAFE_CALL(cudaMemset2D(m_deviceData, bytePitch, 0x0, bytePitch, height));
 
 	//! \todo may need a default value here
