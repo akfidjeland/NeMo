@@ -16,13 +16,15 @@ import Text.Printf
 
 import Construction hiding (excitatory, inhibitory, random)
 import Construction.Neuron hiding (synapseCount)
+import qualified Construction.Neurons as Neurons (fromList)
 import Options
 import Simulation.Common
 import Simulation.CUDA.Options (cudaOptions, optProbeDevice)
 import Simulation.FiringStimulus
 import Simulation.Options (simOptions, optBackend, SimulationOptions, BackendOptions(..))
 import Simulation.Run (initSim)
-import Simulation.STDP (STDPApplication(..), STDPConf(..), stdpOptions)
+import Simulation.STDP (STDPApplication(..), STDPConf(..))
+import Simulation.STDP.Options (stdpOptions)
 import Types
 import qualified Util.List as L (chunksOf)
 
@@ -72,7 +74,7 @@ clusteredNetwork seed cc m p = Network ns t
         r  = mkStdGen seed -- thread RNG through whole program
         cs = 1024
         n  = cc * cs
-        ns = Map.fromList $ take n $
+        ns = Neurons.fromList $ take n $
                 clusteredNeurons (exN, exSynapse) (inN, inSynapse) 0 cc cs m p r
         t  = Node 0 -- the topology is not used after construction
 

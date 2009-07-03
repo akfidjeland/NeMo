@@ -31,7 +31,7 @@ import qualified Data.Map as Map
 
 import Construction.Izhikevich (IzhNeuron, IzhState)
 import qualified Construction.Network as Net
-import qualified Construction.Neurons as Neurons (Neurons, empty, size)
+import qualified Construction.Neurons as Neurons (Neurons, empty, toList, size)
 import qualified Construction.Neuron as N
 import Construction.Synapse
 import Simulation.CUDA.Address
@@ -216,7 +216,7 @@ cuNetwork att stdp pcount psize ns = runST $ do
             maxL1RPitch = l1r
         }
     where
-        cns = Map.toList ns
+        cns = Neurons.toList ns
         empty = CuNet Map.empty 0 0 0 0 0
 
 

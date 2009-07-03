@@ -13,7 +13,6 @@ module Network.ClientFFI (
 
 import Control.Exception (handle)
 import Data.Binary
-import qualified Data.Map as Map (fromList)
 import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Marshal.Array
@@ -23,6 +22,7 @@ import Foreign.Storable
 import Network.Socket
 
 import Construction.Neuron
+import qualified Construction.Neurons as Neurons (fromList)
 import Construction.Izhikevich
 import Construction.Network
 import Construction.Synapse
@@ -176,7 +176,7 @@ socketFD fd = mkSocket fd AF_INET Stream defaultProtocol Connected
 
 createNetwork n' m' a b c d u v st sd sw = do
     ns <- go 0 0
-    return $! Network (Map.fromList ns)  t
+    return $! Network (Neurons.fromList ns)  t
     where
         n = fromIntegral n'
         m = fromIntegral m'
@@ -216,7 +216,14 @@ peekNeuron n_idx s_idx m a b c d u v st sd sw = do
 
 
 {- | Get an axon out of c-array -}
-peekAxon :: Idx -> Int -> Int -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> IO [Synapse Static]
+peekAxon
+    :: Idx
+    -> Int
+    -> Int
+    -> Ptr CInt
+    -> Ptr CInt
+    -> Ptr CDouble
+    -> IO [Synapse Static]
 peekAxon source i m t d w = go i (i+m)
     where
         go i end
