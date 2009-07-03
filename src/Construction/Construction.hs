@@ -54,13 +54,13 @@ module Construction.Construction (
 ) where
 
 import Test.QuickCheck(generate, Gen)
-import qualified Data.Map as Map
 import System.Random(mkStdGen)
 
 import Types
 import Construction.Connectivity
 import Construction.Network
 import Construction.Neuron
+import qualified Construction.Neurons as Neurons (union, fromList)
 import Construction.Topology
 import Construction.Synapse
 
@@ -78,14 +78,12 @@ cluster
 cluster subnets fs = do
     subnets' <- sequence subnets
     let offsets = scanl (+) 0 (map size subnets')
-    let relocated = zipWith relocate offsets subnets'
-    let ns' = foldl (Map.unionWithKey uErr) Map.empty $ map neurons relocated
-    let ts' = map topology relocated
+        relocated = zipWith relocate offsets subnets'
+        ns' = Neurons.union $ map neurons relocated
+        ts' = map topology relocated
     f $ return $ Network ns' (Cluster ts')
     where
         f = foldr (.) id fs
-        uErr k x y = error $ "cluster: duplicate key (" ++ show k
-                ++ ") when merging neurons:\n" ++ show x ++ "\n" ++ show y
 
 
 {- | Return a cluster of subnets each of which is a clone of the others. This
@@ -98,20 +96,18 @@ clone n subnet fs = do
         -- TODO: share all the following code with cluster
         -- offsets = scanl (+) 0 (map size subnets)
         relocated = zipWith relocate offsets subnets
-        ns' = foldl (Map.unionWithKey uErr) Map.empty $ map neurons relocated
+        ns' = Neurons.union $ map neurons relocated
         ts' = map topology relocated
     f $ return $ Network ns' (Cluster ts')
     where
         f = foldr (.) id fs
-        uErr k x y = error $ "cluster: duplicate key (" ++ show k
-                ++ ") when merging neurons:\n" ++ show x ++ "\n" ++ show y
 
 
 {- | Return a cluster of neurons connected according to connector list -}
 clusterN :: [Gen n] -> [Connector n s] -> Gen (Network n s)
 clusterN ns fs = do
     ns' <- sequence ns
-    f $ return $ Network (Map.fromList (zip [0..] (map unconnected ns'))) t
+    f $ return $ Network (Neurons.fromList (zip [0..] (map unconnected ns'))) t
     where
         f = foldr (.) id fs
         t = Cluster $ map Node [0..(length ns - 1)]

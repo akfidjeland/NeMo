@@ -9,6 +9,7 @@ import qualified Data.Set as Set
 import Control.Monad
 
 import Construction.Network
+import qualified Construction.Neurons as Neurons (size, neurons, indices)
 import Construction.Neuron (NeuronProbe, mergeProbeFs, ndata)
 import Construction.Spiking
 import Construction.Synapse
@@ -107,10 +108,10 @@ data NetworkRT n s = NetworkRT {
 -- pre: neurons in ns are numbered consecutively from 0-size ns-1.
 mkRuntimeN ns =
     if validIdx ns
-        then newListArray (0, Map.size ns - 1) (map ndata (Map.elems ns))
+        then newListArray (0, Neurons.size ns - 1) (map ndata (Neurons.neurons ns))
         else error "mkRuntimeN: Incorrect indices in neuron map"
     where
-        validIdx ns = all (uncurry (==)) (zip [0..] (Map.keys ns))
+        validIdx ns = all (uncurry (==)) (zip [0..] (Neurons.indices ns))
 
 
 mkRuntime net@(Network ns _) = do

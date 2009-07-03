@@ -109,11 +109,12 @@ instance (NFData n, NFData s) => NFData (Network n s) where
     rnf (Network n t) = rnf n `seq` rnf t
 
 
-printConnections :: (Show s) => Network n s -> IO ()
-printConnections net =
-    mapM_ (uncurry Neuron.printConnections) $ Map.assocs $ neurons net
+-------------------------------------------------------------------------------
+-- Printing
+-------------------------------------------------------------------------------
 
+printConnections :: (Show s) => Network n s -> IO ()
+printConnections = Neurons.printConnections . neurons
 
 printNeurons :: (Show n, Show s) => Network n s -> IO ()
-printNeurons net = mapM_ f $ Map.assocs $ neurons net
-    where f (idx, n) = putStrLn $ show idx ++ " " ++ show n
+printNeurons = Neurons.printNeurons . neurons

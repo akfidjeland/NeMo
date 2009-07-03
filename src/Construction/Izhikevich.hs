@@ -5,6 +5,7 @@
 
 
 module Construction.Izhikevich where
+-- TODO: export list
 
 import Control.Parallel.Strategies (NFData, rnf)
 import Control.Monad (liftM)
