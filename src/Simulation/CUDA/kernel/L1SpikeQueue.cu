@@ -31,8 +31,8 @@ STDP_FN(updateCurrent)(
 		uint32_t* s_recentFiring,
 		size_t pitch32,
 #endif
-		uint2* g_sq,
-		size_t sqPitch,
+		uint2* g_sb,
+		size_t sbPitch,
 		float* s_current)
 {
 #define BANKS 16
@@ -47,9 +47,9 @@ STDP_FN(updateCurrent)(
 	//! \todo conditional load from global memory
 
 	uint targetPartition = CURRENT_PARTITION;
-	size_t base = sbBase(sqPitch, sourcePartition, targetPartition, readBufferIdx);
+	size_t base = g_sbBase(sbPitch, sourcePartition, targetPartition, readBufferIdx);
 	//! \todo load by 32-bit values
-	uint2 spike = g_sq[base + spikeIdx];
+	uint2 spike = g_sb[base + spikeIdx];
 
 	/* We don't need to clear the data from the spike buffer,
 	 * as long as the head is cleared. \see loadAndClearBufferHeads */
@@ -121,8 +121,8 @@ STDP_FN(gatherL1Spikes_JIT_)(
 		size_t pitch32,
 #endif
 		uint readBufferIdx,
-		uint2* g_sq,
-		size_t sqPitch,
+		uint2* g_sb,
+		size_t sbPitch,
 		uint* g_heads,
         size_t headPitch,
 		float* s_current)
@@ -142,7 +142,7 @@ STDP_FN(gatherL1Spikes_JIT_)(
 					s_recentFiring,
 					pitch32,
 #endif
-					g_sq, sqPitch, s_current);
+					g_sb, sbPitch, s_current);
 		}
 	}
 	__syncthreads();
@@ -164,8 +164,8 @@ STDP_FN(deliverL1Spikes_JIT)(
 	// L1 spike queue
     //! \todo allow more than 32 partitions (by splitting L1CM)
 	uint2* s_outbuf,        // 16 words of buffer per target partition
-	uint2* g_sq,
-	size_t sqPitch,
+	uint2* g_sb,
+	size_t sbPitch,
 	uint* g_heads,
 	size_t headPitch,
 	uint16_t* s_firingIdx,
@@ -225,8 +225,8 @@ STDP_FN(deliverL1Spikes_JIT)(
 #endif
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
-		s_buffersPerPartition = buffersPerPartition();
-		s_bufferCount = bufferCount();
+		s_buffersPerPartition = s_sbBuffersPerPartition();
+		s_bufferCount = s_sbCount();
 	}
 	__syncthreads();
 
@@ -310,7 +310,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 						doCommit = true;
 						target = gf1_address[synapseAddress];
 						bufferIdx =
-							outputBufferIdx(targetPartition(target),
+							s_sbBufferIdx(targetPartition(target),
 								s_buffersPerPartition);
 						bufferOffset = atomicAdd(s_sheads + bufferIdx, 1);
 					}
@@ -392,7 +392,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 					for(uint flush_i=0; flush_i < s_flushCount; flush_i += BUFFERS_PER_BLOCK) {
 						uint i = flush_i + threadIdx.x / THREADS_PER_BUFFER;
 						bool validBuffer = i < s_flushCount;
-						flushSpikeBuffer(
+						s_sbFlush(
 								validBuffer,
 								s_flushPartition[i],
 								writeBufferIdx,
@@ -400,7 +400,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 								BUFFER_SZ, // flush whole buffer
 								s_gheads,
 								s_outbuf,
-								g_sq, sqPitch);
+								g_sb, sbPitch);
 					}
 				} while(s_flushCount);
 				/* ensure every thread has left the loop, before re-entering it */
@@ -409,9 +409,9 @@ STDP_FN(deliverL1Spikes_JIT)(
 		}
 	}
 
-	flushAllSpikeBuffers(
+	s_sbFlushAll(
 			s_buffersPerPartition,
 			writeBufferIdx,
-			headPitch, g_heads, s_gheads, s_sheads, s_outbuf, g_sq, sqPitch);
+			headPitch, g_heads, s_gheads, s_sheads, s_outbuf, g_sb, sbPitch);
 }
 
