@@ -79,7 +79,7 @@ cluster subnets fs = do
     subnets' <- sequence subnets
     let offsets = scanl (+) 0 (map size subnets')
         relocated = zipWith relocate offsets subnets'
-        ns' = Neurons.union $ map neurons relocated
+        ns' = Neurons.union $ map networkNeurons relocated
         ts' = map topology relocated
     f $ return $ Network ns' (Cluster ts')
     where
@@ -96,7 +96,7 @@ clone n subnet fs = do
         -- TODO: share all the following code with cluster
         -- offsets = scanl (+) 0 (map size subnets)
         relocated = zipWith relocate offsets subnets
-        ns' = Neurons.union $ map neurons relocated
+        ns' = Neurons.union $ map networkNeurons relocated
         ts' = map topology relocated
     f $ return $ Network ns' (Cluster ts')
     where
