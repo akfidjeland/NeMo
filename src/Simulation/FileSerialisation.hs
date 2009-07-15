@@ -17,14 +17,15 @@ import Simulation.FiringStimulus
 {- | Magic number that identifies the file encoding. 'decode' tends to happily
  - consume garbage data untill it runs out of stack-space, so its's desirable
  - to detect invalid data early. This magic number should be modified if the
- - serialisation routines are changed. -}
+ - serialisation routines are changed, which includes any changes to the
+ - network data types. -}
 type MagicNumber = String
 
 simMagic :: MagicNumber
-simMagic = "NSIM001SIM"
+simMagic = "NEMO001SIM"
 
 netMagic :: MagicNumber
-netMagic = "NSIM001NET"
+netMagic = "NEMO001NET"
 
 
 data SimulationState n s = SimulationState {

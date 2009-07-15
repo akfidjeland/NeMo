@@ -71,7 +71,7 @@ relocate base = withTerminals (+base)
 
 {- | Return a cluster of subnets transformed according to connector list -}
 cluster
-    :: (Show n)
+    :: (Show n, Show s)
     => [Gen (Network n s)]
     -> [Connector n s]
     -> Gen (Network n s)
@@ -88,7 +88,12 @@ cluster subnets fs = do
 
 {- | Return a cluster of subnets each of which is a clone of the others. This
  - should be faster, as we don't need to thread RNG through the whole thing. -}
-clone :: (Show n) => Int -> Network n s -> [Connector n s] -> Gen (Network n s)
+clone
+    :: (Show n, Show s)
+    => Int
+    -> Network n s
+    -> [Connector n s]
+    -> Gen (Network n s)
 clone n subnet fs = do
     let subnets = replicate n subnet
         sz = size subnet

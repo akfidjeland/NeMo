@@ -15,68 +15,80 @@
 module Construction.Axon (
         -- * Construct
         Axon(..),
-        fromList,
         unconnected,
+        fromList,
         -- * Query
         synapses,
         synapsesByDelay,
         size,
         maxDelay,
+        targets,
         -- * Modify
         connect,
         connectMany,
         disconnect,
         disconnectM,
         replaceM,
-        withTargets,
         -- * Traverse
-        foldTarget,
+        withTargets,
+        withSynapses,
         -- * Pretty-print
         printConnections,
-        -- * Internal
-        strip
+        -- * Internals, exposed for testing
+        present
     ) where
 
 
 import Control.Monad (forM_, liftM)
 import Data.Binary
-import Data.List (foldl', delete, find, intercalate)
+import Data.List (foldl', intercalate, find, delete)
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Control.Parallel.Strategies (NFData, rnf, using)
 
--- import Construction.Synapse (Synapse(..), delay)
 import Construction.Synapse (Synapse(..), delay, Static)
-import Types (Idx, Delay)
+import Types (Source, Target, Delay)
 import qualified Util.List as L (replace)
+import qualified Util.Assocs as Assocs (mapElems)
 
 
 {- Synapses are stored sorted by delay, since this is how the backend will need
  - to access them. We only need the postsynaptic index and the "payload" (which
- - varies depending on synapse type. The delay and the presynaptic is stored in
- - the collection data structure. -}
+ - varies depending on synapse type). The delay and the source neuron index is
+ - stored in the collection data structure, rather than in the leaf nodes. -}
 
-newtype Axon s = Axon (Map.Map Delay [SData s]) deriving (Eq, Show)
-
-smap (Axon ss) = ss
-
-{- Some neuron data is stored in the data structure, rather than in the nodes,
- - so we use a reduced representation. -}
-type SData s = (Idx, s)
+newtype Axon s = Axon {
+        smap :: Map.Map Delay (AxonD s)
+    } deriving (Eq)
 
 
-{- | Extract only the synapse data used stored in the leaf nodes -}
-strip :: Synapse s -> SData s
-strip s = tgt `seq` pl `seq` (tgt, pl)
+{- All synapses with a specific delay are stored indexed by the target neruon.
+ -
+ - If two synapses have the same source, target, and delay, they will end up in
+ - the same leaf node. It may or may not be desirable to merge such parallel
+ - synapses. With straightforward static synapses, it's probably desirable to
+ - merge these (to decrease synapse count, spike deliveries, and the
+ - possibility of collisions in the current update on the backend), although
+ - the network should produce the same result in either case. For plastic
+ - synapses, however, merging synapses could affect the learning, especially,
+ - if an additive scheme is used for potentiation/depression.
+ -
+ - The treatment of parallel synapses really ought to be specified by the user.
+ -}
+
+type AxonD s = Map.Map Target [s]
+
+
+{- | Return a list of target/synapse pairs for a bundle of synapses with a
+ - fixed delay -}
+synapsesD = concat . map expand . Map.assocs
     where
-        tgt = target s
-        pl  = sdata s
+        expand (tgt, ss) = map ((,) tgt) ss
 
 
-{- | Create axon from a list of synapses -}
--- fromList :: (Synaptic s ix r) => [Synapse s] -> Axon s
-fromList :: [Synapse s] -> Axon s
-fromList = foldl' (flip connect) unconnected
+{- | Return the number of synapses in a synapse bundle with a fixed delay -}
+sizeD :: AxonD s -> Int
+sizeD = Map.fold (\xs a -> a + length xs) 0
 
 
 {- | Return axon with no synapses -}
@@ -84,21 +96,35 @@ unconnected :: Axon s
 unconnected = Axon Map.empty
 
 
-{- | Return all synapses, not ordered -}
-synapses :: Idx -> Axon s -> [Synapse s]
+{- | Create axon from a list of synapses -}
+fromList :: [Synapse s] -> Axon s
+fromList = foldl' (flip connect) unconnected
+
+
+{- | Return all synapses, not ordered. The source must be supplied since a
+ - stand-alone synapse should contain the source, and the source is not present
+ - in the data.  -}
+synapses :: Source -> Axon s -> [Synapse s]
 synapses src axon = concat $ map wrap $ synapsesByDelay axon
     where
         wrap (d, ss) = map (\(tgt, s) -> Synapse src tgt d s) ss
 
 
+{- | Return all synapses without the source -}
+strippedSynapses :: Axon s -> [(Target, Delay, s)]
+strippedSynapses axon = concat $ map wrap $ synapsesByDelay axon
+    where
+        wrap (d, ss) = map (\(tgt, s) -> (tgt, d, s)) ss
+
+
 {- | Return all synapses, ordered by delay -}
-synapsesByDelay :: Axon s -> [(Delay, [(Idx, s)])]
-synapsesByDelay (Axon ss) = Map.toList ss
+synapsesByDelay :: Axon s -> [(Delay, [(Target, s)])]
+synapsesByDelay (Axon ss) = Assocs.mapElems synapsesD $ Map.toList ss
 
 
 {- | Return number of synapses -}
 size :: Axon s -> Int
-size = length . concat . Map.elems . smap
+size = sum . map sizeD . Map.elems . smap
 
 
 maxDelay :: Axon s -> Delay
@@ -108,13 +134,27 @@ maxDelay (Axon ss) =
         else fst $ Map.findMax $ ss
 
 
-{- | Add a synapse -}
-connect :: Synapse s -> Axon s -> Axon s
-connect s (Axon ss) = s' `seq` Axon $ Map.alter (go s') (delay s) ss
+{- | Return list of all targets, including duplicates -}
+targets :: Axon s -> [Target]
+targets (Axon ss) = concatMap targetsD $ Map.elems ss
     where
-        s' = strip s
-        go s'' Nothing   = Just [s'']
-        go s'' (Just ss) = let ss' = (s'':ss) in ss' `seq` Just ss'
+        targetsD ssD = concatMap targetsDT $ Map.assocs ssD
+        targetsDT (tgt, ss) = replicate (length ss) tgt
+
+
+{- | Add a synapse to axon. Duplicates are kept -}
+connect = connectWith (++)
+
+
+{- | Add a synapse with a specified combining function to use in case two
+ - synapses have the same source, target, and delay -}
+connectWith :: ([s] -> [s] -> [s]) -> Synapse s -> Axon s -> Axon s
+connectWith f s (Axon ss) =
+    Axon $ Map.alter (go (target s) (sdata s)) (delay s) ss
+    where
+        go t s Nothing = Just $ Map.singleton t [s]
+        go t s (Just ss) =
+           let ss' = Map.insertWith f t [s] ss in ss' `seq` Just ss'
 
 
 {- | Add a group of synapses -}
@@ -124,12 +164,18 @@ connectMany ss axon = foldl' (flip connect) axon ss
 
 {- | Check if synapse is part of an axon -}
 present :: (Eq s) => Synapse s -> Axon s -> Bool
-present s (Axon ss) = isJust (find (==(strip s)) =<< Map.lookup (delay s) ss)
+present s (Axon ss) = isJust found
+   where
+       found = find (== (sdata s)) =<< Map.lookup (target s) =<< Map.lookup (delay s) ss
 
 
 {- | Remove the first matching synapse -}
 disconnect :: (Eq s) => Synapse s -> Axon s -> Axon s
-disconnect s (Axon ss) = Axon $ Map.adjust (delete (strip s)) (delay s) ss
+disconnect s a@(Axon ss) =
+    -- TODO: do lookup and delete in one go
+    if present s a
+        then Axon $ Map.adjust (Map.adjust (delete (sdata s)) (target s)) (delay s) ss
+        else a
 
 
 {- | Remove the first matching synapse, reporting error in monad if no match is
@@ -154,28 +200,37 @@ replaceM old new axon =
 
 
 {- | Map function over all target indices -}
-withTargets :: (Idx -> Idx) -> Axon s -> Axon s
-withTargets f (Axon ss) = Axon $ Map.map (map (\(t, s) -> (f t, s))) ss
-
-
-{- | Fold function over all target indices -}
-foldTarget :: (a -> Idx -> a) -> a -> Axon s -> a
-foldTarget f x (Axon ss) = Map.fold (flip (foldl' f')) x ss
+withTargets :: (Target -> Target) -> Axon s -> Axon s
+withTargets f (Axon ss) = Axon $ Map.map go ss
     where
-        f' x s = f x (fst s)
+        -- TODO: we should use same merging scheme as in 'connect'
+        go  = Map.mapKeysWith err f
+        err = error "Axon.withTargets: updated axon contains duplicate targets"
+
+
+{- | Map function over all synapse data -}
+withSynapses :: (s -> s) -> Axon s -> Axon s
+withSynapses f (Axon ss) = Axon $ Map.map (Map.map (map f)) ss
 
 
 -- TODO: make instance of Show instead
-printConnections :: (Show s) => Idx -> Axon s -> IO ()
+printConnections :: (Show s) => Source -> Axon s -> IO ()
 printConnections src axon = do
     forM_ (synapsesByDelay axon) $ \(d, ss) -> do
         forM_ ss $ \(tgt, s) -> do
             putStrLn $ intercalate " " $ [show src, show tgt, show d, show s]
 
 
+instance (Show s) => Show (Axon s) where
+    {- Print one synapse per line -}
+    showsPrec _ a s = showSynapses (strippedSynapses a) s
+        where
+            showSynapses [] = id
+            showSynapses (s:ss) = shows s . showChar '\n' . showSynapses ss
+
+
 instance (Binary s) => Binary (Axon s) where
     put (Axon ss) = put (Map.size ss) >> mapM_ put (Map.toAscList ss)
-    -- get = liftM (Axon . Map.fromDistinctAscList) get
     get = do
         ss <- liftM Map.fromAscList get
         -- TODO: could force evaluation of list elements instead

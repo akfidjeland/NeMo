@@ -56,7 +56,7 @@ fromList :: [(Idx, Neuron.Neuron n s)] -> Neurons n s
 fromList = Neurons . Map.fromList
 
 
-union :: (Show n) => [Neurons n s] -> Neurons n s
+union :: (Show n, Show s) => [Neurons n s] -> Neurons n s
 union ns = Neurons $ foldl (Map.unionWithKey err) Map.empty $ map ndata ns
     where
         err k x y = error $ "Neurons.union: duplicate key (" ++ show k
