@@ -6,7 +6,7 @@
 # Author: Andreas Fidjeland
 #
 
-m_src := nsSetHost nsSetPort nsStart nsRun nsTerminate nsEnableSTDP nsDisableSTDP nsApplySTDP
+m_src := nsSetHost nsSetPort nsStart nsRun nsTerminate nsEnableSTDP nsDisableSTDP nsApplySTDP nsGetWeights
 mex_src_dir := src/client-api
 client_dist := client-dist
 build_dir := $(client_dist)/build
