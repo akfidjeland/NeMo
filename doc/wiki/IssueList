@@ -79,6 +79,9 @@ Haskell core
 ------------
 
 - add simulation monad. It should be possible to draw upon random numbers 
+- improve the reporting of failed tests. If we compare two networks and they
+  somehow differ we'll get an enourmous dump which is next-to-impossible to make
+  sense of. Do a recursive descent keeping track of the current context.
 - make sure we correctly compute the max buffer size in allocRT. Currently this
   is just set to a large number. Should determine how many synapses cross
   partition bounadry. It would make sense to only allocate this after CM has
