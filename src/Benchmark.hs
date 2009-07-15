@@ -37,12 +37,15 @@ import qualified Util.List as L (chunksOf)
 isExcitatory idx = idx `mod` 1024 < 820
 
 -- TODO: randomise delays here!
-exSynapse src tgt = Synapse src tgt 1 $! Static 0.25
+-- exSynapse r src tgt = Synapse src tgt 1 $! Static 0.25
+exSynapse r src tgt = Synapse src tgt delay $! Static 0.25
+    where
+        delay = ceiling $ 20.0 * r
 -- exSynapse src tgt r = w `seq` StdSynapse src tgt w 1
     -- where w = 0.5 * r
 
 -- TODO: randomise weights here!
-inSynapse src tgt = Synapse src tgt 1 $ Static (-0.5)
+inSynapse _ src tgt = Synapse src tgt 1 $ Static (-0.5)
 -- inSynapse src tgt r = StdSynapse src tgt ((-1.0)*r) 1
 
 -- excitatory neuron
@@ -99,7 +102,7 @@ clusteredNeuron (ex_ngen, ex_sgen) (in_ngen, in_sgen) idx cc cs m p r =
 {- Generate a neuron with some local and some global connections. -}
 clusteredNeuron'
     :: (FT -> IzhNeuron FT)    -- ^ function that generates neuron
-    -> (Idx -> Idx -> Synapse Static)
+    -> (FT -> Idx -> Idx -> Synapse Static)
                                -- ^ function that generates synapse
     -> Idx                     -- ^ presynaptic index
     -> Int                     -- ^ cluster count
@@ -111,8 +114,9 @@ clusteredNeuron'
 clusteredNeuron' ngen sgen pre cc cs m p r = state `seq` neuron state ss
     where
         (nr, r2) = random r
+        (sr, r3) = random r2
         state = ngen nr
-        ss = map (sgen pre) $ clusteredTargets pre cc cs m p r2
+        ss = map (sgen sr pre) $ clusteredTargets pre cc cs m p r3
 
 
 {- Produce a list of postsynaptic neurons where a proportion 'p' is selected
