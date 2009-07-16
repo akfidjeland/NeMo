@@ -108,6 +108,14 @@ setCMDRow(RTDATA rtdata,
         size_t length);
 
 
+/*! Read connectivity matrix back from device. */
+void
+getCM(RTDATA rtdata,
+		size_t cmIdx,
+        int** targetPartitions,
+        int** targetNeurons,
+        float** weights,
+        size_t* pitch);
 
 //-----------------------------------------------------------------------------
 // FIRING PROBE
@@ -182,6 +190,13 @@ step(	unsigned short cycle,
 		const int* extFiringCIdx,   // cluster indices
 		const int* extFiringNIdx,   // neuron indices
 		RTDATA rtdata);
+
+
+/* Force all allocated memory onto the device. Calling this is not required
+ * during normal operation, as step invokes it on first call, but can be used
+ * for testing */
+void
+copyToDevice(RTDATA rtdata);
 
 
 //-----------------------------------------------------------------------------

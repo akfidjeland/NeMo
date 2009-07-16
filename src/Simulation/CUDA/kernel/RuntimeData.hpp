@@ -80,6 +80,7 @@ struct RuntimeData
     uint32_t cycle() const;
 
 	bool usingSTDP() const;
+	void configureSTDP();
 
 	//! \see ::enableSTDP
 	void enableSTDP(int tauP, int tauD,
