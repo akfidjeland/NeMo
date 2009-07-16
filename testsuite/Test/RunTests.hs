@@ -22,6 +22,7 @@ import Test.ClientAPI.Matlab as Matlab (tests, create_tests)
 #endif
 #if defined(CUDA_ENABLED)
 import Test.Simulation.CUDA.Mapping as Mapping (tests)
+import Test.Simulation.CUDA.Memory as Memory (tests)
 #endif
 
 runQCTests = runQC
@@ -35,6 +36,7 @@ runHUnitTests dir = runTestTT $ TestList $ [
         rtests,
 #if defined(CUDA_ENABLED)
         Mapping.tests,
+        Memory.tests,
 #endif
         TestClient.tests,
 #if defined(MATLAB_ENABLED)

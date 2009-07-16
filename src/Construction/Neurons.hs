@@ -18,6 +18,8 @@ module Construction.Neurons (
         toList,
         synapseCount,
         maxDelay,
+        -- * Traversal
+        withSynapses,
         -- * Modification
         addSynapse,
         addSynapses,
@@ -118,6 +120,15 @@ maxDelay (Neurons ns) = Map.fold go 0 ns
         go n d = max (Neuron.maxDelay n) d
 
 -------------------------------------------------------------------------------
+-- Traversal
+-------------------------------------------------------------------------------
+
+
+withSynapses :: (s -> s) -> Neurons n s -> Neurons n s
+withSynapses f (Neurons ns) = Neurons $ Map.map (Neuron.withSynapses f) ns
+
+
+-------------------------------------------------------------------------------
 -- Modification
 -------------------------------------------------------------------------------
 
@@ -196,7 +207,13 @@ instance (NFData n, NFData s) => NFData (Neurons n s) where
 
 
 instance (Show n, Show s) => Show (Neurons n s) where
-    show _ = "hello"
+    -- create a list of all neurons, one line per neuron
+    -- TODO: show synapses as well
+    showsPrec _ (Neurons ns) s = showNeuronList (Map.toList ns) s
+
+showNeuronList [] = id
+showNeuronList ((idx, n):ns) =
+    shows idx . showChar ':' . shows n . showChar '\n' . showNeuronList ns
 
 
 {- | Print synapses, one line per synapse -}

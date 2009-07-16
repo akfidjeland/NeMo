@@ -15,6 +15,7 @@ module Construction.Network (
         -- * Modify
         withNeurons,
         withTerminals,
+        withSynapses,
         -- * Pretty-printing
         printConnections,
         printNeurons
@@ -100,6 +101,13 @@ withTerminals f (Network ns t) = Network ns' t'
     where
         ns' = Neurons.withTerminals f ns
         t'  = fmap f t
+
+
+{- | Apply function to all synapses. -}
+withSynapses :: (s -> s) -> Network n s -> Network n s
+withSynapses f (Network ns t) = Network ns' t
+    where
+        ns' = Neurons.withSynapses f ns
 
 
 

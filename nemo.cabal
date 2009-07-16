@@ -245,7 +245,8 @@ executable runtests
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
                             Simulation.CUDA.Probe,
-                            Test.Simulation.CUDA.Mapping
+                            Test.Simulation.CUDA.Mapping,
+                            Test.Simulation.CUDA.Memory
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /opt/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
