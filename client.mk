@@ -6,8 +6,13 @@
 # Author: Andreas Fidjeland
 #
 
-# Source files corresponding to Matlab calls
-m_src := nsSetHost nsSetPort nsStart nsRun nsTerminate nsEnableSTDP nsDisableSTDP nsApplySTDP nsGetWeights
+# Matlab functions with both Matlab and MEX files
+mex_fn := $(addprefix nemo,Start Run Terminate GetConnectivity)
+
+# Matlab functions, regardless of implementation
+matlab_fn := $(mex_fn) $(addprefix nemo,SetHost SetPort EnableSTDP DisableSTDP ApplySTDP)
+
+
 
 
 mex_src_dir := src/client-api
@@ -18,19 +23,19 @@ hs_stubs := dist/build/Network
 ghc_include := $(shell ghc --print-libdir)/include
 
 ifeq ($(OSTYPE),msys)
-so := dll
+so  := dll
 obj := obj
-mex_ext := dll
+mex := dll
 else
-so := so
+so  := so
 obj := o
-mex_ext := mexglx
+mex := mexglx
 endif
 
 version :=$(shell util/version)
 
-m_files := $(patsubst %,$(mex_src_dir)/matlab/%.m,$(m_src))
-mex_files := $(addprefix $(build_dir)/,$(addsuffix .$(mex_ext),nsStart_aux nsRun_aux nsTerminate_aux nsGetWeights_aux))
+m_files := $(patsubst %,$(mex_src_dir)/matlab/%.m,$(matlab_fn))
+mex_files := $(addprefix $(build_dir)/,$(addsuffix _aux.$(mex),$(mex_fn)))
 client_so := $(build_dir)/libnemoclient.$(so)
 
 
@@ -79,7 +84,7 @@ WMEXLIBS=\
 	$(WMEXLIBDIR)/mexlib2.lib \
 	$(WMEXLIBDIR)/mexlib3.lib
 
-$(build_dir)/%.$(mex_ext): $(addprefix $(mex_src_dir)/,%.c args.c error.c) $(client_so)
+$(build_dir)/%.$(mex): $(addprefix $(mex_src_dir)/,%.c args.c error.c) $(client_so)
 	$(CC) -c $(WMEXCFLAGS) $(CFLAGS) $(mex_includes) -I/c/MinGW/include $(wordlist 1, 3) -o $(build_dir)/$*.o
 	$(CC) -shared $(WMEXLIBDIR)/mex.def -o $@ -s \
 		$(build_dir)/$*.o \
@@ -91,7 +96,7 @@ $(build_dir)/%.$(mex_ext): $(addprefix $(mex_src_dir)/,%.c args.c error.c) $(cli
 		$< $(build_dir)/libnemoclient.dll.a /c/MinGW/lib/libws2_32.a
 else
 
-$(build_dir)/%.$(mex_ext): $(addprefix $(mex_src_dir)/,%.c args.c error.c) $(client_so)
+$(build_dir)/%.$(mex): $(addprefix $(mex_src_dir)/,%.c args.c error.c) $(client_so)
 	matlab-mex $(mex_includes) -lnemoclient -L$(build_dir) -outdir $(build_dir) $(wordlist 1, 3, $^)
 endif
 
@@ -99,6 +104,7 @@ endif
 #
 # Documentation
 #
+
 
 doc_dir := $(client_dist)/doc
 
@@ -108,16 +114,21 @@ $(doc_dir)/%.txt: $(mex_src_dir)/matlab/%.m
 	util/extract_matlab_docstring.pl $< > $@
 
 
+# The wiki page includes just a single combined file
+$(doc_dir)/functionReference: $(patsubst %,$(doc_dir)/%.txt,$(matlab_fn))
+	cat $^ > $@
+
+
 # A description of the whole matlab client is found in the wiki
 $(doc_dir)/manual.tex: \
 		doc/wiki/MatlabAPI \
 		$(mex_src_dir)/matlab/manual_stylesheet.tex \
-		$(patsubst %,$(doc_dir)/%.txt,$(m_src))
+		$(doc_dir)/functionReference
 	cp --target-directory $(doc_dir) $(wordlist 1,2,$^)
-	# cp --target-directory $(doc_dir) doc/wiki/MatlabAPI
 	rst2latex --use-latex-docinfo --use-latex-toc --no-section-numbering \
 		--stylesheet=manual_stylesheet.tex \
 		$(doc_dir)/MatlabAPI > $@
+
 
 $(doc_dir)/manual.pdf: $(doc_dir)/manual.tex
 	(cd $(dir $<); pdflatex $(notdir $<); cd ..)

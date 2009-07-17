@@ -119,14 +119,7 @@ The reference for each function is also available from within MATLAB by using
 the usual ``help`` function. 
 
 .. The function reference is extracted from the relevant m-files
-.. include:: nsSetHost.txt
-.. include:: nsSetPort.txt
-.. include:: nsStart.txt
-.. include:: nsRun.txt
-.. include:: nsTerminate.txt
-.. include:: nsEnableSTDP.txt
-.. include:: nsDisableSTDP.txt
-.. include:: nsApplySTDP.txt
+.. include:: functionReference
 
 Troubleshooting
 ===============
