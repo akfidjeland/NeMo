@@ -6,7 +6,10 @@
 # Author: Andreas Fidjeland
 #
 
-m_src := nsSetHost nsSetPort nsStart nsRun nsTerminate nsEnableSTDP nsDisableSTDP nsApplySTDP nsGetWeights
+# Source files corresponding to Matlab calls
+m_src := nsSetHost nsSetPort nsStart nsRun nsTerminate nsEnableSTDP nsDisableSTDP nsApplySTDP
+
+
 mex_src_dir := src/client-api
 client_dist := client-dist
 build_dir := $(client_dist)/build
@@ -24,7 +27,7 @@ obj := o
 mex_ext := mexglx
 endif
 
- version :=$(shell util/version)
+version :=$(shell util/version)
 
 m_files := $(patsubst %,$(mex_src_dir)/matlab/%.m,$(m_src))
 mex_files := $(addprefix $(build_dir)/,$(addsuffix .$(mex_ext),nsStart_aux nsRun_aux nsTerminate_aux))
@@ -76,8 +79,8 @@ WMEXLIBS=\
 	$(WMEXLIBDIR)/mexlib2.lib \
 	$(WMEXLIBDIR)/mexlib3.lib
 
-$(build_dir)/%.dll: $(mex_src_dir)/%.c $(client_so)
-	$(CC) -c $(WMEXCFLAGS) $(CFLAGS) $(mex_includes) -I/c/MinGW/include $< -o $(build_dir)/$*.o
+$(build_dir)/%.$(mex_ext): $(addprefix $(mex_src_dir)/,%.c args.c error.c) $(client_so)
+	$(CC) -c $(WMEXCFLAGS) $(CFLAGS) $(mex_includes) -I/c/MinGW/include $(wordlist 1, 3) -o $(build_dir)/$*.o
 	$(CC) -shared $(WMEXLIBDIR)/mex.def -o $@ -s \
 		$(build_dir)/$*.o \
 		$(build_dir)/libnemoclient.dll.a \
@@ -87,8 +90,9 @@ $(build_dir)/%.dll: $(mex_src_dir)/%.c $(client_so)
 #	cmd //c mex.bat -f util/mexopts.bat $(mex_includes) -outdir $(build_dir) \
 		$< $(build_dir)/libnemoclient.dll.a /c/MinGW/lib/libws2_32.a
 else
-$(build_dir)/%.$(mex_ext): $(mex_src_dir)/%.c $(client_so)
-	matlab-mex $(mex_includes) -lnemoclient -L$(build_dir) -outdir $(build_dir) $<
+
+$(build_dir)/%.$(mex_ext): $(addprefix $(mex_src_dir)/,%.c args.c error.c) $(client_so)
+	matlab-mex $(mex_includes) -lnemoclient -L$(build_dir) -outdir $(build_dir) $(wordlist 1, 3, $^)
 endif
 
 

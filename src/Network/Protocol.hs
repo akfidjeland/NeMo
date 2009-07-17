@@ -17,6 +17,9 @@ import Data.Binary
 import Network.Socket
 
 import Construction.Network (Network)
+import Construction.Neurons (Neurons)
+import Construction.Neuron (Stateless)
+import Construction.Synapse (Static)
 import Network.SocketSerialisation (sendSerialised, recvSerialised)
 import Simulation.Common (Simulation, SimulationInit)
 import Simulation.STDP
@@ -90,13 +93,15 @@ data ClientRequest n s
         = ReqStart !(Network n s) TemporalResolution STDPConf
         -- = ReqStart (Network n s) TemporalResolution (Maybe STDPConf)
         | ReqPing
+        | ReqWeights -- ^ return full weight matrix
         | ReqError Word8
     deriving (Eq)
 
 instance (Binary n, Binary s, NFData n, NFData s) => Binary (ClientRequest n s) where
     put (ReqStart n tr stdp) = putWord8 1 >> put n >> put tr >> put stdp
-    put ReqPing = putWord8 2
-    put (ReqError _) = putWord8 0
+    put ReqPing              = putWord8 2
+    put ReqWeights           = putWord8 3
+    put (ReqError _)         = putWord8 0
     get = do
         tag <- getWord8
         case tag of
@@ -108,6 +113,7 @@ instance (Binary n, Binary s, NFData n, NFData s) => Binary (ClientRequest n s) 
                 stdp <- get
                 return $! (ReqStart net tr stdp `using` rnf)
             2 -> return ReqPing
+            3 -> return ReqWeights
             -- TODO: perhaps return a special error value instead?
             _ -> return $ ReqError tag
 
@@ -157,17 +163,19 @@ data ServerResponse
         | RspError String
         | RspReady
         | RspBusy
+        | RspWeights (Neurons Stateless Static)
 
 instance Binary ServerResponse where
     put = putRsp
     get = getRsp
 
 putRsp :: ServerResponse -> Put
-putRsp RspStart = putWord8 0
+putRsp RspStart                 = putWord8 0
 putRsp (RspData firing elapsed) = putWord8 1 >> put firing >> put elapsed
-putRsp (RspError err) = putWord8 2 >> put err
-putRsp RspReady = putWord8 3
-putRsp RspBusy = putWord8 4
+putRsp (RspError err)           = putWord8 2 >> put err
+putRsp RspReady                 = putWord8 3
+putRsp RspBusy                  = putWord8 4
+putRsp (RspWeights net)         = putWord8 5 >> put net
 
 getRsp :: Get ServerResponse
 getRsp = do
@@ -178,3 +186,5 @@ getRsp = do
         2 -> liftM RspError get
         3 -> return RspReady
         4 -> return RspBusy
+        5 -> liftM RspWeights get
+        _ -> fail "Decoding server response failed"
