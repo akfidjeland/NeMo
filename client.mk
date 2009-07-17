@@ -7,7 +7,7 @@
 #
 
 # Source files corresponding to Matlab calls
-m_src := nsSetHost nsSetPort nsStart nsRun nsTerminate nsEnableSTDP nsDisableSTDP nsApplySTDP
+m_src := nsSetHost nsSetPort nsStart nsRun nsTerminate nsEnableSTDP nsDisableSTDP nsApplySTDP nsGetWeights
 
 
 mex_src_dir := src/client-api
@@ -30,7 +30,7 @@ endif
 version :=$(shell util/version)
 
 m_files := $(patsubst %,$(mex_src_dir)/matlab/%.m,$(m_src))
-mex_files := $(addprefix $(build_dir)/,$(addsuffix .$(mex_ext),nsStart_aux nsRun_aux nsTerminate_aux))
+mex_files := $(addprefix $(build_dir)/,$(addsuffix .$(mex_ext),nsStart_aux nsRun_aux nsTerminate_aux nsGetWeights_aux))
 client_so := $(build_dir)/libnemoclient.$(so)
 
 

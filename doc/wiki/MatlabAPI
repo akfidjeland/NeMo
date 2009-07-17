@@ -127,7 +127,6 @@ the usual ``help`` function.
 .. include:: nsEnableSTDP.txt
 .. include:: nsDisableSTDP.txt
 .. include:: nsApplySTDP.txt
-.. include:: nsGetWeights.txt
 
 Troubleshooting
 ===============

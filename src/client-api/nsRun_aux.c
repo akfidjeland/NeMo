@@ -96,8 +96,8 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 	uint32_t* ret = (uint32_t*) mxGetData(plhs[0]); 
 
-	memcpy((char*)ret, firingCycles, firingLen*sizeof(uint32_t));
-	memcpy((char*)(ret + firingLen), firingIdx, firingLen*sizeof(uint32_t));
+	memcpy((void*)ret, firingCycles, firingLen*sizeof(uint32_t));
+	memcpy((void*)(ret + firingLen), firingIdx, firingLen*sizeof(uint32_t));
 
 	if((plhs[1] = mxCreateNumericMatrix(1, 1, mxINT32_CLASS, mxREAL)) == NULL) {
 		mexErrMsgTxt("Failed to allocate memory for return data: elapsed time\n");
