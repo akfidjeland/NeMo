@@ -82,6 +82,8 @@ Haskell core
 - improve the reporting of failed tests. If we compare two networks and they
   somehow differ we'll get an enourmous dump which is next-to-impossible to make
   sense of. Do a recursive descent keeping track of the current context.
+- the 'client' backend does not support request for weight matrix. Add this.
+- the 'cpu' backend does not support request for weight matrix. Add this.
 - make sure we correctly compute the max buffer size in allocRT. Currently this
   is just set to a large number. Should determine how many synapses cross
   partition bounadry. It would make sense to only allocate this after CM has
@@ -90,7 +92,9 @@ Haskell core
   maximum.
 - merge duplicate L1 synapse. If we make sure the network is constructed such
   that synapses with the same source and target end up in the same slot, this
-  should be sipmle.
+  should be simple.
+- remove print method from Axon.hs. Make use of show instead. May need to add
+  Source field to Axon in order to get a complete listing.
 - add/complete time function in NSim 
 
 MatlabAPI

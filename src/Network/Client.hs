@@ -41,6 +41,8 @@ initSim hostname port net dt stdpConf = do
         (stepRemote sock stepsz)
         (return 0)              -- TODO: add timing function here
         (return ())             -- TODO: add timing function here
+        -- TODO: add function to forward request for weights
+        (error "getWeights not implemented in 'client' backend")
         (closeRemote sock)
 
 

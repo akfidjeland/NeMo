@@ -5,6 +5,8 @@ module Simulation.Common where
 import qualified Data.Set as Set
 
 import Construction.Network
+import Construction.Neuron (Stateless)
+import Construction.Synapse (Static)
 import Simulation.STDP (STDPConf, STDPApplication)
 import Types
 
@@ -59,11 +61,13 @@ data Simulation = Simulation {
         stepSize :: Int,
         runStep  :: [[Idx]] -> [STDPApplication] -> IO [ProbeData],
 
-        -- | Return the number of milliseconds of elapsed (wall-clock)
-        -- simulation time
+        {- | Return the number of milliseconds of elapsed (wall-clock)
+         - simulation time -}
         elapsed :: IO Int,
 
         resetTimer :: IO (),
+
+        getWeights :: IO (Network Stateless Static),
 
         -- | Perform any clean-up operations
         -- TODO: could we make the garbage collector do this perhaps?

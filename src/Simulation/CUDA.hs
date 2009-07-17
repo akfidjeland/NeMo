@@ -22,6 +22,7 @@ import Foreign.ForeignPtr (withForeignPtr)
 import qualified Construction.Network as N
 import Construction.Izhikevich (IzhNeuron, IzhState)
 import Construction.Synapse (Static)
+import Construction.Topology (Topology(..))
 import Simulation.Common (Simulation(..))
 import Simulation.SpikeQueue
 import Types
@@ -32,7 +33,7 @@ import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import Simulation.CUDA.Probe (readFiring, readFiringCount)
 import Simulation.CUDA.KernelFFI as Kernel (c_step, syncSimulation, printCycleCounters, elapsedMs, resetTimer)
-import Simulation.CUDA.Memory
+import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.Mapping (mapNetwork)
 import Simulation.STDP
 
@@ -79,7 +80,12 @@ initSim net probeIdx probeF dt verbose partitionSize stdpConf = do
         (stepMulti sim nsteps probeIdx probeF dt)
         (withForeignPtr (rt sim) Kernel.elapsedMs)
         (withForeignPtr (rt sim) Kernel.resetTimer)
+        (getWeights' sim)
         (return ()) -- foreign pointer finalizers clean up
+    where
+        getWeights' sim = do
+            ns <- Memory.getWeights sim
+            return $! N.Network ns (Node 0) -- dummy topology
 
 
 

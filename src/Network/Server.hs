@@ -15,7 +15,7 @@ import System.Time (getClockTime)
 import Control.Exception(assert)
 import Control.Monad (zipWithM)
 
-import Network.Protocol
+import Network.Protocol hiding (getWeights)
 import Simulation.Common
 import Simulation.STDP
 import Types
@@ -110,6 +110,11 @@ procSimReq sock sim log = do
                     sendResponse sock $ RspData probed elapsed
                     procSimReq sock sim log)
         CmdStop  -> stop sim
+        CmdGetWeights -> do
+            log "Server.hs: returning weight matrix"
+            weights <- getWeights sim
+            sendResponse sock $ RspWeights weights
+            procSimReq sock sim log
         (CmdError c) -> do
             log $ "Server.hs: invalid simulation request: " ++ show c
             stop sim

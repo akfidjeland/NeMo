@@ -17,6 +17,7 @@ module Construction.Neurons (
         synapses,
         toList,
         synapseCount,
+        maxSynapsesPerNeuron,
         maxDelay,
         -- * Traversal
         withSynapses,
@@ -82,6 +83,11 @@ size = Map.size . ndata
 {- | Return number of synapses -}
 synapseCount :: Neurons n s -> Int
 synapseCount (Neurons ns) = Map.fold ((+) . Neuron.synapseCount) 0 ns
+
+
+{- | Return max number of synapses per neuron -}
+maxSynapsesPerNeuron :: Neurons n s -> Int
+maxSynapsesPerNeuron = Map.fold (max) 0 . Map.map Neuron.synapseCount . ndata
 
 
 {- | Return list of all neuron indices -}

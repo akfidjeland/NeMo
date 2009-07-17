@@ -36,6 +36,7 @@ initSim net pidx pfn = do
         -- TODO: add proper timing
         (return 0)
         (return ())
+        (error "getWeights not implemented in 'CPU' backend")
         (return ())
     where
         step netRT f = stepSim netRT pset f >>= return . (outputFn pfn)

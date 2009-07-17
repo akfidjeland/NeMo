@@ -70,7 +70,7 @@ initSim simOpts net probeIdx probeF verbose cudaOpts stdpConf = do
 -- | Run full simulation using the appropriate backend
 runSim simOpts net probeIdx probeF fstimF outfn opts stdpConf = do
     -- TODO: don't pass stdp conf to init
-    (Simulation sz run elapsed _ close) <-
+    (Simulation sz run elapsed _ _ close) <-
         initSim simOpts net probeIdx probeF False opts stdpConf
     let cs = cycles duration
     fstim <- firingStimulus fstimF

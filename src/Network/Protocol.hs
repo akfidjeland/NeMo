@@ -1,6 +1,6 @@
 module Network.Protocol (
     -- * Client interface
-    startSimulation, runSimulation, stopSimulation,
+    startSimulation, runSimulation, stopSimulation, getWeights,
     -- * Host interface
     startSimulationHost,
     -- TODO: move both sides of protocol to this file
@@ -17,7 +17,6 @@ import Data.Binary
 import Network.Socket
 
 import Construction.Network (Network)
-import Construction.Neurons (Neurons)
 import Construction.Neuron (Stateless)
 import Construction.Synapse (Static)
 import Network.SocketSerialisation (sendSerialised, recvSerialised)
@@ -76,31 +75,45 @@ runSimulation sock nsteps fstim stdp = do
         _                 -> fail "runSimulation: unexpected response"
 
 
--- | Send shutdown instruction from client to host
+{- | Send shutdown instruction from client to host -}
 stopSimulation :: Socket -> IO ()
 stopSimulation sock = sendCommand sock CmdStop
 
 
+{- | Request weights from host -}
+getWeights :: Socket -> IO (Network Stateless Static)
+getWeights sock = do
+    sendCommand sock CmdGetWeights
+    rsp <- recvResponse sock
+    case rsp of
+        RspWeights ns -> return ns
+        RspError msg  -> fail $ "getWeights: " ++ msg
+        _             -> fail "getWeights: unexpected response"
+
+
+
 -- simulation setup
 
-sendRequest :: (Binary n, Binary s, NFData n, NFData s) => Socket -> ClientRequest n s -> IO ()
+sendRequest
+    :: (Binary n, Binary s, NFData n, NFData s)
+    => Socket -> ClientRequest n s -> IO ()
 sendRequest = sendSerialised
 
-recvRequest :: (Binary n, Binary s, NFData n, NFData s) => Socket -> IO (ClientRequest n s)
+recvRequest
+    :: (Binary n, Binary s, NFData n, NFData s)
+    => Socket -> IO (ClientRequest n s)
 recvRequest = recvSerialised
 
 data ClientRequest n s
         = ReqStart !(Network n s) TemporalResolution STDPConf
         -- = ReqStart (Network n s) TemporalResolution (Maybe STDPConf)
         | ReqPing
-        | ReqWeights -- ^ return full weight matrix
         | ReqError Word8
     deriving (Eq)
 
 instance (Binary n, Binary s, NFData n, NFData s) => Binary (ClientRequest n s) where
     put (ReqStart n tr stdp) = putWord8 1 >> put n >> put tr >> put stdp
     put ReqPing              = putWord8 2
-    put ReqWeights           = putWord8 3
     put (ReqError _)         = putWord8 0
     get = do
         tag <- getWord8
@@ -113,7 +126,6 @@ instance (Binary n, Binary s, NFData n, NFData s) => Binary (ClientRequest n s) 
                 stdp <- get
                 return $! (ReqStart net tr stdp `using` rnf)
             2 -> return ReqPing
-            3 -> return ReqWeights
             -- TODO: perhaps return a special error value instead?
             _ -> return $ ReqError tag
 
@@ -134,6 +146,7 @@ recvCommand = recvSerialised
 data ClientCommand
         = CmdSync Time [(Time, [Idx])] STDPApplication
         | CmdStop
+        | CmdGetWeights -- ^ return full weight matrix
         | CmdError Word8
     deriving (Show, Eq)
 
@@ -141,12 +154,14 @@ data ClientCommand
 instance Binary ClientCommand where
     put (CmdSync duration f stdp) = putWord8 3 >> put duration >> put f >> put stdp
     put CmdStop = putWord8 4
+    put CmdGetWeights = putWord8 5
     put (CmdError _) = putWord8 0
     get = do
         tag <- getWord8
         case tag of
             3 -> liftM3 CmdSync get get get
             4 -> return CmdStop
+            5 -> return CmdGetWeights
             _ -> return $ CmdError tag
 
 
@@ -163,7 +178,7 @@ data ServerResponse
         | RspError String
         | RspReady
         | RspBusy
-        | RspWeights (Neurons Stateless Static)
+        | RspWeights (Network Stateless Static)
 
 instance Binary ServerResponse where
     put = putRsp

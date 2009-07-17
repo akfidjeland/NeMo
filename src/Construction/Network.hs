@@ -10,8 +10,10 @@ module Construction.Network (
         indices,
         idxBounds,
         synapses,
+        synapsesOf,
         neurons,
         maxDelay,
+        maxSynapsesPerNeuron,
         -- * Modify
         withNeurons,
         withTerminals,
@@ -72,6 +74,10 @@ synapses :: Network n s -> [(Idx, [(Delay, [(Idx, s)])])]
 synapses = Neurons.synapses . networkNeurons
 
 
+synapsesOf :: Network n s -> Idx -> [Synapse s]
+synapsesOf = Neurons.synapsesOf . networkNeurons
+
+
 {- | Return list of all neurons -}
 neurons :: Network n s -> [Neuron.Neuron n s]
 -- TODO: merge Neurons into Network, this is just messy!
@@ -81,6 +87,10 @@ neurons = Neurons.neurons . networkNeurons
 {- | Return maximum delay in network -}
 maxDelay :: Network n s -> Delay
 maxDelay = Neurons.maxDelay . networkNeurons
+
+
+maxSynapsesPerNeuron :: Network n s -> Int
+maxSynapsesPerNeuron = Neurons.maxSynapsesPerNeuron . networkNeurons
 
 
 
