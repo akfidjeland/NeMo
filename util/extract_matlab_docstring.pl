@@ -12,6 +12,10 @@ if($#ARGV+1 != 1) {
 open FILE, "<$ARGV[0]" or die $!;
 
 my $lineno = 0;
+
+# Make sure header stands on its own
+print "\n";
+
 while (my $line = <FILE>) {
 
 	$lineno += 1;
