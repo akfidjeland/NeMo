@@ -79,10 +79,10 @@ connectSocket(const char* hostname, unsigned short portno)
  * shut down only once. Failure to do this causes matlab to segfault. 
  *
  * Under windows we also need to load and unload the winsock dll in the same
- *  manner.
+ * manner.
  *
- *  Both of these are taken care of by calling startRTS. The shutdown is then
- *  handled automatically once mex is all finished.
+ * Both of these are taken care of by calling startRTS. The shutdown is then
+ * handled automatically once mex is all finished.
  */
 void stopRTS();
 void
