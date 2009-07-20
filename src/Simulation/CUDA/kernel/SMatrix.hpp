@@ -65,9 +65,9 @@ struct SMatrix
 		/*! Copy entire host buffer to the device */
 		void copyToDevice();
 
-		/*! Copy a single plane from device to host. Data are valid until the
-		 * next call to copyToHost. */
-		const T* copyToHost(size_t plane);
+		/*! Copy a single plane from device to host into memory allocated by
+		 * the caller */
+		void copyToHost(size_t plane, std::vector<T>& hostData);
 
         /*! Copy entire host buffer to device and clear it (host-side) */
         void moveToDevice();

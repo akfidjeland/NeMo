@@ -86,7 +86,7 @@ struct ConnectivityMatrix
 		void df_clear(size_t submatrix);
 		void dr_clear(size_t submatrix);
 
-		void printSTDPTrace();
+		// void printSTDPTrace();
 
 	private:
 
@@ -119,9 +119,13 @@ struct ConnectivityMatrix
 		 * of each of these is exactly that of the weights on the device.
 		 * Invalid entries have both partition and neuron set to InvalidNeuron.
 		 * */
-		//! \todo construct this when building up network.
 		std::vector<int> mf_targetPartition;
 		std::vector<int> mf_targetNeuron;
+
+		/* The weight matrix is the only bit of data which needs to be read
+		 * from the device. This is only allocated if the user requests this
+		 * data.  */
+		std::vector<uint32_t> mf_weights;
 
 		static const int InvalidNeuron = -1;
 };

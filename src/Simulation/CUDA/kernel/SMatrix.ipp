@@ -114,31 +114,25 @@ SMatrix<T>::copyToDevice()
 
 
 template<typename T>
-const T*
-SMatrix<T>::copyToHost(size_t plane)
+void
+SMatrix<T>::copyToHost(size_t plane, std::vector<T>& hostData)
 {
-	/* Host data may be empty if there are no synapses */
-	if(m_hostData.empty()) {
-		fprintf(stderr, "Null CM\n");
-		return NULL;
-	}
-    //! \todo add assertions
     //if(m_hostData.empty()) {
     //    throw std::logic_error("Attempt to copy from device to empty host vector");
     //}
-    //! \todo add bounds testing
+    //! \todo change back to exceptions instead
     assert(plane < m_planeCount);
+	assert(hostData.size() == size());
     size_t pitch = m_pitch * sizeof(T);
-    T* hostData = &m_hostData[plane * size()];
 	/* nvcc chokes with "closing brace of template definition not found" if
 	 * CUDA_SAFE_CALL is used in cuda 2.1 */
 	/* CUDA_SAFE_CALL( */ cudaMemcpy(
-			&m_hostData[0],
-			m_deviceData,
+			&hostData[0],
+			m_deviceData + plane * size(),
 			size() * sizeof(T),
 			cudaMemcpyDeviceToHost) /*)*/ ;
-	return const_cast<const T*>(hostData);
 }
+
 
 
 
@@ -146,9 +140,8 @@ template<typename T>
 void
 SMatrix<T>::moveToDevice()
 {
-    copyToDevice();
-	//! \todo clear some fields but not all, perhaps?
-	//m_hostData.clear();
+	copyToDevice();
+	m_hostData.clear();
 }
 
 

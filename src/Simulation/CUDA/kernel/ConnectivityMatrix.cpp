@@ -195,13 +195,15 @@ ConnectivityMatrix::copyToHost(
 				float* f_weights[],
 				size_t* pitch)
 {
-	/*! \todo could just keep address matrix around. At least, don't copy this
-	 * more than once, as it does not change. */
+	*pitch = m_fsynapses.delayPitch();
+	if(mf_weights.empty()){
+		mf_weights.resize(m_fsynapses.size(), 0.0f);
+	}
+	m_fsynapses.copyToHost(FCM_WEIGHT, mf_weights);
 	*f_targetPartitions = &mf_targetPartition[0];
 	*f_targetNeurons = &mf_targetNeuron[0];
-	*pitch = m_fsynapses.delayPitch();
 	assert(sizeof(float) == sizeof(uint));
-	*f_weights = (float*) m_fsynapses.copyToHost(FCM_WEIGHT);
+	*f_weights = (float*) &mf_weights[0];
 }
 
 
@@ -228,6 +230,7 @@ typedef union
 } synapse_t;
 
 
+#if 0
 void
 ConnectivityMatrix::printSTDPTrace()
 {
@@ -256,6 +259,7 @@ ConnectivityMatrix::printSTDPTrace()
         }
     }
 }
+#endif
 
 
 
