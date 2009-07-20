@@ -3,20 +3,26 @@
 module Construction.Neuron (
     NeuronProbe(..),
     mergeProbeFs,
+    -- * Construction
     Neuron,
     ndata,
     unconnected,
     neuron,
+    Stateless(..),
+    -- * Query
     synapses,
     synapsesByDelay,
     synapseCount,
+    targets,
+    -- * Modify
     connect,
     connectMany,
     disconnect,
     replaceSynapse,
-    foldTarget,
     maxDelay,
+    -- * Traversal
     withTargets,
+    withSynapses,
     -- * Pretty-printing
     printConnections
 ) where
@@ -86,6 +92,11 @@ synapseCount :: Neuron n s -> Int
 synapseCount = Axon.size . axon
 
 
+{- | Return list of target neurons, including duplicates -}
+targets :: Neuron n s -> [Target]
+targets = Axon.targets . axon
+
+
 {- | Add a single synapse to a neuron -}
 connect :: Synapse s -> Neuron n s -> Neuron n s
 connect s = withAxon (Axon.connect s)
@@ -108,17 +119,16 @@ replaceSynapse
 replaceSynapse old new = withAxonM (Axon.replaceM old new)
 
 
-{- | Fold function over target indices -}
-foldTarget :: (a -> Idx -> a) -> a -> Neuron n s -> a
-foldTarget f x n = Axon.foldTarget f x $! axon n
-
-
 maxDelay :: Neuron n s -> Delay
 maxDelay = Axon.maxDelay . axon
 
 
 withTargets :: (Idx -> Idx) -> Neuron n s -> Neuron n s
 withTargets f = withAxon (Axon.withTargets f)
+
+
+withSynapses :: (s -> s) -> Neuron n s -> Neuron n s
+withSynapses f = withAxon (Axon.withSynapses f)
 
 
 printConnections :: (Show s) => Idx -> Neuron n s -> IO ()
@@ -134,5 +144,19 @@ instance (Binary n, Binary s) => Binary (Neuron n s) where
     get = liftM2 Neuron get get
 
 
-instance (Show n) => Show (Neuron n s) where
-    show n = show (ndata n) ++ "(" ++ (show $ Axon.size $ axon n) ++ " synapses"
+instance (Show n, Show s) => Show (Neuron n s) where
+    showsPrec _ n = shows (ndata n) . showChar '\n' . shows (axon n)
+
+
+
+{- To define a network where there's nothing interesting in the neuron itself
+ - use Stateless -}
+data Stateless = Stateless
+
+instance Binary Stateless where
+    put _ = putWord8 0
+    get = do
+        tag <- getWord8
+        case tag of
+            0 -> return Stateless
+            _ -> fail "Decoding Stateless failed"

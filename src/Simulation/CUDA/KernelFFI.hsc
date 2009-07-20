@@ -3,6 +3,8 @@
 module Simulation.CUDA.KernelFFI (
     c_step,
     setCMDRow,
+    getCM,
+    copyToDevice,
     syncSimulation,
     printCycleCounters,
     CuRT,
@@ -24,9 +26,11 @@ import Control.Monad (when)
 import Data.Array.Storable (StorableArray, withStorableArray)
 import Foreign.C.Types
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
-import Foreign.Marshal.Utils (fromBool)
+import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Array (withArray)
+import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
+import Foreign.Storable (peek)
 
 import Simulation.CUDA.Address
 
@@ -98,6 +102,13 @@ foreign import ccall unsafe "maxPartitionSize" c_maxPartitionSize :: CInt -> CUI
 -- Loading data
 -------------------------------------------------------------------------------
 
+
+{- | Force copy of data to device -}
+foreign import ccall unsafe "copyToDevice" c_copyToDevice :: Ptr CuRT -> IO ()
+
+copyToDevice rt = withForeignPtr rt c_copyToDevice
+
+
 foreign import ccall unsafe "setCMDRow"
     c_setCMDRow :: Ptr CuRT
                     -> CSize        -- ^ matrix level: 0 or 1
@@ -123,6 +134,28 @@ setCMDRow rt wbuf pbuf nbuf level pre delay len =
 
 
 
+foreign import ccall unsafe "getCM"
+    c_getCM :: Ptr CuRT
+        -> CSize            -- ^ matrix level: 0 or 1
+        -> Ptr (Ptr CInt)   -- ^ synapse target partitions
+        -> Ptr (Ptr CInt)   -- ^ synapse target neurons
+        -> Ptr (Ptr CFloat) -- ^ synapse weights
+        -> Ptr CSize        -- ^ pitch of each row (synapses per delay)
+        -> IO ()
+
+
+getCM :: Ptr CuRT -> CMatrixIndex -> IO (Ptr CInt, Ptr CInt, Ptr CFloat, Int)
+getCM rt lvl = do
+    alloca $ \p_ptr   -> do
+    alloca $ \n_ptr   -> do
+    alloca $ \w_ptr   -> do
+    alloca $ \len_ptr -> do
+    c_getCM rt (unCMatrixIndex lvl) p_ptr n_ptr w_ptr len_ptr
+    p   <- peek p_ptr
+    n   <- peek n_ptr
+    w   <- peek w_ptr
+    len <- peek len_ptr
+    return $! (p, n, w, fromIntegral len)
 
 -------------------------------------------------------------------------------
 -- Kernel execution

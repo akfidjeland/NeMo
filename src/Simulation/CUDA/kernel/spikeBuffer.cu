@@ -1,20 +1,39 @@
+//! \file spikeBuffer.cu
+
 /* For L1 delivery spikes are delivered via global memory. To reduce the number
- * of non-coalesced global memory accesses, we first stage outgoing buffers in
- * shared memory.
- *
- * At the very least one buffer is made available for each potential target
+ * of non-coalesced global memory accesses, we first stage outgoing spikes in
+ * shared-memory buffers. */
+
+/* Each buffer contains one warp's worth of data, for efficient bandwidth
+ * utilisation when flushing */
+#define BUFFER_SZ 16
+
+/*! At the very least one buffer is made available for each potential target
  * partition. To load-balance, multiple buffers may be allocated to the same
- * target partition, especially if the number of partitions is small */
+ * target partition, especially if the number of partitions is small 
+ *
+ * Max partition size used here because this is the size of the buffer as
+ * allocated in kernel.cu:step. This is very brittle and will probably break.
+ *
+ * \todo use a c++ template to make this a compile time constant that depends
+ * on total buffer size. */
+#define MAX_BUFFER_COUNT (MAX_PARTITION_SIZE/(BUFFER_SZ*2)) // 2 since we use uint2
 
 
+/* We can flush multiple buffers per block for better global memory bandwidth
+ * utilisation */
+#define THREADS_PER_BUFFER (BUFFER_SZ*2)
+
+#define BUFFERS_PER_BLOCK (THREADS_PER_BLOCK / THREADS_PER_BUFFER)
 
 
+//! \todo move to separate file for global buffer
 /*! \return
- *      word offset to beginning of global memory spike buffer for a particular
- *      partition pair */
+ *      word offset to beginning of global memory spike buffer for a
+ *      particular partition pair */
 __device__
 size_t
-sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
+g_sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
 {
 	ASSERT(src < PARTITION_COUNT);
 	ASSERT(tgt < PARTITION_COUNT);
@@ -23,23 +42,10 @@ sbBase(size_t pitch, size_t src, size_t tgt, size_t bufferIdx)
 }
 
 
-#define BUFFER_SZ 16
-/*! Max partition size used because this is the size of the buffer as allocated
- * in kernel.cu:step. This is very brittle and will probably break.
- *
- * \todo use a c++ template to make this a compile time constant that depends
- * on total buffer size. */
-#define MAX_BUFFER_COUNT (MAX_PARTITION_SIZE/(BUFFER_SZ*2)) // 2 since we use uint2
-
-/* We can flush multiple buffers per block for better global memory bandwidth
- * utilisation */
-#define THREADS_PER_BUFFER (BUFFER_SZ*2)
-#define BUFFERS_PER_BLOCK (THREADS_PER_BLOCK / THREADS_PER_BUFFER)
-
 
 __device__
 uint
-buffersPerPartition()
+s_sbBuffersPerPartition()
 {
 	return MAX_BUFFER_COUNT / PARTITION_COUNT;
 }
@@ -49,9 +55,9 @@ buffersPerPartition()
 /* Due to rounding some buffers at the end may be invalid */
 __device__
 uint
-bufferCount()
+s_sbCount()
 {
-	return buffersPerPartition() * PARTITION_COUNT;
+	return s_sbBuffersPerPartition() * PARTITION_COUNT;
 }
 
 
@@ -63,27 +69,23 @@ bufferCount()
 
 __device__
 uint
-outputBufferIdx(uint targetPartition, uint buffersPerPartition)
+s_sbBufferIdx(uint targetPartition, uint buffersPerPartition)
 {
     ASSERT(targetPartition < PARTITION_COUNT);
     uint idx
         = targetPartition * buffersPerPartition
         + threadIdx.x % buffersPerPartition;
-    ASSERT(idx < bufferCount());
+    ASSERT(idx < s_sbCount());
     return idx;
 }
 
 
 __device__
 uint
-bufferPartition(uint buffer, uint buffersPerPartition)
+s_sbPartition(uint buffer, uint buffersPerPartition)
 {
-	//! \todo tidy!
-    //uint buffersPerPartition = MAX_BUFFER_COUNT / PARTITION_COUNT;
     return buffer / buffersPerPartition;
 }
-
-
 
 
 
@@ -142,7 +144,7 @@ s_clear_(uint* s_buf)
  */
 __device__
 size_t
-headOffset(size_t src, size_t tgt, size_t pitch, size_t bufferIdx)
+g_headOffset(size_t src, size_t tgt, size_t pitch, size_t bufferIdx)
 {
 	ASSERT(src < PARTITION_COUNT);
 	ASSERT(tgt < PARTITION_COUNT);
@@ -169,7 +171,7 @@ loadAndClearBufferHeads(
 #endif
 	int sourcePartition = threadIdx.x;
 	if(sourcePartition < PARTITION_COUNT) {
-		size_t offset = headOffset(sourcePartition, CURRENT_PARTITION, pitch, bufferIdx);
+		size_t offset = g_headOffset(sourcePartition, CURRENT_PARTITION, pitch, bufferIdx);
 		//! \todo could use atomicExch here instead. Not sure which is faster.
 		s_heads[sourcePartition] = g_heads[offset];
 		g_heads[offset] = 0;
@@ -189,7 +191,7 @@ loadAndClearBufferHeads(
  */
 __device__
 void
-flushSpikeBuffer(
+s_sbFlush(
 	bool validBuffer,
 	uint outbufferIdx,
 	uint writeBufferIdx,
@@ -210,7 +212,7 @@ flushSpikeBuffer(
 	uint t_buf = threadIdx.x / THREADS_PER_BUFFER;
 	uint t_offset = threadIdx.x % THREADS_PER_BUFFER;
 
-	uint targetPartition = bufferPartition(outbufferIdx, buffersPerPartition);
+	uint targetPartition = s_sbPartition(outbufferIdx, buffersPerPartition);
 
 	/* Several output buffers may write to the same global buffer, so we
 	 * need atomic update. */
@@ -221,7 +223,7 @@ flushSpikeBuffer(
 
 	if(validBuffer && t_offset < count*2) {
 
-		size_t base = sbBase(sbPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
+		size_t base = g_sbBase(sbPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
 		uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset];
 
 		g_sb32[2 * (base + g_offset[t_buf]) + t_offset] = data;
@@ -233,34 +235,34 @@ flushSpikeBuffer(
 }
 
 
-/*! Flush all spike buffers */
+/*! Flush all shared memory spike buffers to global memory */
 __device__
 void
-flushAllSpikeBuffers(
+s_sbFlushAll(
 	uint buffersPerPartition,
 	uint writeBufferIdx,
 	size_t headPitch,
 	uint32_t* g_heads,
 	uint32_t* s_heads,
 	uint* s_outheads,
-	uint2* s_outbuf,
-	uint2* g_sq,
+	uint2* s_sb,
+	uint2* g_sb,
 	size_t sbPitch)
 {
-	uint bcount = bufferCount();
+	uint bcount = s_sbCount();
 
 	/* Flush all buffers which still have data in them */
 	for(uint flush_i=0; flush_i < bcount; flush_i += BUFFERS_PER_BLOCK) {
 		uint bufferIdx = flush_i + threadIdx.x / THREADS_PER_BUFFER;
-		flushSpikeBuffer(
+		s_sbFlush(
 			bufferIdx < bcount,
 			bufferIdx,
 			writeBufferIdx,
 			buffersPerPartition,
 			s_outheads[bufferIdx],
 			s_heads,
-			s_outbuf,
-			g_sq, sbPitch);
+			s_sb,
+			g_sb, sbPitch);
 	}
 
 	/* Now that all buffers have been flushed, s_heads should contain the total
@@ -272,8 +274,8 @@ flushAllSpikeBuffers(
 	uint bufferIdx = threadIdx.x;
 	ASSERT(MAX_BUFFER_COUNT <= THREADS_PER_BLOCK);
 	if(bufferIdx < bcount) {
-		uint targetPartition = bufferPartition(bufferIdx, buffersPerPartition);
-		size_t g_offset = headOffset(CURRENT_PARTITION, targetPartition, headPitch, writeBufferIdx);
+		uint targetPartition = s_sbPartition(bufferIdx, buffersPerPartition);
+		size_t g_offset = g_headOffset(CURRENT_PARTITION, targetPartition, headPitch, writeBufferIdx);
 		//! \todo only write if the buffer contains anything
 		g_heads[g_offset] = s_heads[targetPartition];
 	}

@@ -6,6 +6,8 @@ type FT = Double
 -- type FT = Float
 
 type Idx     = Int     -- unique indices for neurons
+type Source  = Idx
+type Target  = Idx
 type Voltage = FT
 type Current = FT
 type Time    = Int     -- synchronous simulation only

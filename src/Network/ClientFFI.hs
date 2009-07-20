@@ -28,7 +28,7 @@ import Construction.Network
 import Construction.Synapse
 import Construction.Topology
 import Network.SocketSerialisation
-import Network.Protocol (startSimulation, stopSimulation, runSimulation, defaultPort)
+import Network.Protocol (startSimulation, stopSimulation, runSimulation, getWeights, defaultPort)
 import Simulation.STDP
 import Types
 
@@ -98,8 +98,8 @@ foreign export ccall hs_runSimulation
     -> Ptr CInt         -- ^ firing stimulus (cycles)
     -> Ptr CInt         -- ^ firing stimulus (indices)
     -> CInt             -- ^ firing stimulus (length)
-    -> Ptr (Ptr CInt)   -- ^ firing (cycles), allocated by caller
-    -> Ptr (Ptr CInt)   -- ^ firing (indices), allocated by caller
+    -> Ptr (Ptr CInt)   -- ^ firing (cycles) (caller should free)
+    -> Ptr (Ptr CInt)   -- ^ firing (indices) (caller should free)
     -> Ptr CInt         -- ^ firing (length)
     -> Ptr CInt         -- ^ elapsed time (milliseconds)
     -> Ptr (Ptr CChar)  -- ^ pointer to error if call failed (caller should free)
@@ -122,6 +122,81 @@ hs_runSimulation fd nsteps applySTDP stdpReward
         stdpApplication
             | applySTDP == 0 = STDPIgnore
             | otherwise      = STDPApply $ realToFrac stdpReward
+
+
+
+{- | Return weights from the running simulation.
+ -
+ - The format of the returned data is the same as in the connectivity matrix
+ - specification in hs_startSimulation.
+ -
+ - The weights may change slightly in the process of setting up the simulation,
+ - as the backend may use a different floating point precision than the caller.
+ -
+ - The order of the weight will almost certainly be different from the
+ - specification in hs_startSimulation, but each call to hs_getWeights should
+ - return the synapses in the same order.
+ -
+ - The caller should free the allocated data.
+ -}
+foreign export ccall hs_getWeights
+    :: CInt              -- ^ socket file descriptor
+    -> Ptr (Ptr CInt)    -- ^ targets
+    -> Ptr (Ptr CUInt)   -- ^ delays
+    -> Ptr (Ptr CDouble) -- ^ weights
+    -> Ptr CUInt         -- ^ number of neurons
+    -> Ptr CUInt         -- ^ number of synapses per neurons
+    -> IO Bool           -- ^ success
+hs_getWeights fd t_ptr d_ptr w_ptr nc_ptr sc_ptr = do
+    handle (\_ -> return False) $ do
+    ns <- getWeights =<< socketFD fd
+    let (_, max) = idxBounds ns
+    {- TODO: the caller should already know this, so no need to compute it
+     - again every time. This should be only instance of maxSynapsesPerNeuron
+     - so remove dead code if changing to allocation in caller -}
+    let pitch = maxSynapsesPerNeuron ns
+    let size  = pitch * (max+1)
+    targets <- newArray $ replicate size nullNeuron
+    delays  <- mallocArray size
+    weights <- mallocArray size
+    mapM_ (pokeNeuron ns pitch targets delays weights) [0..max]
+    poke t_ptr targets
+    poke d_ptr delays
+    poke w_ptr weights
+    poke nc_ptr $ fromIntegral $ max+1
+    poke sc_ptr $ fromIntegral pitch
+    return True
+
+
+
+pokeNeuron
+    :: Network Stateless Static
+    -> Int
+    -> Ptr CInt
+    -> Ptr CUInt
+    -> Ptr CDouble
+    -> Int
+    -> IO ()
+pokeNeuron ns pitch t_ptr d_ptr w_ptr n_idx = do
+    let ss = synapsesOf ns n_idx
+    let i = rowOffset n_idx
+    pokeSynapses (plusPtr t_ptr (i*4)) (plusPtr d_ptr (i*4)) (plusPtr w_ptr (i*8)) ss
+
+    where
+        rowOffset n = pitch * n
+
+        pokeSynapses :: Ptr CInt -> Ptr CUInt -> Ptr CDouble -> [Synapse Static] -> IO ()
+        pokeSynapses _ _ _ [] = return ()
+        pokeSynapses t_ptr d_ptr w_ptr (s:ss) = do
+            poke t_ptr $ fromIntegral $ target s
+            poke d_ptr $ fromIntegral $ delay s
+            poke w_ptr $ realToFrac $ current $ sdata s
+            -- TODO: detect row overflow?
+            pokeSynapses
+                (plusPtr t_ptr 4)
+                (plusPtr d_ptr 4)
+                (plusPtr w_ptr 8) ss
+
 
 
 foreignToFlat :: Ptr CInt -> Ptr CInt -> CInt -> IO [(Time, Idx)]

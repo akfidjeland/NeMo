@@ -1,52 +1,10 @@
 #include <mex.h>
 #include <matrix.h>
-#include <math.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "client.h"
-
-
-
-/* Return the socket descriptor argument */
-int32_t
-getSockfd(const mxArray* arr)
-{
-	if(!mxIsInt32(arr)) {
-		mxErrMsgTxt("HANDLE should be int32_t");
-	}
-
-	if(mxGetN(arr) != 1 || mxGetM(arr) != 1) {
-		mexErrMsgTxt("HANDLE should be scalar");
-	}
-
-	return *((int32_t*) mxGetData(arr));
-}
-
-
-
-/* Return the number of simulation cycles to simulation */
-unsigned int
-getScalarInt(const mxArray* arr)
-{
-	if(!mxIsNumeric(arr)) {
-		mxErrMsgTxt("NSTEPS argument should be numeric");
-	}
-
-	if(mxGetN(arr) != 1 || mxGetM(arr) != 1) {
-		mexErrMsgTxt("NSTEPS argument should be scalar");
-	}
-	/* Generally, if the user specifies the argument in the MATLAB terminal it
-	 * will be a double. However, the backend simulation is discrete, so
-	 * fractional cycles make little sense. */
-	double nstepsf;
-	if(modf(mxGetScalar(arr), &nstepsf) != 0.0) {
-		mxErrMsgTxt("NSTEPS argument should be integral");
-	}
-
-	unsigned int nsteps = (unsigned int) nstepsf;
-	return nsteps;
-}
+#include "args.h"
+#include "error.h"
 
 
 
@@ -58,9 +16,7 @@ getFiringStimulus(const mxArray* arr,
 		uint32_t** firingIdx,
 		unsigned int* len)
 {
-	if(mxIsChar(arr) || mxIsClass(arr, "sparse") || mxIsComplex(arr) ) {
-		mexErrMsgTxt("Firing stimulus matrix must be real, full, and nonstring");
-	}
+	checkRealFullNonstring(arr, "firing stimulus");
 
 	if(!mxIsUint32(arr)) {
 		mexErrMsgTxt("Firing stimulus matrix must have elements of type uint32");
@@ -75,18 +31,6 @@ getFiringStimulus(const mxArray* arr,
 	*firingIdx = *firingCycles + *len;
 }
 
-
-
-/*! Return annotated error while freeing up haskell-allocated error string */
-void
-error(const char* prefix, char* hs_errorMsg)
-{
-	size_t len = strlen(hs_errorMsg) + strlen(prefix) + 1;
-	char* mx_errorMsg = mxMalloc(len);
-	snprintf(mx_errorMsg, len, "%s%s", prefix, hs_errorMsg);
-	free(hs_errorMsg);
-	mexErrMsgTxt(mx_errorMsg);
-}
 
 
 /*! nsStep
@@ -114,7 +58,7 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	}
 
 	int32_t sockfd = getSockfd(prhs[0]); 
-	unsigned int nsteps = getScalarInt(prhs[1]);
+	unsigned int nsteps = getScalarInt(prhs[1], "NSTEPS");
 
 	uint32_t* firingStimulusCycles;
 	uint32_t* firingStimulusIdx;
@@ -128,7 +72,7 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	uint32_t* firingIdx = NULL;
 	unsigned int firingLen; 
 
-	unsigned int applySTDP = getScalarInt(prhs[3]);
+	unsigned int applySTDP = getScalarInt(prhs[3], "APPLY_STDP");
 	double stdpReward = mxGetScalar(prhs[4]);
 	
 	uint32_t elapsed = 0;      /* computation time on server in milliseconds */
@@ -140,7 +84,8 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	if(!success) {
 		free(firingCycles);
 		free(firingIdx);
-		error("server error: ", hs_errorMsg);
+		/*! \todo should free hs_errorMsg before returning */
+		error("%s: %s", "server error", hs_errorMsg);
 	}
 
 	if((plhs[0] = mxCreateNumericMatrix(firingLen, 2, mxUINT32_CLASS, mxREAL)) == NULL) { 
@@ -151,8 +96,8 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 	uint32_t* ret = (uint32_t*) mxGetData(plhs[0]); 
 
-	memcpy((char*)ret, firingCycles, firingLen*sizeof(uint32_t));
-	memcpy((char*)(ret + firingLen), firingIdx, firingLen*sizeof(uint32_t));
+	memcpy((void*)ret, firingCycles, firingLen*sizeof(uint32_t));
+	memcpy((void*)(ret + firingLen), firingIdx, firingLen*sizeof(uint32_t));
 
 	if((plhs[1] = mxCreateNumericMatrix(1, 1, mxINT32_CLASS, mxREAL)) == NULL) {
 		mexErrMsgTxt("Failed to allocate memory for return data: elapsed time\n");

@@ -1,16 +1,16 @@
-% nsEnableSTDP: enable and configure STDP
+% nemoEnableSTDP: enable and configure STDP
 %
-%   nsEnableSTDP(PRE_FIRE, POST_FIRE, MAX_WEIGHT)
+%   nemoEnableSTDP(PRE_FIRE, POST_FIRE, MAX_WEIGHT)
 %
-% If set before nsStart is called, the backend is configured to run with STDP.
+% If set before nemoStart is called, the backend is configured to run with STDP.
 % It will gather synapses modification statistics continously. To update the
-% synapses using the accumulated values, call nsApplySTDP.
+% synapses using the accumulated values, call nemoApplySTDP.
 %
 % Synapses are modified either when a spike arrives either shortly before or
 % shortly after the postsynaptic neuron fires.
 %
 % The vectors PRE_FIRE and POST_FIRE specify the value that is added to the
-% synapses weight (when nsApplySTDP is called) in the two cases for different
+% synapses weight (when nemoApplySTDP is called) in the two cases for different
 % values of dt+1 (where dt is time difference between spike arrival and
 % firing). The +1 is due to the 1-based indexing used in Matlab;
 % it's possible to have dt=0. For example PRE_FIRE[2] specifies
@@ -28,18 +28,18 @@
 % allowed to go negative. However, it is possible for a synapse to recover
 % after reaching weight 0.
 %
-% STDP is disabled by default. When nsEnableSTDP is called it is enabled for
-% all subsequent simulations until nsDisableSTDP is called. 
+% STDP is disabled by default. When nemoEnableSTDP is called it is enabled for
+% all subsequent simulations until nemoDisableSTDP is called. 
 
-% Just store the values, configuration is done in nsStart
-function nsEnableSTDP(prefire, postfire, maxWeight)
-    global NS_STDP_ACTIVE;
-    global NS_STDP_PRE_FIRE;
-    global NS_STDP_POST_FIRE;
-    global NS_STDP_MAX_WEIGHT;
+% Just store the values, configuration is done in nemoStart
+function nemoEnableSTDP(prefire, postfire, maxWeight)
+    global NEMO_STDP_ACTIVE;
+    global NEMO_STDP_PRE_FIRE;
+    global NEMO_STDP_POST_FIRE;
+    global NEMO_STDP_MAX_WEIGHT;
 
-    NS_STDP_ACTIVE = int32(1);
-    NS_STDP_PRE_FIRE = prefire;
-    NS_STDP_POST_FIRE = postfire;
-    NS_STDP_MAX_WEIGHT = maxWeight;
+    NEMO_STDP_ACTIVE = int32(1);
+    NEMO_STDP_PRE_FIRE = prefire;
+    NEMO_STDP_POST_FIRE = postfire;
+    NEMO_STDP_MAX_WEIGHT = maxWeight;
 end

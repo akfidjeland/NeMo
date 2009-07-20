@@ -15,6 +15,11 @@ extern "C" {
 #include <assert.h>
 #include <sys/time.h>
 
+//! \todo put in header instead
+extern void
+configureSTDP(int tauP, int tauD,
+		std::vector<float>& h_prefire,
+		std::vector<float>& h_postfire);
 
 RuntimeData::RuntimeData(
 		size_t partitionCount,
@@ -282,6 +287,19 @@ RuntimeData::usingSTDP() const
 }
 
 
+void
+RuntimeData::configureSTDP()
+{
+	if(m_usingSTDP) {
+		::configureSTDP(
+				m_stdpTauP,
+				m_stdpTauD,
+				m_stdpPotentiation,
+				m_stdpDepression);
+	}
+}
+
+
 /* We just store the parameters here for the time being. The kernel is
  * configured on first launch */ 
 void
@@ -417,6 +435,19 @@ setCMDRow(RTDATA rtdata,
         h_targetPartition,
         h_targetNeuron,
         length);
+}
+
+
+
+void
+getCM(RTDATA rtdata,
+		size_t cmIdx,
+        int* targetPartitions[],
+        int* targetNeurons[],
+        float* weights[],
+        size_t* pitch)
+{
+	rtdata->cm(cmIdx)->copyToHost(targetPartitions, targetNeurons, weights, pitch);
 }
 
 

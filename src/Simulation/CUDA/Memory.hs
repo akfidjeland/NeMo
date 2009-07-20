@@ -3,24 +3,26 @@
 
 module Simulation.CUDA.Memory (
     initMemory,
+    getWeights,
     SimData(..),
     -- * Opaque pointer to kernel data structures
     CuRT
 ) where
 
 
-import Control.Monad (zipWithM_, forM_, when)
+import Control.Monad (zipWithM_, zipWithM, forM_, when)
 import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
-import Foreign.C.Types (CSize, CFloat, CUInt)
+import Foreign.C.Types
 import Foreign.ForeignPtr
 import Foreign.Marshal.Array (mallocArray)
 import Foreign.Ptr
-import Foreign.Storable (pokeElemOff)
+import Foreign.Storable (pokeElemOff, peekElemOff)
 
-import Construction.Neuron (synapsesByDelay)
+import Construction.Neuron (neuron, synapsesByDelay, Stateless(..))
+import qualified Construction.Neurons as Neurons (Neurons, fromList)
 import Construction.Izhikevich
-import Construction.Synapse (Static, target, current)
+import Construction.Synapse (Synapse(..), Static(..), target, current)
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI
 import Simulation.CUDA.Mapping
@@ -29,10 +31,11 @@ import Types
 
 
 data SimData = SimData {
-        ccount  :: Int,
-        csize   :: [Int],              -- size of each cluster,
-        att     :: ATT,
-        rt      :: ForeignPtr CuRT          -- kernel runtime data
+        pcount   :: Int,
+        psize    :: [Int],          -- ^ size of each partition,
+        maxDelay :: Delay,
+        att      :: ATT,
+        rt       :: ForeignPtr CuRT -- ^ kernel runtime data
     }
 
 
@@ -45,11 +48,11 @@ initMemory
     -> STDPConf
     -> IO SimData
 initMemory net att maxProbePeriod stdp = do
-    (pcount, psizes, rt) <- allocRT net maxProbePeriod
+    (pcount, psizes, maxDelay, rt) <- allocRT net maxProbePeriod
     configureSTDP rt stdp
     loadAllNeurons rt net
     loadCMatrix rt att net
-    return $ SimData pcount psizes att rt
+    return $ SimData pcount psizes maxDelay att rt
 
 
 loadPartitionNeurons
@@ -135,6 +138,8 @@ loadCMatrix rt att net =
         setRow rtptr buf = setCMDRow rtptr (weights buf) (pidx buf) (nidx buf)
 
 
+
+
 {- | Write a row of synapses (i.e for a single presynaptic/delay) to output buffer -}
 pokeSynapses _ len0 _ len1 _ _ [] = return (len0, len1)
 pokeSynapses buf0 i0 buf1 i1  att isL0 (s:ss) = do
@@ -156,6 +161,111 @@ pokeSynapse buf i att (target, s) = do
     pokeElemOff (nidx buf) i $! fromIntegral $! neuronIdx didx
 
 
+type DArr = (Ptr CInt, Ptr CInt, Ptr CFloat, Int)
+
+pitch :: DArr -> Int
+pitch (_, _, _, p) = p
+
+
+{- | Get (possibly modified) connectivity matrix back from device -}
+getWeights :: SimData -> IO (Neurons.Neurons Stateless Static)
+getWeights sim = do
+    withForeignPtr (rt sim) $ \rt_ptr -> do
+    darr0 <- getCM rt_ptr cmatrixL0
+    darr1 <- getCM rt_ptr cmatrixL1
+    ns <- peekPartitions
+            (globalIdx $ att sim)
+            (pcount sim)
+            (psize sim)
+            (maxDelay sim)
+            darr0 darr1
+    return $! Neurons.fromList $ concat ns
+
+
+-- for each partition in network
+peekPartitions globalIdx pcount psizes d_max darr0 darr1 = zipWithM go [0..] psizes
+    where
+        go p_idx psize = do
+            let s_idx0 = poffset p_idx psize darr0
+            let s_idx1 = poffset p_idx psize darr1
+            peekNeurons globalIdx p_idx 0 psize d_max s_idx0 s_idx1 darr0 darr1
+        poffset p psize darr = p * maxPSize * d_max * pitch darr
+        maxPSize = maximum psizes
+
+
+-- for each neuron in partition
+peekNeurons globalIdx p_idx n_idx n_max d_max s_idx0 s_idx1 darr0 darr1 =
+    go 0 s_idx0 s_idx1
+    where
+        go n_idx s_idx0 s_idx1
+            -- TODO have some way to determine end of partition, for small
+            -- partitions
+            | n_idx == n_max = return []
+            | otherwise      = do
+                let n_gidx = globalIdx (p_idx, n_idx)
+                ss <- peekDelays globalIdx n_gidx d_max s_idx0 s_idx1 darr0 darr1
+                ns <- go (n_idx+1) (step s_idx0 darr0) (step s_idx1 darr1)
+                return $! (n_gidx, neuron Stateless $ concat ss) : ns
+        step s_idx darr = s_idx + d_max * pitch darr
+
+
+-- for each delay in neuron
+peekDelays globalIdx n_idx d_max s_idx0 s_idx1 darr0 darr1 = go 1 s_idx0 s_idx1
+    where
+        go d s_idx0 s_idx1
+            | d > d_max = return []
+            | otherwise  = do
+                s0  <- peekAxon globalIdx n_idx d s_idx0 darr0
+                s1  <- peekAxon globalIdx n_idx d s_idx1 darr1
+                ss  <- go (d+1) (s_idx0 + pitch darr0) (s_idx1 + pitch darr1)
+                return $! s0 : s1 : ss
+
+
+{- | Get synapses for a specific delay -}
+peekAxon
+    :: (DeviceIdx -> Idx)
+    -> Source
+    -> Delay
+    -> Int        -- ^ current synapse
+    -> DArr       -- ^ device data
+    -> IO [Synapse Static]
+peekAxon globalIdx source d i darr = go i (i + pitch darr)
+    where
+        go i end
+            | i == end  = return []
+            | otherwise = do
+                s  <- peekSynapse globalIdx i source d darr
+                ss <- go (i+1) end
+                case s of
+                    -- TODO: ok to assume all null synapses at end
+                    Nothing -> return $! ss
+                    Just s  -> return $! (s:ss)
+
+
+{- | Synapses pointing to the null neuron are considered inactive -}
+-- TODO: get this value from kernel
+nullIdx = (== (-1))
+
+
+{- | Get a single synapse out of c-array -}
+peekSynapse
+    :: (DeviceIdx -> Idx)
+    -> Int
+    -> Source
+    -> Delay
+    -> DArr
+    -> IO (Maybe (Synapse Static))
+peekSynapse globalIdx i source delay (tp_arr, tn_arr, w_arr, _) = do
+    tp <- peekElemOff tp_arr i
+    if nullIdx tp
+        then return $! Nothing
+        else do
+            tn     <- peekElemOff tn_arr i
+            weight <- peekElemOff w_arr i
+            let target = globalIdx (fromIntegral tp, fromIntegral tn)
+            return $! Just $!
+                Synapse source target delay $! Static (realToFrac weight)
+
 -------------------------------------------------------------------------------
 -- Runtime data
 -------------------------------------------------------------------------------
@@ -176,14 +286,15 @@ foreign import ccall unsafe "allocRuntimeData"
 foreign import ccall unsafe "&freeRuntimeData"
     c_freeRT :: FunPtr (Ptr CuRT -> IO ())
 
-allocRT :: CuNet n s -> Int -> IO (Int, [Int], ForeignPtr CuRT)
+allocRT :: CuNet n s -> Int -> IO (Int, [Int], Delay, ForeignPtr CuRT)
 allocRT net maxProbePeriod = do
     let pcount = partitionCount net
         psizes = partitionSizes net
+        dmax   = maxNetworkDelay net
     ptr <- c_allocRT
         (fromIntegral pcount)
         (fromIntegral $! maximum psizes)
-        (fromIntegral $! maxNetworkDelay net)
+        (fromIntegral $! dmax)
         (fromIntegral $! maxL0Pitch net)
         (fromIntegral $! maxL0RPitch net)
         (fromIntegral $! maxL1Pitch net)
@@ -192,7 +303,7 @@ allocRT net maxProbePeriod = do
         64768 -- L1 queue size
         (fromIntegral maxProbePeriod)
     rt <- newForeignPtr c_freeRT ptr
-    return (pcount, psizes, rt)
+    return (pcount, psizes, dmax, rt)
 
 
 configureSTDP :: ForeignPtr CuRT -> STDPConf -> IO ()

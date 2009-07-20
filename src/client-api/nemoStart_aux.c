@@ -4,6 +4,8 @@
 #include <assert.h>
 
 #include "client.h"
+#include "args.h"
+#include "error.h"
 
 
 #if defined(MINGW32) || defined(WIN32)
@@ -77,10 +79,10 @@ connectSocket(const char* hostname, unsigned short portno)
  * shut down only once. Failure to do this causes matlab to segfault. 
  *
  * Under windows we also need to load and unload the winsock dll in the same
- *  manner.
+ * manner.
  *
- *  Both of these are taken care of by calling startRTS. The shutdown is then
- *  handled automatically once mex is all finished.
+ * Both of these are taken care of by calling startRTS. The shutdown is then
+ * handled automatically once mex is all finished.
  */
 void stopRTS();
 void
@@ -113,15 +115,6 @@ stopRTS()
 
 
 void
-checkRealFullNonstring(const mxArray* arr)
-{
-	if(mxIsChar(arr) || mxIsClass(arr, "sparse") || mxIsComplex(arr) ) {
-		mexErrMsgTxt("Argument must be real, full, and nonstring");
-	}
-}
-
-
-void
 setOrCheckLength(int found, int* expected,
 		const char* dimension,
 		const char* foundName,
@@ -143,41 +136,7 @@ setOrCheckLength(int found, int* expected,
 }
 
 
-void
-invalidArgError(const char* msg, const char* argname)
-{
-	char buffer[128];
-	snprintf(buffer, 128, "%s: %s", msg, argname);
-	mxErrMsgTxt(buffer);
-}
-
-
-/*! \todo share this with e.g. nsRun_aux.c:getNSteps */
-unsigned int
-getScalarInt(const mxArray* arr, const char* argname)
-{
-    /*! \todo better error messages */
-	if(!mxIsNumeric(arr)) {
-		invalidArgError(argname, "argument should be numeric");
-	}
-
-	if(mxGetN(arr) != 1 || mxGetM(arr) != 1) {
-		invalidArgError(argname, "argument should be scalar");
-	}
-
-    /* Generally, if the user specifies the argument in the MATLAB terminal it
-     * will be a double. If there's no fractional part, we're ok */ 
-    double intpart;
-	if(modf(mxGetScalar(arr), &intpart) != 0.0) {
-		invalidArgError(argname, "argument should be integral");
-	}
-
-    return (unsigned int) intpart;
-}
-
-
-
-
+/*! \todo move into args.c */
 /* If lenOut is NULL, ignore the argument. If it's 0, set it to the array
  * length. Otherwise, verify that the length of the array is the same */
 double*
@@ -185,14 +144,29 @@ getDoubleArr(const mxArray* arr, int* lenOut,
 		const char* arrname,
 		const char* refarrname)
 {
-	checkRealFullNonstring(arr);
+	checkRealFullNonstring(arr, arrname);
 	if(mxGetN(arr) != 1) {
-		mxErrMsgTxt("Array should be (m,1)");
+		error("Array '%s' should be (m,1). Actual dimensions are (%u,%u).",
+				arrname, mxGetM(arr), mxGetN(arr));
 	}
 	setOrCheckLength(mxGetM(arr), lenOut, "M", arrname, refarrname);
 	return mxGetPr(arr);
 }
 
+
+/*! \return (m,1) Array which might possibly be null */
+double*
+maybeGetDoubleArr(const mxArray* arr, int* len, const char* arrname)
+{
+	checkRealFullNonstring(arr, arrname);
+	if(mxGetN(arr) != 1 && mxGetN(arr) != 0) {
+		error("Array '%s' should be (m,1) or (m,0). Actual dimensions are (%u,%u).",
+				arrname, mxGetM(arr), mxGetN(arr));
+	}
+	*len = mxGetM(arr);
+	return mxGetPr(arr);
+
+}
 
 
 double*
@@ -200,7 +174,7 @@ getDoubleArr2(const mxArray* arr, int* stride, int* lenOut,
 		const char* arrname,
 		const char* refarrname)
 {
-	checkRealFullNonstring(arr);
+	checkRealFullNonstring(arr, arrname);
 	/* The matrix should be transposed before calling nsStart. (done in wrapper.) */
 	setOrCheckLength(mxGetM(arr), stride, "M", arrname, refarrname);
 	setOrCheckLength(mxGetN(arr), lenOut, "N", arrname, refarrname);
@@ -270,15 +244,15 @@ mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	int prefire_len = 0;
 	int postfire_len = 0;
 
-	double* prefire  = getDoubleArr(prhs[13], &prefire_len, "prefire", "none");
-	double* postfire = getDoubleArr(prhs[14], &postfire_len, "prefire", "none");
+	double* prefire  = maybeGetDoubleArr(prhs[13], &prefire_len, "prefire (STDP)");
+	double* postfire = maybeGetDoubleArr(prhs[14], &postfire_len, "postfire (STDP)");
 	double maxWeight = mxGetScalar(prhs[15]);
 
 	bool success = hs_startSimulation(sockfd, nlen, sstride, tempSubres,
 			usingSTDP, prefire_len, postfire_len, prefire, postfire, maxWeight,
 			a, b, c, d, u, v, postIdx, delays, weights);
     if(!success) {
-        mexErrMsgTxt("An unknown error occurred");
+        mexErrMsgTxt("An unspecified error occurred on the host");
     }
 
 	if((plhs[0] = mxCreateNumericMatrix(1, 1, mxINT32_CLASS, mxREAL)) == NULL) {

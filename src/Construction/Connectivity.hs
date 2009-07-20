@@ -41,7 +41,7 @@ import Control.Monad
 import Data.Maybe
 import Test.QuickCheck (Gen, choose)
 
-import Construction.Network hiding (synapses)
+import Construction.Network hiding (synapses, synapsesOf)
 import Construction.Neuron hiding (connect, synapses)
 import Construction.Neurons (Neurons, updateSynapses, addSynapseAssocs, synapsesOf)
 import Construction.Synapse

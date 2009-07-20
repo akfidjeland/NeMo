@@ -15,7 +15,7 @@ import System.Time (getClockTime)
 import Control.Exception(assert)
 import Control.Monad (zipWithM)
 
-import Network.Protocol
+import Network.Protocol hiding (getWeights)
 import Simulation.Common
 import Simulation.STDP
 import Types
@@ -74,11 +74,11 @@ procRequests
     -> IO ()
 procRequests mastersock hdl verbose initfn = do
     (connsock, clientaddr) <- accept mastersock
-    logMsg hdl clientaddr "Server.hs: client connected"
+    logMsg hdl clientaddr "client connected"
     (catch
         (procSim connsock verbose initfn (logMsg hdl clientaddr))
         (\e -> logMsg hdl clientaddr $
-            "Server.hs: exception caught, simulation terminated\n\t" ++ show e))
+            "exception caught, simulation terminated\n\t" ++ show e))
     sClose connsock
     procRequests mastersock hdl verbose initfn
 
@@ -104,19 +104,24 @@ procSimReq sock sim log = do
             try (procSynReq nsteps sim fstim applySTDP) >>= either
                 (\err -> do
                     sendResponse sock $ RspError $ show err
-                    log $ "Server.hs: error: " ++ show err
+                    log $ "error: " ++ show err
                     stop sim)
                 (\(probed, elapsed) -> do
                     sendResponse sock $ RspData probed elapsed
                     procSimReq sock sim log)
         CmdStop  -> stop sim
+        CmdGetWeights -> do
+            log "returning weight matrix"
+            weights <- getWeights sim
+            sendResponse sock $ RspWeights weights
+            procSimReq sock sim log
         (CmdError c) -> do
-            log $ "Server.hs: invalid simulation request: " ++ show c
+            log $ "invalid simulation request: " ++ show c
             stop sim
     where
         stop sim = do
             closeSim sim
-            log "Server.hs: stopping simulation"
+            log "stopping simulation"
 
 
 
@@ -150,4 +155,4 @@ procSynReq nsteps sim sparseFstim applySTDP = do
 logMsg :: Handle -> SockAddr -> String -> IO ()
 logMsg hdl addr msg = do
     t <- getClockTime
-    hPutStrLn hdl $ show t ++ " From " ++ show addr ++ ": " ++ msg
+    hPutStrLn hdl $ show t ++ " From " ++ show addr ++ ": " ++ "Server.hs: " ++ msg

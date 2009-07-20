@@ -165,9 +165,8 @@ syncSimulation(RTDATA rtdata)
 
 /* Copy network data and configuration to device, if this has not already been
  * done */
-__host__
 void
-configureDevice(RTDATA rtdata)
+copyToDevice(RTDATA rtdata)
 {
 	/* This would have been tidier if we did all the handling inside rtdata.
 	 * However, problems with copying to constant memory in non-cuda code
@@ -184,13 +183,7 @@ configureDevice(RTDATA rtdata)
 			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
 		configurePartition(cr1_maxSynapsesPerDelay,
 			rtdata->cm(CM_L1)->r_maxSynapsesPerDelay());
-		if(rtdata->usingSTDP()) {
-			configureSTDP(
-				rtdata->m_stdpTauP,
-				rtdata->m_stdpTauD,
-				rtdata->m_stdpPotentiation,
-				rtdata->m_stdpDepression);
-		}
+		rtdata->configureSTDP();
         rtdata->setStart();
 	}
 }
@@ -283,7 +276,7 @@ step(	ushort cycle,
 	rtdata->firingProbe->checkOverflow();
 	rtdata->step();
 
-	configureDevice(rtdata); // only done on first invocation
+	copyToDevice(rtdata); // only has effect on first invocation
 
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(rtdata->partitionCount);

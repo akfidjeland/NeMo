@@ -6,6 +6,7 @@ module Network.SocketSerialisation (
     recvSerialised
 ) where
 
+import Control.Monad (when)
 import Data.Binary
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
@@ -67,6 +68,7 @@ recvChunk sock len = return . BL.fromChunks =<< recvChunk_ sock len
         recvChunk_ :: Socket -> Int -> IO [B.ByteString]
         recvChunk_ sock len = do
             string <- recv sock len
+            when (B.null string) (fail "client connection dropped")
             case len - B.length string of
                 0 -> return $! [string]
                 remaining -> do

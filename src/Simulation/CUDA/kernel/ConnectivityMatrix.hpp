@@ -54,6 +54,13 @@ struct ConnectivityMatrix
 		/* Copy data to device and clear host buffers */
 		void moveToDevice();
 
+		/* Copy data from device to host */
+		void copyToHost(
+				int* f_targetPartition[],
+				int* f_targetNeuron[],
+				float* f_weights[],
+				size_t* pitch);
+
 		/*! \return device data for connectivity */
 		uint* df_synapses() const;
 		uint* dr_synapses() const;
@@ -106,6 +113,17 @@ struct ConnectivityMatrix
 		/* Furthermore, to reduce the number of reverse lookups we keep track
 		 * of the possible delays at which spikes arrive at each neuron */
 		NVector<uint32_t> m_arrivalBits;
+
+		/* The user may want to read back the modified weight matrix. We then
+		 * need the corresponding non-compressed addresses as well. The shape
+		 * of each of these is exactly that of the weights on the device.
+		 * Invalid entries have both partition and neuron set to InvalidNeuron.
+		 * */
+		//! \todo construct this when building up network.
+		std::vector<int> mf_targetPartition;
+		std::vector<int> mf_targetNeuron;
+
+		static const int InvalidNeuron = -1;
 };
 
 #endif

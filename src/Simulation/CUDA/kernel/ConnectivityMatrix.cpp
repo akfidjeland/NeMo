@@ -31,7 +31,13 @@ ConnectivityMatrix::ConnectivityMatrix(
 			maxRevSynapsesPerDelay,
 			true,
 			RCM_SUBMATRICES),
-	m_arrivalBits(partitionCount, maxPartitionSize, true)
+	m_arrivalBits(partitionCount, maxPartitionSize, true),
+	mf_targetPartition(
+			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
+			InvalidNeuron),
+	mf_targetNeuron(
+			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
+			InvalidNeuron)
 {
 	//! \todo this initialisation only needed as long as we use delay-specific reverse connectivity
 	m_rsynapses.h_fill(INVALID_REVERSE_SYNAPSE, RCM_ADDRESS);
@@ -156,6 +162,16 @@ ConnectivityMatrix::setRow(
 	m_maxDelay = std::max(m_maxDelay, delay);
 	m_maxSynapsesPerDelay[sourcePartition] =
 		std::max(m_maxSynapsesPerDelay[sourcePartition], (uint) f_length);
+
+	{
+		size_t offset = m_fsynapses.offset(sourcePartition, sourceNeuron, delay, 0);
+		std::copy(targetPartition,
+				targetPartition + f_length,
+				mf_targetPartition.begin() + offset);
+		std::copy(targetNeuron,
+				targetNeuron + f_length,
+				mf_targetNeuron.begin() + offset);
+	}
 }
 
 
@@ -168,6 +184,24 @@ ConnectivityMatrix::moveToDevice()
 	m_fsynapses.copyToDevice();
 	m_arrivalBits.moveToDevice();
 	m_rsynapses.moveToDevice();
+}
+
+
+
+void
+ConnectivityMatrix::copyToHost(
+				int* f_targetPartitions[],
+				int* f_targetNeurons[],
+				float* f_weights[],
+				size_t* pitch)
+{
+	/*! \todo could just keep address matrix around. At least, don't copy this
+	 * more than once, as it does not change. */
+	*f_targetPartitions = &mf_targetPartition[0];
+	*f_targetNeurons = &mf_targetNeuron[0];
+	*pitch = m_fsynapses.delayPitch();
+	assert(sizeof(float) == sizeof(uint));
+	*f_weights = (float*) m_fsynapses.copyToHost(FCM_WEIGHT);
 }
 
 

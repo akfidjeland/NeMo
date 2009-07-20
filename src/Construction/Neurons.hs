@@ -17,7 +17,10 @@ module Construction.Neurons (
         synapses,
         toList,
         synapseCount,
+        maxSynapsesPerNeuron,
         maxDelay,
+        -- * Traversal
+        withSynapses,
         -- * Modification
         addSynapse,
         addSynapses,
@@ -56,7 +59,7 @@ fromList :: [(Idx, Neuron.Neuron n s)] -> Neurons n s
 fromList = Neurons . Map.fromList
 
 
-union :: (Show n) => [Neurons n s] -> Neurons n s
+union :: (Show n, Show s) => [Neurons n s] -> Neurons n s
 union ns = Neurons $ foldl (Map.unionWithKey err) Map.empty $ map ndata ns
     where
         err k x y = error $ "Neurons.union: duplicate key (" ++ show k
@@ -80,6 +83,11 @@ size = Map.size . ndata
 {- | Return number of synapses -}
 synapseCount :: Neurons n s -> Int
 synapseCount (Neurons ns) = Map.fold ((+) . Neuron.synapseCount) 0 ns
+
+
+{- | Return max number of synapses per neuron -}
+maxSynapsesPerNeuron :: Neurons n s -> Int
+maxSynapsesPerNeuron = Map.fold (max) 0 . Map.map Neuron.synapseCount . ndata
 
 
 {- | Return list of all neuron indices -}
@@ -116,6 +124,15 @@ maxDelay :: Neurons n s -> Delay
 maxDelay (Neurons ns) = Map.fold go 0 ns
     where
         go n d = max (Neuron.maxDelay n) d
+
+-------------------------------------------------------------------------------
+-- Traversal
+-------------------------------------------------------------------------------
+
+
+withSynapses :: (s -> s) -> Neurons n s -> Neurons n s
+withSynapses f (Neurons ns) = Neurons $ Map.map (Neuron.withSynapses f) ns
+
 
 -------------------------------------------------------------------------------
 -- Modification
@@ -196,7 +213,13 @@ instance (NFData n, NFData s) => NFData (Neurons n s) where
 
 
 instance (Show n, Show s) => Show (Neurons n s) where
-    show _ = "hello"
+    -- create a list of all neurons, one line per neuron
+    -- TODO: show synapses as well
+    showsPrec _ (Neurons ns) s = showNeuronList (Map.toList ns) s
+
+showNeuronList [] = id
+showNeuronList ((idx, n):ns) =
+    shows idx . showChar ':' . shows n . showChar '\n' . showNeuronList ns
 
 
 {- | Print synapses, one line per synapse -}

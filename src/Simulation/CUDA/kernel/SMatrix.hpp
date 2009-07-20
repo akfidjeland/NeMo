@@ -45,27 +45,29 @@ struct SMatrix
 		/*! \return word pitch for each row of delay data */
 		size_t delayPitch() const;
 
-        /*! Add a synapse to the given row. Return the length of the row after addition */
-        size_t addSynapse(
-                size_t sourcePartition,
-                size_t sourceNeuron,
-                size_t delay,
-                const T& data); 
+		/*! Add a synapse to the given row. Return the length of the row after
+		 * addition */
+		size_t addSynapse(
+			size_t sourcePartition,
+			size_t sourceNeuron,
+			size_t delay,
+			const T& data); 
 
 		/*! Set a row of data pertaining to a single presynaptic neuron and a
 		 * single delay */
-        void setDelayRow(
-                size_t sourcePartition,
-                size_t sourceNeuron,
-                size_t delay,
-                const std::vector<T>& data,
-				size_t plane=0);
+		void setDelayRow(
+			size_t sourcePartition,
+			size_t sourceNeuron,
+			size_t delay,
+			const std::vector<T>& data,
+			size_t plane=0);
 
 		/*! Copy entire host buffer to the device */
 		void copyToDevice();
 
-		/*! Copy single plane from device to host. */
-		void copyToHost(size_t plane);
+		/*! Copy a single plane from device to host. Data are valid until the
+		 * next call to copyToHost. */
+		const T* copyToHost(size_t plane);
 
         /*! Copy entire host buffer to device and clear it (host-side) */
         void moveToDevice();
@@ -93,28 +95,6 @@ struct SMatrix
 				size_t synapseIndex,
 				size_t plane=0) const;
 
-	private :
-
-		/*! \return number of bytes of data for all sub-matrices, including padding */
-		size_t bytes() const;
-
-		T* m_deviceData;
-		std::vector<T> m_hostData;
-
-        std::vector<size_t> m_rowLength;
-
-		size_t m_partitionCount;
-
-		size_t m_maxPartitionSize;
-
-        size_t m_maxSynapsesPerDelay;
-
-        size_t m_maxDelay;
-
-		size_t m_pitch;
-
-		size_t m_planeCount;
-
 		/*! \return word offset */
 		size_t offset(
 				size_t sourcePartition,
@@ -122,6 +102,32 @@ struct SMatrix
 				size_t delay,
 				size_t synapseIndex,
 				size_t plane=0) const;
+
+	private :
+
+		/*! \return number of bytes of data for all sub-matrices, including padding */
+		size_t bytes() const;
+
+		T* m_deviceData;
+
+		/*!  \todo store host data separately for each plane, in moveToDevice,
+		 * clear some of these planes, but leave the forward address and
+		 * weights which we may need to read back later */
+		std::vector<T> m_hostData;
+
+		std::vector<size_t> m_rowLength;
+
+		size_t m_partitionCount;
+
+		size_t m_maxPartitionSize;
+
+		size_t m_maxSynapsesPerDelay;
+
+		size_t m_maxDelay;
+
+		size_t m_pitch;
+
+		size_t m_planeCount;
 
 		/*! \return word offset into length array */
 		size_t lenOffset(

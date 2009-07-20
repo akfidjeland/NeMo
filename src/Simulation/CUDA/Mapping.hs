@@ -126,7 +126,7 @@ partitionAssocs = Map.assocs . netPartitions
 synapseParameters :: ATT -> PartitionIdx -> N.Neuron n s -> (Delay, Int, Int)
 synapseParameters att preIdx n = (N.maxDelay n, l0, l1)
     where
-        (l0, l1) = N.foldTarget go' (0, 0) n
+        (l0, l1) = foldl' go' (0,0) $ N.targets n
         go' (pitchL0, pitchL1) s =
             if isL0 s
                 then (pitchL0+1, pitchL1)
@@ -234,6 +234,7 @@ mapNetwork net@(Net.Network ns _) stdp psizeReq = do
     logMsg $ "Network size: " ++ show (Net.size net)
     logMsg $ "Partition count: " ++ show pcount
     logMsg $ "Partition size: " ++ show psize
+    logMsg $ "Max delay: " ++ show (maxNetworkDelay d_ns)
     logMsg $ "L0 pitch: " ++ show (maxL0Pitch d_ns)
     logMsg $ "L1 pitch: " ++ show (maxL1Pitch d_ns)
     when stdp $ logMsg $ "L0 reverse pitch: " ++ show (maxL0RPitch d_ns)

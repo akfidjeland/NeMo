@@ -1,9 +1,9 @@
-% nsStart: initialize simulation on host
+% nemoStart: initialize simulation on host
 %
-% 	nsStart(A, B, C, D, U, V, SPOST, SDELAY, SWEIGHT, DT, F)
+% 	nemoStart(A, B, C, D, U, V, SPOST, SDELAY, SWEIGHT, DT, F)
 %
-% Initialize a simulation (on the host specified using nsSetHost), in order to
-% allow subsequent calls to nsRun.
+% Initialize a simulation (on the host specified using nemoSetHost), in order to
+% allow subsequent calls to nemoRun.
 %
 % The network is specified using the remaining parameters. The neuron
 % population are defined by A-D, U, and V which are all N-by-1 matrices, where
@@ -24,34 +24,34 @@
 % If the server is not running the function returns an error.
 
 % This a wrapper for MEX code, with some marshalling
-function nsStart(a, b, c, d, u, v, postIdx, delays, weights, dt, F)
+function nemoStart(a, b, c, d, u, v, postIdx, delays, weights, dt, F)
 
 	% If there is already an open simulation, close it first
-	global NS_SIMULATION_SOCKET;
-	if isa(NS_SIMULATION_SOCKET, 'int32') && NS_SIMULATION_SOCKET ~= -1
+	global NEMO_SIMULATION_SOCKET;
+	if isa(NEMO_SIMULATION_SOCKET, 'int32') && NEMO_SIMULATION_SOCKET ~= -1
 		warning 'Closed already active simulation'
-		nsTerminate_aux(NS_SIMULATION_SOCKET);
+		nemoTerminate_aux(NEMO_SIMULATION_SOCKET);
 	end;
 
-    global NS_SIMULATION_HOST;
-    if ~isa(NS_SIMULATION_HOST, 'char')
-        error 'Simulation host not defined. Call nsSetHost before nsStart';
+    global NEMO_SIMULATION_HOST;
+    if ~isa(NEMO_SIMULATION_HOST, 'char')
+        error 'Simulation host not defined. Call nemoSetHost before nemoStart';
     end;
 
-	global NS_SIMULATION_PORT;
-	if ~isa(NS_SIMULATION_PORT, 'int32')
-		NS_SIMULATION_PORT = 0;  % use default port on the backend
+	global NEMO_SIMULATION_PORT;
+	if ~isa(NEMO_SIMULATION_PORT, 'int32')
+		NEMO_SIMULATION_PORT = 0;  % use default port on the backend
 	end;
 
-    global NS_STDP_ACTIVE;
-    global NS_STDP_PRE_FIRE;
-    global NS_STDP_POST_FIRE;
-    global NS_STDP_MAX_WEIGHT;
-    if ~isa(NS_STDP_ACTIVE, 'int32')
-        NS_STDP_ACTIVE = int32(0);
-        NS_STDP_PRE_FIRE = [];
-        NS_STDP_POST_FIRE = [];
-        NS_STDP_MAX_WEIGHT = 0;
+    global NEMO_STDP_ACTIVE;
+    global NEMO_STDP_PRE_FIRE;
+    global NEMO_STDP_POST_FIRE;
+    global NEMO_STDP_MAX_WEIGHT;
+    if ~isa(NEMO_STDP_ACTIVE, 'int32')
+        NEMO_STDP_ACTIVE = int32(0);
+        NEMO_STDP_PRE_FIRE = [];
+        NEMO_STDP_POST_FIRE = [];
+        NEMO_STDP_MAX_WEIGHT = 0;
     end;
 
     weights = F*weights;
@@ -65,15 +65,15 @@ function nsStart(a, b, c, d, u, v, postIdx, delays, weights, dt, F)
 	% adjust indices by one as host expects 0-based array indexing
 	sp = transpose(int32(postIdx-1));
 	sw = transpose(weights);
-	global NS_SIMULATION_SOCKET;
+	global NEMO_SIMULATION_SOCKET;
 
-	NS_SIMULATION_SOCKET = int32(nsStart_aux(...
-		NS_SIMULATION_HOST, NS_SIMULATION_PORT, ...
+	NEMO_SIMULATION_SOCKET = int32(nemoStart_aux(...
+		NEMO_SIMULATION_HOST, NEMO_SIMULATION_PORT, ...
 		a, b, c, d, u, v, sp, sd, sw, dt, ...
-        NS_STDP_ACTIVE, ...
-        NS_STDP_PRE_FIRE, ...
-        NS_STDP_POST_FIRE, ...
-        NS_STDP_MAX_WEIGHT));
+        NEMO_STDP_ACTIVE, ...
+        NEMO_STDP_PRE_FIRE, ...
+        NEMO_STDP_POST_FIRE, ...
+        NEMO_STDP_MAX_WEIGHT));
 end
 
 
