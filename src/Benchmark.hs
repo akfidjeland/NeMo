@@ -234,7 +234,7 @@ runBenchmark simOpts stdpOpts bm = do
     hPutStrLn stderr $ "Throughput: " ++ show (throughput `div` 1000000) ++ "M"
 
 runBenchmarkTiming simOpts stdpOpts net bm rts = do
-    (Simulation sz run elapsed resetTimer close) <-
+    (Simulation sz run elapsed resetTimer _ close) <-
         initSim simOpts net All (Firing :: ProbeFn IzhState) False 
             (cudaOpts Timing) stdpOpts
     -- Note: only provide firing stimulus during the warm-up
@@ -261,7 +261,7 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
 initCycles = 1000
 
 runBenchmarkData simOpts stdpOpts net bm rts = do
-    (Simulation sz run elapsed resetTimer close) <-
+    (Simulation sz run elapsed resetTimer _ close) <-
         initSim simOpts net All (Firing :: ProbeFn IzhState) False 
             (cudaOpts Data) stdpOpts
     -- TODO: factor out stimulus
