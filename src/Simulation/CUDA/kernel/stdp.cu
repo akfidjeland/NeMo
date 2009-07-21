@@ -210,7 +210,7 @@ potentiateSynapse(
 	//! \todo move s_stdpTau into the mask here.
 	// most recent firing which has reached postsynaptic
 	int preFired = __ffs((sourceRecentFiring[sourceNeuron(r_synapse)] >> rfshift)
-	             & 0x80000000        // hack to get consistent results (*)
+	             & ~0x80000000        // hack to get consistent results (*)
 	             & ((~0) << delay));
 
 	/* (*) By the time we deal with LTP we have lost one cycle of history for
