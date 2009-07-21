@@ -248,6 +248,7 @@ potentiateSynapse(
 }
 
 
+
 /*! Process each firing neuron, potentiating synapses with spikes reaching the
  * fired neuron shortly before firing. */
 //! \todo fold this into 'fire' loop
@@ -255,7 +256,6 @@ __device__
 void
 updateLTP_(
 	bool isL1, // hack to work out how to address recent firing bits
-	uint maxDelay,
 	uint32_t* sourceRecentFiring,
 	uint32_t* s_targetRecentFiring,
 	size_t pitch32,
@@ -263,116 +263,64 @@ updateLTP_(
 	uint r_maxSynapses,
 	uint* gr_cm, size_t r_pitch, size_t r_size,
 	uint16_t* s_firingIdx,
-	uint s_firingCount,
-	uint32_t* g_arrivalDelays) // for target partition
+	uint s_firingCount)
 {
-	/*! \note This is the maximum number of chunks required for this whole
-	 * cluster. It should be possible to reduce this for rows with few
-	 * entries. Perhaps better to just save the number of chunks in
-	 * constant memory. It would depend on the chunk size, though. */
-	//! \todo change to uint
-	__shared__ int s_chunkCount;
-	__shared__ int s_synapsesPerDelay;
-	__shared__ int s_delaysPerChunk;
-	__shared__ int s_chunksPerDelay;
+    /*! \note This is the maximum number of chunks required for this whole
+     * cluster. It should be possible to reduce this for rows with few
+     * entries. Perhaps better to just save the number of chunks in
+     * constant memory. It would depend on the chunk size, though. */
+    __shared__ uint s_chunkCount;
 
-	float* gr_ltp = (float*) (gr_cm + RCM_STDP_LTP * r_size);
+    float* gr_ltp = (float*) (gr_cm + RCM_STDP_LTP * r_size);
+    uint32_t* gr_address = gr_cm + RCM_ADDRESS * r_size;
 
-	//! \todo factor this out and share with integrate step
-	if(threadIdx.x == 0) {
-		//! \todo do we need to round to block size if multiple chunks per delay?
-		s_synapsesPerDelay = ALIGN(r_maxSynapses, warpSize);
-		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
-		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
-	}
-	__syncthreads();
+    //! \todo factor this out and share with integrate step
+    if(threadIdx.x == 0) {
+        // deal with at most one postsynaptic neuron in one chunk
+        s_chunkCount = DIV_CEIL(r_maxSynapses, THREADS_PER_BLOCK);
+    }
+    __syncthreads();
 
-	for(int i=0; i<s_firingCount; ++i) {
+    for(int i=0; i<s_firingCount; ++i) {
 
-		uint postsynaptic = s_firingIdx[i];
+        uint target = s_firingIdx[i];
 
-		__shared__ uint s_delayBlocks;
-		__shared__ uint32_t s_arrivals[MAX_DELAY];
+        //! \todo consider using per-neuron maximum here instead
+        for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
-		//! \todo store reverse matrix in non-delay specific form
-		//! \todo factor this out and share with integrate step
-		if(threadIdx.x == 0) {
-			s_delayBlocks = 0;
+            uint r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-			/* It's probably not worthwhile pre-loading arrival delays, since
-			 * only a few of the loaded values will be used */
-			//! \todo could pre-load in one go for all the ones that did fire, though
-			uint32_t arrivalBits = g_arrivalDelays[postsynaptic];
-			while(arrivalBits) {
-				int arrivalDelay = __ffs(arrivalBits) - 1;
-				s_arrivals[s_delayBlocks] = arrivalDelay;
-				arrivalBits &= ~(0x1 << arrivalDelay);
-				s_delayBlocks += 1;
-			}
-			s_chunkCount = s_delaysPerChunk == 0 ?
-				s_delayBlocks * s_chunksPerDelay :  // >= 1 chunk(s) per delay
-				DIV_CEIL(s_delayBlocks, s_delaysPerChunk);  // multiple delays per chunk
-		}
-		__syncthreads();
+            if(r_sidx < r_maxSynapses) {
 
-		for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
+                //! \todo move this inside potentiateSynapse as well
+                size_t r_address = target * r_pitch + r_sidx;
+                uint r_sdata = gr_address[r_address];
 
-			uint delayEntry = s_delaysPerChunk == 0 ?
-				chunk / s_chunksPerDelay :
-				chunk * s_delaysPerChunk + threadIdx.x / s_synapsesPerDelay;
-			uint32_t delay = s_arrivals[delayEntry] + 1;
+                if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
-			/* Offset /within/ a delay block */
-			uint r_sidx = s_delaysPerChunk == 0 ?
-				(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
-				(threadIdx.x % s_synapsesPerDelay);
+                    /* For L0 LTP, recentFiring is in shared memory so access
+                     * is cheap. For L1, recentFiring is in a global memory
+                     * double buffer. Accesses are both expensive and
+                     * non-coalesced. */
+                    //! \todo consider using a cache for L1
 
-			// reverse matrix *only* contains excitatory neurons
-			//! \todo consider using per-neuron maximum here instead
-			if(r_sidx < r_maxSynapses 
-					&& delayEntry < s_delayBlocks
-#ifdef __DEVICE_EMULATION__
-					// warp size is 1, so rounding to warp size not as expected
-					&& threadIdx.x < s_synapsesPerDelay * s_delaysPerChunk
-#endif
-			  )
-			{
-				//! \todo move this inside potentiateSynapse as well
-				size_t r_address = (postsynaptic * maxDelay + delay-1) * r_pitch + r_sidx;
-				uint r_sdata = gr_cm[r_address];
-
-				if(r_sdata != INVALID_REVERSE_SYNAPSE) {
-
-					//! \todo tidy!
-					/* Ignore any firing whose spikes have not had a chance
-					 * to reach postsynaptic, as well as any firing in the
-					 * presynaptic which happened in /this/ cycle. */
-
-					/* For L0 LTP, recentFiring is in shared memory so access
-					 * if cheap. For L1, recentFiring is in a global memory
-					 * double buffer. Accesses are both expensive and
-					 * non-coalesced. */
-
-					//! \todo consider using a cache for L1
-
-					potentiateSynapse(
-							r_sdata,
-							postsynaptic,
-							rfshift,
-							delay,
-							isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch32
-								 : sourceRecentFiring,
-							s_targetRecentFiring,	
-							r_address,
-							gr_ltp);
-				}
-			}
-		}
-		__syncthreads();
-	}
-	__syncthreads();
+                    potentiateSynapse(
+                            r_sdata,
+                            target,
+                            rfshift,
+                            r_delay(r_sdata),
+                            isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch32
+                                 : sourceRecentFiring,
+                            s_targetRecentFiring,
+                            r_address,
+                            gr_ltp);
+                }
+            }
+        }
+        __syncthreads();
+    }
+    __syncthreads();
 }
-
 
 
 
@@ -436,8 +384,6 @@ reorderLTP_(
 #endif
 	int maxPartitionSize,
 	int maxDelay,
-	size_t pitch32,
-	uint32_t* g_delayBits,
 	// forward connectivity
 	uint* gf_cm,
 	size_t f_pitch,
@@ -449,41 +395,31 @@ reorderLTP_(
 {
 	SET_COUNTER(s_ccReorderSTDP, 0);
 
-	/* The accumulated long-term potentiation is stored in a reverse-order matrix. */
+    __shared__ uint s_chunkCount;
 	__shared__ uint s_partitionSize;
-	__shared__ uint s_neuronsPerThread;
+
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-		s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
+        s_chunkCount = DIV_CEIL(r_pitch, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
 
-	/* Pre-load all delay bits, since all of it will be needed */
-	__shared__ uint32_t s_delayBits[MAX_PARTITION_SIZE];
-	loadSharedArray(s_partitionSize, s_neuronsPerThread, pitch32, g_delayBits, s_delayBits);
+	size_t poffset = CURRENT_PARTITION * maxPartitionSize * r_pitch;
+	uint* g_raddress =       gr_cm + RCM_ADDRESS  * r_size + poffset;
+	float* gr_ltp = (float*) gr_cm + RCM_STDP_LTP * r_size + poffset;
 
-	//! \todo fold all into poffset, as forward addressing does its own partition addressing
-	size_t poffset = CURRENT_PARTITION * maxPartitionSize * maxDelay;
-	uint* g_raddress =       gr_cm + RCM_ADDRESS  * r_size + poffset * r_pitch;
-	float* gr_ltp = (float*) gr_cm + RCM_STDP_LTP * r_size + poffset * r_pitch;
+	float* gf_ltp = (float*) gf_cm + FCM_STDP_LTP * f_size;
 
-	float* gf_ltp = (float*) gf_cm + FCM_STDP_LTP * f_size; 
+	for(uint target=0; target < s_partitionSize; ++target) {
+        for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
-	for(uint postsynaptic=0; postsynaptic < s_partitionSize; ++postsynaptic) {
+            uint r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-		__shared__ uint s_delayBlocks;
-		__shared__ uint32_t s_delays[MAX_DELAY];
-		setDelayBits(s_delayBits[postsynaptic], &s_delayBlocks, s_delays);
+            if(r_sidx < r_pitch) {
 
-		ASSERT(r_pitch <= THREADS_PER_BLOCK);
-
-		for(int delayIdx=0; delayIdx<s_delayBlocks; ++delayIdx) {
-
-			int delay = s_delays[delayIdx];
-			//! \todo make this work even if there are more threads than delays
-			if(threadIdx.x < r_pitch) {
-				size_t gr_offset = (postsynaptic * maxDelay + delay) * r_pitch + threadIdx.x;
+				size_t gr_offset = target * r_pitch + r_sidx;
 				uint rsynapse = g_raddress[gr_offset];
+
 				if(rsynapse != INVALID_REVERSE_SYNAPSE) {
 
 					float ltp = gr_ltp[gr_offset];
@@ -492,27 +428,27 @@ reorderLTP_(
 
 						//! \todo refactor
 						size_t gf_offset
-								= sourcePartition(rsynapse) * maxPartitionSize * maxDelay * f_pitch // partition 
-								+ (sourceNeuron(rsynapse) * maxDelay + delay) * f_pitch              // neuron
-								+ forwardIdx(rsynapse);                                              // synapse
+								= sourcePartition(rsynapse) * maxPartitionSize * maxDelay * f_pitch     // partition
+								+ (sourceNeuron(rsynapse) * maxDelay + r_delay(rsynapse)-1) * f_pitch   // neuron
+								+ forwardIdx(rsynapse);                                                 // synapse
 
 						gf_ltp[gf_offset] = ltp;
 						gr_ltp[gr_offset] = 0;
 
-						DEBUG_MSG("stdp %+f for synapse %u -> %u\n", ltp,
+						DEBUG_MSG("stdp %+f for synapse %u-%u -> %u-%u\n", ltp,
 							sourcePartition(rsynapse), sourceNeuron(rsynapse),
-							CURRENT_PARTITION, postsynaptic);
+							CURRENT_PARTITION, target);
 					}
 				}
 			}
 		}
+        //! \todo remove sync?
 		__syncthreads();
 	}
 
 	SET_COUNTER(s_ccReorderSTDP, 1);
 	WRITE_COUNTERS(s_ccReorderSTDP, g_cc, ccPitch, 2);
 }
-
 
 
 
@@ -598,6 +534,7 @@ applySTDP_(
 							targetNeuron(g_postsynaptic[g_offset]),
 							w_new, ltp, ltd);
 
+						//! \todo conditionally include this
 						if(recordTrace) {
 							g_trace[g_offset] = __float_as_int(w_new);
 						}

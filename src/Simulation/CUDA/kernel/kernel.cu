@@ -209,7 +209,7 @@ STDP_FN(deliverL0Spikes_)(
 
 		int candidate = preOffset + threadIdx.x;
 
-		/* It might seem a good idea to load firing delays from global memory *
+		/* It might seem a good idea to load firing delays from global memory
 		 * inside the if-clause, so as to avoid memory traffic when little
 		 * firing occurs.  In practice, however, this was found to increase
 		 * execution time (when not firing) by 68%. It's not clear why this is
@@ -342,8 +342,8 @@ STDP_FN(step) (
 		uint* gf0_cm, uint32_t* gf0_delays,
 		uint* gf1_cm, uint32_t* gf1_delays,
 #ifdef STDP
-		uint* gr0_cm, uint32_t* gr0_delays,
-		uint* gr1_cm, uint32_t* gr1_delays,
+		uint* gr0_cm,
+		uint* gr1_cm,
 #endif
 		// L1 spike queue
 		uint2* gSpikeQueue, 
@@ -391,8 +391,8 @@ STDP_FN(step) (
 	__shared__ uint sf0_maxSynapsesPerDelay;
 	__shared__ uint sf1_maxSynapsesPerDelay;
 #ifdef STDP
-	__shared__ uint sr0_maxSynapsesPerDelay;
-	__shared__ uint sr1_maxSynapsesPerDelay;
+	__shared__ uint sr0_maxSynapsesPerNeuron;
+	__shared__ uint sr1_maxSynapsesPerNeuron;
 #endif
 	__shared__ float s_substepMult;
 
@@ -402,8 +402,8 @@ STDP_FN(step) (
 		sf0_maxSynapsesPerDelay = cf0_maxSynapsesPerDelay[CURRENT_PARTITION];
 		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
 #ifdef STDP
-		sr0_maxSynapsesPerDelay = cr0_maxSynapsesPerDelay[CURRENT_PARTITION];
-		sr1_maxSynapsesPerDelay = cr1_maxSynapsesPerDelay[CURRENT_PARTITION];
+		sr0_maxSynapsesPerNeuron = cr0_maxSynapsesPerNeuron[CURRENT_PARTITION];
+		sr1_maxSynapsesPerNeuron = cr1_maxSynapsesPerNeuron[CURRENT_PARTITION];
 #endif
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
@@ -413,11 +413,15 @@ STDP_FN(step) (
 
 #ifdef STDP
 	loadStdpParameters();
+
+	/* The reverse matrix uses one row per neuron rather than per delay.  The
+	 * word offset may differ in levels 0 and 1. */
+	size_t r_partitionRow = CURRENT_PARTITION * s_maxPartitionSize;
 #endif
 	/* Within a connection matrix plane, partitionRow is the row offset of the
 	 * current partition. The offset in /words/ differ between forward/reverse
 	 * and level 0/1 as they have different row pitches */
-	size_t partitionRow = CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay;
+	size_t f_partitionRow = CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay;
 
 	SET_COUNTER(s_ccMain, 1);
 
@@ -468,7 +472,7 @@ STDP_FN(step) (
 			s_maxDelay,
 			s_partitionSize,
 			sf0_maxSynapsesPerDelay,
-			gf0_cm + partitionRow * sf0_pitch, sf0_pitch, sf0_size,
+			gf0_cm + f_partitionRow * sf0_pitch, sf0_pitch, sf0_size,
 			s_recentFiring,
 			gf0_delays + CURRENT_PARTITION * s_pitch32,
 			s_current, s_T16, s_T32, s_D32);
@@ -500,30 +504,26 @@ STDP_FN(step) (
 #ifdef STDP
 	updateLTP_(
 		false,
-		s_maxDelay,
 		s_recentFiring,
 		s_recentFiring,
 		s_pitch32, 1,
-		sr0_maxSynapsesPerDelay,
-		gr0_cm + partitionRow * sr0_pitch, sr0_pitch, sr0_size,
+		sr0_maxSynapsesPerNeuron,
+		gr0_cm + r_partitionRow * sr0_pitch, sr0_pitch, sr0_size,
 		s_firingIdx,
-		s_firingCount,
-		gr0_delays + CURRENT_PARTITION * s_pitch32);
+		s_firingCount);
 #endif
 	SET_COUNTER(s_ccMain, 7);
 #ifdef STDP
 	if(haveL1) {
-		updateLTP_(
-				true,
-				s_maxDelay,
-				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
-				s_recentFiring,
-				s_pitch32, 0,
-				sr1_maxSynapsesPerDelay,
-				gr1_cm + partitionRow * sr1_pitch, sr1_pitch, sr1_size,
-				s_firingIdx,
-				s_firingCount,
-				gr1_delays + CURRENT_PARTITION * s_pitch32);
+        updateLTP_(
+            true,
+            s_recentFiring,
+            g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
+            s_pitch32, 0,
+            sr1_maxSynapsesPerNeuron,
+            gr1_cm + r_partitionRow * sr1_pitch, sr1_pitch, sr1_size,
+            s_firingIdx,
+            s_firingCount);
 	}
 #endif
 	SET_COUNTER(s_ccMain, 8);
@@ -540,7 +540,7 @@ STDP_FN(step) (
 				s_partitionSize,
 				//! \todo need to call this differently from wrapper
 				sf1_maxSynapsesPerDelay,
-				gf1_cm + partitionRow * sf1_pitch, sf1_pitch, sf1_size,
+				gf1_cm + f_partitionRow * sf1_pitch, sf1_pitch, sf1_size,
 				s_recentFiring,
 				gf1_delays + CURRENT_PARTITION * s_pitch32,
 				(uint2*) s_M1KA, // used for s_current previously, now use for staging outgoing spikes
@@ -556,3 +556,4 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 10);
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }
+

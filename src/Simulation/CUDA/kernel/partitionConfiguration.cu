@@ -92,9 +92,9 @@ loadNetworkParameters()
 /* Per-partition configuration */
 
 __constant__ uint cf0_maxSynapsesPerDelay[MAX_THREAD_BLOCKS];
-__constant__ uint cr0_maxSynapsesPerDelay[MAX_THREAD_BLOCKS];
+__constant__ uint cr0_maxSynapsesPerNeuron[MAX_THREAD_BLOCKS];
 __constant__ uint cf1_maxSynapsesPerDelay[MAX_THREAD_BLOCKS];
-__constant__ uint cr1_maxSynapsesPerDelay[MAX_THREAD_BLOCKS];
+__constant__ uint cr1_maxSynapsesPerNeuron[MAX_THREAD_BLOCKS];
 
 template<class T>
 __host__

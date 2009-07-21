@@ -135,8 +135,7 @@ synapseParameters att preIdx n = (N.maxDelay n, l0, l1)
         isL0 t = (==preIdx) $! partitionIdx $! deviceIdx att t
 
 
-
-type RPitch t = STUArray t (PartitionIdx, NeuronIdx, Delay) Int
+type RPitch t = STUArray t (PartitionIdx, NeuronIdx) Int
 
 
 mkRPitch stdp pcount psize =
@@ -147,23 +146,20 @@ mkRPitch stdp pcount psize =
             return $! Just (l0r, l1r)
         else return Nothing
     where
-        -- TODO: remove hard-coding of max delay hee
-        arr = newArray ((0,0,1), (pcount-1, psize-1, 32)) 0
-
+        -- TODO: remove hard-coding of max delay here
+        arr = newArray ((0,0), (pcount-1, psize-1)) 0
 
 
 {- Increment either L0 or L1 reverse pitch -}
 accRPitch :: ATT -> DeviceIdx -> (RPitch t, RPitch t) -> Synapse s -> ST t ()
 accRPitch att src@(srcp,_) (l0r, l1r) s =
     if isL0
-        then inc l0r tgt d
-        else inc l1r tgt d
+        then inc l0r tgt
+        else inc l1r tgt
     where
-        d = delay s
         tgt = deviceIdx att $! target s
         isL0 = (==srcp) $! partitionIdx $! tgt
-        inc ss (p,n) d = readArray ss i >>= writeArray ss i . (+1)
-            where i = (p,n,d)
+        inc ss i@(p,n) = readArray ss i >>= writeArray ss i . (+1)
 
 
 maxRPitch :: RPitch t -> ST t Int

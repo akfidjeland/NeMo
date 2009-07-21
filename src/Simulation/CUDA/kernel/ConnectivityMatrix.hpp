@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <cuda_runtime.h>
 #include "SMatrix.hpp"
+#include "RSMatrix.hpp"
 #include "NVector.hpp"
 
 /*! \brief Connectivity matrix
@@ -38,7 +39,7 @@ struct ConnectivityMatrix
 				size_t maxPartitionSize,
 				size_t maxDelay,
 				size_t maxSynapsesPerDelay,
-				size_t maxRevSynapsesPerDelay);
+				size_t maxRevSynapsesPerNeuron);
 
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
@@ -75,12 +76,11 @@ struct ConnectivityMatrix
 
 		/*! \return device delay bit data */
 		uint32_t* df_delayBits() const;
-		uint32_t* dr_delayBits() const;
 
 		/*! \return vector specifying maximum synapses per delay (<= pitch) for
 		 * each partition */
 		const std::vector<uint>& f_maxSynapsesPerDelay() const;
-		const std::vector<uint>& r_maxSynapsesPerDelay() const;
+		const std::vector<uint>& r_maxPartitionPitch() const;
 
 		/*! Clear one plane of connectivity matrix on the device */
 		void df_clear(size_t submatrix);
@@ -104,15 +104,10 @@ struct ConnectivityMatrix
 		/* As we fill the matrix, we accumulate per-partition statistics which
 		 * can be used for later configuration */
 		std::vector<uint> m_maxSynapsesPerDelay;
-		std::vector<uint> m_maxReverseSynapsesPerDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
-		 * partition, and (dynamic) spike arrival time */
-		SMatrix<uint> m_rsynapses;
-
-		/* Furthermore, to reduce the number of reverse lookups we keep track
-		 * of the possible delays at which spikes arrive at each neuron */
-		NVector<uint32_t> m_arrivalBits;
+		 * partition, and delay */
+		RSMatrix m_rsynapses;
 
 		/* The user may want to read back the modified weight matrix. We then
 		 * need the corresponding non-compressed addresses as well. The shape

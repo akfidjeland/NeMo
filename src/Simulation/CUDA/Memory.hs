@@ -276,9 +276,9 @@ foreign import ccall unsafe "allocRuntimeData"
         -> CSize  -- ^ max partition size
         -> CUInt  -- ^ max delay (L0 and L1)
         -> CSize  -- ^ max L0 synapses per delay
-        -> CSize  -- ^ max L0 synapses per delay in reverse matrix
+        -> CSize  -- ^ max L0 synapses per neuron in reverse matrix
         -> CSize  -- ^ max L1 synapses per delay
-        -> CSize  -- ^ max L1 synapses per delay in reverse matrix
+        -> CSize  -- ^ max L1 synapses per neuron in reverse matrix
         -> CSize  -- ^ l1 spike queue entry size
         -> CUInt  -- ^ max read period
         -> IO (Ptr CuRT)

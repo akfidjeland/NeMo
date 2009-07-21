@@ -50,16 +50,16 @@ typedef struct RuntimeData* RTDATA;
  */
 RTDATA
 allocRuntimeData(
-        size_t partitionCount,
-        size_t maxPartitionSize,
-        unsigned int maxDelay,
-        size_t maxL0SynapsesPerDelay,
-        size_t maxL0RevSynapsesPerDelay,
-        size_t maxL1SynapsesPerDelay,
-        size_t maxL1RevSynapsesPerDelay,
-        //! \todo determine the entry size inside allocator
-        size_t l1SQEntrySize,
-        unsigned int maxReadPeriod);
+		size_t partitionCount,
+		size_t maxPartitionSize,
+		unsigned int maxDelay,
+		size_t maxL0SynapsesPerDelay,
+		size_t maxL0RevSynapsesPerNeuron,
+		size_t maxL1SynapsesPerDelay,
+		size_t maxL1RevSynapsesPerNeuron,
+		//! \todo determine the entry size inside allocator
+		size_t l1SQEntrySize,
+		unsigned int maxReadPeriod);
 
 void freeRuntimeData(RTDATA);
 

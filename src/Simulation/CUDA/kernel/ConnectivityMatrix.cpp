@@ -12,7 +12,7 @@ ConnectivityMatrix::ConnectivityMatrix(
         size_t maxPartitionSize,
 		size_t maxDelay,
 		size_t maxSynapsesPerDelay,
-		size_t maxRevSynapsesPerDelay) :
+		size_t maxRevSynapsesPerNeuron) :
 	m_fsynapses(partitionCount,
 			maxPartitionSize,
 			maxDelay,
@@ -24,24 +24,16 @@ ConnectivityMatrix::ConnectivityMatrix(
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(maxDelay),
 	m_maxSynapsesPerDelay(partitionCount, 0),
-	m_maxReverseSynapsesPerDelay(partitionCount, 0),
 	m_rsynapses(partitionCount,
 			maxPartitionSize,
-			maxDelay,
-			maxRevSynapsesPerDelay,
-			true,
-			RCM_SUBMATRICES),
-	m_arrivalBits(partitionCount, maxPartitionSize, true),
+			maxRevSynapsesPerNeuron),
 	mf_targetPartition(
 			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
-			InvalidNeuron),
+			ConnectivityMatrix::InvalidNeuron),
 	mf_targetNeuron(
 			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
-			InvalidNeuron)
-{
-	//! \todo this initialisation only needed as long as we use delay-specific reverse connectivity
-	m_rsynapses.h_fill(INVALID_REVERSE_SYNAPSE, RCM_ADDRESS);
-}
+			ConnectivityMatrix::InvalidNeuron)
+{ }
 
 
 
@@ -49,13 +41,6 @@ uint32_t*
 ConnectivityMatrix::df_delayBits() const
 {
 	return m_delayBits.deviceData();
-}
-
-
-uint32_t*
-ConnectivityMatrix::dr_delayBits() const
-{
-	return m_arrivalBits.deviceData();
 }
 
 
@@ -99,7 +84,7 @@ ConnectivityMatrix::dr_planeSize() const
 size_t
 ConnectivityMatrix::dr_pitch() const
 {
-	return m_rsynapses.delayPitch();
+	return m_rsynapses.pitch();
 }
 
 
@@ -132,21 +117,15 @@ ConnectivityMatrix::setRow(
 	std::vector<uint> abuf(m_fsynapses.delayPitch(), 0);
 	std::vector<uint> wbuf(m_fsynapses.delayPitch(), 0);
 
-    bool setReverse = m_rsynapses.delayPitch() > 0;
+	bool setReverse = !m_rsynapses.empty();
 
 	for(size_t i=0; i<f_length; ++i) {
 		// see connectivityMatrix.cu_h for encoding format
 		if(setReverse && weights[i] > 0.0f) { // only do STDP for excitatory synapses
-			size_t r_length = m_rsynapses.addSynapse(
-					targetPartition[i],
-					targetNeuron[i],
-					delay,
-					r_packSynapse(sourcePartition, sourceNeuron, i));
-			m_maxReverseSynapsesPerDelay[targetPartition[i]] =
-				std::max(m_maxReverseSynapsesPerDelay[targetPartition[i]], (uint) r_length);
-			uint32_t arrivalBits = m_arrivalBits.getNeuron(targetPartition[i], targetNeuron[i]);
-			arrivalBits |= 0x1 << (delay-1);
-			m_arrivalBits.setNeuron(targetPartition[i], targetNeuron[i], arrivalBits);
+			m_rsynapses.addSynapse(
+					sourcePartition, sourceNeuron, i,
+					targetPartition[i], targetNeuron[i],
+					delay);
 		}
 		wbuf[i] = reinterpret_cast<const uint32_t&>(weights[i]);
 		abuf[i] = f_packSynapse(targetPartition[i], targetNeuron[i]);
@@ -182,7 +161,6 @@ ConnectivityMatrix::moveToDevice()
 	/* The forward connectivity is retained as the address and weight data are
 	 * needed if we do STDP tracing (along with the trace matrix itself). */
 	m_fsynapses.copyToDevice();
-	m_arrivalBits.moveToDevice();
 	m_rsynapses.moveToDevice();
 }
 
@@ -215,10 +193,11 @@ ConnectivityMatrix::f_maxSynapsesPerDelay() const
 }
 
 
+
 const std::vector<uint>&
-ConnectivityMatrix::r_maxSynapsesPerDelay() const
+ConnectivityMatrix::r_maxPartitionPitch() const
 {
-	return m_maxReverseSynapsesPerDelay;
+	return m_rsynapses.maxPartitionPitch();
 }
 
 
@@ -273,5 +252,5 @@ ConnectivityMatrix::df_clear(size_t plane)
 void
 ConnectivityMatrix::dr_clear(size_t plane)
 {
-	m_rsynapses.d_fill(0, plane);
+	m_rsynapses.d_fill(plane, 0);
 }

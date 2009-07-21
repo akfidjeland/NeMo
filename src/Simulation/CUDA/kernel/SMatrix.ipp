@@ -117,13 +117,12 @@ template<typename T>
 void
 SMatrix<T>::copyToHost(size_t plane, std::vector<T>& hostData)
 {
-    //if(m_hostData.empty()) {
-    //    throw std::logic_error("Attempt to copy from device to empty host vector");
-    //}
-    //! \todo change back to exceptions instead
-    assert(plane < m_planeCount);
+	//if(m_hostData.empty()) {
+	//    throw std::logic_error("Attempt to copy from device to empty host vector");
+	//}
+	//! \todo change back to exceptions instead
+	assert(plane < m_planeCount);
 	assert(hostData.size() == size());
-    size_t pitch = m_pitch * sizeof(T);
 	/* nvcc chokes with "closing brace of template definition not found" if
 	 * CUDA_SAFE_CALL is used in cuda 2.1 */
 	/* CUDA_SAFE_CALL( */ cudaMemcpy(

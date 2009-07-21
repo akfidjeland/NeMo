@@ -177,12 +177,12 @@ copyToDevice(RTDATA rtdata)
 		configureKernel(rtdata);
 		configurePartition(cf0_maxSynapsesPerDelay,
 			rtdata->cm(CM_L0)->f_maxSynapsesPerDelay());
-		configurePartition(cr0_maxSynapsesPerDelay,
-			rtdata->cm(CM_L0)->r_maxSynapsesPerDelay());
+		configurePartition(cr0_maxSynapsesPerNeuron,
+			rtdata->cm(CM_L0)->r_maxPartitionPitch());
 		configurePartition(cf1_maxSynapsesPerDelay,
 			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
-		configurePartition(cr1_maxSynapsesPerDelay,
-			rtdata->cm(CM_L1)->r_maxSynapsesPerDelay());
+		configurePartition(cr1_maxSynapsesPerNeuron,
+			rtdata->cm(CM_L1)->r_maxPartitionPitch());
 		rtdata->configureSTDP();
         rtdata->setStart();
 	}
@@ -219,8 +219,6 @@ applySTDP(dim3 dimGrid,
 #endif
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
-			rtdata->pitch32(),
-			rtdata->cm(cmIdx)->dr_delayBits(),
 			rtdata->cm(cmIdx)->df_synapses(),
 			rtdata->cm(cmIdx)->df_pitch(),
 			rtdata->cm(cmIdx)->df_planeSize(),
@@ -321,10 +319,8 @@ step(	ushort cycle,
 				rtdata->cm(CM_L1)->df_delayBits(),
 				// L0 reverse connectivity
 				rtdata->cm(CM_L0)->dr_synapses(),
-				rtdata->cm(CM_L0)->dr_delayBits(),
 				// L1 reverse connectivity
 				rtdata->cm(CM_L1)->dr_synapses(),
-				rtdata->cm(CM_L1)->dr_delayBits(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),

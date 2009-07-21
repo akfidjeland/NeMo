@@ -227,10 +227,16 @@ s_sbFlush(
 		uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset];
 
 		g_sb32[2 * (base + g_offset[t_buf]) + t_offset] = data;
-		DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u"
-				"(after unknown delay)\n",
-				__int_as_float(data.y), CURRENT_PARTITION,
-				targetPartition, targetNeuron(data.x));
+#ifdef __DEVICE_EMULATION__
+		if(threadIdx.x % 2 == 1) {
+			DEBUG_MSG("Sending L1 current %f for synapse %d-?? -> %u-%u"
+					"(after unknown delay)\n",
+					__int_as_float(s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset + 1]),
+					CURRENT_PARTITION,
+					targetPartition,
+					targetNeuron(s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset]));
+		}
+#endif
 	}
 }
 

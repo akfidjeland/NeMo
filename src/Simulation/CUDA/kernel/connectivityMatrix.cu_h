@@ -3,6 +3,8 @@
 
 //! \file connectivityMatrix.cu_h
 
+#include <cuda_runtime.h>
+
 /* \brief Synapse encoding/decoding
  *
  * Forward synapse: target partition / target neuron
@@ -28,12 +30,17 @@ __host__ uint f_packSynapse(uint partition, uint neuron);
 __device__ uint targetNeuron(uint synapse);
 __device__ uint targetPartition(uint synapse);
 
-__host__ uint r_packSynapse(uint sourcePartition, uint sourceNeuron, uint sourceSynapse);
+__host__ uint r_packSynapse(
+		uint sourcePartition,
+		uint sourceNeuron,
+		uint sourceSynapse,
+		uint delay);
 
 #define INVALID_REVERSE_SYNAPSE ((uint) ~0)
 
 __device__ uint sourceNeuron(uint rsynapse);
 __device__ uint sourcePartition(uint rsynapse);
 __device__ uint forwardIdx(uint rsynapse);
+__device__ uint r_delay(uint rsynapse);
 
 #endif
