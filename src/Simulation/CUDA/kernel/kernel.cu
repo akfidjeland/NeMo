@@ -503,27 +503,27 @@ STDP_FN(step) (
 
 #ifdef STDP
 	updateLTP_(
-		false,
-		s_recentFiring,
-		s_recentFiring,
-		s_pitch32, 1,
-		sr0_maxSynapsesPerNeuron,
-		gr0_cm + r_partitionRow * sr0_pitch, sr0_pitch, sr0_size,
-		s_firingIdx,
-		s_firingCount);
+			false,
+			s_recentFiring,
+			s_recentFiring,
+			s_pitch32, 1,
+			s_partitionSize,
+			sr0_maxSynapsesPerNeuron,
+			gr0_cm + r_partitionRow * sr0_pitch, sr0_pitch, sr0_size,
+			s_T32);
 #endif
 	SET_COUNTER(s_ccMain, 7);
 #ifdef STDP
 	if(haveL1) {
-        updateLTP_(
-            true,
-            s_recentFiring,
-            g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
-            s_pitch32, 0,
-            sr1_maxSynapsesPerNeuron,
-            gr1_cm + r_partitionRow * sr1_pitch, sr1_pitch, sr1_size,
-            s_firingIdx,
-            s_firingCount);
+		updateLTP_(
+				true,
+				s_recentFiring,
+				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
+				s_pitch32, 0,
+				s_partitionSize,
+				sr1_maxSynapsesPerNeuron,
+				gr1_cm + r_partitionRow * sr1_pitch, sr1_pitch, sr1_size,
+				s_T32);
 	}
 #endif
 	SET_COUNTER(s_ccMain, 8);

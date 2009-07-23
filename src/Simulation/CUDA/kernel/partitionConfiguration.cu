@@ -29,7 +29,7 @@
 #define NPARAM_r0_size          8
 #define NPARAM_r1_pitch         9
 #define NPARAM_r1_size         10
-#define NPARAM_COUNT           11 
+#define NPARAM_COUNT           11
 
 /* Configuration array is stored in constant memory, and is loaded in
  * (parallel) into shared memory for each thread block */

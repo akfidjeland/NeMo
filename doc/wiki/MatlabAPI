@@ -1,12 +1,12 @@
 .. Note: this page is used to create user documentation for the MATLAB API
 
 ========================
-Nemo v0.3.1 - Matlab API
+Nemo v0.3.2 - Matlab API
 ========================
 
 :Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
 :Organization: Department of Computing, Imperial College London
-:Date: June 2008
+:Date: July 2008
 
 The MATLAB API can be used to control a simulation running on a dedicated host.
 The network is constructed in MATLAB, and is then transferred to the host. The

@@ -201,17 +201,27 @@ potentiateSynapse(
 		uint r_synapse,
 		uint targetNeuron,
 		uint rfshift,
-		uint delay,
+		uint processingDelay,
 		uint32_t* sourceRecentFiring, // L0: shared memory; L1: global memory
 		uint32_t* s_targetRecentFiring,
 		size_t r_offset,
 		float* gr_ltp)
 {
-	//! \todo move s_stdpTau into the mask here.
-	// most recent firing which has reached postsynaptic
-	int preFired = __ffs((sourceRecentFiring[sourceNeuron(r_synapse)] >> rfshift)
-	             & ~0x80000000        // hack to get consistent results (*)
-	             & ((~0) << delay));
+	//! \todo
+	/* Potentiation is only applied with some processing delay after the
+	 * relevant postsynaptic firing took place. Any spikes that arrived after
+	 * this postsynaptic firing are ignored as far as potentiation is concerned
+	 */
+
+	/* The most recent cycles worth of source firing is not of interest for
+	 * potentiation. (1) Firings which have not had time to reach are ignored
+	 * (2) Firings  */
+	int ignore = rfshift + r_delay(r_synapse) + processingDelay;
+
+	int dt = __ffs(
+		(sourceRecentFiring[sourceNeuron(r_synapse)] >> ignore)
+		 & ~0x80000000        // hack to get consistent results (*)
+		 & MASK(s_stdpTauP)); // ignore firings that happened outside the STDP window
 
 	/* (*) By the time we deal with LTP we have lost one cycle of history for
 	 * the recent firing of the source partition when doing L0. For L1 we read
@@ -225,23 +235,21 @@ potentiateSynapse(
 	 * well ensures we get consistent results when modifying the partition
 	 * size.  */
 
-	if(preFired) {
-		int dt = preFired - delay;
-		ASSERT(dt > 0);
-		if(dt < s_stdpTauP) {
-			/* did this postsynaptic fire in the last dt cycles, i.e. after the
-			 * last incoming spike? */
-			uint32_t p_mask = ~((~0) << dt) << 1; // see above figure
-			bool alreadyPotentiated = s_targetRecentFiring[targetNeuron] & p_mask;
-			if(!alreadyPotentiated) {
+	if(dt) {
+		/* did this postsynaptic fire in the last dt cycles, i.e. after the
+		 * last incoming spike? */
+		uint32_t p_mask = MASK(dt) << 1; // see above figure
+		bool alreadyPotentiated
+			= (s_targetRecentFiring[targetNeuron] >> processingDelay)
+			& p_mask;
+		if(!alreadyPotentiated) {
 
-				gr_ltp[r_offset] += potentiation(dt);
+			gr_ltp[r_offset] += potentiation(dt);
 
-				DEBUG_MSG("ltp %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
-						potentiation(dt),
-						sourcePartition(r_synapse), sourceNeuron(r_synapse),
-						CURRENT_PARTITION, targetNeuron, dt, delay);
-			}
+			DEBUG_MSG("ltp %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
+					potentiation(dt),
+					sourcePartition(r_synapse), sourceNeuron(r_synapse),
+					CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse));
 		}
 	}
 
@@ -260,66 +268,83 @@ updateLTP_(
 	uint32_t* s_targetRecentFiring,
 	size_t pitch32,
 	uint rfshift, // how much to shift recent firing bits
+	uint partitionSize,
 	uint r_maxSynapses,
 	uint* gr_cm, size_t r_pitch, size_t r_size,
-	uint16_t* s_firingIdx,
-	uint s_firingCount)
+	uint32_t* s_firingIdx) // thread buffer
 {
-    /*! \note This is the maximum number of chunks required for this whole
-     * cluster. It should be possible to reduce this for rows with few
-     * entries. Perhaps better to just save the number of chunks in
-     * constant memory. It would depend on the chunk size, though. */
-    __shared__ uint s_chunkCount;
-
-    float* gr_ltp = (float*) (gr_cm + RCM_STDP_LTP * r_size);
-    uint32_t* gr_address = gr_cm + RCM_ADDRESS * r_size;
+    __shared__ uint s_schunkCount; // number of chunks for synapse-parallel execution
+    __shared__ uint s_nchunkCount; // number of chunks for neuron-parallel execution
 
     //! \todo factor this out and share with integrate step
     if(threadIdx.x == 0) {
         // deal with at most one postsynaptic neuron in one chunk
-        s_chunkCount = DIV_CEIL(r_maxSynapses, THREADS_PER_BLOCK);
+		s_schunkCount = DIV_CEIL(r_maxSynapses, THREADS_PER_BLOCK); // per-partition size
+		s_nchunkCount = DIV_CEIL(partitionSize, THREADS_PER_BLOCK);
     }
     __syncthreads();
 
-    for(int i=0; i<s_firingCount; ++i) {
+    float* gr_ltp = (float*) (gr_cm + RCM_STDP_LTP * r_size);
+    uint32_t* gr_address = gr_cm + RCM_ADDRESS * r_size;
 
-        uint target = s_firingIdx[i];
+	/* Determine what postsynaptic neurons needs processing in small batches */
+	for(uint nchunk=0; nchunk < s_nchunkCount; ++nchunk) {
 
-        //! \todo consider using per-neuron maximum here instead
-        for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
+		uint target = nchunk * THREADS_PER_BLOCK + threadIdx.x;
+		const int processingDelay = 0;
+		bool fired = s_targetRecentFiring[target] & (0x1 << processingDelay);
 
-            uint r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+		__shared__ uint s_firingCount;
+		if(threadIdx.x == 0) {
+			s_firingCount = 0;
+		}
+		__syncthreads();
 
-            if(r_sidx < r_maxSynapses) {
+		if(fired && target < partitionSize) {
+			uint i = atomicAdd(&s_firingCount, 1);
+			s_firingIdx[i] = target;
+		}
+		__syncthreads();
 
-                //! \todo move this inside potentiateSynapse as well
-                size_t r_address = target * r_pitch + r_sidx;
-                uint r_sdata = gr_address[r_address];
+		for(uint i=0; i<s_firingCount; ++i) {
 
-                if(r_sdata != INVALID_REVERSE_SYNAPSE) {
+			uint target = s_firingIdx[i];
 
-                    /* For L0 LTP, recentFiring is in shared memory so access
-                     * is cheap. For L1, recentFiring is in a global memory
-                     * double buffer. Accesses are both expensive and
-                     * non-coalesced. */
-                    //! \todo consider using a cache for L1
+			//! \todo consider using per-neuron maximum here instead
+			for(uint schunk=0; schunk < s_schunkCount; ++schunk) {
 
-                    potentiateSynapse(
-                            r_sdata,
-                            target,
-                            rfshift,
-                            r_delay(r_sdata),
-                            isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch32
-                                 : sourceRecentFiring,
-                            s_targetRecentFiring,
-                            r_address,
-                            gr_ltp);
-                }
-            }
-        }
-        __syncthreads();
-    }
-    __syncthreads();
+				uint r_sidx = schunk * THREADS_PER_BLOCK + threadIdx.x;
+
+				if(r_sidx < r_maxSynapses) {
+
+					//! \todo move this inside potentiateSynapse as well
+					size_t r_address = target * r_pitch + r_sidx;
+					uint r_sdata = gr_address[r_address];
+
+					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
+
+						/* For L0 LTP, recentFiring is in shared memory so access
+						 * is cheap. For L1, recentFiring is in a global memory
+						 * double buffer. Accesses are both expensive and
+						 * non-coalesced. */
+						//! \todo consider using a cache for L1
+						potentiateSynapse(
+								r_sdata,
+								target,
+								rfshift,
+								processingDelay,
+								isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch32
+									 : sourceRecentFiring,
+								s_targetRecentFiring,
+								r_address,
+								gr_ltp);
+					}
+				}
+			}
+			__syncthreads();
+		}
+		__syncthreads();
+	}
 }
 
 

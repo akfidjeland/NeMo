@@ -116,6 +116,8 @@ loadExternalFiring(
 
 
 
+//! \todo get rid of 'activeNeuron' and 's_neuronsPerThread'. Use
+//per-partition size directly instead.
 __device__
 void
 loadSharedArray(
@@ -132,6 +134,8 @@ loadSharedArray(
 		}
 	}
 }
+
+
 
 //=============================================================================
 // Current buffer
