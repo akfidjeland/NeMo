@@ -1,3 +1,6 @@
+#ifndef PARTITION_CONFIGURATION_CU
+#define PARTITION_CONFIGURATION_CU
+
 //-----------------------------------------------------------------------------
 // Kernel configuration
 //-----------------------------------------------------------------------------
@@ -14,6 +17,9 @@
 
 #include <cutil.h>
 #include "kernel.cu_h"
+#include "kernel.h"
+#include "RuntimeData.hpp"
+#include "ConnectivityMatrix.hpp"
 
 
 /* Network-wide configuration */
@@ -123,3 +129,5 @@ configurePartitionSize(size_t n, const uint* d_partitionSize)
 			MAX_THREAD_BLOCKS*sizeof(uint), 
 			0, cudaMemcpyHostToDevice));
 }
+
+#endif

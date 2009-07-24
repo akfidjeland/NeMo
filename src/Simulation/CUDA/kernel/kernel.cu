@@ -178,9 +178,6 @@ STDP_FN(deliverL0Spikes_)(
 {
 	uint*  gf0_address =          gf0_cm + FCM_ADDRESS  * f0_size;
 	float* gf0_weight  = (float*) gf0_cm + FCM_WEIGHT   * f0_size;
-#ifdef STDP
-	float* gf0_ltd     = (float*) gf0_cm + FCM_STDP_LTD * f0_size;
-#endif
 
 	/*! \note This is the maximum number of chunks required for this whole
 	 * cluster. It should be possible to reduce this for rows with few entries.
@@ -283,24 +280,14 @@ STDP_FN(deliverL0Spikes_)(
 						(presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
 					weight = gf0_weight[synapseAddress];
 
-					//! \todo only load address if it will actually be used.
-					//For benchmarks this made little difference, presumable
-					//because all neurons have same number of synapses. Experiment!
+					/*! \todo only load address if it will actually be used.
+					 * For benchmarks this made little difference, presumably
+					 * because all neurons have same number of synapses.
+					 * Experiment! */
 					uint sdata = gf0_address[synapseAddress];
 					postsynaptic = targetNeuron(sdata);
 
-					if(weight != 0.0f) {
-						doCommit = true;
-#ifdef STDP
-						if(weight > 0.0f) {
-							depressSynapse(
-									CURRENT_PARTITION, presynaptic,
-									CURRENT_PARTITION, postsynaptic, delay+1,
-									s_recentFiring, s_recentFiring,
-									synapseAddress, gf0_ltd);
-						}
-#endif
-					}
+					doCommit = weight != 0.0f;
 				}
 
 				STDP_FN(commitCurrent_)(doCommit, delayEntry, s_delayBlocks, 
@@ -451,13 +438,6 @@ STDP_FN(step) (
 	bool haveL1 = gSpikeQueue != NULL;
 	if(haveL1) {
 		STDP_FN(gatherL1Spikes_JIT_)(
-#ifdef STDP
-				(float*) gf1_cm + FCM_STDP_LTD * sf1_size,
-				sf1_pitch,
-				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
-				s_recentFiring,
-				s_pitch32,
-#endif
 				readBuffer(cycle),
 				gSpikeQueue,
 				sqPitch,
@@ -502,7 +482,7 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 6);
 
 #ifdef STDP
-	updateLTP_(
+	updateSTDP_(
 			false,
 			s_recentFiring,
 			s_recentFiring,
@@ -515,7 +495,7 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 7);
 #ifdef STDP
 	if(haveL1) {
-		updateLTP_(
+		updateSTDP_(
 				true,
 				s_recentFiring,
 				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,

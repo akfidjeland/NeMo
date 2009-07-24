@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "kernel.cu_h"
 #include "connectivityMatrix.cu_h"
 

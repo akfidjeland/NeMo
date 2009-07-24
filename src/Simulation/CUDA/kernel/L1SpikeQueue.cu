@@ -24,13 +24,6 @@ STDP_FN(updateCurrent)(
 		uint sourcePartition,
 		uint32_t spikeIdx,   // index of spike for current thread
 		uint32_t spikeCount, // number of spikes to delivered for current buffer 
-#ifdef STDP
-		float* gf1_ltd,
-		size_t f1_pitch,
-		uint32_t* g_recentFiring,
-		uint32_t* s_recentFiring,
-		size_t pitch32,
-#endif
 		uint2* g_sb,
 		size_t sbPitch,
 		float* s_current)
@@ -62,22 +55,6 @@ STDP_FN(updateCurrent)(
 	if(spiked) {
 		// serialise commits for each shared memory bank to avoid race condition
 		commitNo = atomicAdd(s_committing + (target % BANKS), 1);
-#ifdef STDP
-		if(weight > 0.0f) {
-			size_t f1_poffset = sourcePartition * s_maxPartitionSize * s_maxDelay * f1_pitch;
-			size_t f1_noffset = (spikeSourceNeuron(spike) * s_maxDelay + spikeDelay(spike)) * f1_pitch;
-			depressSynapse(
-					sourcePartition,
-					spikeSourceNeuron(spike), 
-					targetPartition,
-					target, 
-					spikeDelay(spike) + 1,
-					g_recentFiring + sourcePartition * pitch32,  // source
-					s_recentFiring,                              // target
-					f1_noffset + spikeSourceSynapse(spike),
-					gf1_ltd + f1_poffset);
-		}
-#endif
 	}
 	__syncthreads();
 
@@ -113,13 +90,6 @@ STDP_FN(updateCurrent)(
 __device__
 void
 STDP_FN(gatherL1Spikes_JIT_)(
-#ifdef STDP
-		float* gf1_ltd,
-		size_t f1_pitch,
-		uint32_t* g_recentFiring,
-		uint32_t* s_recentFiring,
-		size_t pitch32,
-#endif
 		uint readBufferIdx,
 		uint2* g_sb,
 		size_t sbPitch,
@@ -136,12 +106,6 @@ STDP_FN(gatherL1Spikes_JIT_)(
 		for(uint load=0; load<parallelLoads; ++load) {
 			uint spikeIdx = load * THREADS_PER_BLOCK + threadIdx.x;
 			STDP_FN(updateCurrent)(readBufferIdx, src, spikeIdx, s_heads[src],
-#ifdef STDP
-					gf1_ltd, f1_pitch,
-					g_recentFiring,
-					s_recentFiring,
-					pitch32,
-#endif
 					g_sb, sbPitch, s_current);
 		}
 	}

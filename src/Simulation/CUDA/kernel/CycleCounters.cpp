@@ -10,7 +10,6 @@
 
 CycleCounters::CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpEnabled) :
 	m_ccMain(partitionCount, CC_MAIN_COUNT-1, true),
-	m_ccReorderSTDP(partitionCount, 1, stdpEnabled),
 	m_ccApplySTDP(partitionCount, 1, stdpEnabled),
 	m_partitionCount(partitionCount),
 	m_clockRateKHz(clockRateKHz),
@@ -87,7 +86,6 @@ CycleCounters::printCounters(const char* filename)
 	outfile.open(filename);
 	printCounterSet(m_ccMain, CC_MAIN_COUNT-1, "Main", durationNames, outfile);
 	if(m_stdpEnabled) {
-		printCounterSet(m_ccReorderSTDP, 1, "STDP (reorder)", NULL, outfile);
 		printCounterSet(m_ccApplySTDP, 1, "STDP (apply)", NULL, outfile);
 	}
 	outfile.close();

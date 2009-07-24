@@ -40,7 +40,7 @@ ROOTDIR := dist/build/cuda
 CU_MAIN = kernel_wrapper.cu
 
 # CUDA source files which are #included in main kernel source file
-CU_INC = kernel.cu L1SpikeQueue.cu firingProbe.cu partitionConfiguration.cu cycleCounting.cu error.cu connectivityMatrix.cu stdp.cu thalamicInput.cu
+CU_INC = kernel.cu L1SpikeQueue.cu firingProbe.cu partitionConfiguration.cu cycleCounting.cu error.cu connectivityMatrix.cu stdp.cu applySTDP.cu thalamicInput.cu
 
 # CUDA source files (compiled with cudacc)
 # CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN) $(CU_INC))

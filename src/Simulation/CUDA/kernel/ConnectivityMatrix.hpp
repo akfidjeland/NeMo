@@ -122,7 +122,7 @@ struct ConnectivityMatrix
 		 * data.  */
 		std::vector<uint32_t> mf_weights;
 
-		static const int InvalidNeuron = -1;
+		static const int InvalidNeuron;
 };
 
 #endif

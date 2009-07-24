@@ -15,14 +15,12 @@
 // planes of forward connectivity matrix
 #define FCM_ADDRESS 0        // target partition and neuron
 #define FCM_WEIGHT 1         // float packed as int
-#define FCM_STDP_LTD 2       // long-term depression accumulator
-#define FCM_STDP_LTP 3       // long-term potentiation accumulator (temporary only)
-#define FCM_STDP_TRACE 4     // recording of every synapse (weight) with modifications
-#define FCM_SUBMATRICES 5
+#define FCM_STDP_TRACE 2     // recording of every synapse (weight) with modifications
+#define FCM_SUBMATRICES 3
 
 // planes of reverse connectivity matrix
 #define RCM_ADDRESS 0        // source partition, neuron and synapse index 
-#define RCM_STDP_LTP 1       // long-term potentiation accumulator
+#define RCM_STDP 1       // long-term potentiation accumulator
 #define RCM_SUBMATRICES 2
 
 __host__ uint f_packSynapse(uint partition, uint neuron);

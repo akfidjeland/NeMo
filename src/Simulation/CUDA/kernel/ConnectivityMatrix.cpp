@@ -6,6 +6,7 @@
 
 #include "connectivityMatrix.cu_h"
 
+const int ConnectivityMatrix::InvalidNeuron = -1;
 
 ConnectivityMatrix::ConnectivityMatrix(
         size_t partitionCount,

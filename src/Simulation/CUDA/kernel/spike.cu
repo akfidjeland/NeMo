@@ -1,3 +1,6 @@
+#ifndef SPIKE_CU
+#define SPIKE_CU
+
 /* Packing and unpacking of L1 spikes spikes
  * 
  * For spike delivery we distinguish between L0 (short-range) and L1
@@ -127,3 +130,5 @@ spikeWeight(spike_t s)
 {
 	return __int_as_float(s.y);	
 }
+
+#endif

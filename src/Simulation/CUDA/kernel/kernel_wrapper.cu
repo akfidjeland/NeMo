@@ -28,6 +28,7 @@ extern "C" {
 #include "partitionConfiguration.cu"
 #include "cycleCounting.cu"
 #include "ThalamicInput.hpp"
+#include "applySTDP.cu"
 
 #define SLOW_32B_INTS
 
@@ -157,6 +158,7 @@ loadSharedArray(
 #include "L1SpikeQueue.cu"
 #include "kernel.cu"
 
+
 /* Force all asynchronously launced kernels to complete before returning */
 __host__
 void
@@ -164,7 +166,6 @@ syncSimulation(RTDATA rtdata)
 {
     CUDA_SAFE_CALL(cudaThreadSynchronize());
 }
-
 
 
 /* Copy network data and configuration to device, if this has not already been
@@ -200,8 +201,7 @@ __host__
 void
 clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
 {
-	rtdata->cm(cmIdx)->df_clear(FCM_STDP_LTD);
-	rtdata->cm(cmIdx)->dr_clear(RCM_STDP_LTP);
+	rtdata->cm(cmIdx)->dr_clear(RCM_STDP);
 }
 
 
@@ -209,18 +209,21 @@ clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
 
 __host__
 void
-applySTDP(dim3 dimGrid,
+applySTDP(
+		dim3 dimGrid,
 		dim3 dimBlock,
 		RTDATA rtdata,
 		uint cmIdx,
 		float reward,
 		bool trace)
 {
-	reorderLTP_<<<dimGrid, dimBlock>>>(
+	applySTDP_<<<dimGrid, dimBlock>>>(
 #ifdef KERNEL_TIMING
-			rtdata->cycleCounters->dataReorderSTDP(),
-			rtdata->cycleCounters->pitchReorderSTDP(),
+			rtdata->cycleCounters->dataApplySTDP(),
+			rtdata->cycleCounters->pitchApplySTDP(),
 #endif
+			reward,
+			rtdata->stdpMaxWeight(),
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
 			rtdata->cm(cmIdx)->df_synapses(),
@@ -233,30 +236,6 @@ applySTDP(dim3 dimGrid,
 	if(trace) {
 		rtdata->cm(cmIdx)->df_clear(FCM_STDP_TRACE);
 	}
-
-	applySTDP_<<<dimGrid, dimBlock>>>(
-#ifdef KERNEL_TIMING
-			rtdata->cycleCounters->dataApplySTDP(),
-			rtdata->cycleCounters->pitchApplySTDP(),
-#endif
-			reward,
-			rtdata->stdpMaxWeight(),
-			rtdata->maxPartitionSize,
-			rtdata->maxDelay(),
-			rtdata->pitch32(),
-			rtdata->cm(cmIdx)->df_delayBits(),
-			rtdata->cm(cmIdx)->df_synapses(),
-			rtdata->cm(cmIdx)->df_pitch(),
-			rtdata->cm(cmIdx)->df_planeSize(),
-			trace);
-
-	rtdata->cm(cmIdx)->df_clear(FCM_STDP_LTP);
-
-#if 0
-	if(trace) {
-		rtdata->cm(cmIdx)->printSTDPTrace();
-	}
-#endif
 }
 
 

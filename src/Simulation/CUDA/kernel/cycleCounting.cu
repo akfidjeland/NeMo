@@ -1,10 +1,12 @@
+#ifndef CYCLE_COUNTING_CU
+#define CYCLE_COUNTING_CU
+
 #include "cycleCounting.cu_h"
 
 /* Each kernel has a separate cycle counter */
 #ifdef KERNEL_TIMING
 __shared__ clock_t s_ccMain[CC_MAIN_COUNT];
 //! \todo don't allocate this memory if STDP not enabled
-__shared__ clock_t s_ccReorderSTDP[CC_STDP_REORDER_COUNT];
 __shared__ clock_t s_ccApplySTDP[CC_STDP_APPLY_COUNT];
 #endif
 
@@ -53,4 +55,6 @@ writeCycleCounters(clock_t* s_cc, unsigned long long* g_cc, size_t pitch, size_t
 #else
 #define SET_COUNTER(s_cc, counter)
 #define WRITE_COUNTERS(s_cc, g_cc, ccPitch, ccCount)
+#endif
+
 #endif

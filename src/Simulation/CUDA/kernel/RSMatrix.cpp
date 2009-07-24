@@ -25,7 +25,7 @@ RSMatrix::RSMatrix(
 				height));
 	m_pitch = bytePitch / sizeof(uint32_t);
 	d_fill(RCM_ADDRESS, 0);
-	d_fill(RCM_STDP_LTP, 0);
+	d_fill(RCM_STDP, 0);
 
 	/* We only need to store the addresses on the host side */
 	m_hostData.resize(size(), INVALID_REVERSE_SYNAPSE);

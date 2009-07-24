@@ -1,3 +1,6 @@
+#ifndef ERROR_CU
+#define ERROR_CU
+
 /*! \brief Run-time assertions on the GPU
  *
  * If the kernel is compiled with device assertions (CPP flag
@@ -95,3 +98,5 @@ clearAssertions()
 	CUDA_SAFE_CALL(cudaMemset(addr, 0, DEVICE_ASSERTION_MEMSZ*sizeof(int)));
 #endif
 }
+
+#endif
