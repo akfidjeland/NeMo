@@ -2,7 +2,7 @@
 #define KERNEL_CU_H
 
 #define MAX_THREAD_BLOCKS 128
-#define THREADS_PER_BLOCK 128
+#define THREADS_PER_BLOCK 256
 
 #define DELAY_BITS 5
 #define MAX_DELAY (1<<5)

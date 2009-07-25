@@ -155,12 +155,9 @@ STDP_FN(commitCurrent_)(
 		}
 		__syncthreads();
 	}
-	/* We need a barrier *outside* the loop to avoid threads
-	 * reaching the barrier (inside the loop), then having thread 0
-	 * race ahead and changing s_delayBlocks before all threads
-	 * have left the loop. */
-	__syncthreads();
 }
+
+
 
 __device__
 void
@@ -292,6 +289,12 @@ STDP_FN(deliverL0Spikes_)(
 
 				STDP_FN(commitCurrent_)(doCommit, delayEntry, s_delayBlocks, 
 						presynaptic, postsynaptic, weight, s_current);
+
+				/* We need a barrier *outside* the loop to avoid threads
+				 * reaching the barrier (inside the loop), then having thread 0
+				 * race ahead and changing s_delayBlocks before all threads
+				 * have left the loop. */
+				__syncthreads();
 			}
 		}
 	}
