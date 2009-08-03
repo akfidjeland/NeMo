@@ -43,9 +43,10 @@ STDP_FN(fire)(
 	float* g_neuronParameters,
 	size_t neuronParametersSize,
 	// input
-	uint32_t* g_fstim,                            // externally driven firing
-	float* s_current,                              // input current
+	uint32_t* g_fstim,   // externally driven firing
+	float* s_current,    // input current
 	// buffers
+	uint32_t* s_fstim,   // s_T32, so larger than needed
 	uint32_t* s_recentFiring,
 	uint32_t* g_recentFiring,
 	uint16_t* s_firingIdx,
@@ -58,12 +59,7 @@ STDP_FN(fire)(
 	float* g_u = g_neuronParameters + STATE_U * neuronParametersSize;
 	float* g_v = g_neuronParameters + STATE_V * neuronParametersSize;
 
-	/* We could save a small amount of shared memory by moving this inside the
-	 * firing loop. However, as it is it's typically no more than a single
-	 * warp's worth of data, so saving this shared memory will have an adverse
-	 * effect on global memory usgage */
-	//! \todo make  this reuasable memory
-	__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
+	//__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
 	loadExternalFiring(hasExternalInput, s_partitionSize,
         fstimPitch, g_fstim, s_fstim);
 	
@@ -368,8 +364,11 @@ STDP_FN(step) (
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
 	__shared__ uint32_t s_T32[THREADS_PER_BLOCK];
 
-	/* Per-delay buffers */
+	/* Per-delay buffer */
 	__shared__ uint32_t s_D32[MAX_DELAY];
+
+	/* Per-partition buffer */
+	__shared__ uint32_t s_P32[MAX_PARTITION_COUNT];
 
 	uint32_t* s_recentFiring = s_M1KB;
 	//! \todo we could probably get away with per-thread storage here, by reorganising kernel
@@ -446,7 +445,8 @@ STDP_FN(step) (
 				sqPitch,
 				gSpikeQueueHeads,
 				sqHeadPitch,
-				s_current);
+				s_current,
+				s_P32);
 	}
 
 	SET_COUNTER(s_ccMain, 4);
@@ -477,6 +477,7 @@ STDP_FN(step) (
 			g_neuronParameters,
 			neuronParametersSize,
 			g_fstim, s_current, 
+			s_T32,
 			s_recentFiring, 
 			g_recentFiring + writeBuffer(cycle) * PARTITION_COUNT * s_pitch32,
 			s_firingIdx,
@@ -533,7 +534,7 @@ STDP_FN(step) (
 				sqPitch,
 				gSpikeQueueHeads,
 				sqHeadPitch,
-				s_T16, s_T32, s_D32);
+				s_T16, s_T32, s_D32, s_P32);
 	}
 
 	SET_COUNTER(s_ccMain, 10);

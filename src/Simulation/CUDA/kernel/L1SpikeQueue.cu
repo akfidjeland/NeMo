@@ -95,11 +95,9 @@ STDP_FN(gatherL1Spikes_JIT_)(
 		size_t sbPitch,
 		uint* g_heads,
         size_t headPitch,
-		float* s_current)
+		float* s_current,
+		uint* s_heads /* s_P32 */ )
 {
-	//! \todo share this memory with other code, perhaps as a special p_buffer.
-	__shared__ uint s_heads[MAX_PARTITION_COUNT];
-
 	loadAndClearBufferHeads(g_heads, s_heads, headPitch, readBufferIdx);
 	for(uint src=0; src<PARTITION_COUNT; ++src) {
 		uint parallelLoads = DIV_CEIL(s_heads[src], THREADS_PER_BLOCK);
@@ -134,7 +132,9 @@ STDP_FN(deliverL1Spikes_JIT)(
 	size_t headPitch,
 	uint16_t* s_firingIdx,
 	uint32_t* s_arrivalBits,
-	uint32_t* s_arrivals)
+	uint32_t* s_arrivals,
+	/* In global memory there is one buffer per source-target partition pair */
+	uint32_t* s_gheads /* s_P32 */)
 {
 	uint*  gf1_address =          gf1_cm + FCM_ADDRESS * f1_size;
 	float* gf1_weights = (float*) gf1_cm + FCM_WEIGHT  * f1_size;
@@ -150,10 +150,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 	 * writes we stage spike data in shared memory before writing it to global
 	 * memory.
 	 */
-
-	/* In global memory there is one buffer per source-target partition pair */
-	//! \todo reuse this memory
-	__shared__ uint s_gheads[MAX_PARTITION_COUNT];
 
 	/* For the output buffers, multiple buffers may be dedicated to the same
 	 * global buffer. This is to avoid a sequential bottleneck when we have
