@@ -22,28 +22,38 @@ import Simulation.Common
 import Types
 
 
+
 {- We use a regression test to verify that both the Matlab/Mex interface and
  - the socket communication works. -}
 tests :: Test
-tests = TestLabel "testing matlab API" $ TestCase $ do
+tests = TestLabel "testing matlab API (smallworld)" $ TestCase $ do
     withSimulation $ do
+    testSmallworld False
+    -- testSmallworld True
 
+
+testSmallworld usingSTDP = do
     {- It seems there is no way to make matlab return a status code to the
      - shell, so to check whether the m-file was successful or not, we have to
      - rely on it returning a status string which we then have to parse.
      -
      - A return string starting with 'success' is deemed to be a success.
      - Anything else, a failure -}
-    file <- dataFile
-    results <- matlabRun (ml_runSmallworld ++ ml_checkFiring file)
+    file <- dataFile usingSTDP
+    results <- matlabRun (ml_runSmallworld usingSTDP ++ ml_checkFiring file)
     let status = last results
     assertBool status ("success" `isPrefixOf` status)
 
 
 create_tests = withSimulation $ do
-    outfile <- dataFile
+    createSmallworldTest False
+    -- createSmallworldTest True
+
+
+createSmallworldTest usingSTDP = do
+    outfile <- dataFile usingSTDP
     putStrLn $ "Writing regression data to " ++ outfile
-    matlabRun $ ml_runSmallworld ++ ml_saveFiring outfile
+    matlabRun $ ml_runSmallworld usingSTDP ++ ml_saveFiring outfile
     return ()
 
 
@@ -91,12 +101,14 @@ matlabOutput h = go h '\0' []
 
 
 {- Set up and run simulation, returning firing vector in 'f' -}
-ml_runSmallworld = [
+ml_runSmallworld usingSTDP = [
         "addpath('client-dist/matlab/latest');",
         "addpath('testsuite/Test/ClientAPI');",   -- for smallworld script
         "nsSetHost('localhost');",
         "nsSetPort(" ++ testPort ++ ");",
-        "nsDisableSTDP;",
+        if usingSTDP
+            then "nsEnableSTDP(20, 20, 1.0, 0.8, 30);"
+            else "nsDisableSTDP;",
         "[a, b, c, d, u, v, post, delays, weights] = smallworld(34, 12345);",
         "nsStart(a, b, c, d, u, v, post, delays, weights, 4, 1);",
         "[f, t] = nsRun(1000, [1, 1])",
@@ -124,14 +136,20 @@ ml_checkFiring filename = [
 
 
 
-dataFile = do
+
+
+dataFile usingSTDP = do
     hostname <- getHostName
-    return $! "testsuite" </> "regression-data" </> hostname </> "smallworld-matlab-1000.dat"
+    return $! "testsuite" </> "regression-data" </> hostname </> 
+        "smallworld-matlab-1000" ++ stdp ++ ".dat"
+    where
+        stdp = if usingSTDP then "-stdp" else ""
+
 
 
 
 {- Make sure to run on non-standard port to avoid interference with running server -}
-testPort = show $ defaultPort + 2
+testPort = show $ defaultPort + 3
 
 withSimulation f = bracket (forkIO runServer) kill (\_ -> f)
     where
