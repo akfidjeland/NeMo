@@ -103,20 +103,17 @@ loadExternalFiring(
 
 
 
+template<typename T>
 __device__
 void
-loadSharedArray(
-        int partitionSize,
-        size_t pitch32,
-		uint32_t* g_arr,
-        uint32_t* s_arr)
+loadSharedArray(int partitionSize, size_t pitch, T* g_arr, T* s_arr)
 {
 	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 
 		uint neuron = nbase + threadIdx.x;
 
 		if(neuron < partitionSize) {
-			s_arr[neuron] = g_arr[mul24(blockIdx.x, pitch32) + neuron];
+			s_arr[neuron] = g_arr[mul24(blockIdx.x, pitch) + neuron];
 		}
 	}
 }

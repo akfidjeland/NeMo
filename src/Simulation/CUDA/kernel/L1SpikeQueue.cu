@@ -121,8 +121,8 @@ STDP_FN(deliverL1Spikes_JIT)(
 	uint partitionSize,
 	uint sf1_maxSynapses,
 	uint* gf1_cm, uint f1_pitch, uint f1_size,
-	uint32_t* s_recentFiring,
-	uint32_t* g_firingDelays,
+	uint64_t* s_recentFiring,
+	uint64_t* g_firingDelays,
 	// L1 spike queue
     //! \todo allow more than 32 partitions (by splitting L1CM)
 	uint2* s_outbuf,        // 16 words of buffer per target partition
@@ -202,7 +202,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 		//! \todo load s_recentFiring here, write result to smem array
 		int candidate = preOffset + threadIdx.x;
-		uint32_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
+		uint64_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
 		if(arrivals && candidate < partitionSize) {
 			int nextFree = atomicAdd(&s_firingCount, 1);
 			s_firingIdx[nextFree] = candidate;

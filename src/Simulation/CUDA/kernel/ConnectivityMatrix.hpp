@@ -75,7 +75,7 @@ struct ConnectivityMatrix
 		size_t dr_planeSize() const;
 
 		/*! \return device delay bit data */
-		uint32_t* df_delayBits() const;
+		uint64_t* df_delayBits() const;
 
 		/*! \return vector specifying maximum synapses per delay (<= pitch) for
 		 * each partition */
@@ -94,7 +94,7 @@ struct ConnectivityMatrix
 
 		/* We also accumulate the firing delay bits that are used in the spike
 		 * delivery */
-		NVector<uint32_t> m_delayBits;
+		NVector<uint64_t> m_delayBits;
 
 		size_t m_partitionCount;
 		size_t m_maxPartitionSize;

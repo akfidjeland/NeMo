@@ -37,6 +37,7 @@ RuntimeData::RuntimeData(
     m_maxDelay(maxDelay),
 	m_cm(CM_COUNT, (ConnectivityMatrix*) NULL),
 	m_pitch32(0),
+	m_pitch64(0),
 	m_deviceDirty(true),
 	m_usingSTDP(false),
 	m_haveL1Connections(partitionCount != 1 && l1SQEntrySize != 0)
@@ -44,7 +45,7 @@ RuntimeData::RuntimeData(
 	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize, maxL1SynapsesPerDelay);
 	firingProbe = new FiringProbe(partitionCount, maxPartitionSize, maxReadPeriod);
 
-	recentFiring = new NVector<uint32_t>(partitionCount, maxPartitionSize, false, 2);
+	recentFiring = new NVector<uint64_t>(partitionCount, maxPartitionSize, false, 2);
 	neuronParameters = new NVector<float>(partitionCount, maxPartitionSize, true, NVEC_COUNT);
 
 	firingStimulus = new NVector<uint32_t>(
@@ -209,6 +210,14 @@ RuntimeData::pitch32() const
 
 
 
+size_t
+RuntimeData::pitch64() const
+{
+    return m_pitch64;
+}
+
+
+
 void
 checkPitch(size_t expected, size_t found)
 {
@@ -224,9 +233,10 @@ checkPitch(size_t expected, size_t found)
 void
 RuntimeData::setPitch()
 {
-    m_pitch32 = neuronParameters->wordPitch();
-    checkPitch(m_pitch32, recentFiring->wordPitch());
-    checkPitch(m_pitch32, thalamicInput->wordPitch());
+	m_pitch32 = neuronParameters->wordPitch();
+	m_pitch64 = recentFiring->wordPitch();
+	//! \todo fold thalamic input into neuron parameters
+	checkPitch(m_pitch32, thalamicInput->wordPitch());
 }
 
 

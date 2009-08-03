@@ -38,7 +38,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 
 
-uint32_t*
+uint64_t*
 ConnectivityMatrix::df_delayBits() const
 {
 	return m_delayBits.deviceData();

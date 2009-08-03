@@ -12,6 +12,7 @@ import Simulation.FiringStimulus
 import Simulation.Options (SimulationOptions(..))
 import Simulation.Run
 import Simulation.STDP.Options (stdpOptions)
+import Simulation.STDP (STDPConf(..))
 import Types
 
 import Test.Comparative (comparisonTest)
@@ -21,22 +22,26 @@ import Test.Comparative (comparisonTest)
  - on CUDA backend. Some of these also test that L1 connectivity works, as one
  - case uses L0 only, whereas the other uses both L0 and L1. -}
 tests = TestList [
-        testClusterSize 1000 1024,
-        testClusterSize 1000 512,
-        testClusterSize 1000 256,
-        testClusterSize 1000 250
+        testClusterSize False 1000 1024,
+        testClusterSize False 1000 512,
+        testClusterSize False 1000 256,
+        testClusterSize False 1000 250,
+        testClusterSize True 1000 512
     ]
 
 
-testClusterSize sz1 sz2 = comparisonTest (sim sz1) (sim sz2) lbl
+testClusterSize stdp sz1 sz2 =
+    comparisonTest (sim sz1 stdp) (sim sz2 stdp) lbl
     where
-       lbl = "Comparing different partition sizes in the mapper: "
-            ++ show sz1 ++ " vs " ++ show sz2
+        lbl = "Comparing different partition sizes in the mapper: "
+            ++ show sz1 ++ " vs " ++ show sz2 ++ "(stdp: " ++ show stdp ++ ")"
 
 
-sim sz f = runSim (SimulationOptions duration dt CUDA) net probeIdx probeF fstim f
+
+sim sz stdp f =
+    runSim (SimulationOptions duration dt CUDA) net probeIdx probeF fstim f
             ((defaults cudaOptions) { optPartitionSize = Just sz })
-            (defaults stdpOptions)
+            stdpConf
     where
         -- TODO: factor this out and share with Test.Network.Client
         net = build 123456 $ smallworldOrig
@@ -45,3 +50,10 @@ sim sz f = runSim (SimulationOptions duration dt CUDA) net probeIdx probeF fstim
         probeIdx = All
         probeF = Firing :: ProbeFn IzhState
         fstim = FiringList [(0, [1])]
+        stdpConf =
+            if stdp
+                then (defaults stdpOptions) {
+                        stdpEnabled = True,
+                        stdpFrequency = Just 50
+                     }
+                else defaults stdpOptions

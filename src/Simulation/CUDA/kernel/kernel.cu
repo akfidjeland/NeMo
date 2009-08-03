@@ -44,8 +44,8 @@ STDP_FN(fire)(
 	float* s_current,    // input current
 	// buffers
 	uint32_t* s_fstim,   // s_T16, so larger than needed
-	uint32_t* s_recentFiring,
-	uint32_t* g_recentFiring,
+	uint64_t* s_recentFiring,
+	uint64_t* g_recentFiring,
 	uint16_t* s_firingIdx,
 	// gmem firing output
 	ushort fmemCycle,
@@ -183,8 +183,8 @@ STDP_FN(deliverL0Spikes_)(
 	uint partitionSize,
 	uint sf0_maxSynapses,
 	uint* gf0_cm, uint f0_pitch, uint f0_size,
-	uint32_t* s_recentFiring,
-	uint32_t* g_firingDelays,
+	uint64_t* s_recentFiring,
+	uint64_t* g_firingDelays,
 	float* s_current,
 	uint16_t* s_firingIdx,
 	uint32_t* s_arrivalBits,
@@ -225,7 +225,7 @@ STDP_FN(deliverL0Spikes_)(
 		 * firing occurs.  In practice, however, this was found to increase
 		 * execution time (when not firing) by 68%. It's not clear why this is
 		 * so. */ 
-		uint32_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
+		uint64_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
 		if(arrivals && candidate < partitionSize) {
 			int nextFree = atomicAdd(&s_firingCount, 1);
 			s_firingIdx[nextFree] = candidate;
@@ -337,27 +337,27 @@ __global__
 void
 STDP_FN(step) (
 		int substeps,
-        uint32_t cycle,
-		uint32_t* g_recentFiring, 
+		uint32_t cycle,
+		uint64_t* g_recentFiring,
 		// neuron state
 		float* g_neuronParameters,
-        unsigned* g_rngState,
+		unsigned* g_rngState,
 		//! \todo combine with g_neuronParameters
-        float* g_sigma,
+		float* g_sigma,
 		size_t neuronParametersSize,
 		// connectivity
-		uint* gf0_cm, uint32_t* gf0_delays,
-		uint* gf1_cm, uint32_t* gf1_delays,
+		uint* gf0_cm, uint64_t* gf0_delays,
+		uint* gf1_cm, uint64_t* gf1_delays,
 #ifdef STDP
 		uint* gr0_cm,
 		uint* gr1_cm,
 #endif
 		// L1 spike queue
-		uint2* gSpikeQueue, 
-		size_t sqPitch, 
-        unsigned int* gSpikeQueueHeads, 
-        size_t sqHeadPitch,
-        // firing stimulus
+		uint2* gSpikeQueue,
+		size_t sqPitch,
+		unsigned int* gSpikeQueueHeads,
+		size_t sqHeadPitch,
+		// firing stimulus
 		uint32_t* g_fstim,
 		size_t fstimPitch,
 #ifdef KERNEL_TIMING
@@ -378,7 +378,7 @@ STDP_FN(step) (
 
 	/* Per-neuron buffers */
 	__shared__ uint32_t s_M1KA[STDP_FN(MAX_PARTITION_SIZE)];
-	__shared__ uint32_t s_M1KB[STDP_FN(MAX_PARTITION_SIZE)];
+	__shared__ uint64_t s_M1KB[STDP_FN(MAX_PARTITION_SIZE)];
 
 	/* Per-thread buffers */
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
@@ -390,7 +390,7 @@ STDP_FN(step) (
 	/* Per-partition buffer */
 	__shared__ uint32_t s_P32[MAX_PARTITION_COUNT];
 
-	uint32_t* s_recentFiring = s_M1KB;
+	uint64_t* s_recentFiring = s_M1KB;
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -445,8 +445,8 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 2);
 
 	loadSharedArray(s_partitionSize,
-			s_pitch32,
-			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
+			s_pitch64,
+			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
 			s_recentFiring);
 	__syncthreads();
 
@@ -472,7 +472,7 @@ STDP_FN(step) (
 			sf0_maxSynapsesPerDelay,
 			gf0_cm + f_partitionRow * sf0_pitch, sf0_pitch, sf0_size,
 			s_recentFiring,
-			gf0_delays + CURRENT_PARTITION * s_pitch32,
+			gf0_delays + CURRENT_PARTITION * s_pitch64,
 			s_current, s_T16, s_T32, s_D32);
 
 	SET_COUNTER(s_ccMain, 5);
@@ -488,8 +488,8 @@ STDP_FN(step) (
 			(uint32_t*) s_T16,
 			s_recentFiring, 
 			g_recentFiring
-				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch32
-				+ CURRENT_PARTITION * s_pitch32,
+				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
+				+ CURRENT_PARTITION * s_pitch64,
 			(uint16_t*) s_T32,
 			fmemCycle, g_fmemNextFree, g_fmemBuffer);
 	__syncthreads();
@@ -512,8 +512,8 @@ STDP_FN(step) (
 		updateSTDP_(
 				true,
 				s_recentFiring,
-				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
-				s_pitch32, 0,
+				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
+				s_pitch64, 0,
 				s_partitionSize,
 				sr1_maxSynapsesPerNeuron,
 				gr1_cm + r_partitionRow * sr1_pitch, sr1_pitch, sr1_size,
@@ -531,7 +531,7 @@ STDP_FN(step) (
 				sf1_maxSynapsesPerDelay,
 				gf1_cm + f_partitionRow * sf1_pitch, sf1_pitch, sf1_size,
 				s_recentFiring,
-				gf1_delays + CURRENT_PARTITION * s_pitch32,
+				gf1_delays + CURRENT_PARTITION * s_pitch64,
 				(uint2*) s_M1KA, // used for s_current previously, now use for staging outgoing spikes
 				//! \todo compile-time assertions to make sure we're not overflowing here
 				//! \todo fix naming!

@@ -142,36 +142,21 @@ updateSynapse(
 		uint r_synapse,
 		uint targetNeuron,
 		uint rfshift,
-		uint32_t* sourceRecentFiring, // L0: shared memory; L1: global memory
-		uint32_t* s_targetRecentFiring)
+		uint64_t* sourceRecentFiring, // L0: shared memory; L1: global memory
+		uint64_t* s_targetRecentFiring)
 {
 	int inFlight
 		= rfshift
 		+ r_delay(r_synapse) - 1; /* -1 since we do spike arrival before
 									 neuron-update and STDP in a single
 									 simulation cycle */
-	uint32_t sourceFiring 
-		= (sourceRecentFiring[sourceNeuron(r_synapse)]
-			& ~0x80000000)        // hack to get consistent results (*)
-		>> inFlight;
-
-	/* (*) By the time we deal with LTP we have lost one cycle of history for
-	 * the recent firing of the source partition when doing L0. For L1 we read
-	 * the recent firing from global memory, so we get 32 cycles worth of
-	 * history. For L0 we read from shared memory, which has already been
-	 * updated to reflect firing that took place /this/ cycle, so we only get
-	 * 31 cycles worth of relevant history. We could, of course, read firing
-	 * from global memory in both cases. However, in any event we're short of
-	 * history and will loose STDP applications when dt+delay > 32. Untill this
-	 * is fixed, the above hack which truncates the history for L1 delivery as
-	 * well ensures we get consistent results when modifying the partition
-	 * size.  */
+	uint64_t sourceFiring = sourceRecentFiring[sourceNeuron(r_synapse)] >> inFlight;
 
 	float w_diff = 0.0f;
-	uint32_t p_spikes = (sourceFiring >> s_stdpTauD) & MASK(s_stdpTauP);
+	uint64_t p_spikes = (sourceFiring >> s_stdpTauD) & MASK(s_stdpTauP);
 
 	if(p_spikes) {
-		int dt = __ffs(p_spikes) - 1;
+		int dt = __ffsll(p_spikes) - 1;
 
 		/* A spike was sent from pre- to post-synaptic. However, it's possible
 		 * that this spike has already caused potentiation due to multiple
@@ -189,11 +174,11 @@ updateSynapse(
 		}
 	}
 
-	uint32_t d_spikes = sourceFiring & MASK(s_stdpTauD);
+	uint64_t d_spikes = sourceFiring & MASK(s_stdpTauD);
 
 	if(d_spikes) {
 
-		int dt = __clz(d_spikes << (32 - rfshift - s_stdpTauD));
+		int dt = __clzll(d_spikes << (64 - rfshift - s_stdpTauD));
 
 		/* A spike was sent from pre- to post-synaptic. However, it's possible
 		 * that this spike has already caused depression due to the
@@ -201,7 +186,7 @@ updateSynapse(
 		 * and the spike arrival. That depression will be processed in a few
 		 * simulation cycles' time. */
 		bool alreadyDepressed
-			= s_targetRecentFiring[targetNeuron] >> (s_stdpTauD-1-dt)
+			= (s_targetRecentFiring[targetNeuron] >> (s_stdpTauD-1-dt))
 			& MASK(dt);
 
 		if(!alreadyDepressed) {
@@ -227,9 +212,9 @@ __device__
 void
 updateSTDP_(
 	bool isL1, // hack to work out how to address recent firing bits
-	uint32_t* sourceRecentFiring,
-	uint32_t* s_targetRecentFiring,
-	size_t pitch32,
+	uint64_t* sourceRecentFiring,
+	uint64_t* s_targetRecentFiring,
+	size_t pitch64,
 	uint rfshift, // how much to shift recent firing bits
 	uint partitionSize,
 	uint r_maxSynapses,
@@ -295,8 +280,8 @@ updateSTDP_(
 								r_sdata,
 								target,
 								rfshift,
-								isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch32
-								: sourceRecentFiring,
+								isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch64
+								     : sourceRecentFiring,
 								s_targetRecentFiring);
 
 						//! \todo perhaps stage diff in output buffers

@@ -11,21 +11,21 @@
 
 struct RuntimeData
 {
-    RuntimeData(
-        size_t partitionCount,
-		size_t maxPartitionSize,
-        uint maxDelay,
-		size_t maxL0SynapsesPerDelay,
-		size_t maxL0RevSynapsesPerNeuron,
-		size_t maxL1SynapsesPerDelay,
-		size_t maxL1RevSynapsesPerNeuron,
-		//! \todo determine the entry size inside allocator
-		size_t l1SQEntrySize,
-		unsigned int maxReadPeriod);
+	RuntimeData(
+			size_t partitionCount,
+			size_t maxPartitionSize,
+			uint maxDelay,
+			size_t maxL0SynapsesPerDelay,
+			size_t maxL0RevSynapsesPerNeuron,
+			size_t maxL1SynapsesPerDelay,
+			size_t maxL1RevSynapsesPerNeuron,
+			//! \todo determine the entry size inside allocator
+			size_t l1SQEntrySize,
+			unsigned int maxReadPeriod);
 
-    ~RuntimeData();
+	~RuntimeData();
 
-    uint maxDelay() const;
+	uint maxDelay() const;
 
 	/* Copy data to device if this has not already been done, and clear the
 	 * host buffers */
@@ -42,23 +42,24 @@ struct RuntimeData
 	struct L1SpikeQueue* spikeQueue;
 	struct FiringProbe* firingProbe;
 
-	NVector<uint32_t>* recentFiring;
+	NVector<uint64_t>* recentFiring;
 
 	NVector<float>* neuronParameters;
 
 	/* Densely packed, one bit per neuron */
 	NVector<uint32_t>* firingStimulus;
 
-    class ThalamicInput* thalamicInput;
+	class ThalamicInput* thalamicInput;
 
-    /*! \return connectivity matrix with given index */
-    struct ConnectivityMatrix* cm(size_t idx) const;
+	/*! \return connectivity matrix with given index */
+	struct ConnectivityMatrix* cm(size_t idx) const;
 
 	size_t maxPartitionSize;
 	size_t partitionCount;
 
 	/*! \return word pitch for 32-bit neuron arrays */
 	size_t pitch32() const;
+	size_t pitch64() const;
 
 	float* setCurrentStimulus(size_t n,
 			const int* cidx,
@@ -66,18 +67,18 @@ struct RuntimeData
 			const float* current);
 
 	uint32_t*
-	setFiringStimulus(
-			size_t count,
-			const int* pidx,
-			const int* nidx);
+		setFiringStimulus(
+				size_t count,
+				const int* pidx,
+				const int* nidx);
 
 	struct CycleCounters* cycleCounters;
 
-    /*! Update internal cycle counters. This should be called every simulation
-     * cycle */
-    void step();
+	/*! Update internal cycle counters. This should be called every simulation
+	 * cycle */
+	void step();
 
-    uint32_t cycle() const;
+	uint32_t cycle() const;
 
 	bool usingSTDP() const;
 	void configureSTDP();
@@ -88,28 +89,29 @@ struct RuntimeData
 			float* depression,
 			float maxWeight);
 
-    float stdpMaxWeight() const;
+	float stdpMaxWeight() const;
 
-    /*! \return number of milliseconds of wall-clock time elapsed since first
-     * simulation step */
-    long int elapsed();
+	/*! \return number of milliseconds of wall-clock time elapsed since first
+	 * simulation step */
+	long int elapsed();
 
-    void setStart();
+	void setStart();
 
-    private :
+	private :
 
-        uint m_maxDelay;
+		uint m_maxDelay;
 
-        uint32_t m_cycle;
+		uint32_t m_cycle;
 
 		// see kernel.h for enumeration of connectivity matrices
 		std::vector<struct ConnectivityMatrix*> m_cm;
 
-        cudaDeviceProp m_deviceProperties;
+		cudaDeviceProp m_deviceProperties;
 
-        void setPitch();
+		void setPitch();
 
-        size_t m_pitch32;
+		size_t m_pitch32;
+		size_t m_pitch64;
 
 		/* True if host buffers have not been copied to device */
 		bool m_deviceDirty;
@@ -123,8 +125,8 @@ struct RuntimeData
 		std::vector<float> m_stdpDepression;
 		float m_stdpMaxWeight;
 
-        struct timeval m_start; // set before first step
-        struct timeval m_end;   // set after every step
+		struct timeval m_start; // set before first step
+		struct timeval m_end;   // set after every step
 
 		bool m_haveL1Connections;
 

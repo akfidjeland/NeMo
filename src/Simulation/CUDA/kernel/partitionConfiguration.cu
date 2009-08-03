@@ -35,7 +35,8 @@
 #define NPARAM_r0_size          8
 #define NPARAM_r1_pitch         9
 #define NPARAM_r1_size         10
-#define NPARAM_COUNT           11
+#define NPARAM_pitch64         11
+#define NPARAM_COUNT           12
 
 /* Configuration array is stored in constant memory, and is loaded in
  * (parallel) into shared memory for each thread block */
@@ -47,6 +48,7 @@ __shared__ uint s_networkParameters[NPARAM_COUNT];
 #define s_maxPartitionSize s_networkParameters[NPARAM_maxPartitionSize]
 #define s_maxDelay         s_networkParameters[NPARAM_maxDelay]
 #define s_pitch32          s_networkParameters[NPARAM_pitch32]
+#define s_pitch64          s_networkParameters[NPARAM_pitch64]
 #define sf0_pitch          s_networkParameters[NPARAM_f0_pitch]
 #define sf0_size           s_networkParameters[NPARAM_f0_size]
 #define sf1_pitch          s_networkParameters[NPARAM_f1_pitch]
@@ -67,6 +69,7 @@ configureKernel(RTDATA rtdata)
 	SET_CONSTANT(maxPartitionSize, rtdata->maxPartitionSize);
 	SET_CONSTANT(maxDelay,  rtdata->maxDelay());
 	SET_CONSTANT(pitch32,   rtdata->pitch32());
+	SET_CONSTANT(pitch64,   rtdata->pitch64());
 	SET_CONSTANT(f0_pitch,  rtdata->cm(CM_L0)->df_pitch());
 	SET_CONSTANT(f0_size,   rtdata->cm(CM_L0)->df_planeSize());
 	SET_CONSTANT(f1_pitch,  rtdata->cm(CM_L1)->df_pitch());
