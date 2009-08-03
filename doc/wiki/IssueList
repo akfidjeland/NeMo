@@ -37,6 +37,9 @@ Simulation general
 CUDA backend
 ------------
 
+- It's now possible to overflow the firing buffer in L0 delivery, if more than
+  half the neurons fire. We can avoid this by flushing the buffer whenever it's
+  half-full and making it a rotating buffer.
 - For cycle counting, we only report data for thread block 0. Get data from all
   and report mean and std. deviation. 
 - Extend max delay to 64, at least when STDP is enabled. The history needs to

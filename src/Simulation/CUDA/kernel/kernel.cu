@@ -379,7 +379,6 @@ STDP_FN(step) (
 	/* Per-neuron buffers */
 	__shared__ uint32_t s_M1KA[STDP_FN(MAX_PARTITION_SIZE)];
 	__shared__ uint32_t s_M1KB[STDP_FN(MAX_PARTITION_SIZE)];
-	__shared__ uint16_t s_M512[STDP_FN(MAX_PARTITION_SIZE)];
 
 	/* Per-thread buffers */
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
@@ -395,7 +394,6 @@ STDP_FN(step) (
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
-	__shared__ uint s_neuronsPerThread;
 	__shared__ uint sf0_maxSynapsesPerDelay;
 	__shared__ uint sf1_maxSynapsesPerDelay;
 #ifdef STDP
@@ -406,7 +404,6 @@ STDP_FN(step) (
 
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-		s_neuronsPerThread = DIV_CEIL(s_partitionSize, THREADS_PER_BLOCK);
 		sf0_maxSynapsesPerDelay = cf0_maxSynapsesPerDelay[CURRENT_PARTITION];
 		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
 #ifdef STDP
@@ -438,7 +435,6 @@ STDP_FN(step) (
 	float* s_current = (float*) s_M1KA;
     if(g_rngState != NULL && g_sigma != NULL) {
         thalamicInput(s_partitionSize,
-                s_neuronsPerThread,
                 neuronParametersSize,
                 s_pitch32,
                 g_rngState,
@@ -448,7 +444,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 2);
 
-	loadSharedArray(s_partitionSize, s_neuronsPerThread,
+	loadSharedArray(s_partitionSize,
 			s_pitch32,
 			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch32,
 			s_recentFiring);
@@ -494,8 +490,7 @@ STDP_FN(step) (
 			g_recentFiring
 				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch32
 				+ CURRENT_PARTITION * s_pitch32,
-			//! \todo we could probably get away with per-thread storage here, by reorganising kernel
-			s_M512,
+			(uint16_t*) s_T32,
 			fmemCycle, g_fmemNextFree, g_fmemBuffer);
 	__syncthreads();
 	SET_COUNTER(s_ccMain, 6);

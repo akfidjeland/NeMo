@@ -69,8 +69,7 @@ rng_genGaussian(unsigned* rngState)
 __device__
 void
 thalamicInput(
-        size_t s_partitionSize,
-        size_t s_neuronsPerThread,
+        size_t partitionSize,
         size_t planeSize,
         size_t pitch,
         unsigned* g_rngState,
@@ -82,9 +81,12 @@ thalamicInput(
 	/* Copy the input state from memory into our local state */
 	rng_loadState(rngState, g_rngState, planeSize, pitch);
 	
-	for(int i=0; i < s_neuronsPerThread; ++i) {
-		if(activeNeuron(i, s_partitionSize)){
-            size_t neuron = i * THREADS_PER_BLOCK + threadIdx.x;
+	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
+
+		uint neuron = nbase + threadIdx.x;
+
+		if(neuron < partitionSize) {
+
             size_t partitionOffset = CURRENT_PARTITION * pitch;
             //! \todo make use of  both randoms
             float2 r = rng_genGaussian(rngState);

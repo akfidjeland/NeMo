@@ -49,20 +49,6 @@ maxPartitionSize(int useSTDP)
 //-----------------------------------------------------------------------------
 
 
-/*! \param chunk 
- *		Each thread processes n neurons. The chunk is the index (<n) of the
- *		neuron currently processed by the thread.
- * \return 
- *		true if the thread should be active when processing the specified
- * 		neuron, false otherwise.
- */
-__device__
-bool 
-activeNeuron(int chunk, int s_partitionSize)
-{
-	return threadIdx.x + chunk*THREADS_PER_BLOCK < s_partitionSize;
-}
-
 
 //=============================================================================
 // Double buffering
@@ -117,21 +103,20 @@ loadExternalFiring(
 
 
 
-//! \todo get rid of 'activeNeuron' and 's_neuronsPerThread'. Use
-//per-partition size directly instead.
 __device__
 void
 loadSharedArray(
-        int s_partitionSize,
-        int s_neuronsPerThread,
+        int partitionSize,
         size_t pitch32,
 		uint32_t* g_arr,
         uint32_t* s_arr)
 {
-	for(int i=0; i < s_neuronsPerThread; ++i) {
-		if(activeNeuron(i, s_partitionSize)){
-			s_arr[threadIdx.x + i*THREADS_PER_BLOCK] =
-				g_arr[mul24(blockIdx.x, pitch32) + threadIdx.x + i*THREADS_PER_BLOCK];
+	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
+
+		uint neuron = nbase + threadIdx.x;
+
+		if(neuron < partitionSize) {
+			s_arr[neuron] = g_arr[mul24(blockIdx.x, pitch32) + neuron];
 		}
 	}
 }
