@@ -29,28 +29,28 @@ STDP_FN(setSharedArray)(uint32_t* s_mem, uint32_t val)
 
 
 
-
 __device__
 void
 STDP_FN(fire)(
 	bool hasExternalInput,
 	uint s_partitionSize,
-	uint s_neuronsPerThread,
 	uint substeps,
 	float substepMult, // substepMul * substeps = 1
 	size_t fstimPitch,
-	size_t pitch32,
 	float* g_neuronParameters,
 	size_t neuronParametersSize,
 	// input
 	uint32_t* g_fstim,   // externally driven firing
 	float* s_current,    // input current
 	// buffers
-	uint32_t* s_fstim,   // s_T32, so larger than needed
+	uint32_t* s_fstim,   // s_T16, so larger than needed
 	uint32_t* s_recentFiring,
 	uint32_t* g_recentFiring,
 	uint16_t* s_firingIdx,
-	uint* s_nextIdxEntry)
+	// gmem firing output
+	ushort fmemCycle,
+	uint* g_fmemNextFree,
+	ushort2* g_fmemBuffer)
 {
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
@@ -60,21 +60,28 @@ STDP_FN(fire)(
 	float* g_v = g_neuronParameters + STATE_V * neuronParametersSize;
 
 	//__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
+	/* Make sure s_T16 is large enough */
+	ASSERT(THREADS_PER_BLOCK/2 >= DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32));
 	loadExternalFiring(hasExternalInput, s_partitionSize,
-        fstimPitch, g_fstim, s_fstim);
-	
-	for( int i=0; i<s_neuronsPerThread; ++i ){
+			fstimPitch, g_fstim, s_fstim);
 
-		if(activeNeuron(i, s_partitionSize)) {
+	__shared__ uint s_firedCount;
+	if(threadIdx.x == 0) {
+		s_firedCount = 0;
+	}
+	__syncthreads();
 
-			int s_index = i*THREADS_PER_BLOCK + threadIdx.x;
-			int g_index = mul24(blockIdx.x, pitch32) + s_index;
+	for(uint nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
 
-			float v = g_v[g_index];
-			float u = g_u[g_index];
-			float a = g_a[g_index];
-			float b = g_b[g_index];
-			float I = s_current[s_index];
+		uint neuron = nbase + threadIdx.x;
+
+		if(neuron < s_partitionSize) {
+
+			float v = g_v[neuron];
+			float u = g_u[neuron];
+			float a = g_a[neuron];
+			float b = g_b[neuron];
+			float I = s_current[neuron];
 
 			/* n sub-steps for numerical stability, with u held */
 			bool fired = false;
@@ -88,28 +95,42 @@ STDP_FN(fire)(
 			}
 
 			/* s_fstim accessed using broadcast */
-			bool forceFiring = (s_fstim[s_index/32] >> (s_index % 32)) & 0x1;
+			bool forceFiring = (s_fstim[neuron/32] >> (neuron % 32)) & 0x1;
 			uint32_t firing = 0;
 
 			if(fired || forceFiring) {
-                //! \todo could probably hard-code c and d 
-				v = g_c[g_index];
-				u += g_d[g_index];
+
+				/* Only a subset of the neurons fire and thus require c/d
+				 * fetched from global memory. One could therefore deal with
+				 * all the fired neurons separately. This was found, however,
+				 * to slow down the fire step by 50%, due to extra required
+				 * synchronisation.  */
+				//! \todo could probably hard-code c
+				v = g_c[neuron];
+				u += g_d[neuron];
+
 				firing = 0x1;
-				DEBUG_MSG("%d fired\n", s_index);
-				int idxEntry = atomicAdd(s_nextIdxEntry, 1);
-				s_firingIdx[idxEntry] = (uint16_t) s_index;
+				DEBUG_MSG("%d fired (forced: %u)\n", neuron, forceFiring);
+				int idxEntry = atomicAdd(&s_firedCount, 1);
+
+				//! \todo use a smaller memory for this list, can use s_T32
+				s_firingIdx[idxEntry] = (uint16_t) neuron;
 			}
 
 			/* We need the (updated) recent firing history for L1 spike
 			 * delivery later, but won't update this further, so we can write
 			 * back to global memory now. */
-			s_recentFiring[s_index] = (s_recentFiring[s_index] << 1) | firing;
-			g_recentFiring[g_index] = s_recentFiring[s_index];
-			g_v[g_index] = v;
-			g_u[g_index] = u;
+			s_recentFiring[neuron] = (s_recentFiring[neuron] << 1) | firing;
+			g_recentFiring[neuron] = s_recentFiring[neuron];
+			g_v[neuron] = v;
+			g_u[neuron] = u;
+
 		}
 	}
+
+	__syncthreads();
+	writeFiringOutput(fmemCycle, g_fmemNextFree,
+			s_firingIdx, s_firedCount, g_fmemBuffer);
 }
 
 
@@ -371,8 +392,6 @@ STDP_FN(step) (
 	__shared__ uint32_t s_P32[MAX_PARTITION_COUNT];
 
 	uint32_t* s_recentFiring = s_M1KB;
-	//! \todo we could probably get away with per-thread storage here, by reorganising kernel
-	uint16_t* s_firingIdx = s_M512;
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -462,26 +481,22 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 5);
 
-	__shared__ uint s_firingCount;
-	if(threadIdx.x == 0) {
-		s_firingCount = 0;
-	}
-	__syncthreads();
-
 	STDP_FN(fire)(
 			g_fstim != 0,
             s_partitionSize,
-            s_neuronsPerThread,
 			substeps, s_substepMult,
-			fstimPitch, s_pitch32, 
-			g_neuronParameters,
+			fstimPitch,
+			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
 			neuronParametersSize,
 			g_fstim, s_current, 
-			s_T32,
+			(uint32_t*) s_T16,
 			s_recentFiring, 
-			g_recentFiring + writeBuffer(cycle) * PARTITION_COUNT * s_pitch32,
-			s_firingIdx,
-			&s_firingCount);
+			g_recentFiring
+				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch32
+				+ CURRENT_PARTITION * s_pitch32,
+			//! \todo we could probably get away with per-thread storage here, by reorganising kernel
+			s_M512,
+			fmemCycle, g_fmemNextFree, g_fmemBuffer);
 	__syncthreads();
 	SET_COUNTER(s_ccMain, 6);
 
@@ -512,11 +527,6 @@ STDP_FN(step) (
 #endif
 	SET_COUNTER(s_ccMain, 8);
 
-	writeFiringOutput(fmemCycle, g_fmemNextFree, 
-			s_firingIdx, s_firingCount, g_fmemBuffer);
-	__syncthreads();
-	SET_COUNTER(s_ccMain, 9);
-
 	if(haveL1) {
 		STDP_FN(deliverL1Spikes_JIT)(
 				s_maxDelay,
@@ -537,7 +547,7 @@ STDP_FN(step) (
 				s_T16, s_T32, s_D32, s_P32);
 	}
 
-	SET_COUNTER(s_ccMain, 10);
+	SET_COUNTER(s_ccMain, 9);
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }
 

@@ -26,7 +26,6 @@ const char* durationNames[] = {
 	"fire",
 	"L0 LTP",
 	"L1 LTP",
-	"store firing",
 	"L1 scatter"
 };
 
