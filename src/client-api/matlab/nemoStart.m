@@ -1,6 +1,6 @@
 % nemoStart: initialize simulation on host
 %
-% 	nemoStart(A, B, C, D, U, V, SPOST, SDELAY, SWEIGHT, DT, F)
+% 	nemoStart(A, B, C, D, U, V, TARGETS, DELAYS, WEIGHTS, DT, F)
 %
 % Initialize a simulation (on the host specified using nemoSetHost), in order to
 % allow subsequent calls to nemoRun.
@@ -9,8 +9,8 @@
 % population are defined by A-D, U, and V which are all N-by-1 matrices, where
 % N is the number of neurons in the network.
 %
-% The connectivity is specified using the three N-by-M matrices SPOST, SWEIGHT
-% and SDELAY. N is again the number of neurons in the network and M is the
+% The connectivity is specified using the three N-by-M matrices TARGETS, WEIGHTs
+% and DELAYS. N is again the number of neurons in the network and M is the
 % maximum number of synapses per neuron. If a neuron has less than M outgoing
 % synapses, invalid synapses should point to neuron 0.
 %

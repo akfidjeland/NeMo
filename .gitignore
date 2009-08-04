@@ -2,7 +2,7 @@ ext
 dist
 .setup-config
 client-dist
-tmp
+tmp*
 debug
 profiling
 performance
