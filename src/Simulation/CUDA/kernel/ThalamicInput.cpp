@@ -29,6 +29,13 @@ ThalamicInput::setSigma(size_t partition, const float* arr, size_t length)
 }
 
 
+size_t
+ThalamicInput::d_allocated() const
+{
+	return m_rngState.d_allocated() + m_sigma.d_allocated();
+}
+
+
 
 void
 ThalamicInput::moveToDevice()

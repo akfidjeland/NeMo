@@ -46,6 +46,7 @@ class NVector
 
 		/*! \return number of bytes of data in all vectors, including padding */
 		size_t bytes() const;
+		size_t d_allocated() const;
 
 		/*! \return word pitch for vector, i.e. number of neurons (including
 		 * padding) for each partition */

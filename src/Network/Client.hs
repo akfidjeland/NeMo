@@ -43,6 +43,7 @@ initSim hostname port net dt stdpConf = do
         (return ())             -- TODO: add timing function here
         -- TODO: add function to forward request for weights
         (error "getWeights not implemented in 'client' backend")
+        (error "diagnostics not implemented in 'client' backend")
         (closeRemote sock)
 
 

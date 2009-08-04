@@ -21,10 +21,11 @@ FiringProbe::FiringProbe(
 	m_hostBufferSize(0),
 	m_partitionCount(partitionCount),
 	m_maxReadPeriod(maxReadPeriod),
-    m_nextOverflow(maxReadPeriod)
+	m_nextOverflow(maxReadPeriod),
+	m_allocated(0)
 {
 	size_t width = FMEM_CHUNK_SIZE * sizeof(ushort2);
-    size_t partitionSize = (size_t) ceilPowerOfTwo((uint32_t) partitionSizeUnaligned);
+	size_t partitionSize = (size_t) ceilPowerOfTwo((uint32_t) partitionSizeUnaligned);
 
 	/* In the worst case every neuron in a partition fires every cycle */
 	size_t maxPartitionFirings = partitionSize * sizeof(ushort2);
@@ -32,6 +33,7 @@ FiringProbe::FiringProbe(
 
 	size_t bpitch;
 	CUDA_SAFE_CALL(cudaMallocPitch((void**)(&m_deviceBuffer), &bpitch, width, height));
+	m_allocated += bpitch * height;
 
 	/* kernel relies on hard-coded pitch... */
 	assert(bpitch ==  FMEM_CHUNK_SIZE*sizeof(ushort2));
@@ -39,6 +41,7 @@ FiringProbe::FiringProbe(
 
 	/* Device data containing next free entry for each partition */
 	CUDA_SAFE_CALL(cudaMalloc((void**) &m_deviceNextFree, m_partitionCount*sizeof(uint)));
+	m_allocated += m_partitionCount * sizeof(uint);
 	resetNextFree();
 
 	/* Allocate the host-side buffer for staging data between host and output
@@ -60,6 +63,13 @@ FiringProbe::~FiringProbe()
 	cudaFreeHost(m_hostBuffer);
 	cudaFree(m_deviceNextFree);
 	cudaFree(m_deviceBuffer);
+}
+
+
+size_t
+FiringProbe::d_allocated() const
+{
+	return m_allocated;
 }
 
 
@@ -282,10 +292,10 @@ FiringProbe::resetNextFree()
 				m_partitionCount*sizeof(uint),
 				cudaMemcpyHostToDevice));
 
-    /* We only reset the headers here, rather than the firing buffers
-     * themselves. Some garbage is thus left, but this will not be read later
-     */
-    m_nextOverflow = m_maxReadPeriod;
+	/* We only reset the headers here, rather than the firing buffers
+	 * themselves. Some garbage is thus left, but this will not be read
+	 * later */
+	m_nextOverflow = m_maxReadPeriod;
 }
 
 
@@ -357,9 +367,9 @@ FiringProbe::maxReadPeriod() const
 void
 FiringProbe::checkOverflow()
 {
-    if(m_nextOverflow == 0) {
-        WARNING("Emptied device firing buffers to avoid buffer overflow. Firing data lost. Read data from device more frequently to avoid");
-        resetNextFree(); // also reset m_nextOverflow;
-    }
-    m_nextOverflow -= 1;
+	if(m_nextOverflow == 0) {
+		WARNING("Emptied device firing buffers to avoid buffer overflow. Firing data lost. Read data from device more frequently to avoid");
+		resetNextFree(); // also reset m_nextOverflow;
+	}
+	m_nextOverflow -= 1;
 }

@@ -103,6 +103,8 @@ struct SMatrix
 				size_t synapseIndex,
 				size_t plane=0) const;
 
+		size_t d_allocated() const;
+
 	private :
 
 		/*! \return number of bytes of data for all sub-matrices, including padding */

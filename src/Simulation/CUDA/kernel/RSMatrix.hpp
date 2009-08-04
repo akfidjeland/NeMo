@@ -47,6 +47,9 @@ struct RSMatrix
 		/*! \return size (in words) of a single plane of the matrix */
 		size_t size() const;
 
+		/*! \return bytes allocated on the device */
+		size_t d_allocated() const;
+
 		bool empty() const;
 
 	private:
@@ -69,6 +72,7 @@ struct RSMatrix
 
 		size_t m_pitch;
 
+		size_t m_allocated;
 };
 
 #endif

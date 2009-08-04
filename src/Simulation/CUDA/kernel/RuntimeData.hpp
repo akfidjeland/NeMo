@@ -97,6 +97,13 @@ struct RuntimeData
 
 	void setStart();
 
+	/*! \return
+	 * 		number of bytes allocated on the device
+	 *
+	 * It seems that cudaMalloc*** does not fail properly when running out of
+	 * memory, so this value could be useful for diagnostic purposes */
+	size_t d_allocated() const;
+
 	private :
 
 		uint m_maxDelay;

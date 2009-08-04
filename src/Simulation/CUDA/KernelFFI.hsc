@@ -5,6 +5,7 @@ module Simulation.CUDA.KernelFFI (
     setCMDRow,
     getCM,
     copyToDevice,
+    deviceDiagnostics,
     syncSimulation,
     printCycleCounters,
     CuRT,
@@ -107,6 +108,16 @@ foreign import ccall unsafe "maxPartitionSize" c_maxPartitionSize :: CInt -> CUI
 foreign import ccall unsafe "copyToDevice" c_copyToDevice :: Ptr CuRT -> IO ()
 
 copyToDevice rt = withForeignPtr rt c_copyToDevice
+
+
+foreign import ccall unsafe "allocatedDeviceMemory"
+    c_allocatedDeviceMemory :: Ptr CuRT -> IO CSize
+
+deviceDiagnostics :: ForeignPtr CuRT -> IO String
+deviceDiagnostics rt = do
+    withForeignPtr rt $ \rtptr -> do
+    dmem <- c_allocatedDeviceMemory rtptr
+    return $ "Allocated device memory: " ++ show dmem ++ "B"
 
 
 foreign import ccall unsafe "setCMDRow"

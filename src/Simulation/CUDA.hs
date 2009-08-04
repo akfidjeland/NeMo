@@ -32,7 +32,7 @@ import Simulation.CUDA.Address
 import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import Simulation.CUDA.Probe (readFiring, readFiringCount)
-import Simulation.CUDA.KernelFFI as Kernel (c_step, syncSimulation, printCycleCounters, elapsedMs, resetTimer)
+import Simulation.CUDA.KernelFFI as Kernel (c_step, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.Mapping (mapNetwork)
 import Simulation.STDP
@@ -81,6 +81,7 @@ initSim net probeIdx probeF dt verbose partitionSize stdpConf = do
         (withForeignPtr (rt sim) Kernel.elapsedMs)
         (withForeignPtr (rt sim) Kernel.resetTimer)
         (getWeights' sim)
+        (deviceDiagnostics (rt sim))
         (return ()) -- foreign pointer finalizers clean up
     where
         getWeights' sim = do

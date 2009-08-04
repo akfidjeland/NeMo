@@ -88,6 +88,8 @@ struct ConnectivityMatrix
 
 		// void printSTDPTrace();
 
+		size_t d_allocated() const;
+
 	private:
 
 		SMatrix<uint> m_fsynapses;

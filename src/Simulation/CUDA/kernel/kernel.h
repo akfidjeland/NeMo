@@ -196,7 +196,12 @@ step(	unsigned short cycle,
  * during normal operation, as step invokes it on first call, but can be used
  * for testing */
 void
-copyToDevice(RTDATA rtdata);
+copyToDevice(RTDATA);
+
+
+/* Return the number of bytes allocated on the device so far */
+size_t
+allocatedDeviceMemory(RTDATA);
 
 
 //-----------------------------------------------------------------------------

@@ -41,6 +41,8 @@ class ThalamicInput
 		/*! \return word pitch of both the RNG state vector and the sigma
 		 * vector */
 		size_t wordPitch() const;
+
+		size_t d_allocated() const;
 	
 	private :
 

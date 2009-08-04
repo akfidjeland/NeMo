@@ -12,7 +12,8 @@ L1SpikeQueue::L1SpikeQueue(
 	m_data(NULL),
 	m_pitch(0),
 	m_heads(NULL),
-	m_headPitch(0)
+	m_headPitch(0),
+	m_allocated(0)
 {
 	if(partitionCount != 1 && entrySize != 0 && l1pitch != 0) {
 		{
@@ -24,6 +25,7 @@ L1SpikeQueue::L1SpikeQueue(
 						(void**)&m_data, &bpitch, width, height));
 			cudaMemset2D(m_data, bpitch, 0x0, bpitch, height);
 			assert(bpitch != 0);
+			m_allocated = bpitch * height;
 			m_pitch = bpitch / sizeof(uint2);
 		}
 
@@ -46,6 +48,14 @@ L1SpikeQueue::~L1SpikeQueue()
 	cudaFree(m_data);
 	cudaFree(m_heads);
 }
+
+
+size_t
+L1SpikeQueue::d_allocated() const
+{
+	return m_allocated;
+}
+
 
 
 uint2*

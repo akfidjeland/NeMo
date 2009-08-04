@@ -14,16 +14,19 @@ RSMatrix::RSMatrix(
 	m_maxPartitionSize(maxPartitionSize),
 	m_maxSynapsesPerNeuron(maxSynapsesPerNeuron),
 	m_synapseCount(partitionCount * maxPartitionSize, 0),
-	m_maxPartitionPitch(partitionCount, 0)
+	m_maxPartitionPitch(partitionCount, 0),
+	m_allocated(0)
 {
 	size_t height = RCM_SUBMATRICES * partitionCount * maxPartitionSize;
 	size_t bytePitch = 0;
+
 	CUDA_SAFE_CALL(
 			cudaMallocPitch((void**) &m_deviceData,
 				&bytePitch,
 				maxSynapsesPerNeuron * sizeof(uint32_t),
 				height));
 	m_pitch = bytePitch / sizeof(uint32_t);
+	m_allocated = bytePitch * height;
 	d_fill(RCM_ADDRESS, 0);
 	d_fill(RCM_STDP, 0);
 
@@ -138,4 +141,11 @@ RSMatrix::d_fill(size_t plane, char val) const
 				m_deviceData + plane * size(),
 				m_pitch*sizeof(uint32_t), val,
 				m_pitch*sizeof(uint32_t), height));
+}
+
+
+size_t
+RSMatrix::d_allocated() const
+{
+	return m_allocated;
 }

@@ -41,6 +41,9 @@ struct L1SpikeQueue
 		/*! Pitch (in words) between each partitions head entries */
 		size_t headPitch() const;
 
+		/*! \return bytes of allocated device memory */
+		size_t d_allocated() const;
+
 	private :
 
 		uint2* m_data;
@@ -50,6 +53,8 @@ struct L1SpikeQueue
 		unsigned int* m_heads;
 
 		size_t m_headPitch;
+
+		size_t m_allocated;
 };
 
 #endif

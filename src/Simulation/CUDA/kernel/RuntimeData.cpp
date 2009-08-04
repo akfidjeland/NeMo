@@ -228,6 +228,24 @@ checkPitch(size_t expected, size_t found)
 }
 
 
+size_t
+RuntimeData::d_allocated() const
+{
+	size_t total = 0;
+	total += spikeQueue       ? spikeQueue->d_allocated()       : 0;
+	total += firingStimulus   ? firingProbe->d_allocated()      : 0;
+	total += recentFiring     ? recentFiring->d_allocated()     : 0;
+	total += neuronParameters ? neuronParameters->d_allocated() : 0;
+	total += firingProbe      ? firingStimulus->d_allocated()   : 0;
+	total += thalamicInput    ? thalamicInput->d_allocated()    : 0;
+	for(std::vector<ConnectivityMatrix*>::const_iterator i = m_cm.begin();
+			i != m_cm.end(); ++i) {
+		total += *i ?  (*i)->d_allocated() : 0;
+	}
+	return total;
+}
+
+
 /* Set common pitch and check that all relevant arrays have the same pitch. The
  * kernel uses a single pitch for all 32-bit data */ 
 void
@@ -396,6 +414,13 @@ loadParam(RTDATA rt,
         float* arr)
 {
 	rt->neuronParameters->setPartition(partitionIdx, arr, partitionSize, paramIdx);
+}
+
+
+size_t
+allocatedDeviceMemory(RTDATA rt)
+{
+	return rt->d_allocated();
 }
 
 

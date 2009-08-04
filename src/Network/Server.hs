@@ -91,7 +91,7 @@ procSim sock _ initfn log = do
     -- TODO: catch protocol errors here, esp invalid request
     ret <- startSimulationHost sock initfn
     case ret of
-        Nothing     -> return ()
+        Nothing  -> return ()
         Just sim -> procSimReq sock sim log
 
 
@@ -105,6 +105,8 @@ procSimReq sock sim log = do
                 (\err -> do
                     sendResponse sock $ RspError $ show err
                     log $ "error: " ++ show err
+                    dmsg <- diagnostics sim
+                    log $ "diagnostics:\n" ++ dmsg
                     stop sim)
                 (\(probed, elapsed) -> do
                     sendResponse sock $ RspData probed elapsed

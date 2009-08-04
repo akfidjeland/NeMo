@@ -71,6 +71,15 @@ NVector<T>::bytes() const
 
 template<typename T>
 size_t
+NVector<T>::d_allocated() const
+{
+	return bytes();
+}
+
+
+
+template<typename T>
+size_t
 NVector<T>::wordPitch() const
 {
 	return m_pitch;

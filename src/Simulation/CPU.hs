@@ -37,6 +37,7 @@ initSim net pidx pfn = do
         (return 0)
         (return ())
         (error "getWeights not implemented in 'CPU' backend")
+        (error "diagnostics not implemented in 'CPU' backend")
         (return ())
     where
         step netRT f = stepSim netRT pset f >>= return . (outputFn pfn)

@@ -13,7 +13,7 @@ ConnectivityMatrix::ConnectivityMatrix(
         size_t maxPartitionSize,
 		size_t maxDelay,
 		size_t maxSynapsesPerDelay,
-		size_t maxRevSynapsesPerNeuron) :
+		size_t maxRevSynapsesPerNeuron):
 	m_fsynapses(partitionCount,
 			maxPartitionSize,
 			maxDelay,
@@ -255,3 +255,14 @@ ConnectivityMatrix::dr_clear(size_t plane)
 {
 	m_rsynapses.d_fill(plane, 0);
 }
+
+
+size_t
+ConnectivityMatrix::d_allocated() const
+{
+	return
+		m_fsynapses.d_allocated()
+		+ m_delayBits.d_allocated()
+		+ m_rsynapses.d_allocated();
+}
+

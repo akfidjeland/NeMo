@@ -69,6 +69,10 @@ data Simulation = Simulation {
 
         getWeights :: IO (Network Stateless Static),
 
+        {- | Return a string with diagnostic data, which could be useful if the
+         - backend fails for some reason -}
+        diagnostics :: IO String,
+
         -- | Perform any clean-up operations
         -- TODO: could we make the garbage collector do this perhaps?
         closeSim :: IO ()

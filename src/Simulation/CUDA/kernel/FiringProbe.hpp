@@ -68,6 +68,8 @@ struct FiringProbe
          * the firing data. */
         void checkOverflow();
 
+		size_t d_allocated() const;
+
 	private :
 
 		/* On the device side, the firing is stored as interleaved
@@ -123,6 +125,8 @@ struct FiringProbe
 		uint m_maxReadPeriod;
 
         uint m_nextOverflow;
+
+		size_t m_allocated;
 };
 
 
