@@ -1,12 +1,12 @@
 .. Note: this page is used to create user documentation for the MATLAB API
 
 ========================
-Nemo v0.3.2 - Matlab API
+Nemo v0.3.3 - Matlab API
 ========================
 
 :Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
 :Organization: Department of Computing, Imperial College London
-:Date: July 2008
+:Date: August 2008
 
 The MATLAB API can be used to control a simulation running on a dedicated host.
 The network is constructed in MATLAB, and is then transferred to the host. The
@@ -31,48 +31,49 @@ set either in the GUI or in the terminal::
 
 The network is generated on the client side. The user should generate n-vectors
 ``a``, ``b``, ``c``, ``d``, ``u``, and ``v`` that describes the neuron
-population. The connectivity is described using n-by-s matrices specifying the
+population. The connectivity is described using n-by-m matrices specifying the
 postsynaptic neuron indices, synaptic weights, and delays.
 
 A simple script which connects to a server, runs for 60 s with just a single
-firing stimulus, processing the returned firing data with the function ``foo``::
+firing stimulus, processing the returned firing data with the function ``foo``,
+could be written as follows::
     
     . . . code that generates the network
      
-    nsSetHost('axel01.doc.ic.ac.uk');
+    nemoSetHost('axel01.doc.ic.ac.uk');
     F = 30;
     iterations = 4;
-    nsStart(a, b, c, d, u, v, spost, sdelays, sweights, iterations, F);
+    nemoStart(a, b, c, d, u, v, targets, delays, weights, iterations, F);
     for i=1:60
-        fired = nsRun(1000, [500 1]);
+        fired = nemoRun(1000, [500 1]);
         foo(fired);
     end
-    nsTerminate;
+    nemoTerminate;
 
 or simpler, if 60 seconds worth of data can be processed (and buffered) at once::
     
     . . . code that generates the network
 
-    nsSetHost('axel01.doc.ic.ac.uk');
-    nsStart(a, b, c, d, u, v, spost, sdelays, sweights, 4, 30);
-    fired = nsRun(60000, [500 1], 4, 30);
+    nemoSetHost('axel01.doc.ic.ac.uk');
+    nemoStart(a, b, c, d, u, v, targets, delays, weights, 4, 30);
+    fired = nemoRun(60000, [500 1], 4, 30);
     foo(fired);
-    nsTerminate;
+    nemoTerminate;
 
 To run for 1000ms applying STDP every 50ms, do something like the following
 (perhaps with some added stimulus)::
 
-    nsSetHost('axel01.doc.ic.ac.uk');
+    nemoSetHost('axel01.doc.ic.ac.uk');
     F = 30;
-    nsEnableSTDP(potentiation(1.0, 20), depression(0.8, 20), F);
+    nemoEnableSTDP(potentiation(1.0, 20), depression(0.8, 20), F);
     iterations = 4;
-    nsStart(a, b, c, d, u, v, spost, sdelays, sweights, iterations, F);
+    nemoStart(a, b, c, d, u, v, targets, delays, weights, iterations, F);
     for i=1:50:1000
         fired = nsRun(50, []);
         foo(fired);
-        nsApplySTDP(1.0);
+        nemoApplySTDP(1.0);
     end
-    nsTerminate;
+    nemoTerminate;
 
 The functions ``potentiation`` and ``depression`` produce the lookup-tables
 that define the STDP function. See ``nsEnableSTDP`` for expexted format. 
