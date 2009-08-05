@@ -156,22 +156,14 @@ updateSynapse(
 	uint64_t p_spikes = (sourceFiring >> s_stdpTauD) & MASK(s_stdpTauP);
 
 	if(p_spikes) {
+
 		int dt = __ffsll(p_spikes) - 1;
 
-		/* A spike was sent from pre- to post-synaptic. However, it's possible
-		 * that this spike has already caused potentiation due to multiple
-		 * firings at the postsynaptic */
-		bool alreadyPotentiated
-			= (s_targetRecentFiring[targetNeuron] >> s_stdpTauD)
-			& MASK(dt);
-
-		if(!alreadyPotentiated) {
-			w_diff += potentiation(dt);
-			DEBUG_MSG("ltp %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
-					potentiation(dt),
-					sourcePartition(r_synapse), sourceNeuron(r_synapse),
-					CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse));
-		}
+		w_diff += potentiation(dt);
+		DEBUG_MSG("ltp %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
+				potentiation(dt),
+				sourcePartition(r_synapse), sourceNeuron(r_synapse),
+				CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse));
 	}
 
 	uint64_t d_spikes = sourceFiring & MASK(s_stdpTauD);
@@ -180,23 +172,12 @@ updateSynapse(
 
 		int dt = __clzll(d_spikes << (64 - rfshift - s_stdpTauD));
 
-		/* A spike was sent from pre- to post-synaptic. However, it's possible
-		 * that this spike has already caused depression due to the
-		 * postsynaptic firing again between the currently considered firing
-		 * and the spike arrival. That depression will be processed in a few
-		 * simulation cycles' time. */
-		bool alreadyDepressed
-			= (s_targetRecentFiring[targetNeuron] >> (s_stdpTauD-1-dt))
-			& MASK(dt);
-
-		if(!alreadyDepressed) {
-			w_diff += depression(dt);
-			DEBUG_MSG("ltd: %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
-					depression(dt),
-					sourcePartition(r_synapse), sourceNeuron(r_synapse),
-					CURRENT_PARTITION, targetNeuron,
-					dt, r_delay(r_synapse));
-		}
+		w_diff += depression(dt);
+		DEBUG_MSG("ltd: %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
+				depression(dt),
+				sourcePartition(r_synapse), sourceNeuron(r_synapse),
+				CURRENT_PARTITION, targetNeuron,
+				dt, r_delay(r_synapse));
 	}
 
 	return w_diff;
