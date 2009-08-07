@@ -160,21 +160,36 @@ resetTimer(RTDATA rtdata);
 //-----------------------------------------------------------------------------
 
 
-/* D: depression
- * P: potentiation
- * alpha: multiplier for exponential
- * tau: maximum time difference between spike arrival and firing
+/*! Enable spike-timing dependent plasticity in the simulation.
  *
+ * \param preFireWindow
+ * 		Length, in cycles, of the part of the STDP window that precedes the
+ * 		postsynaptic firing.
+ * \param postFireWindow
+ * 		Length, in cycles, of the part of the STDP window that comes after the
+ * 		postsynaptic firing.
+ * \param potentiationMask
+ * 		Bit mask indicating what cycles during the STDP for which potentiation
+ * 		takes place. Bit 0 is the end of the STDP window.
+ * \param depressionMask
+ * 		Bit mask indicating what cycles during the STDP for which depression
+ * 		takes place. Bit 0 is the end of the STDP window.
+ * \param stdpFn
+ * 		STDP function sampled at integer cycle intervals. Length should be
+ * 		preFireWindow + postFireWindow. The first entry corresponds to the
+ * 		beginning of the STDP window.
  * \param maxWeight
  * 		Weight beyond which excitatory synapses are not allowed to move
  */
 void
-enableSTDP(RTDATA rtdata,
-		int tauP,
-		int tauD,
-		float* potentiation, // len: tauP
-		float* depression, // len: tauD
+enableStdp(RTDATA,
+		unsigned int preFireWindow,
+		unsigned int postFireWindow,
+		uint64_t potentiationBits,
+		uint64_t depressionBits,
+		float* stdpFn,
 		float maxWeight);
+
 
 //-----------------------------------------------------------------------------
 // SIMULATION STEPPING

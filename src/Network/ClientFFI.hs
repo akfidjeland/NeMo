@@ -29,6 +29,8 @@ import Construction.Synapse
 import Construction.Topology
 import Network.SocketSerialisation
 import Network.Protocol (startSimulation, stopSimulation, runSimulation, getWeights, defaultPort)
+import Options (defaults)
+import Simulation.STDP.Options (stdpOptions)
 import Simulation.STDP
 import Types
 
@@ -41,11 +43,12 @@ foreign export ccall hs_startSimulation
     -> CInt             -- ^ number of synapses per neuron (must be the same for all)
     -> CInt             -- ^ temporal subresolution of simulation
 
+    -- TODO: just use window size of 0 to inidicate STDP
     -> CInt             -- ^ bool: use STDP?
-    -> CInt             -- ^ STDP tau (max time) for potentiation
-    -> CInt             -- ^ STDP tau (max time) for depression
-    -> Ptr CDouble      -- ^ lookup table for potentiation
-    -> Ptr CDouble      -- ^ lookup table for depression
+    -> CInt             -- ^ length of prefire part of STDP window
+    -> CInt             -- ^ length of postfire part of STDP window
+    -> Ptr CDouble      -- ^ lookup table for prefire part of STDP function
+    -> Ptr CDouble      -- ^ lookup table for postfire part of STDP function
     -> CDouble          -- ^ STDP max weight
 
     -> Ptr CDouble      -- ^ a
@@ -59,24 +62,29 @@ foreign export ccall hs_startSimulation
     -> Ptr CDouble      -- ^ syanapse weights
     -> IO Bool
 hs_startSimulation fd n spn tsr
-        useSTDP tp td pot dep mw
+        useStdp tpre tpost pre post mw
         a b c d u v sidx sdelay sweight = do
-    potLUT <- peekArray (fromIntegral tp) pot
-    depLUT <- peekArray (fromIntegral td) dep
     net <- createNetwork n spn a b c d u v sidx sdelay sweight
     sock <- socketFD fd
     handle (\_ -> return False) $ do
-    startSimulation sock net (fromIntegral tsr) (stdpConf potLUT depLUT)
+    stdpConf <- peekStdpConf useStdp mw tpre tpost pre post
+    startSimulation sock net (fromIntegral tsr) stdpConf
     return True
     where
-        -- TODO: might want to control regular STDP application from the host
-        stdpConf potLUT depLUT = STDPConf {
-                stdpEnabled      = toBool useSTDP,
-                stdpPotentiation = map realToFrac potLUT,
-                stdpDepression   = map realToFrac depLUT,
-                stdpMaxWeight    = (realToFrac mw),
-                stdpFrequency    = Nothing
-            }
+
+        peekStdpConf active maxWeight preLen postLen preArr postArr = do
+            if toBool active
+                then return (defaults stdpOptions) { stdpEnabled = False }
+                else do
+                    preList <- peekArray (fromIntegral preLen) preArr
+                    postList <- peekArray (fromIntegral postLen) postArr
+                    return $! StdpConf {
+                            stdpEnabled = True,
+                            prefire = map realToFrac preList,
+                            postfire = map realToFrac postList,
+                            stdpMaxWeight = realToFrac maxWeight,
+                            stdpFrequency = Nothing
+                        }
 
 
 
@@ -104,7 +112,7 @@ foreign export ccall hs_runSimulation
     -> Ptr CInt         -- ^ elapsed time (milliseconds)
     -> Ptr (Ptr CChar)  -- ^ pointer to error if call failed (caller should free)
     -> IO Bool
-hs_runSimulation fd nsteps applySTDP stdpReward
+hs_runSimulation fd nsteps applyStdp stdpReward
         fscycles fsidx fslen fcycles fidx flen elapsed errMsg = do
     sock <- socketFD fd
     let nsteps' = fromIntegral nsteps
@@ -120,8 +128,8 @@ hs_runSimulation fd nsteps applySTDP stdpReward
     return True
     where
         stdpApplication
-            | applySTDP == 0 = STDPIgnore
-            | otherwise      = STDPApply $ realToFrac stdpReward
+            | applyStdp == 0 = StdpIgnore
+            | otherwise      = StdpApply $ realToFrac stdpReward
 
 
 

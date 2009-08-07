@@ -100,8 +100,8 @@ procSim sock _ initfn log = do
 procSimReq sock sim log = do
     req <- recvCommand sock
     case req of
-        (CmdSync nsteps fstim applySTDP) -> do
-            try (procSynReq nsteps sim fstim applySTDP) >>= either
+        (CmdSync nsteps fstim applyStdp) -> do
+            try (procSynReq nsteps sim fstim applyStdp) >>= either
                 (\err -> do
                     sendResponse sock $ RspError $ show err
                     log $ "error: " ++ show err
@@ -127,7 +127,7 @@ procSimReq sock sim log = do
 
 
 
-procSynReq nsteps sim sparseFstim applySTDP = do
+procSynReq nsteps sim sparseFstim applyStdp = do
     -- We should do this by whatever increments are requested by the step
     -- TODO: should deal with nsteps that don't work out exactly
     resetTimer sim
@@ -146,8 +146,8 @@ procSynReq nsteps sim sparseFstim applySTDP = do
         getFiring (FiringData firing) = sort firing
 
         -- only a single STDP application per request supported (in first cycle)
-        stdpApplications = (applySTDP : tail nostdp) : repeat nostdp
-        nostdp = replicate sz STDPIgnore
+        stdpApplications = (applyStdp : tail nostdp) : repeat nostdp
+        nostdp = replicate sz StdpIgnore
 
 
 

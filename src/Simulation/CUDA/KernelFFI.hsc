@@ -17,7 +17,7 @@ module Simulation.CUDA.KernelFFI (
     loadA, loadB, loadC, loadD,
     loadU, loadV,
     loadThalamicInputSigma,
-    enableSTDP,
+    configureStdp,
     maxPartitionSize,
     elapsedMs,
     resetTimer
@@ -25,6 +25,9 @@ module Simulation.CUDA.KernelFFI (
 
 import Control.Monad (when)
 import Data.Array.Storable (StorableArray, withStorableArray)
+import Data.Bits (setBit)
+import Data.List (foldl')
+import Data.Word (Word64)
 import Foreign.C.Types
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import Foreign.Marshal.Alloc (alloca)
@@ -34,6 +37,8 @@ import Foreign.Ptr
 import Foreign.Storable (peek)
 
 import Simulation.CUDA.Address
+import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow,
+        potentiationMask, depressionMask)
 
 #include <kernel.h>
 
@@ -194,24 +199,42 @@ foreign import ccall unsafe "step"
 -- STDP
 -------------------------------------------------------------------------------
 
-foreign import ccall unsafe "enableSTDP" c_enableSTDP
+
+foreign import ccall unsafe "enableStdp" c_enableStdp
     :: Ptr CuRT
-    -> CInt       -- ^ p_len : maximum time for potentiation
-    -> CInt       -- ^ d_len : maximum time for depression
-    -> Ptr CFloat -- ^ lookup-table values (dt -> float) for potentiation, length: p_len
-    -> Ptr CFloat -- ^ lookup-table values (dt -> float) for depression, length: d_len
-    -> CFloat   -- ^ max weight: limit for excitatory synapses
+    -> CUInt       -- ^ length of pre-fire part of STDP window
+    -> CUInt       -- ^ length of post-fire part of STDP window
+    -> Word64      -- ^ bit-mask indicating the part of the STDP window which
+                   --   is potentiation
+    -> Word64      -- ^ bit-mask indicating the part of the STDP window which
+                   --   is depression
+    -> Ptr CFloat  -- ^ lookup-table values (dt -> float) for STDP function,
+                   --   length: prefire_len + postfire_len
+    -> CFloat      -- ^ max weight: limit for excitatory synapses
     -> IO ()
 
-enableSTDP rt potentiationLUT depressionLUT maxWeight = do
-    let p_len = fromIntegral $ length potentiationLUT
-    let d_len = fromIntegral $ length depressionLUT
-    withForeignPtr rt         $ \rtptr -> do
-    withArray potentiationLUT $ \p_ptr -> do
-    withArray depressionLUT   $ \d_ptr -> do
-    c_enableSTDP rtptr p_len d_len
-        p_ptr d_ptr
-        (realToFrac maxWeight)
+
+configureStdp :: ForeignPtr CuRT -> StdpConf -> IO ()
+configureStdp rt conf =
+    when (stdpEnabled conf) $ do
+    withForeignPtr rt $ \rt_ptr -> do
+    let lut = map realToFrac $ reverse (prefire conf) ++ (postfire conf)
+    withArray lut $ \fnLut -> do
+    c_enableStdp rt_ptr
+        (fromIntegral $ prefireWindow conf)
+        (fromIntegral $ postfireWindow conf)
+        (word64 $ reverse $ potentiationMask conf)
+        (word64 $ reverse $ depressionMask conf)
+        fnLut
+        (realToFrac $ stdpMaxWeight conf)
+
+    where
+
+        word64 :: [Bool] -> Word64
+        word64 bits = foldl' set 0 $ zip bits [0..]
+            where
+                set w (b, i) = if b then setBit w i else w
+
 
 
 

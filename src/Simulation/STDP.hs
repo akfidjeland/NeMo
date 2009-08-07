@@ -1,22 +1,30 @@
 module Simulation.STDP (
-    STDPConf(..),
-    STDPApplication(..),
+    StdpConf(..),
+    StdpApplication(..),
     asymPotentiation,
-    asymDepression
+    asymDepression,
+    asymStdp,
+    stdpWindow,
+    prefireWindow,
+    postfireWindow,
+    potentiationMask,
+    depressionMask
 ) where
 
 import Control.Monad (liftM)
 import Data.Binary
 
 
-data STDPConf = STDPConf {
+data StdpConf = StdpConf {
 
         stdpEnabled :: Bool,
 
-        {- Lookup-table mapping time difference (dt) to additive weight for
-         - potentiation and depression -}
-        stdpPotentiation :: [Double],
-        stdpDepression :: [Double],
+        {- | STDP function sampled at integer cycles. Positive values indicate
+         - potentation, while negative values indicate depression. For the two
+         - parts of the function (prefire and postfire) the index corresponds
+         - to dt (which starts at 0 on both sides of the firing). -}
+        prefire :: [Double],
+        postfire :: [Double],
 
         -- TODO: use Maybe here, to allow max weight be max in current network
         stdpMaxWeight :: Double,
@@ -24,6 +32,29 @@ data STDPConf = STDPConf {
         -- | We may specify a fixed frequency with which STDP should be applied
         stdpFrequency :: Maybe Int
     } deriving (Show, Eq)
+
+
+prefireWindow :: StdpConf -> Int
+prefireWindow = length . prefire
+
+postfireWindow :: StdpConf -> Int
+postfireWindow = length . postfire
+
+stdpWindow :: StdpConf -> Int
+stdpWindow stdp = prefireWindow stdp + postfireWindow stdp
+
+
+{- | Mask specifying what cycles in the STDP window correspond to potentiation.
+ - The first element is at the beginning of the window -}
+potentiationMask :: StdpConf -> [Bool]
+potentiationMask conf = map (>0.0) $ (reverse $ prefire conf) ++ (postfire conf)
+
+{- | Mask specifying what cycles in the STDP window correspond to depression.
+ - The first element is at the beginning of the window -}
+depressionMask :: StdpConf -> [Bool]
+depressionMask conf = map (<0.0) $ (reverse $ prefire conf) ++ (postfire conf)
+
+
 
 
 {- "Standard" potentiation and depression for asymetric STDP.
@@ -44,32 +75,39 @@ asymDepression = map f [0..max_dt-1]
         max_dt = 20
 
 
+{- "Standard" potentiation and depressing for asymmetric STDP with new
+ - configuaration scheme -}
+asymStdp :: StdpConf
+{- TODO: may want to use Maybe here for max weight, and default to max in
+ - network. The default value here is arbitrary -}
+asymStdp = StdpConf True asymPotentiation asymDepression 100.0 Nothing
+
+
 {- We may need to configure STDP from over the network -}
-instance Binary STDPConf where
-    put (STDPConf en pot dep mw f) =
-        put en >> put pot >> put dep >> put mw >> put f
+instance Binary StdpConf where
+    put (StdpConf en prefire postfire mw f) =
+        put en >> put prefire >> put postfire >> put mw >> put f
     get = do
         en  <- get
-        pot <- get
-        dep <- get
+        prefire <- get
+        postfire <- get
         mw  <- get
         f   <- get
-        return $ STDPConf en pot dep mw f
+        return $ StdpConf en prefire postfire mw f
 
 
-
-data STDPApplication
-        = STDPApply Double   -- apply with multiplier
-        | STDPIgnore
+data StdpApplication
+        = StdpApply Double   -- apply with multiplier
+        | StdpIgnore
     deriving (Show, Eq)
 
 
-instance Binary STDPApplication where
-    put (STDPApply m) = putWord8 1 >> put m
-    put STDPIgnore = putWord8 2
+instance Binary StdpApplication where
+    put (StdpApply m) = putWord8 1 >> put m
+    put StdpIgnore = putWord8 2
     get = do
         tag <- getWord8
         case tag of
-            1 -> liftM STDPApply get
-            2 -> return STDPIgnore
-            _ -> error "Incorrectly serialised STDPApplication data"
+            1 -> liftM StdpApply get
+            2 -> return StdpIgnore
+            _ -> error "Incorrectly serialised StdpApplication data"

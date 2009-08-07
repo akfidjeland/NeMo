@@ -7,7 +7,7 @@ import qualified Data.Set as Set
 import Construction.Network
 import Construction.Neuron (Stateless)
 import Construction.Synapse (Static)
-import Simulation.STDP (STDPConf, STDPApplication)
+import Simulation.STDP (StdpConf, StdpApplication)
 import Types
 
 -- TODO: move to Simulation.Run
@@ -59,7 +59,7 @@ sample (Until end) xs = take end xs
  - communication overheads. -}
 data Simulation = Simulation {
         stepSize :: Int,
-        runStep  :: [[Idx]] -> [STDPApplication] -> IO [ProbeData],
+        runStep  :: [[Idx]] -> [StdpApplication] -> IO [ProbeData],
 
         {- | Return the number of milliseconds of elapsed (wall-clock)
          - simulation time -}
@@ -83,11 +83,11 @@ type SimulationInit n s
     = Network n s
     -- TODO: remove  temporal resolution, put everything into simulation options
     -> TemporalResolution   -- sub-step resolution
-    -> STDPConf
+    -> StdpConf
     -> IO Simulation
 
 -- TODO: rename, this is really multiple steps handled in one go.
 type SimulationStep
     = [[Idx]]               -- ^ firing stimulus
-    -> [STDPApplication]
+    -> [StdpApplication]
     -> IO [ProbeData]

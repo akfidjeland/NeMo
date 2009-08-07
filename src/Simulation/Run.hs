@@ -74,8 +74,7 @@ runSim simOpts net probeIdx probeF fstimF outfn opts stdpConf = do
         initSim simOpts net probeIdx probeF False opts stdpConf
     let cs = cycles duration
     fstim <- firingStimulus fstimF
-    -- let stdp = applySTDP $ maybe Nothing stdpFrequency stdpConf
-    let stdp = applySTDP stdpConf
+    let stdp = applyStdp stdpConf
         stim = zip fstim stdp
     mapM_ (aux run) $ L.chunksOf sz $ sample duration stim
     close
@@ -86,7 +85,7 @@ runSim simOpts net probeIdx probeF fstimF outfn opts stdpConf = do
             run fstim stdp >>= mapM_ outfn
 
         -- TODO: move to Simulation STDP?
-        applySTDP conf = maybe
-            (repeat STDPIgnore)
-            (\freq -> cycle $ (replicate  (freq-1) STDPIgnore) ++ [STDPApply 1.0])
+        applyStdp conf = maybe
+            (repeat StdpIgnore)
+            (\freq -> cycle $ (replicate  (freq-1) StdpIgnore) ++ [StdpApply 1.0])
             (stdpFrequency conf)

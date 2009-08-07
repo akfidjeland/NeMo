@@ -46,7 +46,7 @@ CU_INC = kernel.cu L1SpikeQueue.cu firingProbe.cu partitionConfiguration.cu cycl
 # CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN) $(CU_INC))
 CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN))
 CU_DEPS     := $(addprefix $(SRCDIR),$(CU_INC))
-CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringProbe.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp RSMatrix.cpp)
+CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringProbe.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp RSMatrix.cpp StdpFunction.cpp)
 CFILES		:= $(addprefix $(SRCDIR),kernel.c)
 
 

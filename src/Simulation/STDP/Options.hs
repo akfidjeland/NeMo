@@ -1,4 +1,5 @@
 {- | Command-line options controlling STDP -}
+
 module Simulation.STDP.Options (stdpOptions) where
 
 import Simulation.STDP
@@ -6,14 +7,7 @@ import Options
 
 stdpOptions = OptionGroup "STDP options" stdpOptDefaults stdpOptDescr
 
-stdpOptDefaults = STDPConf {
-        stdpEnabled = False,
-        stdpPotentiation = asymPotentiation,
-        stdpDepression = asymDepression,
-        -- TODO: may want to use Maybe here, and default to max in network
-        stdpMaxWeight = 100.0, -- for no good reason
-        stdpFrequency = Nothing
-    }
+stdpOptDefaults = asymStdp { stdpEnabled = False }
 
 
 stdpOptDescr = [

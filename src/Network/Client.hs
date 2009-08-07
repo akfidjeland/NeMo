@@ -15,7 +15,7 @@ import Network.Protocol
         (startSimulation, runSimulation, stopSimulation, defaultPort)
 import Simulation.Common
 import Simulation.FiringStimulus (denseToSparse)
-import Simulation.STDP (STDPConf, STDPApplication(..))
+import Simulation.STDP (StdpConf, StdpApplication(..))
 import Types
 
 
@@ -26,7 +26,7 @@ initSim :: (Binary n, Binary s, NFData n, NFData s)
     -> Int            -- ^ port number
     -> Network n s
     -> TemporalResolution
-    -> STDPConf
+    -> StdpConf
     -> IO Simulation
 initSim hostname port net dt stdpConf = do
     sock <- openSocket hostname (show port)
@@ -54,7 +54,7 @@ stepRemote :: Socket -> Int -> SimulationStep
 stepRemote sock stepsz fstim _ = do
     assert (length fstim == stepsz) $ do
     -- Here we only support fixed-rate application of STDP, which is configured during initialisation
-    (firing, _) <- runSimulation sock stepsz (denseToSparse fstim) STDPIgnore
+    (firing, _) <- runSimulation sock stepsz (denseToSparse fstim) StdpIgnore
     return $ map FiringData firing
 
 

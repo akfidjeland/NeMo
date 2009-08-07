@@ -65,12 +65,12 @@ initSim
     -> TemporalResolution
     -> Bool
     -> Maybe Int            -- ^ cluster size which mapper should be forced to use
-    -> STDPConf
+    -> StdpConf
     -> IO Simulation
 initSim net probeIdx probeF dt verbose partitionSize stdpConf = do
     -- TODO: select device?
-    let usingSTDP = stdpEnabled stdpConf
-        ((cuNet, att), mapLog) = runWriter $ mapNetwork net usingSTDP partitionSize
+    let usingStdp = stdpEnabled stdpConf
+        ((cuNet, att), mapLog) = runWriter $ mapNetwork net usingStdp partitionSize
     when (not $ null mapLog) $ writeFile "map.log" mapLog
     -- TODO: should we free this memory?
     configureKernel cuNet
@@ -106,7 +106,7 @@ stepMulti
     -> Maybe (ProbeFn IzhState)
     -> TemporalResolution   -- ^ temporal subresolution
     -> [[Idx]]
-    -> [STDPApplication]
+    -> [StdpApplication]
     -> IO [ProbeData]
 stepMulti sim steps pidx pfn dt fstim stdpApp = do
     sequence3_ (stepOne sim pidx pfn dt) fstim [0..] stdpApp
@@ -165,7 +165,7 @@ stepOne sim probeIdx probeF tempSubres fstim currentCycle stdpApplication = do
     withForeignPtr (rt sim)      $ \rtPtr     -> do
     kernelStatus <- c_step currentCycle
         (fromIntegral tempSubres)
-        applySTDP stdpReward
+        applyStdp stdpReward
         (fromIntegral flen) fsPIdxPtr fsNIdxPtr
         rtPtr
     when (kernelStatus /= 0) $ fail "Backend error"
@@ -173,6 +173,6 @@ stepOne sim probeIdx probeF tempSubres fstim currentCycle stdpApplication = do
     where
 
         -- TODO: just use a maybe type here instead, unwrap in KernelFFI
-        (applySTDP, stdpReward) = case stdpApplication of
-            STDPIgnore    -> (0, 0)
-            (STDPApply r) -> (1, realToFrac r)
+        (applyStdp, stdpReward) = case stdpApplication of
+            StdpIgnore    -> (0, 0)
+            (StdpApply r) -> (1, realToFrac r)

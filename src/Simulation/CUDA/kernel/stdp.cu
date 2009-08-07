@@ -3,8 +3,6 @@
 
 #include "log.hpp"
 #include "error.cu"
-//! \todo remove: this is only needed for MASK 
-#include "spike.cu"
 #include "util.h"
 
 
@@ -13,98 +11,100 @@
  * The STDP parameters apply to all neurons in a network. One might, however,
  * want to do this differently for different neuron populations. This is not
  * yet supported.
- *
- * The STDP parameters are stored in constant memory as we're running out of
- * available kernel paramters.
- *
- * We postfix parameters either P or D to indicate whether the parameter refers
- * to potentiation or depression.
- *
- * - tau specifies the maximum delay between presynaptic spike and
- *   postsynaptic firing for which STDP has an effect.
- * - alpha is a multiplier for the exponential
  */
 
-__constant__ int c_stdpTauP;
-__constant__ int c_stdpTauD;
 
-__constant__ float c_depression[MAX_STDP_DELAY];
-__constant__ float c_potentiation[MAX_STDP_DELAY];
+/* The STDP window is separated into two distinct region: potentiation and
+ * depression. In the common assymetrical case the pre-fire part of the STDP
+ * window will be potentiation, while the post-fire part of the window will be
+ * depression. Other schemes are supported, however. */
+
+/*! The STDP parameters are stored in constant memory, and is loaded into shared
+ * memory during execution. \a configureStdp should be called before simulation
+ * starts, and \a loadStdpParameters should be called at the beginning of the
+ * kernel */
+
+
+/* Mask of cycles within the STDP for which we consider potentiating synapses */
+__constant__ uint64_t c_stdpPotentiation;
+
+/* Mask of cycles within the STDP for which we consider depressing synapses */
+__constant__ uint64_t c_stdpDepression;
+
+/* The STDP function sampled at integer cycle points within the STDP window */
+__constant__ float c_stdpFn[STDP_WINDOW_SIZE];
+
+/* Length of the window (in cycles) which is post firing */
+__constant__ uint c_stdpPostFireWindow;
+
+/* Length of the window (in cycles) which is pre firing */
+__constant__ uint c_stdpPreFireWindow;
+
+__constant__ uint c_stdpWindow;
+
+
+__shared__ uint64_t s_stdpPotentiation;
+__shared__ uint64_t s_stdpDepression;
+__shared__ float s_stdpFn[STDP_WINDOW_SIZE];
+__shared__ uint s_stdpPostFireWindow;
+__shared__ uint s_stdpPreFireWindow;
 
 
 #define SET_STDP_PARAMETER(symbol, val) CUDA_SAFE_CALL(\
         cudaMemcpyToSymbol(symbol, &val, sizeof(val), 0, cudaMemcpyHostToDevice)\
     )
 
+
 __host__
 void
-configureSTDP(int tauP, int tauD,
-		std::vector<float>& h_prefire,
-		std::vector<float>& h_postfire)
+configureStdp(
+		uint preFireWindow,
+		uint postFireWindow,
+		uint64_t potentiationBits, // remainder are depression
+		uint64_t depressionBits, // remainder are depression
+		float* stdpFn)
 {
-    SET_STDP_PARAMETER(c_stdpTauP, tauP);
-    SET_STDP_PARAMETER(c_stdpTauD, tauD);
-
-	cudaMemcpyToSymbol(c_potentiation,
-			&h_prefire[0],
-			sizeof(float)*MAX_STDP_DELAY,
-			0, cudaMemcpyHostToDevice);
-
-	cudaMemcpyToSymbol(c_depression,
-			&h_postfire[0],
-			sizeof(float)*MAX_STDP_DELAY,
+	SET_STDP_PARAMETER(c_stdpPreFireWindow, preFireWindow);
+	SET_STDP_PARAMETER(c_stdpPostFireWindow, postFireWindow);
+	SET_STDP_PARAMETER(c_stdpWindow, preFireWindow + postFireWindow);
+	SET_STDP_PARAMETER(c_stdpPotentiation, potentiationBits);
+	SET_STDP_PARAMETER(c_stdpDepression, depressionBits);
+	uint window = preFireWindow + postFireWindow;
+	assert(window <= STDP_WINDOW_SIZE);
+	cudaMemcpyToSymbol(c_stdpFn, stdpFn,
+			sizeof(float)*window,
 			0, cudaMemcpyHostToDevice);
 }
+
 
 
 /* In the kernel we load the parameters into shared memory. These variables can
  * then be accessed using broadcast */
 
-//! \todo move into vector as other parameters
-__shared__ int s_stdpTauP;
-__shared__ int s_stdpTauD;
 
 
 #define LOAD_STDP_PARAMETER(symbol) s_ ## symbol = c_ ## symbol
-
-__shared__ float s_potentiation[MAX_STDP_DELAY];
-__shared__ float s_depression[MAX_STDP_DELAY];
 
 
 __device__
 void
 loadStdpParameters()
 {
-    //! \todo could use an array for this and load in parallel
     if(threadIdx.x == 0) {
-        LOAD_STDP_PARAMETER(stdpTauP);
-        LOAD_STDP_PARAMETER(stdpTauD);
+        LOAD_STDP_PARAMETER(stdpPotentiation);
+        LOAD_STDP_PARAMETER(stdpDepression);
+        LOAD_STDP_PARAMETER(stdpPreFireWindow);
+        LOAD_STDP_PARAMETER(stdpPostFireWindow);
     }
+
 	ASSERT(MAX_STDP_DELAY <= THREADS_PER_BLOCK);
 	int dt = threadIdx.x;
-	if(dt < MAX_STDP_DELAY) {
-		s_potentiation[dt] = c_potentiation[dt];
-		s_depression[dt] = c_depression[dt];
+	if(dt < STDP_WINDOW_SIZE) {
+		s_stdpFn[dt] = c_stdpFn[dt];
 	}
     __syncthreads();
 }
 
-
-
-__device__
-float
-depression(int dt)
-{
-	return s_depression[abs(dt)];
-}
-
-
-__device__
-float
-potentiation(int dt)
-{
-	return s_potentiation[abs(dt)];
-}
 
 
 
@@ -136,59 +136,121 @@ potentiation(int dt)
  * Within the P spikes (if any) we only consider the *last* spike. Within the D
  * spikes (if any) we only consider the *first* spike.
  */
+
+
+#define STDP_NO_APPLICATION (~0)
+
+
+/*! \return
+ *		shortest delay between spike arrival and firing of this neuron or
+ *		largest representable delay if STDP not appliccable.
+ *
+ * STDP is not applicable if the postsynaptic neuron also fired closer to the
+ * incoming spike than the firing currently under consideration. */
 __device__
-float
-updateSynapse(
-		uint r_synapse,
-		uint targetNeuron,
-		uint rfshift,
-		uint64_t* sourceRecentFiring, // L0: shared memory; L1: global memory
-		uint64_t* s_targetRecentFiring)
+uint
+closestPreFire(uint64_t spikes, uint targetNeuron)
 {
-	int inFlight
-		= rfshift
-		+ r_delay(r_synapse) - 1; /* -1 since we do spike arrival before
-									 neuron-update and STDP in a single
-									 simulation cycle */
-	uint64_t sourceFiring = sourceRecentFiring[sourceNeuron(r_synapse)] >> inFlight;
+	int dt =  __ffsll(spikes >> s_stdpPostFireWindow);
+	return dt ? (uint) dt-1 : STDP_NO_APPLICATION;
+}
 
-	float w_diff = 0.0f;
-	uint64_t p_spikes = (sourceFiring >> s_stdpTauD) & MASK(s_stdpTauP);
 
-	if(p_spikes) {
 
-		int dt = __ffsll(p_spikes) - 1;
+__device__
+uint
+closestPostFire(uint64_t spikes, uint rfshift, uint targetNeuron)
+{
+	int dt = __clzll(spikes << (64 - rfshift - s_stdpPostFireWindow));
+	return dt ? (uint) dt : STDP_NO_APPLICATION;
+}
 
-		w_diff += potentiation(dt);
-		DEBUG_MSG("ltp %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
-				potentiation(dt),
+
+
+#ifdef __DEVICE_EMULATION__
+
+__device__
+void
+logStdp(int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
+{
+	const char* type[] = { "ltd", "ltp" };
+
+	if(w_diff != 0.0f) {
+		fprintf(stderr, "%s %+f for synapse %u-%u -> %u-%u (dt=%d, delay=%u)\n",
+				type[w_diff > 0.0f], w_diff,
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
 				CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse));
 	}
+}
 
-	uint64_t d_spikes = sourceFiring & MASK(s_stdpTauD);
+#endif
 
-	if(d_spikes) {
 
-		int dt = __clzll(d_spikes << (64 - rfshift - s_stdpTauD));
+__device__
+float
+updateRegion(uint64_t spikes,
+		uint rfshift,
+		uint targetNeuron,
+		uint32_t r_synapse, // used for logging only
+		uint64_t* s_targetRecentFiring)
+{
+	/* The potentiation can happen on either side of the firing. We want to
+	 * find the one closest to the firing. We therefore need to compute the
+	 * prefire and postfire dt's separately. */
+	uint dt_pre = closestPreFire(spikes, targetNeuron);
+	uint dt_post = closestPostFire(spikes, rfshift, targetNeuron);
 
-		w_diff += depression(dt);
-		DEBUG_MSG("ltd: %+f for synapse %u-%u -> %u-%u (dt=%u, delay=%u)\n",
-				depression(dt),
-				sourcePartition(r_synapse), sourceNeuron(r_synapse),
-				CURRENT_PARTITION, targetNeuron,
-				dt, r_delay(r_synapse));
+	/* For logging. Positive values: post-fire, negative values: pre-fire */
+	int dt_log;
+
+	float w_diff = 0.0f;
+	if(spikes) {
+		if(dt_pre < dt_post) {
+			w_diff = s_stdpFn[s_stdpPreFireWindow - 1 - dt_pre];
+			dt_log = -dt_pre;
+		} else if(dt_post < dt_pre) {
+			w_diff = s_stdpFn[s_stdpPreFireWindow+dt_post];
+			dt_log = dt_post;
+		}
+		// if neither is applicable dt_post == dt_pre
 	}
-
+#ifdef __DEVICE_EMULATION__
+	logStdp(dt_log, w_diff, targetNeuron, r_synapse);
+#endif
 	return w_diff;
 }
 
 
 
-/*! Update STDP statistics for all neurons
+/*! Update a synapse according to the user-specified STDP function. Both
+ * potentiation and depression takes place.
  *
- * Process each firing neuron, potentiating synapses with spikes reaching the
- * fired neuron shortly before firing. */
+ * \return weight modifcation (additive term)
+ */
+__device__
+float
+updateSynapse(
+		uint32_t r_synapse,
+		uint targetNeuron,
+		uint rfshift,
+		uint64_t* x_sourceFiring, // L0: shared memory; L1: global memory
+		uint64_t* s_targetFiring)
+{
+	int inFlight = rfshift + r_delay(r_synapse) - 1;
+	/* -1 since we do spike arrival before neuron-update and STDP in a single
+	 * simulation cycle */
+
+	uint64_t sourceFiring = x_sourceFiring[sourceNeuron(r_synapse)] >> inFlight;
+	uint64_t p_spikes = sourceFiring & s_stdpPotentiation;
+	uint64_t d_spikes = sourceFiring & s_stdpDepression;
+
+	return updateRegion(p_spikes, rfshift, targetNeuron, r_synapse, s_targetFiring)
+           + updateRegion(d_spikes, rfshift, targetNeuron, r_synapse, s_targetFiring);
+}
+
+
+
+/*! Update STDP statistics for all neurons */
 __device__
 void
 updateSTDP_(
@@ -220,7 +282,8 @@ updateSTDP_(
 	for(uint nchunk=0; nchunk < s_nchunkCount; ++nchunk) {
 
 		uint target = nchunk * THREADS_PER_BLOCK + threadIdx.x;
-		const int processingDelay = s_stdpTauD;
+		const int processingDelay = s_stdpPostFireWindow;
+
 		bool fired = s_targetRecentFiring[target] & (0x1 << processingDelay);
 
 		__shared__ uint s_firingCount;
@@ -248,7 +311,7 @@ updateSTDP_(
 
 					//! \todo move this inside updateSynapse as well
 					size_t r_address = target * r_pitch + r_sidx;
-					uint r_sdata = gr_address[r_address];
+					uint32_t r_sdata = gr_address[r_address];
 
 					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 

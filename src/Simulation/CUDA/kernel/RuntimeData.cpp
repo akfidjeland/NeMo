@@ -8,6 +8,7 @@ extern "C" {
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
 #include "ThalamicInput.hpp"
+#include "StdpFunction.hpp"
 #include "util.h"
 #include "log.hpp"
 
@@ -15,11 +16,7 @@ extern "C" {
 #include <assert.h>
 #include <sys/time.h>
 
-//! \todo put in header instead
-extern void
-configureSTDP(int tauP, int tauD,
-		std::vector<float>& h_prefire,
-		std::vector<float>& h_postfire);
+
 
 RuntimeData::RuntimeData(
 		size_t partitionCount,
@@ -34,12 +31,12 @@ RuntimeData::RuntimeData(
 		unsigned int maxReadPeriod) :
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
-    m_maxDelay(maxDelay),
+	stdpFn(NULL),
+	m_maxDelay(maxDelay),
 	m_cm(CM_COUNT, (ConnectivityMatrix*) NULL),
 	m_pitch32(0),
 	m_pitch64(0),
 	m_deviceDirty(true),
-	m_usingSTDP(false),
 	m_haveL1Connections(partitionCount != 1 && l1SQEntrySize != 0)
 {
 	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize, maxL1SynapsesPerDelay);
@@ -49,7 +46,7 @@ RuntimeData::RuntimeData(
 	neuronParameters = new NVector<float>(partitionCount, maxPartitionSize, true, NVEC_COUNT);
 
 	firingStimulus = new NVector<uint32_t>(
-            partitionCount, 
+			partitionCount,
 			DIV_CEIL(maxPartitionSize, 32),
 			false);
 
@@ -57,20 +54,20 @@ RuntimeData::RuntimeData(
 	thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
 
 	m_cm[CM_L0] = new ConnectivityMatrix(
-            partitionCount,
-            maxPartitionSize,
-            maxDelay,
-            maxL0SynapsesPerDelay,
-            maxL0RevSynapsesPerNeuron);
+			partitionCount,
+			maxPartitionSize,
+			maxDelay,
+			maxL0SynapsesPerDelay,
+			maxL0RevSynapsesPerNeuron);
 
 	m_cm[CM_L1] = new ConnectivityMatrix(
 			partitionCount,
 			maxPartitionSize,
 			maxDelay,
 			maxL1SynapsesPerDelay,
-            maxL1RevSynapsesPerNeuron);
+			maxL1RevSynapsesPerNeuron);
 
-    setPitch();
+	setPitch();
 
 	int device;
 	cudaGetDevice(&device);
@@ -88,13 +85,16 @@ RuntimeData::~RuntimeData()
 	delete recentFiring;
 	delete neuronParameters;
 	delete firingStimulus;
-    delete thalamicInput;
+	delete thalamicInput;
 	delete cycleCounters;
 	for(std::vector<ConnectivityMatrix*>::iterator i = m_cm.begin();
 			i != m_cm.end(); ++i) {
 		if(*i != NULL) {
 			delete *i;
 		}
+	}
+	if(stdpFn != NULL) {
+		delete stdpFn;
 	}
 }
 
@@ -116,7 +116,10 @@ RuntimeData::moveToDevice()
 			i != m_cm.end(); ++i) {
 			(*i)->moveToDevice();
 		}
-        thalamicInput->moveToDevice();
+		thalamicInput->moveToDevice();
+		if(stdpFn != NULL) {
+			stdpFn->configureDevice();
+		}
 	    m_deviceDirty = false;
 	}
 }
@@ -258,11 +261,13 @@ RuntimeData::setPitch()
 }
 
 
+
 void
 RuntimeData::step()
 {
     m_cycle += 1;
 }
+
 
 
 uint32_t
@@ -309,64 +314,16 @@ RuntimeData::setStart()
 
 
 bool
-RuntimeData::usingSTDP() const
+RuntimeData::usingStdp() const
 {
-	return m_usingSTDP;
+	return stdpFn != NULL;
 }
 
 
-void
-RuntimeData::configureSTDP()
-{
-	if(m_usingSTDP) {
-		::configureSTDP(
-				m_stdpTauP,
-				m_stdpTauD,
-				m_stdpPotentiation,
-				m_stdpDepression);
-	}
-}
 
-
-/* We just store the parameters here for the time being. The kernel is
- * configured on first launch */ 
-void
-RuntimeData::enableSTDP(int tauP, int tauD,
-		float* potentiation,
-		float* depression,
-		float maxWeight)
-{
-	m_usingSTDP = true;
-	m_stdpTauP = tauP;
-	m_stdpTauD = tauD;
-
-	//! \todo do more sensible error reporting here
-	m_stdpPotentiation.resize(MAX_STDP_DELAY, 0.0f);
-	if(tauP > MAX_STDP_DELAY) {
-		fprintf(stderr, "Time window for potentiation (%u) exceeds CUDA backend maximum (%u)\n",
-			tauP, MAX_STDP_DELAY);
-		tauP = MAX_STDP_DELAY;
-	}
-	std::copy(potentiation, potentiation+tauP, m_stdpPotentiation.begin());
-
-	m_stdpDepression.resize(MAX_STDP_DELAY, 0.0f);
-	if(tauD > MAX_STDP_DELAY) {
-		fprintf(stderr, "Time window for depression (%u) exceeds CUDA backend maximum (%u)\n",
-			tauD, MAX_STDP_DELAY);
-		tauP = MAX_STDP_DELAY;
-	}
-	std::copy(depression, depression+tauD, m_stdpDepression.begin());
-	m_stdpMaxWeight = maxWeight;
-}
-
-
-float
-RuntimeData::stdpMaxWeight() const
-{
-    return m_stdpMaxWeight;
-}
-
-
+//-----------------------------------------------------------------------------
+// External API
+//-----------------------------------------------------------------------------
 
 
 /* The external API of the kernel is C-based, so we need wrappers to modify the
@@ -377,7 +334,7 @@ RTDATA
 allocRuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-        uint maxDelay,
+		uint maxDelay,
 		size_t maxL0SynapsesPerDelay,
 		size_t maxL0RevSynapsesPerNeuron,
 		size_t maxL1SynapsesPerDelay,
@@ -389,7 +346,7 @@ allocRuntimeData(
 	return new RuntimeData(
 			partitionCount,
 			maxPartitionSize,
-            maxDelay,
+			maxDelay,
 			maxL0SynapsesPerDelay,
 			maxL0RevSynapsesPerNeuron,
 			maxL1SynapsesPerDelay,
@@ -431,11 +388,11 @@ allocatedDeviceMemory(RTDATA rt)
 
 void
 loadThalamicInputSigma(RTDATA rt,
-        size_t partitionIdx,
-        size_t partitionSize,
-        float* arr)
+		size_t partitionIdx,
+		size_t partitionSize,
+		float* arr)
 {
-    rt->thalamicInput->setSigma(partitionIdx, arr, partitionSize);
+	rt->thalamicInput->setSigma(partitionIdx, arr, partitionSize);
 }
 
 
@@ -454,22 +411,22 @@ loadThalamicInputSigma(RTDATA rt,
 void
 setCMDRow(RTDATA rtdata,
 		size_t cmIdx,
-        unsigned int sourcePartition,
-        unsigned int sourceNeuron,
-        unsigned int delay,
-        float* h_weights,
-        unsigned int* h_targetPartition,
-        unsigned int* h_targetNeuron,
-        size_t length)
+		unsigned int sourcePartition,
+		unsigned int sourceNeuron,
+		unsigned int delay,
+		float* h_weights,
+		unsigned int* h_targetPartition,
+		unsigned int* h_targetNeuron,
+		size_t length)
 {
-    rtdata->cm(cmIdx)->setRow(
-        sourcePartition,
-        sourceNeuron,
-        delay,
-        h_weights,
-        h_targetPartition,
-        h_targetNeuron,
-        length);
+	rtdata->cm(cmIdx)->setRow(
+		sourcePartition,
+		sourceNeuron,
+		delay,
+		h_weights,
+		h_targetPartition,
+		h_targetNeuron,
+		length);
 }
 
 
@@ -477,10 +434,10 @@ setCMDRow(RTDATA rtdata,
 void
 getCM(RTDATA rtdata,
 		size_t cmIdx,
-        int* targetPartitions[],
-        int* targetNeurons[],
-        float* weights[],
-        size_t* pitch)
+		int* targetPartitions[],
+		int* targetNeurons[],
+		float* weights[],
+		size_t* pitch)
 {
 	rtdata->cm(cmIdx)->copyToHost(targetPartitions, targetNeurons, weights, pitch);
 }
@@ -502,16 +459,16 @@ printCycleCounters(RTDATA rtdata)
 long int
 elapsedMs(RTDATA rtdata)
 {
-    return rtdata->elapsed();
+	return rtdata->elapsed();
 }
 
 
 void
 resetTimer(RTDATA rtdata)
 {
-    // force all execution to complete first
-    syncSimulation(rtdata);
-    rtdata->setStart();
+	// force all execution to complete first
+	syncSimulation(rtdata);
+	rtdata->setStart();
 }
 
 
@@ -537,11 +494,14 @@ readFiring(RTDATA rtdata,
 
 
 void
-enableSTDP(RTDATA rtdata,
-		int tauP, int tauD,
-		float* potentiation,
-		float* depression,
-		float maxWeight)
+enableStdp(RTDATA rtdata,
+		uint prefire,
+		uint postfire,
+		uint64_t pbits,
+		uint64_t dbits,
+		float* fn,
+		float maxWeight) // length: prefire + postfire
 {
-	rtdata->enableSTDP(tauP, tauD, potentiation, depression, maxWeight);
+	rtdata->stdpFn =
+		new StdpFunction(prefire, postfire, pbits, dbits, fn, maxWeight);
 }

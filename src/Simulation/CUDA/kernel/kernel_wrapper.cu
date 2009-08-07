@@ -25,6 +25,7 @@ extern "C" {
 #include "RuntimeData.hpp"
 #include "CycleCounters.hpp"
 #include "ConnectivityMatrix.hpp"
+#include "StdpFunction.hpp"
 #include "partitionConfiguration.cu"
 #include "cycleCounting.cu"
 #include "ThalamicInput.hpp"
@@ -146,7 +147,7 @@ __host__
 void
 syncSimulation(RTDATA rtdata)
 {
-    CUDA_SAFE_CALL(cudaThreadSynchronize());
+	CUDA_SAFE_CALL(cudaThreadSynchronize());
 }
 
 
@@ -159,7 +160,7 @@ copyToDevice(RTDATA rtdata)
 	 * However, problems with copying to constant memory in non-cuda code
 	 * prevents this. */
 	if(rtdata->deviceDirty()) {
-        clearAssertions();
+		clearAssertions();
 		rtdata->moveToDevice();
 		configureKernel(rtdata);
 		configurePartition(cf0_maxSynapsesPerDelay,
@@ -170,8 +171,7 @@ copyToDevice(RTDATA rtdata)
 			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
 		configurePartition(cr1_maxSynapsesPerNeuron,
 			rtdata->cm(CM_L1)->r_maxPartitionPitch());
-		rtdata->configureSTDP();
-        rtdata->setStart();
+		rtdata->setStart();
 	}
 }
 
@@ -205,7 +205,7 @@ applySTDP(
 			rtdata->cycleCounters->pitchApplySTDP(),
 #endif
 			reward,
-			rtdata->stdpMaxWeight(),
+			rtdata->stdpFn->maxWeight(),
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
 			rtdata->cm(cmIdx)->df_synapses(),
@@ -227,7 +227,7 @@ status_t
 step(	ushort cycle,
         //! \todo make all these unsigned
 		int substeps,
-		int doApplySTDP,
+		int doApplyStdp,
 		float stdpReward,
 		// External firing (sparse)
 		size_t extFiringCount,
@@ -249,7 +249,7 @@ step(	ushort cycle,
 	fprintf(stdout, "cycle %u\n", scycle++);
 #endif
 
-	if(rtdata->usingSTDP() && doApplySTDP) {
+	if(rtdata->usingStdp() && doApplyStdp) {
 		if(stdpReward == 0.0f) {
 			clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L0);
 			if(rtdata->haveL1Connections()) {
@@ -266,7 +266,7 @@ step(	ushort cycle,
 	uint32_t* d_extFiring = 
 		rtdata->setFiringStimulus(extFiringCount, extFiringCIdx, extFiringNIdx);
 
-	if(rtdata->usingSTDP()) {
+	if(rtdata->usingStdp()) {
 		step_STDP<<<dimGrid, dimBlock>>>(
 				substeps, 
 				rtdata->cycle(),

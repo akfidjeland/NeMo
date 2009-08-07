@@ -36,7 +36,7 @@ startSimulation
     => Socket
     -> Network n s
     -> TemporalResolution
-    -> STDPConf
+    -> StdpConf
     -> IO ()
 startSimulation sock net tr stdpConf = do
     sendRequest sock (ReqStart net tr stdpConf)
@@ -65,7 +65,7 @@ startSimulationHost sock initfn = do
 
 
 -- | Send data request from client and return data from host
-runSimulation :: Socket -> Time -> [(Time, [Idx])] -> STDPApplication -> IO ([[Idx]], Int)
+runSimulation :: Socket -> Time -> [(Time, [Idx])] -> StdpApplication -> IO ([[Idx]], Int)
 runSimulation sock nsteps fstim stdp = do
     sendCommand sock $ CmdSync nsteps fstim stdp
     rsp <- recvResponse sock
@@ -105,8 +105,8 @@ recvRequest
 recvRequest = recvSerialised
 
 data ClientRequest n s
-        = ReqStart !(Network n s) TemporalResolution STDPConf
-        -- = ReqStart (Network n s) TemporalResolution (Maybe STDPConf)
+        = ReqStart !(Network n s) TemporalResolution StdpConf
+        -- = ReqStart (Network n s) TemporalResolution (Maybe StdpConf)
         | ReqPing
         | ReqError Word8
     deriving (Eq)
@@ -144,7 +144,7 @@ recvCommand = recvSerialised
 
 
 data ClientCommand
-        = CmdSync Time [(Time, [Idx])] STDPApplication
+        = CmdSync Time [(Time, [Idx])] StdpApplication
         | CmdStop
         | CmdGetWeights -- ^ return full weight matrix
         | CmdError Word8

@@ -80,16 +80,7 @@ struct RuntimeData
 
 	uint32_t cycle() const;
 
-	bool usingSTDP() const;
-	void configureSTDP();
-
-	//! \see ::enableSTDP
-	void enableSTDP(int tauP, int tauD,
-			float* potentiation,
-			float* depression,
-			float maxWeight);
-
-	float stdpMaxWeight() const;
+	bool usingStdp() const;
 
 	/*! \return number of milliseconds of wall-clock time elapsed since first
 	 * simulation step */
@@ -103,6 +94,9 @@ struct RuntimeData
 	 * It seems that cudaMalloc*** does not fail properly when running out of
 	 * memory, so this value could be useful for diagnostic purposes */
 	size_t d_allocated() const;
+
+		class StdpFunction* stdpFn;
+		// should be private, but have problems with friend with C linkage
 
 	private :
 
@@ -122,15 +116,6 @@ struct RuntimeData
 
 		/* True if host buffers have not been copied to device */
 		bool m_deviceDirty;
-
-		bool m_usingSTDP;
-
-		//! \todo remote tau parameters, can be inferred from vectors
-		int m_stdpTauP;
-		int m_stdpTauD;
-		std::vector<float> m_stdpPotentiation;
-		std::vector<float> m_stdpDepression;
-		float m_stdpMaxWeight;
 
 		struct timeval m_start; // set before first step
 		struct timeval m_end;   // set after every step

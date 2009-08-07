@@ -66,8 +66,8 @@ mapNetworkATT psize gidx = (mkATT ncount pcount psize gidx didx, pcount)
  - user. partitionSize determines this size and logs a message if the user
  - request is over-ridden.  -}
 targetPartitionSize :: Bool -> Maybe Int -> Writer Log Int
-targetPartitionSize usingSTDP userSz = do
-    let maxSz = Kernel.maxPartitionSize usingSTDP
+targetPartitionSize usingStdp userSz = do
+    let maxSz = Kernel.maxPartitionSize usingStdp
     maybe (return maxSz) (validateUserSz maxSz) userSz
     where
         validateUserSz maxSz userSz =

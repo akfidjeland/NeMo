@@ -30,6 +30,7 @@ import Simulation.STDP
 import Types
 
 
+
 data SimData = SimData {
         pcount   :: Int,
         psize    :: [Int],          -- ^ size of each partition,
@@ -45,11 +46,11 @@ initMemory
     :: CuNet (IzhNeuron FT) Static
     -> ATT
     -> Int
-    -> STDPConf
+    -> StdpConf
     -> IO SimData
 initMemory net att maxProbePeriod stdp = do
     (pcount, psizes, maxDelay, rt) <- allocRT net maxProbePeriod
-    configureSTDP rt stdp
+    configureStdp rt stdp
     loadAllNeurons rt net
     loadCMatrix rt att net
     return $ SimData pcount psizes maxDelay att rt
@@ -304,12 +305,3 @@ allocRT net maxProbePeriod = do
         (fromIntegral maxProbePeriod)
     rt <- newForeignPtr c_freeRT ptr
     return (pcount, psizes, dmax, rt)
-
-
-configureSTDP :: ForeignPtr CuRT -> STDPConf -> IO ()
-configureSTDP rt conf =
-    when (stdpEnabled conf) $
-        enableSTDP rt
-            (map realToFrac $ stdpPotentiation conf)
-            (map realToFrac $ stdpDepression conf)
-            (stdpMaxWeight conf)
