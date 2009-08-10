@@ -23,7 +23,7 @@ import Simulation.CUDA.Options (cudaOptions, optProbeDevice)
 import Simulation.FiringStimulus
 import Simulation.Options (simOptions, optBackend, SimulationOptions, BackendOptions(..))
 import Simulation.Run (initSim)
-import Simulation.STDP (STDPApplication(..), STDPConf(..))
+import Simulation.STDP (StdpApplication(..), StdpConf(..))
 import Simulation.STDP.Options (stdpOptions)
 import Types
 import qualified Util.List as L (chunksOf)
@@ -221,7 +221,7 @@ data Run = Timing | Data deriving (Eq)
 cudaOpts run = (defaults cudaOptions) { optProbeDevice = (run == Data) }
 
 
-runBenchmark :: SimulationOptions -> STDPConf -> Benchmark -> IO ()
+runBenchmark :: SimulationOptions -> StdpConf -> Benchmark -> IO ()
 runBenchmark simOpts stdpOpts bm = do
     -- TODO: average over multiple runs
     let net = bmNet bm `using` rnf
@@ -239,7 +239,7 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
             (cudaOpts Timing) stdpOpts
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
-    let stim = take initCycles $ map (\f -> (f, STDPIgnore)) fstim
+    let stim = take initCycles $ map (\f -> (f, StdpIgnore)) fstim
     hPutStrLn stderr "Warming up timing run"
     mapM_ (step3 run) $ L.chunksOf sz stim
     hPutStrLn stderr "Performing timing"
@@ -247,7 +247,7 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
     -- TODO: factor out timing code
     t0 <- getCPUTime
     let runCycles = bmCycles bm
-        runStim = replicate (runCycles `div` sz) $ replicate sz ([], STDPIgnore)
+        runStim = replicate (runCycles `div` sz) $ replicate sz ([], StdpIgnore)
     mapM_ (step3 run) runStim
     t1 <- getCPUTime
     t <- elapsed
@@ -267,13 +267,13 @@ runBenchmarkData simOpts stdpOpts net bm rts = do
     -- TODO: factor out stimulus
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
-    let stim = take initCycles $ map (\f -> (f, STDPIgnore)) fstim
+    let stim = take initCycles $ map (\f -> (f, StdpIgnore)) fstim
     hPutStrLn stderr "Warming up data run"
     mapM_ (step3 run) $ L.chunksOf sz stim
     resetTimer
     hPutStrLn stderr "Gathering data"
     let runCycles = bmCycles bm
-    let runStim = replicate (runCycles `div` sz) $ replicate sz ([], STDPIgnore)
+    let runStim = replicate (runCycles `div` sz) $ replicate sz ([], StdpIgnore)
     -- TODO: get synapse count from benchmark
     rts' <- foldRTS (step3 run) (foldl' $ updateRTS) rts runStim
     close
