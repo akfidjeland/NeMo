@@ -1,6 +1,7 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Test.Simulation.Run (tests) where
 
-import Control.Exception (handle)
+import Control.Exception (handle, IOException)
 import System.Directory (removeFile)
 import System.IO (hClose)
 import System.Random (mkStdGen)
@@ -48,7 +49,7 @@ test_fileSerialisation = do
 -- garbage data
 test_invalidDataDecoding :: Assertion
 test_invalidDataDecoding = do
-    handle (\_ -> return ()) $ do
+    handle (\(_::IOException) -> return ()) $ do
     (net, _) <- decodeSimFile "/dev/random"
         :: IO (Network (IzhNeuron FT) Static, FiringStimulus)
     assertFailure "succeeded in decoding random data!?"

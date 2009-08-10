@@ -43,7 +43,7 @@ test_clientSim = TestLabel "comparing client/server with local" $ TestCase $ do
                         probeIdx probeF fstim f
                             (defaults cudaOptions) (defaults stdpOptions)
     compareSims sim1 sim2
-    throwTo serverThread $ AsyncException ThreadKilled
+    throwTo serverThread ThreadKilled
     where
         -- TODO: share this with several other places in the testsuite
         net = build 123456 $ smallworldOrig

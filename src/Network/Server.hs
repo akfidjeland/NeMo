@@ -2,7 +2,7 @@ module Network.Server (serveSimulation) where
 
 -- Based on example in Real World Haskell, Chapter 27
 
-import Control.Exception (try)
+import Control.Exception (try, IOException)
 import Control.Parallel.Strategies (NFData)
 import Data.Binary (Binary)
 import Data.List (sort)
@@ -103,7 +103,7 @@ procSimReq sock sim log = do
         (CmdSync nsteps fstim applyStdp) -> do
             try (procSynReq nsteps sim fstim applyStdp) >>= either
                 (\err -> do
-                    sendResponse sock $ RspError $ show err
+                    sendResponse sock $ RspError $ show (err :: IOException)
                     log $ "error: " ++ show err
                     dmsg <- diagnostics sim
                     log $ "diagnostics:\n" ++ dmsg

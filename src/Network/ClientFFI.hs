@@ -11,7 +11,7 @@ module Network.ClientFFI (
     createNetwork
 ) where
 
-import Control.Exception (handle)
+import Control.Exception (handle, IOException)
 import Data.Binary
 import Foreign.C.Types
 import Foreign.C.String
@@ -66,7 +66,7 @@ hs_startSimulation fd n spn tsr
         a b c d u v sidx sdelay sweight = do
     net <- createNetwork n spn a b c d u v sidx sdelay sweight
     sock <- socketFD fd
-    handle (\_ -> return False) $ do
+    handle clientError $ do
     stdpConf <- peekStdpConf useStdp mw tpre tpost pre post
     startSimulation sock net (fromIntegral tsr) stdpConf
     return True
@@ -86,12 +86,15 @@ hs_startSimulation fd n spn tsr
                             stdpFrequency = Nothing
                         }
 
+clientError :: IOException -> IO Bool
+clientError _ = return False
+
 
 
 {- | Stop simulation on the host, return success status -}
 foreign export ccall hs_stopSimulation :: CInt -> IO Bool
 hs_stopSimulation fd = do
-    handle (\_ -> return False) $ do
+    handle clientError $ do
     socketFD fd >>= stopSimulation
     return True
 
@@ -117,7 +120,7 @@ hs_runSimulation fd nsteps applyStdp stdpReward
     sock <- socketFD fd
     let nsteps' = fromIntegral nsteps
     fstim <- foreignToFlat fscycles fsidx fslen
-    handle (\err -> newCString (show err) >>= poke errMsg >> return False) $ do
+    handle simError $ do
     (firing, elapsed') <- runSimulation sock nsteps' (flatToSparse fstim) stdpApplication
     (fcycles', fidx', flen') <-
         flatToForeign $ sparseToFlat $ denseToSparse firing
@@ -130,6 +133,9 @@ hs_runSimulation fd nsteps applyStdp stdpReward
         stdpApplication
             | applyStdp == 0 = StdpIgnore
             | otherwise      = StdpApply $ realToFrac stdpReward
+
+        simError :: IOException -> IO Bool
+        simError err = newCString (show err) >>= poke errMsg >> return False
 
 
 
@@ -156,7 +162,7 @@ foreign export ccall hs_getWeights
     -> Ptr CUInt         -- ^ number of synapses per neurons
     -> IO Bool           -- ^ success
 hs_getWeights fd t_ptr d_ptr w_ptr nc_ptr sc_ptr = do
-    handle (\_ -> return False) $ do
+    handle clientError $ do
     ns <- getWeights =<< socketFD fd
     let (_, max) = idxBounds ns
     {- TODO: the caller should already know this, so no need to compute it

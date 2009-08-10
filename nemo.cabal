@@ -5,7 +5,7 @@ author:                     Andreas Fidjeland
 maintainer:                 Andreas Fidjeland <akf@doc.ic.ac.uk>
 cabal-version:              >= 1.2
 stability:                  alpha
--- tested-with:             ghc-6.8
+-- tested-with:                ghc-6.10
 build-type:                 Simple
 
 
@@ -61,6 +61,7 @@ library
                             Simulation.FileSerialisation,
                             Simulation.FiringStimulus,
                             Simulation.STDP,
+                            Simulation.STDP.Options,
                             Types,
                             Util.Assocs,
                             Util.List
@@ -230,7 +231,7 @@ executable runtests
         buildable:          False
     if flag(profile)
         ghc-options:        -prof -auto-all
-    build-depends:          HUnit, filepath, directory, process >= 1.0.0.0 && < 1.0.1.1
+    build-depends:          HUnit, filepath, directory
     hs-source-dirs:         src, testsuite
     if flag(Matlab)
         other-modules:      Test.ClientAPI.Matlab
@@ -291,7 +292,8 @@ executable benchmark
     hs-source-dirs:         src
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
-    ghc-options:            -O2 -fno-monomorphism-restriction
+    ghc-options:            -O2
+    extensions:              NoMonomorphismRestriction
     if flag(profile)
         ghc-options:        -prof -auto-all
     if flag(CUDA)
@@ -346,7 +348,7 @@ executable smallworld
     if !flag(examples)
         buildable:          False
 
-    ghc-options:            -fno-monomorphism-restriction
+    extensions:             NoMonomorphismRestriction
     hs-source-dirs:         src
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
@@ -411,7 +413,7 @@ executable random1k
         ghc-options:        -prof -auto-all -caf-all -O2
     else
         ghc-options:        -O2
-    ghc-options:            -fno-monomorphism-restriction
+    extensions:             NoMonomorphismRestriction
     if flag(profile)
         ghc-options:        -prof -auto-all
     if flag(CUDA)
@@ -468,7 +470,7 @@ executable ring
     hs-source-dirs:         src
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
-    ghc-options:            -fno-monomorphism-restriction
+    extensions:             NoMonomorphismRestriction
     if flag(profile)
         ghc-options:        -prof -auto-all
     if flag(CUDA)
