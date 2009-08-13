@@ -57,10 +57,12 @@ library
                             Construction.Topology,
                             Network.Protocol,
                             Network.SocketSerialisation,
+                            Options,
                             Simulation.Common,
                             Simulation.FileSerialisation,
                             Simulation.FiringStimulus,
                             Simulation.STDP,
+                            Simulation.STDP.Options,
                             Types,
                             Util.Assocs,
                             Util.List
