@@ -57,6 +57,7 @@ library
                             Construction.Topology,
                             Network.Protocol,
                             Network.SocketSerialisation,
+                            Options,
                             Simulation.Common,
                             Simulation.FileSerialisation,
                             Simulation.FiringStimulus,
