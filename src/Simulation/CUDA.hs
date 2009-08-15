@@ -32,7 +32,7 @@ import Simulation.CUDA.Address
 import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import Simulation.CUDA.Probe (readFiring, readFiringCount)
-import Simulation.CUDA.KernelFFI as Kernel (c_step, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics)
+import Simulation.CUDA.KernelFFI as Kernel (c_step, applyStdp, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.Mapping (mapNetwork)
 import Simulation.STDP
@@ -163,16 +163,8 @@ stepOne sim probeIdx probeF tempSubres fstim currentCycle stdpApplication = do
     withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
     withForeignPtr (rt sim)      $ \rtPtr     -> do
-    kernelStatus <- c_step currentCycle
+    applyStdp rtPtr stdpApplication
+    kernelStatus <- c_step rtPtr currentCycle
         (fromIntegral tempSubres)
-        applyStdp stdpReward
         (fromIntegral flen) fsPIdxPtr fsNIdxPtr
-        rtPtr
     when (kernelStatus /= 0) $ fail "Backend error"
-
-    where
-
-        -- TODO: just use a maybe type here instead, unwrap in KernelFFI
-        (applyStdp, stdpReward) = case stdpApplication of
-            StdpIgnore    -> (0, 0)
-            (StdpApply r) -> (1, realToFrac r)

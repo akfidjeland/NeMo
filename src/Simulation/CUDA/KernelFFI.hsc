@@ -2,6 +2,7 @@
 
 module Simulation.CUDA.KernelFFI (
     c_step,
+    applyStdp,
     setCMDRow,
     getCM,
     copyToDevice,
@@ -38,7 +39,7 @@ import Foreign.Storable (peek)
 
 import Simulation.CUDA.Address
 import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow,
-        potentiationMask, depressionMask)
+        potentiationMask, depressionMask, StdpApplication(..))
 
 #include <kernel.h>
 
@@ -173,6 +174,8 @@ getCM rt lvl = do
     len <- peek len_ptr
     return $! (p, n, w, fromIntegral len)
 
+
+
 -------------------------------------------------------------------------------
 -- Kernel execution
 -------------------------------------------------------------------------------
@@ -182,17 +185,15 @@ foreign import ccall unsafe "syncSimulation"
 
 
 foreign import ccall unsafe "step"
-    c_step :: CUShort          -- ^ cycle number (within current batch)
-           -> CInt             -- ^ Sub-ms update steps
-           -> CInt             -- ^ Apply STDP? Boolean
-           -> CFloat           -- ^ STDP reward
+    c_step :: Ptr CuRT  -- ^ kernel runtime data
+           -> CUShort   -- ^ cycle number (within current batch)
+           -> CInt      -- ^ Sub-ms update steps
            -- External firing stimulus
-           -> CSize            -- ^ Number of neurons whose firing is forced this step
-           -> Ptr CInt         -- ^ Partition indices of neurons with forced firing
-           -> Ptr CInt         -- ^ Neuron indices of neurons with forced firing
-           -- Network state
-           -> Ptr CuRT         -- ^ Kernel runtime data
-           -> IO CInt          -- ^ Kernel status
+           -> CSize     -- ^ Number of neurons whose firing is forced this step
+           -> Ptr CInt  -- ^ Partition indices of neurons with forced firing
+           -> Ptr CInt  -- ^ Neuron indices of neurons with forced firing
+           -> IO CInt   -- ^ Kernel status
+
 
 
 -------------------------------------------------------------------------------
@@ -229,13 +230,20 @@ configureStdp rt conf =
         (realToFrac $ stdpMaxWeight conf)
 
     where
-
         word64 :: [Bool] -> Word64
         word64 bits = foldl' set 0 $ zip bits [0..]
-            where
-                set w (b, i) = if b then setBit w i else w
+
+        set w (b, i) = if b then setBit w i else w
 
 
+
+foreign import ccall unsafe "applyStdp"
+    c_applyStdp :: Ptr CuRT -> CFloat -> IO ()
+
+
+applyStdp :: Ptr CuRT -> StdpApplication -> IO ()
+applyStdp _ StdpIgnore = return ()
+applyStdp rt (StdpApply reward) = c_applyStdp rt $ realToFrac reward
 
 
 

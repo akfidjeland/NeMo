@@ -189,9 +189,10 @@ clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
 
 
 
+/* Apply STDP to a single connectivity matrix */
 __host__
 void
-applySTDP(
+applyStdp_(
 		dim3 dimGrid,
 		dim3 dimBlock,
 		RTDATA rtdata,
@@ -221,20 +222,45 @@ applySTDP(
 }
 
 
+
+__host__
+void
+applyStdp(RTDATA rtdata, float stdpReward)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(rtdata->partitionCount);
+
+	if(rtdata->deviceDirty()) {
+		return; // we haven't even started simulating yet
+	}
+
+	if(rtdata->usingStdp()) {
+		if(stdpReward == 0.0f) {
+			clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L0);
+			if(rtdata->haveL1Connections()) {
+				clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L1);
+			}
+		} else  {
+			applyStdp_(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);
+			if(rtdata->haveL1Connections()) {
+				applyStdp_(dimGrid, dimBlock, rtdata, CM_L1, stdpReward, false);
+			}
+		}
+	}
+}
+
+
+
 /*! Wrapper for the __global__ call that performs a single simulation step */
 __host__
 status_t
-step(	ushort cycle,
-        //! \todo make all these unsigned
+step(RTDATA rtdata,
+		ushort cycle,
 		int substeps,
-		int doApplyStdp,
-		float stdpReward,
 		// External firing (sparse)
 		size_t extFiringCount,
 		const int* extFiringCIdx, 
-		const int* extFiringNIdx, 
-		// Run-time data
-		RTDATA rtdata)
+		const int* extFiringNIdx)
 {
 	rtdata->firingProbe->checkOverflow();
 	rtdata->step();
@@ -248,20 +274,6 @@ step(	ushort cycle,
 	static uint scycle = 0;
 	fprintf(stdout, "cycle %u\n", scycle++);
 #endif
-
-	if(rtdata->usingStdp() && doApplyStdp) {
-		if(stdpReward == 0.0f) {
-			clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L0);
-			if(rtdata->haveL1Connections()) {
-				clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L1);
-			}
-		} else  {
-			applySTDP(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);
-			if(rtdata->haveL1Connections()) {
-				applySTDP(dimGrid, dimBlock, rtdata, CM_L1, stdpReward, false);
-			}
-		}
-	}
 
 	uint32_t* d_extFiring = 
 		rtdata->setFiringStimulus(extFiringCount, extFiringCIdx, extFiringNIdx);

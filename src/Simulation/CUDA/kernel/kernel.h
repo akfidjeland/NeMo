@@ -79,9 +79,9 @@ loadParam(RTDATA rt,
 //! \todo could merge this with loadParam
 void
 loadThalamicInputSigma(RTDATA rt,
-        size_t partitionIdx,
-        size_t partitionSize,
-        float* arr);
+		size_t partitionIdx,
+		size_t partitionSize,
+		float* arr);
 
 
 
@@ -99,23 +99,24 @@ loadThalamicInputSigma(RTDATA rt,
 void
 setCMDRow(RTDATA rtdata,
 		size_t cmIdx,
-        unsigned int sourceCluster,
-        unsigned int sourceNeuron,
-        unsigned int delay,
-        float* h_weights,
-        unsigned int* h_targetPartition,
-        unsigned int* h_targetNeuron,
-        size_t length);
+		unsigned int sourceCluster,
+		unsigned int sourceNeuron,
+		unsigned int delay,
+		float* h_weights,
+		unsigned int* h_targetPartition,
+		unsigned int* h_targetNeuron,
+		size_t length);
 
 
 /*! Read connectivity matrix back from device. */
 void
 getCM(RTDATA rtdata,
 		size_t cmIdx,
-        int** targetPartitions,
-        int** targetNeurons,
-        float** weights,
-        size_t* pitch);
+		int** targetPartitions,
+		int** targetNeurons,
+		float** weights,
+		size_t* pitch);
+
 
 //-----------------------------------------------------------------------------
 // FIRING PROBE
@@ -196,15 +197,16 @@ enableStdp(RTDATA,
 //-----------------------------------------------------------------------------
 
 status_t
-step(	unsigned short cycle,
+step(RTDATA rtdata,
+		unsigned short cycle,
 		int substeps,               // number of substeps per normal 1ms step
-		int applySTDP,
-        float stdpReward,
 		// External firing (sparse)
 		size_t extFiringCount,
 		const int* extFiringCIdx,   // cluster indices
-		const int* extFiringNIdx,   // neuron indices
-		RTDATA rtdata);
+		const int* extFiringNIdx);  // neuron indices
+
+
+void applyStdp(RTDATA rtdata, float stdpReward);
 
 
 /* Force all allocated memory onto the device. Calling this is not required
