@@ -4,59 +4,51 @@ module Simulation.CPU (initSim) where
 
 import Data.Array.IO
 import Data.Array.Base
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Control.Monad
 
 import Construction.Network
 import qualified Construction.Neurons as Neurons (size, neurons, indices)
-import Construction.Neuron (NeuronProbe, mergeProbeFs, ndata)
+import Construction.Neuron (ndata)
+import Construction.Izhikevich (IzhNeuron)
 import Construction.Spiking
 import Construction.Synapse
-import Simulation.Common
+import Simulation
 import Simulation.FiringStimulus
 import Simulation.SpikeQueue as SQ
 import Types
 import qualified Util.Assocs as A (mapElems)
 
 
+{- The Network data type is used when constructing the net, but is not suitable
+ - for execution. When executing we need 1) fast random access 2) in-place
+ - modification, hence IOArray. -}
+data CpuSimulation = CpuSimulation {
+        network  :: IOArray Idx (IzhNeuron FT),
+        synapses :: SynapsesRT Static,
+        spikes   :: SpikeQueue Static
+    }
+
+
+
+instance Simulation_Iface CpuSimulation where
+    step = stepSim
+    applyStdp _ _ = error "STDP not supported on CPU backend"
+    -- TODO: implement these properly. The dummy definitions are needed for testing
+    elapsed _ = return 0
+    resetTimer _ = return ()
+    getWeights _ = error "getWeights not supported on CPU backend"
+
+
 
 {- | Initialise simulation and return function to step through simuation -}
-initSim
-    :: (Spiking n FT, Conductive s, NeuronProbe a n FT)
-    => Network (n FT) s
-    -> Probe
-    -> ProbeFn a
-    -> IO Simulation
-initSim net pidx pfn = do
-    netRT <- mkRuntime net
-    return $ Simulation 1
-        -- TODO: add support for STDP
-        (\fstim _ -> mapM (step netRT) fstim)
-        -- TODO: add proper timing
-        (return 0)
-        (return ())
-        (error "getWeights not implemented in 'CPU' backend")
-        (error "diagnostics not implemented in 'CPU' backend")
-        (return ())
-    where
-        step netRT f = stepSim netRT pset f >>= return . (outputFn pfn)
-
-        pset = getProbeSet pidx net
-
-        outputFn Firing ns     = FiringData $ map fst $ filter (fired . snd) ns
-        outputFn (State ps) ns = NeuronState $ A.mapElems (mergeProbeFs ps) ns
+initSim :: Network (IzhNeuron FT) Static -> IO CpuSimulation
+initSim net = mkRuntime net
 
 
 
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
-stepSim :: (Spiking n FT, Conductive s)
-    => NetworkRT (n FT) s
-    -> ProbeSet
-    -> [Idx]               -- ^ firing stimulus
-    -> IO [(Idx, (n FT))]
-stepSim (NetworkRT ns ss sq) probe forcedFiring = do
+stepSim :: CpuSimulation -> [Idx] -> IO ProbeData
+stepSim (CpuSimulation ns ss sq) forcedFiring = do
     bounds <- getBounds ns
     let idx = [fst bounds..snd bounds]
     addCurrent ns =<< deqSpikes sq
@@ -66,8 +58,9 @@ stepSim (NetworkRT ns ss sq) probe forcedFiring = do
     let ns' = zipWith (liftN update) (densify forcedFiring idx) assoc
     mapM_ (uncurry (unsafeWrite ns)) ns'
     assoc' <- getAssocs ns
-    enqSpikes sq (firingIdx assoc') ss
-    return $ filter (((flip Set.member) probe) . fst) assoc'
+    let fired = firingIdx assoc'
+    enqSpikes sq fired ss
+    return $! FiringData fired
     where
         liftN f x (y, z) = (y, f x z)
         firingIdx assoc = map fst $ filter (fired . snd) assoc
@@ -97,15 +90,6 @@ updateArray f xs = getAssocs xs >>= mapM_ (modify xs f)
 -------------------------------------------------------------------------------
 
 
-{- The Network data type is used when constructing the net, but is not suitable
- - for execution. When executing we need 1) fast random access 2) in-place
- - modification, hence IOArray. -}
-data NetworkRT n s = NetworkRT {
-        network  :: IOArray Idx n,
-        synapses :: SynapsesRT s,
-        spikes   :: SpikeQueue s
-    }
-
 
 -- pre: neurons in ns are numbered consecutively from 0-size ns-1.
 mkRuntimeN ns =
@@ -120,7 +104,7 @@ mkRuntime net@(Network ns _) = do
     ns' <- mkRuntimeN ns
     let ss = mkSynapsesRT net
     sq <- mkSpikeQueue net
-    return $ NetworkRT ns' ss sq
+    return $! CpuSimulation ns' ss sq
 
 
 

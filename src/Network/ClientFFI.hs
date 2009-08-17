@@ -121,7 +121,7 @@ hs_runSimulation fd nsteps applyStdp stdpReward
     let nsteps' = fromIntegral nsteps
     fstim <- foreignToFlat fscycles fsidx fslen
     handle simError $ do
-    (firing, elapsed') <- runSimulation sock nsteps' (flatToSparse fstim) stdpApplication
+    (firing, elapsed') <- runSimulation sock nsteps' (flatToSparse fstim)
     (fcycles', fidx', flen') <-
         flatToForeign $ sparseToFlat $ denseToSparse firing
     poke fcycles fcycles'

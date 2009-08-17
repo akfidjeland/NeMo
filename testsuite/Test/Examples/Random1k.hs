@@ -4,7 +4,7 @@ import Test.HUnit
 
 import Examples.Random1k (random1k)
 import Simulation.FiringStimulus
-import Simulation.Common hiding (cycles)
+import Simulation.Options (Backend(..))
 import Types
 
 import Test.Regression

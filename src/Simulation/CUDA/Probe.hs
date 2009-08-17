@@ -20,21 +20,28 @@ foreign import ccall unsafe "readFiring"
         -> Ptr (Ptr CUInt) -- cycles
         -> Ptr (Ptr CUInt) -- partition idx
         -> Ptr (Ptr CUInt) -- neuron idx
-        -> IO CSize
+        -> Ptr CUInt       -- number of fired neurons
+        -> Ptr CUInt       -- number of cycles
+        -> IO ()
 
 
-{- Return both the length of firing as well as a compact list of firings in device indices -}
+{- Return both the length of firing as well as a compact list of firings in
+ - device indices -}
 readFiring :: ForeignPtr CuRT -> IO (Int, [(Time, DeviceIdx)])
 readFiring rtdata = do
     withForeignPtr rtdata $ \rtptr -> do
     alloca $ \cyclesPtr -> do
     alloca $ \pidxPtr   -> do
     alloca $ \nidxPtr   -> do
-    nfired <- c_readFiring rtptr cyclesPtr pidxPtr nidxPtr
+    alloca $ \nfiredPtr -> do
+    alloca $ \ncyclesPtr -> do
+    c_readFiring rtptr cyclesPtr pidxPtr nidxPtr nfiredPtr ncyclesPtr
+    nfired <- peek nfiredPtr
     cycles <- readArr cyclesPtr nfired
     pidx <- readArr pidxPtr nfired
     nidx <- readArr nidxPtr nfired
-    return $! (fromIntegral nfired, zipWith3 fired cycles pidx nidx)
+    ncycles <- peek ncyclesPtr
+    return $! (fromIntegral ncycles, zipWith3 fired cycles pidx nidx)
     where
         fired c p n = (fromIntegral c, (fromIntegral p, fromIntegral n))
         readArr ptr len = do
@@ -46,8 +53,11 @@ readFiring rtdata = do
 readFiringCount :: ForeignPtr CuRT -> IO Int
 readFiringCount rtdata = do
     withForeignPtr rtdata $ \rtptr -> do
-    alloca $ \cyclesPtr -> do
-    alloca $ \pidxPtr   -> do
-    alloca $ \nidxPtr   -> do
-    -- TODO: could provide a kernel function which only reads the table length
-    return . fromIntegral =<< c_readFiring rtptr cyclesPtr pidxPtr nidxPtr
+    alloca $ \cyclesPtr  -> do
+    alloca $ \pidxPtr    -> do
+    alloca $ \nidxPtr    -> do
+    alloca $ \nfiredPtr  -> do
+    alloca $ \ncyclesPtr -> do
+    c_readFiring rtptr cyclesPtr pidxPtr nidxPtr nfiredPtr ncyclesPtr
+    nfired <- peek nfiredPtr
+    return $! fromIntegral nfired

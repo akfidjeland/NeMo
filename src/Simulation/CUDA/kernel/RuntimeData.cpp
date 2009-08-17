@@ -476,15 +476,16 @@ resetTimer(RTDATA rtdata)
 // Generated firing
 //-----------------------------------------------------------------------------
 
-size_t
+void
 readFiring(RTDATA rtdata,
 		uint** cycles,
 		uint** partitionIdx,
-		uint** neuronIdx)
+		uint** neuronIdx,
+		uint* nfired,
+		uint* ncycles)
 {
-	size_t nfired;
-	rtdata->firingProbe->readFiring(cycles, partitionIdx, neuronIdx, &nfired);
-	return nfired;
+	rtdata->firingProbe->readFiring(cycles, partitionIdx,
+			neuronIdx, nfired, ncycles);
 }
 
 

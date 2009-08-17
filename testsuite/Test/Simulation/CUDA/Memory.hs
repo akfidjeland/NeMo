@@ -30,7 +30,7 @@ testWeightQuery = TestCase $ do
         ns = withSynapses viaCFloat $ networkNeurons net
         ((cuNet, att), _) = runWriter $ mapNetwork net stdp psize
         nsteps = 1000 -- irrelevant for this test
-    sim  <- initMemory cuNet att nsteps (defaults stdpOptions)
+    sim  <- initMemory cuNet att nsteps 4 (defaults stdpOptions)
     {- When initialising memory, the device may not be involved yet -}
     copyToDevice (rt sim)
     ns' <- getWeights sim
@@ -38,7 +38,7 @@ testWeightQuery = TestCase $ do
     assertEqual "Same number of neurons in weight matrix before and after writing to device"
        (size ns) (size ns')
 
-    assertEqual 
+    assertEqual
         "Same number of synapses in weight matrix before and after writing to device"
         (synapseCount ns) (synapseCount ns')
 

@@ -45,7 +45,8 @@ struct FiringProbe
 				uint** cycles,
 				uint** partitionIdx,
 				uint** neuronIdx,
-				size_t* len);
+				uint* len,
+				uint* totalCycles);
 
 		ushort2* deviceBuffer() const;
 
@@ -60,13 +61,21 @@ struct FiringProbe
 
 		uint maxReadPeriod() const;
 
-        /*! The user is in control of when to read the buffer. This opens up
-         * the possibility of overflowing the buffers through negligence on the
-         * part of the caller. To avoid this, keep an internal counter counting
-         * down to the time we can no longer guarantee no overflow. If the user
-         * has not emptied the buffer by then, clear the buffers, discarding
-         * the firing data. */
-        void checkOverflow();
+		/*! The user is in control of when to read the buffer. This opens up
+		 * the possibility of overflowing the buffers through negligence on the
+		 * part of the caller. To avoid this, keep an internal counter counting
+		 * down to the time we can no longer guarantee no overflow. If the user
+		 * has not emptied the buffer by then, clear the buffers, discarding
+		 * the firing data.
+		 *
+		 * We also keep track of how many cycles worth of firing data we have
+		 * currently buffered. This is not apparent in the sparse firing data
+		 * we return.
+		 *
+		 * \a step() should be called every simulation cycle to update these
+		 * counters.
+		 */
+		void step();
 
 		size_t d_allocated() const;
 
@@ -125,6 +134,7 @@ struct FiringProbe
 		uint m_maxReadPeriod;
 
         uint m_nextOverflow;
+		uint m_bufferedCycles;
 
 		size_t m_allocated;
 };

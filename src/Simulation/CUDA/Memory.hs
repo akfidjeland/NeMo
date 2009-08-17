@@ -31,10 +31,12 @@ import Types
 
 
 
+-- TODO: move to CUDA.hs
 data SimData = SimData {
         pcount   :: Int,
         psize    :: [Int],          -- ^ size of each partition,
         maxDelay :: Delay,
+        dt       :: CInt,           -- ^ number of steps in neuron update
         att      :: ATT,
         rt       :: ForeignPtr CuRT -- ^ kernel runtime data
     }
@@ -46,14 +48,15 @@ initMemory
     :: CuNet (IzhNeuron FT) Static
     -> ATT
     -> Int
+    -> Int
     -> StdpConf
     -> IO SimData
-initMemory net att maxProbePeriod stdp = do
+initMemory net att maxProbePeriod dt stdp = do
     (pcount, psizes, maxDelay, rt) <- allocRT net maxProbePeriod
     configureStdp rt stdp
     loadAllNeurons rt net
     loadCMatrix rt att net
-    return $ SimData pcount psizes maxDelay att rt
+    return $ SimData pcount psizes maxDelay (fromIntegral dt) att rt
 
 
 loadPartitionNeurons

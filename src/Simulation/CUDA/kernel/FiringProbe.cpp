@@ -22,6 +22,7 @@ FiringProbe::FiringProbe(
 	m_partitionCount(partitionCount),
 	m_maxReadPeriod(maxReadPeriod),
 	m_nextOverflow(maxReadPeriod),
+	m_bufferedCycles(0),
 	m_allocated(0)
 {
 	size_t width = FMEM_CHUNK_SIZE * sizeof(ushort2);
@@ -317,7 +318,11 @@ FiringProbe::resizeOutputBuffer(size_t maxFirings)
 
 
 void
-FiringProbe::readFiring(uint** cycles, uint** pidx, uint** nidx, size_t* len)
+FiringProbe::readFiring(uint** cycles,
+		uint** pidx,
+		uint** nidx,
+		uint* len,
+		uint* totalCycles)
 {
 	std::vector<uint> chunksPerStream = setStreamLength();
 	resetNextFree();
@@ -329,6 +334,8 @@ FiringProbe::readFiring(uint** cycles, uint** pidx, uint** nidx, size_t* len)
 	*cycles = &m_hostCycles[0];
 	*nidx = &m_hostNeuronIdx[0];
 	*pidx = &m_hostPartitionIdx[0];
+	*totalCycles = m_bufferedCycles;
+	m_bufferedCycles = 0;
 }
 
 
@@ -365,11 +372,13 @@ FiringProbe::maxReadPeriod() const
 
 
 void
-FiringProbe::checkOverflow()
+FiringProbe::step()
 {
 	if(m_nextOverflow == 0) {
 		WARNING("Emptied device firing buffers to avoid buffer overflow. Firing data lost. Read data from device more frequently to avoid");
 		resetNextFree(); // also reset m_nextOverflow;
 	}
+	//! \todo could combine these two
 	m_nextOverflow -= 1;
+	m_bufferedCycles += 1;
 }

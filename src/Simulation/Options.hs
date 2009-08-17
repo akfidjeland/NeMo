@@ -4,16 +4,34 @@
  - backend used -}
 
 module Simulation.Options (
+        Backend(..),
         SimulationOptions(..),
         simOptions,
         BackendOptions(..)
     ) where
 
 import Options
-import Simulation.Common (Backend(..))
 import Network.Protocol (defaultPort)
 import Types
 
+
+data Backend
+        = CPU                   -- ^ (multi-core) CPU
+#if defined(CUDA_ENABLED)
+        | CUDA                  -- ^ CUDA-enabled GPU
+#endif
+        | RemoteHost String Int -- ^ some other machine on specified port
+    deriving (Eq, Show)
+
+
+
+-- TODO: remove
+defaultBackend :: Backend
+#if defined(CUDA_ENABLED)
+defaultBackend = CUDA
+#else
+defaultBackend = CPU
+#endif
 
 data BackendOptions
         = AllBackends

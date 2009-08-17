@@ -7,9 +7,8 @@ import Construction.Izhikevich
 import Examples.Smallworld
 import Options (defaults)
 import Simulation.CUDA.Options
-import Simulation.Common
 import Simulation.FiringStimulus
-import Simulation.Options (SimulationOptions(..))
+import Simulation.Options (SimulationOptions(..), Backend(CUDA))
 import Simulation.Run
 import Simulation.STDP.Options (stdpOptions)
 import Simulation.STDP (StdpConf(..))
@@ -39,7 +38,7 @@ testClusterSize stdp sz1 sz2 =
 
 
 sim sz stdp f =
-    runSim (SimulationOptions duration dt CUDA) net probeIdx probeF fstim f
+    runSim (SimulationOptions duration dt CUDA) net fstim f
             ((defaults cudaOptions) { optPartitionSize = Just sz })
             stdpConf
     where
@@ -47,8 +46,6 @@ sim sz stdp f =
         net = build 123456 $ smallworldOrig
         dt = 4
         duration = Until 1000
-        probeIdx = All
-        probeF = Firing :: ProbeFn IzhState
         fstim = FiringList [(0, [1])]
         stdpConf =
             if stdp

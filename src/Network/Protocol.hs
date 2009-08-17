@@ -1,14 +1,15 @@
 module Network.Protocol (
     -- * Client interface
-    startSimulation, runSimulation, stopSimulation, getWeights,
+    startSimulation, runSimulation, stopSimulation, applyStdp, getWeights,
     -- * Host interface
     startSimulationHost,
-    -- TODO: move both sides of protocol to this file
+    -- TODO: move both sides of protocol to this fil
     recvRequest, ClientRequest(..),
     sendResponse, ServerResponse(..),
     recvCommand, ClientCommand(..),
     -- * Common interface
-    defaultPort
+    defaultPort,
+    SimulationInit
 ) where
 
 import Control.Monad
@@ -20,12 +21,19 @@ import Construction.Network (Network)
 import Construction.Neuron (Stateless)
 import Construction.Synapse (Static)
 import Network.SocketSerialisation (sendSerialised, recvSerialised)
-import Simulation.Common (Simulation, SimulationInit)
+import Simulation (Simulation)
 import Simulation.STDP
 import Types (Time, TemporalResolution, Idx)
 
 defaultPort :: Int
 defaultPort = 56100
+
+
+type SimulationInit n s
+    =  Network n s
+    -> TemporalResolution
+    -> StdpConf
+    -> IO Simulation
 
 
 -- Starting the simulation
@@ -59,15 +67,16 @@ startSimulationHost sock initfn = do
             -- TODO: catch errors in initfn before responding
             stepfn <- initfn net tr stdp
             sendResponse sock RspStart
-            return $ Just stepfn
+            return $! Just stepfn
         ReqPing      -> sendResponse sock RspReady >> return Nothing
         (ReqError c) -> fail $ "Invalid start request: " ++ show c
 
 
 -- | Send data request from client and return data from host
-runSimulation :: Socket -> Time -> [(Time, [Idx])] -> StdpApplication -> IO ([[Idx]], Int)
-runSimulation sock nsteps fstim stdp = do
-    sendCommand sock $ CmdSync nsteps fstim stdp
+-- TODO: just send dense data here
+runSimulation :: Socket -> Time -> [(Time, [Idx])] -> IO ([[Idx]], Int)
+runSimulation sock nsteps fstim = do
+    sendCommand sock $ CmdSync nsteps fstim
     rsp <- recvResponse sock
     case rsp of
         RspData d elapsed -> return (d, elapsed)
@@ -78,6 +87,10 @@ runSimulation sock nsteps fstim stdp = do
 {- | Send shutdown instruction from client to host -}
 stopSimulation :: Socket -> IO ()
 stopSimulation sock = sendCommand sock CmdStop
+
+
+applyStdp :: Socket -> Double -> IO ()
+applyStdp sock reward = sendCommand sock $! CmdApplyStdp reward
 
 
 {- | Request weights from host -}
@@ -144,24 +157,27 @@ recvCommand = recvSerialised
 
 
 data ClientCommand
-        = CmdSync Time [(Time, [Idx])] StdpApplication
+        = CmdSync Time [(Time, [Idx])]
         | CmdStop
-        | CmdGetWeights -- ^ return full weight matrix
+        | CmdGetWeights       -- ^ return full weight matrix
+        | CmdApplyStdp Double -- ^ apply STDP with the given reward
         | CmdError Word8
     deriving (Show, Eq)
 
 
 instance Binary ClientCommand where
-    put (CmdSync duration f stdp) = putWord8 3 >> put duration >> put f >> put stdp
+    put (CmdSync duration f) = putWord8 3 >> put duration >> put f
     put CmdStop = putWord8 4
     put CmdGetWeights = putWord8 5
+    put (CmdApplyStdp reward) = putWord8 6 >> put reward
     put (CmdError _) = putWord8 0
     get = do
         tag <- getWord8
         case tag of
-            3 -> liftM3 CmdSync get get get
+            3 -> liftM2 CmdSync get get
             4 -> return CmdStop
             5 -> return CmdGetWeights
+            6 -> liftM CmdApplyStdp get
             _ -> return $ CmdError tag
 
 

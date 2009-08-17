@@ -5,18 +5,31 @@
 
 module Network.Client (initSim) where
 
-import Control.Exception (assert)
 import Control.Parallel.Strategies (NFData)
 import Data.Binary (Binary)
 import Network.Socket
 
 import Construction.Network (Network)
-import Network.Protocol
-        (startSimulation, runSimulation, stopSimulation, defaultPort)
-import Simulation.Common
+import qualified Network.Protocol as Wire (startSimulation,
+           runSimulation, stopSimulation, applyStdp)
+import Simulation (Simulation_Iface(..))
 import Simulation.FiringStimulus (denseToSparse)
-import Simulation.STDP (StdpConf, StdpApplication(..))
+import Simulation.STDP (StdpConf)
 import Types
+
+
+data RemoteSimulation = RSim Socket
+
+
+instance Simulation_Iface RemoteSimulation where
+    run (RSim s) = runRemote s
+    step _ = error "single step not supported in client backend"
+    applyStdp (RSim s) reward = Wire.applyStdp s reward
+    elapsed _ = error "timing functions not supported in client backend"
+    resetTimer _ = error "timing functions not supported in client backend"
+    getWeights _ = error "getWeights not supported in client backend"
+    terminate (RSim s) = Wire.stopSimulation s >> sClose s
+
 
 
 -- TODO: refactor wrt runSim in CUDA and CPU
@@ -27,40 +40,21 @@ initSim :: (Binary n, Binary s, NFData n, NFData s)
     -> Network n s
     -> TemporalResolution
     -> StdpConf
-    -> IO Simulation
+    -> IO RemoteSimulation
 initSim hostname port net dt stdpConf = do
     sock <- openSocket hostname (show port)
-    -- TODO: get STDP configuration from options instead
-    startSimulation sock net dt stdpConf
-    {- To reduce network overheads we deal with one second's worth of data at a
-     - time. -}
-    -- TODO: might want to adjust this at run-time
-    -- TODO: when do we close socket? When Simluation goes out of scope perhaps?
-    let stepsz = 1000
-    return $ Simulation stepsz
-        (stepRemote sock stepsz)
-        (return 0)              -- TODO: add timing function here
-        (return ())             -- TODO: add timing function here
-        -- TODO: add function to forward request for weights
-        (error "getWeights not implemented in 'client' backend")
-        (error "diagnostics not implemented in 'client' backend")
-        (closeRemote sock)
+    Wire.startSimulation sock net dt stdpConf
+    return $! RSim sock
 
 
 
 -- | Step through a fixed number of simulation cycles on the remote host
-stepRemote :: Socket -> Int -> SimulationStep
--- TODO: get STDP application from caller
-stepRemote sock stepsz fstim _ = do
-    assert (length fstim == stepsz) $ do
-    -- Here we only support fixed-rate application of STDP, which is configured during initialisation
-    (firing, _) <- runSimulation sock stepsz (denseToSparse fstim) StdpIgnore
+runRemote :: Socket -> [[Idx]] -> IO [ProbeData]
+runRemote sock fstim = do
+    (firing, _) <- Wire.runSimulation sock nsteps $ denseToSparse fstim
     return $ map FiringData firing
-
-
-
-closeRemote :: Socket -> IO ()
-closeRemote sock = stopSimulation sock >> sClose sock
+    where
+        nsteps = length fstim
 
 
 

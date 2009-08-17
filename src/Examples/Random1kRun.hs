@@ -10,7 +10,4 @@ main = do
     -- TODO: would like to express this in terms of neuron properties
     let ne = 800
     let ni = 200
-    execute
-        (random1k ne ni)
-        NoFiring
-        All (Firing :: ProbeFn IzhState)
+    execute (random1k ne ni) NoFiring

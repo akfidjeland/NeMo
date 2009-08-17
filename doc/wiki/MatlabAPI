@@ -119,7 +119,7 @@ Function reference
 The reference for each function is also available from within MATLAB by using
 the usual ``help`` function. 
 
-.. The function reference is extracted from the relevant m-files
+.. The function reference is generated from help-text for m-files
 .. include:: functionReference
 
 Troubleshooting

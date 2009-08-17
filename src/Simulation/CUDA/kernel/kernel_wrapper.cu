@@ -262,7 +262,7 @@ step(RTDATA rtdata,
 		const int* extFiringCIdx, 
 		const int* extFiringNIdx)
 {
-	rtdata->firingProbe->checkOverflow();
+	rtdata->firingProbe->step();
 	rtdata->step();
 
 	copyToDevice(rtdata); // only has effect on first invocation

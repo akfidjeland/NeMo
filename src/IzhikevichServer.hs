@@ -7,7 +7,7 @@ import Construction.Network (Network)
 import Construction.Synapse (Static)
 import Network.Protocol (defaultPort)
 import Network.Server (serveSimulation)
-import Simulation.Run (chooseBackend, initSim)
+import Simulation.Backend (initSim)
 import Simulation.CUDA.Options (cudaOptions)
 import Simulation.Options (simOptions, optBackend, BackendOptions(..))
 import Options
@@ -33,15 +33,12 @@ main = do
     simOpts     <- processOptGroup (simOptions LocalBackends) args
     cudaOpts    <- processOptGroup cudaOptions args
     endOptProcessing args
-    backend <- chooseBackend $ optBackend simOpts
     let verbose = optVerbose commonOpts
     serveSimulation
         stdout
         (show $ optPort serverOpts)
         verbose
         -- TODO: get probe etc, from host as well
-        (\net tr stdp -> initSim simOpts
+        (\net tr stdp -> initSim
                     (net :: Network (IzhNeuron FT) Static)
-                    All
-                    (Firing :: ProbeFn IzhState)
-                    verbose cudaOpts stdp)
+                    simOpts cudaOpts stdp)

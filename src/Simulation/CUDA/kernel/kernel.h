@@ -123,17 +123,21 @@ getCM(RTDATA rtdata,
 //-----------------------------------------------------------------------------
 
 
-/*!
- * \return number of fired neurons since last read 
+/*! Return all buffered firing data and empty buffers.
  *
- * The three arrays together form a vector of 3-tuples with specifying cycle,
+ * The three arrays together form a vector of 3-tuples specifying cycle,
  * partition index, and neuron index for all the fired neurons. 
+ *
+ * The last to output variables contain the number of neurons and the number of
+ * cycles for which we have firing.
  */
-size_t
+void
 readFiring(RTDATA rtdata,
 		unsigned int** cycles,
 		unsigned int** partitionIdx,
-		unsigned int** neuronIdx);
+		unsigned int** neuronIdx,
+		unsigned int* nfired,
+		unsigned int* ncycles);
 
 
 /* Step can be asynchronous. sync forces completion of all steps */

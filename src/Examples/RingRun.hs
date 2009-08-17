@@ -54,5 +54,4 @@ main = do
     hPutStrLn stderr $ (show n) ++ " network of size " ++ (show sz)
     execute
         (nrings n sz d)
-        (FiringList [(0, fstim)]) All
-        (Firing :: ProbeFn IzhState)
+        (FiringList [(0, fstim)])

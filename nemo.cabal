@@ -44,7 +44,6 @@ flag Benchmark
     default:                False
 
 
-
 library
     exposed-modules:        Network.ClientFFI
     other-modules:          Construction.Axon,
@@ -58,9 +57,11 @@ library
                             Network.Protocol,
                             Network.SocketSerialisation,
                             Options,
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.FileSerialisation,
                             Simulation.FiringStimulus,
+                            Simulation.Options,
                             Simulation.STDP,
                             Simulation.STDP.Options,
                             Types,
@@ -74,6 +75,28 @@ library
         ghc-options:        -prof -auto-all
     else
         ghc-options:        -O2 -fPIC
+
+
+executable nemo
+    main-is:                Nemo.hs
+    other-modules:          Construction.Network,
+                            Construction.Neurons,
+                            Construction.Synapse,
+                            Construction.Izhikevich,
+                            Construction.Topology,
+                            ExternalClient,
+                            Options,
+                            Simulation,
+                            Simulation.Backend,
+                            Simulation.CUDA.Options,
+                            Simulation.Options,
+                            Simulation.Run,
+                            Simulation.STDP,
+                            Simulation.STDP.Options,
+                            Types
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
+    build-depends:          Thrift
+    extensions:             DeriveDataTypeable
 
 
 executable nemo-server
@@ -90,7 +113,8 @@ executable nemo-server
                             Network.Protocol,
                             Network.Server,
                             Network.SocketSerialisation
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Queue,
@@ -148,7 +172,8 @@ executable nemo-run
                             Construction.Topology,
                             Network.Client,
                             Network.Protocol,
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.FileSerialisation,
                             Simulation.FiringStimulus,
                             Simulation.Queue,
@@ -205,7 +230,8 @@ executable runtests
                             Network.Server,
                             Network.SocketSerialisation,
                             Options,
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Options,
@@ -275,7 +301,8 @@ executable benchmark
                             Network.Server,
                             Network.SocketSerialisation
                             Options,
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Options,
@@ -334,7 +361,8 @@ executable smallworld
                             Network.Protocol,
                             Network.Server,
                             Network.SocketSerialisation
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Options,
@@ -392,7 +420,8 @@ executable random1k
                             Network.SocketSerialisation
                             NSim,
                             Options,
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Options,
@@ -453,7 +482,8 @@ executable ring
                             Network.SocketSerialisation
                             NSim,
                             Options,
-                            Simulation.Common,
+                            Simulation,
+                            Simulation.Backend,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Options,

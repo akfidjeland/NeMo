@@ -1,21 +1,26 @@
 HASKELL_BUILD_DIR := dist/build
 CUDA_LIB := dist/build/cuda/lib/libcuIzhikevich.a
 
+all: cabal
+
+
+# TODO: use configure for this
+thrift_inc =/usr/local/include/thrift
+thrift_build = dist/build/thrift
+
+
+cabal.mk: nemo.cabal
+	rm -f cabal.mk
+	./Setup.lhs makefile -f $@
+
+
 # Build haskell via 'make' to allow parallel build using the -j flag. This is
 # passed on to the recursive make call. Cabal doesn't support building specific
 # flags. Selecting targets is done via ./Setup.lhs configure.
-all: cuda haskell.mk
+cabal: cuda cabal.mk $(thrift_build)/gen-hs
 	@echo "Using configuration from previous run of ./Setup.lhs configure"
-	make -f haskell.mk
+	make -f cabal.mk
 	./Setup.lhs build
-
-
-# This makefile relies on an existing file haskell.mk. This can be generated
-# using Setup makefile -f haskell.mk. Make sure to specify the output file, as
-# otherwise THIS file will be overwritten.
-haskell.mk: nemo.cabal
-	rm -f haskell.mk
-	./Setup.lhs makefile -f $@
 
 
 # CUDA kernel
@@ -24,8 +29,88 @@ cuda:
 	make -f cuda.mk $(CUDA_LIB)
 
 
+client: matlab-client
+
+autogen := dist/build/autogen
+
+matlab_src = src/ExternalClient/matlab
+matlab_build = dist/build/matlab
+matlab_m_files := \
+	nemoConnect.m \
+	nemoDisconnect.m \
+	nemoSetNetwork.m \
+	nemoRun.m \
+	nemoEnableStdp.m \
+	nemoApplyStdp.m \
+	nemoDisableStdp.m
+
+
+matlab-client: $(matlab_build)/nemo_mex.mexa64 $(addprefix $(matlab_build)/,$(matlab_m_files))
+
+
+# Generate LUT for Matlab API function dispatch (m-file)
+$(autogen)/matlab_fn_lut.m4: $(matlab_src)/gen_fn.py
+	mkdir -p $(dir $@)
+	$< --m4 > $@
+
+# Generate LUT for Matlab API function dispatch (mex-file)
+$(autogen)/nemo_mex_fn_arr.hpp: $(matlab_src)/gen_fn.py
+	mkdir -p $(dir $@)
+	$< --cpp > $@
+
+# Generate Matlab files from source, docuemntation, and function LUT
+$(matlab_build)/%.m: $(autogen)/matlab_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.m.help
+	$(matlab_src)/m-help $(word 3, $^) > $@
+	m4 $(wordlist 1, 2, $^) >> $@
+
+
+# TODO: detect the default extension for matlab-mex
+# TODO: windows build
+$(matlab_build)/%.mexa64: $(matlab_src)/%.cpp $(thrift_build)/gen-cpp $(autogen)/nemo_mex_fn_arr.hpp
+	mkdir -p $(dir $@)
+	matlab-mex -I$(thrift_inc) -I$(thrift_build)/gen-cpp -I$(autogen) -lthrift \
+		-o $(matlab_build)/$* \
+		$< $(addprefix $(thrift_build)/gen-cpp/,NemoFrontend.cpp nemo_types.cpp)
+
+
+
+.PRECIOUS: $(thrift_build)/gen-%
+$(thrift_build)/gen-%: src/ExternalClient/nemo.thrift
+	mkdir -p $(thrift_build)
+	thrift --gen $* -o $(thrift_build) $<
+	touch $@
+
+
 # Target only needed for install
 $(HASKELL_BUILD_DIR)/nemo-server/nemo-server: all
+
+
+
+# Generate documentation
+
+doc_build := dist/build/manual
+
+.PHONY: doc
+doc: $(doc_build)/manual.pdf
+
+# The wiki page includes just a single combined file
+$(doc_build)/functionReference: $(matlab_src)/*.m.help
+	mkdir -p $(dir $@)
+	cat $^ > $@
+
+
+$(doc_build)/manual.tex: doc/wiki/MatlabAPI \
+		doc/manual/manual_stylesheet.tex \
+		$(doc_build)/functionReference
+	mkdir -p $(dir $@)
+	cp --target-directory $(dir $@) $(wordlist 1,2,$^)
+	rst2latex --use-latex-docinfo --use-latex-toc --no-section-numbering \
+		--stylesheet=manual_stylesheet.tex \
+		$(doc_build)/MatlabAPI > $@
+
+$(doc_build)/manual.pdf: $(doc_build)/manual.tex
+	(cd $(dir $<); pdflatex $(notdir $<); cd ..)
+
 
 # Run after building with cabal
 install: # $(HASKELL_BUILD_DIR)/nemo-server/nemo-server
@@ -63,4 +148,4 @@ count:
 .PHONY: clean
 clean:
 	./Setup.lhs clean
-	rm -f haskell.mk
+	rm -f cabal.mk

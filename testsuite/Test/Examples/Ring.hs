@@ -13,10 +13,9 @@ import Construction.Network (Network)
 import Construction.Synapse (Static)
 import Examples.Ring (ring)
 import Options
-import Simulation.Common hiding (cycles)
 import Simulation.CUDA.Options (cudaOptions, optPartitionSize)
 import Simulation.FiringStimulus
-import Simulation.Options (simOptions, optDuration, optBackend, BackendOptions(..))
+import Simulation.Options (simOptions, optDuration, optBackend, BackendOptions(..), Backend(..))
 import Simulation.Run (runSim)
 import Simulation.STDP.Options (stdpOptions)
 import Types
@@ -59,7 +58,6 @@ testRing size impulse delay backend partitionSize = do
     let net = build 123456 $ ring size delay :: Network (IzhNeuron FT) Static
         fstim = FiringList [(0, [impulse])]
         -- test = checkFiring size impulse delay
-        probefn = Firing :: ProbeFn IzhState
 #if defined(CUDA_ENABLED)
         opts = (defaults cudaOptions) { optPartitionSize = partitionSize }
 #else
@@ -67,7 +65,7 @@ testRing size impulse delay backend partitionSize = do
 #endif
     ref <- newIORef $ RingState impulse size 0
     let test = checkFiring size impulse delay ref
-    runSim simOpts net All probefn fstim test opts (defaults stdpOptions)
+    runSim simOpts net fstim test opts (defaults stdpOptions)
     where
         simOpts = (defaults $ simOptions LocalBackends) {
                 optBackend = backend,

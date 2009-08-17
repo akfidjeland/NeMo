@@ -18,12 +18,6 @@ import Simulation.FiringStimulus
 --    | otherwise = return []
 
 
--- Specify neurons from which to gather data (currently only firing)
-probe = All
--- probe = Only [67,200]
--- probe = Only [0] -- only the first neuron
--- probe = Only [0..99] -- only the first 100 neurons
-
 
 data Options = Options {
         optClusterCount :: Int,
@@ -96,5 +90,3 @@ main = do
             (optScaling opts)
             False)
         (FiringList [(0, [0])])
-        probe
-        (Firing :: ProbeFn IzhState)

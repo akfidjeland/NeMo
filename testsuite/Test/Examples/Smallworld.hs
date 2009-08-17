@@ -6,7 +6,7 @@ import Test.HUnit
 
 import Examples.Smallworld (smallworldOrig)
 import Simulation.FiringStimulus
-import Simulation.Common hiding (cycles)
+import Simulation.Options (Backend(..))
 import Types
 
 import Test.Regression

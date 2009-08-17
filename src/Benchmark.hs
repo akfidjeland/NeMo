@@ -3,10 +3,9 @@ module Main (main) where
 
 import Prelude
 
-import Control.Monad (when)
+import Control.Monad (when, foldM)
 import Control.Parallel.Strategies
 import Data.List (foldl', intercalate)
-import qualified Data.Map as Map (fromList)
 import System.CPUTime (getCPUTime)
 import System.Exit (exitWith, ExitCode(..))
 import System.FilePath
@@ -18,11 +17,11 @@ import Construction hiding (excitatory, inhibitory, random)
 import Construction.Neuron hiding (synapseCount)
 import qualified Construction.Neurons as Neurons (fromList)
 import Options
-import Simulation.Common
+import Simulation
 import Simulation.CUDA.Options (cudaOptions, optProbeDevice)
 import Simulation.FiringStimulus
 import Simulation.Options (simOptions, optBackend, SimulationOptions, BackendOptions(..))
-import Simulation.Run (initSim)
+import Simulation.Backend (initSim)
 import Simulation.STDP (StdpApplication(..), StdpConf(..))
 import Simulation.STDP.Options (stdpOptions)
 import Types
@@ -233,51 +232,53 @@ runBenchmark simOpts stdpOpts bm = do
     let throughput = (rtsSpikes rts2) * 1000 `div` (rtsElapsed rts2)
     hPutStrLn stderr $ "Throughput: " ++ show (throughput `div` 1000000) ++ "M"
 
+
 runBenchmarkTiming simOpts stdpOpts net bm rts = do
-    (Simulation sz run elapsed resetTimer _ _ close) <-
-        initSim simOpts net All (Firing :: ProbeFn IzhState) False 
-            (cudaOpts Timing) stdpOpts
+    sim <- initSim net simOpts (cudaOpts Timing) stdpOpts
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
-    let stim = take initCycles $ map (\f -> (f, StdpIgnore)) fstim
     hPutStrLn stderr "Warming up timing run"
-    mapM_ (step3 run) $ L.chunksOf sz stim
+    run sim $ take initCycles fstim
     hPutStrLn stderr "Performing timing"
-    resetTimer
+    resetTimer sim
     -- TODO: factor out timing code
     t0 <- getCPUTime
-    let runCycles = bmCycles bm
-        runStim = replicate (runCycles `div` sz) $ replicate sz ([], StdpIgnore)
-    mapM_ (step3 run) runStim
+    run sim $ replicate runCycles []
     t1 <- getCPUTime
-    t <- elapsed
+    t <- elapsed sim
     hPutStrLn stderr $ "Elapsed: " ++ show t
     hPutStrLn stderr $ (show ((t1-t0) `div` 1000000000)) ++ " vs " ++ show t
-    close
+    terminate sim
     return $ rts { rtsCycles = fromIntegral runCycles,
                    rtsElapsed = fromIntegral t }
+    where
+        chunkSize = maybe 1000 id (stdpFrequency stdpOpts)
+        runCycles = bmCycles bm
 
 
 initCycles = 1000
 
 runBenchmarkData simOpts stdpOpts net bm rts = do
-    (Simulation sz run elapsed resetTimer _ _ close) <-
-        initSim simOpts net All (Firing :: ProbeFn IzhState) False 
-            (cudaOpts Data) stdpOpts
-    -- TODO: factor out stimulus
+    sim <- initSim net simOpts (cudaOpts Data) stdpOpts
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
-    let stim = take initCycles $ map (\f -> (f, StdpIgnore)) fstim
     hPutStrLn stderr "Warming up data run"
-    mapM_ (step3 run) $ L.chunksOf sz stim
-    resetTimer
+    run sim $ take initCycles fstim
+    -- TODO: not needed:
+    resetTimer sim
     hPutStrLn stderr "Gathering data"
-    let runCycles = bmCycles bm
-    let runStim = replicate (runCycles `div` sz) $ replicate sz ([], StdpIgnore)
-    -- TODO: get synapse count from benchmark
-    rts' <- foldRTS (step3 run) (foldl' $ updateRTS) rts runStim
-    close
+    rts' <- foldM (\x _ -> runChunk sim x) rts $ [0.. (runCycles `div` chunkSize)]
+    terminate sim
     return rts'
+    where
+        chunkSize = maybe 1000 id (stdpFrequency stdpOpts)
+        runCycles = bmCycles bm
+
+        runChunk :: Simulation -> RTS -> IO RTS
+        runChunk sim rts = do
+            pdata <- run sim $ replicate chunkSize []
+            return $! foldl' updateRTS rts pdata
+
 
 
 firingCount :: ProbeData -> Integer
@@ -297,24 +298,6 @@ updateRTS rts p = rts {
          -- assume uniform distribution
          m = (rtsSynapses rts) `div` (rtsNeurons rts)
 
-
--- b: stimulus
--- foldRTS :: (Monad m) => (b -> m a) -> (RTS -> a -> RTS) -> RTS -> [b] -> m RTS
-foldRTS :: (b -> IO a) -> (RTS -> a -> RTS) -> RTS -> [b] -> IO RTS
-foldRTS step update rts [] = return rts
-foldRTS step update rts (x:xs) = do
-    -- TODO: force evaulation here
-    pdata <- step x
-    let rts' = update rts pdata
-    foldRTS step update rts' xs
-
-
--- TODO: move this to general simulation code
-{- | Run step function on packed stimulation data -}
--- TODO just use zipWithM
-step3 run stim = do
-    let (fstim, stdp) = unzip stim
-    run fstim stdp
 
 
 

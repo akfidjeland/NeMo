@@ -7,16 +7,13 @@ import Control.Parallel.Strategies (NFData)
 import Data.Binary (Binary)
 import Data.List (sort)
 import Network.Socket
--- import Control.Concurrent
--- import Control.Concurrent.MVar
 import System.IO (Handle, hPutStrLn)
 import System.Time (getClockTime)
 
 import Control.Exception(assert)
-import Control.Monad (zipWithM)
 
-import Network.Protocol hiding (getWeights)
-import Simulation.Common
+import Network.Protocol hiding (getWeights, applyStdp)
+import Simulation (Simulation_Iface(..))
 import Simulation.STDP
 import Types
 import qualified Util.Assocs as A (densify)
@@ -43,7 +40,6 @@ serveSimulation loghdl port verbose initfn = withSocketsDo $ do
         (Just port)
     let serveraddr = head addrinfos
 
-    -- create a socket
     sock <- socket (addrFamily serveraddr) Stream defaultProtocol
 
     -- TODO: remove in production code. This makes TCP less reliable
@@ -100,57 +96,50 @@ procSim sock _ initfn log = do
 procSimReq sock sim log = do
     req <- recvCommand sock
     case req of
-        (CmdSync nsteps fstim applyStdp) -> do
-            try (procSynReq nsteps sim fstim applyStdp) >>= either
-                (\err -> do
-                    sendResponse sock $ RspError $ show (err :: IOException)
-                    log $ "error: " ++ show err
-                    dmsg <- diagnostics sim
-                    log $ "diagnostics:\n" ++ dmsg
-                    stop sim)
-                (\(probed, elapsed) -> do
-                    sendResponse sock $ RspData probed elapsed
-                    procSimReq sock sim log)
+        (CmdSync nsteps fstim) -> do
+            -- TODO: re-order arguments
+            withSim sock (procSynReq nsteps sim fstim) $ do
+                (\(probed, elapsed) -> sendResponse sock $ RspData probed elapsed)
         CmdStop  -> stop sim
         CmdGetWeights -> do
             log "returning weight matrix"
             weights <- getWeights sim
             sendResponse sock $ RspWeights weights
             procSimReq sock sim log
+
+        (CmdApplyStdp reward) -> withSim sock ((applyStdp sim) reward) (\_ -> return ())
+
         (CmdError c) -> do
             log $ "invalid simulation request: " ++ show c
             stop sim
     where
-        stop sim = do
-            closeSim sim
-            log "stopping simulation"
+        stop sim = terminate sim >> log "stopping simulation"
+
+        withSim :: Socket -> IO a -> (a -> IO ()) -> IO ()
+        withSim sock simFn outFn =
+            try simFn >>= either
+                (\err -> do
+                    sendResponse sock $ RspError $ show (err :: IOException)
+                    log $ "error: " ++ show err
+                    dmsg <- diagnostics sim
+                    log $ "diagnostics:\n" ++ dmsg
+                    stop sim)
+                (\a -> outFn a >> procSimReq sock sim log)
 
 
-
-procSynReq nsteps sim sparseFstim applyStdp = do
-    -- We should do this by whatever increments are requested by the step
-    -- TODO: should deal with nsteps that don't work out exactly
+procSynReq nsteps sim sparseFstim = do
     resetTimer sim
-    probed1 <- zipWithM (\f s -> (runStep sim) f s) fstim stdpApplications
+    probed <- run sim fstim
     e <- elapsed sim
     putStrLn $ "Simulated " ++ (show nsteps) ++ " steps in " ++ (show e) ++ "ms"
-    let probed = concat probed1
     assert ((length probed) == nsteps) $ do
     return (map getFiring probed, fromIntegral e)
     where
-        sz = stepSize sim
-        fstim = L.chunksOf sz $ A.densify 0 nsteps [] sparseFstim
+        fstim = A.densify 0 nsteps [] sparseFstim
 
         -- | We only deal with firing data here
         getFiring (NeuronState _) = error "Server.hs: simulation returned non-firing data"
         getFiring (FiringData firing) = sort firing
-
-        -- only a single STDP application per request supported (in first cycle)
-        stdpApplications = (applyStdp : tail nostdp) : repeat nostdp
-        nostdp = replicate sz StdpIgnore
-
-
-
 
 
 -- | Log message along with client information

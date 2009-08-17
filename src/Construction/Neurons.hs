@@ -4,7 +4,7 @@
 
 module Construction.Neurons (
         -- * Construction
-        Neurons,
+        Neurons(..),
         empty,
         fromList,
         union,

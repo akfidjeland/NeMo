@@ -10,6 +10,7 @@ import qualified Data.List as List
 data Topology a
         = Node a
         | Cluster [Topology a]
+        | NoTopology
     deriving (Show, Eq)
 
 

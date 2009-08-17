@@ -15,7 +15,7 @@ import Examples.Smallworld (smallworldOrig)
 import Network.Protocol
 import Network.Server
 import Options (defaults)
-import Simulation.Common
+import Simulation.Backend (initSim)
 import Simulation.CUDA.Options (cudaOptions)
 import Simulation.FiringStimulus
 import Simulation.Options
@@ -37,18 +37,15 @@ test_clientSim = TestLabel "comparing client/server with local" $ TestCase $ do
     serverThread <- forkIO runServer
     yield
     let
-        sim1 = \f -> runSim (simOpts CPU 4) net probeIdx probeF
+        sim1 = \f -> runSim (simOpts CPU 4) net
                         fstim f (defaults cudaOptions) (defaults stdpOptions)
         sim2 = \f -> runSim (simOpts (RemoteHost "localhost" testPort) 4) net
-                        probeIdx probeF fstim f
-                            (defaults cudaOptions) (defaults stdpOptions)
+                        fstim f (defaults cudaOptions) (defaults stdpOptions)
     compareSims sim1 sim2
     throwTo serverThread ThreadKilled
     where
         -- TODO: share this with several other places in the testsuite
         net = build 123456 $ smallworldOrig
-        probeIdx = All
-        probeF = Firing :: ProbeFn IzhState
         fstim = FiringList [(0, [1])]
 
 
@@ -67,11 +64,10 @@ runServer = do
         (show $ testPort)
         False
         -- TODO: get probe etc, from host as well
-        (\net dt -> initSim (simOpts CPU dt)
+        (\net dt -> initSim
                     (net :: Network (IzhNeuron FT) Static)
-                    All
-                    (Firing :: ProbeFn IzhState)
-                    False (defaults cudaOptions))
+                    (simOpts CPU dt)
+                    (defaults cudaOptions))
 
 simOpts backend dt =
     (defaults $ simOptions AllBackends) {

@@ -1,0 +1,5 @@
+nemoConnect: initialize connection to nemo
+------------------------------------------
+
+:: nemoConnect(HOSTNAME, PORT)
+

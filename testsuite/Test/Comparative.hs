@@ -5,7 +5,6 @@ import Control.Exception (bracket)
 import System.IO
 import Test.HUnit
 
-import Simulation.Common
 import Test.Files (openTemp, closeTemp)
 import Types
 

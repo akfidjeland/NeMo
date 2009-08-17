@@ -1,0 +1,12 @@
+#!/bin/sh
+# 
+# Convert matlab function help text from ReST format to m-file comment format.
+#
+# 1) remove code-block indicators, inline code delimiters, and remove header
+#    indicator
+# 2) break paragraphs
+# 3) comment every line and add an extra line at the end
+#
+sed -e 's/:: /   /' -e 's/``//g' -e '/^--*-$/d' $1 \
+	| fold --spaces --width=78 \
+	| sed -e 's/^/\%\ /' -e '$a\ '

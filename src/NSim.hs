@@ -27,7 +27,6 @@ import Construction.Parameterisation
 import Construction.Randomised.Synapse
 import Construction.Synapse
 import Options
-import Simulation.Common
 import Simulation.CUDA.Options
 import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
 import Simulation.Run
@@ -56,7 +55,7 @@ initRng (Just seed) = setStdGen $ mkStdGen $ fromInteger seed
 
 
 -- TODO: migrate to Simulation.Run
-runSimulation seed simOpts net fstimF probeIdx probeFn stdpOpts cudaOpts = do
+runSimulation seed simOpts net fstimF stdpOpts cudaOpts = do
     startConstruct <- getCPUTime
     net' <- buildNetwork seed net
     hPutStrLn stderr "Building simulation..."
@@ -66,7 +65,7 @@ runSimulation seed simOpts net fstimF probeIdx probeFn stdpOpts cudaOpts = do
     hPutStrLn stderr $ "Building done (" ++ show(elapsed startConstruct endConstruct) ++ "s)"
     start <- getCPUTime
     -- TODO: use only a single probe function parameter
-    runSim simOpts net' probeIdx probeFn fstimF (putStrLn . show) cudaOpts stdpOpts
+    runSim simOpts net' fstimF (putStrLn . show) cudaOpts stdpOpts
     end <- getCPUTime
     hPutStrLn stderr $ "Simulation done (" ++ show(elapsed start end) ++ "s)"
     where
@@ -77,7 +76,7 @@ runSimulation seed simOpts net fstimF probeIdx probeFn stdpOpts cudaOpts = do
 
 {- Process externally defined network according to command-line options
  - (default to run forever). -}
-execute net fstim probeidx probefn = do
+execute net fstim = do
     (args, commonOpts) <- startOptProcessing
     cudaOpts    <- processOptGroup cudaOptions args
     networkOpts <- processOptGroup (networkOptions FromCode) args
@@ -87,7 +86,7 @@ execute net fstim probeidx probefn = do
     initRng $ optSeed commonOpts -- RNG for stimlulus
     processOutputOptions commonOpts networkOpts net
     -- TODO: use a single RNG? Currently one for build and one for stimulus
-    execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstim probeidx probefn
+    execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstim
 
 
 
@@ -105,7 +104,7 @@ executeFile = do
     (net', fstim) <- decodeSimFile filename
     let net = return net' -- wrap in Gen
     processOutputOptions commonOpts networkOpts net
-    execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstim All Firing
+    execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstim
 
 
 
@@ -118,10 +117,9 @@ processOutputOptions commonOpts networkOpts net
         net' = buildNetwork (optSeed commonOpts) net
 
 
-execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts
-    net fstimF probeidx probefn
+execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstimF
     | optStoreNet networkOpts /= Nothing = do
         net' <- buildNetwork (optSeed commonOpts) net
         encodeSimFile (fromJust $ optStoreNet networkOpts) net' fstimF
     | otherwise = runSimulation (optSeed commonOpts) simOpts net fstimF
-                                probeidx probefn stdpOpts cudaOpts
+                                stdpOpts cudaOpts

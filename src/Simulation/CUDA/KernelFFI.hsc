@@ -39,7 +39,7 @@ import Foreign.Storable (peek)
 
 import Simulation.CUDA.Address
 import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow,
-        potentiationMask, depressionMask, StdpApplication(..))
+        potentiationMask, depressionMask)
 
 #include <kernel.h>
 
@@ -241,9 +241,8 @@ foreign import ccall unsafe "applyStdp"
     c_applyStdp :: Ptr CuRT -> CFloat -> IO ()
 
 
-applyStdp :: Ptr CuRT -> StdpApplication -> IO ()
-applyStdp _ StdpIgnore = return ()
-applyStdp rt (StdpApply reward) = c_applyStdp rt $ realToFrac reward
+applyStdp :: Ptr CuRT -> Double -> IO ()
+applyStdp rt reward = c_applyStdp rt $ realToFrac reward
 
 
 

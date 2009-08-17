@@ -4,6 +4,7 @@
 
 module Construction.Network (
         Network(..),
+        empty,
         -- * Query
         size,
         synapseCount,
@@ -43,6 +44,9 @@ data Network n s = Network {
         networkNeurons     :: Neurons.Neurons n s,
         topology    :: Topology Idx
     } deriving (Eq, Show)
+
+
+empty = Network (Neurons.empty) NoTopology
 
 
 -------------------------------------------------------------------------------
