@@ -45,7 +45,6 @@ flag Benchmark
 
 
 library
-    exposed-modules:        Network.ClientFFI
     other-modules:          Construction.Axon,
                             Construction.Izhikevich,
                             Construction.Network,
@@ -248,7 +247,6 @@ executable runtests
                             Test.Examples.Ring,
                             Test.Files,
                             Test.Network.Client,
-                            Test.Network.ClientFFI,
                             Test.Regression,
                             Test.Simulation.Run,
                             Types,

@@ -14,7 +14,6 @@ import Test.Examples.Smallworld as Smallworld (tests)
 import Test.Examples.Random1k as Random1k (tests)
 import Test.Examples.Ring as Ring (tests)
 import Test.Network.Client as TestClient (tests, test_clientSim)
-import qualified Test.Network.ClientFFI (tests, create_tests)
 import Test.Regression (testAll, createAll)
 import Test.Simulation.Run as TestRun (tests)
 #if defined(MATLAB_ENABLED)
@@ -38,11 +37,10 @@ runHUnitTests dir = runTestTT $ TestList $ [
         Mapping.tests,
         Memory.tests,
 #endif
-        TestClient.tests,
 #if defined(MATLAB_ENABLED)
         Matlab.tests,
 #endif
-        Test.Network.ClientFFI.tests dir
+        TestClient.tests
       ]
     where
         rtests = TestList $ map (testAll dir) regressionTests
@@ -52,7 +50,6 @@ createHUnitTests dir = do
 #if defined(MATLAB_ENABLED)
     Matlab.create_tests
 #endif
-    Test.Network.ClientFFI.create_tests dir
 
 
 data Options = Options {
