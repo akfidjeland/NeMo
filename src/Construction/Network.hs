@@ -11,6 +11,7 @@ module Construction.Network (
         indices,
         idxBounds,
         synapses,
+        weightMatrix,
         synapsesOf,
         neurons,
         maxDelay,
@@ -80,6 +81,11 @@ synapses = Neurons.synapses . networkNeurons
 
 synapsesOf :: Network n s -> Idx -> [Synapse s]
 synapsesOf = Neurons.synapsesOf . networkNeurons
+
+
+{- | Return synapses organised by source only -}
+weightMatrix :: Network n s -> Map.Map Idx [Synapse s]
+weightMatrix = Neurons.weightMatrix . networkNeurons
 
 
 {- | Return list of all neurons -}

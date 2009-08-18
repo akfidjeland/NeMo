@@ -35,43 +35,32 @@ autogen := dist/build/autogen
 
 matlab_src = src/ExternalClient/matlab
 matlab_build = dist/build/matlab
-matlab_m_files := \
-	nemoConnect.m \
-	nemoDisconnect.m \
-	nemoSetNetwork.m \
-	nemoRun.m \
-	nemoEnableStdp.m \
-	nemoApplyStdp.m \
-	nemoDisableStdp.m
+matlab_m_files := $(basename $(basename $(notdir $(wildcard $(matlab_src)/*.m.m4))))
 
 
-matlab-client: $(matlab_build)/nemo_mex.mexa64 $(addprefix $(matlab_build)/,$(matlab_m_files))
+matlab-client: $(matlab_build)/nemo_mex.mexa64 $(patsubst %,$(matlab_build)/%.m,$(matlab_m_files))
 
 
-# Generate LUT for Matlab API function dispatch (m-file)
-$(autogen)/matlab_fn_lut.m4: $(matlab_src)/gen_fn.py
+# Generate LUT for Matlab API function dispatch
+# (m4-macros for m-file or c++ function array)
+$(autogen)/mex_fn_lut.%: $(matlab_src)/gen_fn.py $(matlab_src)/*.m.m4
 	mkdir -p $(dir $@)
-	$< --m4 > $@
+	$< --$* $(matlab_m_files) > $@
 
-# Generate LUT for Matlab API function dispatch (mex-file)
-$(autogen)/nemo_mex_fn_arr.hpp: $(matlab_src)/gen_fn.py
-	mkdir -p $(dir $@)
-	$< --cpp > $@
 
 # Generate Matlab files from source, docuemntation, and function LUT
-$(matlab_build)/%.m: $(autogen)/matlab_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.m.help
+$(matlab_build)/%.m: $(autogen)/mex_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.m.help
 	$(matlab_src)/m-help $(word 3, $^) > $@
 	m4 $(wordlist 1, 2, $^) >> $@
 
 
 # TODO: detect the default extension for matlab-mex
 # TODO: windows build
-$(matlab_build)/%.mexa64: $(matlab_src)/%.cpp $(thrift_build)/gen-cpp $(autogen)/nemo_mex_fn_arr.hpp
+$(matlab_build)/%.mexa64: $(matlab_src)/%.cpp $(thrift_build)/gen-cpp $(autogen)/mex_fn_lut.hpp
 	mkdir -p $(dir $@)
 	matlab-mex -I$(thrift_inc) -I$(thrift_build)/gen-cpp -I$(autogen) -lthrift \
 		-o $(matlab_build)/$* \
 		$< $(addprefix $(thrift_build)/gen-cpp/,NemoFrontend.cpp nemo_types.cpp)
-
 
 
 .PRECIOUS: $(thrift_build)/gen-%

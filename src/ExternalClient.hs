@@ -6,7 +6,9 @@ module ExternalClient (runExternalClient) where
 
 import Control.Concurrent.MVar
 import Control.Exception
+import Control.Monad (liftM4)
 import Data.Maybe (fromJust)
+import Data.Map (Map)
 import Thrift
 import Thrift.Server
 
@@ -44,11 +46,12 @@ data NemoState
 
 
 data Config = Config {
-        stdpConfig :: StdpConf
+        stdpConfig :: StdpConf,
+        simConfig :: SimulationOptions
     }
 
 
-defaultConfig = Config (defaults stdpOptions)
+defaultConfig = Config (defaults stdpOptions) (defaults $ simOptions AllBackends)
 
 
 {- | Return the /static/ network -}
@@ -100,8 +103,6 @@ startSimulation m = do
         -- TODO: move configuration into Config data type
         simOpts = SimulationOptions Forever 4 $ RemoteHost "localhost" 56100
 
-        -- stdpConf = defaults stdpOptions
-
         -- TODO: make this backend options instead of cudaOpts
         -- TODO: perhaps we want to be able to send this to server?
         cudaOpts = defaults cudaOptions
@@ -109,21 +110,11 @@ startSimulation m = do
 
 
 {- Apply simulation function. If nemo state is in construction mode, toggle this -} 
--- TODO: generalise to other functions
--- TODO: add stdp application
 -- TODO: propagate errors to matlab
-runSimulation :: MVar NemoState -> [Wire.Stimulus] -> IO [Wire.Firing]
-runSimulation m stim = do
-    startSimulation m
-    withMVar m $ \st -> do
-    case st of
-        -- TODO: modify runStep to handle [Stimulus] directly
-        Simulating net _ sim -> do
-            pdata <- (Backend.run sim) (map fstim stim)
-            putStrLn $ "flen0: " ++ (show $ length pdata)
-            putStrLn $ "flen: " ++ (show $ sum $ map (length . firing) pdata)
-            return $! map firing pdata
-        _ -> fail "running while not in simulation mode"
+runSimulation :: [Wire.Stimulus] -> Backend.Simulation -> IO [Wire.Firing]
+runSimulation stimulus sim = do
+    pdata <- Backend.run sim $ map fstim stimulus
+    return $! map firing pdata
     where
         fstim :: Wire.Stimulus -> [Idx]
         fstim = maybe (fail "invalid firing stimulus") id . Wire.f_Stimulus_firing
@@ -131,6 +122,7 @@ runSimulation m stim = do
         firing :: ProbeData -> Wire.Firing
         firing (FiringData xs) = xs
         firing _ = error "runSimulation: non-firing data returned from simulation"
+
 
 
 setStdpFn :: [Double] -> [Double] -> Double -> Config -> Config
@@ -144,22 +136,66 @@ setStdpFn prefire postfire maxWeight conf = conf { stdpConfig = stdpConfig' }
         }
 
 
+disableStdp' :: Config -> Config
+disableStdp' conf = conf { stdpConfig = stdpConfig' }
+    where
+        stdpConfig' = (stdpConfig conf) { stdpEnabled = False }
+
+
+setHost :: String -> Config -> Config
+setHost host conf = conf { simConfig = simConfig' }
+    where
+        simConfig' = (simConfig conf) { optBackend = RemoteHost host 56100 }
+
+
+
+getConnectivity' :: Backend.Simulation -> IO (Map Idx [Wire.Synapse])
+getConnectivity' sim = do
+    ss <- Backend.getWeights sim
+    return $! fmap (map encodeSynapse) ss
+
+
+
+
+
+simulateWith :: MVar NemoState -> (Backend.Simulation -> IO a) -> IO a
+simulateWith m f = do
+    modifyMVar m $ \st -> do
+    case st of
+        Simulating _ _ sim -> do
+            ret <- f sim
+            return $! (st, ret)
+        Constructing net conf -> do
+            -- Start simulation first
+            putStrLn $ "starting simulation"
+            sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
+            ret <- f sim
+            return $! (Simulating net conf sim, ret)
+    where
+        -- TODO: make this backend options instead of cudaOpts
+        -- TODO: perhaps we want to be able to send this to server?
+        cudaOpts = defaults cudaOptions
+
+
+
 
 instance NemoFrontend_Iface ClientState where
     -- TODO: handle Maybes here!
+    setBackend h (Just host) = reconfigure h $ setHost host
     setNetwork h (Just wnet) = constructWith h (\_ -> decodeNetwork wnet)
-    run h (Just stim) = runSimulation h stim
+    run h (Just stim) = simulateWith h $ runSimulation stim
     enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
         reconfigure h $ setStdpFn prefire postfire maxWeight
-    -- TODO: add simulateWith method
-    -- applyStdp h (Just reward) = 
+    disableStdp h = reconfigure h $ disableStdp'
+    applyStdp h (Just reward) = simulateWith h (\s -> Backend.applyStdp s reward)
+    getConnectivity h = simulateWith h getConnectivity'
 
 
 {- | Convert network from wire format to internal format -}
 decodeNetwork :: Wire.IzhNetwork -> Net
 decodeNetwork wnet = Network.Network ns t
     where
-        ns = Neurons $ fmap decodeNeuron $ fromJust $ Wire.f_IzhNetwork_neurons wnet
+        ns = Neurons $ fmap decodeNeuron wnet
         t = Cluster $ map Node $ indices ns
 
 
@@ -188,6 +224,14 @@ decodeSynapse ws = Synapse src tgt d $ Static w
         d = fromJust $ Wire.f_Synapse_delay ws
         w = fromJust $ Wire.f_Synapse_weight ws
 
+
+encodeSynapse :: Synapse Static -> Wire.Synapse
+encodeSynapse s = Wire.Synapse src tgt d w
+    where
+        src = Just $ source s
+        tgt = Just $ target s
+        d   = Just $ delay s
+        w   = Just $ current $ sdata s
 
 
 

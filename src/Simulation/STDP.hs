@@ -8,7 +8,8 @@ module Simulation.STDP (
     prefireWindow,
     postfireWindow,
     potentiationMask,
-    depressionMask
+    depressionMask,
+    Reward
 ) where
 
 import Control.Monad (liftM)
@@ -32,6 +33,9 @@ data StdpConf = StdpConf {
         -- | We may specify a fixed frequency with which STDP should be applied
         stdpFrequency :: Maybe Int
     } deriving (Show, Eq)
+
+
+type Reward = Double
 
 
 prefireWindow :: StdpConf -> Int

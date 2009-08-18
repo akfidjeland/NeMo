@@ -4,10 +4,11 @@
 
 module Simulation (Simulation_Iface(..), Simulation(..)) where
 
+import Data.Map
+
 import Types
 import Construction.Network (Network)
-import Construction.Neuron (Stateless)
-import Construction.Synapse (Static)
+import Construction.Synapse (Synapse, Static)
 
 
 class Simulation_Iface a where
@@ -28,7 +29,7 @@ class Simulation_Iface a where
 
     resetTimer :: a -> IO ()
 
-    getWeights :: a -> IO (Network Stateless Static)
+    getWeights :: a -> IO (Map Idx [Synapse Static])
 
     {- | Return a string with diagnostic data, which could be useful if the
      - backend fails for some reason -}

@@ -7,6 +7,9 @@ struct Synapse {
 }
 
 
+typedef list<Synapse> Axon
+
+
 struct IzhNeuron {
 	1:double a,
 	2:double b,
@@ -14,20 +17,16 @@ struct IzhNeuron {
 	4:double d,
 	5:double u,
 	6:double v = -65.0,
-	7:list<Synapse> axon
+	7:Axon axon
 }
 
 
-# TODO: no need for struct here
-struct IzhNetwork {
-	1:map<i32, IzhNeuron> neurons
-}
-
+typedef map<i32, IzhNeuron> IzhNetwork
 
 
 # Stimulus for a single cycle
 struct Stimulus {
-    1:list<i32> firing
+	1:list<i32> firing
 }
 
 
@@ -36,19 +35,21 @@ typedef list<i32> Firing
 
 
 service NemoFrontend {
-    void setNetwork(1:IzhNetwork net),
+
+	void setBackend(1:string host),
+
+	void setNetwork(1:IzhNetwork net),
 
     # Run simulation for multiple cycles 
-    list<Firing> run(1:list<Stimulus> stim),
+	list<Firing> run(1:list<Stimulus> stim),
 
 	void enableStdp(1:list<double> prefire,
 			2:list<double> postfire,
 			3:double maxWeight),
 
-	# void disableStdp(),
+	void disableStdp(),
 
-	void applyStdp(1:double reward)
+	void applyStdp(1:double reward),
 
-    # TODO: add query functions
-    # TODO: add network reset
+	map<i32, Axon> getConnectivity()
 }

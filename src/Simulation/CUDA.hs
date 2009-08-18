@@ -15,7 +15,6 @@ import Foreign.ForeignPtr (withForeignPtr)
 import qualified Construction.Network as N
 import Construction.Izhikevich (IzhNeuron, IzhState)
 import Construction.Synapse (Static)
-import Construction.Topology (Topology(NoTopology))
 import Simulation (Simulation_Iface(..))
 import Simulation.SpikeQueue
 import Types
@@ -49,9 +48,7 @@ instance Simulation_Iface SimData where
     applyStdp sim reward = withForeignPtr (rt sim) $ \p -> Kernel.applyStdp p reward
     elapsed sim = withForeignPtr (rt sim) Kernel.elapsedMs
     resetTimer sim = withForeignPtr (rt sim) Kernel.resetTimer
-    getWeights sim = do
-        ns <- Memory.getWeights sim
-        return $! N.Network ns NoTopology
+    getWeights sim = Memory.getWeights sim
 
 
 {- | Initialise simulation and return a function to step through the rest of it -}

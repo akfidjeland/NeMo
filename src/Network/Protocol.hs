@@ -15,11 +15,11 @@ module Network.Protocol (
 import Control.Monad
 import Control.Parallel.Strategies (NFData, rnf, using)
 import Data.Binary
+import qualified Data.Map as Map (Map)
 import Network.Socket
 
 import Construction.Network (Network)
-import Construction.Neuron (Stateless)
-import Construction.Synapse (Static)
+import Construction.Synapse (Synapse, Static)
 import Network.SocketSerialisation (sendSerialised, recvSerialised)
 import Simulation (Simulation)
 import Simulation.STDP
@@ -94,7 +94,7 @@ applyStdp sock reward = sendCommand sock $! CmdApplyStdp reward
 
 
 {- | Request weights from host -}
-getWeights :: Socket -> IO (Network Stateless Static)
+getWeights :: Socket -> IO (Map.Map Idx [Synapse Static])
 getWeights sock = do
     sendCommand sock CmdGetWeights
     rsp <- recvResponse sock
@@ -194,7 +194,7 @@ data ServerResponse
         | RspError String
         | RspReady
         | RspBusy
-        | RspWeights (Network Stateless Static)
+        | RspWeights (Map.Map Idx [Synapse Static])
 
 instance Binary ServerResponse where
     put = putRsp

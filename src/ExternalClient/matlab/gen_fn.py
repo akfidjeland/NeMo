@@ -6,10 +6,13 @@
 
 import sys
 
-functions = ['connect', 'disconnect', 'setNetwork', 'run', 'applyStdp']
+
+def fn_name(filename):
+    """ convert from 'nemoXxxYyy' format to 'xxxYyy' format """
+    return filename[4].lower() + filename[5:]
 
 
-def generateFnArray():
+def generate_fn_array(functions):
     """ Generate a c function array for inclusion into nemo_mex """
     print "#define FN_COUNT", len(functions)
     print "typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);"
@@ -18,14 +21,15 @@ def generateFnArray():
     print "};"
 
 
-def generateM4Macros():
+def generate_m4_macros(functions):
     for (i, fn) in enumerate(functions):
         print "define(mex_%s, uint32(%s))dnl" % (fn, i)
 
 
 if __name__ == "__main__":
     output = sys.argv[1]
+    functions = [fn_name(x) for x in sys.argv[2:]]
     if output == '--m4':
-        generateM4Macros()
-    elif output == '--cpp':
-        generateFnArray()
+        generate_m4_macros(functions)
+    elif output == '--hpp':
+        generate_fn_array(functions)

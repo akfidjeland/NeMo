@@ -8,7 +8,6 @@ module Construction.Neuron (
     ndata,
     unconnected,
     neuron,
-    Stateless(..),
     -- * Query
     synapses,
     synapsesByDelay,
@@ -65,7 +64,7 @@ unconnected n = Neuron n Axon.unconnected
 
 {- | Create a neuron from a list of connections -}
 neuron :: n -> [Synapse s] -> Neuron n s
-neuron n ss = Neuron n $ Axon.fromList ss
+neuron n ss = Neuron n $! Axon.fromList ss
 
 
 {- | Apply function to synapses of a neuron -}
@@ -146,17 +145,3 @@ instance (Binary n, Binary s) => Binary (Neuron n s) where
 
 instance (Show n, Show s) => Show (Neuron n s) where
     showsPrec _ n = shows (ndata n) . showChar '\n' . shows (axon n)
-
-
-
-{- To define a network where there's nothing interesting in the neuron itself
- - use Stateless -}
-data Stateless = Stateless
-
-instance Binary Stateless where
-    put _ = putWord8 0
-    get = do
-        tag <- getWord8
-        case tag of
-            0 -> return Stateless
-            _ -> fail "Decoding Stateless failed"

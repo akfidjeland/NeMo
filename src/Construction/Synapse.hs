@@ -15,6 +15,7 @@ import Types
 
 
 class Conductive s where
+    -- TODO: rename conductance
     current :: s -> Current
 
 

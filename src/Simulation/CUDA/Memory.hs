@@ -13,14 +13,14 @@ module Simulation.CUDA.Memory (
 import Control.Monad (zipWithM_, zipWithM, forM_, when)
 import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
+import qualified Data.Map as Map (Map, fromList)
 import Foreign.C.Types
 import Foreign.ForeignPtr
 import Foreign.Marshal.Array (mallocArray)
 import Foreign.Ptr
 import Foreign.Storable (pokeElemOff, peekElemOff)
 
-import Construction.Neuron (neuron, synapsesByDelay, Stateless(..))
-import qualified Construction.Neurons as Neurons (Neurons, fromList)
+import Construction.Neuron (neuron, synapsesByDelay)
 import Construction.Izhikevich
 import Construction.Synapse (Synapse(..), Static(..), target, current)
 import Simulation.CUDA.Address
@@ -172,7 +172,7 @@ pitch (_, _, _, p) = p
 
 
 {- | Get (possibly modified) connectivity matrix back from device -}
-getWeights :: SimData -> IO (Neurons.Neurons Stateless Static)
+getWeights :: SimData -> IO (Map.Map Idx [Synapse Static])
 getWeights sim = do
     withForeignPtr (rt sim) $ \rt_ptr -> do
     darr0 <- getCM rt_ptr cmatrixL0
@@ -183,7 +183,7 @@ getWeights sim = do
             (psize sim)
             (maxDelay sim)
             darr0 darr1
-    return $! Neurons.fromList $ concat ns
+    return $! Map.fromList $ concat ns
 
 
 -- for each partition in network
@@ -209,7 +209,7 @@ peekNeurons globalIdx p_idx n_idx n_max d_max s_idx0 s_idx1 darr0 darr1 =
                 let n_gidx = globalIdx (p_idx, n_idx)
                 ss <- peekDelays globalIdx n_gidx d_max s_idx0 s_idx1 darr0 darr1
                 ns <- go (n_idx+1) (step s_idx0 darr0) (step s_idx1 darr1)
-                return $! (n_gidx, neuron Stateless $ concat ss) : ns
+                return $! (n_gidx, concat ss) : ns
         step s_idx darr = s_idx + d_max * pitch darr
 
 

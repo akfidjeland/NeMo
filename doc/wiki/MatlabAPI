@@ -40,10 +40,8 @@ could be written as follows::
     
     . . . code that generates the network
      
-    nemoSetHost('axel01.doc.ic.ac.uk');
-    F = 30;
-    iterations = 4;
-    nemoStart(a, b, c, d, u, v, targets, delays, weights, iterations, F);
+    nemoConnect('axel01.doc.ic.ac.uk');
+    nemoStart(a, b, c, d, u, v, targets, delays, weights);
     for i=1:60
         fired = nemoRun(1000, [500 1]);
         foo(fired);
@@ -54,29 +52,30 @@ or simpler, if 60 seconds worth of data can be processed (and buffered) at once:
     
     . . . code that generates the network
 
-    nemoSetHost('axel01.doc.ic.ac.uk');
-    nemoStart(a, b, c, d, u, v, targets, delays, weights, 4, 30);
+    nemoConnect('axel01.doc.ic.ac.uk');
+    nemoStart(a, b, c, d, u, v, targets, delays, weights);
     fired = nemoRun(60000, [500 1], 4, 30);
     foo(fired);
     nemoTerminate;
 
-To run for 1000ms applying STDP every 50ms, do something like the following
-(perhaps with some added stimulus)::
+To run for 1000ms applying STDP every 50ms, do something like the following::
 
-    nemoSetHost('axel01.doc.ic.ac.uk');
-    F = 30;
-    nemoEnableSTDP(potentiation(1.0, 20), depression(0.8, 20), F);
-    iterations = 4;
-    nemoStart(a, b, c, d, u, v, targets, delays, weights, iterations, F);
-    for i=1:50:1000
-        fired = nsRun(50, []);
+    . . . code that generates the network
+
+    prefire = 1.0 * exp(-(1:20)./20)
+    postfire = 0.8 * exp(-(1:20)./20)
+    nemoConnect('axel01.doc.ic.ac.uk');
+    nemoEnableStdp(prefire, postfire, 30.0)
+    nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights);
+    fired = nemoRun(50, [1 1]);
+    for i=50:50:1000
+        nemoApplyStdp(1.0);
+        fired = nemoRun(50, []);
         foo(fired);
-        nemoApplySTDP(1.0);
     end
     nemoTerminate;
 
-The functions ``potentiation`` and ``depression`` produce the lookup-tables
-that define the STDP function. See ``nsEnableSTDP`` for expexted format. 
+The vectors ``prefire`` and ``postfire`` specify the STDP function in the prefire and postfire parts of the STDP window. The length of these vectors specify the size of the STDP window.
 
 .. For small networks (a few thousands of neurons), it might be interesting to run
 .. a number of networks in parallel, as otherwise the simulation backend will be
@@ -138,12 +137,6 @@ before starting MATLAB. For bash::
 For csh::
 
 	setenv LD_PRELOAD /lib/libgcc_s.so.1
-
-Running the client on a 64-bit machine fails
---------------------------------------------
-
-This is a known issue with the build process. No 64-bit client code is
-available, so run on a 32-bit machine for the time being.
 
 Matlab fails with ``Invalid MEX-file``  ``libnemoclient.so: cannot open shared object file: No such file or directory.``
 ------------------------------------------------------------------------------------------------------------------------

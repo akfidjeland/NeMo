@@ -44,6 +44,7 @@ error(const std::string& fmt, ...)
 }
 
 
+
 template<typename T>
 T
 scalar(const mxArray* arr)
@@ -63,11 +64,12 @@ std::vector<T> // let's hope the compiler can optimise the return...
 vector(const mxArray* arr)
 {
 #ifdef CHECK_ARGS
-	if(mxGetN(arr) != 1) {
-		error("argument should be 1xm vector");
+	if(mxGetM(arr) != 1) {
+		error("argument should be 1 x m vector. Size is %u x %u",
+				mxGetM(arr), mxGetN(arr));
 	}
 #endif
-	size_t length = mxGetM(arr);
+	size_t length = mxGetN(arr);
 	T* begin = mxGetPr(arr);
 	return std::vector<T>(begin, begin+length);
 }
@@ -125,7 +127,6 @@ connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	// redirect thrift error messages
 	GlobalOutput.setOutputFunction(mexWarnMsgTxt); 
 
-	//! \todo get arguments from caller
 	const std::string host = "localhost";
 	int port = 56101;
 
@@ -159,6 +160,17 @@ connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+setBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	checkConnection();
+	//! \todo more careful checking here
+	std::string hostname(mxArrayToString(prhs[1]));
+	g_client->setBackend(hostname);
+}
+
+
+
+void
 setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkConnection();
@@ -179,7 +191,7 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	int32_t* delays = (int32_t*) mxGetData(prhs[8]);
 	double* weights = mxGetPr(prhs[9]);
 
-	std::map<int32_t, IzhNeuron> neurons;
+	std::map<int32_t, IzhNeuron> network;
 	//! \todo perhaps just stick to 1-based addressing for a better interface
 	for(int32_t n_idx=0; n_idx<nlen; ++n_idx) {
 
@@ -205,11 +217,9 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	
 		n.axon = axon;
 
-		neurons.insert(std::make_pair(n_idx, n)); 
+		network.insert(std::make_pair(n_idx, n)); 
 	}
 
-	IzhNetwork network;
-	network.neurons = neurons;
 	g_client->setNetwork(network);
 
 	mexPrintf("done\n");
@@ -330,7 +340,57 @@ disableStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 
-#include <nemo_mex_fn_arr.hpp> // auto-generated table of function pointers
+/* Allocate return data for connectivity matrix and return pointer to beginning
+ * of the data */
+template<typename T>
+T*
+allocCM(size_t n_count, size_t s_count, mxClassID type, mxArray* plhs[], int ilhs)
+{
+	mxArray* cm = mxCreateNumericMatrix(n_count, s_count, type, mxREAL);
+	plhs[ilhs] = cm;
+	return (T*) mxGetPr(cm);
+}
+
+
+void
+getConnectivity(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	checkConnection();
+
+	std::map<int, Axon> cm;
+	g_client->getConnectivity(cm);
+
+	size_t n_count = 0;
+	size_t s_count = 0;
+	for(std::map<int, Axon>::const_iterator axon = cm.begin();
+			axon != cm.end(); ++axon) {
+		s_count = std::max(s_count, axon->second.size());
+		n_count = std::max(n_count, 1 + (size_t) axon->first);
+	}
+
+	/* The target matrix is initialised to 0, which indicate invalid entries.
+	 * We thus don't need to touch the unused parts of the matrix */
+	int32_t* targets = allocCM<int32_t>(n_count, s_count, mxINT32_CLASS, plhs, 0);
+	uint32_t* delays = allocCM<uint32_t>(n_count, s_count, mxUINT32_CLASS, plhs, 1);
+	double* weights = allocCM<double>(n_count, s_count, mxDOUBLE_CLASS, plhs, 2);
+
+	for(std::map<int, Axon>::const_iterator n = cm.begin();
+			n != cm.end(); ++n) {
+		int n_idx = n->first;
+		const Axon& axon = n->second;
+		for(Axon::const_iterator s = axon.begin(); s != axon.end(); ++s) {
+			uint s_idx = s - axon.begin();
+			size_t addr = n_idx + s_idx * n_count;
+			/* change from 0-based (C) to 1-based (Matlab) indexing */
+			targets[addr] = s->target + 1;
+			delays[addr] = s->delay;
+			weights[addr] = s->weight;
+		}
+	}
+}
+
+
+#include <mex_fn_lut.hpp> // auto-generated table of function pointers
 
 void
 mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])

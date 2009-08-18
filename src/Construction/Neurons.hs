@@ -15,6 +15,7 @@ module Construction.Neurons (
         neurons,
         idxBounds,
         synapses,
+        weightMatrix,
         toList,
         synapseCount,
         maxSynapsesPerNeuron,
@@ -103,9 +104,14 @@ idxBounds (Neurons ns) = (mn, mx)
         (mx, _) = Map.findMax ns
 
 
-{- | Return synapses orderd by source and delay -}
+{- | Return synapses ordered by source and delay -}
 synapses :: Neurons n s -> [(Idx, [(Delay, [(Idx, s)])])]
 synapses = map (\(i, n) -> (i, Neuron.synapsesByDelay n)) . toList
+
+
+{- | Return synapses organised by source only -}
+weightMatrix :: Neurons n s -> Map.Map Idx [Synapse s]
+weightMatrix = Map.mapWithKey Neuron.synapses . ndata
 
 
 {- | Return network as list of index-neuron pairs -}

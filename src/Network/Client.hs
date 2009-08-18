@@ -11,7 +11,7 @@ import Network.Socket
 
 import Construction.Network (Network)
 import qualified Network.Protocol as Wire (startSimulation,
-           runSimulation, stopSimulation, applyStdp)
+           runSimulation, stopSimulation, applyStdp, getWeights)
 import Simulation (Simulation_Iface(..))
 import Simulation.FiringStimulus (denseToSparse)
 import Simulation.STDP (StdpConf)
@@ -27,7 +27,7 @@ instance Simulation_Iface RemoteSimulation where
     applyStdp (RSim s) reward = Wire.applyStdp s reward
     elapsed _ = error "timing functions not supported in client backend"
     resetTimer _ = error "timing functions not supported in client backend"
-    getWeights _ = error "getWeights not supported in client backend"
+    getWeights (RSim s) = Wire.getWeights s
     terminate (RSim s) = Wire.stopSimulation s >> sClose s
 
 
