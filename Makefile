@@ -3,6 +3,7 @@ CUDA_LIB := dist/build/cuda/lib/libcuIzhikevich.a
 
 all: cabal
 
+version :=$(shell util/version)
 
 # TODO: use configure for this
 thrift_inc =/usr/local/include/thrift
@@ -74,10 +75,29 @@ $(thrift_build)/gen-%: src/ExternalClient/nemo.thrift
 $(HASKELL_BUILD_DIR)/nemo-server/nemo-server: all
 
 
+#
+# Distribution
+#
 
-# Generate documentation
-
+dist_dir := dist/build/nemo-x86_64-$(strip $(version))
 doc_build := dist/build/manual
+
+.PHONY: dist
+dist: $(dist_dir).zip
+
+
+# TODO: get architecture from system
+# TODO: use proper dependencies here
+$(dist_dir).zip: $(doc_build)/manual.pdf client cabal
+	mkdir -p $(basename $@)
+	cp --target-directory $(dist_dir) -r $< dist/build/nemo/nemo dist/build/matlab
+	strip $(dist_dir)/nemo
+	(cd dist/build; zip -r $(notdir $@) $(basename $(notdir $@)); cd ../..)
+
+#
+# Documentation
+#
+
 
 .PHONY: doc
 doc: $(doc_build)/manual.pdf
