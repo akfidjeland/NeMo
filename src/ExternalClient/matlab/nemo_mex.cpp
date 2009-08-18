@@ -310,7 +310,7 @@ run(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
-enableStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+enableSTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkConnection();
 	std::vector<double> prefire = vector<double>(numeric(prhs[1]));
@@ -322,7 +322,7 @@ enableStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
-applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+applySTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkConnection();
 	double reward = scalar<double>(numeric(prhs[1]));
@@ -332,7 +332,7 @@ applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
-disableStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+disableSTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkConnection();
 	g_client->disableStdp();

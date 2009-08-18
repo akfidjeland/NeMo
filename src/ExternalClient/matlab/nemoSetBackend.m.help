@@ -1,6 +1,10 @@
 nemoSetBackend: specify where/how the simulation will run
 ---------------------------------------------------------
 
-:: nemoSetBackend(HOSTNAME)
+::
+
+	nemoSetBackend(HOSTNAME)
 
 Currently only a remote backend is supported, i.e. the simulation takes place on a remote machine, to which the nemo process communicates. Future versions will support running with different backends on the local machine.
+
+

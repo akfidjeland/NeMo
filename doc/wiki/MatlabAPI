@@ -1,7 +1,7 @@
 .. Note: this page is used to create user documentation for the MATLAB API
 
 ========================
-Nemo v0.3.4 - Matlab API
+Nemo v0.4.0 - Matlab API
 ========================
 
 :Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
@@ -62,14 +62,14 @@ To run for 1000ms applying STDP every 50ms, do something like the following::
 
     . . . code that generates the network
 
-    prefire = 1.0 * exp(-(1:20)./20)
-    postfire = 0.8 * exp(-(1:20)./20)
+    prefire = 1.0 * exp(-(1:20)./20);
+    postfire = 0.8 * exp(-(1:20)./20);
     nemoConnect('axel01.doc.ic.ac.uk');
-    nemoEnableStdp(prefire, postfire, 30.0)
+    nemoEnableSTDP(prefire, postfire, 30.0);
     nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights);
     fired = nemoRun(50, [1 1]);
     for i=50:50:1000
-        nemoApplyStdp(1.0);
+        nemoApplySTDP(1.0);
         fired = nemoRun(50, []);
         foo(fired);
     end

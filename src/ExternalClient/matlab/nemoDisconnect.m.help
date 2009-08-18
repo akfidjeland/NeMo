@@ -1,7 +1,9 @@
 nemoDisconnect
 --------------
 
-:: nemoDisconnect()
+::
+
+	nemoDisconnect()
 
 Disconnect from nemo.
 

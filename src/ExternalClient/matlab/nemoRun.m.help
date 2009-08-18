@@ -1,7 +1,9 @@
 nemoRun: Perform one or more simulation steps
 ---------------------------------------------
 
-:: F = nemoRun(NSTEPS, FSTIM)
+::
+
+	F = nemoRun(NSTEPS, FSTIM)
 
 Returns an N-by-2 matrix containing the firing information for the next ``NSTEPS`` simulation steps on an already constructed network. 
 
@@ -10,5 +12,5 @@ interest.
 
 The firing stimulus has the same format as the return matrix, and is used to specify neurons which should be forced to fire at some specific time. The firing stimulus should be sorted by cycle number. Out-of-bounds cycle values or neuron indices may lead to undefined behaviour.
 
-The simulation is discrete-time, and any floating point values in FSTIM will be converted to uint32. 
+The simulation is discrete-time, and any floating point values in ``FSTIM`` will be converted to ``uint32``. 
 

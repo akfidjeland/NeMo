@@ -1,5 +1,9 @@
 nemoConnect: initialize connection to nemo
 ------------------------------------------
 
-:: nemoConnect()
+::
+
+	nemoConnect()
+
+This must be called before any other operations.
 
