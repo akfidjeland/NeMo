@@ -13,3 +13,4 @@ debug_cuda.sh
 release_cuda.sh
 cc.dat
 map.log
+cabal.mk
