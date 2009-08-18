@@ -7,6 +7,8 @@ version :=$(shell util/version)
 
 # TODO: use configure for this
 thrift_inc =/usr/local/include/thrift
+thrift_dir = /usr/local/lib
+
 thrift_build = dist/build/thrift
 
 
@@ -92,6 +94,9 @@ $(dist_dir).zip: $(doc_build)/manual.pdf client cabal
 	mkdir -p $(basename $@)
 	cp --target-directory $(dist_dir) -r $< dist/build/nemo/nemo dist/build/matlab
 	strip $(dist_dir)/nemo
+	# include shared thrift libraries as well.
+	cp --no-dereference --preserve=links --target-directory $(dist_dir)/matlab $(thrift_dir)/libthrift.so*
+	strip $(dist_dir)/matlab/libthrift.so.0.0.0
 	(cd dist/build; zip -r $(notdir $@) $(basename $(notdir $@)); cd ../..)
 
 #
