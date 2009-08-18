@@ -1,3 +1,3 @@
 function nemoApplySTDP(r)
-	nemo_mex(mex_applyStdp, r)
+	nemo_mex(mex_applySTDP, r)
 end
