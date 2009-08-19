@@ -24,9 +24,10 @@ import Simulation.CUDA.Address
 import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import qualified Simulation.CUDA.Probe as Probe (readFiring, readFiringCount)
-import Simulation.CUDA.KernelFFI as Kernel (c_step, applyStdp, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics)
+import Simulation.CUDA.KernelFFI as Kernel (stepBuffering, applyStdp, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.Mapping (mapNetwork)
+import Simulation.CUDA.State (State(..))
 import Simulation.STDP
 
 
@@ -41,8 +42,7 @@ import Simulation.STDP
 -------------------------------------------------------------------------------
 
 
--- TODO: rename
-instance Simulation_Iface SimData where
+instance Simulation_Iface State where
     run = runCuda
     step = stepCuda
     applyStdp sim reward = withForeignPtr (rt sim) $ \p -> Kernel.applyStdp p reward
@@ -57,7 +57,7 @@ initSim
     -> N.Network (IzhNeuron FT) Static
     -> TemporalResolution
     -> StdpConf
-    -> IO SimData
+    -> IO State
 initSim partitionSize net dt stdpConf = do
     -- TODO: select device?
     let usingStdp = stdpEnabled stdpConf
@@ -76,7 +76,7 @@ initSim partitionSize net dt stdpConf = do
 
 
 
-runCuda :: SimData -> [[Idx]] -> IO [ProbeData]
+runCuda :: State -> [[Idx]] -> IO [ProbeData]
 runCuda sim fstim = do
     sequence2_ (stepBuffering sim) fstim [0..]
     withForeignPtr (rt sim) $ \rtPtr -> do
@@ -89,14 +89,14 @@ runCuda sim fstim = do
         sequence2_ _ _  _ = return ()
 
 
-stepCuda :: SimData -> [Idx] -> IO ProbeData
+stepCuda :: State -> [Idx] -> IO ProbeData
 stepCuda sim fstim = do
     stepBuffering sim fstim 0
     [firing] <- readFiring sim 1
     return $! firing
 
 
-readFiring :: SimData -> Time -> IO [ProbeData]
+readFiring :: State -> Time -> IO [ProbeData]
 readFiring sim ncycles = do
     (ncycles', fired) <- Probe.readFiring $ rt sim
     assert (ncycles == ncycles') $ do
@@ -123,28 +123,3 @@ densifyDeviceFiring att len fired = map FiringData dense
 
         dense :: [[Idx]]
         dense = A.densify 0 len [] grouped'
-
-
-
-{- Run possibly failing computation, and propagate any errors with additional
- - prefix -}
-rethrow :: (Monad m) => String -> (a -> Either String b) -> a -> m b
-rethrow prefix f x = either (fail . (++) (prefix ++ ": ")) return (f x)
-
-
-
--- TODO: move into KernelFFI
-{- | Perform a single simulation step, while buffering firing data on the
- - device, rather than reading it back to the host -}
-stepBuffering sim fstim currentCycle = do
-    let flen = length fstim
-        fbounds = (0, flen-1)
-    fstim <- forM fstim $ rethrow "firing stimulus" $ deviceIdxM (att sim)
-    fsPIdxArr <- newListArray fbounds (map (fromIntegral . partitionIdx) fstim)
-    fsNIdxArr <- newListArray fbounds (map (fromIntegral . neuronIdx) fstim)
-    withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
-    withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
-    withForeignPtr (rt sim)      $ \rtPtr     -> do
-    kernelStatus <- c_step rtPtr currentCycle
-        (dt sim) (fromIntegral flen) fsPIdxPtr fsNIdxPtr
-    when (kernelStatus /= 0) $ fail "Backend error"

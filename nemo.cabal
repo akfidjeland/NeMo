@@ -148,7 +148,8 @@ executable nemo-server
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe
+                            Simulation.CUDA.Probe,
+                            Simulation.CUDA.State
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
@@ -200,7 +201,8 @@ executable nemo-run
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe
+                            Simulation.CUDA.Probe,
+                            Simulation.CUDA.State
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
@@ -271,6 +273,7 @@ executable runtests
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
                             Simulation.CUDA.Probe,
+                            Simulation.CUDA.State
                             Test.Simulation.CUDA.Mapping,
                             Test.Simulation.CUDA.Memory
         cpp-options:        -DCUDA_ENABLED
@@ -331,7 +334,8 @@ executable benchmark
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe
+                            Simulation.CUDA.Probe,
+                            Simulation.CUDA.State
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
@@ -392,7 +396,8 @@ executable smallworld
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe
+                            Simulation.CUDA.Probe,
+                            Simulation.CUDA.State
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
@@ -453,7 +458,8 @@ executable random1k
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe
+                            Simulation.CUDA.Probe,
+                            Simulation.CUDA.State
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
@@ -511,7 +517,8 @@ executable ring
                             Simulation.CUDA.Memory,
                             Simulation.CUDA.Mapping,
                             Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe
+                            Simulation.CUDA.Probe,
+                            Simulation.CUDA.State
         cpp-options:        -DCUDA_ENABLED
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib

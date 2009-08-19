@@ -3,14 +3,11 @@
 
 module Simulation.CUDA.Memory (
     initMemory,
-    getWeights,
-    SimData(..),
-    -- * Opaque pointer to kernel data structures
-    CuRT
+    getWeights
 ) where
 
 
-import Control.Monad (zipWithM_, zipWithM, forM_, when)
+import Control.Monad (zipWithM_, zipWithM, forM_)
 import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
 import qualified Data.Map as Map (Map, fromList)
@@ -20,26 +17,17 @@ import Foreign.Marshal.Array (mallocArray)
 import Foreign.Ptr
 import Foreign.Storable (pokeElemOff, peekElemOff)
 
-import Construction.Neuron (neuron, synapsesByDelay)
-import Construction.Izhikevich
+import Construction.Neuron (synapsesByDelay)
+import Construction.Izhikevich (IzhNeuron(..), stateSigma)
 import Construction.Synapse (Synapse(..), Static(..), target, current)
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI
+import Simulation.CUDA.State (State(..))
 import Simulation.CUDA.Mapping
 import Simulation.STDP
 import Types
 
 
-
--- TODO: move to CUDA.hs
-data SimData = SimData {
-        pcount   :: Int,
-        psize    :: [Int],          -- ^ size of each partition,
-        maxDelay :: Delay,
-        dt       :: CInt,           -- ^ number of steps in neuron update
-        att      :: ATT,
-        rt       :: ForeignPtr CuRT -- ^ kernel runtime data
-    }
 
 
 
@@ -50,13 +38,13 @@ initMemory
     -> Int
     -> Int
     -> StdpConf
-    -> IO SimData
+    -> IO State
 initMemory net att maxProbePeriod dt stdp = do
     (pcount, psizes, maxDelay, rt) <- allocRT net maxProbePeriod
     configureStdp rt stdp
     loadAllNeurons rt net
     loadCMatrix rt att net
-    return $ SimData pcount psizes maxDelay (fromIntegral dt) att rt
+    return $ State pcount psizes maxDelay (fromIntegral dt) att rt
 
 
 loadPartitionNeurons
@@ -172,7 +160,7 @@ pitch (_, _, _, p) = p
 
 
 {- | Get (possibly modified) connectivity matrix back from device -}
-getWeights :: SimData -> IO (Map.Map Idx [Synapse Static])
+getWeights :: State -> IO (Map.Map Idx [Synapse Static])
 getWeights sim = do
     withForeignPtr (rt sim) $ \rt_ptr -> do
     darr0 <- getCM rt_ptr cmatrixL0

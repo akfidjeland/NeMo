@@ -25,19 +25,17 @@ import Control.Monad (foldM)
 import Control.Monad.ST
 import Control.Monad.Writer
 import Data.Array.ST
-import Data.Function (on)
-import Data.List (insert, sortBy, groupBy, partition, foldl', sort)
-import Data.Maybe (fromMaybe, isJust, fromJust)
+import Data.List (insert)
 import qualified Data.Map as Map
 
 import Construction.Izhikevich (IzhNeuron, IzhState)
 import qualified Construction.Network as Net
-import qualified Construction.Neurons as Neurons (Neurons, empty, toList, size)
+import qualified Construction.Neurons as Neurons (Neurons, empty, toList)
 import qualified Construction.Neuron as N
 import Construction.Synapse
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI as Kernel (maxPartitionSize)
-import Types
+import Types (Idx, Delay)
 
 
 {- During mapping we may want to log various network statistics -}

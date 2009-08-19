@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, ForeignFunctionInterface #-}
 
 module Simulation.CUDA.KernelFFI (
-    c_step,
+    stepBuffering,
     applyStdp,
     setCMDRow,
     getCM,
@@ -24,7 +24,8 @@ module Simulation.CUDA.KernelFFI (
     resetTimer
 ) where
 
-import Control.Monad (when)
+import Control.Monad (when, forM)
+import Data.Array.MArray (newListArray)
 import Data.Array.Storable (StorableArray, withStorableArray)
 import Data.Bits (setBit)
 import Data.List (foldl')
@@ -38,14 +39,13 @@ import Foreign.Ptr
 import Foreign.Storable (peek)
 
 import Simulation.CUDA.Address
-import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow,
-        potentiationMask, depressionMask)
+import Simulation.CUDA.State (State(..), CuRT)
+import Simulation.STDP (StdpConf(..),
+            prefireWindow, postfireWindow,
+            potentiationMask, depressionMask)
 
 #include <kernel.h>
 
-
-{- Runtime data is managed on the CUDA-side in a single structure -}
-data CuRT = CuRT
 
 
 {- In the interface we manipulate/construction different connectivity matrices
@@ -193,6 +193,27 @@ foreign import ccall unsafe "step"
            -> Ptr CInt  -- ^ Partition indices of neurons with forced firing
            -> Ptr CInt  -- ^ Neuron indices of neurons with forced firing
            -> IO CInt   -- ^ Kernel status
+
+
+{- | Perform a single simulation step, while buffering firing data on the
+ - device, rather than reading it back to the host -}
+stepBuffering sim fstim currentCycle = do
+    let flen = length fstim
+        fbounds = (0, flen-1)
+    fstim <- forM fstim $ rethrow "firing stimulus" $ deviceIdxM (att sim)
+    fsPIdxArr <- newListArray fbounds (map (fromIntegral . partitionIdx) fstim)
+    fsNIdxArr <- newListArray fbounds (map (fromIntegral . neuronIdx) fstim)
+    withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
+    withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
+    withForeignPtr (rt sim)      $ \rtPtr     -> do
+    kernelStatus <- c_step rtPtr currentCycle
+        (dt sim) (fromIntegral flen) fsPIdxPtr fsNIdxPtr
+    when (kernelStatus /= 0) $ fail "Backend error"
+    where
+        {- Run possibly failing computation, and propagate any errors with
+         - additional prefix -}
+        rethrow :: (Monad m) => String -> (a -> Either String b) -> a -> m b
+        rethrow prefix f x = either (fail . (++) (prefix ++ ": ")) return (f x)
 
 
 

@@ -10,7 +10,7 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Ptr
 import Foreign.Storable (peek)
 
-import Simulation.CUDA.Memory (CuRT)
+import Simulation.CUDA.State (CuRT)
 import Simulation.CUDA.Address (DeviceIdx)
 import Types (Time)
 
