@@ -50,8 +50,6 @@ serveSimulation loghdl port verbose initfn = withSocketsDo $ do
     -- start listening for connection requests
     let maxQueueLength = 5
     listen sock maxQueueLength
-    -- create a lock to use for synchronising access to the handler
-    -- lock <- newMVar ()
 
     -- loop forever waiting for connections. Ctrl-C to abort
     procRequests sock loghdl verbose initfn

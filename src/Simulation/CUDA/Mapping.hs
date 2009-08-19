@@ -21,8 +21,9 @@ module Simulation.CUDA.Mapping (
         maxL1RPitch
 ) where
 
-import Control.Monad.Writer
+import Control.Monad (foldM)
 import Control.Monad.ST
+import Control.Monad.Writer
 import Data.Array.ST
 import Data.Function (on)
 import Data.List (insert, sortBy, groupBy, partition, foldl', sort)
@@ -123,16 +124,17 @@ partitionAssocs = Map.assocs . netPartitions
 
 {- | Determine the max delay, as well as the L0 and L1 pitches for a particular
  - neuron -}
-synapseParameters :: ATT -> PartitionIdx -> N.Neuron n s -> (Delay, Int, Int)
-synapseParameters att preIdx n = (N.maxDelay n, l0, l1)
+synapseParameters :: ATT -> PartitionIdx -> N.Neuron n s -> ST t (Delay, Int, Int)
+synapseParameters att preIdx n = do
+    (l0, l1) <- foldM go' (0,0) $ N.targets n
+    return $! (N.maxDelay n, l0, l1)
     where
-        (l0, l1) = foldl' go' (0,0) $ N.targets n
-        go' (pitchL0, pitchL1) s =
-            if isL0 s
-                then (pitchL0+1, pitchL1)
-                else (pitchL0, pitchL1+1)
-
-        isL0 t = (==preIdx) $! partitionIdx $! deviceIdx att t
+        go' (pitchL0, pitchL1) s = do
+            didx <- deviceIdxM att s
+            if isL0 didx
+                then return $! (pitchL0+1, pitchL1)
+                else return $! (pitchL0, pitchL1+1)
+        isL0 t = (==preIdx) $! partitionIdx t
 
 
 type RPitch t = STUArray t (PartitionIdx, NeuronIdx) Int
@@ -152,13 +154,13 @@ mkRPitch stdp pcount psize =
 
 {- Increment either L0 or L1 reverse pitch -}
 accRPitch :: ATT -> DeviceIdx -> (RPitch t, RPitch t) -> Synapse s -> ST t ()
-accRPitch att src@(srcp,_) (l0r, l1r) s =
-    if isL0
+accRPitch att src@(srcp,_) (l0r, l1r) s = do
+    tgt <- deviceIdxM att $! target s
+    if isL0 tgt
         then inc l0r tgt
         else inc l1r tgt
     where
-        tgt = deviceIdx att $! target s
-        isL0 = (==srcp) $! partitionIdx $! tgt
+        isL0 tgt = (==srcp) $! partitionIdx $! tgt
         inc ss i@(p,n) = readArray ss i >>= writeArray ss i . (+1)
 
 
@@ -174,31 +176,26 @@ networkInsert
     -> ST t (CuNet n s)
 networkInsert att rpitch (CuNet ptn mxd l0w l1w l0r l1r) (gidx, n) = do
     -- TODO: use synapsesByDelay here instead.
+    didx@(pidx, nidx) <- deviceIdxM att gidx
     maybe (return ()) (\r -> mapM_ (accRPitch att didx r) $ N.synapses gidx n) rpitch
-    return $! ptn' `seq` mxd' `seq` l0w' `seq` l1w' `seq` CuNet ptn' mxd' l0w' l1w' l0r l1r
-    where
-        ptn' = Map.alter clusterInsert pidx ptn
-
-        didx = deviceIdx att gidx
-        pidx = partitionIdx didx
-        nidx = neuronIdx didx
-
-        {- Note: We cannot determine these parameters on the forward pass, as
-         - we won't know which synapses are L0 and which are L1 before we do
-         - the mapping. We'd have to interleave the mapping with the
-         - construction. It would, however, be possible to determine the
-         - global maximum. It would then be possible to set per-neuron maxima
-         - for L0 and L1 when we load this onto the device. -}
-        (n_mxd, n_l0w, n_l1w) = synapseParameters att pidx n
-
+    {- Note: We cannot determine these parameters on the forward pass, as we
+     - won't know which synapses are L0 and which are L1 before we do the
+     - mapping. We'd have to interleave the mapping with the construction. It
+     - would, however, be possible to determine the global maximum. It would
+     - then be possible to set per-neuron maxima for L0 and L1 when we load
+     - this onto the device. -}
+    (n_mxd, n_l0w, n_l1w) <- synapseParameters att pidx n
+    let ptn' = Map.alter (clusterInsert nidx) pidx ptn
         -- fold arguments into synapse parameters
         mxd' = max mxd n_mxd
         l0w' = max l0w n_l0w
         l1w' = max l1w n_l1w
-
+    return $! ptn' `seq` mxd' `seq` l0w' `seq` l1w' `seq`
+        CuNet ptn' mxd' l0w' l1w' l0r l1r
+    where
         -- clusterInsert :: Maybe (CuPartition n) -> Maybe (CuPartition n)
-        clusterInsert (Just c) = Just $! Map.insert nidx n c
-        clusterInsert Nothing  = Just $! Map.singleton nidx n
+        clusterInsert nidx (Just c) = Just $! Map.insert nidx n c
+        clusterInsert nidx Nothing = Just $! Map.singleton nidx n
 
 
 cuNetwork :: ATT -> Bool -> Int -> Int -> Neurons.Neurons n s -> CuNet n s
