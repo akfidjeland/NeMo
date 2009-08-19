@@ -6,6 +6,7 @@
 module Network.Client (initSim) where
 
 import Control.Parallel.Strategies (NFData)
+import Control.Exception (handle, SomeException)
 import Data.Binary (Binary)
 import Network.Socket
 
@@ -43,8 +44,12 @@ initSim :: (Binary n, Binary s, NFData n, NFData s)
     -> IO RemoteSimulation
 initSim hostname port net dt stdpConf = do
     sock <- openSocket hostname (show port)
+    handle (initError sock) $ do
     Wire.startSimulation sock net dt stdpConf
     return $! RSim sock
+    where
+        initError :: Socket -> SomeException -> IO RemoteSimulation
+        initError s e = sClose s >> fail (show e)
 
 
 

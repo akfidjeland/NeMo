@@ -88,27 +88,6 @@ reconfigure m f = do
 
 
 
-{- To start simulation, freeze the network -}
-startSimulation :: MVar NemoState -> IO ()
-startSimulation m = do
-    modifyMVar_ m $ \st -> do
-    case st of
-        Simulating _ _ _ -> return st
-        Constructing net conf -> do
-            sim <- initSim net simOpts cudaOpts (stdpConfig conf)
-            return $! Simulating net conf sim
-    where
-        -- TODO: get values from 1) command-line 2) external client
-        -- TODO: remove hard-coding
-        -- TODO: move configuration into Config data type
-        simOpts = SimulationOptions Forever 4 $ RemoteHost "localhost" 56100
-
-        -- TODO: make this backend options instead of cudaOpts
-        -- TODO: perhaps we want to be able to send this to server?
-        cudaOpts = defaults cudaOptions
-
-
-
 {- Apply simulation function. If nemo state is in construction mode, toggle this -} 
 -- TODO: propagate errors to matlab
 runSimulation :: [Wire.Stimulus] -> Backend.Simulation -> IO [Wire.Firing]
@@ -168,6 +147,7 @@ simulateWith m f = do
         Constructing net conf -> do
             -- Start simulation first
             putStrLn $ "starting simulation"
+            handle initError $ do
             sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
             ret <- f sim
             return $! (Simulating net conf sim, ret)
@@ -175,6 +155,13 @@ simulateWith m f = do
         -- TODO: make this backend options instead of cudaOpts
         -- TODO: perhaps we want to be able to send this to server?
         cudaOpts = defaults cudaOptions
+
+        initError :: SomeException -> IO (NemoState, a)
+        initError e = do
+            putStrLn $ "initialisation error: " ++ show e
+            throwIO $ Wire.ConstructionError $ Just $ show e
+
+
 
 
 

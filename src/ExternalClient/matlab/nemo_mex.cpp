@@ -220,7 +220,11 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		network.insert(std::make_pair(n_idx, n)); 
 	}
 
-	g_client->setNetwork(network);
+	try {
+		g_client->setNetwork(network);
+	} catch (ConstructionError& err) {
+		error("construction error: %s", err.msg.c_str());
+	}
 
 	mexPrintf("done\n");
 }
@@ -301,7 +305,11 @@ run(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	firingStimulus(ncycles, prhs[2], stimuli);
 
 	std::vector<Firing> firing;
-	g_client->run(firing, stimuli);
+	try {
+		g_client->run(firing, stimuli);
+	} catch (ConstructionError& err) {
+		error("construction error: %s", err.msg.c_str());
+	}
 
 	plhs[0] = firingData(firing);
 	mexPrintf("done\n");
@@ -326,7 +334,11 @@ applySTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkConnection();
 	double reward = scalar<double>(numeric(prhs[1]));
-	g_client->applyStdp(reward);
+	try {
+		g_client->applyStdp(reward);
+	} catch (ConstructionError& err) {
+		error("construction error: %s", err.msg.c_str());
+	}
 }
 
 

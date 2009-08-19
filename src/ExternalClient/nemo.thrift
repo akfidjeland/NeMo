@@ -34,14 +34,21 @@ struct Stimulus {
 typedef list<i32> Firing
 
 
+exception ConstructionError {
+	1:string msg
+}
+
+
 service NemoFrontend {
 
 	void setBackend(1:string host),
 
-	void setNetwork(1:IzhNetwork net),
+	void setNetwork(1:IzhNetwork net)
+		throws (1:ConstructionError err),
 
     # Run simulation for multiple cycles 
-	list<Firing> run(1:list<Stimulus> stim),
+	list<Firing> run(1:list<Stimulus> stim)
+		throws (1:ConstructionError err),
 
 	void enableStdp(1:list<double> prefire,
 			2:list<double> postfire,
@@ -49,7 +56,8 @@ service NemoFrontend {
 
 	void disableStdp(),
 
-	void applyStdp(1:double reward),
+	void applyStdp(1:double reward)
+		throws (1:ConstructionError err),
 
 	map<i32, Axon> getConnectivity()
 }

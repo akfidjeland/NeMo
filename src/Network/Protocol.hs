@@ -13,6 +13,7 @@ module Network.Protocol (
 ) where
 
 import Control.Monad
+import Control.Exception (handle, SomeException)
 import Control.Parallel.Strategies (NFData, rnf, using)
 import Data.Binary
 import qualified Data.Map as Map (Map)
@@ -51,6 +52,7 @@ startSimulation sock net tr stdpConf = do
     rsp <- recvResponse sock
     case rsp of
         RspStart -> return ()
+        RspError msg -> fail msg
         _        -> fail "startSimulation: unexpected response"
 
 
@@ -63,13 +65,18 @@ startSimulationHost
 startSimulationHost sock initfn = do
     req <- recvRequest sock
     case req of
-        ReqStart net tr stdp -> do
-            -- TODO: catch errors in initfn before responding
+        ReqStart net tr stdp ->
+            handle initFail $ do
             stepfn <- initfn net tr stdp
             sendResponse sock RspStart
             return $! Just stepfn
         ReqPing      -> sendResponse sock RspReady >> return Nothing
         (ReqError c) -> fail $ "Invalid start request: " ++ show c
+    where
+        initFail :: SomeException -> IO (Maybe Simulation)
+        initFail e = do
+            sendResponse sock (RspError $ show e)
+            fail $ "initialisation failed: " ++ show e
 
 
 -- | Send data request from client and return data from host

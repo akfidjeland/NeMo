@@ -2,7 +2,7 @@ module Network.Server (serveSimulation) where
 
 -- Based on example in Real World Haskell, Chapter 27
 
-import Control.Exception (try, IOException)
+import Control.Exception (try, handle, IOException)
 import Control.Parallel.Strategies (NFData)
 import Data.Binary (Binary)
 import Data.List (sort)
@@ -76,19 +76,22 @@ procRequests mastersock hdl verbose initfn = do
         (\e -> logMsg hdl clientaddr $
             "exception caught, simulation terminated\n\t" ++ show e))
     sClose connsock
+    logMsg hdl clientaddr "client disconnected"
     procRequests mastersock hdl verbose initfn
 
 
 
--- TODO: add back verbosity
--- | Process potential simulation request
+{- | Process potential simulation request -}
 procSim sock _ initfn log = do
-    -- TODO: remove runfn from Protocol
-    -- TODO: catch protocol errors here, esp invalid request
+    handle initError $ do
     ret <- startSimulationHost sock initfn
     case ret of
-        Nothing  -> return ()
+        Nothing  -> return () -- ping or similar
         Just sim -> procSimReq sock sim log
+    where
+        initError :: IOException -> IO ()
+        initError e = log $ show e
+
 
 
 -- | Process user requests during running simulation
