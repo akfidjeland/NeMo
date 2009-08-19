@@ -256,7 +256,7 @@ firingStimulus(unsigned ncycles,
 	for(unsigned cycle=0; cycle < ncycles; ++cycle) {
 		Stimulus stimulus; // for a single cycle
 		while(cycles != end && *cycles == cycle) {
-			stimulus.firing.push_back(*cycles);
+			stimulus.firing.push_back(*idx);
 			++cycles;
 			++idx;
 		}
