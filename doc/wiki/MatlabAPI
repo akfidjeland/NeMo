@@ -1,7 +1,7 @@
 .. Note: this page is used to create user documentation for the MATLAB API
 
 ========================
-Nemo v0.4.0 - Matlab API
+Nemo v0.4.1 - Matlab API
 ========================
 
 :Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
@@ -40,31 +40,34 @@ could be written as follows::
     
     . . . code that generates the network
      
-    nemoConnect('axel01.doc.ic.ac.uk');
-    nemoStart(a, b, c, d, u, v, targets, delays, weights);
+    nemoConnect;
+    nemoSetBackend('axel01.doc.ic.ac.uk');
+    nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights);
     for i=1:60
         fired = nemoRun(1000, [500 1]);
         foo(fired);
     end
-    nemoTerminate;
+    nemoDisconnect;
 
 or simpler, if 60 seconds worth of data can be processed (and buffered) at once::
     
     . . . code that generates the network
 
-    nemoConnect('axel01.doc.ic.ac.uk');
-    nemoStart(a, b, c, d, u, v, targets, delays, weights);
+    nemoConnect;
+    nemoSetBackend('axel01.doc.ic.ac.uk');
+    nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights);
     fired = nemoRun(60000, [500 1], 4, 30);
     foo(fired);
-    nemoTerminate;
+    nemoDisconnect;
 
 To run for 1000ms applying STDP every 50ms, do something like the following::
 
     . . . code that generates the network
 
+    nemoConnect;
+    nemoSetBackend('axel01.doc.ic.ac.uk');
     prefire = 1.0 * exp(-(1:20)./20);
     postfire = 0.8 * exp(-(1:20)./20);
-    nemoConnect('axel01.doc.ic.ac.uk');
     nemoEnableSTDP(prefire, postfire, 30.0);
     nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights);
     fired = nemoRun(50, [1 1]);
@@ -73,7 +76,7 @@ To run for 1000ms applying STDP every 50ms, do something like the following::
         fired = nemoRun(50, []);
         foo(fired);
     end
-    nemoTerminate;
+    nemoDisconnect;
 
 The vectors ``prefire`` and ``postfire`` specify the STDP function in the prefire and postfire parts of the STDP window. The length of these vectors specify the size of the STDP window.
 
