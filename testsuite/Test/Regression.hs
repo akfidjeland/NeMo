@@ -33,8 +33,6 @@ data RegressionTest = RegressionTest {
         dataFile :: FilePath,
         netGen   :: Gen (Network (IzhNeuron FT) Static),
         fstim    :: FiringStimulus,
-        probe    :: Probe,
-        probeFn  :: ProbeFn IzhState,
         backend  :: Backend,
         cycles   :: Time,
         rngSeed  :: Int,
@@ -74,8 +72,7 @@ testRegression basedir rtest = do
 
 
 runRegression :: RegressionTest -> (ProbeData -> IO ()) -> Assertion
--- TODO: remove unused parameters
-runRegression rtest@(RegressionTest nm _ nf fs _ _ be cs rs stdp) f = do
+runRegression rtest@(RegressionTest nm _ nf fs be cs rs stdp) f = do
     -- TODO: share code with NSim/Simulation.Run
     -- TODO: don't use the same seed twice. Also sync with use in NSim/Construction
     let net = build (fromIntegral rs) nf

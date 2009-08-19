@@ -22,7 +22,7 @@ import Simulation.CUDA.Options (cudaOptions, optProbeDevice)
 import Simulation.FiringStimulus
 import Simulation.Options (simOptions, optBackend, SimulationOptions, BackendOptions(..))
 import Simulation.Backend (initSim)
-import Simulation.STDP (StdpApplication(..), StdpConf(..))
+import Simulation.STDP (StdpConf(..))
 import Simulation.STDP.Options (stdpOptions)
 import Types
 import qualified Util.List as L (chunksOf)

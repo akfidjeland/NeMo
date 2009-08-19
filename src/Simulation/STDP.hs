@@ -1,6 +1,5 @@
 module Simulation.STDP (
     StdpConf(..),
-    StdpApplication(..),
     asymPotentiation,
     asymDepression,
     asymStdp,
@@ -98,20 +97,3 @@ instance Binary StdpConf where
         mw  <- get
         f   <- get
         return $ StdpConf en prefire postfire mw f
-
-
-data StdpApplication
-        = StdpApply Double   -- apply with multiplier
-        | StdpIgnore
-    deriving (Show, Eq)
-
-
-instance Binary StdpApplication where
-    put (StdpApply m) = putWord8 1 >> put m
-    put StdpIgnore = putWord8 2
-    get = do
-        tag <- getWord8
-        case tag of
-            1 -> liftM StdpApply get
-            2 -> return StdpIgnore
-            _ -> error "Incorrectly serialised StdpApplication data"
