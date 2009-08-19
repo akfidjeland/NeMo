@@ -169,6 +169,7 @@ setBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
+enum { INVALID_TARGET = -1 };
 
 void
 setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
@@ -206,13 +207,15 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		std::vector<Synapse> axon;
 
 		for(size_t s_idx=n_idx*sstride; s_idx<(n_idx+1)*sstride; ++s_idx) {
-			Synapse s;
-			//! \todo remove source from axon in transport. It should be implicit
-			s.source = n_idx;
-			s.target = targets[s_idx];
-			s.delay = delays[s_idx];
-			s.weight = weights[s_idx];
-			axon.push_back(s);
+			if(targets[s_idx] != INVALID_TARGET) {
+				Synapse s;
+				//! \todo remove source from axon in transport. It should be implicit
+				s.source = n_idx;
+				s.target = targets[s_idx];
+				s.delay = delays[s_idx];
+				s.weight = weights[s_idx];
+				axon.push_back(s);
+			}
 		}
 	
 		n.axon = axon;
