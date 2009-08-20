@@ -51,6 +51,7 @@ instance Simulation_Iface State where
     elapsed sim = withForeignPtr (rt sim) Kernel.elapsedMs
     resetTimer sim = withForeignPtr (rt sim) Kernel.resetTimer
     getWeights sim = Memory.getWeights sim
+    terminate = terminateCuda
 
 
 {- | Initialise simulation and return a function to step through the rest of it -}
@@ -70,6 +71,11 @@ initSim partitionSize net dt stdpConf = do
     let maxProbePeriod = 1000
     initMemory cuNet att maxProbePeriod dt stdpConf
 
+
+
+-- free the device, clear all memory in Sim
+terminateCuda :: State -> IO ()
+terminateCuda sim = withForeignPtr (rt sim) freeRT
 
 
 -------------------------------------------------------------------------------

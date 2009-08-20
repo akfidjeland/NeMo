@@ -3,7 +3,8 @@
 
 module Simulation.CUDA.Memory (
     initMemory,
-    getWeights
+    getWeights,
+    freeRT
 ) where
 
 
@@ -275,8 +276,10 @@ foreign import ccall unsafe "allocRuntimeData"
         -> CUInt  -- ^ max read period
         -> IO (Ptr CuRT)
 
-foreign import ccall unsafe "&freeRuntimeData"
-    c_freeRT :: FunPtr (Ptr CuRT -> IO ())
+
+foreign import ccall unsafe "freeRuntimeData"
+    freeRT :: Ptr CuRT -> IO ()
+
 
 allocRT :: CuNet n s -> Int -> IO (Int, [Int], Delay, ForeignPtr CuRT)
 allocRT net maxProbePeriod = do
@@ -294,5 +297,5 @@ allocRT net maxProbePeriod = do
         -- TODO: compute properly how large the buffers should be
         64768 -- L1 queue size
         (fromIntegral maxProbePeriod)
-    rt <- newForeignPtr c_freeRT ptr
-    return (pcount, psizes, dmax, rt)
+    rt <- newForeignPtr_ ptr
+    return $! (pcount, psizes, dmax, rt)
