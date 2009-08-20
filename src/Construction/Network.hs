@@ -17,6 +17,7 @@ module Construction.Network (
         maxDelay,
         maxSynapsesPerNeuron,
         -- * Modify
+        addNeuron,
         withNeurons,
         withTerminals,
         withSynapses,
@@ -107,6 +108,9 @@ maxSynapsesPerNeuron = Neurons.maxSynapsesPerNeuron . networkNeurons
 -------------------------------------------------------------------------------
 -- Modification
 -------------------------------------------------------------------------------
+
+
+addNeuron idx n = withNeurons (Neurons.addNeuron idx n)
 
 
 {- | Apply function to all neurons -}

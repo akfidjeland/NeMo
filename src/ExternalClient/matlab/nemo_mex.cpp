@@ -12,6 +12,7 @@
 #include <stdexcept>
 
 #include <NemoFrontend.h>
+//#include <nemo.hpp>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -124,6 +125,8 @@ disconnect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
+	//connect();
+#if 1
 	// redirect thrift error messages
 	GlobalOutput.setOutputFunction(mexWarnMsgTxt); 
 
@@ -132,6 +135,7 @@ connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 	//! \todo what is this for?
 	bool framed = false;
+	//bool framed = true;
 
 	shared_ptr<TSocket> socket(new TSocket(host, port));
 
@@ -154,7 +158,7 @@ connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	} catch (TTransportException& ttx) {
 		error("Connect failed: %s\n", ttx.what());
 	} 
-
+#endif
 }
 
 
@@ -192,8 +196,6 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	int32_t* delays = (int32_t*) mxGetData(prhs[8]);
 	double* weights = mxGetPr(prhs[9]);
 
-	std::map<int32_t, IzhNeuron> network;
-	//! \todo perhaps just stick to 1-based addressing for a better interface
 	for(int32_t n_idx=0; n_idx<nlen; ++n_idx) {
 
 		IzhNeuron n;
@@ -209,8 +211,6 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		for(size_t s_idx=n_idx*sstride; s_idx<(n_idx+1)*sstride; ++s_idx) {
 			if(targets[s_idx] != INVALID_TARGET) {
 				Synapse s;
-				//! \todo remove source from axon in transport. It should be implicit
-				s.source = n_idx;
 				s.target = targets[s_idx];
 				s.delay = delays[s_idx];
 				s.weight = weights[s_idx];
@@ -220,13 +220,11 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	
 		n.axon = axon;
 
-		network.insert(std::make_pair(n_idx, n)); 
-	}
-
-	try {
-		g_client->setNetwork(network);
-	} catch (ConstructionError& err) {
-		error("construction error: %s", err.msg.c_str());
+		try {
+			g_client->addNeuron(n_idx, n);
+		} catch (ConstructionError& err) {
+			error("construction error: %s", err.msg.c_str());
+		}
 	}
 
 	mexPrintf("done\n");

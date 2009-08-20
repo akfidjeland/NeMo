@@ -51,11 +51,11 @@ instance Binary Static where
 
 
 instance (NFData s) => NFData (Synapse s) where
-    rnf (Synapse s t d pl) = rnf s `seq` rnf t `seq` rnf d `seq` rnf pl
+    rnf (Synapse s t d pl) = rnf s `seq` rnf t `seq` rnf d `seq` rnf pl `seq` ()
 
 
 instance NFData Static where
-    rnf (Static w) = rnf w
+    rnf (Static w) = rnf w `seq` ()
 
 
 -- TODO: consitent name and argument order

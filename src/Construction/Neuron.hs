@@ -135,7 +135,7 @@ printConnections source n = Axon.printConnections source $ axon n
 
 
 instance (NFData n, NFData s) => NFData (Neuron n s) where
-    rnf (Neuron n ss) = rnf n `seq` rnf ss
+    rnf (Neuron n ss) = rnf n `seq` rnf ss `seq` ()
 
 
 instance (Binary n, Binary s) => Binary (Neuron n s) where

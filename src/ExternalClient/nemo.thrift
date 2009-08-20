@@ -1,9 +1,11 @@
 
+
+# The source neuron for a synapse is implicit. They are always stored with the
+# presynaptic neuron
 struct Synapse {
-	1:i32 source,
-	2:i32 target,
-	3:i16 delay = 1,
-	4:double weight
+	1:i32 target,
+	2:i16 delay = 1,
+	3:double weight
 }
 
 
@@ -46,7 +48,10 @@ service NemoFrontend {
 	void setNetwork(1:IzhNetwork net)
 		throws (1:ConstructionError err),
 
-    # Run simulation for multiple cycles 
+	void addNeuron(1:i32 neuronIndex, 2:IzhNeuron neuron)
+		throws (1:ConstructionError err),
+
+	# Run simulation for multiple cycles
 	list<Firing> run(1:list<Stimulus> stim)
 		throws (1:ConstructionError err),
 

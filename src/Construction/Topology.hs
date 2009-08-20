@@ -23,17 +23,20 @@ instance Functor Topology where
 instance (Binary a) => Binary (Topology a) where
     put (Node x) = putWord8 0 >> put x
     put (Cluster xs) = putWord8 1 >> put xs
+    put NoTopology = putWord8 2
     get = do
         tag <- getWord8
         case tag of
             0 -> liftM Node get
             1 -> liftM Cluster get
+            2 -> return $! NoTopology
             _ -> error "Could not deserialise Topology"
 
 
 instance NFData a => NFData (Topology a) where
     rnf (Node x) = rnf x
     rnf (Cluster xs) = rnf xs
+    rnf NoTopology = ()
 
 
 -- functions on Topology instances fall into several classes. First, some

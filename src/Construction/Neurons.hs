@@ -23,6 +23,7 @@ module Construction.Neurons (
         -- * Traversal
         withSynapses,
         -- * Modification
+        addNeuron,
         addSynapse,
         addSynapses,
         addSynapseAssocs,
@@ -154,6 +155,12 @@ withNeuron f idx (Neurons ns) =
     if Map.member idx ns
         then Neurons $ Map.adjust f idx ns
         else error $! "withNeuron" ++ ": invalid neuron index (" ++ show idx ++ ")"
+
+
+addNeuron :: Idx -> Neuron.Neuron n s -> Neurons n s -> Neurons n s
+addNeuron idx n (Neurons ns) = Neurons $ Map.insertWithKey collision idx n ns
+    where
+        collision idx _ _ = error $ "duplicate neuron index: " ++ show idx
 
 
 -- TODO: monadic error handling

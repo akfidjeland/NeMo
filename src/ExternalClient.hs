@@ -7,8 +7,9 @@ module ExternalClient (runExternalClient) where
 import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad (liftM4)
+import Control.Parallel.Strategies (rnf)
 import Data.Maybe (fromJust)
-import Data.Map (Map)
+import qualified Data.Map as Map (Map, mapWithKey)
 import Thrift
 import Thrift.Server
 
@@ -68,14 +69,16 @@ initNemoState = Constructing Network.empty defaultConfig
 type ClientState = MVar NemoState
 
 
+
 {- Apply function as long as we're in constuction mode -}
 constructWith :: MVar NemoState -> (Net -> Net) -> IO ()
 constructWith m f = do
     modifyMVar_ m $ \st -> do
     case st of
-        Constructing net conf -> return $! Constructing (f net) conf
+        Constructing net conf -> do
+            net' <- return $! f net
+            return $! Constructing net' conf
         _ -> fail "trying to construct during simulation"
-
 
 
 {- Modify configuration, regardles of mode -}
@@ -128,7 +131,7 @@ setHost host conf = conf { simConfig = simConfig' }
 
 
 
-getConnectivity' :: Backend.Simulation -> IO (Map Idx [Wire.Synapse])
+getConnectivity' :: Backend.Simulation -> IO (Map.Map Idx [Wire.Synapse])
 getConnectivity' sim = do
     ss <- Backend.getWeights sim
     return $! fmap (map encodeSynapse) ss
@@ -146,10 +149,11 @@ simulateWith m f = do
             return $! (st, ret)
         Constructing net conf -> do
             -- Start simulation first
-            putStrLn $ "starting simulation"
+            putStr "starting simulation..."
             handle initError $ do
             sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
             ret <- f sim
+            putStrLn "done"
             return $! (Simulating net conf sim, ret)
     where
         -- TODO: make this backend options instead of cudaOpts
@@ -169,7 +173,11 @@ simulateWith m f = do
 instance NemoFrontend_Iface ClientState where
     -- TODO: handle Maybes here!
     setBackend h (Just host) = reconfigure h $ setHost host
-    setNetwork h (Just wnet) = constructWith h (\_ -> decodeNetwork wnet)
+    setNetwork h (Just wnet) = do
+        putStr "constructing network..."
+        constructWith h (\_ -> decodeNetwork wnet)
+        putStrLn "done"
+    addNeuron h (Just idx) (Just n) = constructWith h (addNeuron' idx n)
     run h (Just stim) = simulateWith h $ runSimulation stim
     enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
         reconfigure h $ setStdpFn prefire postfire maxWeight
@@ -182,40 +190,44 @@ instance NemoFrontend_Iface ClientState where
 decodeNetwork :: Wire.IzhNetwork -> Net
 decodeNetwork wnet = Network.Network ns t
     where
-        ns = Neurons $ fmap decodeNeuron wnet
+        ns = Neurons $ Map.mapWithKey decodeNeuron wnet
         t = Cluster $ map Node $ indices ns
 
 
+-- TODO: handle errors here, perhaps just handle in constructWith?
+addNeuron' :: Int -> Wire.IzhNeuron -> Net -> Net
+addNeuron' idx wn net = rnf n `seq` Network.addNeuron idx n net
+    where
+        n = decodeNeuron idx wn
+
 
 {- | Convert neuron from wire format to internal format -}
-decodeNeuron :: Wire.IzhNeuron -> Neuron (IzhNeuron Double) Static
-decodeNeuron wn = neuron n ss
+decodeNeuron :: Int -> Wire.IzhNeuron -> Neuron (IzhNeuron Double) Static
+decodeNeuron src wn = neuron n ss -- rnf n `seq` rnf ss `seq` neuron n ss
     where
         n = IzhNeuron
-                (fromJust $ Wire.f_IzhNeuron_a wn)
-                (fromJust $ Wire.f_IzhNeuron_b wn)
-                (fromJust $ Wire.f_IzhNeuron_c wn)
-                (fromJust $ Wire.f_IzhNeuron_d wn)
-                (fromJust $ Wire.f_IzhNeuron_u wn)
-                (fromJust $ Wire.f_IzhNeuron_v wn)
+                (fromJust $! Wire.f_IzhNeuron_a wn)
+                (fromJust $! Wire.f_IzhNeuron_b wn)
+                (fromJust $! Wire.f_IzhNeuron_c wn)
+                (fromJust $! Wire.f_IzhNeuron_d wn)
+                (fromJust $! Wire.f_IzhNeuron_u wn)
+                (fromJust $! Wire.f_IzhNeuron_v wn)
                 0.0 False Nothing
-        ss = map decodeSynapse $ fromJust $ Wire.f_IzhNeuron_axon wn
+        ss = map (decodeSynapse src) $! fromJust $! Wire.f_IzhNeuron_axon wn
 
 
 {- | Convert synapse from wire format to internal format -}
-decodeSynapse :: Wire.Synapse -> Synapse Static
-decodeSynapse ws = Synapse src tgt d $ Static w
+decodeSynapse :: Idx -> Wire.Synapse -> Synapse Static
+decodeSynapse src ws = Synapse src tgt d $! Static w
     where
-        src = fromJust $ Wire.f_Synapse_source ws
-        tgt = fromJust $ Wire.f_Synapse_target ws
-        d = fromJust $ Wire.f_Synapse_delay ws
-        w = fromJust $ Wire.f_Synapse_weight ws
+        tgt = fromJust $! Wire.f_Synapse_target ws
+        d = fromJust $! Wire.f_Synapse_delay ws
+        w = fromJust $! Wire.f_Synapse_weight ws
 
 
 encodeSynapse :: Synapse Static -> Wire.Synapse
-encodeSynapse s = Wire.Synapse src tgt d w
+encodeSynapse s = Wire.Synapse tgt d w
     where
-        src = Just $ source s
         tgt = Just $ target s
         d   = Just $ delay s
         w   = Just $ current $ sdata s

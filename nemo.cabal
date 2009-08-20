@@ -96,6 +96,8 @@ executable nemo
     hs-source-dirs:         src, dist/build/thrift/gen-hs
     build-depends:          Thrift
     extensions:             DeriveDataTypeable
+    if flag(profile)
+        ghc-options:        -prof -auto-all
 
 
 executable nemo-server

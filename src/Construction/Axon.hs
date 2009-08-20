@@ -240,4 +240,4 @@ instance (Binary s) => Binary (Axon s) where
             f' () x = x `seq` ((), x)
 
 instance (NFData s) => NFData (Axon s) where
-    rnf (Axon ss) = rnf ss
+    rnf (Axon ss) = rnf ss `seq` ()
