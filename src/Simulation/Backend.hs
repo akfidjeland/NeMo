@@ -9,13 +9,13 @@ import System.IO (hPutStrLn, stderr)
 
 import qualified Network.Client as Remote (initSim)
 import Simulation
-import qualified Simulation.CPU as CPU
+import qualified Simulation.CPU as CPU (initSim)
 #if defined(CUDA_ENABLED)
-import qualified Simulation.CUDA as CUDA
+import qualified Simulation.CUDA as CUDA (initSim, deviceCount)
 import Simulation.CUDA.Options
 #endif
 import Simulation.Options
-import Simulation.STDP
+import Simulation.STDP (stdpEnabled)
 
 
 {- | Initialise simulation of the requested kind -}

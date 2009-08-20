@@ -44,7 +44,9 @@ import Simulation.STDP
 
 instance Simulation_Iface State where
     run = runCuda
+    run_ = runCuda_
     step = stepCuda
+    step_ = stepCuda_
     applyStdp sim reward = withForeignPtr (rt sim) $ \p -> Kernel.applyStdp p reward
     elapsed sim = withForeignPtr (rt sim) Kernel.elapsedMs
     resetTimer sim = withForeignPtr (rt sim) Kernel.resetTimer
@@ -78,22 +80,28 @@ initSim partitionSize net dt stdpConf = do
 
 runCuda :: State -> [[Idx]] -> IO [ProbeData]
 runCuda sim fstim = do
-    sequence2_ (stepBuffering sim) fstim [0..]
-    withForeignPtr (rt sim) $ \rtPtr -> do
-    printCycleCounters rtPtr
-    readFiring sim $ length fstim
-    where
-        steps = length fstim
+    runCuda_ sim fstim
+    readFiring sim $! length fstim
 
+
+runCuda_ :: State -> [[Idx]] -> IO ()
+runCuda_ sim fstim = do
+    sequence2_ (stepBuffering sim) fstim [0..]
+    printCycleCounters sim
+    where
         sequence2_ m (a:as) (b:bs) = m a b >> sequence2_ m as bs
         sequence2_ _ _  _ = return ()
 
 
 stepCuda :: State -> [Idx] -> IO ProbeData
 stepCuda sim fstim = do
-    stepBuffering sim fstim 0
+    stepCuda_ sim fstim
     [firing] <- readFiring sim 1
     return $! firing
+
+
+stepCuda_ :: State -> [Idx] -> IO ()
+stepCuda_ sim fstim = stepBuffering sim fstim 0
 
 
 readFiring :: State -> Time -> IO [ProbeData]

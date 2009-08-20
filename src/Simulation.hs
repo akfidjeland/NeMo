@@ -19,7 +19,14 @@ class Simulation_Iface a where
     run :: a -> [[Idx]] -> IO [ProbeData]
     run sim fstim = mapM (step sim) fstim
 
+    {- | Perform several simulation steps, but ignore outputs -}
+    run_ :: a -> [[Idx]] -> IO ()
+    run_ sim fstim = mapM_ (step_ sim) fstim
+
     step :: a -> [Idx] -> IO ProbeData
+
+    step_ :: a -> [Idx] -> IO ()
+    step_ sim fstim = step sim fstim >> return ()
 
     applyStdp :: a -> Double -> IO ()
 
@@ -47,7 +54,9 @@ data Simulation = forall s . Simulation_Iface s => BS s
 
 instance Simulation_Iface Simulation where
     run (BS s) = run s
+    run_ (BS s) = run_ s
     step (BS s) = step s
+    step_ (BS s) = step_ s
     applyStdp (BS s) = applyStdp s
     elapsed (BS s) = elapsed s
     resetTimer (BS s) = resetTimer s

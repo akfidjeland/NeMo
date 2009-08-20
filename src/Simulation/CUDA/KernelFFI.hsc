@@ -271,11 +271,11 @@ applyStdp rt reward = c_applyStdp rt $ realToFrac reward
 -- Reporting
 -------------------------------------------------------------------------------
 
--- foreign import ccall unsafe "setVerbose" setVerbose :: IO ()
 
-foreign import ccall unsafe "printCycleCounters" printCycleCounters
+foreign import ccall unsafe "printCycleCounters" c_printCycleCounters
     :: Ptr CuRT -> IO ()
 
+printCycleCounters sim = withForeignPtr (rt sim) c_printCycleCounters
 
 
 -------------------------------------------------------------------------------

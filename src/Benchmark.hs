@@ -18,7 +18,7 @@ import Construction.Neuron hiding (synapseCount)
 import qualified Construction.Neurons as Neurons (fromList)
 import Options
 import Simulation
-import Simulation.CUDA.Options (cudaOptions, optProbeDevice)
+import Simulation.CUDA.Options (cudaOptions)
 import Simulation.FiringStimulus
 import Simulation.Options (simOptions, optBackend, SimulationOptions, BackendOptions(..))
 import Simulation.Backend (initSim)
@@ -214,10 +214,8 @@ clusteredBenchmark n m p = Benchmark {
     }
 
 
-data Run = Timing | Data deriving (Eq)
 
--- For timing run we don't want to read back firing
-cudaOpts run = (defaults cudaOptions) { optProbeDevice = (run == Data) }
+cudaOpts = defaults cudaOptions
 
 
 runBenchmark :: SimulationOptions -> StdpConf -> Benchmark -> IO ()
@@ -234,7 +232,7 @@ runBenchmark simOpts stdpOpts bm = do
 
 
 runBenchmarkTiming simOpts stdpOpts net bm rts = do
-    sim <- initSim net simOpts (cudaOpts Timing) stdpOpts
+    sim <- initSim net simOpts cudaOpts stdpOpts
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
     hPutStrLn stderr "Warming up timing run"
@@ -243,7 +241,7 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
     resetTimer sim
     -- TODO: factor out timing code
     t0 <- getCPUTime
-    run sim $ replicate runCycles []
+    run_ sim $ replicate runCycles []
     t1 <- getCPUTime
     t <- elapsed sim
     hPutStrLn stderr $ "Elapsed: " ++ show t
@@ -259,7 +257,7 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
 initCycles = 1000
 
 runBenchmarkData simOpts stdpOpts net bm rts = do
-    sim <- initSim net simOpts (cudaOpts Data) stdpOpts
+    sim <- initSim net simOpts cudaOpts stdpOpts
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
     hPutStrLn stderr "Warming up data run"
@@ -311,7 +309,7 @@ data BenchmarkOptions = BenchmarkOptions {
 
 benchmarkDefaults = BenchmarkOptions {
         optN           = 1,
-        optM           = 100,
+        optM           = 1000,
         optP           = 0.9,
         optPrintHeader = False
     }
