@@ -23,8 +23,6 @@ struct IzhNeuron {
 }
 
 
-typedef map<i32, IzhNeuron> IzhNetwork
-
 
 # Stimulus for a single cycle
 struct Stimulus {
@@ -50,9 +48,6 @@ service NemoFrontend {
 			3:double maxWeight),
 
 	void disableStdp(),
-
-	void setNetwork(1:IzhNetwork net)
-		throws (1:ConstructionError err),
 
 	void addNeuron(1:i32 neuronIndex, 2:IzhNeuron neuron)
 		throws (1:ConstructionError err),

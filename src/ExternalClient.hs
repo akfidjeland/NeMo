@@ -189,8 +189,6 @@ resetState m = do
 instance NemoFrontend_Iface ClientState where
     -- TODO: handle Maybes here!
     setBackend h (Just host) = reconfigure h $ setHost host
-    -- TODO: remove unused method
-    setNetwork h (Just wnet) = constructWith h (\_ -> decodeNetwork wnet)
     addNeuron h (Just idx) (Just n) = constructWith h (addNeuron' idx n)
     run h (Just stim) = simulateWith h $ runSimulation stim
     enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
@@ -202,12 +200,6 @@ instance NemoFrontend_Iface ClientState where
     reset h = resetState h
 
 
-{- | Convert network from wire format to internal format -}
-decodeNetwork :: Wire.IzhNetwork -> Net
-decodeNetwork wnet = Network.Network ns t
-    where
-        ns = Neurons $ Map.mapWithKey decodeNeuron wnet
-        t = Cluster $ map Node $ indices ns
 
 
 -- TODO: handle errors here, perhaps just handle in constructWith?
