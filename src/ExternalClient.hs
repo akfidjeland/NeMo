@@ -167,6 +167,14 @@ simulateWith m f = do
 
 
 
+stopSimulation' :: MVar NemoState -> IO ()
+stopSimulation' m = do
+    modifyMVar_ m $ \static -> do
+    case static of
+        Simulating net conf sim -> do
+            Backend.terminate sim
+            return $! (Constructing net conf)
+        c@(Constructing _ _) -> return $! c
 
 
 
@@ -184,6 +192,7 @@ instance NemoFrontend_Iface ClientState where
     disableStdp h = reconfigure h $ disableStdp'
     applyStdp h (Just reward) = simulateWith h (\s -> Backend.applyStdp s reward)
     getConnectivity h = simulateWith h getConnectivity'
+    stopSimulation h = stopSimulation' h
 
 
 {- | Convert network from wire format to internal format -}

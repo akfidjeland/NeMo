@@ -45,6 +45,12 @@ service NemoFrontend {
 
 	void setBackend(1:string host),
 
+	void enableStdp(1:list<double> prefire,
+			2:list<double> postfire,
+			3:double maxWeight),
+
+	void disableStdp(),
+
 	void setNetwork(1:IzhNetwork net)
 		throws (1:ConstructionError err),
 
@@ -55,14 +61,10 @@ service NemoFrontend {
 	list<Firing> run(1:list<Stimulus> stim)
 		throws (1:ConstructionError err),
 
-	void enableStdp(1:list<double> prefire,
-			2:list<double> postfire,
-			3:double maxWeight),
-
-	void disableStdp(),
-
 	void applyStdp(1:double reward)
 		throws (1:ConstructionError err),
 
-	map<i32, Axon> getConnectivity()
+	map<i32, Axon> getConnectivity(),
+
+	void stopSimulation()
 }

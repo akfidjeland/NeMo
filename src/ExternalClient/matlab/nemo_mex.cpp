@@ -90,13 +90,38 @@ numeric(const mxArray* arr)
 
 
 
+bool
+isConnected()
+{
+	return g_transport != NULL && g_transport->isOpen();
+}
+
+
 /* Check that we're connected and issue an error if we're not */
 void
 checkConnection()
 {
-	if(g_transport == NULL || !g_transport->isOpen()) {
+	if(!isConnected) {
 		error("Not connected to nemo\n"); 
 	}
+}
+
+
+void
+stopSimulation_()
+{
+	if(isConnected()) {
+		g_client->stopSimulation();
+	}
+}
+
+
+
+void
+stopSimulation(int /*nlhs*/, mxArray** /*plhs*/,
+		int /*nrhs*/, const mxArray** /*prhs*/)
+{
+	stopSimulation_();
 }
 
 
@@ -104,6 +129,7 @@ checkConnection()
 void
 disconnect_()
 {
+	stopSimulation_();
 	if(g_transport != NULL) {
 		mexPrintf("disconnecting\n");
 		g_transport->close();
@@ -119,6 +145,7 @@ disconnect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	disconnect_();
 }
+
 
 
 
@@ -160,6 +187,8 @@ connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	} 
 #endif
 }
+
+
 
 
 
