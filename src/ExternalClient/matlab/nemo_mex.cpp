@@ -107,8 +107,12 @@ checkConnection()
 }
 
 
+
+
+
 void
-stopSimulation_()
+stopSimulation(int /*nlhs*/, mxArray** /*plhs*/,
+		int /*nrhs*/, const mxArray** /*prhs*/)
 {
 	if(isConnected()) {
 		g_client->stopSimulation();
@@ -118,10 +122,12 @@ stopSimulation_()
 
 
 void
-stopSimulation(int /*nlhs*/, mxArray** /*plhs*/,
-		int /*nrhs*/, const mxArray** /*prhs*/)
+reset()
 {
-	stopSimulation_();
+	if(isConnected()) {
+		mexPrintf("resetting nemo\n");
+		g_client->reset();
+	}
 }
 
 
@@ -129,7 +135,7 @@ stopSimulation(int /*nlhs*/, mxArray** /*plhs*/,
 void
 disconnect_()
 {
-	stopSimulation_();
+	reset();
 	if(g_transport != NULL) {
 		mexPrintf("disconnecting\n");
 		g_transport->close();

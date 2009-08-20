@@ -67,4 +67,7 @@ service NemoFrontend {
 	map<i32, Axon> getConnectivity(),
 
 	void stopSimulation()
+
+	# Clear all state in the client. This will also stop any simulation.
+	void reset();
 }

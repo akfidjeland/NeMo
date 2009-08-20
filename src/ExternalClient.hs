@@ -178,13 +178,19 @@ stopSimulation' m = do
 
 
 
+resetState :: MVar NemoState -> IO ()
+resetState m = do
+    putStrLn "resetting state"
+    stopSimulation m
+    modifyMVar_ m $ \_ -> return $! initNemoState
+
+
+
 instance NemoFrontend_Iface ClientState where
     -- TODO: handle Maybes here!
     setBackend h (Just host) = reconfigure h $ setHost host
-    setNetwork h (Just wnet) = do
-        putStr "constructing network..."
-        constructWith h (\_ -> decodeNetwork wnet)
-        putStrLn "done"
+    -- TODO: remove unused method
+    setNetwork h (Just wnet) = constructWith h (\_ -> decodeNetwork wnet)
     addNeuron h (Just idx) (Just n) = constructWith h (addNeuron' idx n)
     run h (Just stim) = simulateWith h $ runSimulation stim
     enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
@@ -193,6 +199,7 @@ instance NemoFrontend_Iface ClientState where
     applyStdp h (Just reward) = simulateWith h (\s -> Backend.applyStdp s reward)
     getConnectivity h = simulateWith h getConnectivity'
     stopSimulation h = stopSimulation' h
+    reset h = resetState h
 
 
 {- | Convert network from wire format to internal format -}
