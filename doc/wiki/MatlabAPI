@@ -1,7 +1,7 @@
 .. Note: this page is used to create user documentation for the MATLAB API
 
 ========================
-Nemo v0.4.1 - Matlab API
+Nemo v0.4.2 - Matlab API
 ========================
 
 :Author: Andreas Fidjeland <akf@doc.ic.ac.uk>
@@ -47,6 +47,7 @@ could be written as follows::
         fired = nemoRun(1000, [500 1]);
         foo(fired);
     end
+    nemoStopSimulation;
     nemoDisconnect;
 
 or simpler, if 60 seconds worth of data can be processed (and buffered) at once::
@@ -58,6 +59,7 @@ or simpler, if 60 seconds worth of data can be processed (and buffered) at once:
     nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights);
     fired = nemoRun(60000, [500 1], 4, 30);
     foo(fired);
+    nemoStopSimulation;
     nemoDisconnect;
 
 To run for 1000ms applying STDP every 50ms, do something like the following::
@@ -76,6 +78,7 @@ To run for 1000ms applying STDP every 50ms, do something like the following::
         fired = nemoRun(50, []);
         foo(fired);
     end
+    nemoStopSimulation;
     nemoDisconnect;
 
 The vectors ``prefire`` and ``postfire`` specify the STDP function in the prefire and postfire parts of the STDP window. The length of these vectors specify the size of the STDP window.
