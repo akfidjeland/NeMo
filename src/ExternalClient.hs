@@ -1,17 +1,22 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-
+{-# LANGUAGE ScopedTypeVariables #-}
 {- | Run nemo through an external thrift-based client interface -}
 
 module ExternalClient (runExternalClient) where
 
+import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
 import Control.Exception
-import Control.Monad (liftM4)
+import Control.Monad (liftM4, forever, when)
 import Control.Parallel.Strategies (rnf)
 import Data.Maybe (fromJust)
 import qualified Data.Map as Map (Map, mapWithKey)
+import Data.Typeable (Typeable)
+import Network
 import Thrift
-import Thrift.Server
+import Thrift.Protocol.Binary
+import Thrift.Transport.Handle
+import System.Exit (exitSuccess)
 
 -- imports from auto-generated modules. These are not hierarchical
 import NemoFrontend
@@ -35,6 +40,11 @@ import Simulation.STDP.Options
 import Types
 
 
+
+data ClientException = ClientTermination
+    deriving (Show, Typeable)
+
+instance Exception ClientException
 
 type Net = Network.Network (IzhNeuron Double) Static
 
@@ -198,6 +208,7 @@ instance NemoFrontend_Iface ClientState where
     getConnectivity h = simulateWith h getConnectivity'
     stopSimulation h = stopSimulation' h
     reset h = resetState h
+    terminate h = stopSimulation h >> throw ClientTermination
 
 
 
@@ -241,9 +252,32 @@ encodeSynapse s = Wire.Synapse tgt d w
         w   = Just $ current $ sdata s
 
 
+{- | A binary non-threaded server, which only deals with requests from a single
+ - external client -}
+runThreadedServer :: (Transport t, Protocol i, Protocol o)
+                  => (Socket -> IO (i t, o t))
+                  -> h
+                  -> (h -> (i t, o t) -> IO Bool)
+                  -> PortID
+                  -> IO a
+runThreadedServer accepter hand proc port = do
+    socket <- listenOn port
+    -- acceptLoop (accepter socket) (proc hand)
+    forever $ do
+        ps <- (accepter socket)
+        loop $ (proc hand) ps
+    where
+        loop m = do { continue <- m; when continue (loop m) }
+
 
 runExternalClient :: IO ()
 runExternalClient = do
     st <- newMVar initNemoState
-    Control.Exception.handle (\(TransportExn s t) -> fail s) $ do
-    runBasicServer st process 56101
+    -- TODO: deal with other exceptions as well
+    -- Control.Exception.handle (\(TransportExn s t) -> fail s) $ do
+    Control.Exception.handle (\ClientTermination -> exitSuccess) $ do
+    runThreadedServer binaryAccept st process (PortNumber 56101)
+    where
+        binaryAccept s = do
+            (h, _, _) <- accept s
+            return (BinaryProtocol h, BinaryProtocol h)
