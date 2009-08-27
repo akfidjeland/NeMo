@@ -56,11 +56,13 @@ library
                             Network.Protocol,
                             Network.SocketSerialisation,
                             Options,
+                            Protocol,
                             Simulation,
                             Simulation.Backend,
                             Simulation.FileSerialisation,
                             Simulation.FiringStimulus,
                             Simulation.Options,
+                            Simulation.Remote,
                             Simulation.STDP,
                             Simulation.STDP.Options,
                             Types,
@@ -69,7 +71,8 @@ library
 
     build-depends:          array >= 0.1, base, binary >= 0.4, bytestring, mtl,
                             containers, haskell98, network, network-bytestring, parallel
-    hs-source-dirs:         src
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
+    extensions:             DeriveDataTypeable
     if flag(profile)
         ghc-options:        -prof -auto-all
     else
@@ -84,11 +87,14 @@ executable nemo
                             Construction.Izhikevich,
                             Construction.Topology,
                             ExternalClient,
+                            NemoBackend_Client,
                             Options,
+                            Protocol,
                             Simulation,
                             Simulation.Backend,
                             Simulation.CUDA.Options,
                             Simulation.Options,
+                            Simulation.Remote,
                             Simulation.Run,
                             Simulation.STDP,
                             Simulation.STDP.Options,
@@ -114,12 +120,14 @@ executable nemo-server
                             Network.Protocol,
                             Network.Server,
                             Network.SocketSerialisation
+                            Protocol,
                             Simulation,
                             Simulation.Backend,
                             Simulation.CPU,
                             Simulation.FiringStimulus,
                             Simulation.Queue,
                             Simulation.Options,
+                            Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
@@ -134,11 +142,12 @@ executable nemo-server
     if flag(client)
         buildable:          False
 
-    build-depends:          random, old-time, QuickCheck
+    build-depends:          random, old-time, QuickCheck, Thrift
     if !os(windows)
         build-depends:      unix
 
-    hs-source-dirs:         src 
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
+    extensions:             DeriveDataTypeable
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
     if flag(CUDA)
@@ -158,57 +167,6 @@ executable nemo-server
         include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
     if flag(profile)
         ghc-options:        -prof -auto-all
-
-
-executable nemo-run
-    main-is:                RunNetwork.hs
-    other-modules:          Construction.Axon,
-                            Construction.Izhikevich,
-                            Construction.Network,
-                            Construction.Neuron,
-                            Construction.Neurons,
-                            Construction.Rand,
-                            Construction.Randomised.Topology,
-                            Construction.Spiking,
-                            Construction.Synapse,
-                            Construction.Topology,
-                            Network.Client,
-                            Network.Protocol,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.FileSerialisation,
-                            Simulation.FiringStimulus,
-                            Simulation.Queue,
-                            Simulation.Run,
-                            Simulation.SpikeQueue,
-                            Simulation.STDP,
-                            Types,
-                            Util.Assocs
-    hs-source-dirs:         src 
-    if flag(client)
-        buildable:          False
-    if flag(debug)
-        ghc-options:        -fno-ignore-asserts
-    else
-      if flag(profile)
-        ghc-options:        -prof -auto-all -caf-all -O2
-      else
-        ghc-options:        -O2
-    if flag(CUDA)
-        other-modules:      Simulation.CUDA, 
-                            Simulation.CUDA.Address,
-                            Simulation.CUDA.Configuration,
-                            Simulation.CUDA.DeviceProperties,
-                            Simulation.CUDA.KernelFFI,
-                            Simulation.CUDA.Memory,
-                            Simulation.CUDA.Mapping,
-                            Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe,
-                            Simulation.CUDA.State
-        cpp-options:        -DCUDA_ENABLED
-        extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
-        include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
 
 
 
@@ -239,6 +197,7 @@ executable runtests
                             Simulation.FiringStimulus,
                             Simulation.Options,
                             Simulation.Queue,
+                            Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
@@ -310,6 +269,7 @@ executable benchmark
                             Simulation.FiringStimulus,
                             Simulation.Options,
                             Simulation.Queue,
+                            Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
@@ -371,6 +331,7 @@ executable smallworld
                             Simulation.FiringStimulus,
                             Simulation.Options,
                             Simulation.Queue, 
+                            Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue, 
                             Simulation.STDP,
@@ -431,6 +392,7 @@ executable random1k
                             Simulation.FiringStimulus,
                             Simulation.Options,
                             Simulation.Queue,
+                            Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
@@ -494,6 +456,7 @@ executable ring
                             Simulation.FiringStimulus,
                             Simulation.Options,
                             Simulation.Queue,
+                            Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
