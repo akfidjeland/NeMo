@@ -7,8 +7,8 @@ module Simulation.Backend (initSim) where
 import Control.Monad (when)
 import System.IO (hPutStrLn, stderr)
 
-import qualified Network.Client as Remote (initSim)
 import Simulation
+import qualified Simulation.Remote as Remote (initSim)
 import qualified Simulation.CPU as CPU (initSim)
 #if defined(CUDA_ENABLED)
 import qualified Simulation.CUDA as CUDA (initSim, deviceCount)
@@ -31,7 +31,7 @@ initSim net simOpts cudaOpts stdpConf = do
             return . BS =<< CUDA.initSim (optPartitionSize cudaOpts) net dt stdpConf
 #endif
         (RemoteHost hostname port) ->
-            return . BS =<< Remote.initSim hostname port net dt stdpConf
+            return . BS =<< Remote.initSim hostname port net stdpConf
     where
         dt = optTempSubres simOpts
 

@@ -37,17 +37,16 @@ import Simulation.Options
 import Simulation.Backend (initSim)
 import Simulation.STDP
 import Simulation.STDP.Options
+import qualified Protocol (decodeNeuron, run, getConnectivity, decodeStdpConfig, defaultPort)
 import Types
 
 
+type Net = Network.Network (IzhNeuron Double) Static
 
 data ClientException = ClientTermination
     deriving (Show, Typeable)
 
 instance Exception ClientException
-
-type Net = Network.Network (IzhNeuron Double) Static
-
 
 -- TODO: add user configuration options
 
@@ -101,31 +100,10 @@ reconfigure m f = do
 
 
 
-{- Apply simulation function. If nemo state is in construction mode, toggle this -} 
--- TODO: propagate errors to matlab
-runSimulation :: [Wire.Stimulus] -> Backend.Simulation -> IO [Wire.Firing]
-runSimulation stimulus sim = do
-    pdata <- Backend.run sim $ map fstim stimulus
-    return $! map firing pdata
-    where
-        fstim :: Wire.Stimulus -> [Idx]
-        fstim = maybe (fail "invalid firing stimulus") id . Wire.f_Stimulus_firing
-
-        firing :: ProbeData -> Wire.Firing
-        firing (FiringData xs) = xs
-        firing _ = error "runSimulation: non-firing data returned from simulation"
-
-
-
 setStdpFn :: [Double] -> [Double] -> Double -> Config -> Config
 setStdpFn prefire postfire maxWeight conf = conf { stdpConfig = stdpConfig' }
     where
-        stdpConfig' = (stdpConfig conf) {
-            stdpEnabled = True,
-            prefire = prefire,
-            postfire = postfire,
-            stdpMaxWeight = maxWeight
-        }
+        stdpConfig' = Protocol.decodeStdpConfig prefire postfire maxWeight
 
 
 disableStdp' :: Config -> Config
@@ -137,15 +115,9 @@ disableStdp' conf = conf { stdpConfig = stdpConfig' }
 setHost :: String -> Config -> Config
 setHost host conf = conf { simConfig = simConfig' }
     where
-        simConfig' = (simConfig conf) { optBackend = RemoteHost host 56100 }
-
-
-
-getConnectivity' :: Backend.Simulation -> IO (Map.Map Idx [Wire.Synapse])
-getConnectivity' sim = do
-    ss <- Backend.getWeights sim
-    return $! fmap (map encodeSynapse) ss
-
+        simConfig' = (simConfig conf) {
+                optBackend = RemoteHost host Protocol.defaultPort
+            }
 
 
 
@@ -177,8 +149,8 @@ simulateWith m f = do
 
 
 
-stopSimulation' :: MVar NemoState -> IO ()
-stopSimulation' m = do
+clientStopSimulation :: MVar NemoState -> IO ()
+clientStopSimulation m = do
     modifyMVar_ m $ \static -> do
     case static of
         Simulating net conf sim -> do
@@ -187,11 +159,10 @@ stopSimulation' m = do
         c@(Constructing _ _) -> return $! c
 
 
-
-resetState :: MVar NemoState -> IO ()
-resetState m = do
+clientReset :: MVar NemoState -> IO ()
+clientReset m = do
     putStrLn "resetting state"
-    stopSimulation m
+    clientStopSimulation m
     modifyMVar_ m $ \_ -> return $! initNemoState
 
 
@@ -199,70 +170,38 @@ resetState m = do
 instance NemoFrontend_Iface ClientState where
     -- TODO: handle Maybes here!
     setBackend h (Just host) = reconfigure h $ setHost host
-    addNeuron h (Just idx) (Just n) = constructWith h (addNeuron' idx n)
-    run h (Just stim) = simulateWith h $ runSimulation stim
+    addNeuron h (Just n) = constructWith h $ clientAddNeuron n
+    run h (Just stim) = simulateWith h $ Protocol.run stim
     enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
         reconfigure h $ setStdpFn prefire postfire maxWeight
     disableStdp h = reconfigure h $ disableStdp'
     applyStdp h (Just reward) = simulateWith h (\s -> Backend.applyStdp s reward)
-    getConnectivity h = simulateWith h getConnectivity'
-    stopSimulation h = stopSimulation' h
-    reset h = resetState h
-    terminate h = stopSimulation h >> throw ClientTermination
-
+    getConnectivity h = simulateWith h Protocol.getConnectivity
+    stopSimulation h = clientStopSimulation h
+    reset = clientReset
+    terminate h = clientStopSimulation h >> throw ClientTermination
 
 
 
 -- TODO: handle errors here, perhaps just handle in constructWith?
-addNeuron' :: Int -> Wire.IzhNeuron -> Net -> Net
-addNeuron' idx wn net = rnf n `seq` Network.addNeuron idx n net
+clientAddNeuron :: Wire.IzhNeuron -> Net -> Net
+clientAddNeuron wn net = rnf n `seq` Network.addNeuron idx n net
     where
-        n = decodeNeuron idx wn
+        (idx, n) = Protocol.decodeNeuron wn
 
-
-{- | Convert neuron from wire format to internal format -}
-decodeNeuron :: Int -> Wire.IzhNeuron -> Neuron (IzhNeuron Double) Static
-decodeNeuron src wn = neuron n ss -- rnf n `seq` rnf ss `seq` neuron n ss
-    where
-        n = IzhNeuron
-                (fromJust $! Wire.f_IzhNeuron_a wn)
-                (fromJust $! Wire.f_IzhNeuron_b wn)
-                (fromJust $! Wire.f_IzhNeuron_c wn)
-                (fromJust $! Wire.f_IzhNeuron_d wn)
-                (fromJust $! Wire.f_IzhNeuron_u wn)
-                (fromJust $! Wire.f_IzhNeuron_v wn)
-                0.0 False Nothing
-        ss = map (decodeSynapse src) $! fromJust $! Wire.f_IzhNeuron_axon wn
-
-
-{- | Convert synapse from wire format to internal format -}
-decodeSynapse :: Idx -> Wire.Synapse -> Synapse Static
-decodeSynapse src ws = Synapse src tgt d $! Static w
-    where
-        tgt = fromJust $! Wire.f_Synapse_target ws
-        d = fromJust $! Wire.f_Synapse_delay ws
-        w = fromJust $! Wire.f_Synapse_weight ws
-
-
-encodeSynapse :: Synapse Static -> Wire.Synapse
-encodeSynapse s = Wire.Synapse tgt d w
-    where
-        tgt = Just $ target s
-        d   = Just $ delay s
-        w   = Just $ current $ sdata s
 
 
 {- | A binary non-threaded server, which only deals with requests from a single
  - external client -}
-runThreadedServer :: (Transport t, Protocol i, Protocol o)
-                  => (Socket -> IO (i t, o t))
-                  -> h
-                  -> (h -> (i t, o t) -> IO Bool)
-                  -> PortID
-                  -> IO a
+runThreadedServer
+    :: (Transport t, Protocol i, Protocol o)
+    => (Socket -> IO (i t, o t))
+    -> h
+    -> (h -> (i t, o t) -> IO Bool)
+    -> PortID
+    -> IO a
 runThreadedServer accepter hand proc port = do
     socket <- listenOn port
-    -- acceptLoop (accepter socket) (proc hand)
     forever $ do
         ps <- (accepter socket)
         loop $ (proc hand) ps

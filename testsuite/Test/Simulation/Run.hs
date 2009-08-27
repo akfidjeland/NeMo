@@ -16,7 +16,7 @@ import Examples.Smallworld (smallworldOrig)
 import Options (defaults)
 import Simulation.CUDA.Options (cudaOptions)
 import Simulation.FiringStimulus
-import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
+-- import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
 import Simulation.Options (simOptions, BackendOptions(..), optDuration)
 import Simulation.Run
 import Simulation.STDP.Options (stdpOptions)
@@ -26,13 +26,14 @@ import Test.Files
 import Test.Comparative (comparisonTest)
 
 tests = TestList [
-        TestCase test_fileSerialisation,
-        TestCase test_invalidDataDecoding,
+        -- TestCase test_fileSerialisation,
+        -- TestCase test_invalidDataDecoding,
         test_repeatedRun
     ]
 
 
 -- | Network should be the same after a roundtrip to a file
+{-
 test_fileSerialisation :: Assertion
 test_fileSerialisation = do
     (f,h) <- openTemp "test_fileSerialisation"
@@ -42,10 +43,11 @@ test_fileSerialisation = do
     (net2, _) <- decodeSimFile f
     removeFile f
     assertEqual "file serialisation/deserialisation" net1 net2
-
+-}
 
 -- | We should get an exception (rather than stack overflow) if provided with
 -- garbage data
+{-
 test_invalidDataDecoding :: Assertion
 test_invalidDataDecoding = do
     handle (\(_::IOException) -> return ()) $ do
@@ -53,7 +55,7 @@ test_invalidDataDecoding = do
         :: IO (Network (IzhNeuron FT) Static, FiringStimulus)
     assertFailure "succeeded in decoding random data!?"
     -- would be surprising indeed. In practice we'd get a stack overflow
-
+-}
 
 -- | We should get the same firing trace when running the same network twice.
 -- This tests for the case where residual data from one run affects the next

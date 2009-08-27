@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Construction.Neuron (
     NeuronProbe(..),
@@ -64,6 +65,7 @@ unconnected n = Neuron n Axon.unconnected
 
 {- | Create a neuron from a list of connections -}
 neuron :: n -> [Synapse s] -> Neuron n s
+-- neuron !n !ss = Neuron n $! Axon.fromList ss
 neuron n ss = Neuron n $! Axon.fromList ss
 
 

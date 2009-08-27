@@ -1,44 +1,33 @@
 module Main where
 
-import System.IO (stdout)
+import Network (PortID(PortNumber))
+import System.IO (stderr)
 
-import Construction.Izhikevich (IzhNeuron, IzhState)
-import Construction.Network (Network)
-import Construction.Synapse (Static)
-import Network.Protocol (defaultPort)
-import Network.Server (serveSimulation)
-import Simulation.Backend (initSim)
-import Simulation.CUDA.Options (cudaOptions)
-import Simulation.Options (simOptions, optBackend, BackendOptions(..))
 import Options
-import Types
-
+import Protocol (defaultPort)
+import Server (runServer, forever)
+import Simulation.STDP.Options (stdpOptions)
 
 
 data ServerOptions = ServerOptions {
-        optPort :: Int
+        optPort :: PortID
     }
+
 
 serverOptions = OptionGroup "Server options" (ServerOptions defaultPort) optionDescr
 
 optionDescr = [
         Option [] ["port"]
-            (ReqArg (\a o -> return o { optPort = read a }) "INT")
+            (ReqArg (\a o -> return o { optPort = PortNumber $ toEnum $ read a }) "INT")
             "port number for client/server communication"
     ]
 
 main = do
     (args, commonOpts) <- startOptProcessing
     serverOpts  <- processOptGroup serverOptions args
-    simOpts     <- processOptGroup (simOptions LocalBackends) args
-    cudaOpts    <- processOptGroup cudaOptions args
+    -- simOpts     <- processOptGroup (simOptions LocalBackends) args
+    -- cudaOpts    <- processOptGroup cudaOptions args
     endOptProcessing args
-    let verbose = optVerbose commonOpts
-    serveSimulation
-        stdout
-        (show $ optPort serverOpts)
-        verbose
-        -- TODO: get probe etc, from host as well
-        (\net tr stdp -> initSim
-                    (net :: Network (IzhNeuron FT) Static)
-                    simOpts cudaOpts stdp)
+    -- let verbose = optVerbose commonOpts
+    -- TODO: pass in options from command line
+    runServer forever stderr (defaults stdpOptions) (optPort serverOpts)

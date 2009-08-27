@@ -10,8 +10,10 @@ module Simulation.Options (
         BackendOptions(..)
     ) where
 
+import Network (PortID(PortNumber))
+
 import Options
-import Network.Protocol (defaultPort)
+import Protocol (defaultPort)
 import Types
 
 
@@ -20,10 +22,11 @@ data Backend
 #if defined(CUDA_ENABLED)
         | CUDA                  -- ^ CUDA-enabled GPU
 #endif
-        | RemoteHost String Int -- ^ some other machine on specified port
+        | RemoteHost String PortID -- ^ some other machine on specified port
     deriving (Eq, Show)
 
-
+instance Eq PortID
+instance Show PortID
 
 -- TODO: remove
 defaultBackend :: Backend
@@ -102,5 +105,5 @@ getRemote arg opts = return opts { optBackend = RemoteHost hostname port }
     where
         (hostname, port') = break (==':') arg
         port = if length port' > 1
-            then read $ tail port'
+            then PortNumber $ toEnum $ read $ tail port'
             else defaultPort

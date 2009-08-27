@@ -14,10 +14,12 @@ module Construction.Network (
         weightMatrix,
         synapsesOf,
         neurons,
+        toList,
         maxDelay,
         maxSynapsesPerNeuron,
         -- * Modify
         addNeuron,
+        addNeuronGroup,
         withNeurons,
         withTerminals,
         withSynapses,
@@ -95,6 +97,9 @@ neurons :: Network n s -> [Neuron.Neuron n s]
 neurons = Neurons.neurons . networkNeurons
 
 
+toList = Neurons.toList . networkNeurons
+
+
 {- | Return maximum delay in network -}
 maxDelay :: Network n s -> Delay
 maxDelay = Neurons.maxDelay . networkNeurons
@@ -112,6 +117,7 @@ maxSynapsesPerNeuron = Neurons.maxSynapsesPerNeuron . networkNeurons
 
 addNeuron idx n = withNeurons (Neurons.addNeuron idx n)
 
+addNeuronGroup ns = withNeurons (Neurons.addNeuronGroup ns)
 
 {- | Apply function to all neurons -}
 -- TODO: perhaps use Neuron -> Neuron instead

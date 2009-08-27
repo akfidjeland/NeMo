@@ -28,7 +28,6 @@ import Construction.Randomised.Synapse
 import Construction.Synapse
 import Options
 import Simulation.CUDA.Options
-import Simulation.FileSerialisation (encodeSimFile, decodeSimFile)
 import Simulation.Run
 import Simulation.STDP.Options (stdpOptions)
 import Simulation.Options (simOptions, optBackend, BackendOptions(..))
@@ -92,6 +91,8 @@ execute net fstim = do
 
 {- Process network provided from file according to command-line options -}
 executeFile = do
+    error "reading from file not currently supported"
+{-
     (args, commonOpts) <- startOptProcessing
     cudaOpts    <- processOptGroup cudaOptions args
     networkOpts <- processOptGroup (networkOptions FromFile) args
@@ -105,7 +106,7 @@ executeFile = do
     let net = return net' -- wrap in Gen
     processOutputOptions commonOpts networkOpts net
     execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstim
-
+-}
 
 
 {- | If requested, print network and terminate. Otherwise do nothing -}
@@ -118,8 +119,6 @@ processOutputOptions commonOpts networkOpts net
 
 
 execute_ commonOpts networkOpts simOpts stdpOpts cudaOpts net fstimF
-    | optStoreNet networkOpts /= Nothing = do
-        net' <- buildNetwork (optSeed commonOpts) net
-        encodeSimFile (fromJust $ optStoreNet networkOpts) net' fstimF
+    | optStoreNet networkOpts /= Nothing = error "serialisation to file not supported"
     | otherwise = runSimulation (optSeed commonOpts) simOpts net fstimF
                                 stdpOpts cudaOpts

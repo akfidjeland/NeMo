@@ -1,4 +1,5 @@
-{- Common simulation interface for different backends -}
+{- Do a complete simulation run -}
+
 module Simulation.Run (runSim) where
 
 import Control.Monad (forM, mapM_, when)
@@ -14,7 +15,6 @@ import Types
 
 
 {- | Run full simulation using the appropriate backend -}
--- TODO: fix argument ordering
 runSim simOpts net fstimF outfn opts stdpConf = do
     fstim <- firingStimulus fstimF
     sim <- initSim net simOpts opts stdpConf
@@ -25,7 +25,7 @@ runSim simOpts net fstimF outfn opts stdpConf = do
         freq = stdpFrequency stdpConf
         chunkSize = maybe 1000 id freq
 
-        go sim fstim =
+        go sim fstim = do
             forM (L.chunksOf chunkSize fstim) $ \f -> do
             probed <- run sim f
             when (isJust freq) $ applyStdp sim 1.0

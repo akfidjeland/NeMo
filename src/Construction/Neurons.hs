@@ -24,6 +24,7 @@ module Construction.Neurons (
         withSynapses,
         -- * Modification
         addNeuron,
+        addNeuronGroup,
         addSynapse,
         addSynapses,
         addSynapseAssocs,
@@ -62,10 +63,15 @@ fromList = Neurons . Map.fromList
 
 
 union :: (Show n, Show s) => [Neurons n s] -> Neurons n s
-union ns = Neurons $ foldl (Map.unionWithKey err) Map.empty $ map ndata ns
+union ns = Neurons $ foldl f Map.empty $ map ndata ns
     where
-        err k x y = error $ "Neurons.union: duplicate key (" ++ show k
-                ++ ") when merging neurons:\n" ++ show x ++ "\n" ++ show y
+        f = Map.unionWithKey $ duplicateKeyError "Neurons(union)"
+
+
+duplicateKeyError :: (Show n) => String -> Idx -> n -> n -> n
+duplicateKeyError msg key n1 n2 =
+    error $! msg ++ ": duplicate key (" ++ show key ++ ") for neurons:\n" ++
+        show n1 ++ "\n" ++ show n2
 
 
 -------------------------------------------------------------------------------
@@ -161,6 +167,16 @@ addNeuron :: Idx -> Neuron.Neuron n s -> Neurons n s -> Neurons n s
 addNeuron idx n (Neurons ns) = Neurons $ Map.insertWithKey collision idx n ns
     where
         collision idx _ _ = error $ "duplicate neuron index: " ++ show idx
+
+
+addNeuronGroup
+    :: (Show n, Show s)
+    => [(Idx, Neuron.Neuron n s)]
+    -> Neurons n s
+    -> Neurons n s
+addNeuronGroup ns' (Neurons ns) = Neurons $ union ns $ Map.fromList ns'
+    where
+        union = Map.unionWithKey $ duplicateKeyError "Neurons(mapUnion)"
 
 
 -- TODO: monadic error handling

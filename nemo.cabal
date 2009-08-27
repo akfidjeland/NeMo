@@ -1,11 +1,10 @@
 name:                       nemo
 version:                    0.4.2
-synopsis:                   Simulation library for spiking neural networks
+synopsis:                   Spiking neural network simulator
 author:                     Andreas Fidjeland
-maintainer:                 Andreas Fidjeland <akf@doc.ic.ac.uk>
+maintainer:                 Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>
 cabal-version:              >= 1.2
 stability:                  alpha
--- tested-with:                ghc-6.10
 build-type:                 Simple
 
 
@@ -27,10 +26,6 @@ flag Profile
     description:            Enable profiling
     default:                False
 
-flag Client
-    description:            Build client-only library
-    default:                False
-
 flag Examples
     description:            Build stand-alone example networks
     default:                False
@@ -44,39 +39,8 @@ flag Benchmark
     default:                False
 
 
-library
-    other-modules:          Construction.Axon,
-                            Construction.Izhikevich,
-                            Construction.Network,
-                            Construction.Neuron,
-                            Construction.Neurons,
-                            Construction.Synapse,
-                            Construction.Spiking,
-                            Construction.Topology,
-                            Network.Protocol,
-                            Network.SocketSerialisation,
-                            Options,
-                            Protocol,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.FileSerialisation,
-                            Simulation.FiringStimulus,
-                            Simulation.Options,
-                            Simulation.Remote,
-                            Simulation.STDP,
-                            Simulation.STDP.Options,
-                            Types,
-                            Util.Assocs,
-                            Util.List
-
-    build-depends:          array >= 0.1, base, binary >= 0.4, bytestring, mtl,
-                            containers, haskell98, network, network-bytestring, parallel
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
-    extensions:             DeriveDataTypeable
-    if flag(profile)
-        ghc-options:        -prof -auto-all
-    else
-        ghc-options:        -O2 -fPIC
+--library
+    --build-depends:          array >= 0.1, base, binary >= 0.4, bytestring, mtl, containers, haskell98, network, network-bytestring, parallel
 
 
 executable nemo
@@ -100,7 +64,7 @@ executable nemo
                             Simulation.STDP.Options,
                             Types
     hs-source-dirs:         src, dist/build/thrift/gen-hs
-    build-depends:          Thrift
+    build-depends:          array >= 0.1, base, binary >= 0.4, containers, haskell98, mtl, network, parallel, Thrift
     extensions:             DeriveDataTypeable
     if flag(profile)
         ghc-options:        -prof -auto-all
@@ -108,8 +72,7 @@ executable nemo
 
 executable nemo-server
     main-is:                IzhikevichServer.hs
-    other-modules:          Network.Client,
-                            Construction.Axon,
+    other-modules:          Construction.Axon,
                             Construction.Izhikevich,
                             Construction.Network,
                             Construction.Neuron,
@@ -117,10 +80,8 @@ executable nemo-server
                             Construction.Spiking,
                             Construction.Synapse,
                             Construction.Topology,
-                            Network.Protocol,
-                            Network.Server,
-                            Network.SocketSerialisation
                             Protocol,
+                            Server,
                             Simulation,
                             Simulation.Backend,
                             Simulation.CPU,
@@ -139,8 +100,6 @@ executable nemo-server
                             Construction.Randomised.Topology,
                             Construction.Randomised.Synapse,
                             Examples.Smallworld
-    if flag(client)
-        buildable:          False
 
     build-depends:          random, old-time, QuickCheck, Thrift
     if !os(windows)
@@ -151,7 +110,7 @@ executable nemo-server
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
     if flag(CUDA)
-        other-modules:      Simulation.CUDA, 
+        other-modules:      Simulation.CUDA,
                             Simulation.CUDA.Address,
                             Simulation.CUDA.Configuration,
                             Simulation.CUDA.DeviceProperties,
@@ -176,7 +135,7 @@ executable runtests
                             Construction.Construction,
                             Construction.Izhikevich,
                             Construction.Network,
-                            Construction.Neuron, 
+                            Construction.Neuron,
                             Construction.Neurons,
                             Construction.Parameterisation,
                             Construction.Rand,
@@ -186,10 +145,6 @@ executable runtests
                             Construction.Topology,
                             Examples.Smallworld,
                             Examples.Random1k,
-                            Network.Client,
-                            Network.Protocol,
-                            Network.Server,
-                            Network.SocketSerialisation,
                             Options,
                             Simulation,
                             Simulation.Backend,
@@ -214,18 +169,18 @@ executable runtests
                             Test.Simulation.Run,
                             Types,
                             Util.Assocs
-    extensions:             NoMonomorphismRestriction
+    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
     if !flag(test)
         buildable:          False
     if flag(profile)
         ghc-options:        -prof -auto-all
     build-depends:          HUnit, filepath, directory
-    hs-source-dirs:         src, testsuite
+    hs-source-dirs:         src, testsuite, dist/build/thrift/gen-hs
     if flag(Matlab)
         other-modules:      Test.ClientAPI.Matlab
         cpp-options:        -DMATLAB_ENABLED
-    if flag(CUDA) 
-        other-modules:      Simulation.CUDA, 
+    if flag(CUDA)
+        other-modules:      Simulation.CUDA,
                             Simulation.CUDA.Address,
                             Simulation.CUDA.Configuration,
                             Simulation.CUDA.DeviceProperties,
@@ -258,10 +213,6 @@ executable benchmark
                             Construction.Topology,
                             Examples.Ring,
                             Examples.Random1k,
-                            Network.Client,
-                            Network.Protocol,
-                            Network.Server,
-                            Network.SocketSerialisation
                             Options,
                             Simulation,
                             Simulation.Backend,
@@ -280,11 +231,11 @@ executable benchmark
     if !flag(benchmark)
         buildable:          False
 
-    hs-source-dirs:         src
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
     ghc-options:            -O2
-    extensions:              NoMonomorphismRestriction
+    extensions:              NoMonomorphismRestriction, DeriveDataTypeable
     if flag(profile)
         ghc-options:        -prof -auto-all
     if flag(CUDA)
@@ -321,10 +272,6 @@ executable smallworld
                             Construction.Synapse,
                             Construction.Topology,
                             Examples.Smallworld,
-                            Network.Client,
-                            Network.Protocol,
-                            Network.Server,
-                            Network.SocketSerialisation
                             Simulation,
                             Simulation.Backend,
                             Simulation.CPU,
@@ -342,8 +289,8 @@ executable smallworld
     if !flag(examples)
         buildable:          False
 
-    extensions:             NoMonomorphismRestriction
-    hs-source-dirs:         src
+    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
     else
@@ -366,6 +313,8 @@ executable smallworld
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
 
+
+
 executable random1k
     main-is:                Examples/Random1kRun.hs
     other-modules:          Construction.Axon,
@@ -380,10 +329,6 @@ executable random1k
                             Construction.Synapse,
                             Construction.Topology,
                             Examples.Random1k
-                            Network.Client,
-                            Network.Protocol,
-                            Network.Server,
-                            Network.SocketSerialisation
                             NSim,
                             Options,
                             Simulation,
@@ -403,14 +348,14 @@ executable random1k
     if !flag(examples)
         buildable:          False
 
-    hs-source-dirs:         src
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
     if flag(profile)
         ghc-options:        -prof -auto-all -caf-all -O2
     else
         ghc-options:        -O2
-    extensions:             NoMonomorphismRestriction
+    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
     if flag(profile)
         ghc-options:        -prof -auto-all
     if flag(CUDA)
@@ -444,10 +389,6 @@ executable ring
                             Construction.Synapse,
                             Construction.Topology,
                             Examples.Ring,
-                            Network.Client,
-                            Network.Protocol,
-                            Network.Server,
-                            Network.SocketSerialisation
                             NSim,
                             Options,
                             Simulation,
@@ -467,10 +408,10 @@ executable ring
     if !flag(examples)
         buildable:          False
 
-    hs-source-dirs:         src
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
-    extensions:             NoMonomorphismRestriction
+    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
     if flag(profile)
         ghc-options:        -prof -auto-all
     if flag(CUDA)

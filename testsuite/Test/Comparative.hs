@@ -19,10 +19,10 @@ compareSims sim1 sim2 = do
     bracket (openTemp "test_compare") closeTemp $ \(_, h1) -> do
     bracket (openTemp "test_compare") closeTemp $ \(_, h2) -> do
     sim1 $ hPutStrLn h1 . show
-    sim2 $ hPutStrLn h2 . show
     hSeek h1 AbsoluteSeek 0
-    hSeek h2 AbsoluteSeek 0
     c1 <- hGetContents h1
+    sim2 $ hPutStrLn h2 . show
+    hSeek h2 AbsoluteSeek 0
     c2 <- hGetContents h2
     let cmp = zipWith (==) c1 c2
     if all id cmp

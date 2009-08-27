@@ -12,7 +12,6 @@
 #include <stdexcept>
 
 #include <NemoFrontend.h>
-//#include <nemo.hpp>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -234,6 +233,7 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	for(int32_t n_idx=0; n_idx<nlen; ++n_idx) {
 
 		IzhNeuron n;
+		n.index = n_idx;
 		n.a = a[n_idx];
 		n.b = b[n_idx];
 		n.c = c[n_idx];
@@ -256,7 +256,7 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		n.axon = axon;
 
 		try {
-			g_client->addNeuron(n_idx, n);
+			g_client->addNeuron(n);
 		} catch (ConstructionError& err) {
 			error("construction error: %s", err.msg.c_str());
 		}
@@ -284,7 +284,7 @@ firingStimulus(unsigned ncycles,
 	size_t length = mxGetM(arr);
 	uint32_t* cycles = (uint32_t*) mxGetData(arr);
 	uint32_t* idx = cycles + length;
-	uint32_t* end = idx + length;
+	uint32_t* end = cycles + length;
 
 	for(unsigned cycle=0; cycle < ncycles; ++cycle) {
 		Stimulus stimulus; // for a single cycle
@@ -333,7 +333,6 @@ firingData(const std::vector<Firing>& firing)
 void
 run(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	mexPrintf("run...");
 	checkConnection();
 	uint32_t ncycles = scalar<uint32_t>(numeric(prhs[1]));
 
@@ -348,7 +347,6 @@ run(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	}
 
 	plhs[0] = firingData(firing);
-	mexPrintf("done\n");
 }
 
 

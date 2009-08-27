@@ -12,17 +12,12 @@ thrift_dir = /usr/local/lib
 thrift_build = dist/build/thrift
 
 
-cabal.mk: nemo.cabal
-	rm -f cabal.mk
-	./Setup.lhs makefile -f $@
-
 
 # Build haskell via 'make' to allow parallel build using the -j flag. This is
 # passed on to the recursive make call. Cabal doesn't support building specific
 # flags. Selecting targets is done via ./Setup.lhs configure.
-cabal: cuda cabal.mk $(thrift_build)/gen-hs
+cabal: cuda $(thrift_build)/gen-hs
 	@echo "Using configuration from previous run of ./Setup.lhs configure"
-	make -f cabal.mk
 	./Setup.lhs build
 
 
@@ -36,9 +31,11 @@ client: matlab-client
 
 autogen := dist/build/autogen
 
+
 matlab_src = src/ExternalClient/matlab
 matlab_build = dist/build/matlab
 matlab_m_files := $(basename $(basename $(notdir $(wildcard $(matlab_src)/*.m.m4))))
+
 
 
 matlab-client: $(matlab_build)/nemo_mex.mexa64 $(patsubst %,$(matlab_build)/%.m,$(matlab_m_files))
@@ -162,4 +159,3 @@ count:
 .PHONY: clean
 clean:
 	./Setup.lhs clean
-	rm -f cabal.mk

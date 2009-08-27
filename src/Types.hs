@@ -1,6 +1,7 @@
 module Types where
 
 import Data.List (sort)
+import Control.Parallel.Strategies (rnf, NFData)
 
 type FT = Double
 -- type FT = Float
@@ -30,3 +31,9 @@ instance Show ProbeData where
     show (FiringData x)  = show $ sort x
     show (FiringCount x) = show x
     show (NeuronState x) = show x
+
+
+instance NFData ProbeData where
+    rnf (FiringData x) = rnf x `seq` ()
+    rnf (FiringCount x) = rnf x `seq` ()
+    rnf (NeuronState x) = rnf x `seq` ()
