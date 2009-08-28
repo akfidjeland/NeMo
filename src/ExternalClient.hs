@@ -148,13 +148,23 @@ simulateWith m f = do
             throwIO $ Wire.ConstructionError $ Just $ show e
 
 
+-- TODO: share code with clientStopSimulation
+clientStartSimulation :: MVar NemoState -> IO ()
+clientStartSimulation m = do
+    modifyMVar_ m $ \static -> do
+    case static of
+        Simulating net conf sim -> do
+            Backend.start sim
+            return $! (Constructing net conf)
+        c@(Constructing _ _) -> return $! c
+
 
 clientStopSimulation :: MVar NemoState -> IO ()
 clientStopSimulation m = do
     modifyMVar_ m $ \static -> do
     case static of
         Simulating net conf sim -> do
-            Backend.terminate sim
+            Backend.stop sim
             return $! (Constructing net conf)
         c@(Constructing _ _) -> return $! c
 
@@ -177,9 +187,9 @@ instance NemoFrontend_Iface ClientState where
     disableStdp h = reconfigure h $ disableStdp'
     applyStdp h (Just reward) = simulateWith h (\s -> Backend.applyStdp s reward)
     getConnectivity h = simulateWith h Protocol.getConnectivity
-    stopSimulation h = clientStopSimulation h
+    startSimulation h = clientStartSimulation h
+    stopSimulation h = clientStopSimulation h >> throw ClientTermination
     reset = clientReset
-    terminate h = clientStopSimulation h >> throw ClientTermination
 
 
 

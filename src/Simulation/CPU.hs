@@ -36,6 +36,7 @@ instance Simulation_Iface CpuSimulation where
     elapsed _ = return 0
     resetTimer _ = return ()
     getWeights _ = error "getWeights not supported on CPU backend"
+    start _ = return ()
 
 
 

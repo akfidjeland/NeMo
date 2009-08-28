@@ -107,6 +107,14 @@ checkConnection()
 
 
 
+void
+startSimulation(int /*nlhs*/, mxArray** /*plhs*/,
+		int /*nrhs*/, const mxArray** /*prhs*/)
+{
+	if(isConnected()) {
+		g_client->startSimulation();
+	}
+}
 
 
 void

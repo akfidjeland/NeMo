@@ -19,7 +19,7 @@ runSim simOpts net fstimF outfn opts stdpConf = do
     fstim <- firingStimulus fstimF
     sim <- initSim net simOpts opts stdpConf
     go sim $ sample duration fstim
-    terminate sim
+    stop sim
     where
         duration = optDuration simOpts
         freq = stdpFrequency stdpConf

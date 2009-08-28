@@ -53,6 +53,8 @@ service NemoFrontend {
 	void addNeuron(1:IzhNeuron neuron)
 		throws (1:ConstructionError err),
 
+	void startSimulation()
+
 	# Run simulation for multiple cycles
 	list<Firing> run(1:list<Stimulus> stim)
 		throws (1:ConstructionError err),
@@ -98,7 +100,7 @@ service NemoBackend {
     # a simulation command will do the same. However, setting up the simulation
     # may be quite time consuming, so the user is given the option of
     # controlling when this happens manually.
-	void finaliseNetwork()
+	void startSimulation()
 
 	# Run simulation for multiple cycles
 	list<Firing> run(1:list<Stimulus> stim)

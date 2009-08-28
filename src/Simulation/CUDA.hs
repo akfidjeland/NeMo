@@ -51,7 +51,7 @@ instance Simulation_Iface State where
     elapsed sim = withForeignPtr (rt sim) Kernel.elapsedMs
     resetTimer sim = withForeignPtr (rt sim) Kernel.resetTimer
     getWeights sim = Memory.getWeights sim
-    terminate = terminateCuda
+    stop = terminateCuda
 
 
 {- | Initialise simulation and return a function to step through the rest of it -}
@@ -68,7 +68,8 @@ initSim partitionSize net dt stdpConf = do
     when (not $ null mapLog) $ writeFile "map.log" mapLog
     -- TODO: should we free this memory?
     configureKernel cuNet
-    let maxProbePeriod = 1000
+    -- let maxProbePeriod = 1000
+    let maxProbePeriod = 50
     initMemory cuNet att maxProbePeriod dt stdpConf
 
 

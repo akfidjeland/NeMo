@@ -43,10 +43,14 @@ class Simulation_Iface a where
     diagnostics :: a -> IO String
     diagnostics _ = return "no diagnostics available"
 
+    {- | Force any potentially time-consuming setup operations -}
+    start :: a -> IO ()
+    start a = return ()
+
     {- | Perform any clean-up operations -}
     -- TODO: could we make the garbage collector do this perhaps?
-    terminate :: a -> IO ()
-    terminate a = return ()
+    stop :: a -> IO ()
+    stop a = return ()
 
 
 data Simulation = forall s . Simulation_Iface s => BS s
@@ -62,4 +66,5 @@ instance Simulation_Iface Simulation where
     resetTimer (BS s) = resetTimer s
     getWeights (BS s) = getWeights s
     diagnostics (BS s) = diagnostics s
-    terminate (BS s) = terminate s
+    start (BS s) = start s
+    stop (BS s) = stop s
