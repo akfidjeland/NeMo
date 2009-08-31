@@ -100,7 +100,7 @@ isConnected()
 void
 checkConnection()
 {
-	if(!isConnected) {
+	if(!isConnected()) {
 		error("Not connected to nemo\n"); 
 	}
 }
@@ -269,6 +269,9 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 			error("construction error: %s", err.msg.c_str());
 		}
 	}
+
+	/* Since the whole network is set in one go, finalise it as well */
+	g_client->startSimulation();
 
 	mexPrintf("done\n");
 }
