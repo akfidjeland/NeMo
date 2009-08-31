@@ -24,7 +24,7 @@ import Simulation.CUDA.Address
 import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import qualified Simulation.CUDA.Probe as Probe (readFiring, readFiringCount)
-import Simulation.CUDA.KernelFFI as Kernel (stepBuffering, applyStdp, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics)
+import Simulation.CUDA.KernelFFI as Kernel (stepBuffering, applyStdp, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics, copyToDevice)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.Mapping (mapNetwork)
 import Simulation.CUDA.State (State(..))
@@ -51,6 +51,7 @@ instance Simulation_Iface State where
     elapsed sim = withForeignPtr (rt sim) Kernel.elapsedMs
     resetTimer sim = withForeignPtr (rt sim) Kernel.resetTimer
     getWeights sim = Memory.getWeights sim
+    start sim = copyToDevice (rt sim)
     stop = terminateCuda
 
 

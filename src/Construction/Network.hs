@@ -45,8 +45,8 @@ import Types
 {- For the synapses we just store the indices of pre and post. The list should
  - be sorted to simplify the construction of the in-memory data later. -}
 data Network n s = Network {
-        networkNeurons     :: Neurons.Neurons n s,
-        topology    :: Topology Idx
+        networkNeurons :: !(Neurons.Neurons n s),
+        topology :: !(Topology Idx)
     } deriving (Eq, Show)
 
 

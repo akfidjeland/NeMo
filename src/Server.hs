@@ -76,8 +76,8 @@ serverAddCluster (Handler log mvar) ns = do
             return $! Constructing conf $! Network.addNeuronGroup ns' net
 
 
-serverFinaliseNetwork :: Handler -> IO ()
-serverFinaliseNetwork (Handler log mvar) = do
+serverStartSimulation :: Handler -> IO ()
+serverStartSimulation (Handler log mvar) = do
     log "finalise network"
     modifyMVar_ mvar $ \st -> do
     case st of
@@ -149,10 +149,10 @@ instance NemoBackend_Iface Handler where
     -- TODO: use constructWith
     addCluster st (Just ns) = serverAddCluster st ns
     addNeuron h (Just n) = constructWith h $ serverAddNeuron n
-    startSimulation = serverFinaliseNetwork
+    startSimulation = serverStartSimulation
     enableStdp st (Just pre) (Just post) (Just mw) = serverEnableStdp st pre post mw
     run st (Just stim) = simulateWith st "run" $ Protocol.run stim
-    applyStdp st (Just reward) = simulateWith "apply STDP" st (\s -> Backend.applyStdp s reward)
+    applyStdp st (Just reward) = simulateWith st "apply STDP" (\s -> Backend.applyStdp s reward)
     getConnectivity st = simulateWith st "returning connectivity" Protocol.getConnectivity
 
     {- This is a bit of a clunky way to get out of the serving of a single
