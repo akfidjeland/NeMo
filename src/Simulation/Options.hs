@@ -7,7 +7,8 @@ module Simulation.Options (
         Backend(..),
         SimulationOptions(..),
         simOptions,
-        BackendOptions(..)
+        BackendOptions(..),
+        defaultBackend
     ) where
 
 import Network (PortID(PortNumber))

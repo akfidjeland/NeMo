@@ -22,7 +22,7 @@ import Construction.Synapse (Static)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.Backend (initSim)
 import Simulation.CUDA.Options (cudaOptions)
-import Simulation.Options (SimulationOptions(..), Backend(..))
+import Simulation.Options (SimulationOptions(..), Backend(..), defaultBackend)
 import Simulation.STDP (StdpConf(..))
 import Options (defaults)
 import qualified Protocol (decodeNeuron, run, getConnectivity, defaultPort, decodeStdpConfig)
@@ -87,7 +87,7 @@ serverStartSimulation (Handler log mvar) = do
             sim <- initSim net simConfig cudaOpts (stdpConfig conf)
             return $! Simulating sim
     where
-        simConfig = SimulationOptions Forever 4 CUDA
+        simConfig = SimulationOptions Forever 4 defaultBackend
         cudaOpts = defaults cudaOptions
 
 
@@ -119,7 +119,7 @@ simulateWith (Handler log mvar) fnName f = do
     where
         -- TODO: make this backend options instead of cudaOpts
         -- TODO: perhaps we want to be able to send this to server?
-        simConfig = SimulationOptions Forever 4 CUDA
+        simConfig = SimulationOptions Forever 4 defaultBackend
         cudaOpts = defaults cudaOptions
 
         initError :: CE.SomeException -> IO (ServerState, a)
