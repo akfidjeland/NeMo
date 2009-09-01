@@ -43,6 +43,7 @@ matlab-client: $(matlab_build)/nemo_mex.mexa64 $(patsubst %,$(matlab_build)/%.m,
 
 # Generate LUT for Matlab API function dispatch
 # (m4-macros for m-file or c++ function array)
+.PRECIOUS: $(autogen)/mex_fn_lut.hpp
 $(autogen)/mex_fn_lut.%: $(matlab_src)/gen_fn.py $(matlab_src)/*.m.m4
 	mkdir -p $(dir $@)
 	$< --$* $(matlab_m_files) > $@
@@ -92,8 +93,6 @@ $(dist_dir).zip: $(doc_build)/manual.pdf client cabal
 	cp --target-directory $(dist_dir) -r $< dist/build/nemo/nemo dist/build/matlab
 	strip $(dist_dir)/nemo
 	# include shared thrift libraries as well.
-	cp --no-dereference --preserve=links --target-directory $(dist_dir)/matlab $(thrift_dir)/libthrift.so*
-	strip $(dist_dir)/matlab/libthrift.so.0.0.0
 	(cd dist/build; zip -r $(notdir $@) $(basename $(notdir $@)); cd ../..)
 
 #
