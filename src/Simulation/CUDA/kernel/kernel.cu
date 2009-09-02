@@ -36,7 +36,7 @@ STDP_FN(fire)(
 	uint s_partitionSize,
 	uint substeps,
 	float substepMult, // substepMul * substeps = 1
-	size_t fstimPitch,
+	size_t pitch1, //! \todo move into shared memory along with other pitches
 	float* g_neuronParameters,
 	size_t neuronParametersSize,
 	// input
@@ -47,10 +47,7 @@ STDP_FN(fire)(
 	uint64_t* s_recentFiring,
 	uint64_t* g_recentFiring,
 	uint16_t* s_firingIdx,
-	// gmem firing output
-	ushort fmemCycle,
-	uint* g_fmemNextFree,
-	ushort2* g_fmemBuffer)
+	uint32_t* g_firingOutput) // already offset to current partition
 {
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
@@ -59,11 +56,14 @@ STDP_FN(fire)(
 	float* g_u = g_neuronParameters + STATE_U * neuronParametersSize;
 	float* g_v = g_neuronParameters + STATE_V * neuronParametersSize;
 
+	/* The dense firing output is staged in shared memory before being written to global memory */
+	clearFiringOutput();
+
 	//__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
+	//! \todo use the same buffer for both input and output
 	/* Make sure s_T16 is large enough */
 	ASSERT(THREADS_PER_BLOCK/2 >= DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32));
-	loadExternalFiring(hasExternalInput, s_partitionSize,
-			fstimPitch, g_fstim, s_fstim);
+	loadExternalFiring(hasExternalInput, s_partitionSize, pitch1, g_fstim, s_fstim);
 
 	__shared__ uint s_firedCount;
 	if(threadIdx.x == 0) {
@@ -110,11 +110,12 @@ STDP_FN(fire)(
 				u += g_d[neuron];
 
 				firing = 0x1;
-				DEBUG_MSG("%d fired (forced: %u)\n", neuron, forceFiring);
+				DEBUG_MSG("%u-%u fired (forced: %u) (thread %u)\n",
+						CURRENT_PARTITION, neuron, forceFiring, threadIdx.x);
 				int idxEntry = atomicAdd(&s_firedCount, 1);
 
-				//! \todo use a smaller memory for this list, can use s_T32
 				s_firingIdx[idxEntry] = (uint16_t) neuron;
+				setFiringOutput(neuron);
 			}
 
 			/* We need the (updated) recent firing history for L1 spike
@@ -129,8 +130,7 @@ STDP_FN(fire)(
 	}
 
 	__syncthreads();
-	writeFiringOutput(fmemCycle, g_fmemNextFree,
-			s_firingIdx, s_firedCount, g_fmemBuffer);
+	writeFiringOutput(g_firingOutput, pitch1);
 }
 
 
@@ -359,16 +359,13 @@ STDP_FN(step) (
 		size_t sqHeadPitch,
 		// firing stimulus
 		uint32_t* g_fstim,
-		size_t fstimPitch,
+		size_t pitch1,
 #ifdef KERNEL_TIMING
 		// cycle counting
 		unsigned long long* g_cycleCounters,
 		size_t ccPitch,
 #endif
-		// firing output
-		int fmemCycle,
-		ushort2* g_fmemBuffer,
-		uint* g_fmemNextFree)
+		uint32_t* firingOutput) // already offset to current cycle
 {
 	SET_COUNTER(s_ccMain, 0);
 
@@ -481,7 +478,7 @@ STDP_FN(step) (
 			g_fstim != 0,
             s_partitionSize,
 			substeps, s_substepMult,
-			fstimPitch,
+			pitch1,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
 			neuronParametersSize,
 			g_fstim, s_current, 
@@ -491,7 +488,7 @@ STDP_FN(step) (
 				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
 				+ CURRENT_PARTITION * s_pitch64,
 			(uint16_t*) s_T32,
-			fmemCycle, g_fmemNextFree, g_fmemBuffer);
+			firingOutput + CURRENT_PARTITION * pitch1);
 	__syncthreads();
 	SET_COUNTER(s_ccMain, 6);
 

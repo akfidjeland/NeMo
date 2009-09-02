@@ -4,7 +4,7 @@ extern "C" {
 #include "kernel.h"
 }
 #include "L1SpikeQueue.hpp"
-#include "FiringProbe.hpp"
+#include "FiringOutput.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
 #include "ThalamicInput.hpp"
@@ -40,7 +40,7 @@ RuntimeData::RuntimeData(
 	m_haveL1Connections(partitionCount != 1 && l1SQEntrySize != 0)
 {
 	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize, maxL1SynapsesPerDelay);
-	firingProbe = new FiringProbe(partitionCount, maxPartitionSize, maxReadPeriod);
+	firingOutput = new FiringOutput(partitionCount, maxPartitionSize, maxReadPeriod);
 
 	recentFiring = new NVector<uint64_t>(partitionCount, maxPartitionSize, false, 2);
 	neuronParameters = new NVector<float>(partitionCount, maxPartitionSize, true, NVEC_COUNT);
@@ -81,7 +81,7 @@ RuntimeData::RuntimeData(
 RuntimeData::~RuntimeData()
 {
 	delete spikeQueue;
-	delete firingProbe;
+	delete firingOutput;
 	delete recentFiring;
 	delete neuronParameters;
 	delete firingStimulus;
@@ -236,10 +236,10 @@ RuntimeData::d_allocated() const
 {
 	size_t total = 0;
 	total += spikeQueue       ? spikeQueue->d_allocated()       : 0;
-	total += firingStimulus   ? firingProbe->d_allocated()      : 0;
+	total += firingStimulus   ? firingStimulus->d_allocated()   : 0;
 	total += recentFiring     ? recentFiring->d_allocated()     : 0;
 	total += neuronParameters ? neuronParameters->d_allocated() : 0;
-	total += firingProbe      ? firingStimulus->d_allocated()   : 0;
+	total += firingOutput     ? firingOutput->d_allocated()     : 0;
 	total += thalamicInput    ? thalamicInput->d_allocated()    : 0;
 	for(std::vector<ConnectivityMatrix*>::const_iterator i = m_cm.begin();
 			i != m_cm.end(); ++i) {
@@ -254,10 +254,12 @@ RuntimeData::d_allocated() const
 void
 RuntimeData::setPitch()
 {
+	m_pitch1 = firingStimulus->wordPitch();
 	m_pitch32 = neuronParameters->wordPitch();
 	m_pitch64 = recentFiring->wordPitch();
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, thalamicInput->wordPitch());
+	checkPitch(m_pitch1, firingOutput->wordPitch());
 }
 
 
@@ -484,7 +486,7 @@ readFiring(RTDATA rtdata,
 		uint* nfired,
 		uint* ncycles)
 {
-	rtdata->firingProbe->readFiring(cycles, partitionIdx,
+	rtdata->firingOutput->readFiring(cycles, partitionIdx,
 			neuronIdx, nfired, ncycles);
 }
 

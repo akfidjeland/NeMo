@@ -3,6 +3,7 @@
 
 #include <cuda.h>
 #include "cycleCounting.cu"
+#include "util.h"
 
 /*! Apply STDP 
  * 

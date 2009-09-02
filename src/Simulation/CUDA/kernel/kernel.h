@@ -202,7 +202,6 @@ enableStdp(RTDATA,
 
 status_t
 step(RTDATA rtdata,
-		unsigned short cycle,
 		int substeps,               // number of substeps per normal 1ms step
 		// External firing (sparse)
 		size_t extFiringCount,

@@ -69,8 +69,7 @@ initSim partitionSize net dt stdpConf = do
     when (not $ null mapLog) $ writeFile "map.log" mapLog
     -- TODO: should we free this memory?
     configureKernel cuNet
-    -- let maxProbePeriod = 1000
-    let maxProbePeriod = 50
+    let maxProbePeriod = 1000
     initMemory cuNet att maxProbePeriod dt stdpConf
 
 
@@ -94,11 +93,12 @@ runCuda sim fstim = do
 
 runCuda_ :: State -> [[Idx]] -> IO ()
 runCuda_ sim fstim = do
-    sequence2_ (stepBuffering sim) fstim [0..]
+    sequence2_ (stepBuffering sim) fstim
     printCycleCounters sim
     where
-        sequence2_ m (a:as) (b:bs) = m a b >> sequence2_ m as bs
-        sequence2_ _ _  _ = return ()
+        -- TODO: replace by sequence_
+        sequence2_ m (a:as) = m a >> sequence2_ m as
+        sequence2_ _ _ = return ()
 
 
 stepCuda :: State -> [Idx] -> IO ProbeData
@@ -109,7 +109,7 @@ stepCuda sim fstim = do
 
 
 stepCuda_ :: State -> [Idx] -> IO ()
-stepCuda_ sim fstim = stepBuffering sim fstim 0
+stepCuda_ sim fstim = stepBuffering sim fstim
 
 
 readFiring :: State -> Time -> IO [ProbeData]

@@ -20,7 +20,7 @@ extern "C" {
 #include "log.hpp"
 #include "L1SpikeQueue.hpp"
 #include "connectivityMatrix.cu"
-#include "FiringProbe.hpp"
+#include "FiringOutput.hpp"
 #include "firingProbe.cu"
 #include "RuntimeData.hpp"
 #include "CycleCounters.hpp"
@@ -255,14 +255,12 @@ applyStdp(RTDATA rtdata, float stdpReward)
 __host__
 status_t
 step(RTDATA rtdata,
-		ushort cycle,
 		int substeps,
 		// External firing (sparse)
 		size_t extFiringCount,
 		const int* extFiringCIdx, 
 		const int* extFiringNIdx)
 {
-	rtdata->firingProbe->step();
 	rtdata->step();
 
 	copyToDevice(rtdata); // only has effect on first invocation
@@ -270,13 +268,16 @@ step(RTDATA rtdata,
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(rtdata->partitionCount);
 
-#ifdef VERBOSE
 	static uint scycle = 0;
-	fprintf(stdout, "cycle %u\n", scycle++);
+#ifdef VERBOSE
+	fprintf(stderr, "cycle %u\n", scycle);
 #endif
+	scycle += 1;
 
 	uint32_t* d_extFiring = 
 		rtdata->setFiringStimulus(extFiringCount, extFiringCIdx, extFiringNIdx);
+
+	 uint32_t* d_fout = rtdata->firingOutput->step();
 
 	if(rtdata->usingStdp()) {
 		step_STDP<<<dimGrid, dimBlock>>>(
@@ -311,10 +312,7 @@ step(RTDATA rtdata,
 				rtdata->cycleCounters->data(),
 				rtdata->cycleCounters->pitch(),
 #endif
-				// Firing output
-				cycle,
-				rtdata->firingProbe->deviceBuffer(),
-				rtdata->firingProbe->deviceNextFree());
+				d_fout);
 	} else {
 		step_static<<<dimGrid, dimBlock>>>(
 				substeps, 
@@ -345,12 +343,10 @@ step(RTDATA rtdata,
 				rtdata->cycleCounters->pitch(),
 #endif
 				// Firing output
-				cycle,
-				rtdata->firingProbe->deviceBuffer(),
-				rtdata->firingProbe->deviceNextFree());
+				d_fout);
 	}
 
-    if(assertionsFailed(rtdata->partitionCount, cycle)) {
+    if(assertionsFailed(rtdata->partitionCount, scycle)) {
         fprintf(stderr, "checking assertions\n");
         clearAssertions();
         return KERNEL_ASSERTION_FAILURE;

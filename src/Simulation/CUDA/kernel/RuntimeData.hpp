@@ -40,7 +40,7 @@ struct RuntimeData
 	bool haveL1Connections() const;
 
 	struct L1SpikeQueue* spikeQueue;
-	struct FiringProbe* firingProbe;
+	struct FiringOutput* firingOutput;
 
 	NVector<uint64_t>* recentFiring;
 
@@ -111,6 +111,7 @@ struct RuntimeData
 
 		void setPitch();
 
+		size_t m_pitch1;
 		size_t m_pitch32;
 		size_t m_pitch64;
 

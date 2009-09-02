@@ -186,7 +186,6 @@ foreign import ccall unsafe "syncSimulation"
 
 foreign import ccall unsafe "step"
     c_step :: Ptr CuRT  -- ^ kernel runtime data
-           -> CUShort   -- ^ cycle number (within current batch)
            -> CInt      -- ^ Sub-ms update steps
            -- External firing stimulus
            -> CSize     -- ^ Number of neurons whose firing is forced this step
@@ -197,7 +196,7 @@ foreign import ccall unsafe "step"
 
 {- | Perform a single simulation step, while buffering firing data on the
  - device, rather than reading it back to the host -}
-stepBuffering sim fstim currentCycle = do
+stepBuffering sim fstim = do
     let flen = length fstim
         fbounds = (0, flen-1)
     fstim <- forM fstim $ rethrow "firing stimulus" $ deviceIdxM (att sim)
@@ -206,7 +205,7 @@ stepBuffering sim fstim currentCycle = do
     withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
     withForeignPtr (rt sim)      $ \rtPtr     -> do
-    kernelStatus <- c_step rtPtr currentCycle
+    kernelStatus <- c_step rtPtr
         (dt sim) (fromIntegral flen) fsPIdxPtr fsNIdxPtr
     when (kernelStatus /= 0) $ fail "Backend error"
     where
