@@ -187,7 +187,8 @@ loadAndClearBufferHeads(
  * \param count
  *		Number of entries from the output buffer to flush
  *
- * \todo write 4B values instead of 8B
+ * After call s_heads contains number of entries filled in the global memory
+ * buffer, so far.
  */
 __device__
 void
@@ -214,8 +215,10 @@ s_sbFlush(
 
 	uint targetPartition = s_sbPartition(outbufferIdx, buffersPerPartition);
 
-	/* Several output buffers may write to the same global buffer, so we
-	 * need atomic update. */
+	/* Several output buffers may write to the same global buffer, so we need
+	 * atomic update. After this g_offset should contain the per shared memory
+	 * buffer offsets used for writing to the per-partition global memory
+	 * buffers  */
 	if(t_offset == 0 && validBuffer) {
 		g_offset[t_buf] = atomicAdd(s_heads + targetPartition, count);
 	}
@@ -238,6 +241,7 @@ s_sbFlush(
 		}
 #endif
 	}
+	__syncthreads();
 }
 
 
@@ -277,12 +281,14 @@ s_sbFlushAll(
 	 * many spikes are valid */
 	//! \todo factor out function
 	__syncthreads(); /* ensure s_heads is up to date */
-	uint bufferIdx = threadIdx.x;
-	ASSERT(MAX_BUFFER_COUNT <= THREADS_PER_BLOCK);
-	if(bufferIdx < bcount) {
-		uint targetPartition = s_sbPartition(bufferIdx, buffersPerPartition);
+
+	uint targetPartition = threadIdx.x;
+	ASSERT(MAX_PARTITION_COUNT <= THREADS_PER_BLOCK);
+	if(targetPartition < PARTITION_COUNT) {
 		size_t g_offset = g_headOffset(CURRENT_PARTITION, targetPartition, headPitch, writeBufferIdx);
 		//! \todo only write if the buffer contains anything
+		DEBUG_MSG("Buffer %u->%u (outgoing) contains %u spikes\n",
+				CURRENT_PARTITION, targetPartition, s_heads[targetPartition]);
 		g_heads[g_offset] = s_heads[targetPartition];
 	}
 }
