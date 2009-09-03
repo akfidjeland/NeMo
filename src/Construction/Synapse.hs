@@ -7,9 +7,7 @@
 module Construction.Synapse where
 -- TODO: export list
 
-import Control.Monad (liftM, liftM4)
 import Control.Parallel.Strategies (NFData, rnf)
-import Data.Binary
 
 import Types
 
@@ -38,16 +36,6 @@ newtype Static = Static FT deriving (Eq, Show, Ord)
 
 instance Conductive Static where
     current (Static w) = w
-
-
-instance (Binary s) => Binary (Synapse s) where
-    put (Synapse s t d pl) = put s >> put t >> put d >> put pl
-    get = liftM4 Synapse get get get get
-
-
-instance Binary Static where
-    put (Static w) = put w
-    get = liftM Static get
 
 
 instance (NFData s) => NFData (Synapse s) where

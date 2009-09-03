@@ -1,5 +1,5 @@
 name:                       nemo
-version:                    0.4.3
+version:                    0.4.4
 synopsis:                   Spiking neural network simulator
 author:                     Andreas Fidjeland
 maintainer:                 Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>
@@ -40,7 +40,7 @@ flag Benchmark
 
 
 --library
-    --build-depends:          array >= 0.1, base, binary >= 0.4, bytestring, mtl, containers, haskell98, network, network-bytestring, parallel
+    --build-depends:          array >= 0.1, base, bytestring, mtl, containers, haskell98, network, network-bytestring, parallel
 
 
 executable nemo
@@ -64,7 +64,7 @@ executable nemo
                             Simulation.STDP.Options,
                             Types
     hs-source-dirs:         src, dist/build/thrift/gen-hs
-    build-depends:          array >= 0.1, base, binary >= 0.4, containers, haskell98, mtl, network, parallel, Thrift
+    build-depends:          array >= 0.1, base, containers, haskell98, mtl, network, parallel, Thrift
     extensions:             DeriveDataTypeable
     ghc-options:            -threaded
     if flag(profile)

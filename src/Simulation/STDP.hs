@@ -11,9 +11,6 @@ module Simulation.STDP (
     Reward
 ) where
 
-import Control.Monad (liftM)
-import Data.Binary
-
 
 data StdpConf = StdpConf {
 
@@ -84,16 +81,3 @@ asymStdp :: StdpConf
 {- TODO: may want to use Maybe here for max weight, and default to max in
  - network. The default value here is arbitrary -}
 asymStdp = StdpConf True asymPotentiation asymDepression 100.0 Nothing
-
-
-{- We may need to configure STDP from over the network -}
-instance Binary StdpConf where
-    put (StdpConf en prefire postfire mw f) =
-        put en >> put prefire >> put postfire >> put mw >> put f
-    get = do
-        en  <- get
-        prefire <- get
-        postfire <- get
-        mw  <- get
-        f   <- get
-        return $ StdpConf en prefire postfire mw f

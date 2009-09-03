@@ -28,11 +28,8 @@ module Construction.Network (
         printNeurons
     ) where
 
-import Control.Monad (liftM2)
 import Control.Parallel.Strategies (NFData, rnf)
-import Data.Binary
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
 
 import qualified Construction.Neuron as Neuron
 import qualified Construction.Neurons as Neurons
@@ -144,10 +141,6 @@ withSynapses f (Network ns t) = Network ns' t
 -------------------------------------------------------------------------------
 -- Various
 -------------------------------------------------------------------------------
-
-instance (Binary n, Binary s) => Binary (Network n s) where
-    put (Network ns t) = put ns >> put t
-    get = liftM2 Network get get
 
 
 instance (NFData n, NFData s) => NFData (Network n s) where

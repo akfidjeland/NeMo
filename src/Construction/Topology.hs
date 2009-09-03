@@ -1,8 +1,7 @@
 module Construction.Topology where
 
-import Control.Monad
+import Control.Monad (liftM)
 import Control.Parallel.Strategies (NFData, rnf)
-import Data.Binary
 import Data.Maybe
 import qualified Data.List as List
 
@@ -17,20 +16,6 @@ data Topology a
 instance Functor Topology where
     fmap f (Node x)     = Node (f x)
     fmap f (Cluster xs) = Cluster $ map (fmap f) xs
-
-
--- Serialisation
-instance (Binary a) => Binary (Topology a) where
-    put (Node x) = putWord8 0 >> put x
-    put (Cluster xs) = putWord8 1 >> put xs
-    put NoTopology = putWord8 2
-    get = do
-        tag <- getWord8
-        case tag of
-            0 -> liftM Node get
-            1 -> liftM Cluster get
-            2 -> return $! NoTopology
-            _ -> error "Could not deserialise Topology"
 
 
 instance NFData a => NFData (Topology a) where

@@ -9,7 +9,6 @@ module Construction.Izhikevich where
 
 import Control.Parallel.Strategies (NFData, rnf)
 import Control.Monad (liftM)
-import Data.Binary
 import Data.Function(on)
 import System.Random
 
@@ -119,46 +118,6 @@ addThalamic n th = n { stateI = i + i', stateThalamic = th' }
 -- TODO: move to separate 'random' library
 gauss mu sigma (r1, r2) =
     mu + sigma * sqrt (-2 * log r1) * cos (2 * pi * r2)
-
-
-instance (Binary f) => Binary (IzhNeuron f) where
-    put = putNeuron
-    get = getNeuron
-
-
-instance (Binary f) => Binary (Thalamic f) where
-    put (Thalamic s g) = put s >> put g
-    get = do
-        s <- get
-        g <- get
-        return $ Thalamic s g
-
-
-instance Binary StdGen where
-    put = put . show
-    get = get >>= return . read
-
-
-
-putNeuron (IzhNeuron a b c d u v i f th) = do
-    { put a ; put b ; put c ; put d ;
-      put u ; put v ; put i ; put f ;
-      put th }
-
-
--- TODO: simplifiy with two liftM4's
-getNeuron :: (Binary f) => Get (IzhNeuron f)
-getNeuron = do
-    a <- get
-    b <- get
-    c <- get
-    d <- get
-    u <- get
-    v <- get
-    i <- get
-    f <- get
-    th <- get
-    return $! IzhNeuron a b c d u v i f th
 
 
 instance NFData f => NFData (IzhNeuron f) where

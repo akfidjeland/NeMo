@@ -25,9 +25,7 @@ module Construction.Neuron (
     printConnections
 ) where
 
-import Control.Monad (liftM2)
 import Control.Parallel.Strategies (NFData, rnf)
-import Data.Binary
 
 import qualified Construction.Axon as Axon
 import Construction.Synapse
@@ -121,11 +119,6 @@ printConnections source n = Axon.printConnections source $ axon n
 
 instance (NFData n, NFData s) => NFData (Neuron n s) where
     rnf (Neuron n ss) = rnf n `seq` rnf ss `seq` ()
-
-
-instance (Binary n, Binary s) => Binary (Neuron n s) where
-    put (Neuron n ss) = put n >> put ss
-    get = liftM2 Neuron get get
 
 
 instance (Show n, Show s) => Show (Neuron n s) where

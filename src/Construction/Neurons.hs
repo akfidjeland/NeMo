@@ -36,9 +36,7 @@ module Construction.Neurons (
         printNeurons
     ) where
 
-import Control.Monad (liftM)
 import Control.Parallel.Strategies (NFData, rnf)
-import Data.Binary
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 
@@ -227,11 +225,6 @@ withTerminals f (Neurons ns) =
 -------------------------------------------------------------------------------
 -- Various
 -------------------------------------------------------------------------------
-
-instance (Binary n, Binary s) => Binary (Neurons n s) where
-    put (Neurons ns) = put ns
-    get = liftM Neurons get
-
 
 instance (NFData n, NFData s) => NFData (Neurons n s) where
     rnf (Neurons ns) = rnf ns

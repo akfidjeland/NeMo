@@ -39,8 +39,7 @@ module Construction.Axon (
     ) where
 
 
-import Control.Monad (forM_, liftM)
-import Data.Binary
+import Control.Monad (forM_)
 import Data.List (foldl', intercalate, find, delete)
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
@@ -228,16 +227,6 @@ instance (Show s) => Show (Axon s) where
             showSynapses [] = id
             showSynapses (s:ss) = shows s . showChar '\n' . showSynapses ss
 
-
-instance (Binary s) => Binary (Axon s) where
-    put (Axon ss) = put (Map.size ss) >> mapM_ put (Map.toAscList ss)
-    get = do
-        ss <- liftM Map.fromAscList get
-        -- TODO: could force evaluation of list elements instead
-        -- make sure to walk over the whole map to force evaluation
-        return $! Axon $! snd $! Map.mapAccum f' () ss
-        where
-            f' () x = x `seq` ((), x)
 
 instance (NFData s) => NFData (Axon s) where
     rnf (Axon ss) = rnf ss `seq` ()
