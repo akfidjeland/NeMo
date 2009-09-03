@@ -35,17 +35,15 @@ import qualified Util.List as L (chunksOf)
 -- TODO: remove hard-coding here
 isExcitatory idx = idx `mod` 1024 < 820
 
--- TODO: randomise delays here!
--- exSynapse r src tgt = Synapse src tgt 1 $! Static 0.25
 exSynapse r src tgt = Synapse src tgt delay $! Static 0.25
     where
         delay = ceiling $ 20.0 * r
--- exSynapse src tgt r = w `seq` StdSynapse src tgt w 1
-    -- where w = 0.5 * r
+-- exSynapse r src tgt = w `seq` Synapse src tgt 1 $! Static w
+--    where w = 0.5 * r
 
 -- TODO: randomise weights here!
 inSynapse _ src tgt = Synapse src tgt 1 $ Static (-0.5)
--- inSynapse src tgt r = StdSynapse src tgt ((-1.0)*r) 1
+-- inSynapse r src tgt = Synapse src tgt 1 $! Static ((-1.0)*r)
 
 -- excitatory neuron
 exN r = mkNeuron2 0.02 b (v + 15*r^2) (8.0-6.0*r^2) u v thalamic
@@ -218,8 +216,41 @@ clusteredBenchmark n m p = Benchmark {
 cudaOpts = defaults cudaOptions
 
 
-runBenchmark :: SimulationOptions -> StdpConf -> Benchmark -> IO ()
-runBenchmark simOpts stdpOpts bm = do
+{- Measure latency by always providing some stimulus and always reading back
+ - data -}
+runBenchmarkLatency :: SimulationOptions -> StdpConf -> Benchmark -> IO ()
+runBenchmarkLatency simOpts stdpOpts bm = do
+    putStrLn "Setting up sim"
+    sim <- initSim net simOpts cudaOpts stdpOpts
+    putStrLn "Warming up"
+    run_ sim $ fstim 1000
+    resetTimer sim
+    putStrLn "Running"
+    firing <- mapM (\f -> step sim f) $ fstim runCycles
+    -- need to force evaluation of firing
+    t <- rnf firing `seq` elapsed sim
+    stop sim
+    let rts1 = rts0 {
+        rtsCycles = fromIntegral runCycles,
+        rtsElapsed = fromIntegral t
+    }
+    let rts2 = foldl' updateRTS rts1 firing
+    putStrLn $ rtsCvs (bmName bm) rts2
+    let latency = (1000 * rtsElapsed rts2) `div` (rtsCycles rts2)
+    hPutStrLn stderr $ "Latency: " ++ show latency ++ "ms/kcycle"
+    where
+        rts0 = initRTS net
+        net = bmNet bm `using` rnf
+        sz = size net
+        runCycles = bmCycles bm
+        {- We want /some/ stimulus, so that we do a copy operation. The amount of
+         - data is not so important, so just stimulate a single neuron -}
+        fstim n = map (\x -> [x `mod` sz]) [0..n-1]
+        -- fstim n = map (\_ -> []) [0..n-1]
+
+
+runBenchmarkThroughput :: SimulationOptions -> StdpConf -> Benchmark -> IO ()
+runBenchmarkThroughput simOpts stdpOpts bm = do
     -- TODO: average over multiple runs
     let net = bmNet bm `using` rnf
         rts0 = initRTS net
@@ -298,16 +329,20 @@ data BenchmarkOptions = BenchmarkOptions {
         optM           :: Int,
         optP           :: Float,
         -- TODO: control cycles as well
-        optPrintHeader :: Bool
+        optPrintHeader :: Bool,
+        optMeasurement :: Measurement
     }
 
 benchmarkDefaults = BenchmarkOptions {
         optN           = 1,
         optM           = 1000,
         optP           = 0.9,
-        optPrintHeader = False
+        optPrintHeader = False,
+        optMeasurement = Throughput
     }
 
+
+data Measurement = Throughput | Latency
 
 createBenchmark :: BenchmarkOptions -> Benchmark
 createBenchmark o = clusteredBenchmark (optN o) (optM o) (optP o)
@@ -329,7 +364,15 @@ benchmarkDescr = [
 
         Option ['H'] ["print-header"]
             (NoArg (\o -> return o { optPrintHeader=True }))
-            "Print header for runtime statistics"
+            "Print header for runtime statistics",
+
+        Option [] ["throughput"]
+            (NoArg (\o -> return o { optMeasurement = Throughput } ))
+            "Measure throughput of system",
+
+        Option [] ["latency"]
+            (NoArg (\o -> return o { optMeasurement = Latency } ))
+            "Measure latency of system"
     ]
 
 optRead :: Read a => String -> String -> Either String a
@@ -338,16 +381,21 @@ optRead optName s =
         [(x, "")] -> Right x
         _         -> Left $ "Parse error of " ++ optName ++ ":" ++ s
 
+
 benchmarkOptions = OptionGroup "Benchmark options" benchmarkDefaults benchmarkDescr
 
 
 main = do
     (args, commonOpts) <- startOptProcessing
-    simOpts <- processOptGroup (simOptions LocalBackends) args
+    simOpts <- processOptGroup (simOptions AllBackends) args
     bmOpts  <- processOptGroup benchmarkOptions args
     stdpOpts<- processOptGroup stdpOptions args
     endOptProcessing args
     when (optPrintHeader bmOpts) $ do
         putStrLn rtsCvsHeader
         exitWith ExitSuccess
-    runBenchmark simOpts stdpOpts (createBenchmark bmOpts)
+    let f = runFunction $ optMeasurement bmOpts
+    f simOpts stdpOpts (createBenchmark bmOpts)
+    where
+        runFunction Throughput = runBenchmarkThroughput
+        runFunction Latency = runBenchmarkLatency
