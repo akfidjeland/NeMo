@@ -33,10 +33,8 @@ defaultPort = PortNumber 56100
 
 -- TODO: propagate errors to external client
 run :: [Wire.Stimulus] -> Backend.Simulation -> IO [Wire.Firing]
-run stimulus sim = do
-    let fstim = map decodeStimulus stimulus
-    pdata <- rnf fstim `seq` Backend.run sim fstim
-    return $! rnf pdata `seq` map decodeFiring pdata
+run stimulus sim =
+    return . map decodeFiring =<< Backend.run sim (map decodeStimulus stimulus)
 
 
 getConnectivity :: Backend.Simulation -> IO (Map.Map Idx [Wire.Synapse])

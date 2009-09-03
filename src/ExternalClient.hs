@@ -175,7 +175,7 @@ instance NemoFrontend_Iface ClientState where
     -- TODO: handle Maybes here!
     setBackend h (Just host) = reconfigure h $ setHost host
     addNeuron h (Just n) = constructWith h $ clientAddNeuron n
-    run h (Just stim) = simulateWithLog "run" h $ Protocol.run stim
+    run h (Just stim) = simulateWith h $ Protocol.run stim
     enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
         reconfigure h $ setStdpFn prefire postfire maxWeight
     disableStdp h = reconfigure h $ disableStdp'

@@ -101,10 +101,13 @@ serverEnableStdp (Handler log m) prefire postfire mw = do
             return $! Constructing conf' net
         _ -> fail "STDP must be enabled /before/ starting simulation"
 
-
-simulateWith :: Handler -> String -> (Backend.Simulation -> IO a) -> IO a
-simulateWith (Handler log mvar) fnName f = do
+simulateWithLog h@(Handler log mvar) fnName f = do
     log fnName
+    simulateWith h f
+
+
+simulateWith :: Handler -> (Backend.Simulation -> IO a) -> IO a
+simulateWith (Handler log mvar) f = do
     modifyMVar mvar $ \st -> do
     case st of
         Simulating sim -> do
@@ -151,9 +154,9 @@ instance NemoBackend_Iface Handler where
     addNeuron h (Just n) = constructWith h $ serverAddNeuron n
     startSimulation = serverStartSimulation
     enableStdp st (Just pre) (Just post) (Just mw) = serverEnableStdp st pre post mw
-    run st (Just stim) = simulateWith st "run" $ Protocol.run stim
-    applyStdp st (Just reward) = simulateWith st "apply STDP" (\s -> Backend.applyStdp s reward)
-    getConnectivity st = simulateWith st "returning connectivity" Protocol.getConnectivity
+    run st (Just stim) = simulateWith st $ Protocol.run stim
+    applyStdp st (Just reward) = simulateWithLog st "apply STDP" (\s -> Backend.applyStdp s reward)
+    getConnectivity st = simulateWithLog st "returning connectivity" Protocol.getConnectivity
 
     {- This is a bit of a clunky way to get out of the serving of a single
      - client. Unfortunately, the auto-generated protocol code does not allow
