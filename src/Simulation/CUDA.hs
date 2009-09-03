@@ -24,7 +24,9 @@ import Simulation.CUDA.Address
 import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import qualified Simulation.CUDA.Probe as Probe (readFiring, readFiringCount)
-import Simulation.CUDA.KernelFFI as Kernel (stepBuffering, applyStdp, syncSimulation, printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics, copyToDevice)
+import Simulation.CUDA.KernelFFI as Kernel
+    (stepBuffering, stepNonBuffering, applyStdp, syncSimulation,
+     printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics, copyToDevice)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.Mapping (mapNetwork)
 import Simulation.CUDA.State (State(..))
@@ -46,7 +48,7 @@ instance Simulation_Iface State where
     run = runCuda
     run_ = runCuda_
     step = stepCuda
-    step_ = stepCuda_
+    step_ = stepNonBuffering
     applyStdp sim reward = withForeignPtr (rt sim) $ \p -> Kernel.applyStdp p reward
     elapsed sim = withForeignPtr (rt sim) Kernel.elapsedMs
     resetTimer sim = withForeignPtr (rt sim) Kernel.resetTimer
@@ -87,29 +89,22 @@ terminateCuda sim = withForeignPtr (rt sim) freeRT
 
 runCuda :: State -> [[Idx]] -> IO [ProbeData]
 runCuda sim fstim = do
-    runCuda_ sim fstim
+    mapM_ (Kernel.stepBuffering sim) fstim
     readFiring sim $! length fstim
+    -- printCycleCounters sim
 
 
 runCuda_ :: State -> [[Idx]] -> IO ()
 runCuda_ sim fstim = do
-    sequence2_ (stepBuffering sim) fstim
-    printCycleCounters sim
-    where
-        -- TODO: replace by sequence_
-        sequence2_ m (a:as) = m a >> sequence2_ m as
-        sequence2_ _ _ = return ()
+    mapM_ (Kernel.stepNonBuffering sim) fstim
+    -- printCycleCounters sim
 
 
 stepCuda :: State -> [Idx] -> IO ProbeData
 stepCuda sim fstim = do
-    stepCuda_ sim fstim
+    Kernel.stepBuffering sim fstim
     [firing] <- readFiring sim 1
     return $! firing
-
-
-stepCuda_ :: State -> [Idx] -> IO ()
-stepCuda_ sim fstim = stepBuffering sim fstim
 
 
 readFiring :: State -> Time -> IO [ProbeData]

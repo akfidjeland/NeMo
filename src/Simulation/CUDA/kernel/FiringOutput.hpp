@@ -41,6 +41,10 @@ class FiringOutput {
 				uint* len,
 				uint* totalCycles);
 
+		/*! Flush the buffer. Any data on the device is left there as garbage,
+		 * so there's no significant cost to doing this. */
+		void flushBuffer();
+
 		uint32_t* deviceData() const { return md_buffer; }
 
 		/*! The user is in control of when to read the buffer. This opens up

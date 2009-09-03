@@ -144,6 +144,13 @@ readFiring(RTDATA rtdata,
 void syncSimulation(RTDATA rtdata);
 
 
+/* If the user is not reading back firing, the firing output buffers should be
+ * flushed to avoid buffer overflow. The overflow is not harmful in that no
+ * memory accesses take place outside the buffer, but an overflow may result in
+ * later calls to readFiring returning non-sensical results. */
+void flushFiringBuffer(RTDATA rtdata);
+
+
 //-----------------------------------------------------------------------------
 // TIMING
 //-----------------------------------------------------------------------------

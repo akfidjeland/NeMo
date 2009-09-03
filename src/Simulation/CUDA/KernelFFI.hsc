@@ -2,6 +2,7 @@
 
 module Simulation.CUDA.KernelFFI (
     stepBuffering,
+    stepNonBuffering,
     applyStdp,
     setCMDRow,
     getCM,
@@ -193,6 +194,9 @@ foreign import ccall unsafe "step"
            -> Ptr CInt  -- ^ Neuron indices of neurons with forced firing
            -> IO CInt   -- ^ Kernel status
 
+foreign import ccall unsafe "flushFiringBuffer"
+    c_flushFiringBuffer :: Ptr CuRT -> IO ()
+
 
 {- | Perform a single simulation step, while buffering firing data on the
  - device, rather than reading it back to the host -}
@@ -214,6 +218,12 @@ stepBuffering sim fstim = do
         rethrow :: (Monad m) => String -> (a -> Either String b) -> a -> m b
         rethrow prefix f x = either (fail . (++) (prefix ++ ": ")) return (f x)
 
+
+stepNonBuffering sim fstim = do
+    stepBuffering sim fstim
+    -- the simulation always records firing, so we just flush the buffer after
+    -- the fact to avoid overflow.
+    withForeignPtr (rt sim) c_flushFiringBuffer
 
 
 -------------------------------------------------------------------------------
@@ -254,7 +264,6 @@ configureStdp rt conf =
         word64 bits = foldl' set 0 $ zip bits [0..]
 
         set w (b, i) = if b then setBit w i else w
-
 
 
 foreign import ccall unsafe "applyStdp"

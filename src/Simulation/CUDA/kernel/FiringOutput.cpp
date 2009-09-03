@@ -120,3 +120,11 @@ FiringOutput::populateSparse(
 		}
 	}
 }
+
+
+
+void
+FiringOutput::flushBuffer()
+{
+	m_bufferedCycles = 0;
+}

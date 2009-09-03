@@ -491,6 +491,12 @@ readFiring(RTDATA rtdata,
 }
 
 
+void
+flushFiringBuffer(RTDATA rtdata)
+{
+	rtdata->firingOutput->flushBuffer();
+}
+
 //-----------------------------------------------------------------------------
 // STDP
 //-----------------------------------------------------------------------------
