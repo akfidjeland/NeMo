@@ -16,14 +16,14 @@ class Simulation_Iface a where
     {- | Perform several simulation steps, without changing stimulation or STDP
      - application. The default method can be over-ridden to make use of
      - buffering. -}
-    run :: a -> [[Idx]] -> IO [ProbeData]
+    run :: a -> [[Idx]] -> IO [FiringOutput]
     run sim fstim = mapM (step sim) fstim
 
     {- | Perform several simulation steps, but ignore outputs -}
     run_ :: a -> [[Idx]] -> IO ()
     run_ sim fstim = mapM_ (step_ sim) fstim
 
-    step :: a -> [Idx] -> IO ProbeData
+    step :: a -> [Idx] -> IO FiringOutput
 
     step_ :: a -> [Idx] -> IO ()
     step_ sim fstim = step sim fstim >> return ()

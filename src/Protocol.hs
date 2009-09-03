@@ -24,7 +24,7 @@ import Construction.Izhikevich (IzhNeuron(..))
 import Construction.Synapse (Synapse(..), Static(..), current)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.STDP (StdpConf(..))
-import Types (Idx, ProbeData(..))
+import Types (Idx, FiringOutput(..))
 
 
 defaultPort = PortNumber 56100
@@ -98,9 +98,8 @@ encodeStimulus :: [Idx] -> Wire.Stimulus
 encodeStimulus = Wire.Stimulus . Just
 
 
-decodeFiring :: ProbeData -> Wire.Firing
-decodeFiring (FiringData xs) = xs
-decodeFiring _ = error "runSimulation: non-firing data returned from simulation"
+decodeFiring :: FiringOutput -> Wire.Firing
+decodeFiring (FiringOutput xs) = xs
 
 
 decodeConnectivity :: Map.Map Int [Wire.Synapse] -> Map.Map Idx [Synapse Static]

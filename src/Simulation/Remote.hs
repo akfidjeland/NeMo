@@ -18,7 +18,7 @@ import qualified Construction.Network as Network (Network, toList)
 import Protocol (decodeFiring, encodeStimulus, encodeNeuron, decodeConnectivity)
 import Simulation (Simulation_Iface(..), Simulation(..))
 import Simulation.STDP (StdpConf(..))
-import Types (Idx, ProbeData(FiringData))
+import Types (Idx, FiringOutput(..))
 
 import qualified Nemo_Types as Wire
 import qualified NemoBackend_Client as Wire
@@ -72,16 +72,16 @@ remoteEnableStdp r stdp = do
     Wire.enableStdp (ps r) (prefire stdp) (postfire stdp) (stdpMaxWeight stdp)
 
 
-remoteRun :: Remote -> [[Idx]] -> IO [ProbeData]
+remoteRun :: Remote -> [[Idx]] -> IO [FiringOutput]
 remoteRun r fstim = do
     fired <- Wire.run (ps r) $! map encodeStimulus fstim
-    return $! map FiringData fired
+    return $! map FiringOutput fired
 
 
-remoteStep :: Remote -> [Idx] -> IO ProbeData
+remoteStep :: Remote -> [Idx] -> IO FiringOutput
 remoteStep r fstim = do
     [fired] <- Wire.run (ps r) $! [encodeStimulus fstim]
-    return $! FiringData fired
+    return $! FiringOutput fired
 
 
 remoteApplyStdp :: Remote -> Double -> IO ()

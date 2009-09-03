@@ -87,7 +87,7 @@ terminateCuda sim = withForeignPtr (rt sim) freeRT
 
 
 
-runCuda :: State -> [[Idx]] -> IO [ProbeData]
+runCuda :: State -> [[Idx]] -> IO [FiringOutput]
 runCuda sim fstim = do
     mapM_ (Kernel.stepBuffering sim) fstim
     readFiring sim $! length fstim
@@ -100,23 +100,23 @@ runCuda_ sim fstim = do
     -- printCycleCounters sim
 
 
-stepCuda :: State -> [Idx] -> IO ProbeData
+stepCuda :: State -> [Idx] -> IO FiringOutput
 stepCuda sim fstim = do
     Kernel.stepBuffering sim fstim
     [firing] <- readFiring sim 1
     return $! firing
 
 
-readFiring :: State -> Time -> IO [ProbeData]
+readFiring :: State -> Time -> IO [FiringOutput]
 readFiring sim ncycles = do
     (ncycles', fired) <- Probe.readFiring $ rt sim
     assert (ncycles == ncycles') $ do
     return $! densifyDeviceFiring (att sim) ncycles' fired
 
 
--- TODO: error handling: propagate errors to caller, as in stepOne below
-densifyDeviceFiring :: ATT -> Int -> [(Time, DeviceIdx)] -> [ProbeData]
-densifyDeviceFiring att len fired = map FiringData dense
+-- TODO: error handling: propagate errors to caller
+densifyDeviceFiring :: ATT -> Int -> [(Time, DeviceIdx)] -> [FiringOutput]
+densifyDeviceFiring att len fired = map FiringOutput dense
     where
         gidx :: [(Time, Idx)]
         gidx = A.mapElems toGlobal fired

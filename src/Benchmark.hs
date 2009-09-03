@@ -246,7 +246,7 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
     t <- elapsed sim
     hPutStrLn stderr $ "Elapsed: " ++ show t
     hPutStrLn stderr $ (show ((t1-t0) `div` 1000000000)) ++ " vs " ++ show t
-    terminate sim
+    stop sim
     return $ rts { rtsCycles = fromIntegral runCycles,
                    rtsElapsed = fromIntegral t }
     where
@@ -261,12 +261,12 @@ runBenchmarkData simOpts stdpOpts net bm rts = do
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
     hPutStrLn stderr "Warming up data run"
-    run sim $ take initCycles fstim
+    run_ sim $ take initCycles fstim
     -- TODO: not needed:
     resetTimer sim
     hPutStrLn stderr "Gathering data"
-    rts' <- foldM (\x _ -> runChunk sim x) rts $ [0.. (runCycles `div` chunkSize)]
-    terminate sim
+    rts' <- foldM (\x _ -> runChunk sim x) rts $ [1.. (runCycles `div` chunkSize)]
+    stop sim
     return rts'
     where
         chunkSize = maybe 1000 id (stdpFrequency stdpOpts)
@@ -279,20 +279,14 @@ runBenchmarkData simOpts stdpOpts net bm rts = do
 
 
 
-firingCount :: ProbeData -> Integer
-firingCount (FiringCount n) = fromIntegral n
-firingCount (FiringData fs) = fromIntegral $ length fs
-firingCount _               = error "firingCount: non-firing data"
-
-
 {- | For speed: assume every synapse has the same number of synapes -}
-updateRTS :: RTS -> ProbeData -> RTS
-updateRTS rts p = rts {
+updateRTS :: RTS -> FiringOutput -> RTS
+updateRTS rts (FiringOutput f) = rts {
         rtsFired = (rtsFired rts) + n,
         rtsSpikes = (rtsSpikes rts) + n * m
     }
     where
-         n = firingCount p
+         n = fromIntegral $ length f
          -- assume uniform distribution
          m = (rtsSynapses rts) `div` (rtsNeurons rts)
 

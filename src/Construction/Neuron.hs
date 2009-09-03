@@ -2,8 +2,6 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Construction.Neuron (
-    NeuronProbe(..),
-    mergeProbeFs,
     -- * Construction
     Neuron,
     ndata,
@@ -30,29 +28,14 @@ module Construction.Neuron (
 import Control.Monad (liftM2)
 import Control.Parallel.Strategies (NFData, rnf)
 import Data.Binary
-import Data.List
-import qualified Data.Map as Map
-import Data.Maybe (isJust)
 
 import qualified Construction.Axon as Axon
 import Construction.Synapse
 import Types
-import Util.List (replace)
-
-
-
-class NeuronProbe p n f where
-    probeFn :: p -> n f -> f
-
-
-mergeProbeFs :: (NeuronProbe p n f) => [p] -> n f -> [f]
-mergeProbeFs ps n = map (\p -> probeFn p n) ps
 
 
 data Neuron n s = Neuron {
         ndata :: n,
-        -- TODO: use IArray
-        -- TODO: use Data.Seq
         axon :: Axon.Axon s
     } deriving (Eq)
 

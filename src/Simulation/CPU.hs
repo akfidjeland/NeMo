@@ -48,7 +48,7 @@ initSim net = mkRuntime net
 
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
-stepSim :: CpuSimulation -> [Idx] -> IO ProbeData
+stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
 stepSim (CpuSimulation ns ss sq) forcedFiring = do
     bounds <- getBounds ns
     let idx = [fst bounds..snd bounds]
@@ -61,7 +61,7 @@ stepSim (CpuSimulation ns ss sq) forcedFiring = do
     assoc' <- getAssocs ns
     let fired = firingIdx assoc'
     enqSpikes sq fired ss
-    return $! FiringData fired
+    return $! FiringOutput fired
     where
         liftN f x (y, z) = (y, f x z)
         firingIdx assoc = map fst $ filter (fired . snd) assoc

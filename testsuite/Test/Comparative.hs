@@ -8,7 +8,7 @@ import Test.HUnit
 import Test.Files (openTemp, closeTemp)
 import Types
 
-type HSimulation = (ProbeData -> IO ()) -> IO ()
+type HSimulation = (FiringOutput -> IO ()) -> IO ()
 
 comparisonTest :: HSimulation -> HSimulation -> String -> Test
 comparisonTest sim1 sim2 msg = TestLabel msg $ TestCase $ compareSims sim1 sim2

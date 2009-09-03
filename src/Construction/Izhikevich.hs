@@ -117,28 +117,8 @@ addThalamic n th = n { stateI = i + i', stateThalamic = th' }
 
 -- Return a random gaussian
 -- TODO: move to separate 'random' library
-{-
-rgauss mu sigma = do
-    r1 <- getStdRandom random
-    r2 <- getStdRandom random
-    return $ gauss mu sigma (r1, r2)
--}
-
 gauss mu sigma (r1, r2) =
     mu + sigma * sqrt (-2 * log r1) * cos (2 * pi * r2)
-
-instance (RealFrac f, Random f, Floating f) => NeuronProbe IzhState IzhNeuron f where
-    probeFn = izhProbeFn
-
-
-izhProbeFn
-    :: (Spiking IzhNeuron f, Fractional f)
-    => IzhState -> (IzhNeuron f) -> f
-izhProbeFn U n = stateU n
-izhProbeFn V n = stateV n
-izhProbeFn F n
-    | fired n   = 1.0  -- Note: not very elegant hack to make every probe double
-    | otherwise = 0.0
 
 
 instance (Binary f) => Binary (IzhNeuron f) where

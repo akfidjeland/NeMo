@@ -21,19 +21,9 @@ data Duration
 
 
 {- Run-time probed data -}
-data ProbeData
-        = FiringData [Idx]
-        | FiringCount Int
-        | NeuronState [(Idx, [FT])]
-    deriving (Eq)
-
-instance Show ProbeData where
-    show (FiringData x)  = show $ sort x
-    show (FiringCount x) = show x
-    show (NeuronState x) = show x
+-- TODO: rename: fire' -> fired (conflict with Neuron)
+newtype FiringOutput = FiringOutput { fired' :: [Idx] } deriving (Show, Eq)
 
 
-instance NFData ProbeData where
-    rnf (FiringData x) = rnf x `seq` ()
-    rnf (FiringCount x) = rnf x `seq` ()
-    rnf (NeuronState x) = rnf x `seq` ()
+instance NFData FiringOutput where
+    rnf (FiringOutput x) = rnf x `seq` ()

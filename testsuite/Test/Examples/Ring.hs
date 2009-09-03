@@ -30,7 +30,7 @@ data RingState = RingState {
 
 -- The ring network should produce a fixed pattern of just a single neuron
 -- firing
-checkFiring :: Int -> Idx -> Int -> IORef RingState -> ProbeData -> Assertion
+checkFiring :: Int -> Idx -> Int -> IORef RingState -> FiringOutput -> Assertion
 checkFiring size impulse delay ref = \p -> do
     s <- readIORef ref
     let s' = next s
@@ -42,8 +42,7 @@ checkFiring size impulse delay ref = \p -> do
             if t `mod` delay == 0
                 then RingState ((a+1) `mod` sz) sz (t+1)
                 else RingState a sz (t+1)
-        check (NeuronState _) _ = error "non-firing data in ring network test"
-        check (FiringData fs) (RingState expected _ t) = do
+        check (FiringOutput fs) (RingState expected _ t) = do
             when (delay == 1 && length fs /= 1) $ assertFailure $
                 "ring network did not produce exactly one firing during cycle "
                 ++ (show t) ++ ", instead it produced " ++ (show fs)

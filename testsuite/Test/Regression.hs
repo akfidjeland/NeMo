@@ -40,7 +40,7 @@ data RegressionTest = RegressionTest {
     }
 
 
-type SimulationHandler = (ProbeData -> IO ()) -> IO ()
+type SimulationHandler = (FiringOutput -> IO ()) -> IO ()
 
 createAll :: FilePath -> [RegressionTest] -> IO ()
 createAll basedir rs = mapM_ (createRegression basedir) rs
@@ -71,7 +71,7 @@ testRegression basedir rtest = do
     hClose infile
 
 
-runRegression :: RegressionTest -> (ProbeData -> IO ()) -> Assertion
+runRegression :: RegressionTest -> (FiringOutput -> IO ()) -> Assertion
 runRegression rtest@(RegressionTest nm _ nf fs be cs rs stdp) f = do
     -- TODO: share code with NSim/Simulation.Run
     -- TODO: don't use the same seed twice. Also sync with use in NSim/Construction
@@ -96,9 +96,8 @@ testFile basedir testname = do
     return $ basedir </> hostname </> testname
 
 
-checkResults :: Handle -> ProbeData -> IO ()
-checkResults hdl (FiringData probeData) = do
+checkResults :: Handle -> FiringOutput -> IO ()
+checkResults hdl (FiringOutput probeData) = do
     line <- hGetLine hdl
     let testData = sort $ read line
     assertEqual "" testData $ sort probeData
-checkResults hdl _ = error "Non-firing data"
