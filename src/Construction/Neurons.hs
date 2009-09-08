@@ -11,6 +11,7 @@ module Construction.Neurons (
         -- * Query
         synapsesOf,
         size,
+        isEmpty,
         indices,
         neurons,
         idxBounds,
@@ -84,6 +85,10 @@ synapsesOf (Neurons ns) ix = maybe [] (Neuron.synapses ix) $ Map.lookup ix ns
 {- | Return number of neurons -}
 size :: Neurons n s -> Int
 size = Map.size . ndata
+
+
+isEmpty :: Neurons n s -> Bool
+isEmpty = Map.null . ndata
 
 
 {- | Return number of synapses -}

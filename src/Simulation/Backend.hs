@@ -10,6 +10,7 @@ module Simulation.Backend (
 import Control.Monad (when)
 import System.IO (hPutStrLn, stderr)
 
+import Construction.Network (isEmpty)
 import Simulation
 import qualified Simulation.Remote as Remote (initSim)
 import qualified Simulation.CPU as CPU (initSim)
@@ -24,10 +25,12 @@ import Simulation.STDP (stdpEnabled)
 {- | Initialise simulation of the requested kind -}
 initSim net simOpts cudaOpts stdpConf = do
     backend <- chooseBackend $ optBackend simOpts
-    case backend of
+    if isEmpty net
+      then fail "network is empty"
+      else case backend of
         -- TODO: add temporal resolution to CPU simulation
         CPU -> do
-            when (stdpEnabled stdpConf) $ error "STDP not supported for CPU backend"
+            when (stdpEnabled stdpConf) $ fail "STDP not supported for CPU backend"
             return . BS =<< CPU.initSim net
 #if defined(CUDA_ENABLED)
         CUDA ->

@@ -116,8 +116,7 @@ simulateWith (Handler _ mvar) f = do
         Simulating sim -> do
             ret <- f sim
             return $! (st, ret)
-        Constructing conf net -> do
-            -- Start simulation first
+        Constructing conf net ->
             CE.handle initError $ do
             sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
             ret <- f sim

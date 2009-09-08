@@ -7,6 +7,7 @@ module Construction.Network (
         empty,
         -- * Query
         size,
+        isEmpty,
         synapseCount,
         indices,
         idxBounds,
@@ -57,6 +58,10 @@ empty = Network (Neurons.empty) NoTopology
 {- | Return number of neurons in the network -}
 size :: Network n s -> Int
 size = Neurons.size . networkNeurons
+
+
+isEmpty :: Network n s -> Bool
+isEmpty = Neurons.isEmpty . networkNeurons
 
 
 {- | Return total number of synapses in the network -}

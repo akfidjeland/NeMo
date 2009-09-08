@@ -65,6 +65,7 @@ service NemoFrontend {
 		throws (1:ConstructionError err),
 
 	void startSimulation()
+		throws (1:ConstructionError err),
 
 	# Run simulation for multiple cycles
 	list<Firing> run(1:list<Stimulus> stim)
@@ -122,6 +123,7 @@ service NemoBackend {
 	# may be quite time consuming, so the user is given the option of
 	# controlling when this happens manually.
 	void startSimulation()
+		throws (1:ConstructionError err),
 
 	# Run simulation for multiple cycles
 	list<Firing> run(1:list<Stimulus> stim)
