@@ -185,7 +185,15 @@ foreign import ccall unsafe "syncSimulation"
     syncSimulation :: Ptr CuRT -> IO ()
 
 
-foreign import ccall unsafe "step"
+{- The 'c_step' function is marked as safe, even though nothing could be
+ - further from the truth. Haskell conflates the issues of re-entrancy and
+ - concurrency in the FFI annotations. A foreign function can only run in a
+ - concurrent manner if it is marked as safe. The step function is *not*
+ - re-entrant.  If it is called in a re-entrant way the program will most
+ - likely crash. We do, however, require concurrency for performance reason (in
+ - particular performing network communication while the simulation is
+ - running); hence 'safe'. -}
+foreign import ccall safe "step"
     c_step :: Ptr CuRT  -- ^ kernel runtime data
            -> CInt      -- ^ Sub-ms update steps
            -- External firing stimulus

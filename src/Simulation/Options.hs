@@ -8,7 +8,8 @@ module Simulation.Options (
         SimulationOptions(..),
         simOptions,
         BackendOptions(..),
-        defaultBackend
+        defaultBackend,
+        enablePipelining
     ) where
 
 import Network (PortID(PortNumber))
@@ -50,19 +51,25 @@ data SimulationOptions = SimulationOptions {
         optDuration   :: Duration,
         optTempSubres :: TemporalResolution,
         -- TODO: roll CUDA options into this
-        optBackend    :: Backend
+        optBackend    :: Backend,
+        optPipelined  :: Bool
         -- TODO: roll STDP configuration into this
     }
+
+
+enablePipelining :: SimulationOptions -> SimulationOptions
+enablePipelining opts = opts { optPipelined = True }
 
 
 simDefaults = SimulationOptions {
         optDuration   = Forever,
         optTempSubres = 4,
 #if defined(CUDA_ENABLED)
-        optBackend    = CUDA
+        optBackend    = CUDA,
 #else
-        optBackend    = CPU
+        optBackend    = CPU,
 #endif
+        optPipelined  = False
     }
 
 

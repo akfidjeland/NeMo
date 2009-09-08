@@ -34,11 +34,11 @@ import Construction.Topology
 import Options
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.CUDA.Options
-import Simulation.Options
-import Simulation.Backend (initSim)
+import qualified Simulation.Backend as Backend
 import Simulation.STDP
 import Simulation.STDP.Options
-import qualified Protocol (decodeNeuron, run, getConnectivity, decodeStdpConfig, defaultPort)
+import qualified Protocol (decodeNeuron, run, getConnectivity,
+    decodeStdpConfig, defaultPort, pipelineLength)
 import Types
 
 
@@ -58,11 +58,17 @@ data NemoState
 
 data Config = Config {
         stdpConfig :: !StdpConf,
-        simConfig :: !SimulationOptions
+        simConfig :: !Backend.SimulationOptions
     }
 
 
-defaultConfig = Config (defaults stdpOptions) (defaults $ simOptions AllBackends)
+withSimConfig :: (Backend.SimulationOptions -> Backend.SimulationOptions) -> Config -> Config
+withSimConfig f conf = conf { simConfig = simConfig' }
+    where
+        simConfig' = f $ simConfig conf
+
+
+defaultConfig = Config (defaults stdpOptions) (defaults $ Backend.simOptions Backend.AllBackends)
 
 
 {- | Create the initials state for construction -}
@@ -116,7 +122,7 @@ setHost :: String -> Config -> Config
 setHost host conf = conf { simConfig = simConfig' }
     where
         simConfig' = (simConfig conf) {
-                optBackend = RemoteHost host Protocol.defaultPort
+                Backend.optBackend = Backend.RemoteHost host Protocol.defaultPort
             }
 
 simulateWithLog :: String -> IORef NemoState -> (Backend.Simulation -> IO a) -> IO a
@@ -131,8 +137,7 @@ simulateWith m f = do
         Constructing net conf -> do
             -- Start simulation first
             handle initError $ do
-            sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
-            Backend.start sim
+            sim <- Backend.initSim net (simConfig conf) cudaOpts (stdpConfig conf)
             ret <- f sim
             st' <- return $! Simulating conf sim
             st' `seq` writeIORef m st'
@@ -172,16 +177,19 @@ clientReset m = do
 
 
 instance NemoFrontend_Iface ClientState where
-    -- TODO: handle Maybes here!
     setBackend h (Just host) = reconfigure h $ setHost host
     addNeuron h (Just n) = constructWith h $ clientAddNeuron n
     run h (Just stim) = simulateWith h $ Protocol.run stim
+    pipelineLength h = simulateWithLog "pipeline length query" h $ Protocol.pipelineLength
+    enablePipelining h = do
+        putStrLn "enabling pipelining"
+        reconfigure h $ withSimConfig Backend.enablePipelining
     enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
         reconfigure h $ setStdpFn prefire postfire maxWeight
     disableStdp h = reconfigure h $ disableStdp'
     applyStdp h (Just reward) = simulateWithLog "apply STDP" h (\s -> Backend.applyStdp s reward)
     getConnectivity h = simulateWith h Protocol.getConnectivity
-    startSimulation h = simulateWithLog "start" h (\_ -> return ())
+    startSimulation h = simulateWithLog "start" h $ const $ return ()
     stopSimulation h = clientStopSimulation h
     terminate h = clientStopSimulation h >> throw ClientTermination
     reset = clientReset

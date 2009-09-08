@@ -2,6 +2,7 @@
 
 module Server (runServer, forever, once) where
 
+import Control.Concurrent (forkIO, forkOS)
 import Control.Concurrent.MVar
 import qualified Control.Exception as CE
 import Control.Monad (when, forever)
@@ -20,12 +21,14 @@ import Construction.Izhikevich (IzhNeuron, IzhState)
 import qualified Construction.Network as Network (Network, addNeuron, addNeuronGroup, empty)
 import Construction.Synapse (Static)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
-import Simulation.Backend (initSim)
+import Simulation.Pipelined (initSim)
 import Simulation.CUDA.Options (cudaOptions)
 import Simulation.Options (SimulationOptions(..), Backend(..), defaultBackend)
 import Simulation.STDP (StdpConf(..))
 import Options (defaults)
-import qualified Protocol (decodeNeuron, run, getConnectivity, defaultPort, decodeStdpConfig)
+import qualified Protocol (decodeNeuron,
+        run, getConnectivity, defaultPort, decodeStdpConfig, decodeStimulus,
+        pipelineLength)
 import Types
 
 import NemoBackend
@@ -41,9 +44,16 @@ data ServerState
         | Simulating Backend.Simulation
 
 
+
 data Config = Config {
-        stdpConfig :: StdpConf
+        stdpConfig :: StdpConf,
+        pipelined :: Bool
     }
+
+
+newConfig :: StdpConf -> Config
+newConfig s = Config s False -- pipelining disabled by default
+
 
 
 {- Apply function as long as we're in constuction mode -}
@@ -76,38 +86,31 @@ serverAddCluster (Handler log mvar) ns = do
             return $! Constructing conf $! Network.addNeuronGroup ns' net
 
 
-serverStartSimulation :: Handler -> IO ()
-serverStartSimulation (Handler log mvar) = do
-    log "finalise network"
-    modifyMVar_ mvar $ \st -> do
-    case st of
-        -- TODO: throw exception, user might want a warning
-        s@(Simulating _) -> return s
-        Constructing conf net -> do
-            sim <- initSim net simConfig cudaOpts (stdpConfig conf)
-            return $! Simulating sim
-    where
-        simConfig = SimulationOptions Forever 4 defaultBackend
-        cudaOpts = defaults cudaOptions
+configureWithLog :: Handler -> String -> (Config -> Config) -> IO ()
+configureWithLog h@(Handler log _) fnName f = log fnName >> configureWith h f
 
 
-serverEnableStdp :: Handler -> [Double] -> [Double] -> Double -> IO ()
-serverEnableStdp (Handler log m) prefire postfire mw = do
-    log "enabling STDP"
+configureWith :: Handler -> (Config -> Config) -> IO ()
+configureWith (Handler _ m) f = do
     modifyMVar_ m $ \st -> do
     case st of
         Constructing conf net -> do
-            let conf' = Config $ Protocol.decodeStdpConfig prefire postfire mw
-            return $! Constructing conf' net
-        _ -> fail "STDP must be enabled /before/ starting simulation"
+            return $! Constructing (f conf) net
+        _ -> fail "Configuration commands must be called /before/ starting simulation" 
 
-simulateWithLog h@(Handler log mvar) fnName f = do
-    log fnName
-    simulateWith h f
+
+serverEnableStdp :: Handler -> [Double] -> [Double] -> Double -> IO ()
+serverEnableStdp h@(Handler log m) prefire postfire mw = do
+    let stdp = Protocol.decodeStdpConfig prefire postfire mw
+    configureWithLog h "enabling STDP" $ \conf -> conf { stdpConfig = stdp }
+
+
+
+simulateWithLog h@(Handler log mvar) fnName f = log fnName >> simulateWith h f
 
 
 simulateWith :: Handler -> (Backend.Simulation -> IO a) -> IO a
-simulateWith (Handler log mvar) f = do
+simulateWith (Handler _ mvar) f = do
     modifyMVar mvar $ \st -> do
     case st of
         Simulating sim -> do
@@ -116,13 +119,14 @@ simulateWith (Handler log mvar) f = do
         Constructing conf net -> do
             -- Start simulation first
             CE.handle initError $ do
-            sim <- initSim net simConfig cudaOpts (stdpConfig conf)
+            sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
             ret <- f sim
             return $! (Simulating sim, ret)
     where
+
         -- TODO: make this backend options instead of cudaOpts
         -- TODO: perhaps we want to be able to send this to server?
-        simConfig = SimulationOptions Forever 4 defaultBackend
+        simConfig conf = SimulationOptions Forever 4 defaultBackend $ pipelined conf
         cudaOpts = defaults cudaOptions
 
         initError :: CE.SomeException -> IO (ServerState, a)
@@ -148,21 +152,24 @@ data Handler = Handler {
     }
 
 instance NemoBackend_Iface Handler where
-    -- TODO: handle maybes
     -- TODO: use constructWith
-    addCluster st (Just ns) = serverAddCluster st ns
+    addCluster h (Just ns) = serverAddCluster h ns
     addNeuron h (Just n) = constructWith h $ serverAddNeuron n
-    startSimulation = serverStartSimulation
-    enableStdp st (Just pre) (Just post) (Just mw) = serverEnableStdp st pre post mw
-    run st (Just stim) = simulateWith st $ Protocol.run stim
-    applyStdp st (Just reward) = simulateWithLog st "apply STDP" (\s -> Backend.applyStdp s reward)
-    getConnectivity st = simulateWithLog st "returning connectivity" Protocol.getConnectivity
+    startSimulation h = simulateWithLog h "starting simulation" $ const $ return ()
+    enableStdp h (Just pre) (Just post) (Just mw) = serverEnableStdp h pre post mw
+    enablePipelining h =
+        configureWithLog h "enabling pipelining" $ \conf -> conf { pipelined = True }
+    run h (Just stim) = simulateWith h $ Protocol.run stim
+    pipelineLength h = simulateWithLog h "pipeline length query" $ Protocol.pipelineLength
+
+    applyStdp h (Just reward) = simulateWithLog h "apply STDP" (\s -> Backend.applyStdp s reward)
+    getConnectivity h = simulateWithLog h "returning connectivity" Protocol.getConnectivity
 
     {- This is a bit of a clunky way to get out of the serving of a single
      - client. Unfortunately, the auto-generated protocol code does not allow
      - an exit hook. It would be simple in principle (just replace 'process'),
      - but would cause a brittle build. -}
-    stopSimulation st = serverStopSimulation st >> CE.throw StopSimulation
+    stopSimulation h = serverStopSimulation h >> CE.throw StopSimulation
 
 
 data StopSimulation = StopSimulation
@@ -177,7 +184,7 @@ instance CE.Exception StopSimulation
 runServer :: (IO () -> IO ()) -> Handle -> StdpConf -> PortID -> IO ()
 runServer ntimes hdl stdpOptions port = do
     logTime hdl "started"
-    let conf = Config stdpOptions
+    let conf = newConfig stdpOptions
     socket <- listenOn port
     -- TODO: forkIO here, keep mvar showing simulation in use
     ntimes $ do

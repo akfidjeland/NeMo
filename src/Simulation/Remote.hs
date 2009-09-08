@@ -4,6 +4,7 @@
 module Simulation.Remote (initSim) where
 
 import Control.Monad (when)
+import Data.Maybe (fromJust)
 import qualified Data.Map as Map (Map)
 import Data.Word (Word16)
 import Network (HostName, PortID(..))
@@ -18,6 +19,7 @@ import qualified Construction.Network as Network (Network, toList)
 import Protocol (decodeFiring, encodeStimulus, encodeNeuron, decodeConnectivity)
 import Simulation (Simulation_Iface(..), Simulation(..))
 import Simulation.STDP (StdpConf(..))
+import Simulation.Options (SimulationOptions, optPipelined)
 import Types (Idx, FiringOutput(..))
 
 import qualified Nemo_Types as Wire
@@ -31,13 +33,14 @@ data Remote = Remote {
 
 type Net = Network.Network (IzhNeuron Double) Static
 
-initSim :: HostName -> PortID -> Net -> StdpConf -> IO Remote
-initSim hostName portID net stdp = do
+initSim :: HostName -> PortID -> Net -> SimulationOptions -> StdpConf -> IO Remote
+initSim hostName portID net simOpts stdp = do
     to <- hOpen (hostName, portID)
     let p = BinaryProtocol to
     let ps = (p,p)
     when (stdpEnabled stdp) $
         Wire.enableStdp ps (prefire stdp) (postfire stdp) (stdpMaxWeight stdp)
+    when (optPipelined simOpts) $ Wire.enablePipelining ps
     sendChunks ps 128 $ map encodeNeuron $ Network.toList net
     -- sendEach ps $ map encodeNeuron $ Network.toList net
     Wire.startSimulation ps
@@ -58,6 +61,7 @@ initSim hostName portID net stdp = do
 instance Simulation_Iface Remote where
     run = remoteRun
     step = remoteStep
+    pipelineLength = remotePipelineLength
     applyStdp = remoteApplyStdp
     elapsed = error "timing is not supported on remote backend"
     resetTimer = error "timing is not supported on remote backend"
@@ -82,6 +86,14 @@ remoteStep :: Remote -> [Idx] -> IO FiringOutput
 remoteStep r fstim = do
     [fired] <- Wire.run (ps r) $! [encodeStimulus fstim]
     return $! FiringOutput fired
+
+
+remotePipelineLength :: Remote -> IO (Int, Int)
+remotePipelineLength r = do
+    pll <- Wire.pipelineLength (ps r)
+    let input = fromJust $ Wire.f_PipelineLength_input pll
+        output = fromJust $ Wire.f_PipelineLength_output pll
+    return $! (input, output)
 
 
 remoteApplyStdp :: Remote -> Double -> IO ()

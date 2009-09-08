@@ -1,31 +1,34 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
+{- This backend uses a CUDA kernel, which is accessed through a C API. CUDA
+ - requires that the computation be split up into *thread blocks*. The logical
+ - network is mapped onto this computational topology by defining a number of
+ - neuron partitions (ideally strongly interconnected, weakly connected
+ - externally). -}
+
 module Simulation.CUDA (initSim, deviceCount) where
 
 
-import Control.Monad (when, forM)
+import Control.Monad (when)
 import Control.Monad.Writer (runWriter)
 import Control.Exception (assert)
-import Data.Array.Storable (withStorableArray)
-import Data.Array.MArray (newListArray)
-import Data.Either
+-- import Data.Either
 import Data.Maybe (fromMaybe)
 import Foreign.ForeignPtr (withForeignPtr)
 
-import qualified Construction.Network as N
-import Construction.Izhikevich (IzhNeuron, IzhState)
+import Construction.Network (Network)
+import Construction.Izhikevich (IzhNeuron)
 import Construction.Synapse (Static)
 import Simulation (Simulation_Iface(..))
-import Simulation.SpikeQueue
 import Types
 import qualified Util.Assocs as A (elems, keys, mapAssocs, mapElems, groupBy, densify)
 
 import Simulation.CUDA.Address
 import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
-import qualified Simulation.CUDA.Probe as Probe (readFiring, readFiringCount)
+import qualified Simulation.CUDA.Probe as Probe (readFiring)
 import Simulation.CUDA.KernelFFI as Kernel
-    (stepBuffering, stepNonBuffering, applyStdp, syncSimulation,
+    (stepBuffering, stepNonBuffering, applyStdp,
      printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics, copyToDevice)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.Mapping (mapNetwork)
@@ -33,17 +36,12 @@ import Simulation.CUDA.State (State(..))
 import Simulation.STDP
 
 
-{- This backend uses a CUDA kernel, which is accessed through a C API. CUDA
- - requires that the computation be split up into *thread blocks*. The logical
- - network is mapped onto this computational topology by defining a number of
- - neuron partitions (ideally strongly interconnected, weakly connected
- - externally). -}
-
 
 
 -------------------------------------------------------------------------------
 
 
+-- TODO: use same interface for all either Ptr CuRT, ForeignPtr CuRT, or just State
 instance Simulation_Iface State where
     run = runCuda
     run_ = runCuda_
@@ -53,14 +51,15 @@ instance Simulation_Iface State where
     elapsed sim = withForeignPtr (rt sim) Kernel.elapsedMs
     resetTimer sim = withForeignPtr (rt sim) Kernel.resetTimer
     getWeights sim = Memory.getWeights sim
-    start sim = copyToDevice (rt sim)
+    diagnostics = Kernel.deviceDiagnostics . rt
+    start sim = return () -- copy to device forced during initSim
     stop = terminateCuda
 
 
 {- | Initialise simulation and return a function to step through the rest of it -}
 initSim
     :: Maybe Int            -- ^ cluster size which mapper should be forced to use
-    -> N.Network (IzhNeuron FT) Static
+    -> Network (IzhNeuron FT) Static
     -> TemporalResolution
     -> StdpConf
     -> IO State
@@ -68,6 +67,7 @@ initSim partitionSize net dt stdpConf = do
     -- TODO: select device?
     let usingStdp = stdpEnabled stdpConf
         ((cuNet, att), mapLog) = runWriter $ mapNetwork net usingStdp partitionSize
+    -- TODO: send this upstream, so we can e.g. print to server log
     when (not $ null mapLog) $ writeFile "map.log" mapLog
     -- TODO: should we free this memory?
     configureKernel cuNet

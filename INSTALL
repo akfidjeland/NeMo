@@ -3,7 +3,7 @@ Requirements
 
 Common:
 
-- ghc 6.8
+- ghc 6.10
 - gcc
 
 Windows:
@@ -42,12 +42,6 @@ To build the client library:
 
 	./Setup.lhs configure -fclient
 	./Setup.lhs build
-
-Known problems
---------------
-
-- On Windows ghc 6.10 fails to correctly build dlls. Solution: use 6.8 instead.
-- The client Matlab library fails to build on 64-bit linux.
 
 Installing haskell packages from hackage
 ----------------------------------------

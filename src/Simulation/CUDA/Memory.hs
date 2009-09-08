@@ -45,6 +45,7 @@ initMemory net att maxProbePeriod dt stdp = do
     configureStdp rt stdp
     loadAllNeurons rt net
     loadCMatrix rt att net
+    copyToDevice rt
     return $ State pcount psizes maxDelay (fromIntegral dt) att rt
 
 

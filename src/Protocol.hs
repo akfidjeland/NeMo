@@ -3,10 +3,12 @@
 module Protocol (
         defaultPort,
         run,
+        pipelineLength,
         getConnectivity,
         decodeNeuron,
         encodeNeuron,
         decodeStdpConfig,
+        decodeStimulus,
         encodeStimulus,
         decodeFiring,
         decodeConnectivity)
@@ -30,11 +32,17 @@ import Types (Idx, FiringOutput(..))
 defaultPort = PortNumber 56100
 
 
-
 -- TODO: propagate errors to external client
 run :: [Wire.Stimulus] -> Backend.Simulation -> IO [Wire.Firing]
 run stimulus sim =
     return . map decodeFiring =<< Backend.run sim (map decodeStimulus stimulus)
+
+
+pipelineLength :: Backend.Simulation -> IO Wire.PipelineLength
+pipelineLength sim = do
+    -- the backend may be pipelined as well
+    (be_i, be_o) <- Backend.pipelineLength sim
+    return $! Wire.PipelineLength (Just $ be_i) (Just $ be_o)
 
 
 getConnectivity :: Backend.Simulation -> IO (Map.Map Idx [Wire.Synapse])

@@ -2,7 +2,10 @@
 
 {- | Select and intialise one of several kinds of available simulation backends -}
 
-module Simulation.Backend (initSim) where
+module Simulation.Backend (
+    initSim,
+    module Simulation.Options
+) where
 
 import Control.Monad (when)
 import System.IO (hPutStrLn, stderr)
@@ -31,7 +34,7 @@ initSim net simOpts cudaOpts stdpConf = do
             return . BS =<< CUDA.initSim (optPartitionSize cudaOpts) net dt stdpConf
 #endif
         (RemoteHost hostname port) ->
-            return . BS =<< Remote.initSim hostname port net stdpConf
+            return . BS =<< Remote.initSim hostname port net simOpts stdpConf
     where
         dt = optTempSubres simOpts
 

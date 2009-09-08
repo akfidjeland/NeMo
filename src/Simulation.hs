@@ -2,13 +2,16 @@
 
 {- | Common simulation interface for different backends -}
 
-module Simulation (Simulation_Iface(..), Simulation(..)) where
+module Simulation (Simulation_Iface(..), Simulation(..), Weights) where
 
 import Data.Map
 
 import Types
 import Construction.Network (Network)
 import Construction.Synapse (Synapse, Static)
+
+
+type Weights = Map Idx [Synapse Static]
 
 
 class Simulation_Iface a where
@@ -28,15 +31,22 @@ class Simulation_Iface a where
     step_ :: a -> [Idx] -> IO ()
     step_ sim fstim = step sim fstim >> return ()
 
+    {- | For pipelined execution, return the delay on the input and output side
+     - of the simulation. -}
+    pipelineLength :: a -> IO (Int, Int)
+    pipelineLength _ = return (0,0)
+
     applyStdp :: a -> Double -> IO ()
 
     {- | Return the number of milliseconds of elapsed (wall-clock)
      - simulation time -}
     elapsed :: a -> IO Int
+    elapsed _ = fail "no timing functions available"
 
     resetTimer :: a -> IO ()
+    resetTimer _ = fail "no timing functions available"
 
-    getWeights :: a -> IO (Map Idx [Synapse Static])
+    getWeights :: a -> IO Weights
 
     {- | Return a string with diagnostic data, which could be useful if the
      - backend fails for some reason -}
@@ -61,6 +71,7 @@ instance Simulation_Iface Simulation where
     run_ (BS s) = run_ s
     step (BS s) = step s
     step_ (BS s) = step_ s
+    pipelineLength (BS s) = pipelineLength s
     applyStdp (BS s) = applyStdp s
     elapsed (BS s) = elapsed s
     resetTimer (BS s) = resetTimer s

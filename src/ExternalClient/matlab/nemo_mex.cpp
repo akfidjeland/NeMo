@@ -270,9 +270,6 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		}
 	}
 
-	/* Since the whole network is set in one go, finalise it as well */
-	g_client->startSimulation();
-
 	mexPrintf("done\n");
 }
 
@@ -363,6 +360,20 @@ run(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+pipelineLength(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	PipelineLength pll;
+	g_client->pipelineLength(pll);
+	plhs[0] = mxCreateNumericMatrix(1, 1, mxUINT32_CLASS, mxREAL);
+	plhs[1] = mxCreateNumericMatrix(1, 1, mxUINT32_CLASS, mxREAL);
+	mexPrintf("i: %u. o: %u\n", pll.input, pll.output);
+	*mxGetPr(plhs[0]) = pll.input;
+	*mxGetPr(plhs[1]) = pll.output;
+}
+
+
+
+void
 enableSTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkConnection();
@@ -370,6 +381,14 @@ enableSTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	std::vector<double> postfire = vector<double>(numeric(prhs[2]));
 	double maxWeight = scalar<double>(numeric(prhs[3]));
 	g_client->enableStdp(prefire, postfire, maxWeight);
+}
+
+
+void
+enablePipelining(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	checkConnection();
+	g_client->enablePipelining();
 }
 
 

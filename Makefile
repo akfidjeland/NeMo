@@ -4,6 +4,7 @@ CUDA_LIB := dist/build/cuda/lib/libcuIzhikevich.a
 all: cabal
 
 version :=$(shell util/version)
+machine :=$(shell uname -m)
 
 # TODO: use configure for this
 thrift_inc =/usr/local/include/thrift
@@ -79,7 +80,7 @@ $(HASKELL_BUILD_DIR)/nemo-server/nemo-server: all
 # Distribution
 #
 
-dist_dir := dist/build/nemo-x86_64-$(strip $(version))
+dist_dir := dist/build/nemo-$(machine)-$(strip $(version))
 doc_build := dist/build/manual
 
 .PHONY: dist

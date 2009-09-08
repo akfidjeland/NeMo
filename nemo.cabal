@@ -89,6 +89,7 @@ executable nemo-server
                             Simulation.FiringStimulus,
                             Simulation.Queue,
                             Simulation.Options,
+                            Simulation.Pipelined,
                             Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
@@ -106,7 +107,7 @@ executable nemo-server
     if !os(windows)
         build-depends:      unix
 
-    -- ghc-options:            -threaded
+    ghc-options:            -threaded
     hs-source-dirs:         src, dist/build/thrift/gen-hs
     extensions:             DeriveDataTypeable
     if flag(debug)

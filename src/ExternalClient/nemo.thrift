@@ -1,3 +1,4 @@
+namespace java nemo
 
 
 # The source neuron for a synapse is implicit. They are always stored with the
@@ -40,6 +41,12 @@ exception ConstructionError {
 }
 
 
+struct PipelineLength {
+	1:i32 input,
+	2:i32 output
+}
+
+
 service NemoFrontend {
 
 	void setBackend(1:string host),
@@ -47,6 +54,10 @@ service NemoFrontend {
 	void enableStdp(1:list<double> prefire,
 			2:list<double> postfire,
 			3:double maxWeight),
+
+	void enablePipelining(),
+
+	PipelineLength pipelineLength(),
 
 	void disableStdp(),
 
@@ -58,6 +69,10 @@ service NemoFrontend {
 	# Run simulation for multiple cycles
 	list<Firing> run(1:list<Stimulus> stim)
 		throws (1:ConstructionError err),
+
+	# Run simulation for a single cycle
+	#Firing step(1:Stimulus stim)
+	#	throws (1:ConstructionError err),
 
 	void applyStdp(1:double reward)
 		throws (1:ConstructionError err),
@@ -88,23 +103,33 @@ service NemoBackend {
 	void addNeuron(1:IzhNeuron neuron)
 		throws (1:ConstructionError err),
 
-    # STDP is disabled by default. If STDP should be used in the simulation,
-    # enableSTDP must be called before the network is finalised
+	# STDP is disabled by default. If STDP should be used in the simulation,
+	# enableSTDP must be called before the network is finalised
 	void enableStdp(
             1:list<double> prefire,
 			2:list<double> postfire,
 			3:double maxWeight),
 
-    # When the network is complete, we need to indicate network completion.
-    # Calling this function is not strictly necessary, as the first instance of
-    # a simulation command will do the same. However, setting up the simulation
-    # may be quite time consuming, so the user is given the option of
-    # controlling when this happens manually.
+	# Pipelining should be enabled before construction
+	void enablePipelining(),
+
+	# After simulation has started the user can query the actual pipeline length.
+	PipelineLength pipelineLength(),
+
+	# When the network is complete, we need to indicate network completion.
+	# Calling this function is not strictly necessary, as the first instance of
+	# a simulation command will do the same. However, setting up the simulation
+	# may be quite time consuming, so the user is given the option of
+	# controlling when this happens manually.
 	void startSimulation()
 
 	# Run simulation for multiple cycles
 	list<Firing> run(1:list<Stimulus> stim)
 		throws (1:ConstructionError err),
+
+	# Run simulation for a single cycle
+	#Firing step(1:Stimulus stim)
+	#	throws (1:ConstructionError err),
 
 	void applyStdp(1:double reward)
 		throws (1:ConstructionError err),
