@@ -38,7 +38,7 @@ testClusterSize stdp sz1 sz2 =
 
 
 sim sz stdp f =
-    runSim (SimulationOptions duration dt CUDA) net fstim f
+    runSim (SimulationOptions duration dt CUDA False) net fstim f
             ((defaults cudaOptions) { optPartitionSize = Just sz })
             stdpConf
     where
