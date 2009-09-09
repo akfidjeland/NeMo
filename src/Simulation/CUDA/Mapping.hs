@@ -33,6 +33,7 @@ import qualified Construction.Network as Net
 import qualified Construction.Neurons as Neurons (Neurons, empty, toList)
 import qualified Construction.Neuron as N
 import Construction.Synapse
+import Simulation.STDP (plastic)
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI as Kernel (maxPartitionSize)
 import Types (Idx, Delay)
@@ -151,12 +152,15 @@ mkRPitch stdp pcount psize =
 
 
 {- Increment either L0 or L1 reverse pitch -}
-accRPitch :: ATT -> DeviceIdx -> (RPitch t, RPitch t) -> Synapse s -> ST t ()
-accRPitch att src@(srcp,_) (l0r, l1r) s = do
-    tgt <- deviceIdxM att $! target s
-    if isL0 tgt
-        then inc l0r tgt
-        else inc l1r tgt
+accRPitch :: Conductive s => ATT -> DeviceIdx -> (RPitch t, RPitch t) -> Synapse s -> ST t ()
+accRPitch att src@(srcp,_) (l0r, l1r) s =
+    if plastic s
+        then do
+            tgt <- deviceIdxM att $! target s
+            if isL0 tgt
+                then inc l0r tgt
+                else inc l1r tgt
+        else return ()
     where
         isL0 tgt = (==srcp) $! partitionIdx $! tgt
         inc ss i@(p,n) = readArray ss i >>= writeArray ss i . (+1)
@@ -167,7 +171,8 @@ maxRPitch arr = return . maximum =<< getElems arr
 
 
 networkInsert
-    :: ATT
+    :: Conductive s
+    => ATT
     -> Maybe (RPitch t, RPitch t)
     -> CuNet n s
     -> (Idx, N.Neuron n s)
@@ -196,7 +201,7 @@ networkInsert att rpitch (CuNet ptn mxd l0w l1w l0r l1r) (gidx, n) = do
         clusterInsert nidx Nothing = Just $! Map.singleton nidx n
 
 
-cuNetwork :: ATT -> Bool -> Int -> Int -> Neurons.Neurons n s -> CuNet n s
+cuNetwork :: Conductive s => ATT -> Bool -> Int -> Int -> Neurons.Neurons n s -> CuNet n s
 cuNetwork att stdp pcount psize ns = runST $ do
     rpitch <- mkRPitch stdp pcount psize
     net <- foldM (networkInsert att rpitch) empty cns
@@ -213,7 +218,8 @@ cuNetwork att stdp pcount psize ns = runST $ do
 
 {- | Map network onto partitions containing the same number of neurons -}
 mapNetwork
-    :: Net.Network n s
+    :: Conductive s
+    => Net.Network n s
     -> Bool          -- ^ are we using STDP?
     -> Maybe Int     -- ^ user-specified fixed size of each partition
     -- TODO: we may want to use Seq String here instead

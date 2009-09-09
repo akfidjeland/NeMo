@@ -12,12 +12,14 @@ import Control.Parallel.Strategies (NFData, rnf)
 import Types
 
 
+-- TODO: remove this typeclass. It's not needed and the naming is wrong. Also,
+-- it's not clear that we'd ever *not* want a weight.
 class Conductive s where
-    -- TODO: rename conductance
+    -- TODO: rename weight
     current :: s -> Current
 
 
-excitatory, inhibitory :: (Conductive s) => Synapse s -> Bool
+excitatory, inhibitory :: Conductive s => Synapse s -> Bool
 excitatory x = (current $! sdata x) > 0
 inhibitory x = (current $! sdata x) < 0
 
@@ -28,7 +30,6 @@ data Synapse s = Synapse {
         delay  :: !Delay,
         sdata  :: !s  -- variable payload
     } deriving (Eq, Show, Ord)
-
 
 
 newtype Static = Static FT deriving (Eq, Show, Ord)

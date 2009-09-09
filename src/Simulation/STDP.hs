@@ -8,9 +8,11 @@ module Simulation.STDP (
     postfireWindow,
     potentiationMask,
     depressionMask,
-    Reward
+    Reward,
+    plastic
 ) where
 
+import Construction.Synapse (Synapse, Static, excitatory, Conductive)
 
 data StdpConf = StdpConf {
 
@@ -32,6 +34,11 @@ data StdpConf = StdpConf {
 
 
 type Reward = Double
+
+
+-- TODO: allow finer-grained user configuration of plasticity
+plastic :: Conductive s => Synapse s -> Bool
+plastic = excitatory
 
 
 prefireWindow :: StdpConf -> Int
