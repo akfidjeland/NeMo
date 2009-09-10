@@ -159,9 +159,9 @@ closestPreFire(uint64_t spikes, uint targetNeuron)
 
 __device__
 uint
-closestPostFire(uint64_t spikes, uint rfshift, uint targetNeuron)
+closestPostFire(uint64_t spikes, uint targetNeuron)
 {
-	int dt = __clzll(spikes << (64 - rfshift - s_stdpPostFireWindow));
+	int dt = __clzll(spikes << (64 - s_stdpPostFireWindow));
 	return dt ? (uint) dt : STDP_NO_APPLICATION;
 }
 
@@ -171,15 +171,17 @@ closestPostFire(uint64_t spikes, uint rfshift, uint targetNeuron)
 
 __device__
 void
-logStdp(int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
+logStdp(uint cycle, int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
 {
 	const char* type[] = { "ltd", "ltp" };
 
 	if(w_diff != 0.0f) {
-		fprintf(stderr, "%s %+f for synapse %u-%u -> %u-%u (dt=%d, delay=%u)\n",
+		fprintf(stderr, "%s %+f for synapse %u-%u -> %u-%u (dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
 				type[w_diff > 0.0f], w_diff,
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
-				CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse));
+				CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse),
+				cycle - s_stdpPostFireWindow + dt,
+				cycle - s_stdpPostFireWindow);
 	}
 }
 
@@ -188,8 +190,9 @@ logStdp(int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
 
 __device__
 float
-updateRegion(uint64_t spikes,
-		uint rfshift,
+updateRegion(
+		uint cycle,
+		uint64_t spikes,
 		uint targetNeuron,
 		uint32_t r_synapse, // used for logging only
 		uint64_t* s_targetRecentFiring)
@@ -198,7 +201,7 @@ updateRegion(uint64_t spikes,
 	 * find the one closest to the firing. We therefore need to compute the
 	 * prefire and postfire dt's separately. */
 	uint dt_pre = closestPreFire(spikes, targetNeuron);
-	uint dt_post = closestPostFire(spikes, rfshift, targetNeuron);
+	uint dt_post = closestPostFire(spikes, targetNeuron);
 
 	/* For logging. Positive values: post-fire, negative values: pre-fire */
 #ifdef __DEVICE_EMULATION__
@@ -221,7 +224,7 @@ updateRegion(uint64_t spikes,
 		// if neither is applicable dt_post == dt_pre
 	}
 #ifdef __DEVICE_EMULATION__
-	logStdp(dt_log, w_diff, targetNeuron, r_synapse);
+	logStdp(cycle, dt_log, w_diff, targetNeuron, r_synapse);
 #endif
 	return w_diff;
 }
@@ -236,6 +239,7 @@ updateRegion(uint64_t spikes,
 __device__
 float
 updateSynapse(
+		uint cycle,               // for debugging only
 		uint32_t r_synapse,
 		uint targetNeuron,
 		uint rfshift,
@@ -250,8 +254,8 @@ updateSynapse(
 	uint64_t p_spikes = sourceFiring & s_stdpPotentiation;
 	uint64_t d_spikes = sourceFiring & s_stdpDepression;
 
-	return updateRegion(p_spikes, rfshift, targetNeuron, r_synapse, s_targetFiring)
-           + updateRegion(d_spikes, rfshift, targetNeuron, r_synapse, s_targetFiring);
+	return updateRegion(cycle, p_spikes, targetNeuron, r_synapse, s_targetFiring)
+           + updateRegion(cycle, d_spikes, targetNeuron, r_synapse, s_targetFiring);
 }
 
 
@@ -260,6 +264,7 @@ updateSynapse(
 __device__
 void
 updateSTDP_(
+	uint cycle,
 	bool isL1, // hack to work out how to address recent firing bits
 	uint64_t* sourceRecentFiring,
 	uint64_t* s_targetRecentFiring,
@@ -327,6 +332,7 @@ updateSTDP_(
 						 * non-coalesced. */
 						//! \todo consider using a cache for L1 firing history
 						float w_diff = updateSynapse(
+								cycle,
 								r_sdata,
 								target,
 								rfshift,

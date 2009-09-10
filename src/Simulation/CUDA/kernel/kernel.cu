@@ -494,6 +494,7 @@ STDP_FN(step) (
 
 #ifdef STDP
 	updateSTDP_(
+			cycle,
 			false,
 			s_recentFiring,
 			s_recentFiring,
@@ -507,9 +508,10 @@ STDP_FN(step) (
 #ifdef STDP
 	if(haveL1) {
 		updateSTDP_(
+				cycle,
 				true,
-				s_recentFiring,
 				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
+				s_recentFiring,
 				s_pitch64, 0,
 				s_partitionSize,
 				sr1_maxSynapsesPerNeuron,

@@ -22,7 +22,10 @@ data Duration
 
 {- Run-time probed data -}
 -- TODO: rename: fire' -> fired (conflict with Neuron)
-newtype FiringOutput = FiringOutput { fired' :: [Idx] } deriving (Show, Eq)
+newtype FiringOutput = FiringOutput { fired' :: [Idx] } deriving (Eq)
+
+instance Show FiringOutput where
+    show (FiringOutput xs) = show xs
 
 
 instance NFData FiringOutput where

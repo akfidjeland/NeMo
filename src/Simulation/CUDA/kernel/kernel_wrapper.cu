@@ -269,9 +269,7 @@ step(RTDATA rtdata,
 	dim3 dimGrid(rtdata->partitionCount);
 
 	static uint scycle = 0;
-#ifdef VERBOSE
-	fprintf(stderr, "cycle %u\n", scycle);
-#endif
+	DEBUG_MSG("cycle %u\n", scycle);
 	scycle += 1;
 
 	uint32_t* d_extFiring = 

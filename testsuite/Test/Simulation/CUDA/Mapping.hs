@@ -46,7 +46,7 @@ sim sz stdp f =
         net = build 123456 $ smallworldOrig
         dt = 4
         duration = Until 1000
-        fstim = FiringList [(0, [1])]
+        fstim = FiringList [(0, [0])]
         stdpConf =
             if stdp
                 then (defaults stdpOptions) {
