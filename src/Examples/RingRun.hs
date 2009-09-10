@@ -1,7 +1,6 @@
-module Main where
+module Examples.RingRun (runRingExample) where
 
 import System.Console.GetOpt
-import System.Environment (getArgs)
 import System.IO
 
 import Examples.Ring
@@ -42,9 +41,8 @@ options = [
 nrings n sz d = cluster (replicate n $ ring sz d) []
 
 
-main = do
+runRingExample args = do
     -- TODO: option processing
-    args <- getArgs
     let (actions, _, _) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return defaultOptions) actions
     let sz = optRingSize opts

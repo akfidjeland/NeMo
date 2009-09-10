@@ -1,4 +1,7 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 module Examples.Smallworld (smallworld, smallworldOrig) where
+
 import Construction
 
 -- Smallworld topology network

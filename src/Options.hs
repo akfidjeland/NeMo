@@ -59,8 +59,7 @@ withDefault def descr = descr ++ " (default: " ++ show def ++ ")"
  - two modes. In help printing mode, usage for all options are printed, but no
  - parsing takes place. In parsing mode options are parsed and written to
  - option group data -}
-startOptProcessing = do
-    args <- getArgs
+startOptProcessing args = do
     ref <- newIORef args
     -- always process common options
     commonOpts <- processOptGroup commonOptions $ Just ref

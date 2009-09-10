@@ -1,9 +1,8 @@
 {-# LANGUAGE CPP #-}
 
-module Main where
+module Test.RunTests (runTests) where
 
 import System.Console.GetOpt
-import System.Environment (getArgs)
 import System.Exit
 import System.FilePath
 import System.IO
@@ -93,8 +92,7 @@ showHelp _ = do
 
 
 
-main = do
-    args <- getArgs
+runTests args = do
     let (actions, nonOpts, msgs) = getOpt RequireOrder options args
     checkErrors msgs
     opts <- foldl (>>=) (return defaultOptions) actions

@@ -16,6 +16,7 @@ import Data.Maybe
 import Test.QuickCheck (Gen)
 import System.Random (mkStdGen, setStdGen)
 import CPUTime (getCPUTime)
+import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(..))
 import System.Time (getClockTime, ClockTime(..))
 import System.IO (hPutStrLn, stderr)
@@ -76,7 +77,7 @@ runSimulation seed simOpts net fstimF stdpOpts cudaOpts = do
 {- Process externally defined network according to command-line options
  - (default to run forever). -}
 execute net fstim = do
-    (args, commonOpts) <- startOptProcessing
+    (args, commonOpts) <- startOptProcessing =<< getArgs
     cudaOpts    <- processOptGroup cudaOptions args
     networkOpts <- processOptGroup (networkOptions FromCode) args
     stdpOpts    <- processOptGroup stdpOptions args

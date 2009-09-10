@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
-module Main (main) where
+
+module Benchmark (runBenchmark) where
 
 import Prelude
 
@@ -385,8 +386,8 @@ optRead optName s =
 benchmarkOptions = OptionGroup "Benchmark options" benchmarkDefaults benchmarkDescr
 
 
-main = do
-    (args, commonOpts) <- startOptProcessing
+runBenchmark args0 = do
+    (args, commonOpts) <- startOptProcessing args0
     simOpts <- processOptGroup (simOptions AllBackends) args
     bmOpts  <- processOptGroup benchmarkOptions args
     stdpOpts<- processOptGroup stdpOptions args

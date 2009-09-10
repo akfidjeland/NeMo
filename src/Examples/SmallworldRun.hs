@@ -1,7 +1,6 @@
-module Main where
+module Examples.SmallworldRun (runSmallworldExample) where
 
 import System.Console.GetOpt
-import System.Environment (getArgs)
 import System.IO
 
 import Examples.Smallworld (smallworld)
@@ -76,8 +75,7 @@ showHelp options = do
 
 
 
-main = do
-    args <- getArgs
+runSmallworldExample args = do
     let (actions, _, _) = getOpt RequireOrder options args
     opts <- foldl (>>=) (return defaultOptions) actions
     execute

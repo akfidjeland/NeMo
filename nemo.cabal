@@ -39,102 +39,10 @@ flag Benchmark
     default:                False
 
 
---library
-    --build-depends:          array >= 0.1, base, bytestring, mtl, containers, haskell98, network, network-bytestring, parallel
-
-
 executable nemo
     main-is:                Nemo.hs
-    other-modules:          Construction.Network,
-                            Construction.Neurons,
-                            Construction.Synapse,
-                            Construction.Izhikevich,
-                            Construction.Topology,
-                            ExternalClient,
-                            NemoBackend_Client,
-                            Options,
-                            Protocol,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.CUDA.Options,
-                            Simulation.Options,
-                            Simulation.Remote,
-                            Simulation.Run,
-                            Simulation.STDP,
-                            Simulation.STDP.Options,
-                            Types
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
-    build-depends:          array >= 0.1, base, containers, haskell98, mtl, network, parallel, Thrift
-    extensions:             DeriveDataTypeable
-    ghc-options:            -threaded
-    if flag(profile)
-        ghc-options:        -prof -auto-all
-
-
-executable nemo-server
-    main-is:                IzhikevichServer.hs
-    other-modules:          Construction.Axon,
-                            Construction.Izhikevich,
-                            Construction.Network,
-                            Construction.Neuron,
-                            Construction.Neurons,
-                            Construction.Spiking,
-                            Construction.Synapse,
-                            Construction.Topology,
-                            Protocol,
-                            Server,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.CPU,
-                            Simulation.FiringStimulus,
-                            Simulation.Queue,
-                            Simulation.Options,
-                            Simulation.Pipelined,
-                            Simulation.Remote,
-                            Simulation.Run,
-                            Simulation.SpikeQueue,
-                            Simulation.STDP,
-                            Types,
-                            Util.Assocs,
-                            Construction,
-                            Construction.Construction,
-                            Construction.Parameterisation,
-                            Construction.Randomised.Topology,
-                            Construction.Randomised.Synapse,
-                            Examples.Smallworld
-
-    build-depends:          random, old-time, QuickCheck, Thrift
-    if !os(windows)
-        build-depends:      unix
-
-    ghc-options:            -threaded
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
-    extensions:             DeriveDataTypeable
-    if flag(debug)
-        ghc-options:        -fno-ignore-asserts
-    if flag(CUDA)
-        other-modules:      Simulation.CUDA,
-                            Simulation.CUDA.Address,
-                            Simulation.CUDA.Configuration,
-                            Simulation.CUDA.DeviceProperties,
-                            Simulation.CUDA.KernelFFI,
-                            Simulation.CUDA.Memory,
-                            Simulation.CUDA.Mapping,
-                            Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe,
-                            Simulation.CUDA.State
-        cpp-options:        -DCUDA_ENABLED
-        extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
-        include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
-    if flag(profile)
-        ghc-options:        -prof -auto-all
-
-
-
-executable runtests
-    main-is:                Test/RunTests.hs
-    other-modules:          Construction.Axon,
+    other-modules:          Construction,
+                            Construction.Axon,
                             Construction.Construction,
                             Construction.Izhikevich,
                             Construction.Network,
@@ -143,23 +51,39 @@ executable runtests
                             Construction.Parameterisation,
                             Construction.Rand,
                             Construction.Randomised.Topology,
+                            Construction.Randomised.Synapse,
                             Construction.Spiking,
                             Construction.Synapse,
                             Construction.Topology,
-                            Examples.Smallworld,
-                            Examples.Random1k,
+                            ExternalClient,
+                            NemoBackend_Client,
                             Options,
+                            Protocol,
+                            Server,
                             Simulation,
                             Simulation.Backend,
                             Simulation.CPU,
+                            Simulation.CUDA.Options,
                             Simulation.FiringStimulus,
                             Simulation.Options,
                             Simulation.Queue,
+                            Simulation.Pipelined,
                             Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
                             Simulation.STDP,
                             Simulation.STDP.Options,
+                            Types,
+                            Util.Assocs
+
+    if flag(Benchmark)
+        other-modules:      Benchmark,
+                            Examples.Ring,
+                            Examples.Random1k
+        cpp-options:        -DBENCHMARK_ENABLED
+
+    if flag(Test)
+        other-modules:      Test.RunTests,
                             Test.Comparative,
                             Test.Construction.Axon,
                             Test.Construction.Synapse,
@@ -170,253 +94,20 @@ executable runtests
                             Test.Network.Client,
                             Test.Regression,
                             Test.Simulation.Run,
-                            Types,
-                            Util.Assocs
-    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
-    if !flag(test)
-        buildable:          False
-    if flag(profile)
-        ghc-options:        -prof -auto-all
-    build-depends:          HUnit, filepath, directory
-    hs-source-dirs:         src, testsuite, dist/build/thrift/gen-hs
-    if flag(Matlab)
-        other-modules:      Test.ClientAPI.Matlab
-        cpp-options:        -DMATLAB_ENABLED
-    if flag(CUDA)
-        other-modules:      Simulation.CUDA,
-                            Simulation.CUDA.Address,
-                            Simulation.CUDA.Configuration,
-                            Simulation.CUDA.DeviceProperties,
-                            Simulation.CUDA.KernelFFI,
-                            Simulation.CUDA.Memory,
-                            Simulation.CUDA.Mapping,
-                            Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe,
-                            Simulation.CUDA.State
-                            Test.Simulation.CUDA.Mapping,
-                            Test.Simulation.CUDA.Memory
-        cpp-options:        -DCUDA_ENABLED
-        extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
-        include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
-
-
-executable benchmark
-    main-is:                Benchmark.hs
-    other-modules:          Construction.Axon,
-                            Construction.Construction,
-                            Construction.Izhikevich,
-                            Construction.Network,
-                            Construction.Neuron,
-                            Construction.Neurons,
-                            Construction.Parameterisation,
-                            Construction.Randomised.Topology,
-                            Construction.Spiking,
-                            Construction.Synapse,
-                            Construction.Topology,
-                            Examples.Ring,
-                            Examples.Random1k,
-                            Options,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.CPU,
-                            Simulation.FiringStimulus,
-                            Simulation.Options,
-                            Simulation.Queue,
-                            Simulation.Remote,
-                            Simulation.Run,
-                            Simulation.SpikeQueue,
-                            Simulation.STDP,
-                            Simulation.STDP.Options,
-                            Types, Construction.Rand,
-                            Util.Assocs
-
-    if !flag(benchmark)
-        buildable:          False
-
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
-    if flag(debug)
-        ghc-options:        -fno-ignore-asserts
-    ghc-options:            -O2
-    extensions:              NoMonomorphismRestriction, DeriveDataTypeable
-    if flag(profile)
-        ghc-options:        -prof -auto-all
-    if flag(CUDA)
-        other-modules:      Simulation.CUDA,
-                            Simulation.CUDA.Address,
-                            Simulation.CUDA.Configuration,
-                            Simulation.CUDA.DeviceProperties,
-                            Simulation.CUDA.KernelFFI,
-                            Simulation.CUDA.Memory,
-                            Simulation.CUDA.Mapping,
-                            Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe,
-                            Simulation.CUDA.State
-        cpp-options:        -DCUDA_ENABLED
-        extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
-        include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
-
-
-executable smallworld
-    main-is:                Examples/SmallworldRun.hs
-    other-modules:          Construction.Axon,
-                            Construction.Construction,
-                            Construction.Izhikevich,
-                            Construction.Network,
-                            Construction.Neuron, 
-                            Construction.Neurons,
-                            Construction.Spiking,
-                            NSim,
-                            Options,
-                            Construction.Parameterisation,
-                            Construction.Rand,
-                            Construction.Randomised.Topology,
-                            Construction.Synapse,
-                            Construction.Topology,
                             Examples.Smallworld,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.CPU,
-                            Simulation.FiringStimulus,
-                            Simulation.Options,
-                            Simulation.Queue, 
-                            Simulation.Remote,
-                            Simulation.Run,
-                            Simulation.SpikeQueue, 
-                            Simulation.STDP,
-                            Simulation.STDP.Options,
-                            Types,
-                            Util.Assocs
-
-    if !flag(examples)
-        buildable:          False
-
-    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
-    if flag(debug)
-        ghc-options:        -fno-ignore-asserts
-    else
-        ghc-options:        -O2
-    if flag(profile)
-        ghc-options:        -prof -auto-all
-    if flag(CUDA)
-        other-modules:      Simulation.CUDA, 
-                            Simulation.CUDA.Address,
-                            Simulation.CUDA.Configuration,
-                            Simulation.CUDA.DeviceProperties,
-                            Simulation.CUDA.KernelFFI,
-                            Simulation.CUDA.Memory,
-                            Simulation.CUDA.Mapping,
-                            Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe,
-                            Simulation.CUDA.State
-        cpp-options:        -DCUDA_ENABLED
-        extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
-        include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
-
-
-
-executable random1k
-    main-is:                Examples/Random1kRun.hs
-    other-modules:          Construction.Axon,
-                            Construction.Construction,
-                            Construction.Izhikevich,
-                            Construction.Network,
-                            Construction.Neuron,
-                            Construction.Neurons,
-                            Construction.Parameterisation,
-                            Construction.Randomised.Topology,
-                            Construction.Spiking,
-                            Construction.Synapse,
-                            Construction.Topology,
                             Examples.Random1k
-                            NSim,
-                            Options,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.CPU,
-                            Simulation.FiringStimulus,
-                            Simulation.Options,
-                            Simulation.Queue,
-                            Simulation.Remote,
-                            Simulation.Run,
-                            Simulation.SpikeQueue,
-                            Simulation.STDP,
-                            Simulation.STDP.Options,
-                            Types, Construction.Rand,
-                            Util.Assocs
 
-    if !flag(examples)
-        buildable:          False
+        hs-source-dirs:     testsuite
+        build-depends:      HUnit, filepath, directory
+        cpp-options:        -DTEST_ENABLED
 
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
-    if flag(debug)
-        ghc-options:        -fno-ignore-asserts
-    if flag(profile)
-        ghc-options:        -prof -auto-all -caf-all -O2
-    else
-        ghc-options:        -O2
-    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
-    if flag(profile)
-        ghc-options:        -prof -auto-all
-    if flag(CUDA)
-        other-modules:      Simulation.CUDA, 
-                            Simulation.CUDA.Address,
-                            Simulation.CUDA.Configuration,
-                            Simulation.CUDA.DeviceProperties,
-                            Simulation.CUDA.KernelFFI,
-                            Simulation.CUDA.Memory,
-                            Simulation.CUDA.Mapping,
-                            Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe,
-                            Simulation.CUDA.State
-        cpp-options:        -DCUDA_ENABLED
-        extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
-        include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
+        if flag(Matlab)
+            other-modules:  Test.ClientAPI.Matlab
+
+    if flag(Matlab)
+        cpp-options:        -DMATLAB_ENABLED
 
 
-executable ring
-    main-is:                Examples/RingRun.hs
-    other-modules:          Construction.Axon,
-                            Construction.Construction,
-                            Construction.Izhikevich,
-                            Construction.Network,
-                            Construction.Neuron,
-                            Construction.Neurons,
-                            Construction.Parameterisation,
-                            Construction.Randomised.Topology,
-                            Construction.Spiking,
-                            Construction.Synapse,
-                            Construction.Topology,
-                            Examples.Ring,
-                            NSim,
-                            Options,
-                            Simulation,
-                            Simulation.Backend,
-                            Simulation.CPU,
-                            Simulation.FiringStimulus,
-                            Simulation.Options,
-                            Simulation.Queue,
-                            Simulation.Remote,
-                            Simulation.Run,
-                            Simulation.SpikeQueue,
-                            Simulation.STDP,
-                            Simulation.STDP.Options,
-                            Types, Construction.Rand,
-                            Util.Assocs
-
-    if !flag(examples)
-        buildable:          False
-
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
-    if flag(debug)
-        ghc-options:        -fno-ignore-asserts
-    extensions:             NoMonomorphismRestriction, DeriveDataTypeable
-    if flag(profile)
-        ghc-options:        -prof -auto-all
     if flag(CUDA)
         other-modules:      Simulation.CUDA,
                             Simulation.CUDA.Address,
@@ -432,3 +123,43 @@ executable ring
         extra-libraries:    cuIzhikevich cudart cutil
         extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
         include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
+
+    -- We have several test scripts. These should really be replaced by scripts
+    -- which are loaded dynamically by the main nemo binary.
+    if flag(examples)
+        other-modules:      Examples.Random1k,
+                            Examples.Random1kRun,
+                            Examples.Ring,
+                            Examples.RingRun,
+                            Examples.Smallworld,
+                            Examples.SmallworldRun,
+                            NSim
+
+        cpp-options:        -DEXAMPLES_ENABLED
+
+    hs-source-dirs:         src, dist/build/thrift/gen-hs
+
+    build-depends:          array >= 0.1
+    build-depends:          base
+    build-depends:          containers
+    build-depends:          haskell98
+    build-depends:          mtl
+    build-depends:          network
+    build-depends:          old-time
+    build-depends:          parallel
+    build-depends:          QuickCheck
+    build-depends:          random
+    build-depends:          Thrift
+    if !os(windows)
+        build-depends:      unix
+
+    extensions:             DeriveDataTypeable
+
+    ghc-options:            -threaded -O2
+
+    -- TODO: is this needed?
+    if flag(profile)
+        ghc-options:        -prof -auto-all
+
+    if flag(debug)
+        ghc-options:        -fno-ignore-asserts
