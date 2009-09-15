@@ -17,22 +17,30 @@ import Examples.RingRun (runRingExample)
 import ExternalClient (runExternalClient)
 import Options
 import Protocol (defaultPort)
-import Server (runServer, forever)
+import Server (runServer)
 import Simulation.STDP.Options (stdpOptions)
 #if defined(TEST_ENABLED)
 import Test.RunTests (runTests)
 #endif
+import Types (Duration(..))
 
 
-data ServerOptions = ServerOptions { optPort :: PortID }
+data ServerOptions = ServerOptions {
+        optPort :: PortID,
+        optRepetition :: Duration
+    }
 
 
-serverOptions = OptionGroup "Server options" (ServerOptions defaultPort) optionDescr
+serverOptions = OptionGroup "Server options" (ServerOptions defaultPort Forever) optionDescr
 
 optionDescr = [
         Option [] ["port"]
             (ReqArg (\a o -> return o { optPort = PortNumber $ toEnum $ read a }) "INT")
-            "port number for client/server communication"
+            "port number for client/server communication",
+
+        Option [] ["once"]
+            (NoArg (\o -> return o { optRepetition = Once }))
+            "serve only a single client before shutting down (default: disabled)"
     ]
 
 runBackendServer args0 = do
@@ -43,7 +51,9 @@ runBackendServer args0 = do
     endOptProcessing args
     -- let verbose = optVerbose commonOpts
     -- TODO: pass in options from command line
-    runServer forever stderr (defaults stdpOptions) (optPort serverOpts)
+    let reps = optRepetition serverOpts
+        port = optPort serverOpts
+    runServer reps stderr (defaults stdpOptions) port
 
 
 data Command

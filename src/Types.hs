@@ -17,6 +17,7 @@ type Delay   = Time
 
 data Duration
         = Forever
+        | Once
         | Until Time
 
 

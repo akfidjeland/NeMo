@@ -1,11 +1,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Server (runServer, forever, once) where
+module Server (runServer, Duration(..)) where
 
 import Control.Concurrent (forkIO, forkOS)
 import Control.Concurrent.MVar
 import qualified Control.Exception as CE
-import Control.Monad (when, forever)
+import Control.Monad (when, forever, replicateM_)
 import Control.Parallel.Strategies (rnf)
 import Data.Typeable (Typeable)
 import qualified Data.Map as Map (Map, mapWithKey)
@@ -34,6 +34,7 @@ import Types
 import NemoBackend
 import NemoBackend_Iface
 import qualified Nemo_Types as Wire
+
 
 type Net = Network.Network (IzhNeuron Double) Static
 
@@ -178,15 +179,15 @@ instance CE.Exception StopSimulation
 
 
 {- | A binary non-threaded server, which only deals with requests from a single
- - external client at a time. Typically invoked as either 'runServer forever'
- - or 'runServer once' (if it should terminate after serving a single client). -}
-runServer :: (IO () -> IO ()) -> Handle -> StdpConf -> PortID -> IO ()
+ - external client at a time. Typically invoked as either 'runServer Forever'
+ - or 'runServer Once' (if it should terminate after serving a single client). -}
+runServer :: Duration -> Handle -> StdpConf -> PortID -> IO ()
 runServer ntimes hdl stdpOptions port = do
     logTime hdl "started"
     let conf = newConfig stdpOptions
     socket <- listenOn port
     -- TODO: forkIO here, keep mvar showing simulation in use
-    ntimes $ do
+    repeated ntimes $ do
         (h, client, clientPort) <- accept socket
         let log = logMsg hdl client clientPort
         log "connected"
@@ -200,8 +201,10 @@ runServer ntimes hdl stdpOptions port = do
         loop m = do { continue <- m; when continue (loop m) }
 
 
-once :: IO () -> IO ()
-once = id
+repeated :: Duration -> IO () -> IO ()
+repeated Forever = forever
+repeated (Until t) = replicateM_ t
+repeated Once = id
 
 
 {- | Log message, with time prepended -}

@@ -11,7 +11,7 @@ import Test.HUnit
 import Construction.Construction (build)
 import Examples.Smallworld (smallworldOrig)
 import Options (defaults)
-import Server (runServer, once)
+import Server (runServer)
 import Simulation.Backend (initSim)
 import Simulation.CUDA.Options (cudaOptions)
 import Simulation.FiringStimulus
@@ -35,7 +35,7 @@ test_clientSim = TestLabel "comparing client/server with local" $ TestCase $ do
         logfile = logdir </> "TestClient.log"
     createDirectoryIfMissing True logdir
     bracket (openFile logfile WriteMode) (hClose) $ \logTo -> do
-    serverThread <- forkIO $ runServer once logTo (defaults stdpOptions) testPort
+    serverThread <- forkOS $ runServer Once logTo (defaults stdpOptions) testPort
     yield
     let sim1 = \f -> runSim (simOpts CPU 4) net
                         fstim f (defaults cudaOptions) (defaults stdpOptions)
