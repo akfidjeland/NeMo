@@ -10,15 +10,9 @@ submitter, owner, status (open, closed, inprogress, etc).
 Client/server architecture
 --------------------------
 
-- handle result truncation properly, e.g. using nstep of 1000, run simulation
-  for 1500 steps, should not produce 2000 cycles worth of results.
-- provide cleaner separation between connection handling (Server.hs) and
-  communication (Protocol.hs)
 - add a mechanism for dealing with multiple requests - add 'busy' reply in
   server. This requires a threaded server.
-- MultipleParallelSimulations
-- make client specify probe, i.e what subsets of neurons are currently of
-  interest. 
+- MultipleParallelSimulations (low priority)
 - add support for specifying current stimulus in server mode (to run on server)
 
 Network specification/DSL
@@ -37,6 +31,8 @@ Simulation general
 CUDA backend
 ------------
 
+- If the GPU is in use by some other process or user the kernel blocks. We
+  should provide a warning or similar.
 - It's now possible to overflow the firing buffer in L0 delivery, if more than
   half the neurons fire. We can avoid this by flushing the buffer whenever it's
   half-full and making it a rotating buffer.
@@ -109,9 +105,11 @@ MatlabAPI
 Build system
 ------------
 
+- Make cabal build invoke cuda build process
+
 - in Makefile, have cuda build check configuration in dist to determine whether
   or not to build the kernel library
-- add creation of windows install (MSI), using Bamse
+- add creation of windows install (MSI), possibly using Bamse (from hackage)
 - add creation of deb installer
 - tie the test framwork into git. require all tests to pass.
 - cmake? We should do some configuration to determine if CUDA is present

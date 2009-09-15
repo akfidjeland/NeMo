@@ -56,7 +56,8 @@ STDP_FN(fire)(
 	float* g_u = g_neuronParameters + STATE_U * neuronParametersSize;
 	float* g_v = g_neuronParameters + STATE_V * neuronParametersSize;
 
-	/* The dense firing output is staged in shared memory before being written to global memory */
+	/* The dense firing output is staged in shared memory before being written
+	 * to global memory */
 	clearFiringOutput();
 
 	//__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
@@ -92,6 +93,10 @@ STDP_FN(fire)(
 					u += substepMult * (a * ( b*v - u ));
 					fired = v >= 30.0f;
 				} 
+			}
+
+			if(neuron == 810) {
+				DEBUG_MSG("v[811] = %f\n", v);
 			}
 
 			/* s_fstim accessed using broadcast */

@@ -39,7 +39,8 @@ matlab_m_files := $(basename $(basename $(notdir $(wildcard $(matlab_src)/*.m.m4
 
 
 
-matlab-client: $(matlab_build)/nemo_mex.mexa64 $(patsubst %,$(matlab_build)/%.m,$(matlab_m_files))
+matlab-client: $(matlab_build)/nemo_mex.mexa64 \
+	$(patsubst %,$(matlab_build)/%.m,$(matlab_m_files))
 
 
 # Generate LUT for Matlab API function dispatch
@@ -50,10 +51,17 @@ $(autogen)/mex_fn_lut.%: $(matlab_src)/gen_fn.py $(matlab_src)/*.m.m4
 	$< --$* $(matlab_m_files) > $@
 
 
-# Generate Matlab files from source, docuemntation, and function LUT
+# Generate Matlab files from source, documentation, and function LUT
 $(matlab_build)/%.m: $(autogen)/mex_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.m.help
 	$(matlab_src)/m-help $(word 3, $^) > $@
 	m4 $(wordlist 1, 2, $^) >> $@
+
+
+# Generate Matlab reference source files from source and documentation
+$(matlab_build)/reference/%.m: $(matlab_src)/%.m.ref $(matlab_src)/%.m.help
+	mkdir -p $(dir $@)
+	$(matlab_src)/m-help $(word 2, $^) > $@
+	cat $< >> $@
 
 
 # TODO: detect the default extension for matlab-mex
@@ -138,10 +146,7 @@ tags:
 # There ought to be a better way of doing this!
 .PHONY: relink
 relink:
-	rm -f dist/build/ring/ring dist/build/smallworld/smallworld dist/build/random1k/random1k dist/build/runtests/runtests  dist/build/simple/simple dist/build/benchmark/benchmark dist/build/nemo-server/nemo-server
-	#rm -f dist/build/smallworld/smallworld
-	#rm -f dist/build/simple/simple
-	#rm -f dist/build/ring/ring 
+	rm -f dist/build/nemo/nemo
 	./Setup.lhs build
 
 

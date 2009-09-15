@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//#define VERBOSE
+#define VERBOSE
 
 /* Host logging */
 
