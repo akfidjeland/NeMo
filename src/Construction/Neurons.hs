@@ -33,13 +33,14 @@ module Construction.Neurons (
         updateSynapses,
         withTerminals,
         -- * Printing
-        printConnections,
-        printNeurons
+        hPrintConnections,
+        hPrintNeurons,
     ) where
 
 import Control.Parallel.Strategies (NFData, rnf)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
+import System.IO (Handle, hPutStrLn)
 
 import qualified Construction.Neuron as Neuron
 import Construction.Synapse (Synapse, source)
@@ -250,13 +251,12 @@ showNeuronList ((idx, n):ns) =
 
 
 {- | Print synapses, one line per synapse -}
-printConnections :: (Show s) => Neurons n s -> IO ()
-printConnections (Neurons ns) =
-    mapM_ (uncurry Neuron.printConnections) $ Map.assocs ns
+hPrintConnections :: (Show s) => Handle -> Neurons n s -> IO ()
+hPrintConnections hdl (Neurons ns) =
+    mapM_ (uncurry $ Neuron.hPrintConnections hdl) $ Map.assocs ns
 
 
 {- | Print neurons, one line per neuron -}
-printNeurons :: (Show n, Show s) => Neurons n s -> IO ()
-printNeurons (Neurons ns) = mapM_ f $ Map.assocs ns
-    where f (idx, n) = putStrLn $ show idx ++ " " ++ show n
-
+hPrintNeurons :: (Show n, Show s) => Handle -> Neurons n s -> IO ()
+hPrintNeurons hdl (Neurons ns) = mapM_ f $ Map.assocs ns
+    where f (idx, n) = hPutStrLn hdl $ show idx ++ " " ++ show n

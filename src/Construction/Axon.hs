@@ -33,17 +33,18 @@ module Construction.Axon (
         withTargets,
         withSynapses,
         -- * Pretty-print
-        printConnections,
+        hPrintConnections,
         -- * Internals, exposed for testing
         present
     ) where
 
 
 import Control.Monad (forM_)
+import Control.Parallel.Strategies (NFData, rnf, using)
 import Data.List (foldl', intercalate, find, delete)
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
-import Control.Parallel.Strategies (NFData, rnf, using)
+import System.IO (Handle, hPutStrLn)
 
 import Construction.Synapse (Synapse(..), delay, Static)
 import Types (Source, Target, Delay)
@@ -213,11 +214,11 @@ withSynapses f (Axon ss) = Axon $ Map.map (Map.map (map f)) ss
 
 
 -- TODO: make instance of Show instead
-printConnections :: (Show s) => Source -> Axon s -> IO ()
-printConnections src axon = do
+hPrintConnections :: (Show s) => Handle -> Source -> Axon s -> IO ()
+hPrintConnections hdl src axon = do
     forM_ (synapsesByDelay axon) $ \(d, ss) -> do
         forM_ ss $ \(tgt, s) -> do
-            putStrLn $ intercalate " " $ [show src, show tgt, show d, show s]
+            hPutStrLn hdl $ (show src) ++ " -> " ++ (intercalate " " $ [show tgt, show d, show s])
 
 
 instance (Show s) => Show (Axon s) where

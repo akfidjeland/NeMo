@@ -26,11 +26,14 @@ module Construction.Network (
         withSynapses,
         -- * Pretty-printing
         printConnections,
-        printNeurons
+        hPrintConnections,
+        printNeurons,
+        hPrintNeurons
     ) where
 
 import Control.Parallel.Strategies (NFData, rnf)
 import qualified Data.Map as Map
+import System.IO (Handle, stdout)
 
 import qualified Construction.Neuron as Neuron
 import qualified Construction.Neurons as Neurons
@@ -156,8 +159,16 @@ instance (NFData n, NFData s) => NFData (Network n s) where
 -- Printing
 -------------------------------------------------------------------------------
 
+hPrintConnections :: (Show s) => Handle -> Network n s -> IO ()
+hPrintConnections hdl = Neurons.hPrintConnections hdl . networkNeurons
+
 printConnections :: (Show s) => Network n s -> IO ()
-printConnections = Neurons.printConnections . networkNeurons
+printConnections = hPrintConnections stdout
+
 
 printNeurons :: (Show n, Show s) => Network n s -> IO ()
-printNeurons = Neurons.printNeurons . networkNeurons
+printNeurons = hPrintNeurons stdout
+
+hPrintNeurons :: (Show n, Show s) => Handle -> Network n s -> IO ()
+hPrintNeurons hdl = Neurons.hPrintNeurons hdl . networkNeurons
+

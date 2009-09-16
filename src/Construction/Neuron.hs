@@ -22,10 +22,11 @@ module Construction.Neuron (
     withTargets,
     withSynapses,
     -- * Pretty-printing
-    printConnections
+    hPrintConnections
 ) where
 
 import Control.Parallel.Strategies (NFData, rnf)
+import System.IO (Handle)
 
 import qualified Construction.Axon as Axon
 import Construction.Synapse
@@ -113,8 +114,8 @@ withSynapses :: (s -> s) -> Neuron n s -> Neuron n s
 withSynapses f = withAxon (Axon.withSynapses f)
 
 
-printConnections :: (Show s) => Idx -> Neuron n s -> IO ()
-printConnections source n = Axon.printConnections source $ axon n
+hPrintConnections :: (Show s) => Handle -> Idx -> Neuron n s -> IO ()
+hPrintConnections hdl source n = Axon.hPrintConnections hdl source $ axon n
 
 
 instance (NFData n, NFData s) => NFData (Neuron n s) where
