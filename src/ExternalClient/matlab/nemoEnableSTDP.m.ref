@@ -1,0 +1,10 @@
+function nemoEnableSTDP(prefire, postfire, maxWeight)
+
+	global NEMO_STDP_PREFIRE;
+	global NEMO_STDP_POSTFIRE;
+	global NEMO_STDP_MAX_WEIGHT;
+
+	NEMO_STDP_PREFIRE = prefire;
+	NEMO_STDP_POSTFIRE = postfire;
+	NEMO_STDP_MAX_WEIGHT = maxWeight;
+end

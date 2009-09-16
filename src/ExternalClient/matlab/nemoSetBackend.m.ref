@@ -1,0 +1,3 @@
+function nemoSetBackend(hostname)
+	disp('nemoSetBackend command ignored. Currently using reference Matlab implementation');
+end

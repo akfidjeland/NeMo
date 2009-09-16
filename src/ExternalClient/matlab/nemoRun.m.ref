@@ -1,0 +1,115 @@
+function fired = nemoRun(nsteps, stimulus)
+
+	% Neuron parameters
+	global NEMO_NEURONS_A;
+	global NEMO_NEURONS_B;
+	global NEMO_NEURONS_C;
+	global NEMO_NEURONS_D;
+	global NEMO_NEURONS_U;
+	global NEMO_NEURONS_V;
+
+	% Connectivity matrix
+	global NEMO_CM_TARGETS;
+	global NEMO_CM_DELAYS;
+	global NEMO_CM_WEIGHTS;
+	global NEMO_MAX_DELAY;
+
+	% Runtime data
+	% TODO: add to global list for connect/disconnect
+	global NEMO_FIRINGS;
+	global NEMO_CYCLE;
+
+	fired = [];
+
+	for t=1:nsteps
+
+		stim = [];
+		if ~isempty(stimulus)
+			stim = stimulus(stimulus(:,1) == t);
+		end;
+
+		% get the firing relevant to the current cycle (should be at the beginning) 
+		% reduce the size of the stimulus
+
+		[NEMO_NEURONS_U, NEMO_NEURONS_V, NEMO_FIRINGS] =...
+			step(false, NEMO_CYCLE, stim,...
+				NEMO_NEURONS_A,...
+				NEMO_NEURONS_B,...
+				NEMO_NEURONS_C,...
+				NEMO_NEURONS_D,...
+				NEMO_NEURONS_U,...
+				NEMO_NEURONS_V,...
+				NEMO_CM_TARGETS,...
+				NEMO_CM_DELAYS,...
+				NEMO_CM_WEIGHTS,...
+				NEMO_MAX_DELAY,...
+				NEMO_FIRINGS);
+
+		fired_idx = find(NEMO_FIRINGS(:,1) == NEMO_CYCLE);
+		fired = [fired; NEMO_FIRINGS(fired_idx, :)];
+		NEMO_CYCLE = NEMO_CYCLE + 1;
+
+	end;
+
+	% TODO: discard old firings here
+end
+
+
+
+
+% TODO: throw away out-of-date firings
+function [u_out, v_out, firings_out] = ...
+	step(verbose, t, stimulated, a, b, c, d, u, v, targets, delays, weights, Dmax, firings)
+
+	% Accumulate current for incoming spikes
+	I = zeros(size(a));
+	if ~isempty(firings)
+
+		% Find incoming spikes, taking account of propagation delays
+		k = size(firings, 1);
+		while (k > 0 && firings(k, 1) >= t - Dmax)
+			pre = firings(k,2);
+			t_fire = firings(k,1);
+			ind = delays(:, pre) == t - t_fire;
+			post = targets(ind, pre);
+			I(post) = I(post) + weights(ind, pre);
+			if verbose && ~isempty(post)
+				fprintf('c%u %u ->\n', t, firings(k,2));
+				disp([post, weights(ind, pre)]);
+			end;
+			k = k-1;
+		end;
+
+	end;
+
+	% Update v and u using Izhikevich's model in increments of tau
+	emsteps = 4;     % euler method steps
+	tau = 1/emsteps; % ms per euler method step
+
+	for k=1:emsteps
+		quiet = find(v < 30);
+		v(quiet) = v(quiet) + ...
+			tau*((0.04*v(quiet)+5).*v(quiet)+140-u(quiet)+I(quiet));
+		u(quiet) = u(quiet) + ...
+			tau*(a(quiet).*(b(quiet).*v(quiet)-u(quiet)));
+	end
+
+	fprintf('v[195] = %f (I=%f)\n', v(195), I(195));
+
+	fired = find(v >= 30);
+	fired = sort([fired, stimulated]);
+	if verbose && ~isempty(fired)
+		fprintf('c%u: fired\n', t);
+		disp(fired);
+	end;
+
+	if ~isempty(fired)
+		firings = [firings; t+0*fired, fired];
+		v(fired) = c(fired);
+		u(fired) = u(fired) + d(fired);
+	end;
+
+	u_out = u;
+	v_out = v;
+	firings_out = firings;
+end

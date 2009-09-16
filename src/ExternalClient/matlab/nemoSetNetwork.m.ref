@@ -1,0 +1,25 @@
+function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights)
+	global NEMO_NEURONS_A;
+	global NEMO_NEURONS_B;
+	global NEMO_NEURONS_C;
+	global NEMO_NEURONS_D;
+	global NEMO_NEURONS_U;
+	global NEMO_NEURONS_V;
+
+	NEMO_NEURONS_A = a;
+	NEMO_NEURONS_B = b;
+	NEMO_NEURONS_C = c;
+	NEMO_NEURONS_D = d;
+	NEMO_NEURONS_U = u;
+	NEMO_NEURONS_V = v;
+
+	global NEMO_CM_TARGETS;
+	global NEMO_CM_DELAYS;
+	global NEMO_CM_WEIGHTS;
+	global NEMO_MAX_DELAY;
+
+	NEMO_CM_TARGETS = transpose(targets);
+	NEMO_CM_DELAYS = transpose(delays);
+	NEMO_CM_WEIGHTS = transpose(weights);
+	NEMO_MAX_DELAY = max(max(delays));
+end
