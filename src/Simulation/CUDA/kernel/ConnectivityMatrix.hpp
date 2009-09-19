@@ -43,6 +43,8 @@ struct ConnectivityMatrix
 				size_t maxSynapsesPerDelay,
 				size_t maxRevSynapsesPerNeuron);
 
+		~ConnectivityMatrix();
+
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(
@@ -82,7 +84,7 @@ struct ConnectivityMatrix
 
 		/*! Clear one plane of connectivity matrix on the device */
 		void df_clear(size_t submatrix);
-		void dr_clear(size_t submatrix);
+		void clearStdpAccumulator();
 
 		// void printSTDPTrace();
 
@@ -111,8 +113,11 @@ struct ConnectivityMatrix
 		std::vector<uint> m_maxSynapsesPerDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
-		 * partition, and delay */
-		RSMatrix m_rsynapses;
+		 * partition, and delay. The reverse connectivity is stored sepearately
+		 * for each partition */
+		std::vector<RSMatrix*> m_rsynapses;
+
+		bool m_setReverse;
 
 		/* The user may want to read back the modified weight matrix. We then
 		 * need the corresponding non-compressed addresses as well. The shape

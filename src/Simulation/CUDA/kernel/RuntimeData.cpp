@@ -39,6 +39,10 @@ RuntimeData::RuntimeData(
 	m_deviceDirty(true),
 	m_haveL1Connections(partitionCount != 1 && l1SQEntrySize != 0)
 {
+	int device;
+	cudaGetDevice(&device);
+	cudaGetDeviceProperties(&m_deviceProperties, device);
+
 	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize, maxL1SynapsesPerDelay);
 	firingOutput = new FiringOutput(partitionCount, maxPartitionSize, maxReadPeriod);
 
@@ -68,10 +72,6 @@ RuntimeData::RuntimeData(
 			maxL1RevSynapsesPerNeuron);
 
 	setPitch();
-
-	int device;
-	cudaGetDevice(&device);
-	cudaGetDeviceProperties(&m_deviceProperties, device);
 
 	cycleCounters = new CycleCounters(partitionCount, m_deviceProperties.clockRate);
 }

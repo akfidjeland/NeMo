@@ -38,33 +38,35 @@ applySTDP_(
 {
 	SET_COUNTER(s_ccApplySTDP, 0);
 
-    __shared__ uint s_chunkCount;
+	__shared__ uint s_chunkCount;
 	__shared__ uint s_partitionSize;
 
 	float* gr_stdp = cmIdx == 0
 		? (float*) cr0_stdp[CURRENT_PARTITION]
 		: (float*) cr1_stdp[CURRENT_PARTITION];
+
 	uint r_pitch = cmIdx == 0
 		? cr0_pitch[CURRENT_PARTITION]
-		:  cr1_pitch[CURRENT_PARTITION];
+		: cr1_pitch[CURRENT_PARTITION];
+
 	uint32_t* gr_address = cmIdx == 0
 		? (uint32_t*) cr0_address[CURRENT_PARTITION]
 		: (uint32_t*) cr1_address[CURRENT_PARTITION];
 
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-        s_chunkCount = DIV_CEIL(r_pitch, THREADS_PER_BLOCK);
+		s_chunkCount = DIV_CEIL(r_pitch, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
 
 	float* gf_weight = (float*) gf_cm + FCM_WEIGHT * f_size;
 
 	for(uint target=0; target < s_partitionSize; ++target) {
-        for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
+		for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
-            uint r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+			uint r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-            if(r_sidx < r_pitch) {
+			if(r_sidx < r_pitch) {
 
 				size_t gr_offset = target * r_pitch + r_sidx;
 				uint rsynapse = gr_address[gr_offset];
@@ -101,7 +103,7 @@ applySTDP_(
 				}
 			}
 		}
-        //! \todo remove sync?
+		//! \todo remove sync?
 		__syncthreads();
 	}
 

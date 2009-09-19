@@ -9,10 +9,13 @@
 
 #include "kernel.cu_h"
 
-/*! \brief Sparse synapse matrix in reverse format
+/*! \brief Sparse synapse matrix in reverse format for a single partition
  *
  * Synapses in this matrix are stored on a per-target basis. Unlike in SMatrix
  * there is no further sub-division into separate delays.
+ *
+ * The reverse matrix has two planes: one for reverse addressing and one for
+ * accumulating STDP statistics (LTP and LTD).
  *
  * \see SMatrix
  *
@@ -22,9 +25,7 @@ struct RSMatrix
 {
 	public:
 
-		RSMatrix(size_t partitionCount,
-				size_t maxPartitionSize,
-				size_t maxSynapsesPerNeuron);
+		RSMatrix(size_t partitionSize, size_t maxSynapsesPerNeuron);
 
 		~RSMatrix();
 
@@ -32,50 +33,51 @@ struct RSMatrix
 				unsigned int sourcePartition,
 				unsigned int sourceNeuron,
 				unsigned int sourceSynapse,
-				unsigned int targetPartition,
 				unsigned int targetNeuron,
 				unsigned int delay);
 
 		void moveToDevice();
 
-		void d_fill(size_t plane, char val) const;
+		void clearStdpAccumulator();
 
 		/*! \return bytes allocated on the device */
 		size_t d_allocated() const;
 
-		bool empty() const;
+		/*! \return word pitch */
+		size_t pitch() const { return m_pitch; }
 
-		/*! \return pitch for per-partition addressing */
-		const std::vector<DEVICE_UINT_PTR_T> partitionPitch() const;
+		/*! \return device address of reverse address matrix */
+		uint32_t* d_address() const;
 
-		/*! \return addresses to each partition's reverse address data */
-		const std::vector<DEVICE_UINT_PTR_T> partitionAddress() const;
-
-		/*! \return addresses to each partition's STDP accumulator data */
-		const std::vector<DEVICE_UINT_PTR_T> partitionStdp() const;
+		/*! \return device address of STDP accumulator matrix */
+		float* d_stdp() const;
 
 	private:
-
-		//! \todo remove altogher
-		size_t size() const; /*! \return size (in words) of a single plane of the matrix */
 
 		uint32_t* m_deviceData;
 
 		std::vector<uint32_t> m_hostData;
 
-		size_t m_partitionCount;
-
-		size_t m_maxPartitionSize;
+		size_t m_partitionSize;
 
 		size_t m_maxSynapsesPerNeuron;
 
 		std::vector<size_t> m_synapseCount; // per neuron
 
-		std::vector<uint> m_maxPartitionPitch;
-
 		size_t m_pitch;
 
 		size_t m_allocated;
+
+		/* Indices of the two planes of the matrix */
+		enum {
+			RCM_ADDRESS = 0,
+			RCM_STDP,
+			RCM_SUBMATRICES
+		};
+
+		/*! \return size (in words) of a single plane of the matrix */
+		size_t size() const;
+
 };
 
 #endif

@@ -181,18 +181,6 @@ copyToDevice(RTDATA rtdata)
 
 
 
-
-/*! Clear STDP accumulators for a connectivity matrix */
-__host__
-void
-clearSTDPAccumulator(dim3 dimGrid, dim3 dimBlock, RTDATA rtdata, uint cmIdx)
-{
-	rtdata->cm(cmIdx)->dr_clear(RCM_STDP);
-}
-
-
-
-
 /* Apply STDP to a single connectivity matrix */
 __host__
 void
@@ -238,9 +226,9 @@ applyStdp(RTDATA rtdata, float stdpReward)
 
 	if(rtdata->usingStdp()) {
 		if(stdpReward == 0.0f) {
-			clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L0);
+			rtdata->cm(CM_L0)->clearStdpAccumulator();
 			if(rtdata->haveL1Connections()) {
-				clearSTDPAccumulator(dimGrid, dimBlock, rtdata, CM_L1);
+				rtdata->cm(CM_L1)->clearStdpAccumulator();
 			}
 		} else  {
 			applyStdp_(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);

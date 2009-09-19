@@ -18,11 +18,6 @@
 #define FCM_STDP_TRACE 2     // recording of every synapse (weight) with modifications
 #define FCM_SUBMATRICES 3
 
-// planes of reverse connectivity matrix
-#define RCM_ADDRESS 0        // source partition, neuron and synapse index 
-#define RCM_STDP 1       // long-term potentiation accumulator
-#define RCM_SUBMATRICES 2
-
 __host__ uint f_packSynapse(uint partition, uint neuron);
 
 __device__ uint targetNeuron(uint synapse);
