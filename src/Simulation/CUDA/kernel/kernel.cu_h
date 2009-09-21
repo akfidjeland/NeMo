@@ -37,4 +37,16 @@
 #define STATE_V 5
 #define NVEC_COUNT 6
 
+
+/* Sometimes we put a pointer in a (small) integer. The device has a 32b
+ * address space, so uint32_t is suitable. However, when running in emulation
+ * mode the /emulated/ device pointers will be whatever is used by the host
+ * system. We just assume that 64 bits is enough. */
+#ifdef __DEVICE_EMULATION__
+#define DEVICE_UINT_PTR_T uint64_t
+#else
+//! \todo should probably make this uint32_t explicitly
+#define DEVICE_UINT_PTR_T uint
+#endif
+
 #endif

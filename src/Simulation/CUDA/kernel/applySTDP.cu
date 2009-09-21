@@ -3,6 +3,7 @@
 
 #include <cuda.h>
 #include "cycleCounting.cu"
+#include "connectivityMatrix.cu"
 #include "util.h"
 
 /*! Apply STDP 
@@ -25,32 +26,36 @@ applySTDP_(
 	size_t ccPitch,
 #endif
 	float reward,
+	uint cmIdx, // L0 or L1
 	float maxWeight,
 	int maxPartitionSize,
 	int maxDelay,
 	// forward connectivity
 	uint* gf_cm,
 	size_t f_pitch,
-	size_t f_size,
-	// reverse connectivity
-	uint* gr_cm,
-	size_t r_pitch,
-	size_t r_size)
+	size_t f_size)
+	/*! \note reverse connectivity addresses are found in constant memory */
 {
 	SET_COUNTER(s_ccApplySTDP, 0);
 
     __shared__ uint s_chunkCount;
 	__shared__ uint s_partitionSize;
 
+	float* gr_stdp = cmIdx == 0
+		? (float*) cr0_stdp[CURRENT_PARTITION]
+		: (float*) cr1_stdp[CURRENT_PARTITION];
+	uint r_pitch = cmIdx == 0
+		? cr0_pitch[CURRENT_PARTITION]
+		:  cr1_pitch[CURRENT_PARTITION];
+	uint32_t* gr_address = cmIdx == 0
+		? (uint32_t*) cr0_address[CURRENT_PARTITION]
+		: (uint32_t*) cr1_address[CURRENT_PARTITION];
+
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
         s_chunkCount = DIV_CEIL(r_pitch, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
-
-	size_t poffset = CURRENT_PARTITION * maxPartitionSize * r_pitch;
-	uint* gr_address =       gr_cm + RCM_ADDRESS  * r_size + poffset;
-	float* gr_stdp = (float*) gr_cm + RCM_STDP * r_size + poffset;
 
 	float* gf_weight = (float*) gf_cm + FCM_WEIGHT * f_size;
 

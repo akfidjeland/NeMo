@@ -167,7 +167,7 @@ closestPostFire(uint64_t spikes, uint targetNeuron)
 
 
 
-#ifdef __DEVICE_EMULATION__
+#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
 
 __device__
 void
@@ -204,7 +204,7 @@ updateRegion(
 	uint dt_post = closestPostFire(spikes, targetNeuron);
 
 	/* For logging. Positive values: post-fire, negative values: pre-fire */
-#ifdef __DEVICE_EMULATION__
+#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
 	int dt_log;
 #endif
 
@@ -212,18 +212,18 @@ updateRegion(
 	if(spikes) {
 		if(dt_pre < dt_post) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow - 1 - dt_pre];
-#ifdef __DEVICE_EMULATION__
+#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
 			dt_log = -dt_pre;
 #endif
 		} else if(dt_post < dt_pre) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow+dt_post];
-#ifdef __DEVICE_EMULATION__
+#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
 			dt_log = dt_post;
 #endif
 		}
 		// if neither is applicable dt_post == dt_pre
 	}
-#ifdef __DEVICE_EMULATION__
+#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
 	logStdp(cycle, dt_log, w_diff, targetNeuron, r_synapse);
 #endif
 	return w_diff;
@@ -271,12 +271,15 @@ updateSTDP_(
 	size_t pitch64,
 	uint rfshift, // how much to shift recent firing bits
 	uint partitionSize,
-	uint r_maxSynapses,
-	uint* gr_cm, size_t r_pitch, size_t r_size,
+	DEVICE_UINT_PTR_T* cr_address,
+	DEVICE_UINT_PTR_T* cr_stdp,
+	DEVICE_UINT_PTR_T* cr_pitch,
 	uint32_t* s_firingIdx) // thread buffer
 {
     __shared__ uint s_schunkCount; // number of chunks for synapse-parallel execution
     __shared__ uint s_nchunkCount; // number of chunks for neuron-parallel execution
+
+	uint r_maxSynapses = cr_pitch[CURRENT_PARTITION];
 
     //! \todo factor this out and share with integrate step
     if(threadIdx.x == 0) {
@@ -285,9 +288,6 @@ updateSTDP_(
 		s_nchunkCount = DIV_CEIL(partitionSize, THREADS_PER_BLOCK);
     }
     __syncthreads();
-
-    float* gr_stdp = (float*) (gr_cm + RCM_STDP * r_size);
-    uint32_t* gr_address = gr_cm + RCM_ADDRESS * r_size;
 
 	/* Determine what postsynaptic neurons needs processing in small batches */
 	for(uint nchunk=0; nchunk < s_nchunkCount; ++nchunk) {
@@ -320,9 +320,12 @@ updateSTDP_(
 
 				if(r_sidx < r_maxSynapses) {
 
-					//! \todo move this inside updateSynapse as well
-					size_t r_address = target * r_pitch + r_sidx;
-					uint32_t r_sdata = gr_address[r_address];
+					size_t r_offset = target * r_maxSynapses + r_sidx;
+					/* nvcc will warn that gr_address defaults to gmem, as it
+					 * is not clear what address space it belongs to. That's
+					 * ok; this is global memory */
+					uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
+					uint32_t r_sdata = gr_address[r_offset];
 
 					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
@@ -342,7 +345,7 @@ updateSTDP_(
 
 						//! \todo perhaps stage diff in output buffers
 						if(w_diff != 0.0f) {
-							gr_stdp[r_address] += w_diff;
+							((float*) cr_stdp[CURRENT_PARTITION])[r_offset] += w_diff;
 						}
 					}
 				}

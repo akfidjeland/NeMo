@@ -353,10 +353,6 @@ STDP_FN(step) (
 		// connectivity
 		uint* gf0_cm, uint64_t* gf0_delays,
 		uint* gf1_cm, uint64_t* gf1_delays,
-#ifdef STDP
-		uint* gr0_cm,
-		uint* gr1_cm,
-#endif
 		// L1 spike queue
 		uint2* gSpikeQueue,
 		size_t sqPitch,
@@ -398,20 +394,12 @@ STDP_FN(step) (
 	__shared__ uint s_partitionSize;
 	__shared__ uint sf0_maxSynapsesPerDelay;
 	__shared__ uint sf1_maxSynapsesPerDelay;
-#ifdef STDP
-	__shared__ uint sr0_maxSynapsesPerNeuron;
-	__shared__ uint sr1_maxSynapsesPerNeuron;
-#endif
 	__shared__ float s_substepMult;
 
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
 		sf0_maxSynapsesPerDelay = cf0_maxSynapsesPerDelay[CURRENT_PARTITION];
 		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
-#ifdef STDP
-		sr0_maxSynapsesPerNeuron = cr0_maxSynapsesPerNeuron[CURRENT_PARTITION];
-		sr1_maxSynapsesPerNeuron = cr1_maxSynapsesPerNeuron[CURRENT_PARTITION];
-#endif
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
 	__syncthreads();
@@ -420,10 +408,6 @@ STDP_FN(step) (
 
 #ifdef STDP
 	loadStdpParameters();
-
-	/* The reverse matrix uses one row per neuron rather than per delay.  The
-	 * word offset may differ in levels 0 and 1. */
-	size_t r_partitionRow = CURRENT_PARTITION * s_maxPartitionSize;
 #endif
 	/* Within a connection matrix plane, partitionRow is the row offset of the
 	 * current partition. The offset in /words/ differ between forward/reverse
@@ -505,8 +489,7 @@ STDP_FN(step) (
 			s_recentFiring,
 			s_pitch32, 1,
 			s_partitionSize,
-			sr0_maxSynapsesPerNeuron,
-			gr0_cm + r_partitionRow * sr0_pitch, sr0_pitch, sr0_size,
+			cr0_address, cr0_stdp, cr0_pitch,
 			s_T32);
 #endif
 	SET_COUNTER(s_ccMain, 7);
@@ -519,8 +502,7 @@ STDP_FN(step) (
 				s_recentFiring,
 				s_pitch64, 0,
 				s_partitionSize,
-				sr1_maxSynapsesPerNeuron,
-				gr1_cm + r_partitionRow * sr1_pitch, sr1_pitch, sr1_size,
+				cr1_address, cr1_stdp, cr1_pitch,
 				s_T32);
 	}
 #endif

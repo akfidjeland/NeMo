@@ -165,12 +165,16 @@ copyToDevice(RTDATA rtdata)
 		configureKernel(rtdata);
 		configurePartition(cf0_maxSynapsesPerDelay,
 			rtdata->cm(CM_L0)->f_maxSynapsesPerDelay());
-		configurePartition(cr0_maxSynapsesPerNeuron,
-			rtdata->cm(CM_L0)->r_maxPartitionPitch());
 		configurePartition(cf1_maxSynapsesPerDelay,
 			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
-		configurePartition(cr1_maxSynapsesPerNeuron,
-			rtdata->cm(CM_L1)->r_maxPartitionPitch());
+		//! \todo move to RSMatrix.cpp, considering that we need to call it twice (L0 and L1)
+        configureReverseAddressing(
+                rtdata->cm(CM_L0)->r_partitionPitch(),
+                rtdata->cm(CM_L0)->r_partitionAddress(),
+                rtdata->cm(CM_L0)->r_partitionStdp(),
+                rtdata->cm(CM_L1)->r_partitionPitch(),
+                rtdata->cm(CM_L1)->r_partitionAddress(),
+                rtdata->cm(CM_L1)->r_partitionStdp());
 		rtdata->setStart();
 	}
 }
@@ -206,15 +210,13 @@ applyStdp_(
 			rtdata->cycleCounters->pitchApplySTDP(),
 #endif
 			reward,
+			cmIdx,
 			rtdata->stdpFn->maxWeight(),
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
 			rtdata->cm(cmIdx)->df_synapses(),
 			rtdata->cm(cmIdx)->df_pitch(),
-			rtdata->cm(cmIdx)->df_planeSize(),
-			rtdata->cm(cmIdx)->dr_synapses(),
-			rtdata->cm(cmIdx)->dr_pitch(),
-			rtdata->cm(cmIdx)->dr_planeSize());
+			rtdata->cm(cmIdx)->df_planeSize());
 
 	if(trace) {
 		rtdata->cm(cmIdx)->df_clear(FCM_STDP_TRACE);
@@ -278,6 +280,7 @@ step(RTDATA rtdata,
 	 uint32_t* d_fout = rtdata->firingOutput->step();
 
 	if(rtdata->usingStdp()) {
+		//! \todo use a function pointer here. The inputs are the same
 		step_STDP<<<dimGrid, dimBlock>>>(
 				substeps, 
 				rtdata->cycle(),
@@ -293,10 +296,6 @@ step(RTDATA rtdata,
 				// L1 forward connectivity 
 				rtdata->cm(CM_L1)->df_synapses(),
 				rtdata->cm(CM_L1)->df_delayBits(),
-				// L0 reverse connectivity
-				rtdata->cm(CM_L0)->dr_synapses(),
-				// L1 reverse connectivity
-				rtdata->cm(CM_L1)->dr_synapses(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),

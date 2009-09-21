@@ -7,6 +7,8 @@
 #include <stddef.h>
 #include <vector>
 
+#include "kernel.cu_h"
+
 /*! \brief Sparse synapse matrix in reverse format
  *
  * Synapses in this matrix are stored on a per-target basis. Unlike in SMatrix
@@ -36,24 +38,26 @@ struct RSMatrix
 
 		void moveToDevice();
 
-		const std::vector<uint>& maxPartitionPitch() const;
-
-		uint32_t* d_data() const;
-
 		void d_fill(size_t plane, char val) const;
-
-		size_t pitch() const;
-
-		/*! \return size (in words) of a single plane of the matrix */
-		size_t size() const;
 
 		/*! \return bytes allocated on the device */
 		size_t d_allocated() const;
 
 		bool empty() const;
 
+		/*! \return pitch for per-partition addressing */
+		const std::vector<DEVICE_UINT_PTR_T> partitionPitch() const;
+
+		/*! \return addresses to each partition's reverse address data */
+		const std::vector<DEVICE_UINT_PTR_T> partitionAddress() const;
+
+		/*! \return addresses to each partition's STDP accumulator data */
+		const std::vector<DEVICE_UINT_PTR_T> partitionStdp() const;
+
 	private:
 
+		//! \todo remove altogher
+		size_t size() const; /*! \return size (in words) of a single plane of the matrix */
 
 		uint32_t* m_deviceData;
 
@@ -66,7 +70,6 @@ struct RSMatrix
 		size_t m_maxSynapsesPerNeuron;
 
 		std::vector<size_t> m_synapseCount; // per neuron
-		//std::vector<size_t> m_partitionMaxSynapsesPerNeuron;
 
 		std::vector<uint> m_maxPartitionPitch;
 

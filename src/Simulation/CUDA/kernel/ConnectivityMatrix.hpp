@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <cuda_runtime.h>
+
 #include "SMatrix.hpp"
 #include "RSMatrix.hpp"
 #include "NVector.hpp"
+#include "kernel.cu_h"
 
 /*! \brief Connectivity matrix
  *
@@ -64,15 +66,12 @@ struct ConnectivityMatrix
 
 		/*! \return device data for connectivity */
 		uint* df_synapses() const;
-		uint* dr_synapses() const;
 
 		/*! \return device row pitch (in words) */
 		size_t df_pitch() const;
-		size_t dr_pitch() const;
 
 		/*! \return the size (in words) for each CM plane (including padding) */
 		size_t df_planeSize() const;
-		size_t dr_planeSize() const;
 
 		/*! \return device delay bit data */
 		uint64_t* df_delayBits() const;
@@ -80,7 +79,6 @@ struct ConnectivityMatrix
 		/*! \return vector specifying maximum synapses per delay (<= pitch) for
 		 * each partition */
 		const std::vector<uint>& f_maxSynapsesPerDelay() const;
-		const std::vector<uint>& r_maxPartitionPitch() const;
 
 		/*! Clear one plane of connectivity matrix on the device */
 		void df_clear(size_t submatrix);
@@ -89,6 +87,11 @@ struct ConnectivityMatrix
 		// void printSTDPTrace();
 
 		size_t d_allocated() const;
+
+		/* Per-partition addressing */
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
 
 	private:
 

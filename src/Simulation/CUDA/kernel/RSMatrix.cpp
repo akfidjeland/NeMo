@@ -5,6 +5,7 @@
 #include <cutil.h>
 #include <assert.h>
 
+
 RSMatrix::RSMatrix(
 		size_t partitionCount,
 		size_t maxPartitionSize,
@@ -42,17 +43,10 @@ RSMatrix::~RSMatrix()
 
 
 
-size_t
-RSMatrix::pitch() const
-{
-	return m_pitch;
-}
-
-
 bool
 RSMatrix::empty() const
 {
-	return pitch() == 0;
+	return m_pitch == 0;
 }
 
 size_t
@@ -117,20 +111,6 @@ RSMatrix::addSynapse(
 
 
 
-const std::vector<uint>&
-RSMatrix::maxPartitionPitch() const
-{
-	return m_maxPartitionPitch;
-}
-
-
-
-uint32_t*
-RSMatrix::d_data() const
-{
-	return m_deviceData;
-}
-
 
 void
 RSMatrix::d_fill(size_t plane, char val) const
@@ -148,4 +128,50 @@ size_t
 RSMatrix::d_allocated() const
 {
 	return m_allocated;
+}
+
+
+
+const std::vector<DEVICE_UINT_PTR_T>
+RSMatrix::partitionPitch() const
+{
+	//! \todo add synapse-packing and modify this function
+	return std::vector<DEVICE_UINT_PTR_T>(m_partitionCount, m_pitch);
+}
+
+
+
+//! \todo rename to partitionBase
+/*! compute raw addresses (32-bit) based on offset from a base pointer */
+const std::vector<DEVICE_UINT_PTR_T>
+RSMatrix::partitionAddress() const
+{
+	//assert(m_deviceData != NULL);
+
+	//! \todo: look up this data at runtime
+	const void* MAX_ADDRESS = (void *) 4294967296; // on device
+#ifndef __DEVICE_EMULATION__
+	assert(m_deviceData <= MAX_ADDRESS);
+#endif
+
+	DEVICE_UINT_PTR_T base = (DEVICE_UINT_PTR_T) reinterpret_cast<uint64_t>(m_deviceData);
+
+	//! \todo add synapse-packing and modify this function
+	std::vector<DEVICE_UINT_PTR_T> offset(m_partitionCount, (DEVICE_UINT_PTR_T) base);
+	for(uint p=0; p < m_partitionCount; ++p) {
+		offset[p] += p * m_maxPartitionSize * m_pitch * sizeof(uint32_t);
+	}
+	return offset;
+}
+
+
+const std::vector<DEVICE_UINT_PTR_T>
+RSMatrix::partitionStdp() const
+{
+	std::vector<DEVICE_UINT_PTR_T> ret = partitionAddress();
+	for(std::vector<DEVICE_UINT_PTR_T>::iterator i = ret.begin();
+			i != ret.end(); ++i ) {
+		*i += size() * sizeof(uint32_t);
+	}
+	return ret;
 }

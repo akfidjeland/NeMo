@@ -53,14 +53,6 @@ ConnectivityMatrix::df_synapses() const
 }
 
 
-uint*
-ConnectivityMatrix::dr_synapses() const
-{
-	return m_rsynapses.d_data();
-}
-
-
-
 size_t
 ConnectivityMatrix::df_pitch() const
 {
@@ -72,20 +64,6 @@ size_t
 ConnectivityMatrix::df_planeSize() const
 {
 	return m_fsynapses.size();
-}
-
-
-size_t
-ConnectivityMatrix::dr_planeSize() const
-{
-	return m_rsynapses.size();
-}
-
-
-size_t
-ConnectivityMatrix::dr_pitch() const
-{
-	return m_rsynapses.pitch();
 }
 
 
@@ -195,13 +173,6 @@ ConnectivityMatrix::f_maxSynapsesPerDelay() const
 
 
 
-const std::vector<uint>&
-ConnectivityMatrix::r_maxPartitionPitch() const
-{
-	return m_rsynapses.maxPartitionPitch();
-}
-
-
 //! \todo use this type in connectivityMatrix.cu
 typedef union
 {
@@ -266,3 +237,23 @@ ConnectivityMatrix::d_allocated() const
 		+ m_rsynapses.d_allocated();
 }
 
+
+
+const std::vector<DEVICE_UINT_PTR_T>
+ConnectivityMatrix::r_partitionPitch() const
+{
+	return m_rsynapses.partitionPitch();
+}
+
+
+const std::vector<DEVICE_UINT_PTR_T>
+ConnectivityMatrix::r_partitionAddress() const
+{
+	return m_rsynapses.partitionAddress();
+}
+
+const std::vector<DEVICE_UINT_PTR_T>
+ConnectivityMatrix::r_partitionStdp() const
+{
+	return m_rsynapses.partitionStdp();
+}
