@@ -1,11 +1,12 @@
-//! \file RSMatrix.hpp
-
 #ifndef RS_MATRIX_HPP
 #define RS_MATRIX_HPP
+
+//! \file RSMatrix.hpp
 
 #include <stdint.h>
 #include <stddef.h>
 #include <vector>
+#include <boost/shared_ptr.hpp>
 
 #include "kernel.cu_h"
 
@@ -26,8 +27,6 @@ struct RSMatrix
 	public:
 
 		RSMatrix(size_t partitionSize, size_t maxSynapsesPerNeuron);
-
-		~RSMatrix();
 
 		void addSynapse(
 				unsigned int sourcePartition,
@@ -54,7 +53,7 @@ struct RSMatrix
 
 	private:
 
-		uint32_t* m_deviceData;
+		boost::shared_ptr<uint32_t> m_deviceData;
 
 		std::vector<uint32_t> m_hostData;
 

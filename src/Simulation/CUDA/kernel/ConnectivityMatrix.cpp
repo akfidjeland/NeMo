@@ -35,18 +35,9 @@ ConnectivityMatrix::ConnectivityMatrix(
 			ConnectivityMatrix::InvalidNeuron)
 {
 	for(uint p = 0; p < partitionCount; ++p) {
-		m_rsynapses.push_back(new RSMatrix(maxPartitionSize, maxRevSynapsesPerNeuron));
+		m_rsynapses.push_back(RSMatrix(maxPartitionSize, maxRevSynapsesPerNeuron));
 	}
 
-}
-
-
-ConnectivityMatrix::~ConnectivityMatrix()
-{
-	for(std::vector<RSMatrix*>::iterator i = m_rsynapses.begin();
-			i != m_rsynapses.end(); ++i) {
-		delete *i;
-	}
 }
 
 
@@ -112,7 +103,7 @@ ConnectivityMatrix::setRow(
 	for(size_t i=0; i<f_length; ++i) {
 		// see connectivityMatrix.cu_h for encoding format
 		if(m_setReverse && weights[i] > 0.0f) { // only do STDP for excitatory synapses
-			m_rsynapses[targetPartition[i]]->addSynapse(
+			m_rsynapses[targetPartition[i]].addSynapse(
 					sourcePartition, sourceNeuron, i,
 					targetNeuron[i], delay);
 		}
@@ -151,7 +142,7 @@ ConnectivityMatrix::moveToDevice()
 	 * needed if we do STDP tracing (along with the trace matrix itself). */
 	m_fsynapses.copyToDevice();
 	for(uint p=0; p < m_partitionCount; ++p){
-		m_rsynapses[p]->moveToDevice();
+		m_rsynapses[p].moveToDevice();
 	}
 }
 
@@ -239,7 +230,7 @@ ConnectivityMatrix::clearStdpAccumulator()
 {
 	//! \todo this might be done better in a single kernel, to reduce bus traffic
 	for(uint p=0; p < m_partitionCount; ++p){
-		m_rsynapses[p]->clearStdpAccumulator();
+		m_rsynapses[p].clearStdpAccumulator();
 
 	}
 }
@@ -250,9 +241,9 @@ size_t
 ConnectivityMatrix::d_allocated() const
 {
 	size_t rcm = 0;
-	for(std::vector<RSMatrix*>::const_iterator i = m_rsynapses.begin();
+	for(std::vector<RSMatrix>::const_iterator i = m_rsynapses.begin();
 			i != m_rsynapses.end(); ++i) {
-		rcm += (*i)->d_allocated();
+		rcm += i->d_allocated();
 	}
 
 	return m_fsynapses.d_allocated()
@@ -267,7 +258,7 @@ ConnectivityMatrix::r_partitionPitch() const
 {
 	std::vector<DEVICE_UINT_PTR_T> ret(m_partitionCount, 0);
 	for(uint p=0; p < m_partitionCount; ++p) {
-		ret[p] = (DEVICE_UINT_PTR_T) m_rsynapses[p]->pitch();
+		ret[p] = (DEVICE_UINT_PTR_T) m_rsynapses[p].pitch();
 	}
 	return ret;
 }
@@ -291,22 +282,25 @@ devicePointer(T* ptr)
 }
 
 
+
 const std::vector<DEVICE_UINT_PTR_T>
 ConnectivityMatrix::r_partitionAddress() const
 {
 	std::vector<DEVICE_UINT_PTR_T> ret(m_partitionCount, 0);
 	for(uint p=0; p < m_partitionCount; ++p){
-		ret[p] = devicePointer(m_rsynapses[p]->d_address());
+		ret[p] = devicePointer(m_rsynapses[p].d_address());
 	}
 	return ret;
 }
+
+
 
 const std::vector<DEVICE_UINT_PTR_T>
 ConnectivityMatrix::r_partitionStdp() const
 {
 	std::vector<DEVICE_UINT_PTR_T> ret(m_partitionCount, 0);
 	for(uint p=0; p < m_partitionCount; ++p){
-		ret[p] = devicePointer(m_rsynapses[p]->d_stdp());
+		ret[p] = devicePointer(m_rsynapses[p].d_stdp());
 	}
 	return ret;
 }

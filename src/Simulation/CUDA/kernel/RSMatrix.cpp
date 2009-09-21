@@ -7,7 +7,6 @@
 
 
 RSMatrix::RSMatrix(size_t partitionSize, size_t maxSynapsesPerNeuron) :
-	m_deviceData(NULL),
 	m_partitionSize(partitionSize),
 	m_maxSynapsesPerNeuron(maxSynapsesPerNeuron),
 	m_synapseCount(partitionSize, 0),
@@ -16,26 +15,21 @@ RSMatrix::RSMatrix(size_t partitionSize, size_t maxSynapsesPerNeuron) :
 	size_t height = RCM_SUBMATRICES * partitionSize;
 	size_t bytePitch = 0;
 
+	uint32_t* deviceData = NULL;
 	CUDA_SAFE_CALL(
-			cudaMallocPitch((void**) &m_deviceData,
+			cudaMallocPitch((void**) &deviceData,
 				&bytePitch,
 				maxSynapsesPerNeuron * sizeof(uint32_t),
 				height));
+	m_deviceData = boost::shared_ptr<uint32_t>(deviceData , cudaFree);
 	m_pitch = bytePitch / sizeof(uint32_t);
 	m_allocated = bytePitch * height;
 
-	CUDA_SAFE_CALL(cudaMemset2D( m_deviceData, bytePitch, 0, bytePitch, height));
+	CUDA_SAFE_CALL(cudaMemset2D((void*) m_deviceData.get(),
+				bytePitch, 0, bytePitch, height));
 
 	/* We only need to store the addresses on the host side */
 	m_hostData.resize(size(), INVALID_REVERSE_SYNAPSE);
-}
-
-
-RSMatrix::~RSMatrix()
-{
-	if(m_deviceData != NULL) {
-		CUDA_SAFE_CALL(cudaFree(m_deviceData));
-	}
 }
 
 
@@ -55,7 +49,7 @@ RSMatrix::moveToDevice()
 	 * already been cleared. */
 	CUDA_SAFE_CALL(
 			cudaMemcpy(
-				m_deviceData + RCM_ADDRESS * size(),
+				m_deviceData.get() + RCM_ADDRESS * size(),
 				&m_hostData[0],
 				size() * sizeof(uint32_t),
 				cudaMemcpyHostToDevice));
@@ -72,6 +66,7 @@ RSMatrix::addSynapse(
 		unsigned int targetNeuron,
 		unsigned int delay)
 {
+	//! \todo use exceptions here instead
 	assert(targetNeuron < m_partitionSize);
 
 	size_t targetSynapse = m_synapseCount[targetNeuron];
@@ -114,7 +109,7 @@ RSMatrix::d_allocated() const
 uint32_t*
 RSMatrix::d_address() const
 {
-	return m_deviceData + RCM_ADDRESS * size();
+	return m_deviceData.get() + RCM_ADDRESS * size();
 }
 
 
@@ -122,5 +117,5 @@ RSMatrix::d_address() const
 float*
 RSMatrix::d_stdp() const
 {
-	return (float*) m_deviceData + RCM_STDP * size();
+	return (float*) m_deviceData.get() + RCM_STDP * size();
 }

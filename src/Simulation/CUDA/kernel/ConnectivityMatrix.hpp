@@ -43,8 +43,6 @@ struct ConnectivityMatrix
 				size_t maxSynapsesPerDelay,
 				size_t maxRevSynapsesPerNeuron);
 
-		~ConnectivityMatrix();
-
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(
@@ -115,7 +113,7 @@ struct ConnectivityMatrix
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and delay. The reverse connectivity is stored sepearately
 		 * for each partition */
-		std::vector<RSMatrix*> m_rsynapses;
+		std::vector<RSMatrix> m_rsynapses;
 
 		bool m_setReverse;
 
