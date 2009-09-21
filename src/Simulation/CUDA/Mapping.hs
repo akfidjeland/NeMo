@@ -16,16 +16,13 @@ module Simulation.CUDA.Mapping (
         partitionAssocs,
         maxNetworkDelay,
         maxL0Pitch,
-        maxL0RPitch,
         maxL1Pitch,
-        maxL1RPitch
+        usingStdp
 ) where
 
 import Control.Monad (foldM)
-import Control.Monad.ST
 import Control.Monad.Writer
-import Data.Array.ST
-import Data.List (insert)
+import Data.List (foldl')
 import qualified Data.Map as Map
 
 import Construction.Izhikevich (IzhNeuron, IzhState)
@@ -99,8 +96,7 @@ data CuNet n s = CuNet {
         -- presynaptic neuron and delay
         maxL0Pitch      :: Int,
         maxL1Pitch      :: Int,
-        maxL0RPitch     :: Int,
-        maxL1RPitch     :: Int
+        usingStdp       :: Bool
         -- TODO: also determine max L1 spike buffer size
     }
 
@@ -123,97 +119,54 @@ partitionAssocs = Map.assocs . netPartitions
 
 {- | Determine the max delay, as well as the L0 and L1 pitches for a particular
  - neuron -}
-synapseParameters :: ATT -> PartitionIdx -> N.Neuron n s -> ST t (Delay, Int, Int)
-synapseParameters att preIdx n = do
-    (l0, l1) <- foldM go' (0,0) $ N.targets n
-    return $! (N.maxDelay n, l0, l1)
+synapseParameters :: ATT -> PartitionIdx -> N.Neuron n s -> (Delay, Int, Int)
+synapseParameters att preIdx n = (N.maxDelay n, l0, l1)
     where
-        go' (pitchL0, pitchL1) s = do
-            didx <- deviceIdxM att s
+        (l0, l1) = foldl' go2 (0,0) $ N.targets n
+
+        go2 (pitchL0, pitchL1) s =
+            let didx = either error id (deviceIdxM att s) in
             if isL0 didx
-                then return $! (pitchL0+1, pitchL1)
-                else return $! (pitchL0, pitchL1+1)
+                then (pitchL0+1, pitchL1)
+                else (pitchL0, pitchL1+1)
+
         isL0 t = (==preIdx) $! partitionIdx t
 
-
-type RPitch t = STUArray t (PartitionIdx, NeuronIdx) Int
-
-
-mkRPitch stdp pcount psize =
-    if stdp
-        then do
-            l0r <- arr
-            l1r <- arr
-            return $! Just (l0r, l1r)
-        else return Nothing
-    where
-        -- TODO: remove hard-coding of max delay here
-        arr = newArray ((0,0), (pcount-1, psize-1)) 0
-
-
-{- Increment either L0 or L1 reverse pitch -}
-accRPitch :: Conductive s => ATT -> DeviceIdx -> (RPitch t, RPitch t) -> Synapse s -> ST t ()
-accRPitch att src@(srcp,_) (l0r, l1r) s =
-    if plastic s
-        then do
-            tgt <- deviceIdxM att $! target s
-            if isL0 tgt
-                then inc l0r tgt
-                else inc l1r tgt
-        else return ()
-    where
-        isL0 tgt = (==srcp) $! partitionIdx $! tgt
-        inc ss i@(p,n) = readArray ss i >>= writeArray ss i . (+1)
-
-
-maxRPitch :: RPitch t -> ST t Int
-maxRPitch arr = return . maximum =<< getElems arr
 
 
 networkInsert
     :: Conductive s
     => ATT
-    -> Maybe (RPitch t, RPitch t)
     -> CuNet n s
     -> (Idx, N.Neuron n s)
-    -> ST t (CuNet n s)
-networkInsert att rpitch (CuNet ptn mxd l0w l1w l0r l1r) (gidx, n) = do
-    -- TODO: use synapsesByDelay here instead.
-    didx@(pidx, nidx) <- deviceIdxM att gidx
-    maybe (return ()) (\r -> mapM_ (accRPitch att didx r) $ N.synapses gidx n) rpitch
+    -> CuNet n s
+networkInsert att (CuNet ptn mxd l0w l1w stdp) (gidx, n) =
+    ptn' `seq` mxd' `seq` l0w' `seq` l1w' `seq` CuNet ptn' mxd' l0w' l1w' stdp
+    where
+        didx@(pidx, nidx) = either error id $ deviceIdxM att gidx
     {- Note: We cannot determine these parameters on the forward pass, as we
      - won't know which synapses are L0 and which are L1 before we do the
      - mapping. We'd have to interleave the mapping with the construction. It
      - would, however, be possible to determine the global maximum. It would
      - then be possible to set per-neuron maxima for L0 and L1 when we load
      - this onto the device. -}
-    (n_mxd, n_l0w, n_l1w) <- synapseParameters att pidx n
-    let ptn' = Map.alter (clusterInsert nidx) pidx ptn
+        (n_mxd, n_l0w, n_l1w) = synapseParameters att pidx n
+        ptn' = Map.alter (clusterInsert nidx) pidx ptn
         -- fold arguments into synapse parameters
         mxd' = max mxd n_mxd
         l0w' = max l0w n_l0w
         l1w' = max l1w n_l1w
-    return $! ptn' `seq` mxd' `seq` l0w' `seq` l1w' `seq`
-        CuNet ptn' mxd' l0w' l1w' l0r l1r
-    where
+
         -- clusterInsert :: Maybe (CuPartition n) -> Maybe (CuPartition n)
         clusterInsert nidx (Just c) = Just $! Map.insert nidx n c
         clusterInsert nidx Nothing = Just $! Map.singleton nidx n
 
 
 cuNetwork :: Conductive s => ATT -> Bool -> Int -> Int -> Neurons.Neurons n s -> CuNet n s
-cuNetwork att stdp pcount psize ns = runST $ do
-    rpitch <- mkRPitch stdp pcount psize
-    net <- foldM (networkInsert att rpitch) empty cns
-    l0r <- maybe (return 0) (maxRPitch . fst) rpitch
-    l1r <- maybe (return 0) (maxRPitch . snd) rpitch
-    return $ net {
-            maxL0RPitch = l0r,
-            maxL1RPitch = l1r
-        }
+cuNetwork att stdp pcount psize ns = foldl' (networkInsert att) empty cns
     where
         cns = Neurons.toList ns
-        empty = CuNet Map.empty 0 0 0 0 0
+        empty = CuNet Map.empty 0 0 0 stdp
 
 
 {- | Map network onto partitions containing the same number of neurons -}
@@ -234,6 +187,4 @@ mapNetwork net@(Net.Network ns _) stdp psizeReq = do
     logMsg $ "Max delay: " ++ show (maxNetworkDelay d_ns)
     logMsg $ "L0 pitch: " ++ show (maxL0Pitch d_ns)
     logMsg $ "L1 pitch: " ++ show (maxL1Pitch d_ns)
-    when stdp $ logMsg $ "L0 reverse pitch: " ++ show (maxL0RPitch d_ns)
-    when stdp $ logMsg $ "L1 reverse pitch: " ++ show (maxL1RPitch d_ns)
     return (d_ns, att)

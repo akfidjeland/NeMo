@@ -16,9 +16,8 @@ struct RuntimeData
 			size_t maxPartitionSize,
 			uint maxDelay,
 			size_t maxL0SynapsesPerDelay,
-			size_t maxL0RevSynapsesPerNeuron,
 			size_t maxL1SynapsesPerDelay,
-			size_t maxL1RevSynapsesPerNeuron,
+			bool setReverse,
 			//! \todo determine the entry size inside allocator
 			size_t l1SQEntrySize,
 			unsigned int maxReadPeriod);

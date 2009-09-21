@@ -43,10 +43,12 @@ typedef struct RuntimeData* RTDATA;
 
 
 /*!
+ * \param maxDelay
+ * 		maximum synaptic delay (in cycles) for any synapse
+ * \param setReverse
+ * 		set reverse connectivity matrix, required e.g. for STDP
  * \param maxReadPeriod
  * 		maximum period (in cycles) between reads to the device firing buffer
- * \param maxL1Delay
- * 		maximum synaptic delay (in cycles) for any L1 synapse
  */
 RTDATA
 allocRuntimeData(
@@ -54,9 +56,8 @@ allocRuntimeData(
 		size_t maxPartitionSize,
 		unsigned int maxDelay,
 		size_t maxL0SynapsesPerDelay,
-		size_t maxL0RevSynapsesPerNeuron,
 		size_t maxL1SynapsesPerDelay,
-		size_t maxL1RevSynapsesPerNeuron,
+		unsigned int setReverse,
 		//! \todo determine the entry size inside allocator
 		size_t l1SQEntrySize,
 		unsigned int maxReadPeriod);

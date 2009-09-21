@@ -14,7 +14,7 @@ ConnectivityMatrix::ConnectivityMatrix(
         size_t maxPartitionSize,
 		size_t maxDelay,
 		size_t maxSynapsesPerDelay,
-		size_t maxRevSynapsesPerNeuron):
+		bool setReverse) :
 	m_fsynapses(partitionCount,
 			maxPartitionSize,
 			maxDelay,
@@ -26,7 +26,7 @@ ConnectivityMatrix::ConnectivityMatrix(
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(maxDelay),
 	m_maxSynapsesPerDelay(partitionCount, 0),
-	m_setReverse(maxRevSynapsesPerNeuron != 0),
+	m_setReverse(setReverse),
 	mf_targetPartition(
 			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
 			ConnectivityMatrix::InvalidNeuron),
@@ -35,9 +35,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 			ConnectivityMatrix::InvalidNeuron)
 {
 	for(uint p = 0; p < partitionCount; ++p) {
-		m_rsynapses.push_back(RSMatrix(maxPartitionSize, maxRevSynapsesPerNeuron));
+		m_rsynapses.push_back(RSMatrix(maxPartitionSize));
 	}
-
 }
 
 

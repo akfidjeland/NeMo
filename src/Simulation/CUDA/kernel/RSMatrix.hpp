@@ -26,7 +26,7 @@ struct RSMatrix
 {
 	public:
 
-		RSMatrix(size_t partitionSize, size_t maxSynapsesPerNeuron);
+		RSMatrix(size_t partitionSize);
 
 		void addSynapse(
 				unsigned int sourcePartition,
@@ -42,7 +42,7 @@ struct RSMatrix
 		/*! \return bytes allocated on the device */
 		size_t d_allocated() const;
 
-		/*! \return word pitch */
+		/*! \return word pitch, i.e. max number of synapses per neuron */
 		size_t pitch() const { return m_pitch; }
 
 		/*! \return device address of reverse address matrix */
@@ -55,16 +55,14 @@ struct RSMatrix
 
 		boost::shared_ptr<uint32_t> m_deviceData;
 
-		std::vector<uint32_t> m_hostData;
+		typedef std::vector< std::vector<uint32_t> > host_sparse_t;
+		host_sparse_t m_hostData;
 
 		size_t m_partitionSize;
 
-		size_t m_maxSynapsesPerNeuron;
-
-		std::vector<size_t> m_synapseCount; // per neuron
-
 		size_t m_pitch;
 
+		/* Number of bytes of allocated device memory */
 		size_t m_allocated;
 
 		/* Indices of the two planes of the matrix */
@@ -75,8 +73,15 @@ struct RSMatrix
 		};
 
 		/*! \return size (in words) of a single plane of the matrix */
-		size_t size() const;
+		size_t planeSize() const;
 
+		bool onDevice() const;
+
+		size_t maxSynapsesPerNeuron() const;
+
+		boost::shared_ptr<uint32_t>& allocateDeviceMemory();
+
+		void copyToDevice(host_sparse_t h_mem, uint32_t* d_mem);
 };
 
 #endif

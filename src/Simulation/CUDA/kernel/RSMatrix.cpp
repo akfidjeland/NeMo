@@ -3,56 +3,99 @@
 
 #include <cuda_runtime.h>
 #include <cutil.h>
-#include <assert.h>
+#include <stdexcept>
 
 
-RSMatrix::RSMatrix(size_t partitionSize, size_t maxSynapsesPerNeuron) :
+RSMatrix::RSMatrix(size_t partitionSize) :
+	m_hostData(partitionSize),
 	m_partitionSize(partitionSize),
-	m_maxSynapsesPerNeuron(maxSynapsesPerNeuron),
-	m_synapseCount(partitionSize, 0),
+	m_pitch(0),
 	m_allocated(0)
+{ }
+
+
+
+/*! Allocate device memory and a linear block of host memory of the same size */
+boost::shared_ptr<uint32_t>&
+RSMatrix::allocateDeviceMemory()
 {
-	size_t height = RCM_SUBMATRICES * partitionSize;
+	size_t desiredPitch = maxSynapsesPerNeuron() * sizeof(uint32_t);
+	size_t height = RCM_SUBMATRICES * m_partitionSize;
 	size_t bytePitch = 0;
 
 	uint32_t* deviceData = NULL;
 	CUDA_SAFE_CALL(
 			cudaMallocPitch((void**) &deviceData,
 				&bytePitch,
-				maxSynapsesPerNeuron * sizeof(uint32_t),
+				desiredPitch,
 				height));
-	m_deviceData = boost::shared_ptr<uint32_t>(deviceData , cudaFree);
 	m_pitch = bytePitch / sizeof(uint32_t);
 	m_allocated = bytePitch * height;
 
-	CUDA_SAFE_CALL(cudaMemset2D((void*) m_deviceData.get(),
+	CUDA_SAFE_CALL(cudaMemset2D((void*) deviceData,
 				bytePitch, 0, bytePitch, height));
 
-	/* We only need to store the addresses on the host side */
-	m_hostData.resize(size(), INVALID_REVERSE_SYNAPSE);
+	m_deviceData = boost::shared_ptr<uint32_t>(deviceData , cudaFree);
+	return m_deviceData;
+}
+
+
+
+bool
+RSMatrix::onDevice() const
+{
+	return m_deviceData.get() != NULL;
 }
 
 
 
 size_t
-RSMatrix::size() const
+RSMatrix::planeSize() const
 {
 	return m_partitionSize * m_pitch;
 }
 
 
 
+size_t
+RSMatrix::maxSynapsesPerNeuron() const
+{
+	size_t n = 0;
+	for(host_sparse_t::const_iterator i = m_hostData.begin();
+			i != m_hostData.end(); ++i) {
+		n = std::max(n, i->size());
+	}
+	return n;
+}
+
+
+
+//! \todo pass in parameters here
+void
+RSMatrix::copyToDevice(host_sparse_t h_mem, uint32_t* d_mem)
+{
+	/* We only need to store the addresses on the host side */
+	std::vector<uint32_t> buf(planeSize(), INVALID_REVERSE_SYNAPSE);
+	for(host_sparse_t::const_iterator n = h_mem.begin(); n != h_mem.end(); ++n) {
+		size_t offset = (n - h_mem.begin()) * m_pitch;
+		std::copy(n->begin(), n->end(), buf.begin() + offset);
+	}
+
+	CUDA_SAFE_CALL(
+			cudaMemcpy(
+				d_mem + RCM_ADDRESS * planeSize(),
+				&buf[0],
+				planeSize() * sizeof(uint32_t),
+				cudaMemcpyHostToDevice));
+
+}
+
+
 void
 RSMatrix::moveToDevice()
 {
-	/* We only need to copy the addresses across. The STDP accumulator has
-	 * already been cleared. */
-	CUDA_SAFE_CALL(
-			cudaMemcpy(
-				m_deviceData.get() + RCM_ADDRESS * size(),
-				&m_hostData[0],
-				size() * sizeof(uint32_t),
-				cudaMemcpyHostToDevice));
+	boost::shared_ptr<uint32_t> d_mem = allocateDeviceMemory();
+	copyToDevice(m_hostData, d_mem.get());
 	m_hostData.clear();
 }
 
@@ -66,24 +109,11 @@ RSMatrix::addSynapse(
 		unsigned int targetNeuron,
 		unsigned int delay)
 {
-	//! \todo use exceptions here instead
-	assert(targetNeuron < m_partitionSize);
-
-	size_t targetSynapse = m_synapseCount[targetNeuron];
-	m_synapseCount[targetNeuron] += 1;
-
-	assert(targetSynapse < m_maxSynapsesPerNeuron);
-	assert(targetSynapse < m_pitch);
-
-	size_t synapseAddress = targetNeuron * m_pitch + targetSynapse;
-	assert(synapseAddress < m_hostData.size());
-
 	/*! \note we cannot check source partition or neuron here, since this class
 	 * only deals with the reverse synapses for a single partition. It should
-	 * be * checked in the caller */
-
-	m_hostData[synapseAddress] 
-		= r_packSynapse(sourcePartition, sourceNeuron, sourceSynapse, delay);
+	 * be checked in the caller */
+	uint32_t synapse = r_packSynapse(sourcePartition, sourceNeuron, sourceSynapse, delay);
+	m_hostData.at(targetNeuron).push_back(synapse);
 }
 
 
@@ -91,9 +121,12 @@ RSMatrix::addSynapse(
 void
 RSMatrix::clearStdpAccumulator()
 {
-	CUDA_SAFE_CALL(cudaMemset2D(
-				d_stdp(), m_pitch*sizeof(uint32_t), 0,
-				m_pitch*sizeof(uint32_t), m_partitionSize));
+	if(!onDevice()) {
+		throw std::logic_error("attempting to clear STDP array before device memory allocated");
+	}
+
+	CUDA_SAFE_CALL(cudaMemset2D(d_stdp(), m_pitch*sizeof(uint32_t),
+				0, m_pitch*sizeof(uint32_t), m_partitionSize));
 }
 
 
@@ -109,7 +142,7 @@ RSMatrix::d_allocated() const
 uint32_t*
 RSMatrix::d_address() const
 {
-	return m_deviceData.get() + RCM_ADDRESS * size();
+	return m_deviceData.get() + RCM_ADDRESS * planeSize();
 }
 
 
@@ -117,5 +150,5 @@ RSMatrix::d_address() const
 float*
 RSMatrix::d_stdp() const
 {
-	return (float*) m_deviceData.get() + RCM_STDP * size();
+	return (float*) m_deviceData.get() + RCM_STDP * planeSize();
 }

@@ -41,7 +41,7 @@ struct ConnectivityMatrix
 				size_t maxPartitionSize,
 				size_t maxDelay,
 				size_t maxSynapsesPerDelay,
-				size_t maxRevSynapsesPerNeuron);
+				bool setReverse);
 
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */

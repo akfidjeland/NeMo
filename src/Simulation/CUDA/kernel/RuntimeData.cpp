@@ -23,9 +23,8 @@ RuntimeData::RuntimeData(
 		size_t maxPartitionSize,
         uint maxDelay,
 		size_t maxL0SynapsesPerDelay,
-		size_t maxL0RevSynapsesPerNeuron,
 		size_t maxL1SynapsesPerDelay,
-		size_t maxL1RevSynapsesPerNeuron,
+		bool setReverse,
 		//! \todo determine the entry size inside allocator
 		size_t l1SQEntrySize,
 		unsigned int maxReadPeriod) :
@@ -62,14 +61,14 @@ RuntimeData::RuntimeData(
 			maxPartitionSize,
 			maxDelay,
 			maxL0SynapsesPerDelay,
-			maxL0RevSynapsesPerNeuron);
+			setReverse);
 
 	m_cm[CM_L1] = new ConnectivityMatrix(
 			partitionCount,
 			maxPartitionSize,
 			maxDelay,
 			maxL1SynapsesPerDelay,
-			maxL1RevSynapsesPerNeuron);
+			setReverse);
 
 	setPitch();
 
@@ -338,9 +337,8 @@ allocRuntimeData(
 		size_t maxPartitionSize,
 		uint maxDelay,
 		size_t maxL0SynapsesPerDelay,
-		size_t maxL0RevSynapsesPerNeuron,
 		size_t maxL1SynapsesPerDelay,
-		size_t maxL1RevSynapsesPerNeuron,
+		uint setReverse,
 		//! \todo determine the entry size inside allocator
 		size_t l1SQEntrySize,
 		uint maxReadPeriod)
@@ -350,9 +348,8 @@ allocRuntimeData(
 			maxPartitionSize,
 			maxDelay,
 			maxL0SynapsesPerDelay,
-			maxL0RevSynapsesPerNeuron,
 			maxL1SynapsesPerDelay,
-			maxL1RevSynapsesPerNeuron,
+			(bool) setReverse,
 			l1SQEntrySize,
 			maxReadPeriod);
 }
