@@ -1,6 +1,7 @@
 module Util.List (
     chunksOf,
     maxOr0,
+    maximumM,
     groupUnsortedBy,
     groupUnsorted,
     replace,
@@ -17,13 +18,19 @@ chunksOf n xs = y : chunksOf n ys
     where (y, ys) = splitAt n xs
 
 
-maxOr0 [] = 0
-maxOr0 xs = maximum xs
+maxOr0 :: (Ord a, Num a) => [a] -> a
+maxOr0 = maybe 0 id . maximumM
+
+
+maximumM :: (Monad m, Ord a) => [a] -> m a
+maximumM [] = fail "empty list"
+maximumM xs = return $! maximum xs
 
 
 -- | Group a potentially unsorted list
 groupUnsortedBy :: (Eq b, Ord b) => (a -> b) -> [a] -> [[a]]
 groupUnsortedBy f xs = groupBy ((==) `on` f) $ sortBy (comparing f) xs
+
 
 groupUnsorted :: (Eq a, Ord a) => [a] -> [[a]]
 groupUnsorted = groupUnsortedBy id

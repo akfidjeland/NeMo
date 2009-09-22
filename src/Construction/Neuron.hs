@@ -9,6 +9,7 @@ module Construction.Neuron (
     neuron,
     -- * Query
     synapses,
+    synapsesUnordered,
     synapsesByDelay,
     synapseCount,
     targets,
@@ -66,6 +67,8 @@ withAxonM f (Neuron n s) = f s >>= return . Neuron n
 synapses :: Idx -> Neuron n s -> [Synapse s]
 synapses src n = Axon.synapses src $ axon n
 
+synapsesUnordered :: Idx -> Neuron n s -> [Synapse s]
+synapsesUnordered src n = Axon.synapsesUnordered src $ axon n
 
 synapsesByDelay :: Neuron n s -> [(Delay, [(Idx, s)])]
 synapsesByDelay = Axon.synapsesByDelay . axon

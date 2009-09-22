@@ -201,12 +201,13 @@ deleteSynapse :: (Eq s) => Idx -> Synapse s -> Neurons n s -> Neurons n s
 deleteSynapse idx s ns = withNeuron (Neuron.disconnect s) idx ns
 
 
--- TODO: propagate errors from replaceSynapse
 updateNeuronSynapse
     :: (Show s, Eq s)
     => Idx -> Synapse s -> Synapse s -> Neurons n s -> Neurons n s
-updateNeuronSynapse idx old new ns =
-    withNeuron (fromJust . Neuron.replaceSynapse old new) idx ns
+updateNeuronSynapse idx old new ns = withNeuron replace idx ns
+    where
+        replace = either error id . Neuron.replaceSynapse old new
+
 
 
 

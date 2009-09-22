@@ -47,7 +47,7 @@ instance NFData Static where
     rnf (Static w) = rnf w `seq` ()
 
 
--- TODO: consitent name and argument order
+-- TODO: consistent name and argument order
 retarget :: Synapse s -> Idx -> Synapse s
 retarget (Synapse src tgt d pl) tgt' = Synapse src tgt' d pl
 
@@ -56,5 +56,13 @@ changeSource :: Idx -> Synapse s -> Synapse s
 changeSource src' (Synapse src tgt d pl) = Synapse src' tgt d pl
 
 
+mapTarget :: (Idx -> Idx) -> Synapse s -> Synapse s
+mapTarget f (Synapse s t d pl) = Synapse s (f t) d pl
+
+
 mapIdx :: (Idx -> Idx) -> Synapse s -> Synapse s
 mapIdx f (Synapse s t d pl) = Synapse (f s) (f t) d pl
+
+
+mapSData :: (s -> s) -> Synapse s -> Synapse s
+mapSData f (Synapse s t d pl) = Synapse s t d (f pl)

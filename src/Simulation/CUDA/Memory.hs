@@ -8,6 +8,7 @@ module Simulation.CUDA.Memory (
 ) where
 
 
+
 import Control.Monad (zipWithM_, zipWithM, forM_)
 import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
@@ -28,7 +29,7 @@ import Simulation.CUDA.State (State(..))
 import Simulation.CUDA.Mapping
 import Simulation.STDP
 import Types
-
+import Util.List (maximumM)
 
 
 
@@ -185,7 +186,7 @@ peekPartitions globalIdx pcount psizes d_max darr0 darr1 = zipWithM go [0..] psi
             let s_idx1 = poffset p_idx psize darr1
             peekNeurons globalIdx p_idx 0 psize d_max s_idx0 s_idx1 darr0 darr1
         poffset p psize darr = p * maxPSize * d_max * pitch darr
-        maxPSize = maximum psizes
+        maxPSize = either error id $ maximumM psizes
 
 
 -- for each neuron in partition
@@ -289,7 +290,7 @@ allocRT net maxProbePeriod = do
         dmax   = maxNetworkDelay net
     ptr <- c_allocRT
         (fromIntegral pcount)
-        (fromIntegral $! maximum psizes)
+        (fromIntegral $! either error id $ maximumM psizes)
         (fromIntegral $! dmax)
         (fromIntegral $! maxL0Pitch net)
         (fromIntegral $! maxL1Pitch net)

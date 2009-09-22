@@ -21,7 +21,7 @@ import Network (PortID(PortNumber))
 
 import qualified Nemo_Types as Wire
 
-import Construction.Neuron (Neuron, neuron, synapses, ndata)
+import Construction.Neuron (Neuron, neuron, synapsesUnordered, ndata)
 import Construction.Izhikevich (IzhNeuron(..))
 import Construction.Synapse (Synapse(..), Static(..), current)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
@@ -76,7 +76,7 @@ encodeNeuron (idx, n) = Wire.IzhNeuron (Just idx) a b c d u v ss
         d = p paramD
         u = p stateU
         v = p stateV
-        ss = Just $ map encodeSynapse $ synapses idx n
+        ss = Just $ map encodeSynapse $ synapsesUnordered idx n
 
 
 {- | Convert synapse from wire format to internal format -}
