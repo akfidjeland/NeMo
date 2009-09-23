@@ -52,7 +52,7 @@ import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import System.IO (Handle, hPutStrLn)
 
-import Construction.Synapse (Synapse(..), delay, Static, changeSource)
+import Construction.Synapse (Synapse(..), delay, Static)
 import Types (Source, Target, Delay, Current)
 import qualified Util.List as L (replace, maxOr0)
 import qualified Util.Assocs as Assocs (mapElems)

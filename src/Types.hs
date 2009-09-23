@@ -11,6 +11,7 @@ type Source  = Idx
 type Target  = Idx
 type Voltage = FT
 type Current = FT
+type Weight  = FT
 type Time    = Int     -- synchronous simulation only
 type TemporalResolution = Int
 type Delay   = Time

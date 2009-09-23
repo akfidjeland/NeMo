@@ -22,7 +22,7 @@ import Foreign.Storable (pokeElemOff, peekElemOff)
 
 import Construction.Neuron (synapsesByDelay)
 import Construction.Izhikevich (IzhNeuron(..), stateSigma)
-import Construction.Synapse (Synapse(..), Static(..), target, current)
+import Construction.Synapse (Synapse(..), Static(..), target)
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI
 import Simulation.CUDA.State (State(..))

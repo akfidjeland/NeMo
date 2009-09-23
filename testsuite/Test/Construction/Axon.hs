@@ -13,7 +13,7 @@ import Construction.Axon
 import Construction.Synapse
 import Test.Construction.Synapse
 import qualified Util.Assocs as Assocs (groupBy, mapElems)
-import Types (Target, Delay, Current)
+import Types (Source, Target, Delay, Current)
 
 
 check' :: Testable a => a -> String -> IO ()
@@ -250,3 +250,7 @@ prop_newPresent s axon = present s ss
     where
         (Sorted ss) = connect s $ sort axon
         types = (axon :: Axon Static, s :: Synapse Static)
+
+
+changeSource :: Source -> Synapse s -> Synapse s
+changeSource src' (Synapse src tgt d w pl) = Synapse src' tgt d w pl

@@ -348,7 +348,7 @@ reconnect preS postS mnet = do
     old <- (preS |> flatten) (ns, t)
     newIdx <- mapM (((flip (curry postS)) (ns, t)) |> flatten) old
     -- newIdx should be a singleton list
-    let new = zipWith retarget old (map head newIdx)
+    let new = zipWith retarget (map head newIdx) old
     let repl = zip old new
     return $! withNeurons (updateSynapses repl) net
 

@@ -23,7 +23,7 @@ import qualified Nemo_Types as Wire
 
 import Construction.Neuron (Neuron, neuron, synapsesUnordered, ndata)
 import Construction.Izhikevich (IzhNeuron(..))
-import Construction.Synapse (Synapse(..), Static, current)
+import Construction.Synapse (Synapse(..), Static)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.STDP (StdpConf(..))
 import Types (Idx, FiringOutput(..))
@@ -93,9 +93,9 @@ decodeSynapse src ws = Synapse src tgt d w ()
 encodeSynapse :: Synapse Static -> Wire.Synapse
 encodeSynapse s = Wire.Synapse tgt d w
     where
-        tgt = Just $ target s
-        d   = Just $ delay s
-        w   = Just $ current $ sdata s
+        tgt = Just $! target s
+        d   = Just $! delay s
+        w   = Just $! weight s
 
 
 decodeStimulus :: Wire.Stimulus -> [Idx]
