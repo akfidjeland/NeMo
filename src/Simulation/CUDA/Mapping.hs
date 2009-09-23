@@ -135,8 +135,7 @@ synapseParameters att preIdx n = (N.maxDelay n, l0, l1)
 
 
 networkInsert
-    :: Conductive s
-    => ATT
+    :: ATT
     -> CuNet n s
     -> (Idx, N.Neuron n s)
     -> CuNet n s
@@ -162,7 +161,7 @@ networkInsert att (CuNet ptn mxd l0w l1w stdp) (gidx, n) =
         clusterInsert nidx Nothing = Just $! Map.singleton nidx n
 
 
-cuNetwork :: Conductive s => ATT -> Bool -> Int -> Int -> Neurons.Neurons n s -> CuNet n s
+cuNetwork :: ATT -> Bool -> Int -> Int -> Neurons.Neurons n s -> CuNet n s
 cuNetwork att stdp pcount psize ns = foldl' (networkInsert att) empty cns
     where
         cns = Neurons.toList ns
@@ -171,8 +170,7 @@ cuNetwork att stdp pcount psize ns = foldl' (networkInsert att) empty cns
 
 {- | Map network onto partitions containing the same number of neurons -}
 mapNetwork
-    :: Conductive s
-    => Net.Network n s
+    :: Net.Network n s
     -> Bool          -- ^ are we using STDP?
     -> Maybe Int     -- ^ user-specified fixed size of each partition
     -- TODO: we may want to use Seq String here instead

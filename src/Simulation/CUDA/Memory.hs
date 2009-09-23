@@ -126,7 +126,8 @@ loadCMatrix rt att net =
             forM_ (synapsesByDelay n) $ \(delay, ss) -> do
                 let -- isL0 :: (Idx, s) -> Bool
                     -- TODO: force evaluation?
-                    isL0 = ((==) pidx) . partitionIdx . deviceIdx att . fst
+                    idx (i, _, _) = i
+                    isL0 = ((==) pidx) . partitionIdx . deviceIdx att . idx
                 (len0, len1) <- pokeSynapses bufL0 0 bufL1 0 att isL0 ss
                 setRow rtptr bufL0 cmatrixL0 (pidx, nidx) delay len0
                 setRow rtptr bufL1 cmatrixL1 (pidx, nidx) delay len1
@@ -149,9 +150,9 @@ pokeSynapses buf0 i0 buf1 i1  att isL0 (s:ss) = do
 
 
 {- | Write a single synapse to output buffer -}
-pokeSynapse :: Outbuf -> Int -> ATT -> (Idx, Static) -> IO ()
-pokeSynapse buf i att (target, s) = do
-    pokeElemOff (weights buf) i $! realToFrac $! current s
+pokeSynapse :: Outbuf -> Int -> ATT -> (Idx, Current, Static) -> IO ()
+pokeSynapse buf i att (target, weight, _) = do
+    pokeElemOff (weights buf) i $! realToFrac $! weight
     let didx = deviceIdx att target
     pokeElemOff (pidx buf) i $! fromIntegral $! partitionIdx didx
     pokeElemOff (nidx buf) i $! fromIntegral $! neuronIdx didx
@@ -260,7 +261,8 @@ peekSynapse globalIdx i source delay (tp_arr, tn_arr, w_arr, _) = do
             weight <- peekElemOff w_arr i
             let target = globalIdx (fromIntegral tp, fromIntegral tn)
             return $! Just $!
-                Synapse source target delay $! Static (realToFrac weight)
+                Synapse source target delay (realToFrac weight) ()
+
 
 -------------------------------------------------------------------------------
 -- Runtime data

@@ -21,7 +21,7 @@ module Construction.Neuron (
     maxDelay,
     -- * Traversal
     withTargets,
-    withSynapses,
+    withWeights,
     -- * Pretty-printing
     hPrintConnections
 ) where
@@ -70,7 +70,7 @@ synapses src n = Axon.synapses src $ axon n
 synapsesUnordered :: Idx -> Neuron n s -> [Synapse s]
 synapsesUnordered src n = Axon.synapsesUnordered src $ axon n
 
-synapsesByDelay :: Neuron n s -> [(Delay, [(Idx, s)])]
+synapsesByDelay :: Neuron n s -> [(Delay, [(Idx, Current, s)])]
 synapsesByDelay = Axon.synapsesByDelay . axon
 
 
@@ -113,9 +113,8 @@ withTargets :: (Idx -> Idx) -> Neuron n s -> Neuron n s
 withTargets f = withAxon (Axon.withTargets f)
 
 
-withSynapses :: (s -> s) -> Neuron n s -> Neuron n s
-withSynapses f = withAxon (Axon.withSynapses f)
-
+withWeights :: (Current -> Current) -> Neuron n s -> Neuron n s
+withWeights f = withAxon (Axon.withWeights f)
 
 hPrintConnections :: (Show s) => Handle -> Idx -> Neuron n s -> IO ()
 hPrintConnections hdl source n = Axon.hPrintConnections hdl source $ axon n

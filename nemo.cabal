@@ -147,7 +147,7 @@ executable nemo
     build-depends:          network
     build-depends:          old-time
     build-depends:          parallel
-    build-depends:          QuickCheck
+    build-depends:          QuickCheck < 2.0
     build-depends:          random
     build-depends:          Thrift
     if !os(windows)

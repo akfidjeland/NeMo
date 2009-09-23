@@ -23,7 +23,6 @@ module Construction.Network (
         addNeuronGroup,
         withNeurons,
         withTerminals,
-        withSynapses,
         -- * Pretty-printing
         printConnections,
         hPrintConnections,
@@ -83,7 +82,7 @@ idxBounds = Neurons.idxBounds . networkNeurons
 
 
 {- | Return synapses orderd by source and delay -}
-synapses :: Network n s -> [(Idx, [(Delay, [(Idx, s)])])]
+synapses :: Network n s -> [(Idx, [(Delay, [(Idx, Current, s)])])]
 synapses = Neurons.synapses . networkNeurons
 
 
@@ -138,12 +137,12 @@ withTerminals f (Network ns t) = Network ns' t'
         t'  = fmap f t
 
 
-{- | Apply function to all synapses. -}
-withSynapses :: (s -> s) -> Network n s -> Network n s
-withSynapses f (Network ns t) = Network ns' t
-    where
-        ns' = Neurons.withSynapses f ns
 
+{- | Apply function to all weights -}
+withWeights :: (Current -> Current) -> Network n s -> Network n s
+withWeights f (Network ns t) = Network ns' t
+    where
+        ns' = Neurons.withWeights f ns
 
 
 -------------------------------------------------------------------------------

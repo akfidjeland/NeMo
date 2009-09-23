@@ -36,15 +36,15 @@ import qualified Util.List as L (chunksOf)
 -- TODO: remove hard-coding here
 isExcitatory idx = idx `mod` 1024 < 820
 
-exSynapse r src tgt = Synapse src tgt delay $! Static 0.25
+exSynapse r src tgt = Synapse src tgt delay 0.25 ()
     where
         delay = ceiling $ 20.0 * r
--- exSynapse r src tgt = w `seq` Synapse src tgt 1 $! Static w
+-- exSynapse r src tgt = w `seq` Synapse src tgt 1 w ()
 --    where w = 0.5 * r
 
 -- TODO: randomise weights here!
-inSynapse _ src tgt = Synapse src tgt 1 $ Static (-0.5)
--- inSynapse r src tgt = Synapse src tgt 1 $! Static ((-1.0)*r)
+inSynapse _ src tgt = Synapse src tgt 1 (-0.5) ()
+-- inSynapse r src tgt = Synapse src tgt 1 ((-1.0)*r) ()
 
 -- excitatory neuron
 exN r = mkNeuron2 0.02 b (v + 15*r^2) (8.0-6.0*r^2) u v thalamic
@@ -100,7 +100,7 @@ clusteredNeuron (ex_ngen, ex_sgen) (in_ngen, in_sgen) idx cc cs m p r =
 {- Generate a neuron with some local and some global connections. -}
 clusteredNeuron'
     :: (FT -> IzhNeuron FT)    -- ^ function that generates neuron
-    -> (FT -> Idx -> Idx -> Synapse Static)
+    -> (FT -> Idx -> Idx -> Synapse ())
                                -- ^ function that generates synapse
     -> Idx                     -- ^ presynaptic index
     -> Int                     -- ^ cluster count
@@ -108,7 +108,7 @@ clusteredNeuron'
     -> Int                     -- ^ synapses per neuron
     -> Float                   -- ^ probability of local connection
     -> StdGen                  -- ^ random number generator
-    -> Neuron (IzhNeuron FT) Static
+    -> Neuron (IzhNeuron FT) ()
 clusteredNeuron' ngen sgen pre cc cs m p r = state `seq` neuron state ss
     where
         (nr, r2) = random r
@@ -183,7 +183,7 @@ rtsCvs name (RunTimeStatistics cycles elapsed fired spikes neurons synapses) =
 
 
 {- RTS initialised with network statistics -}
-initRTS :: Network (IzhNeuron FT) Static -> RTS
+initRTS :: Network (IzhNeuron FT) () -> RTS
 initRTS net = RunTimeStatistics {
         rtsCycles   = 0,
         rtsElapsed  = 0,
@@ -196,7 +196,7 @@ initRTS net = RunTimeStatistics {
 
 data Benchmark = Benchmark {
         bmName     :: String,
-        bmNet      :: Network (IzhNeuron FT) Static,
+        bmNet      :: Network (IzhNeuron FT) (),
         bmFStim    :: FiringStimulus,
         bmCycles   :: Int
     }

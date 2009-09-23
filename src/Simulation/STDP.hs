@@ -12,7 +12,7 @@ module Simulation.STDP (
     plastic
 ) where
 
-import Construction.Synapse (Synapse, Static, excitatory, Conductive)
+import Construction.Synapse (Synapse, Static, excitatory)
 
 data StdpConf = StdpConf {
 
@@ -37,7 +37,7 @@ type Reward = Double
 
 
 -- TODO: allow finer-grained user configuration of plasticity
-plastic :: Conductive s => Synapse s -> Bool
+plastic :: Synapse s -> Bool
 plastic = excitatory
 
 

@@ -22,7 +22,7 @@ module Construction.Neurons (
         maxSynapsesPerNeuron,
         maxDelay,
         -- * Traversal
-        withSynapses,
+        withWeights,
         -- * Modification
         addNeuron,
         addNeuronGroup,
@@ -116,7 +116,7 @@ idxBounds (Neurons ns) = (mn, mx)
 
 
 {- | Return synapses ordered by source and delay -}
-synapses :: Neurons n s -> [(Idx, [(Delay, [(Idx, s)])])]
+synapses :: Neurons n s -> [(Idx, [(Delay, [(Idx, Current, s)])])]
 synapses = map (\(i, n) -> (i, Neuron.synapsesByDelay n)) . toList
 
 
@@ -147,8 +147,8 @@ maxDelay (Neurons ns) = Map.fold go 0 ns
 -------------------------------------------------------------------------------
 
 
-withSynapses :: (s -> s) -> Neurons n s -> Neurons n s
-withSynapses f (Neurons ns) = Neurons $ Map.map (Neuron.withSynapses f) ns
+withWeights :: (Current -> Current) -> Neurons n s -> Neurons n s
+withWeights f (Neurons ns) = Neurons $ Map.map (Neuron.withWeights f) ns
 
 
 -------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ withNeuron f idx (Neurons ns) =
 
 
 addNeuron :: Idx -> Neuron.Neuron n s -> Neurons n s -> Neurons n s
-addNeuron idx n (Neurons ns) = Neurons $ Map.insertWithKey collision idx n ns
+addNeuron idx n (Neurons ns) = Neurons $! Map.insertWithKey' collision idx n ns
     where
         collision idx _ _ = error $ "duplicate neuron index: " ++ show idx
 

@@ -23,38 +23,42 @@ import Data.Array.IArray
 import Construction.Synapse
 import Construction.Network (Network, idxBounds, synapses, maxDelay)
 import qualified Simulation.Queue as Q
+import qualified Util.Assocs as Assoc (mapElems)
 import Types
 
 {- Run-time collection of synapses with fast lookup, grouped by delay so that
  - signals can be quickly inserted into the correct slot in the queue. -}
-type SynapsesRT s = Array Idx [(Delay, [(Idx, s)])]
+type SynapsesRT = Array Idx [(Delay, [(Idx, Current)])]
 
 
-mkSynapsesRT net = array (idxBounds net) $ synapses net
+mkSynapsesRT :: Network n s -> SynapsesRT
+mkSynapsesRT net = array (idxBounds net) $ Assoc.mapElems strip $ synapses net
+    where
+        strip = Assoc.mapElems (map (\(idx, w, _) -> (idx, w)))
 
 
 {- Rotating queue with insertion at random points, with one slot per delay. -}
 -- TODO: is IORef really required?
-type SpikeQueue s = IORef (Q.Queue (Idx, s))
+type SpikeQueue = IORef (Q.Queue (Idx, Current))
 
 
 {- | Create a new spike queue to handle spikes in the given collection of
  - synapses. -}
-mkSpikeQueue :: Network n s -> IO (SpikeQueue s)
+mkSpikeQueue :: Network n s -> IO (SpikeQueue)
 mkSpikeQueue net = newIORef $! Q.mkQueue $! maxDelay net
 
 
-enqSpikes :: SpikeQueue s -> [Idx] -> SynapsesRT s -> IO ()
+enqSpikes :: SpikeQueue -> [Idx] -> SynapsesRT -> IO ()
 enqSpikes sq fidx ss = modifyIORef sq (aux fidx ss)
     where aux fidx ss sq = foldr Q.enq sq $ concat $ map (ss!) fidx
 
 
 {- | Dequeue spikes at the head of the queue -}
-deqSpikes :: (Conductive s) => SpikeQueue s -> IO [(Idx, FT)]
+deqSpikes :: SpikeQueue -> IO [(Idx, Current)]
 deqSpikes sq = do
     advanceSpikeQueue sq
     sq' <- readIORef sq
-    return $! (map (\(target, s) -> (target, current s))) $ Q.head sq'
+    return $! Q.head sq'
 
 
 advanceSpikeQueue sq = modifyIORef sq Q.advance

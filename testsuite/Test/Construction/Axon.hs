@@ -13,7 +13,7 @@ import Construction.Axon
 import Construction.Synapse
 import Test.Construction.Synapse
 import qualified Util.Assocs as Assocs (groupBy, mapElems)
-import Types (Target, Delay)
+import Types (Target, Delay, Current)
 
 
 check' :: Testable a => a -> String -> IO ()
@@ -54,16 +54,16 @@ instance Arbitrary (Axon Static) where
         let n = nm `div` m         -- max synapse
         ss <- resize m $ vector nm -- the sources are not used here
         oneof [
-            return (Sorted ( Map.fromList ( Assocs.mapElems go (Assocs.groupBy delay ss)))),
-            return (Unsorted $ Seq.fromList ss)
+            return (Unsorted $ Seq.fromList $ map strip ss),
+            return (Sorted ( Map.fromList ( Assocs.mapElems go (Assocs.groupBy delay ss))))
           ]
         where
-            go ss = Map.fromListWith (++) $ zip (map target ss) (map (return . sdata) ss)
+            go ss = Map.fromListWith (++) $ zip (map target ss) (map (\s -> return (weight s, sdata s)) ss)
 
 
 
 {- | Sorting a synapse should leave us with the same synapses -}
-prop_sort ss_in = List.sort ss == (List.sort $ synapses source $ sort $ Unsorted $ Seq.fromList ss)
+prop_sort ss_in = List.sort ss == (List.sort $ synapses source $ sort $ Unsorted $ Seq.fromList $ map strip ss)
     where
         source = 0 -- all synapses in the axon have the same source
         ss = map (changeSource source) ss_in
@@ -124,8 +124,8 @@ prop_synapsesByDelay ss = List.sort ss_out == List.sort ss_out
         ss_in = map (changeSource source) ss
         ss_out = concatMap strip $ synapsesByDelay $ fromList ss_in
 
-        strip :: (Delay, [(Target, Static)]) -> [Static]
-        strip (delay, ss) = map snd ss
+        strip :: (Delay, [(Target, Current, Static)]) -> [Current]
+        strip (delay, ss) = map (\(_,w,_) -> w) ss
 
         types = ss :: [StdSynapse]
 

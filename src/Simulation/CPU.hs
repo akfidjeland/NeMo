@@ -23,8 +23,8 @@ import qualified Util.Assocs as A (mapElems)
  - modification, hence IOArray. -}
 data CpuSimulation = CpuSimulation {
         network  :: IOArray Idx (IzhNeuron FT),
-        synapses :: SynapsesRT Static,
-        spikes   :: SpikeQueue Static
+        synapses :: SynapsesRT,
+        spikes   :: SpikeQueue
     }
 
 

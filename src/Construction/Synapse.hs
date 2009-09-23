@@ -7,6 +7,7 @@
 module Construction.Synapse where
 -- TODO: export list
 
+
 import Control.Parallel.Strategies (NFData, rnf)
 
 import Types
@@ -19,50 +20,47 @@ class Conductive s where
     current :: s -> Current
 
 
-excitatory, inhibitory :: Conductive s => Synapse s -> Bool
-excitatory x = (current $! sdata x) > 0
-inhibitory x = (current $! sdata x) < 0
+excitatory, inhibitory :: Synapse s -> Bool
+excitatory s = (weight s) > 0
+inhibitory s = (weight s) < 0
 
 
 data Synapse s = Synapse {
-        source :: !Idx,
-        target :: !Idx,
-        delay  :: !Delay,
-        sdata  :: !s  -- variable payload
+        source :: {-# UNPACK #-} !Idx,
+        target :: {-# UNPACK #-} !Idx,
+        delay  :: {-# UNPACK #-} !Delay,
+        weight :: {-# UNPACK #-} !Current,
+        sdata  :: {-# UNPACK #-} !s  -- variable payload
     } deriving (Eq, Show, Ord)
 
 
-newtype Static = Static FT deriving (Eq, Show, Ord)
+instance Conductive (Synapse s) where
+    current = weight
 
 
-instance Conductive Static where
-    current (Static w) = w
+type Static = ()
 
 
 instance (NFData s) => NFData (Synapse s) where
-    rnf (Synapse s t d pl) = rnf s `seq` rnf t `seq` rnf d `seq` rnf pl `seq` ()
-
-
-instance NFData Static where
-    rnf (Static w) = rnf w `seq` ()
+    rnf (Synapse s t d w pl) = rnf s `seq` rnf t `seq` rnf d `seq` rnf pl `seq` rnf w `seq` ()
 
 
 -- TODO: consistent name and argument order
 retarget :: Synapse s -> Idx -> Synapse s
-retarget (Synapse src tgt d pl) tgt' = Synapse src tgt' d pl
+retarget (Synapse src tgt d w pl) tgt' = Synapse src tgt' d w pl
 
 
 changeSource :: Idx -> Synapse s -> Synapse s
-changeSource src' (Synapse src tgt d pl) = Synapse src' tgt d pl
+changeSource src' (Synapse src tgt d w pl) = Synapse src' tgt d w pl
 
 
 mapTarget :: (Idx -> Idx) -> Synapse s -> Synapse s
-mapTarget f (Synapse s t d pl) = Synapse s (f t) d pl
+mapTarget f (Synapse s t d w pl) = Synapse s (f t) d w pl
 
 
 mapIdx :: (Idx -> Idx) -> Synapse s -> Synapse s
-mapIdx f (Synapse s t d pl) = Synapse (f s) (f t) d pl
+mapIdx f (Synapse s t d w pl) = Synapse (f s) (f t) d w pl
 
 
-mapSData :: (s -> s) -> Synapse s -> Synapse s
-mapSData f (Synapse s t d pl) = Synapse s t d (f pl)
+mapWeight :: (Current -> Current) -> Synapse s -> Synapse s
+mapWeight f (Synapse s t d w pl) = Synapse s t d (f w) pl

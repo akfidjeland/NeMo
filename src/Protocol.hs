@@ -23,7 +23,7 @@ import qualified Nemo_Types as Wire
 
 import Construction.Neuron (Neuron, neuron, synapsesUnordered, ndata)
 import Construction.Izhikevich (IzhNeuron(..))
-import Construction.Synapse (Synapse(..), Static(..), current)
+import Construction.Synapse (Synapse(..), Static, current)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.STDP (StdpConf(..))
 import Types (Idx, FiringOutput(..))
@@ -52,6 +52,7 @@ getConnectivity sim = return . encodeConnectivity =<< Backend.getWeights sim
 {- | Convert neuron from wire format to internal format -}
 decodeNeuron :: Wire.IzhNeuron -> (Idx, Neuron (IzhNeuron Double) Static)
 decodeNeuron wn = (idx, neuron n ss)
+    -- note: tried adding 'rnf ss' here, but this does not help memory performance
     where
         idx = fromJust $! Wire.f_IzhNeuron_index wn
         n = IzhNeuron
@@ -76,12 +77,13 @@ encodeNeuron (idx, n) = Wire.IzhNeuron (Just idx) a b c d u v ss
         d = p paramD
         u = p stateU
         v = p stateV
-        ss = Just $ map encodeSynapse $ synapsesUnordered idx n
+        ss = Just $! map encodeSynapse $ synapsesUnordered idx n
 
 
 {- | Convert synapse from wire format to internal format -}
 decodeSynapse :: Idx -> Wire.Synapse -> Synapse Static
-decodeSynapse src ws = Synapse src tgt d $! Static w
+decodeSynapse src ws = Synapse src tgt d w ()
+    -- note: tried using 'seq' here, but this did not help with memory usage
     where
         tgt = fromJust $! Wire.f_Synapse_target ws
         d = fromJust $! Wire.f_Synapse_delay ws

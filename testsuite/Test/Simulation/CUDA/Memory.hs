@@ -9,7 +9,7 @@ import Test.HUnit
 import Construction.Construction (build)
 import Construction.Izhikevich (IzhNeuron)
 import Construction.Network (Network, networkNeurons)
-import Construction.Neurons (synapses, withSynapses, synapseCount, size, weightMatrix)
+import Construction.Neurons (synapses, withWeights, synapseCount, size, weightMatrix)
 import Construction.Synapse (Static(..))
 import Examples.Smallworld (smallworld, smallworldOrig)
 import Examples.Ring (ring)
@@ -31,7 +31,7 @@ testWeightQuery = TestCase $ do
     let stdp = False
         psize = Just 128   -- to ensure different partitions are used
         net = build 123456 $ smallworldOrig :: Network (IzhNeuron FT) Static
-        ns = weightMatrix $ withSynapses viaCFloat $ networkNeurons net
+        ns = weightMatrix $ withWeights viaCFloat $ networkNeurons net
         ((cuNet, att), _) = runWriter $ mapNetwork net stdp psize
         nsteps = 1000 -- irrelevant for this test
     sim  <- initMemory cuNet att nsteps 4 (defaults stdpOptions)
@@ -57,5 +57,6 @@ testWeightQuery = TestCase $ do
         {- The weights we get back from the device may be slightly different
          - due to rounding to CFloat. Perform same operation on input neurons
          - as well -}
-        viaCFloat (Static x) = Static $ realToFrac x'
+        viaCFloat :: Double -> Double
+        viaCFloat x = realToFrac x'
             where x' = realToFrac x :: CFloat
