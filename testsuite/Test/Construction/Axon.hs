@@ -5,6 +5,7 @@ module Test.Construction.Axon (runQC) where
 
 import qualified Data.List as List (sort)
 import qualified Data.Map as Map (fromList, fromListWith, assocs)
+import qualified Data.Sequence as Seq
 import Data.Maybe (isNothing, fromJust)
 import Test.QuickCheck
 
@@ -53,8 +54,8 @@ instance Arbitrary (Axon Static) where
         let n = nm `div` m         -- max synapse
         ss <- resize m $ vector nm -- the sources are not used here
         oneof [
-            return ( Sorted ( Map.fromList ( Assocs.mapElems go (Assocs.groupBy delay ss)))),
-            return (Unsorted ss)
+            return (Sorted ( Map.fromList ( Assocs.mapElems go (Assocs.groupBy delay ss)))),
+            return (Unsorted $ Seq.fromList ss)
           ]
         where
             go ss = Map.fromListWith (++) $ zip (map target ss) (map (return . sdata) ss)
@@ -62,7 +63,7 @@ instance Arbitrary (Axon Static) where
 
 
 {- | Sorting a synapse should leave us with the same synapses -}
-prop_sort ss_in = List.sort ss == (List.sort $ synapses source $ sort $ Unsorted ss)
+prop_sort ss_in = List.sort ss == (List.sort $ synapses source $ sort $ Unsorted $ Seq.fromList ss)
     where
         source = 0 -- all synapses in the axon have the same source
         ss = map (changeSource source) ss_in

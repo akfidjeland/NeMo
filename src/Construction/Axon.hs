@@ -44,7 +44,10 @@ module Construction.Axon (
 
 import Control.Monad (forM_)
 import Control.Parallel.Strategies (NFData, rnf, using)
-import Data.List (foldl', intercalate, find, delete)
+import Data.Foldable (foldl', toList)
+import Data.List (intercalate, find, delete)
+-- TODO: remove qualification here
+import qualified Data.Sequence as Seq
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import System.IO (Handle, hPutStrLn)
@@ -61,7 +64,7 @@ import qualified Util.Assocs as Assocs (mapElems)
  - stored in the collection data structure, rather than in the leaf nodes. -}
 
 data Axon s
-        = Unsorted ![Synapse s]
+        = Unsorted !(Seq.Seq (Synapse s)) -- first insertion stored leftmost
         | Sorted { smap :: AxonS s}
     deriving (Eq)
 
@@ -95,7 +98,7 @@ type AxonD s = Map.Map Target [s]
  - beginning. Using a Data.Sequence might be a better choice here.
  - -}
 sort :: Axon s -> Axon s
-sort (Unsorted ss) = Sorted $ foldl' (flip connectSorted) Map.empty $ reverse ss
+sort (Unsorted ss) = Sorted $ foldl' (flip connectSorted) Map.empty ss
 sort axon@(Sorted _) = axon
 
 
@@ -113,12 +116,12 @@ sizeD = Map.fold (\xs a -> a + length xs) 0
 
 {- | Return axon with no synapses -}
 unconnected :: Axon s
-unconnected = Unsorted []
+unconnected = Unsorted Seq.empty
 
 
 {- | Create axon from a list of synapses -}
 fromList :: [Synapse s] -> Axon s
-fromList ss = Unsorted $ reverse ss
+fromList ss = Unsorted $ Seq.fromList ss
 
 
 {- | Return all synapses, ordered by delay and target. The source must be
@@ -137,13 +140,14 @@ synapses src axon@(Sorted _) = concat $ map wrap $ synapsesByDelay axon
  - differ depending on how the axon has been modified previously. If the neuron
  - is currently unsorted the neurons will be returned in the same order in
  - which they were inserted. This method will be cheaper for unsorted axons.-}
-synapsesUnordered src (Unsorted ss) = reverse $ fmap (changeSource src) ss
+-- TODO: avoid reversal here. Just read it in the correct order
+synapsesUnordered src (Unsorted ss) = toList $ fmap (changeSource src) ss
 synapsesUnordered src axon@(Sorted _) = synapses src axon
 
 
 {- | Return all synapses without the source -}
 strippedSynapses :: Axon s -> [(Target, Delay, s)]
-strippedSynapses (Unsorted ss) = fmap strip ss
+strippedSynapses (Unsorted ss) = toList $ fmap strip ss
     where
         strip s = (target s, delay s, sdata s)
 strippedSynapses axon@(Sorted _) = concat $ map wrap $ synapsesByDelay axon
@@ -161,13 +165,12 @@ synapsesByDelay axon =
 
 {- | Return number of synapses -}
 size :: Axon s -> Int
--- TODO: perhaps keep track of length when building up axon
-size (Unsorted ss) = length ss
+size (Unsorted ss) = Seq.length ss
 size (Sorted ss) = sum $ map sizeD $ Map.elems ss
 
 
 maxDelay :: Axon s -> Delay
-maxDelay (Unsorted ss) = L.maxOr0 $ fmap delay ss
+maxDelay (Unsorted ss) = L.maxOr0 $ toList $ fmap delay ss
 maxDelay (Sorted ss) =
     if Map.null ss
         then 0
@@ -176,7 +179,7 @@ maxDelay (Sorted ss) =
 
 {- | Return list of all targets, including duplicates -}
 targets :: Axon s -> [Target]
-targets (Unsorted ss) = fmap target ss
+targets (Unsorted ss) = toList $ fmap target ss
 targets (Sorted ss) = concatMap targetsD $ Map.elems ss
     where
         targetsD ssD = concatMap targetsDT $ Map.assocs ssD
@@ -185,7 +188,7 @@ targets (Sorted ss) = concatMap targetsD $ Map.elems ss
 
 {- | Add a synapse to axon. Duplicates are kept -}
 connect :: Synapse s -> Axon s -> Axon s
-connect s (Unsorted ss) = Unsorted (s:ss)
+connect s (Unsorted ss) = Unsorted $ ss Seq.|> s
 connect s axon@(Sorted ss) = Sorted $ connectSorted s ss
 
 
@@ -205,8 +208,7 @@ connectSortedWith f s ss = Map.alter (go (target s) (sdata s)) (delay s) ss
 
 {- | Add a group of synapses -}
 connectMany :: [Synapse s] -> Axon s -> Axon s
--- connectMany ss' (Unsorted ss) = Unsorted $ (reverse ss') ++ ss
-connectMany ss' (Unsorted ss) = Unsorted $ (reverse ss') ++ ss
+connectMany ss' (Unsorted ss) = Unsorted $ ss Seq.>< (Seq.fromList ss')
 connectMany ss' (Sorted ss) = Sorted $ foldl' (flip connectSorted) ss ss'
 
 
@@ -289,6 +291,7 @@ instance (Show s) => Show (Axon s) where
             showSynapses [] = id
             showSynapses (s:ss) = shows s . showChar '\n' . showSynapses ss
 
+
 instance (NFData s) => NFData (Axon s) where
-    rnf (Unsorted ss) = rnf ss `seq` ()
+    rnf (Unsorted ss) = (rnf $! toList ss) `seq` ()
     rnf (Sorted ss) = rnf ss `seq` ()
