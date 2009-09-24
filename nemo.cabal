@@ -7,6 +7,9 @@ cabal-version:              >= 1.2
 stability:                  alpha
 build-type:                 Simple
 
+extra-source-files:         configure, conf/version
+extra-tmp-files:            nemo.buildinfo
+
 
 -- TODO: use autoconf to find CUDA
 flag CUDA

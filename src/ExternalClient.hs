@@ -227,8 +227,10 @@ runThreadedServer accepter proc port = do
         loop m = do { continue <- m; when continue (loop m) }
 
 
-runExternalClient :: IO ()
-runExternalClient = do
+runExternalClient :: [String] -> IO ()
+runExternalClient args = do
+    (args, commonOpts) <- startOptProcessing args
+    endOptProcessing args
     -- TODO: deal with other exceptions as well
     -- Control.Exception.handle (\(TransportExn s t) -> fail s) $ do
     Control.Exception.handle (\ClientTermination -> exitSuccess) $ do

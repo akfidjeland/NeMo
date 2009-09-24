@@ -86,7 +86,7 @@ command args@(h:t) = if option h then (Client, [], args) else (cmd h, h, t)
 main = do
     (cmd, cmdname, args) <- return . command =<< getArgs
     case cmd of
-        Client -> runExternalClient
+        Client -> runExternalClient args
         Server -> runBackendServer args
 #if defined(BENCHMARK_ENABLED)
         Benchmark -> runBenchmark args

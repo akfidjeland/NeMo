@@ -63,6 +63,7 @@ startOptProcessing args = do
     ref <- newIORef args
     -- always process common options
     commonOpts <- processOptGroup commonOptions $ Just ref
+    when (optShowVersion commonOpts) $ putStrLn NEMO_VERSION >> exitSuccess
     if optShowHelp commonOpts
         then do
             -- reprocess common options in help mode
@@ -131,6 +132,7 @@ endOptProcessing =
 commonOptions = OptionGroup "Common options" commonDefaults commonDescr
 
 data CommonOptions = CommonOptions {
+        optShowVersion :: Bool,
         optVerbose  :: Bool,
         optShowHelp :: Bool,
         optSeed     :: Maybe Integer
@@ -138,6 +140,7 @@ data CommonOptions = CommonOptions {
     }
 
 commonDefaults = CommonOptions {
+        optShowVersion = False,
         optVerbose  = False,
         optShowHelp = False,
         optSeed     = Nothing
@@ -145,6 +148,11 @@ commonDefaults = CommonOptions {
 
 
 commonDescr = [
+
+        Option [] ["version"]
+            (NoArg (\o -> return o { optShowVersion = True }))
+            "print version information",
+
         Option ['h'] ["help"]
             (NoArg (\o -> return o { optShowHelp = True }))
             "show command-line options",

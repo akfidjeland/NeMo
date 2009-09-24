@@ -1,0 +1,16 @@
+#!/usr/bin/env runghc
+
+import Data.Version
+import Distribution.Package
+import Distribution.PackageDescription
+import Distribution.PackageDescription.Parse
+import Distribution.Verbosity
+import System.IO
+
+main = do
+    desc <- readPackageDescription silent "nemo.cabal"
+    let version = showVersion $ pkgVersion $ package $ packageDescription desc
+    writeFile "nemo.buildinfo" $ unlines [
+        "executable: nemo",
+        "cpp-options: -DNEMO_VERSION=" ++ show version
+      ]
