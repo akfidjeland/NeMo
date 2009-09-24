@@ -76,7 +76,7 @@ endif
 BINTARGETDIR := $(BINDIR)/$(BINSUBDIR)
 
 
-count:
+cuda_count:
 	@echo "Lines of kernel code: "
 	@cat $(CUFILES) $(CCFILES) | wc -l 
 

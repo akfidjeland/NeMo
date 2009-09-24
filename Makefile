@@ -1,5 +1,4 @@
 HASKELL_BUILD_DIR := dist/build
-CUDA_LIB := dist/build/cuda/lib/libcuIzhikevich.a
 
 all: cabal
 
@@ -17,15 +16,19 @@ thrift_build = dist/build/thrift
 # Build haskell via 'make' to allow parallel build using the -j flag. This is
 # passed on to the recursive make call. Cabal doesn't support building specific
 # flags. Selecting targets is done via ./Setup.lhs configure.
-cabal: cuda $(thrift_build)/gen-hs
+cabal: src/Simulation/CUDA/KernelFFI.hsc $(thrift_build)/gen-hs
 	@echo "Using configuration from previous run of ./Setup.lhs configure"
-	./Setup.lhs build
+	@./Setup.lhs build
 
 
-# CUDA kernel
-.PHONY: cuda
-cuda:
-	make -f cuda.mk $(CUDA_LIB)
+include cuda.mk
+
+# TODO: use better names in cuda.mk, or hide them
+CUDA_LIB := $(TARGET)
+
+# Force cabal/ghc to relink if the kernel library changes
+src/Simulation/CUDA/KernelFFI.hsc: $(CUDA_LIB)
+	@touch $@
 
 
 client: matlab-client
@@ -143,20 +146,14 @@ tags:
 	#find src -iname '*.hs' -or -iname '*.hsc' | xargs ghc -e :ctags
 	#ghc -e :ctags --make src/NSim.hs
 
-# There ought to be a better way of doing this!
-.PHONY: relink
-relink:
-	rm -f dist/build/nemo/nemo
-	./Setup.lhs build
 
 
 .PHONY: count
-count:
+count: cuda_count
 	@echo "Lines of haskell source code: "
 	@find src -iname '*.hs' -or -iname '*.hsc' | xargs cat | grep -v -e '^[[:space:]]*$$' -e '^[[:space:]]*--' -e '^ - ' -e '^{- ' | wc -l
 	@echo "Lines of test code: "
 	@find testsuite/Test -iname '*.hs' -or -iname '*.hsc' | xargs cat | grep -v -e '^[[:space:]]*$$' -e '^[[:space:]]*--' -e '^ - ' -e '^{- ' | wc -l
-	make -f cuda.mk count
 
 
 # The CUDA lib is built in cabals build tree, so it will be cleaned out along

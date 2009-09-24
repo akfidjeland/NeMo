@@ -342,13 +342,12 @@ endef
 $(foreach smver,$(SM_VERSIONS),$(eval $(call SMVERSION_template,$(smver))))
 
 
-$(TARGET): objdirectory $(OBJS) $(CUBINS) $(CUINC) #Makefile
+$(TARGET): $(OBJDIR) $(OBJS) $(CUBINS) $(CUINC)
 	$(VERBOSE)mkdir -p $(TARGETDIR)
 	$(VERBOSE)$(LINKLINE)
 
 # akf added: ensure directories build before objects created
-.PHONY: objdirectory
-objdirectory:
+$(OBJDIR):
 	$(VERBOSE)mkdir -p $(OBJDIR)
 
 cubindirectory:
@@ -359,8 +358,8 @@ tidy :
 	$(VERBOSE)find . | egrep "#" | xargs rm -f
 	$(VERBOSE)find . | egrep "\~" | xargs rm -f
 
-.PHONY: clean
-clean:
+.PHONY: cuda_clean
+cuda_clean:
 	-$(VERBOSE)find $(ROOTOBJDIR) -iname '*.cu_o' -delete
 	-$(VERBOSE)find $(ROOTOBJDIR) -iname '*.cpp_o' -delete
 	-$(VERBOSE)find $(ROOTOBJDIR) -iname '*.c_o' -delete
@@ -369,5 +368,5 @@ clean:
 	-$(VERBOSE)rm -f $(NVCC_KEEP_CLEAN)
 
 .PHONY: clobber
-clobber: clean
+clobber: cuda_clean
 	$(VERBOSE)rm -rf $(ROOTOBJDIR)
