@@ -1,5 +1,5 @@
 name:                       nemo
-version:                    0.4.6
+version:                    0.4.7
 synopsis:                   Spiking neural network simulator
 author:                     Andreas Fidjeland
 maintainer:                 Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>
@@ -20,10 +20,6 @@ flag Matlab
 
 flag Debug
     description:            Enable debugging
-    default:                False
-
-flag Profile
-    description:            Enable profiling
     default:                False
 
 flag Examples
@@ -156,10 +152,6 @@ executable nemo
     extensions:             DeriveDataTypeable
 
     ghc-options:            -threaded -O2
-
-    -- TODO: is this needed?
-    if flag(profile)
-        ghc-options:        -prof -auto-all
 
     if flag(debug)
         ghc-options:        -fno-ignore-asserts
