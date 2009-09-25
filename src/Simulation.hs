@@ -8,10 +8,10 @@ import Data.Map
 
 import Types
 import Construction.Network (Network)
-import Construction.Synapse (Synapse, Static)
+import Construction.Synapse (AxonTerminal, Static)
 
 
-type Weights = Map Idx [Synapse Static]
+type Weights = Map Idx [AxonTerminal Static]
 
 
 class Simulation_Iface a where

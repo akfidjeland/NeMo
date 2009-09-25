@@ -14,7 +14,7 @@ import Thrift.Transport.Handle (hOpen, tClose)
 import System.IO (Handle)
 
 import Construction.Izhikevich (IzhNeuron)
-import Construction.Synapse (Synapse(..), Static(..))
+import Construction.Synapse (AxonTerminal, Static)
 import qualified Construction.Network as Network (Network, toList)
 import Protocol (decodeFiring, encodeStimulus, encodeNeuron, decodeConnectivity)
 import Simulation (Simulation_Iface(..), Simulation(..))
@@ -100,5 +100,5 @@ remoteApplyStdp :: Remote -> Double -> IO ()
 remoteApplyStdp r reward = Wire.applyStdp (ps r) reward
 
 
-remoteGetWeights :: Remote -> IO (Map.Map Idx [Synapse Static])
+remoteGetWeights :: Remote -> IO (Map.Map Idx [AxonTerminal Static])
 remoteGetWeights r = return . decodeConnectivity =<< Wire.getConnectivity (ps r)

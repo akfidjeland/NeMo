@@ -42,7 +42,7 @@ import Data.Maybe
 import Test.QuickCheck (Gen, choose)
 
 import Construction.Network hiding (synapses, synapsesOf)
-import Construction.Neuron hiding (connect, synapses)
+import Construction.Neuron hiding (connect)
 import Construction.Neurons (Neurons, updateSynapses, addSynapseAssocs, synapsesOf)
 import Construction.Synapse
 import Construction.Rand
@@ -317,7 +317,7 @@ connect fPre fPost gSyn net = do
     ss' <- sequence $ map (sequence . connect') $ zip pres posts
     -- TODO: maintain ordering of synapses
     -- TODO: use withNeurons here use
-    return $ Network (addSynapseAssocs (zip pres ss') ns) t
+    return $! Network (addSynapseAssocs (zip pres ss') ns) t
     where
         connect' (x, ys) = [ gSyn x y | y <- ys ]
 

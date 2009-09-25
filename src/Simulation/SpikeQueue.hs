@@ -28,10 +28,11 @@ import Types
 
 {- Run-time collection of synapses with fast lookup, grouped by delay so that
  - signals can be quickly inserted into the correct slot in the queue. -}
-type SynapsesRT = Array Idx [(Delay, [(Idx, Current)])]
+type SynapsesRT = Array Source [(Delay, [(Target, Weight)])]
 
 
 mkSynapsesRT :: Network n s -> SynapsesRT
+-- TODO: try stripping before getting the assocs
 mkSynapsesRT net = array (idxBounds net) $ Assoc.mapElems strip $ synapses net
     where
         strip = Assoc.mapElems (map (\(idx, w, _) -> (idx, w)))

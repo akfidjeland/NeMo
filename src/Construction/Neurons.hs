@@ -9,17 +9,17 @@ module Construction.Neurons (
         fromList,
         union,
         -- * Query
+        synapses,
         synapsesOf,
         size,
         isEmpty,
         indices,
         neurons,
         idxBounds,
-        synapses,
         weightMatrix,
         toList,
         synapseCount,
-        maxSynapsesPerNeuron,
+        maxFanout,
         maxDelay,
         -- * Traversal
         withWeights,
@@ -27,7 +27,6 @@ module Construction.Neurons (
         addNeuron,
         addNeuronGroup,
         addSynapse,
-        addSynapses,
         addSynapseAssocs,
         deleteSynapse,
         updateSynapses,
@@ -44,7 +43,7 @@ import Data.Maybe (fromJust)
 import System.IO (Handle, hPutStrLn)
 
 import qualified Construction.Neuron as Neuron
-import Construction.Synapse (Synapse, source)
+import Construction.Synapse (Synapse, AxonTerminal, source, strip, unstrip)
 import Types
 
 newtype Neurons n s = Neurons {
@@ -81,7 +80,7 @@ duplicateKeyError msg key n1 n2 =
 
 {- | Return synapses of a specific neuron, unordered -}
 synapsesOf :: Neurons n s -> Idx -> [Synapse s]
-synapsesOf (Neurons ns) ix = maybe [] (Neuron.synapses ix) $ Map.lookup ix ns
+synapsesOf (Neurons ns) ix = maybe [] (map (unstrip ix) . Neuron.terminals) $ Map.lookup ix ns
 
 
 {- | Return number of neurons -}
@@ -95,12 +94,12 @@ isEmpty = Map.null . ndata
 
 {- | Return number of synapses -}
 synapseCount :: Neurons n s -> Int
-synapseCount (Neurons ns) = Map.fold ((+) . Neuron.synapseCount) 0 ns
+synapseCount (Neurons ns) = Map.fold ((+) . Neuron.terminalCount) 0 ns
 
 
-{- | Return max number of synapses per neuron -}
-maxSynapsesPerNeuron :: Neurons n s -> Int
-maxSynapsesPerNeuron = Map.fold (max) 0 . Map.map Neuron.synapseCount . ndata
+{- | Return max number of axon terminals per neuron -}
+maxFanout :: Neurons n s -> Int
+maxFanout = Map.fold (max) 0 . Map.map Neuron.terminalCount . ndata
 
 
 {- | Return list of all neuron indices -}
@@ -117,13 +116,13 @@ idxBounds (Neurons ns) = (mn, mx)
 
 
 {- | Return synapses ordered by source and delay -}
-synapses :: Neurons n s -> [(Idx, [(Delay, [(Idx, Current, s)])])]
-synapses = map (\(i, n) -> (i, Neuron.synapsesByDelay n)) . toList
+synapses :: Neurons n s -> [(Source, [(Delay, [(Target, Current, s)])])]
+synapses = map (\(i, n) -> (i, Neuron.terminalsByDelay n)) . toList
 
 
 {- | Return synapses organised by source only -}
-weightMatrix :: Neurons n s -> Map.Map Idx [Synapse s]
-weightMatrix = Map.mapWithKey Neuron.synapses . ndata
+weightMatrix :: Neurons n s -> Map.Map Idx [AxonTerminal s]
+weightMatrix = fmap Neuron.terminals . ndata
 
 
 {- | Return network as list of index-neuron pairs -}
@@ -185,29 +184,33 @@ addNeuronGroup ns' (Neurons ns) = Neurons $ union ns $ Map.fromList ns'
 
 
 -- TODO: monadic error handling
-addSynapse :: Idx -> Synapse s -> Neurons n s -> Neurons n s
-addSynapse idx s ns = withNeuron (Neuron.connect s) idx ns
+addSynapse :: Synapse s -> Neurons n s -> Neurons n s
+addSynapse s ns = withNeuron (Neuron.connect (strip s)) (source s) ns
 
 
 -- TODO: modify argument order
-addSynapses :: Idx -> [Synapse s] -> Neurons n s -> Neurons n s
+addSynapses :: Idx -> [AxonTerminal s] -> Neurons n s -> Neurons n s
 addSynapses idx ss ns = withNeuron (Neuron.connectMany ss) idx ns
 
 
+-- TODO: we should just pass in AxonTerminals here, but this requires some
+-- rewriting of Construction.Connectivity.connect
 addSynapseAssocs :: [(Idx, [Synapse s])] -> Neurons n s -> Neurons n s
-addSynapseAssocs new ns = foldr (uncurry addSynapses) ns new
+addSynapseAssocs new ns = foldr add ns new
+    where
+        add (idx, ss) ns = addSynapses idx (map strip ss) ns
 
 
 deleteSynapse :: (Eq s) => Idx -> Synapse s -> Neurons n s -> Neurons n s
-deleteSynapse idx s ns = withNeuron (Neuron.disconnect s) idx ns
+deleteSynapse idx s ns = withNeuron (Neuron.disconnect (strip s)) idx ns
 
 
 updateNeuronSynapse
     :: (Show s, Eq s)
-    => Idx -> Synapse s -> Synapse s -> Neurons n s -> Neurons n s
+    => Idx -> AxonTerminal s -> AxonTerminal s -> Neurons n s -> Neurons n s
 updateNeuronSynapse idx old new ns = withNeuron replace idx ns
     where
-        replace = either error id . Neuron.replaceSynapse old new
+        replace = either error id . Neuron.replaceTerminal old new
 
 
 
@@ -219,9 +222,11 @@ updateSynapses
     -> Neurons n s
     -> Neurons n s
 -- TODO: use fold' instead?
+-- TODO: use AxonTerminals here. As it is it's possible to pass in an invalid
+-- replacement.
 updateSynapses diff ns = foldr f ns diff
     where
-        f (s, s') ns =  updateNeuronSynapse (source s) s s' ns
+        f (s, s') ns =  updateNeuronSynapse (source s) (strip s) (strip s') ns
 
 
 {- | Map function over all terminals (source and target) of all synapses -}

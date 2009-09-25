@@ -21,9 +21,9 @@ import Network (PortID(PortNumber))
 
 import qualified Nemo_Types as Wire
 
-import Construction.Neuron (Neuron, neuron, synapsesUnordered, ndata)
+import Construction.Neuron (Neuron, neuron, terminalsUnordered, ndata)
 import Construction.Izhikevich (IzhNeuron(..))
-import Construction.Synapse (Synapse(..), Static)
+import Construction.Synapse (AxonTerminal(AxonTerminal), Static, target, delay, weight)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.STDP (StdpConf(..))
 import Types (Idx, FiringOutput(..))
@@ -63,7 +63,7 @@ decodeNeuron wn = (idx, neuron n ss)
                 (fromJust $! Wire.f_IzhNeuron_u wn)
                 (fromJust $! Wire.f_IzhNeuron_v wn)
                 0.0 False Nothing
-        ss = map (decodeSynapse idx) $! fromJust $! Wire.f_IzhNeuron_axon wn
+        ss = map decodeSynapse $! fromJust $! Wire.f_IzhNeuron_axon wn
 
 
 {- | Convert neuron from internal format to wire format -}
@@ -77,20 +77,23 @@ encodeNeuron (idx, n) = Wire.IzhNeuron (Just idx) a b c d u v ss
         d = p paramD
         u = p stateU
         v = p stateV
-        ss = Just $! map encodeSynapse $ synapsesUnordered idx n
+        ss = Just $! map encodeSynapse $ terminalsUnordered n
 
 
 {- | Convert synapse from wire format to internal format -}
-decodeSynapse :: Idx -> Wire.Synapse -> Synapse Static
-decodeSynapse src ws = Synapse src tgt d w ()
+decodeSynapse :: Wire.Synapse -> AxonTerminal Static
+decodeSynapse ws = rnf tgt `seq` rnf d `seq` rnf w `seq` AxonTerminal tgt d w ()
     -- note: tried using 'seq' here, but this did not help with memory usage
+    -- TODO: put rnf in separate helper
     where
         tgt = fromJust $! Wire.f_Synapse_target ws
         d = fromJust $! Wire.f_Synapse_delay ws
         w = fromJust $! Wire.f_Synapse_weight ws
 
 
-encodeSynapse :: Synapse Static -> Wire.Synapse
+
+
+encodeSynapse :: AxonTerminal Static -> Wire.Synapse
 encodeSynapse s = Wire.Synapse tgt d w
     where
         tgt = Just $! target s
@@ -110,11 +113,11 @@ decodeFiring :: FiringOutput -> Wire.Firing
 decodeFiring (FiringOutput xs) = xs
 
 
-decodeConnectivity :: Map.Map Int [Wire.Synapse] -> Map.Map Idx [Synapse Static]
-decodeConnectivity = Map.mapWithKey (\i ns -> map (decodeSynapse i) ns)
+decodeConnectivity :: Map.Map Int [Wire.Synapse] -> Map.Map Idx [AxonTerminal Static]
+decodeConnectivity = fmap (fmap decodeSynapse)
 
 
-encodeConnectivity :: Map.Map Idx [Synapse Static] -> Map.Map Int [Wire.Synapse]
+encodeConnectivity :: Map.Map Idx [AxonTerminal Static] -> Map.Map Int [Wire.Synapse]
 encodeConnectivity = fmap (fmap encodeSynapse)
 
 

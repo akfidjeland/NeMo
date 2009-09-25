@@ -43,7 +43,7 @@ runQC = do
     check' prop_maxDelay "check that max delay is correctly computed"
 
 
-type StdSynapse = Synapse Static
+type StdSynapse = AxonTerminal Static
 
 {- The synapse collections are sorted by delay, which is present both in the
  - key and the value of the collection. We therefore need to generate our own
@@ -63,34 +63,32 @@ instance Arbitrary (Axon Static) where
 
 
 {- | Sorting a synapse should leave us with the same synapses -}
-prop_sort ss_in = List.sort ss == (List.sort $ synapses source $ sort $ Unsorted $ Seq.fromList $ map strip ss)
+prop_sort ss = List.sort ss == (List.sort $ terminals $ sort $ Unsorted $ Seq.fromList ss)
     where
-        source = 0 -- all synapses in the axon have the same source
-        ss = map (changeSource source) ss_in
-        types = ss_in :: [StdSynapse]
+        types = ss :: [StdSynapse]
 
 
 {- | The order of synapses in the axon should be unchanged by the point at
  - which the axon is sorted -}
 prop_sortTime1 ss = ss1 == ss2
     where
-        ss1 = synapses 0 $ connectMany ss $ sort unconnected
-        ss2 = synapses 0 $ sort $ connectMany ss unconnected
+        ss1 = terminals $ connectMany ss $ sort unconnected
+        ss2 = terminals $ sort $ connectMany ss unconnected
         types = ss :: [StdSynapse]
 
 
 prop_sortTime2 ss = ss1 == ss2
     where
-        ss1 = synapsesByDelay $ connectMany ss $ sort unconnected
-        ss2 = synapsesByDelay $ sort $ connectMany ss unconnected
+        ss1 = terminalsByDelay $ connectMany ss $ sort unconnected
+        ss2 = terminalsByDelay $ sort $ connectMany ss unconnected
         types = ss :: [StdSynapse]
 
 
 {- | Same, but use fromList to construct unsorted list -}
 prop_sortTime3 ss = ss1 == ss2
     where
-        ss1 = synapsesByDelay $ connectMany ss $ sort unconnected
-        ss2 = synapsesByDelay $ sort $ fromList ss
+        ss1 = terminalsByDelay $ connectMany ss $ sort unconnected
+        ss2 = terminalsByDelay $ sort $ fromList ss
         types = ss :: [StdSynapse]
 
 
@@ -107,22 +105,17 @@ prop_connectEmpty s = size (connect s unconnected) == 1
 
 {- | Inserting synapses and taking them out again should not change
  - composition, except for the order -}
-prop_fromList ss = List.sort ss_in == List.sort ss_out
+prop_fromList ss = List.sort ss == List.sort ss_out
     where
-        source = 0 -- all synapses in the same axons have same source
-        ss_in = map (changeSource source) ss
-        ss_out = synapses source $ fromList ss_in
+        ss_out = terminals $ fromList ss
         types = ss :: [StdSynapse]
 
 
 {- | Inserting synapses and taking them out again, ordered by delay should not
  - change composition, except for the order -}
--- prop_synapsesByDelay ss = sort ss_out == sort (map sdata ss_in)
 prop_synapsesByDelay ss = List.sort ss_out == List.sort ss_out
     where
-        source = 0 -- all synapses in the same axons have same source
-        ss_in = map (changeSource source) ss
-        ss_out = concatMap strip $ synapsesByDelay $ fromList ss_in
+        ss_out = concatMap strip $ terminalsByDelay $ fromList ss
 
         strip :: (Delay, [(Target, Current, Static)]) -> [Current]
         strip (delay, ss) = map (\(_,w,_) -> w) ss
@@ -138,50 +131,43 @@ prop_targets ss = List.sort (map target ss) == List.sort (targets (fromList ss))
 prop_maxDelay ss = (not . null) ss ==> maxDelay axon == maximum (map delay ss)
     where
         axon = fromList ss
-        types = ss :: [Synapse Static]
+        types = ss :: [AxonTerminal Static]
 
 
 {- | Inserting synapses and taking them out again should not change
  - composition, except for the order -}
-prop_connectMany ss axon = List.sort (ss_in ++ synapses source axon) == List.sort ss_out
+prop_connectMany ss axon = List.sort (ss ++ terminals axon) == List.sort ss_out
     where
-        source = 0
-        ss_in = map (changeSource source) ss
-        ss_out = synapses source $ connectMany ss_in axon
+        ss_out = terminals $ connectMany ss axon
         types = (ss :: [StdSynapse], axon :: Axon Static)
 
 
 {- | Removing a synapse which is not present, should have no effect other than
  - possibly sorting the synapses. -}
 prop_disconnectNonExistent s axon =
-        s `notElem` ss ==> List.sort ss == List.sort (synapses source $ disconnect s axon)
+        s `notElem` ss ==> List.sort ss == List.sort (terminals $ disconnect s axon)
     where
-        source = 0
-        ss = synapses source axon
+        ss = terminals axon
         types = (s :: StdSynapse, axon :: Axon Static)
 
 
 {- | Removing a synapse which *is* present, should reduce the synapse count by one -}
 prop_disconnect idx axon =
     idx < length ss && idx > 0
-        ==> List.sort (s:ss') == List.sort (synapses source axon)
+        ==> List.sort (s:ss') == List.sort (terminals axon)
     where
-        source = 0
-        ss = synapses source axon
+        ss = terminals axon
         s = ss !! idx
-        ss' = synapses source $ disconnect s axon
+        ss' = terminals $ disconnect s axon
         types = (idx :: Int, axon :: Axon Static)
 
 
 {- | Removing a synapse should have the same result, regardless of whether or
  - not the axon is sorted -}
 prop_disconnectOrdering idx ss =
-        idx < length ss && idx > 0 ==> synapses 0 axon1 == synapses 0 axon2
+        idx < length ss && idx > 0 ==> terminals axon1 == terminals axon2
     where
-        source = 0
-        -- ss = synapses source axon
         s = ss !! idx
-        -- ss' = synapses source $ disconnect s axon
         axon1 = modify $ connectMany ss $ sort unconnected -- replace sorted
         axon2 = modify $ fromList ss -- replace unsorted
         modify = either error id . disconnectM s
@@ -190,8 +176,7 @@ prop_disconnectOrdering idx ss =
 
 {- Replacing a non-existent synapse should result in failure -}
 prop_replaceNonexistent old new axon =
-    old `notElem` (synapses 0 axon)
-        ==> isNothing $ replaceM old new axon
+    old `notElem` (terminals axon) ==> isNothing $ replaceM old new axon
     where
         types = (old, new :: StdSynapse, axon :: Axon Static)
 
@@ -203,7 +188,7 @@ prop_replaceNonexistent old new axon =
 prop_replace idx new axon =
     idx < size axon && idx > 0 ==> size axon == size axon'
     where
-        ss = synapses 0 axon
+        ss = terminals axon
         old = ss !! idx
         axon' = fromJust $ replaceM old new axon
         types = (idx :: Int, new :: StdSynapse, axon :: Axon Static)
@@ -212,7 +197,7 @@ prop_replace idx new axon =
 {- Replacing a synapse should have the same result regardless of whether or not
  - the axon is already sorted -}
 prop_replaceOrdering idx new ss =
-        idx < length ss && idx > 0 ==> synapses 0 axon1 == synapses 0 axon2
+        idx < length ss && idx > 0 ==> terminals axon1 == terminals axon2
     where
         old = ss !! idx
         axon1 = replace $ connectMany ss $ sort unconnected -- replace sorted
@@ -225,8 +210,8 @@ prop_replaceOrdering idx new ss =
 prop_withTargets axon = sumTarget ss' == (sumTarget ss + (size axon))
     where
         axon' = withTargets (+1) axon
-        ss = synapses 0 axon
-        ss' = synapses 0 axon'
+        ss = terminals axon
+        ss' = terminals axon'
         sumTarget = sum . map target
         types = (axon :: Axon Static)
 
@@ -235,21 +220,21 @@ prop_withTargets axon = sumTarget ss' == (sumTarget ss + (size axon))
 prop_allPresent ss = and $ [ present s axon | s <- ss ]
     where
         (Sorted axon) = sort $ fromList ss
-        types = ss :: [Synapse Static]
+        types = ss :: [AxonTerminal Static]
 
 
 {- Check that random synapses are correctly reported as present -}
 prop_randomPresent s ss = present s axon == elem s ss
     where
         (Sorted axon) = sort $ fromList ss
-        types = (s :: Synapse Static, ss :: [Synapse Static])
+        types = (s :: AxonTerminal Static, ss :: [AxonTerminal Static])
 
 
 {- Check that when adding a synapse, it's always reported as present -}
 prop_newPresent s axon = present s ss
     where
         (Sorted ss) = connect s $ sort axon
-        types = (axon :: Axon Static, s :: Synapse Static)
+        types = (axon :: Axon Static, s :: AxonTerminal Static)
 
 
 changeSource :: Source -> Synapse s -> Synapse s

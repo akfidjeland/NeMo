@@ -18,9 +18,9 @@ module Construction.Axon (
         unconnected,
         fromList,
         -- * Query
-        synapses,
-        synapsesUnordered,
-        synapsesByDelay,
+        terminals,
+        terminalsUnordered,
+        terminalsByDelay,
         size,
         maxDelay,
         targets,
@@ -38,26 +38,26 @@ module Construction.Axon (
         -- * Internals, exposed for testing
         present,
         sort,
-        strip
     ) where
 
 
 import Control.Monad (forM_)
-import Control.Parallel.Strategies (NFData, rnf, using)
+import Control.Parallel.Strategies (NFData, rnf)
 import Data.Foldable (foldl', toList)
 import Data.List (intercalate, find, delete)
--- TODO: remove qualification here
 import qualified Data.Sequence as Seq
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import System.IO (Handle, hPutStrLn)
 
-import Construction.Synapse (Synapse(..), delay, Static)
-import Types (Source, Target, Delay, Current)
+import Construction.Synapse (AxonTerminal(..),
+        delay, target, withTarget, weight, withWeight, Static)
+import Types (Source, Target, Delay, Weight)
 import qualified Util.List as L (replace, maxOr0)
 import qualified Util.Assocs as Assocs (mapElems)
 
 
+type Terminal = AxonTerminal
 
 {- Synapses are stored using two different schemes. The Unsorted axon has cheap
  - insertion (in terms of space at least), but more expensive query and
@@ -65,7 +65,7 @@ import qualified Util.Assocs as Assocs (mapElems)
  - axon always start out being unsorted and is sorted only when needed -}
 
 data Axon s
-        = Unsorted !(Seq.Seq (Stripped s)) -- first insertion stored leftmost
+        = Unsorted !(Seq.Seq (Terminal s)) -- first insertion stored leftmost
         | Sorted (AxonS s)
     deriving (Eq)
 
@@ -73,28 +73,6 @@ data Axon s
 isSorted (Unsorted _) = False
 isSorted (Sorted _) = True
 
-
-{- Internally, we don't need the source neuron, so we store a stripped synapse
- - to save space. -}
-
--- TODO: perhaps move this to Construction.Synapse
-data Stripped s = Stripped {
-        sTarget :: {-# UNPACK #-} !Target,
-        sDelay  :: {-# UNPACK #-} !Delay,
-        sWeight :: {-# UNPACK #-} !Current,
-        -- TODO: may want variable payload, but with specialisation for just a double
-        sAux    :: {-# UNPACK #-} !s
-    } deriving (Eq, Show, Ord)
-
-
-strip :: Synapse s -> Stripped s
-strip s = Stripped (target s) (delay s) (weight s) (sdata s)
-
-unstrip :: Source -> Stripped s -> Synapse s
-unstrip src (Stripped t d w a) = Synapse src t d w a
-
-mapTarget f (Stripped t d w a) = Stripped (f t) d w a
-mapWeight f (Stripped t d w a) = Stripped t d (f w) a
 
 
 
@@ -116,11 +94,11 @@ type AxonS s = Map.Map Delay (AxonD s)
 -- TODO: make sure we use unboxed tuple here
 type AxonD s = Map.Map Target [Leaf s]
 
--- data Leaf = Leaf {-# UNPACK #-} !Current {-# UNPACK #-} !s
-type Leaf s = (Current, s)
+-- data Leaf = Leaf {-# UNPACK #-} !Weight {-# UNPACK #-} !s
+type Leaf s = (Weight, s)
 
 
-withLeafWeight :: (Current -> Current) -> Leaf s -> Leaf s
+withLeafWeight :: (Weight -> Weight) -> Leaf s -> Leaf s
 withLeafWeight f (w, s) = (f w, s)
 
 
@@ -139,7 +117,7 @@ sort axon@(Sorted _) = axon
 
 {- | Return a list of target/synapse pairs for a bundle of synapses with a
  - fixed delay -}
-synapsesD :: AxonD s -> [(Target, Current, s)]
+synapsesD :: AxonD s -> [(Target, Weight, s)]
 synapsesD = concat . map expand . Map.assocs
     where
         -- expand (tgt, ss) = map ((,) tgt) ss
@@ -157,45 +135,35 @@ unconnected = Unsorted Seq.empty
 
 
 {- | Create axon from a list of synapses -}
-fromList :: [Synapse s] -> Axon s
-fromList ss = Unsorted $ Seq.fromList $ map strip ss
+fromList :: [Terminal s] -> Axon s
+fromList = Unsorted . Seq.fromList
 
 
-{- | Return all synapses, ordered by delay and target. The source must be
- - supplied since a stand-alone synapse should contain the source, and the
- - source is not necessarily present in the data.  -}
-synapses :: Source -> Axon s -> [Synapse s]
-synapses src axon@(Unsorted ss) = synapses src $ sort axon
-synapses src axon@(Sorted _) = concat $ map wrap $ synapsesByDelay axon
+{- | Return all axon terminals, ordered by delay and target -}
+terminals :: Axon s -> [Terminal s]
+terminals axon@(Unsorted ss) = terminals $ sort axon
+terminals axon@(Sorted _) = concat $ map wrap $ terminalsByDelay axon
     where
-        wrap (d, ss) = map (\(tgt, w, s) -> Synapse src tgt d w s) ss
+        wrap (d, ss) = map (\(tgt, w, s) -> AxonTerminal tgt d w s) ss
 
 
-{- | Return all synapses.
+
+{- | Return all axon terminals.
  -
- - This function differs from 'synapses' in that the order of the synapses may
+ - This function differs from 'terminals' in that the order of the synapses may
  - differ depending on how the axon has been modified previously. If the neuron
  - is currently unsorted the neurons will be returned in the same order in
- - which they were inserted. This method will be cheaper for unsorted axons.-}
-synapsesUnordered src (Unsorted ss) = toList $ fmap (unstrip src) ss
-synapsesUnordered src axon@(Sorted _) = synapses src axon
-
-
-{- | Return all synapses without the source -}
-strippedSynapses :: Axon s -> [(Target, Delay, Current, s)]
-strippedSynapses (Unsorted ss) = toList $ fmap strip ss
-    where
-        strip (Stripped t d w a) = (t, d, w, a)
-strippedSynapses axon@(Sorted _) = concat $ map wrap $ synapsesByDelay axon
-    where
-        wrap (d, ss) = map (\(tgt, w, s) -> (tgt, d, w, s)) ss
+ - which they were inserted. This method will be cheaper for unsorted axons -}
+terminalsUnordered :: Axon s -> [Terminal s]
+terminalsUnordered (Unsorted ss) = toList ss
+terminalsUnordered axon@(Sorted _) = terminals axon
 
 
 {- | Return all synapses, ordered by delay -}
-synapsesByDelay :: Axon s -> [(Delay, [(Target, Current, s)])]
-synapsesByDelay axon =
+terminalsByDelay :: Axon s -> [(Delay, [(Target, Weight, s)])]
+terminalsByDelay axon =
     case axon of
-        (Unsorted _)-> synapsesByDelay $ sort axon
+        (Unsorted _)-> terminalsByDelay $ sort axon
         (Sorted ss) -> Assocs.mapElems synapsesD $ Map.toList ss
 
 
@@ -206,7 +174,7 @@ size (Sorted ss) = sum $ map sizeD $ Map.elems ss
 
 
 maxDelay :: Axon s -> Delay
-maxDelay (Unsorted ss) = L.maxOr0 $ toList $ fmap sDelay ss
+maxDelay (Unsorted ss) = L.maxOr0 $ toList $ fmap delay ss
 maxDelay (Sorted ss) =
     if Map.null ss
         then 0
@@ -215,7 +183,7 @@ maxDelay (Sorted ss) =
 
 {- | Return list of all targets, including duplicates -}
 targets :: Axon s -> [Target]
-targets (Unsorted ss) = toList $ fmap sTarget ss
+targets (Unsorted ss) = toList $ fmap target ss
 targets (Sorted ss) = concatMap targetsD $ Map.elems ss
     where
         targetsD ssD = concatMap targetsDT $ Map.assocs ssD
@@ -223,21 +191,21 @@ targets (Sorted ss) = concatMap targetsD $ Map.elems ss
 
 
 {- | Add a synapse to axon. Duplicates are kept -}
-connect :: Synapse s -> Axon s -> Axon s
-{-# SPECIALIZE connect :: Synapse () -> Axon () -> Axon () #-}
-connect s (Unsorted ss) = Unsorted $ (Seq.|>) ss $! strip s
-connect s axon@(Sorted ss) = Sorted $ connectSorted (strip s) ss
+connect :: Terminal s -> Axon s -> Axon s
+{-# SPECIALIZE connect :: Terminal () -> Axon () -> Axon () #-}
+connect s (Unsorted ss) = Unsorted $ ss |> s
+connect s axon@(Sorted ss) = Sorted $ connectSorted s ss
 
 
-connectSorted :: Stripped s -> AxonS s -> AxonS s
-{-# SPECIALIZE connectSorted :: Stripped () -> AxonS () -> AxonS () #-}
+connectSorted :: Terminal s -> AxonS s -> AxonS s
+{-# SPECIALIZE connectSorted :: Terminal () -> AxonS () -> AxonS () #-}
 connectSorted = connectSortedWith (++)
 
 
 {- | Add a synapse with a specified combining function to use in case two
  - synapses have the same source, target, and delay -}
-connectSortedWith :: ([Leaf s] -> [Leaf s] -> [Leaf s]) -> Stripped s -> AxonS s -> AxonS s
-connectSortedWith f s ss = Map.alter (go (sTarget s) (sWeight s) (sAux s)) (sDelay s) ss
+connectSortedWith :: ([Leaf s] -> [Leaf s] -> [Leaf s]) -> Terminal s -> AxonS s -> AxonS s
+connectSortedWith f s ss = Map.alter (go (target s) (weight s) (atAux s)) (delay s) ss
     where
         go t w s Nothing = Just $ Map.singleton t [(w, s)]
         go t w s (Just ss) =
@@ -245,29 +213,29 @@ connectSortedWith f s ss = Map.alter (go (sTarget s) (sWeight s) (sAux s)) (sDel
 
 
 {- | Add a group of synapses -}
-connectMany :: [Synapse s] -> Axon s -> Axon s
-connectMany ss' (Unsorted ss) = Unsorted $ ss Seq.>< (Seq.fromList $ map strip ss')
-connectMany ss' (Sorted ss) = Sorted $ foldl' (flip connectSorted) ss $ map strip ss'
+connectMany :: [Terminal s] -> Axon s -> Axon s
+connectMany ss' (Unsorted ss) = Unsorted $ ss >< Seq.fromList ss'
+connectMany ss' (Sorted ss) = Sorted $ foldl' (flip connectSorted) ss ss'
 
 
 {- | Check if synapse is part of an axon -}
-present :: (Eq s) => Synapse s -> AxonS s -> Bool
+present :: (Eq s) => Terminal s -> AxonS s -> Bool
 present s ss = isJust found
    where
        found = find eq =<< Map.lookup (target s) =<< Map.lookup (delay s) ss
-       eq (w, pl) = w == weight s && pl == sdata s
+       eq (w, pl) = w == weight s && pl == atAux s
 
 
 
 {- | Remove the first matching synapse -}
-disconnect :: (Eq s) => Synapse s -> Axon s -> Axon s
+disconnect :: (Eq s) => Terminal s -> Axon s -> Axon s
 disconnect s axon =
     case axon of
         (Unsorted _) -> disconnect s $ sort axon
         (Sorted ss) ->
             if present s ss
                 -- TODO: do lookup and delete in one go
-                then Sorted $ Map.adjust (Map.adjust (delete ((weight s, sdata s))) (target s)) (delay s) ss
+                then Sorted $ Map.adjust (Map.adjust (delete ((weight s, atAux s))) (target s)) (delay s) ss
                 else axon
 
 
@@ -275,7 +243,7 @@ disconnect s axon =
  - found -}
 disconnectM
     :: (Monad m, Eq s, Show s)
-    => Synapse s -> Axon s -> m (Axon s)
+    => Terminal s -> Axon s -> m (Axon s)
 disconnectM s axon =
     case axon of
         (Unsorted _) -> disconnectM s $ sort axon
@@ -289,7 +257,7 @@ disconnectM s axon =
 {- | Replace the *first* matching synapse, reporting error if non-existent -}
 replaceM
     :: (Monad m, Show s, Eq s)
-    => Synapse s -> Synapse s -> Axon s -> m (Axon s)
+    => Terminal s -> Terminal s -> Axon s -> m (Axon s)
 replaceM old new axon =
     case axon of
         (Unsorted _) -> replaceM old new $ sort axon
@@ -299,9 +267,10 @@ replaceM old new axon =
                 else fail $ "Axon.replace: failed to find synapse " ++ show old
 
 
+
 {- | Map function over all target indices -}
 withTargets :: (Target -> Target) -> Axon s -> Axon s
-withTargets f (Unsorted ss) = Unsorted $ fmap (mapTarget f) ss
+withTargets f (Unsorted ss) = Unsorted $ fmap (withTarget f) ss
 withTargets f (Sorted ss) = Sorted $ Map.map go ss
     where
         -- TODO: we should use same merging scheme as in 'connect'
@@ -310,29 +279,33 @@ withTargets f (Sorted ss) = Sorted $ Map.map go ss
 
 
 {- | Map function over all weights -}
-withWeights :: (Current -> Current) -> Axon s -> Axon s
-withWeights f (Unsorted ss) = Unsorted $ fmap (mapWeight f) ss
+withWeights :: (Weight -> Weight) -> Axon s -> Axon s
+withWeights f (Unsorted ss) = Unsorted $ fmap (withWeight f) ss
 withWeights f (Sorted ss) = Sorted $ Map.map (Map.map (map $ withLeafWeight f)) ss
 
 
 -- TODO: make instance of Show instead
 hPrintConnections :: (Show s) => Handle -> Source -> Axon s -> IO ()
 hPrintConnections hdl src axon = do
-    forM_ (synapsesByDelay axon) $ \(d, ss) -> do
+    forM_ (terminalsByDelay axon) $ \(d, ss) -> do
         forM_ ss $ \(tgt, w, s) -> do
             hPutStrLn hdl $ (show src) ++ " -> " ++ (intercalate " " $ [show tgt, show d, show w, show s])
 
 
 instance (Show s) => Show (Axon s) where
     {- Print one synapse per line -}
-    showsPrec _ a s = showSynapses (strippedSynapses a) s
+    showsPrec _ a s = showSynapses (terminals a) s
         where
             showSynapses [] = id
             showSynapses (s:ss) = shows s . showChar '\n' . showSynapses ss
 
-instance (NFData s) => NFData (Stripped s) where
-    rnf (Stripped t d w a) = rnf t `seq` rnf d `seq` rnf w `seq` rnf a `seq` ()
+instance (NFData s) => NFData (Terminal s) where
+    rnf (AxonTerminal t d w a) = rnf t `seq` rnf d `seq` rnf w `seq` rnf a `seq` ()
 
 instance (NFData s) => NFData (Axon s) where
     rnf (Unsorted ss) = (rnf $! toList ss) `seq` ()
     rnf (Sorted ss) = rnf ss `seq` ()
+
+
+(|>) = (Seq.|>)
+(><) = (Seq.><)

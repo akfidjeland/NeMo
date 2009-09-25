@@ -17,7 +17,7 @@ module Construction.Network (
         neurons,
         toList,
         maxDelay,
-        maxSynapsesPerNeuron,
+        maxFanout,
         -- * Modify
         addNeuron,
         addNeuronGroup,
@@ -82,7 +82,7 @@ idxBounds = Neurons.idxBounds . networkNeurons
 
 
 {- | Return synapses orderd by source and delay -}
-synapses :: Network n s -> [(Idx, [(Delay, [(Idx, Current, s)])])]
+synapses :: Network n s -> [(Source, [(Delay, [(Target, Current, s)])])]
 synapses = Neurons.synapses . networkNeurons
 
 
@@ -91,7 +91,7 @@ synapsesOf = Neurons.synapsesOf . networkNeurons
 
 
 {- | Return synapses organised by source only -}
-weightMatrix :: Network n s -> Map.Map Idx [Synapse s]
+weightMatrix :: Network n s -> Map.Map Idx [AxonTerminal s]
 weightMatrix = Neurons.weightMatrix . networkNeurons
 
 
@@ -109,8 +109,9 @@ maxDelay :: Network n s -> Delay
 maxDelay = Neurons.maxDelay . networkNeurons
 
 
-maxSynapsesPerNeuron :: Network n s -> Int
-maxSynapsesPerNeuron = Neurons.maxSynapsesPerNeuron . networkNeurons
+{- | Return maximum number of axon terminals for any neuron -}
+maxFanout :: Network n s -> Int
+maxFanout = Neurons.maxFanout . networkNeurons
 
 
 

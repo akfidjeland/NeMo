@@ -4,20 +4,20 @@
 module Construction.Neuron (
     -- * Construction
     Neuron,
-    ndata,
     unconnected,
     neuron,
     -- * Query
-    synapses,
-    synapsesUnordered,
-    synapsesByDelay,
-    synapseCount,
+    ndata,
+    terminals,
+    terminalsUnordered,
+    terminalsByDelay,
+    terminalCount,
     targets,
     -- * Modify
     connect,
     connectMany,
     disconnect,
-    replaceSynapse,
+    replaceTerminal,
     maxDelay,
     -- * Traversal
     withTargets,
@@ -30,7 +30,7 @@ import Control.Parallel.Strategies (NFData, rnf)
 import System.IO (Handle)
 
 import qualified Construction.Axon as Axon
-import Construction.Synapse
+import Construction.Synapse (AxonTerminal)
 import Types
 
 
@@ -47,9 +47,8 @@ unconnected n = Neuron n Axon.unconnected
 
 
 {- | Create a neuron from a list of connections -}
-neuron :: n -> [Synapse s] -> Neuron n s
--- neuron !n !ss = Neuron n $! Axon.fromList ss
-neuron n ss = Neuron n $! Axon.fromList ss
+neuron :: n -> [AxonTerminal s] -> Neuron n s
+neuron n ss = Neuron n $! Axon.fromList $! ss
 
 
 {- | Apply function to synapses of a neuron -}
@@ -63,19 +62,20 @@ withAxonM
 withAxonM f (Neuron n s) = f s >>= return . Neuron n
 
 
-{- | Return unordered list of all synapses -}
-synapses :: Idx -> Neuron n s -> [Synapse s]
-synapses src n = Axon.synapses src $ axon n
-
-synapsesUnordered :: Idx -> Neuron n s -> [Synapse s]
-synapsesUnordered src n = Axon.synapsesUnordered src $ axon n
-
-synapsesByDelay :: Neuron n s -> [(Delay, [(Idx, Current, s)])]
-synapsesByDelay = Axon.synapsesByDelay . axon
+terminals :: Neuron n s -> [AxonTerminal s]
+terminals n = Axon.terminals $ axon n
 
 
-synapseCount :: Neuron n s -> Int
-synapseCount = Axon.size . axon
+terminalsUnordered :: Neuron n s -> [AxonTerminal s]
+terminalsUnordered n = Axon.terminalsUnordered $ axon n
+
+
+terminalsByDelay :: Neuron n s -> [(Delay, [(Idx, Current, s)])]
+terminalsByDelay = Axon.terminalsByDelay . axon
+
+
+terminalCount :: Neuron n s -> Int
+terminalCount = Axon.size . axon
 
 
 {- | Return list of target neurons, including duplicates -}
@@ -84,25 +84,25 @@ targets = Axon.targets . axon
 
 
 {- | Add a single synapse to a neuron -}
-connect :: Synapse s -> Neuron n s -> Neuron n s
+connect :: AxonTerminal s -> Neuron n s -> Neuron n s
 connect s = withAxon (Axon.connect s)
 
 
 {- | Add multiple synapses to a neuron -}
-connectMany :: [Synapse s] -> Neuron n s -> Neuron n s
+connectMany :: [AxonTerminal s] -> Neuron n s -> Neuron n s
 connectMany ss = withAxon (Axon.connectMany ss)
 
 
 {- | Disconnect the first matching synapse -}
-disconnect :: (Eq s) => Synapse s -> Neuron n s -> Neuron n s
+disconnect :: (Eq s) => AxonTerminal s -> Neuron n s -> Neuron n s
 disconnect s = withAxon (Axon.disconnect s)
 
 
 {- | Replace the *first* matching synapse -}
-replaceSynapse
+replaceTerminal
     :: (Monad m, Show s, Eq s)
-    => Synapse s -> Synapse s -> Neuron n s -> m (Neuron n s)
-replaceSynapse old new = withAxonM (Axon.replaceM old new)
+    => AxonTerminal s -> AxonTerminal s -> Neuron n s -> m (Neuron n s)
+replaceTerminal old new = withAxonM (Axon.replaceM old new)
 
 
 maxDelay :: Neuron n s -> Delay
@@ -115,6 +115,7 @@ withTargets f = withAxon (Axon.withTargets f)
 
 withWeights :: (Current -> Current) -> Neuron n s -> Neuron n s
 withWeights f = withAxon (Axon.withWeights f)
+
 
 hPrintConnections :: (Show s) => Handle -> Idx -> Neuron n s -> IO ()
 hPrintConnections hdl source n = Axon.hPrintConnections hdl source $ axon n
