@@ -121,7 +121,9 @@ maxSynapsesPerNeuron = Neurons.maxSynapsesPerNeuron . networkNeurons
 
 addNeuron idx n = withNeurons (Neurons.addNeuron idx n)
 
+{- | Add group of neurons, lazily -}
 addNeuronGroup ns = withNeurons (Neurons.addNeuronGroup ns)
+
 
 {- | Apply function to all neurons -}
 -- TODO: perhaps use Neuron -> Neuron instead

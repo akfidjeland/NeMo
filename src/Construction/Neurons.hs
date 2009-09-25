@@ -38,6 +38,7 @@ module Construction.Neurons (
     ) where
 
 import Control.Parallel.Strategies (NFData, rnf)
+import Data.List (foldl')
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 import System.IO (Handle, hPutStrLn)
@@ -63,7 +64,7 @@ fromList = Neurons . Map.fromList
 
 
 union :: (Show n, Show s) => [Neurons n s] -> Neurons n s
-union ns = Neurons $ foldl f Map.empty $ map ndata ns
+union ns = Neurons $ foldl' f Map.empty $ map ndata ns
     where
         f = Map.unionWithKey $ duplicateKeyError "Neurons(union)"
 
