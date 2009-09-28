@@ -94,7 +94,6 @@ function [u_out, v_out, firings_out] = ...
 			tau*(a(quiet).*(b(quiet).*v(quiet)-u(quiet)));
 	end
 
-	fprintf('v[195] = %f (I=%f)\n', v(195), I(195));
 
 	fired = find(v >= 30);
 	fired = sort([fired, stimulated]);

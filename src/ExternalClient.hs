@@ -35,6 +35,7 @@ import Options
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.CUDA.Options
 import qualified Simulation.Backend as Backend
+import Simulation.Statistics (Statistics, newStatistics, update, firingRate)
 import Simulation.STDP
 import Simulation.STDP.Options
 import qualified Protocol (decodeNeuron, run, getConnectivity,
@@ -53,7 +54,7 @@ instance Exception ClientException
 
 data NemoState
     = Constructing !Net !Config
-    | Simulating !Config !Backend.Simulation
+    | Simulating !Config !Backend.Simulation Statistics
 
 
 data Config = Config {
@@ -100,8 +101,8 @@ reconfigure m f = do
         Constructing net conf -> do
             let st' = Constructing net (f conf)
             st' `seq` writeIORef m st'
-        Simulating conf sim -> do
-            let st' = Simulating (f conf) sim
+        Simulating conf sim stats -> do
+            let st' = Simulating (f conf) sim stats
             st' `seq` writeIORef m st'
 
 
@@ -133,13 +134,14 @@ simulateWith :: IORef NemoState -> (Backend.Simulation -> IO a) -> IO a
 simulateWith m f = do
     st <- readIORef m
     case st of
-        Simulating _ sim -> f sim
+        Simulating _ sim _ -> f sim
         Constructing net conf -> do
             -- Start simulation first
             handle initError $ do
             sim <- Backend.initSim net (simConfig conf) cudaOpts (stdpConfig conf)
             ret <- f sim
-            st' <- return $! Simulating conf sim
+            let stats = newStatistics $ Network.idxBounds net
+            st' <- return $! Simulating conf sim stats
             st' `seq` writeIORef m st'
             return $! ret
     where
@@ -153,14 +155,22 @@ simulateWith m f = do
             throwIO $ Wire.ConstructionError $ Just $ show e
 
 
+-- TODO: allow control of statistics gathering
+updateStats :: IORef NemoState -> FiringOutput -> IO ()
+updateStats m fs =
+    modifyIORef m $ \st -> do
+    case st of
+        Simulating conf sim stats -> Simulating conf sim $ update fs stats
+        Constructing _ _ -> error "updating statistics in construction mode" -- programmer error
 
 
 clientStopSimulation :: IORef NemoState -> IO ()
 clientStopSimulation m = do
     st <- readIORef m
     case st of
-        Simulating conf sim -> do
+        Simulating conf sim stats -> do
             Backend.stop sim
+            putStrLn $ "Avg. firing rate: " ++ show (firingRate stats)
             writeIORef m $! initNemoState
         -- Simulating net conf sim -> do
             -- Backend.stop sim

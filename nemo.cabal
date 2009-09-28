@@ -70,6 +70,7 @@ executable nemo
                             Simulation.Remote,
                             Simulation.Run,
                             Simulation.SpikeQueue,
+                            Simulation.Statistics,
                             Simulation.STDP,
                             Simulation.STDP.Options,
                             Types,

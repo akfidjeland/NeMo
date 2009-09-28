@@ -95,10 +95,6 @@ STDP_FN(fire)(
 				} 
 			}
 
-			if(neuron == 810) {
-				DEBUG_MSG("v[811] = %f\n", v);
-			}
-
 			/* s_fstim accessed using broadcast */
 			bool forceFiring = (s_fstim[neuron/32] >> (neuron % 32)) & 0x1;
 			uint32_t firing = 0;
