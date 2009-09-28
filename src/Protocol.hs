@@ -1,4 +1,9 @@
-{- Encoding and decoding between wire data format and memory data format -}
+{-# LANGUAGE BangPatterns #-}
+
+{- Encoding and decoding between wire data format and memory data format.
+ -
+ - Note: there are various combiations of 'seq', 'rnf' and 'NFData' here left
+ - after attempts to optimise the code. These are probably not needed. -}
 
 module Protocol (
         defaultPort,
@@ -49,10 +54,12 @@ getConnectivity :: Backend.Simulation -> IO (Map.Map Idx [Wire.Synapse])
 getConnectivity sim = return . encodeConnectivity =<< Backend.getWeights sim
 
 
+
 {- | Convert neuron from wire format to internal format -}
 decodeNeuron :: Wire.IzhNeuron -> (Idx, Neuron (IzhNeuron Double) Static)
-decodeNeuron wn = (idx, neuron n ss)
-    -- note: tried adding 'rnf ss' here, but this does not help memory performance
+decodeNeuron !wn = ss `seq` (idx, neuron n ss)
+    {- note: tried adding 'rnf ss' here, but this does not help memory
+     - performance -}
     where
         idx = fromJust $! Wire.f_IzhNeuron_index wn
         n = IzhNeuron
@@ -63,7 +70,15 @@ decodeNeuron wn = (idx, neuron n ss)
                 (fromJust $! Wire.f_IzhNeuron_u wn)
                 (fromJust $! Wire.f_IzhNeuron_v wn)
                 0.0 False Nothing
-        ss = map decodeSynapse $! fromJust $! Wire.f_IzhNeuron_axon wn
+        ss = map' decodeSynapse $! fromJust $! Wire.f_IzhNeuron_axon wn
+
+        {- Performance note: Using a strict map rather than a lazy one brought
+         - the transfer time for a network with 3.125M synapses down from 65s
+         - to 55s.  Additionally reducing y to normal form did not make any
+         - further difference either way. -}
+        map' f [] = []
+        map' f (x:xs) = let y = f x in y `seq` y : map' f xs
+
 
 
 {- | Convert neuron from internal format to wire format -}
@@ -82,9 +97,11 @@ encodeNeuron (idx, n) = Wire.IzhNeuron (Just idx) a b c d u v ss
 
 {- | Convert synapse from wire format to internal format -}
 decodeSynapse :: Wire.Synapse -> AxonTerminal Static
-decodeSynapse ws = rnf tgt `seq` rnf d `seq` rnf w `seq` AxonTerminal tgt d w ()
-    -- note: tried using 'seq' here, but this did not help with memory usage
-    -- TODO: put rnf in separate helper
+decodeSynapse ws = AxonTerminal tgt d w ()
+    {- note: tried using bang-pattern on ws. This reduced performance -}
+    {- note: tried using 'seq' and 'rnf' on all the AxonTerminal fields here,
+     - but this did not help with memory usage.  Time-wise it was much the
+     - same. Left code in the cleaner form. -}
     where
         tgt = fromJust $! Wire.f_Synapse_target ws
         d = fromJust $! Wire.f_Synapse_delay ws
@@ -95,6 +112,8 @@ decodeSynapse ws = rnf tgt `seq` rnf d `seq` rnf w `seq` AxonTerminal tgt d w ()
 
 encodeSynapse :: AxonTerminal Static -> Wire.Synapse
 encodeSynapse s = Wire.Synapse tgt d w
+    {- Note: Tried using rnf/seq on the inputs to Wire.Synapse. This made no
+     - difference to encoding performance -}
     where
         tgt = Just $! target s
         d   = Just $! delay s

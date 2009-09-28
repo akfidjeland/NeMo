@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Server (runServer, Duration(..)) where
 
@@ -71,7 +72,7 @@ constructWith (Handler _ m) f = do
 
 -- TODO: share with frontend code
 serverAddNeuron :: Wire.IzhNeuron -> Net -> Net
-serverAddNeuron wn net = rnf n `seq` Network.addNeuron idx n net
+serverAddNeuron wn net = n `seq` Network.addNeuron idx n net
     where
         (idx, n) = Protocol.decodeNeuron wn
 
@@ -83,8 +84,10 @@ serverAddCluster (Handler log m) ns = do
     case st of
         (Simulating _) -> CE.throwIO $! Wire.ConstructionError $!
             Just $! "simulation command called before construction complete"
-        (Constructing conf net) -> do
-            writeIORef m $! Constructing conf $! foldl' (flip serverAddNeuron) net ns
+        (Constructing conf !net) -> do
+            net' <- return $! foldl' (flip serverAddNeuron) net ns
+            st' <- return $! Constructing conf net'
+            writeIORef m st'
 
 
 configureWithLog :: Handler -> String -> (Config -> Config) -> IO ()
@@ -154,6 +157,7 @@ data Handler = Handler {
 
 instance NemoBackend_Iface Handler where
     -- TODO: use constructWith
+    -- deal with Maybes here. Server can crash if client sends garbage or goes down
     addCluster h (Just ns) = serverAddCluster h ns
     addNeuron h (Just n) = constructWith h $ serverAddNeuron n
     startSimulation h = simulateWithLog h "starting simulation" $ const $ return ()
