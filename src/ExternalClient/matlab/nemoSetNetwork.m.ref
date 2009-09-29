@@ -13,13 +13,47 @@ function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights)
 	NEMO_NEURONS_U = u;
 	NEMO_NEURONS_V = v;
 
-	global NEMO_CM_TARGETS;
-	global NEMO_CM_DELAYS;
-	global NEMO_CM_WEIGHTS;
+	global NEMO_CM; % sparse connectivity matrix, stored by delay
 	global NEMO_MAX_DELAY;
 
-	NEMO_CM_TARGETS = transpose(targets);
-	NEMO_CM_DELAYS = transpose(delays);
-	NEMO_CM_WEIGHTS = transpose(weights);
 	NEMO_MAX_DELAY = max(max(delays));
+	NEMO_CM = sparsify(targets, delays, weights, NEMO_MAX_DELAY);
+end
+
+
+
+% Store one sparse matrix per delay
+function ret = sparsify(targets, delays, weights, d_max)
+
+	ret = cell(d_max, 1);
+
+	[n,s] = size(targets);                     % n: number of neurons
+	                                           % s: number of synapses per neuron
+	len = n*s;
+
+	% We can use the same indices for every delay-specific CM
+	j = reshape(targets, len, 1);              % postsynaptic indices
+	i = reshape(repmat([1:n]', s, 1), len, 1); % presynaptic indices
+	wvec = reshape(weights, len, 1);                 % synaptic data
+
+	% In the input format invalid synapses are specified in the 'targets'
+	% matrix, but in the sparse matrix construction below, invalid synapses are
+	% specified in % the data field, so we need to clear these entries.
+	wvec(j==0) = 0;
+
+	dvec = reshape(delays, len, 1);
+
+	for d=1:d_max
+
+		% mask out any invalid delays
+		w_tmp = wvec;
+		w_tmp(dvec ~= d) = 0;
+
+		% It's possible to have synapses with the same pre, post, and delay. We
+		% need to add their weight. This is already done by 'sparse'.
+
+		% TODO: can avoid transpose here, by using different construction
+		%ret{d} = transpose(sparse(i, j, w_tmp, n, n));
+		ret{d} = sparse(j, i, w_tmp, n, n);
+	end
 end

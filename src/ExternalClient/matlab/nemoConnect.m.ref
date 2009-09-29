@@ -17,14 +17,10 @@ function nemoConnect()
 	NEMO_NEURONS_V = [];
 
 	% Connectivity matrix
-	global NEMO_CM_TARGETS;
-	global NEMO_CM_DELAYS;
-	global NEMO_CM_WEIGHTS;
+	global NEMO_CM;
 	global NEMO_MAX_DELAY;
 
-	NEMO_CM_TARGETS = [];
-	NEMO_CM_DELAYS = [];
-	NEMO_CM_WEIGHTS = [];
+	NEMO_CM = {};
 	NEMO_MAX_DELAY = 0;
 
 	% STDP parameters

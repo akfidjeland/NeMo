@@ -9,9 +9,7 @@ function fired = nemoRun(nsteps, stimulus)
 	global NEMO_NEURONS_V;
 
 	% Connectivity matrix
-	global NEMO_CM_TARGETS;
-	global NEMO_CM_DELAYS;
-	global NEMO_CM_WEIGHTS;
+	global NEMO_CM;
 	global NEMO_MAX_DELAY;
 
 	% Runtime data
@@ -39,9 +37,7 @@ function fired = nemoRun(nsteps, stimulus)
 				NEMO_NEURONS_D,...
 				NEMO_NEURONS_U,...
 				NEMO_NEURONS_V,...
-				NEMO_CM_TARGETS,...
-				NEMO_CM_DELAYS,...
-				NEMO_CM_WEIGHTS,...
+				NEMO_CM,...
 				NEMO_MAX_DELAY,...
 				NEMO_FIRINGS);
 
@@ -59,7 +55,7 @@ end
 
 % TODO: throw away out-of-date firings
 function [u_out, v_out, firings_out] = ...
-	step(verbose, t, stimulated, a, b, c, d, u, v, targets, delays, weights, Dmax, firings)
+	step(verbose, t, stimulated, a, b, c, d, u, v, cm, Dmax, firings)
 
 	% Accumulate current for incoming spikes
 	I = zeros(size(a));
@@ -68,14 +64,17 @@ function [u_out, v_out, firings_out] = ...
 		% Find incoming spikes, taking account of propagation delays
 		k = size(firings, 1);
 		while (k > 0 && firings(k, 1) >= t - Dmax)
+
 			pre = firings(k,2);
 			t_fire = firings(k,1);
-			ind = delays(:, pre) == t - t_fire;
-			post = targets(ind, pre);
-			I(post) = I(post) + weights(ind, pre);
+			delay = t - t_fire;
+			weights = cm{delay};
+			post = find(weights(:,pre) ~= 0);
+			I(post) = I(post) + weights(post, pre);
+
 			if verbose && ~isempty(post)
 				fprintf('c%u %u ->\n', t, firings(k,2));
-				disp([post, weights(ind, pre)]);
+				disp([post, full(w(post, pre))]);
 			end;
 			k = k-1;
 		end;
