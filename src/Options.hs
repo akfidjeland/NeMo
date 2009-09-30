@@ -23,6 +23,8 @@ module Options (
         optStoreNet,
         optLoadNet,
     NetworkSource(..)
+    -- * re-exported types
+    -- OptDescr
 ) where
 
 

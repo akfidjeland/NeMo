@@ -1,5 +1,9 @@
 function fired = nemoRun(nsteps, stimulus)
 
+	% TODO: remove debugging code
+	%fid = fopen('firing.dat','wt');
+	%fid = 1;
+
 	% Neuron parameters
 	global NEMO_NEURONS_A;
 	global NEMO_NEURONS_B;
@@ -12,12 +16,14 @@ function fired = nemoRun(nsteps, stimulus)
 	global NEMO_CM;
 	global NEMO_MAX_DELAY;
 
+	global NEMO_STDP_ENABLED;
+
 	% Runtime data
-	% TODO: add to global list for connect/disconnect
 	global NEMO_FIRINGS;
 	global NEMO_CYCLE;
 
 	fired = [];
+	verbose = false;
 
 	for t=1:nsteps
 
@@ -30,7 +36,7 @@ function fired = nemoRun(nsteps, stimulus)
 		% reduce the size of the stimulus
 
 		[NEMO_NEURONS_U, NEMO_NEURONS_V, NEMO_FIRINGS] =...
-			step(false, NEMO_CYCLE, stim,...
+			step(verbose, fid, NEMO_CYCLE, stim,...
 				NEMO_NEURONS_A,...
 				NEMO_NEURONS_B,...
 				NEMO_NEURONS_C,...
@@ -41,13 +47,26 @@ function fired = nemoRun(nsteps, stimulus)
 				NEMO_MAX_DELAY,...
 				NEMO_FIRINGS);
 
-		fired_idx = find(NEMO_FIRINGS(:,1) == NEMO_CYCLE);
+		fired_idx = [];
+		if ~isempty(NEMO_FIRINGS)
+			fired_idx = find(NEMO_FIRINGS(:,1) == NEMO_CYCLE);
+		end;
+
+		% TODO: make sure to accumulate STDP in the right place
+		% TODO: factor STDP accumulation out into separate m-file
+		if NEMO_STDP_ENABLED
+			accumulateStdpStatistics(verbose, fid, NEMO_CYCLE, ...
+				NEMO_FIRINGS, NEMO_MAX_DELAY);
+		end;
+
+		% TODO: do we really need to add these here?
 		fired = [fired; NEMO_FIRINGS(fired_idx, :)];
 		NEMO_CYCLE = NEMO_CYCLE + 1;
-
 	end;
 
+
 	% TODO: discard old firings here
+	fclose(fid);
 end
 
 
@@ -55,7 +74,7 @@ end
 
 % TODO: throw away out-of-date firings
 function [u_out, v_out, firings_out] = ...
-	step(verbose, t, stimulated, a, b, c, d, u, v, cm, Dmax, firings)
+	step(verbose, fid, t, stimulated, a, b, c, d, u, v, cm, Dmax, firings)
 
 	% Accumulate current for incoming spikes
 	I = zeros(size(a));
@@ -73,8 +92,10 @@ function [u_out, v_out, firings_out] = ...
 			I(post) = I(post) + weights(post, pre);
 
 			if verbose && ~isempty(post)
-				fprintf('c%u %u ->\n', t, firings(k,2));
-				disp([post, full(w(post, pre))]);
+				for i=1:length(post)
+					fprintf(fid, 'c%u: n%u -> n%u %f\n', t, firings(k,2), ...
+						post(i), weights(post(i), pre));
+				end;
 			end;
 			k = k-1;
 		end;
@@ -93,12 +114,12 @@ function [u_out, v_out, firings_out] = ...
 			tau*(a(quiet).*(b(quiet).*v(quiet)-u(quiet)));
 	end
 
-
 	fired = find(v >= 30);
 	fired = sort([fired, stimulated]);
 	if verbose && ~isempty(fired)
-		fprintf('c%u: fired\n', t);
-		disp(fired);
+		for i=1:length(fired)
+			fprintf(fid, 'c%u: n%u fired\n', t, fired(i));
+		end;
 	end;
 
 	if ~isempty(fired)
@@ -110,4 +131,132 @@ function [u_out, v_out, firings_out] = ...
 	u_out = u;
 	v_out = v;
 	firings_out = firings;
+end
+
+
+
+function accumulateStdpStatistics(verbose, fid, t, firings, d_max)
+
+	% TODO: pass these in?
+	global NEMO_STDP_PREFIRE;
+	global NEMO_STDP_POSTFIRE;
+	global NEMO_STDP_MAX_WEIGHT;
+	global NEMO_STDP_ACC;
+	global NEMO_CM;
+
+	% Get all neurons which fired in the middle of the STDP window
+	tf = t - length(NEMO_STDP_POSTFIRE);
+
+	% All potentially relevent post-synaptic firings
+	post_firings = firings((firings(:,1) == tf), 2);
+
+	for pf = 1:size(post_firings,1) 
+		post = post_firings(pf); % index of postsynaptic neurons which fired
+		for d=1:d_max
+			% for this delay find any synapses that go *into* postsynaptic
+			weights = NEMO_CM{d};
+			pre = find(weights(post,:) > 0);   % presynaptic neuron indices.
+											   % we're only interested in
+											   % excitatory connections 
+			if isempty(pre)
+				continue;
+			end;
+
+			% get elements of firings, which are members of pre
+			ind = ismember(firings(:,2), pre); % indices of firings of interest 
+			if isempty(ind)
+				continue;
+			end;
+
+			dt_arr = firings(ind,1) + d - tf;  % dt wrt postsynaptic firing. +ve: post-pre -ve: pre-post
+			i_arr = firings(ind,2);            % indices of arrivals
+
+			% TODO: might want to use sparse format here
+			dt_pre = -1 .* ones(1, size(weights,1), 'int32');
+			dt_post = -1 .* ones(1, size(weights,1), 'int32');
+
+			% TODO: factor out into separate function
+			% For each neuron, keep only the arrival time closest to the
+			% postsynaptic firing
+			for i = 1 : length(i_arr)
+				dt = int32(dt_arr(i));
+				idx = i_arr(i);
+				if dt <= 0 && -dt < length(NEMO_STDP_PREFIRE)
+					dt_pre(idx) = closestToZero(dt_pre(idx), -dt);
+				elseif dt > 0 && dt <= length(NEMO_STDP_POSTFIRE)
+					dt_post(idx) = closestToZero(dt_post(idx), dt);
+				end;
+			end;
+
+			% Note: the assymetry in use of lt, leq, gt, geq wrt dt above, is
+			% due to the order of events within a single cycle (first deliver
+			% spikes, then update state). In either case we now  have prefire
+			% with a minimum of 0 and postfire with a minimum of 1. This is
+			% compensated for in 'prefire'.
+
+			% We can only log LTP/LTD after we've considered all possible spike
+			% pairs, potentially rejecting some.
+			if verbose
+				logStdp(fid, 'ltp', t, post, dt_pre);
+				logStdp(fid, 'ltd', t, post, dt_post-1);
+			end;
+
+			% combine new potentiation and depression with existing
+			% accumulation values
+			% TODO: is this still a sparse matrix after operation?
+			w_diff = NEMO_STDP_ACC{d}(post,:) ...
+				+ arrayfun(@(x) prefire(x), dt_pre) ...
+				+ arrayfun(@(x) postfire(x), dt_post);
+			NEMO_STDP_ACC{d}(post,:) = w_diff;
+		end;
+	end;
+end
+
+
+
+% Return additive term from prefire part of global STDP function
+function diff = prefire(dt)
+	global NEMO_STDP_PREFIRE;
+	if dt == -1
+		diff = 0;
+	else
+		% Indices are 1-based, whereas dt can be 0
+		diff = NEMO_STDP_PREFIRE(dt+1);
+	end;
+end
+
+
+% Return additive term from postfire part of global STDP function
+function diff = postfire(dt)
+	global NEMO_STDP_POSTFIRE;
+	if dt == -1
+		diff = 0;
+	else
+		% On the postfire side 1 is the lowest possible value for dt. This
+		% corresponds to dt=0 in the GPU kernel.
+		diff = NEMO_STDP_POSTFIRE(abs(dt));	
+	end;
+end
+
+
+function z = closestToZero(x, y)
+	if x < 0
+		z = y;
+	elseif abs(x) <= abs(y)
+		z = x;
+	else
+		z = y;
+	end;
+end
+
+
+% Print potentiation or depression to stdout, if in verbose mode
+function logStdp(fid, type, t, post, dt_arr)
+	% TODO: use sparse format here for dt_arr
+	for pre = 1:length(dt_arr)
+		dt = dt_arr(pre);
+		if dt >= 0
+			fprintf(fid, 'c%u %s: %u->%u dt=%d\n', t, type, pre, post, dt);
+		end;
+	end;
 end

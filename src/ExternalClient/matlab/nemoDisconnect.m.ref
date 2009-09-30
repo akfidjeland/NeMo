@@ -14,14 +14,10 @@ function nemoDisconnect()
 	clear NEMO_NEURONS_U;
 	clear NEMO_NEURONS_V;
 
-	global NEMO_CM_TARGETS;
-	global NEMO_CM_DELAYS;
-	global NEMO_CM_WEIGHTS;
+	global NEMO_CM;
 	global NEMO_MAX_DELAY;
 
-	clear NEMO_CM_TARGETS;
-	clear NEMO_CM_DELAYS;
-	clear NEMO_CM_WEIGHTS;
+	clear NEMO_CM;
 	clear NEMO_MAX_DELAY;
 
 	global NEMO_STDP_ENABLED;

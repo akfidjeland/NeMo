@@ -1,3 +1,28 @@
-function nemoApplySTDP(r)
-	warning('not implemented')
+function nemoApplySTDP(reward)
+
+	global NEMO_CM;
+	global NEMO_STDP_ACC;
+	global NEMO_MAX_DELAY;
+	global NEMO_CYCLE;
+
+	verbose = true;
+
+	for d=1:NEMO_MAX_DELAY
+		NEMO_CM{d} = NEMO_CM{d} + NEMO_STDP_ACC{d} .* reward;
+		if verbose
+			logSTDP(NEMO_CYCLE, NEMO_STDP_ACC{d});
+		end;
+		NEMO_STDP_ACC{d}(:) = 0;
+	end;
+end
+
+
+
+% Print (to stdout) all weight matrix modifications
+function logSTDP(t, acc)
+	ind = find(acc ~= 0);
+	for i=1:length(ind)
+		[post, pre] = ind2sub(size(acc), ind);
+		fprintf('c%u: stdp %u->%u w=%f\n', t, pre(i), post(i), acc(ind(i)));
+	end;
 end

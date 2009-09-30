@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
-module Main where
+module Main (main) where
 
 import Network (PortID(PortNumber))
 import System.IO (stderr)
@@ -33,6 +33,7 @@ data ServerOptions = ServerOptions {
 
 serverOptions = OptionGroup "Server options" (ServerOptions defaultPort Forever) optionDescr
 
+
 optionDescr = [
         Option [] ["port"]
             (ReqArg (\a o -> return o { optPort = PortNumber $ toEnum $ read a }) "INT")
@@ -43,6 +44,8 @@ optionDescr = [
             "serve only a single client before shutting down (default: disabled)"
     ]
 
+
+runBackendServer :: [String] -> IO ()
 runBackendServer args0 = do
     (args, commonOpts) <- startOptProcessing args0
     serverOpts  <- processOptGroup serverOptions args

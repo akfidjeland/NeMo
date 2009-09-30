@@ -40,11 +40,18 @@ matlab_src = src/ExternalClient/matlab
 matlab_build = dist/build/matlab
 matlab_m_files := $(basename $(basename $(notdir $(wildcard $(matlab_src)/*.m.m4))))
 
+# Additional Matlab files, for use in reference implementation.
+# (No preprocessing required.)
+matlab_ref_utils := $(addprefix $(matlab_src)/util/,sparsify.m mergeDuplicates.m)
 
 
 matlab-client: $(matlab_build)/nemo_mex.mexa64 \
-	$(patsubst %,$(matlab_build)/%.m,$(matlab_m_files))
+		$(patsubst %,$(matlab_build)/%.m,$(matlab_m_files)) \
+		matlab-reference
 
+matlab-reference: $(patsubst %,$(matlab_build)/reference/%.m,$(matlab_m_files)) $(matlab_ref_utils)
+	mkdir -p $(matlab_build)
+	cp --target-directory $(matlab_build)/reference $(matlab_ref_utils)
 
 # Generate LUT for Matlab API function dispatch
 # (m4-macros for m-file or c++ function array)

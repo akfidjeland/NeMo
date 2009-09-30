@@ -15,11 +15,14 @@ import Network.Socket.Internal (PortNumber)
 import Thrift
 import Thrift.Protocol.Binary
 import Thrift.Transport.Handle
-import System.IO (Handle, hPutStrLn)
+-- TODO: undo!
+-- import System.IO (Handle, hPutStrLn)
+import System.IO
 import System.Time (getClockTime)
 
 import Construction.Izhikevich (IzhNeuron, IzhState)
-import qualified Construction.Network as Network (Network, addNeuron, empty)
+import qualified Construction.Network as Network (Network, addNeuron,
+        addNeuronGroup, empty, hPrintConnections, idxBounds)
 import Construction.Synapse (Static)
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.Pipelined (initSim)
@@ -122,6 +125,9 @@ simulateWith (Handler _ m) f = do
             return $! ret
         Constructing conf net -> do
             CE.handle initError $ do
+            file <- openFile "cm.dat" WriteMode
+            Network.hPrintConnections file net
+            hClose file
             sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
             ret <- f sim
             writeIORef m $! Simulating sim
