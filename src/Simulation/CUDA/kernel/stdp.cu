@@ -162,7 +162,7 @@ uint
 closestPostFire(uint64_t spikes, uint targetNeuron)
 {
 	int dt = __clzll(spikes << (64 - s_stdpPostFireWindow));
-	return dt ? (uint) dt : STDP_NO_APPLICATION;
+	return spikes ? (uint) dt : STDP_NO_APPLICATION;
 }
 
 
