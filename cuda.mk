@@ -63,7 +63,7 @@ EXTINCLUDES := -I/usr/include -I$(CUDA_SDK_PATH)/common/inc
 
 verbose = 1
 include cuda_common.mk
-NVCCFLAGS += --host-compilation c++ --ptxas-options="-v" --maxrregcount 32 # --keep
+NVCCFLAGS += --host-compilation=c++ --ptxas-options="-v" --maxrregcount 32 # --keep
 
 ################################################################################
 

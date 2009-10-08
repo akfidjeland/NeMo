@@ -6,7 +6,6 @@
 #include <cuda_runtime.h>
 
 #include "SMatrix.hpp"
-#include "RSMatrix.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
 
@@ -113,7 +112,7 @@ struct ConnectivityMatrix
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and delay. The reverse connectivity is stored sepearately
 		 * for each partition */
-		std::vector<RSMatrix> m_rsynapses;
+		std::vector<class RSMatrix*> m_rsynapses;
 
 		bool m_setReverse;
 

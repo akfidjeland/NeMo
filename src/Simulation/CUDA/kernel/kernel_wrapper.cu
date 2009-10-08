@@ -24,7 +24,6 @@ extern "C" {
 #include "firingProbe.cu"
 #include "RuntimeData.hpp"
 #include "CycleCounters.hpp"
-#include "ConnectivityMatrix.hpp"
 #include "StdpFunction.hpp"
 #include "partitionConfiguration.cu"
 #include "cycleCounting.cu"

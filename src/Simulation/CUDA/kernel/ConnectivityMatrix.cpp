@@ -4,6 +4,7 @@
 #include "log.hpp"
 #include <algorithm>
 #include <stdexcept>
+#include "RSMatrix.hpp"
 
 #include "connectivityMatrix.cu_h"
 
@@ -35,7 +36,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 			ConnectivityMatrix::InvalidNeuron)
 {
 	for(uint p = 0; p < partitionCount; ++p) {
-		m_rsynapses.push_back(RSMatrix(maxPartitionSize));
+		m_rsynapses.push_back(new RSMatrix(maxPartitionSize));
 	}
 }
 
@@ -102,7 +103,7 @@ ConnectivityMatrix::setRow(
 	for(size_t i=0; i<f_length; ++i) {
 		// see connectivityMatrix.cu_h for encoding format
 		if(m_setReverse && weights[i] > 0.0f) { // only do STDP for excitatory synapses
-			m_rsynapses[targetPartition[i]].addSynapse(
+			m_rsynapses[targetPartition[i]]->addSynapse(
 					sourcePartition, sourceNeuron, i,
 					targetNeuron[i], delay);
 		}
@@ -141,7 +142,7 @@ ConnectivityMatrix::moveToDevice()
 	 * needed if we do STDP tracing (along with the trace matrix itself). */
 	m_fsynapses.copyToDevice();
 	for(uint p=0; p < m_partitionCount; ++p){
-		m_rsynapses[p].moveToDevice();
+		m_rsynapses[p]->moveToDevice();
 	}
 }
 
@@ -229,8 +230,7 @@ ConnectivityMatrix::clearStdpAccumulator()
 {
 	//! \todo this might be done better in a single kernel, to reduce bus traffic
 	for(uint p=0; p < m_partitionCount; ++p){
-		m_rsynapses[p].clearStdpAccumulator();
-
+		m_rsynapses[p]->clearStdpAccumulator();
 	}
 }
 
@@ -240,9 +240,9 @@ size_t
 ConnectivityMatrix::d_allocated() const
 {
 	size_t rcm = 0;
-	for(std::vector<RSMatrix>::const_iterator i = m_rsynapses.begin();
+	for(std::vector<RSMatrix*>::const_iterator i = m_rsynapses.begin();
 			i != m_rsynapses.end(); ++i) {
-		rcm += i->d_allocated();
+		rcm += (*i)->d_allocated();
 	}
 
 	return m_fsynapses.d_allocated()
@@ -257,13 +257,15 @@ template<typename T>
 DEVICE_UINT_PTR_T
 devicePointer(T ptr)
 {
+	uint64_t ptr64 = (uint64_t) ptr;
+#ifndef __DEVICE_EMULATION__
 	//! \todo: look up this data at runtime
 	//! \todo assert that we can fit all device addresses in 32b address.
 	const uint64_t MAX_ADDRESS = 4294967296LL; // on device
-	uint64_t ptr64 = (uint64_t) ptr;
 	if(ptr64 >= MAX_ADDRESS) {
 		throw std::range_error("Device pointer larger than 32 bits");
 	}
+#endif
 	return (DEVICE_UINT_PTR_T) ptr64;
 
 }
@@ -273,11 +275,11 @@ devicePointer(T ptr)
 /* Map function over vector of reverse synapse matrix */
 template<typename T, class S>
 const std::vector<DEVICE_UINT_PTR_T>
-mapDevicePointer(const std::vector<S>& vec, std::const_mem_fun_t<T, S> fun)
+mapDevicePointer(const std::vector<S*>& vec, std::const_mem_fun_t<T, S> fun)
 {
 	std::vector<DEVICE_UINT_PTR_T> ret(vec.size(), 0);
 	for(uint p=0; p < vec.size(); ++p){
-		T ptr = fun(&vec[p]);
+		T ptr = fun(vec[p]);
 		ret[p] = devicePointer(ptr);
 	}
 	return ret;
