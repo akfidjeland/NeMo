@@ -32,6 +32,9 @@ STDP_FN(setSharedArray)(uint32_t* s_mem, uint32_t val)
 __device__
 void
 STDP_FN(fire)(
+#ifdef __DEVICE_EMULATION__
+	uint cycle,
+#endif
 	bool hasExternalInput,
 	uint s_partitionSize,
 	uint substeps,
@@ -111,8 +114,9 @@ STDP_FN(fire)(
 				u += g_d[neuron];
 
 				firing = 0x1;
-				DEBUG_MSG("%u-%u fired (forced: %u) (thread %u)\n",
-						CURRENT_PARTITION, neuron, forceFiring, threadIdx.x);
+				DEBUG_MSG("c%u %u-%u fired (forced: %u) (thread %u)\n",
+						cycle, CURRENT_PARTITION, neuron,
+						forceFiring, threadIdx.x);
 				int idxEntry = atomicAdd(&s_firedCount, 1);
 
 				s_firingIdx[idxEntry] = (uint16_t) neuron;
@@ -157,6 +161,9 @@ STDP_FN(fire)(
 __device__
 void
 STDP_FN(commitCurrent_)(
+#ifdef __DEVICE_EMULATION__
+		uint cycle,
+#endif
 		bool doCommit,
 		uint delayEntry,
 		uint s_delayBlocks,
@@ -167,9 +174,9 @@ STDP_FN(commitCurrent_)(
 {
 	for(uint commit=0; commit < s_delayBlocks; ++commit) {
 		if(delayEntry == commit && doCommit) {
-			s_current[postsynaptic] += weight; 
-			DEBUG_MSG("L0 current %f for synapse %u -> %u\n" ,
-					weight, presynaptic, postsynaptic);
+			s_current[postsynaptic] += weight;
+			DEBUG_MSG("c%u L0 n%u -> n%u %f\n",
+					cycle, presynaptic, postsynaptic, weight);
 		}
 		__syncthreads();
 	}
@@ -180,6 +187,9 @@ STDP_FN(commitCurrent_)(
 __device__
 void
 STDP_FN(deliverL0Spikes_)(
+#ifdef __DEVICE_EMULATION__
+	uint cycle,
+#endif
 	uint maxDelay,
 	uint partitionSize,
 	uint sf0_maxSynapses,
@@ -305,7 +315,11 @@ STDP_FN(deliverL0Spikes_)(
 					doCommit = weight != 0.0f;
 				}
 
-				STDP_FN(commitCurrent_)(doCommit, delayEntry, s_delayBlocks, 
+				STDP_FN(commitCurrent_)(
+#ifdef __DEVICE_EMULATION__
+						cycle,
+#endif
+						doCommit, delayEntry, s_delayBlocks,
 						presynaptic, postsynaptic, weight, s_current);
 
 				/* We need a barrier *outside* the loop to avoid threads
@@ -449,6 +463,9 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 4);
 
 	STDP_FN(deliverL0Spikes_)(
+#ifdef __DEVICE_EMULATION__
+			cycle,
+#endif
 			s_maxDelay,
 			s_partitionSize,
 			sf0_maxSynapsesPerDelay,
@@ -460,6 +477,9 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 5);
 
 	STDP_FN(fire)(
+#ifdef __DEVICE_EMULATION__
+			cycle,
+#endif
 			g_fstim != 0,
             s_partitionSize,
 			substeps, s_substepMult,

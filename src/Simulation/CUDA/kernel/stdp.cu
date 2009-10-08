@@ -176,10 +176,11 @@ logStdp(uint cycle, int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
 	const char* type[] = { "ltd", "ltp" };
 
 	if(w_diff != 0.0f) {
-		fprintf(stderr, "%s %+f for synapse %u-%u -> %u-%u (dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
-				type[w_diff > 0.0f], w_diff,
+		fprintf(stderr, "c%u %s: %u-%u -> %u-%u %+f (dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
+				cycle, type[w_diff > 0.0f],
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
 				CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse),
+				w_diff,
 				cycle - s_stdpPostFireWindow + dt,
 				cycle - s_stdpPostFireWindow);
 	}
