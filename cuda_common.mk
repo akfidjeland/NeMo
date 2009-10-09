@@ -38,11 +38,6 @@
 # Add new SM Versions here as devices with new Compute Capability are released
 SM_VERSIONS := sm_10 sm_11 sm_12 sm_13
 
-CUDA_INSTALL_PATH ?= /opt/cuda
-
-ifdef cuda-install
-	CUDA_INSTALL_PATH := $(cuda-install)
-endif
 
 # detect OS
 OSUPPER = $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
@@ -57,9 +52,7 @@ ROOTDIR    ?=
 ROOTBINDIR ?= $(ROOTDIR)/bin
 BINDIR     ?= $(ROOTBINDIR)/$(OSLOWER)
 ROOTOBJDIR ?= $(ROOTDIR)/obj
-#LIBDIR     := $(ROOTDIR)/../lib
 LIBDIR     := $(ROOTDIR)/lib
-#COMMONDIR  := $(ROOTDIR)/../common
 COMMONDIR  := $(ROOTDIR)/common
 
 # Compilers

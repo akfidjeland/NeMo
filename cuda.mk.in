@@ -1,0 +1,68 @@
+SRCDIR := src/Simulation/CUDA/kernel/
+ROOTDIR := dist/build/cuda
+
+CU_MAIN = kernel_wrapper.cu
+
+# CUDA source files which are #included in main kernel source file
+CU_INC = kernel.cu \
+		 L1SpikeQueue.cu \
+		 firingProbe.cu \
+		 partitionConfiguration.cu \
+		 cycleCounting.cu \
+		 error.cu \
+		 connectivityMatrix.cu \
+		 stdp.cu \
+		 applySTDP.cu \
+		 thalamicInput.cu
+
+CUDA_INSTALL_PATH = @CUDA_PATH@
+
+# CUDA source files (compiled with cudacc)
+CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN))
+CU_DEPS     := $(addprefix $(SRCDIR),$(CU_INC))
+CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringOutput.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp RSMatrix.cpp StdpFunction.cpp)
+CFILES		:= $(addprefix $(SRCDIR),kernel.c)
+
+
+STATIC_LIB := libcuIzhikevich.a
+
+
+################################################################################
+# Rules and targets
+
+
+verbose = 1
+ifeq (@CUDA_ENABLED@, true)
+include cuda_common.mk
+endif
+NVCCFLAGS += --host-compilation=c++ --ptxas-options="-v" --maxrregcount 32 # --keep
+
+################################################################################
+
+ifeq ($(emu), 1)
+	BINSUBDIR   := emu$(BINSUBDIR)
+	# consistency, makes developing easier
+	CXXFLAGS		+= -D__DEVICE_EMULATION__
+	CFLAGS			+= -D__DEVICE_EMULATION__
+endif
+BINTARGETDIR := $(BINDIR)/$(BINSUBDIR)
+
+
+cuda_count:
+	@echo "Lines of kernel code: "
+	@cat $(CUFILES) $(CCFILES) | wc -l 
+
+
+################################################################################
+# Profiling
+################################################################################
+
+PROFILE_DIR := profile
+
+.PHONY: memprofile
+memprofile: PATH := $(ABS_BIN_DIR):$(PATH)
+memprofile: CUDA_PROFILE=1
+memprofile: CUDA_PROFILE_CONFIG=profile.config 
+memprofile: profile.config
+	# TODO: complete
+	#@(cd profile; random1k 

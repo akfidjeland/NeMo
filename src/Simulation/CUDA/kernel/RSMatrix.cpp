@@ -1,8 +1,8 @@
 #include "RSMatrix.hpp"
 #include "connectivityMatrix.cu_h"
+#include "util.h"
 
 #include <cuda_runtime.h>
-#include <cutil.h>
 #include <stdexcept>
 
 

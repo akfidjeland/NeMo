@@ -7,14 +7,9 @@ cabal-version:              >= 1.2
 stability:                  alpha
 build-type:                 Simple
 
-extra-source-files:         configure, conf/version
-extra-tmp-files:            nemo.buildinfo
+extra-source-files:         configure, conf/version, cuda.mk.in nemo.buildinfo.in
+extra-tmp-files:            nemo.buildinfo, cuda.mk, config.status, config.log
 
-
--- TODO: use autoconf to find CUDA
-flag CUDA
-    description:            Enable support for CUDA backend
-    default:                True
 
 -- TODO: use autoconf to find Matlab
 flag Matlab
@@ -106,23 +101,6 @@ executable nemo
 
     if flag(Matlab)
         cpp-options:        -DMATLAB_ENABLED
-
-
-    if flag(CUDA)
-        other-modules:      Simulation.CUDA,
-                            Simulation.CUDA.Address,
-                            Simulation.CUDA.Configuration,
-                            Simulation.CUDA.DeviceProperties,
-                            Simulation.CUDA.KernelFFI,
-                            Simulation.CUDA.Memory,
-                            Simulation.CUDA.Mapping,
-                            Simulation.CUDA.Options,
-                            Simulation.CUDA.Probe,
-                            Simulation.CUDA.State
-        cpp-options:        -DCUDA_ENABLED
-        extra-libraries:    cuIzhikevich cudart cutil
-        extra-lib-dirs:     /usr/local/cuda/lib ext/NVIDIA_CUDA_SDK/lib dist/build/cuda/lib
-        include-dirs:       src/Simulation/CUDA/kernel /usr/local/cuda/include
 
     -- We have several test scripts. These should really be replaced by scripts
     -- which are loaded dynamically by the main nemo binary.

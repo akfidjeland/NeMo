@@ -15,7 +15,7 @@
 //-----------------------------------------------------------------------------
 
 
-#include <cutil.h>
+#include "util.h"
 #include "kernel.cu_h"
 #include "kernel.h"
 #include "RuntimeData.hpp"

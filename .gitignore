@@ -1,4 +1,11 @@
 dist
 *.linkinfo
 cabal.mk
+
+# autotools
+configure
+autom4te.cache
 nemo.buildinfo
+cuda.mk
+config.status
+config.log

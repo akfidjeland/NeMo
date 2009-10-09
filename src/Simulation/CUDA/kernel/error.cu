@@ -13,10 +13,10 @@
  * \author Andreas Fidjeland
  */
 
-#include <cutil.h>
 #include <stdio.h>
 #include <vector>
 
+#include "util.h"
 #include "kernel.cu_h"
 
 

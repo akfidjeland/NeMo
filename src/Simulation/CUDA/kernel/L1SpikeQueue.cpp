@@ -1,7 +1,9 @@
 #include "L1SpikeQueue.hpp"
+
+#include "util.h"
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <cutil.h>
 #include <assert.h>
 
 

@@ -1,5 +1,6 @@
+#include "util.h"
+
 #include <cuda_runtime.h>
-#include <cutil.h>
 #include <algorithm>
 //#include <stdexcept>
 #include <assert.h>

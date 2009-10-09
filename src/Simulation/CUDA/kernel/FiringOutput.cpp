@@ -1,5 +1,4 @@
 #include <cuda_runtime.h>
-#include <cutil.h>
 #include <string.h>
 
 #include "FiringOutput.hpp"

@@ -1,12 +1,13 @@
 #include "ConnectivityMatrix.hpp"
 
-#include <cutil.h>
+#include "util.h"
 #include "log.hpp"
+#include "RSMatrix.hpp"
+#include "connectivityMatrix.cu_h"
+
 #include <algorithm>
 #include <stdexcept>
-#include "RSMatrix.hpp"
 
-#include "connectivityMatrix.cu_h"
 
 const int ConnectivityMatrix::InvalidNeuron = -1;
 

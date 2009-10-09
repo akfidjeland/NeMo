@@ -1,5 +1,4 @@
 #include <vector>
-#include <cutil.h>
 
 #include "log.hpp"
 #include "error.cu"

@@ -7,7 +7,6 @@
  * \author Andreas Fidjeland
  */
 
-#include <cutil.h>
 #include <device_functions.h>
 #include <stdio.h>
 #include <assert.h>
@@ -15,6 +14,7 @@ extern "C" {
 #include "kernel.h"
 }
 
+#include "util.h"
 #include "time.hpp"
 #include "error.cu"
 #include "log.hpp"
