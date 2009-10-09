@@ -2,16 +2,15 @@ HASKELL_BUILD_DIR := dist/build
 
 all: cabal
 
-version :=$(shell util/version)
 machine :=$(shell uname -m)
 
-# TODO: use configure for this
+# TODO: remove this once we change to Java instead of MEX
 thrift_inc =/usr/local/include/thrift
-thrift_dir = /usr/local/lib
 
-thrift_build = dist/build/thrift
+thrift_build = src/thrift
 
 
+ifeq (@CUDA_ENABLED@, true)
 
 # Build haskell via 'make' to allow parallel build using the -j flag. This is
 # passed on to the recursive make call. Cabal doesn't support building specific
@@ -21,6 +20,7 @@ cabal: src/Simulation/CUDA/KernelFFI.hsc $(thrift_build)/gen-hs
 	@./Setup.lhs build
 
 
+CUDA_INSTALL_PATH = @CUDA_PATH@
 include cuda.mk
 
 # TODO: use better names in cuda.mk, or hide them
@@ -30,6 +30,13 @@ CUDA_LIB := $(TARGET)
 src/Simulation/CUDA/KernelFFI.hsc: $(CUDA_LIB)
 	@touch $@
 
+else
+
+cabal: $(thrift_build)/gen-hs
+	@echo "Using configuration from previous run of ./Setup.lhs configure"
+	@./Setup.lhs build
+
+endif
 
 client: matlab-client
 
@@ -83,11 +90,19 @@ $(matlab_build)/%.mexa64: $(matlab_src)/%.cpp $(thrift_build)/gen-cpp $(autogen)
 		$< $(addprefix $(thrift_build)/gen-cpp/,NemoFrontend.cpp nemo_types.cpp)
 
 
+ifeq (@HAVE_THRIFT_COMPILER@, true)
+
 .PRECIOUS: $(thrift_build)/gen-%
-$(thrift_build)/gen-%: src/ExternalClient/nemo.thrift
-	mkdir -p $(thrift_build)
-	thrift --gen $* -o $(thrift_build) $<
+$(thrift_build)/gen-%: src/thrift/nemo.thrift
+	@THRIFT@ --gen $* -o $(thrift_build) $<
 	touch $@
+
+else
+
+$(thrift_build)/gen-%: src/thrift/nemo.thrift
+	$(warning "Auto-generated thrift files out-of-date, but no thrift compiler available")
+
+endif
 
 
 # Target only needed for install
@@ -98,7 +113,7 @@ $(HASKELL_BUILD_DIR)/nemo-server/nemo-server: all
 # Distribution
 #
 
-dist_dir := dist/build/nemo-$(machine)-$(strip $(version))
+dist_dir := dist/build/nemo-$(machine)-@PACKAGE_VERSION@
 doc_build := dist/build/manual
 
 .PHONY: dist

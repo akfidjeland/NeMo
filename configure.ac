@@ -1,5 +1,6 @@
 AC_INIT
 
+
 ########################
 # Version information
 ########################
@@ -8,6 +9,8 @@ AC_INIT
 # then cabal passes the version back to ghc via the CPP.
 
 PACKAGE_VERSION=`conf/version`
+
+
 
 ########################
 # Check for CUDA
@@ -45,5 +48,34 @@ AC_SUBST(CUDA_ENABLED)
 AC_SUBST(CUDA_PATH)
 
 
-AC_CONFIG_FILES([cuda.mk] [nemo.buildinfo])
+########################
+# Check for Thrift
+########################
+
+# Note: We can build without the thrift compiler as long as the protocol does
+# not change, as the auto-generated protocol files are in the repo. We need the
+# haskell libraries, but that is handled by cabal.
+
+AC_ARG_VAR([THRIFT],
+		   [Path of thrift compiler. ]
+		   [This is only needed if changing the thrift protocol, ]
+		   [and the compiler is not on the path])
+AC_PATH_PROG([THRIFT], [thrift])
+
+HAVE_THRIFT_COMPILER=false
+if test -n "$THRIFT"; then
+	HAVE_THRIFT_COMPILER=true
+fi
+
+AC_SUBST(HAVE_THRIFT_COMPILER)
+AC_SUBST(THRIFT)
+
+
+
+########################
+# Generate output
+########################
+
+
+AC_CONFIG_FILES([cuda.mk] [nemo.buildinfo] [Makefile])
 AC_OUTPUT

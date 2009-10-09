@@ -15,7 +15,6 @@ CU_INC = kernel.cu \
 		 applySTDP.cu \
 		 thalamicInput.cu
 
-CUDA_INSTALL_PATH = @CUDA_PATH@
 
 # CUDA source files (compiled with cudacc)
 CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN))
@@ -32,9 +31,7 @@ STATIC_LIB := libcuIzhikevich.a
 
 
 verbose = 1
-ifeq (@CUDA_ENABLED@, true)
 include cuda_common.mk
-endif
 NVCCFLAGS += --host-compilation=c++ --ptxas-options="-v" --maxrregcount 32 # --keep
 
 ################################################################################

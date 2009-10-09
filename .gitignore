@@ -3,6 +3,7 @@ dist
 cabal.mk
 
 # autotools
+Makefile
 configure
 autom4te.cache
 nemo.buildinfo
