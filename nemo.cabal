@@ -115,7 +115,7 @@ executable nemo
 
         cpp-options:        -DEXAMPLES_ENABLED
 
-    hs-source-dirs:         src, dist/build/thrift/gen-hs
+    hs-source-dirs:         src, src/thrift/gen-hs
 
     build-depends:          array >= 0.1
     build-depends:          base
