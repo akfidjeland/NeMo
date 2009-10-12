@@ -2,7 +2,7 @@ function fired = nemoRun(nsteps, stimulus)
 
 	% TODO: remove debugging code
 	%fid = fopen('firing.dat','wt');
-	%fid = 1;
+	fid = 1;
 
 	% Neuron parameters
 	global NEMO_NEURONS_A;
@@ -24,6 +24,7 @@ function fired = nemoRun(nsteps, stimulus)
 
 	fired = [];
 	verbose = false;
+	cycle_start = NEMO_CYCLE;
 
 	for t=1:nsteps
 
@@ -60,13 +61,18 @@ function fired = nemoRun(nsteps, stimulus)
 		end;
 
 		% TODO: do we really need to add these here?
-		fired = [fired; NEMO_FIRINGS(fired_idx, :)];
+		% The firing history uses global cycle numbers so it work correctly
+		% across calls to nemoRun. However, for consistency with the regular
+		% nemoRun call, use local cycle numbers.
+		f_new = NEMO_FIRINGS(fired_idx, :);
+		f_new(:,1) = f_new(:,1) - cycle_start;
+		fired = [fired; f_new];
 		NEMO_CYCLE = NEMO_CYCLE + 1;
 	end;
 
 
 	% TODO: discard old firings here
-	fclose(fid);
+	% fclose(fid);
 end
 
 
