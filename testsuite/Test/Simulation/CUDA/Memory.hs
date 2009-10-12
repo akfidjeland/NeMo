@@ -1,5 +1,6 @@
 module Test.Simulation.CUDA.Memory (tests) where
 
+import Control.Monad (zipWithM_)
 import Control.Monad.Writer (runWriter)
 import qualified Data.Map as Map
 import Data.List (sort)
@@ -49,8 +50,9 @@ testWeightQuery = TestCase $ do
 
     {- The neuron will be different, since getWeights just puts dummy neurons
      - in the network. The synapses should be exactly the same, though -}
-    assertEqual "Weight matrix before and after writing to device"
-        (sort $ concat $ Map.elems ns) (sort $ concat $ Map.elems ns')
+    let sorted = sort $ concat $ Map.elems ns
+    let sorted' = sort $ concat $ Map.elems ns'
+    zipWithM_ (assertEqual "Synapses of each neuron before and after writing to device") sorted sorted'
 
     where
 

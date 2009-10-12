@@ -29,4 +29,5 @@ instance Arbitrary (AxonTerminal Static) where
          - does not affect mapping etc, just execution (which is tested using
          - known networks). -}
         w <- choose (-1.0, 1.0)
-        return $! AxonTerminal tgt d w ()
+        p <- choose (True, False)
+        return $! AxonTerminal tgt d w p ()

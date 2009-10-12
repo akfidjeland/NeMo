@@ -237,6 +237,7 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	int32_t* targets = (int32_t*) mxGetData(prhs[7]);
 	int32_t* delays = (int32_t*) mxGetData(prhs[8]);
 	double* weights = mxGetPr(prhs[9]);
+	mxLogical* plastic = mxGetLogicals(prhs[10]);
 
 	for(int32_t n_idx=0; n_idx<nlen; ++n_idx) {
 
@@ -257,6 +258,7 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 				s.target = targets[s_idx];
 				s.delay = delays[s_idx];
 				s.weight = weights[s_idx];
+				s.plastic = plastic[s_idx];
 				axon.push_back(s);
 			}
 		}

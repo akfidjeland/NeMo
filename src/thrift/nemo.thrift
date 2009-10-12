@@ -7,6 +7,7 @@ struct Synapse {
 	1:i32 target,
 	2:i16 delay = 1,
 	3:double weight
+	4:bool plastic = 0,
 }
 
 

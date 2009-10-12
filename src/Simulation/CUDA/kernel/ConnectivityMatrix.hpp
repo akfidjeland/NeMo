@@ -51,6 +51,7 @@ struct ConnectivityMatrix
 				const float* f_weights,
 				const uint* f_targetPartition,
 				const uint* f_targetNeuron,
+				const uint* f_isPlastic,
 				size_t length);
 
 		/* Copy data to device and clear host buffers */

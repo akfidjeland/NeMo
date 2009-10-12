@@ -70,7 +70,7 @@ terminalsUnordered :: Neuron n s -> [AxonTerminal s]
 terminalsUnordered n = Axon.terminalsUnordered $ axon n
 
 
-terminalsByDelay :: Neuron n s -> [(Delay, [(Idx, Current, s)])]
+terminalsByDelay :: Neuron n s -> [(Delay, [(Target, Weight, Bool, s)])]
 terminalsByDelay = Axon.terminalsByDelay . axon
 
 

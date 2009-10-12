@@ -58,7 +58,7 @@ instance Arbitrary (Axon Static) where
             return (Sorted ( Map.fromList ( Assocs.mapElems go (Assocs.groupBy delay ss))))
           ]
         where
-            go ss = Map.fromListWith (++) $ zip (map target ss) (map (\s -> return (weight s, sdata s)) ss)
+            go ss = Map.fromListWith (++) $ zip (map target ss) (map (\s -> return (weight s, plastic s, sdata s)) ss)
 
 
 
@@ -117,8 +117,8 @@ prop_synapsesByDelay ss = List.sort ss_out == List.sort ss_out
     where
         ss_out = concatMap strip $ terminalsByDelay $ fromList ss
 
-        strip :: (Delay, [(Target, Current, Static)]) -> [Current]
-        strip (delay, ss) = map (\(_,w,_) -> w) ss
+        strip :: (Delay, [(Target, Current, Bool, Static)]) -> [Current]
+        strip (delay, ss) = map (\(_,w,_,_) -> w) ss
 
         types = ss :: [StdSynapse]
 
@@ -235,7 +235,3 @@ prop_newPresent s axon = present s ss
     where
         (Sorted ss) = connect s $ sort axon
         types = (axon :: Axon Static, s :: AxonTerminal Static)
-
-
-changeSource :: Source -> Synapse s -> Synapse s
-changeSource src' (Synapse src tgt d w pl) = Synapse src' tgt d w pl

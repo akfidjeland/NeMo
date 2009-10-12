@@ -35,7 +35,7 @@ mkSynapsesRT :: Network n s -> SynapsesRT
 -- TODO: try stripping before getting the assocs
 mkSynapsesRT net = array (idxBounds net) $ Assoc.mapElems strip $ synapses net
     where
-        strip = Assoc.mapElems (map (\(idx, w, _) -> (idx, w)))
+        strip = Assoc.mapElems (map (\(idx, w, _, _) -> (idx, w)))
 
 
 {- Rotating queue with insertion at random points, with one slot per delay. -}

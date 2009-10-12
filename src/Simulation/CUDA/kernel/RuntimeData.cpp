@@ -413,18 +413,20 @@ setCMDRow(RTDATA rtdata,
 		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
-		float* h_weights,
-		unsigned int* h_targetPartition,
-		unsigned int* h_targetNeuron,
+		float* weights,
+		unsigned int* targetPartition,
+		unsigned int* targetNeuron,
+		unsigned int* isPlastic,
 		size_t length)
 {
 	rtdata->cm(cmIdx)->setRow(
 		sourcePartition,
 		sourceNeuron,
 		delay,
-		h_weights,
-		h_targetPartition,
-		h_targetNeuron,
+		weights,
+		targetPartition,
+		targetNeuron,
+		isPlastic,
 		length);
 }
 

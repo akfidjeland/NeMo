@@ -116,7 +116,7 @@ idxBounds (Neurons ns) = (mn, mx)
 
 
 {- | Return synapses ordered by source and delay -}
-synapses :: Neurons n s -> [(Source, [(Delay, [(Target, Current, s)])])]
+synapses :: Neurons n s -> [(Source, [(Delay, [(Target, Weight, Bool, s)])])]
 synapses = map (\(i, n) -> (i, Neuron.terminalsByDelay n)) . toList
 
 

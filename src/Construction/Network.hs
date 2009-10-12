@@ -82,7 +82,7 @@ idxBounds = Neurons.idxBounds . networkNeurons
 
 
 {- | Return synapses orderd by source and delay -}
-synapses :: Network n s -> [(Source, [(Delay, [(Target, Current, s)])])]
+synapses :: Network n s -> [(Source, [(Delay, [(Target, Weight, Bool, s)])])]
 synapses = Neurons.synapses . networkNeurons
 
 

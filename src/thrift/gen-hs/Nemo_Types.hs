@@ -15,7 +15,7 @@ type Axon = [Synapse]
 
 type Firing = [Int]
 
-data Synapse = Synapse{f_Synapse_target :: Maybe Int,f_Synapse_delay :: Maybe Int,f_Synapse_weight :: Maybe Double} deriving (Show,Eq,Ord,Typeable)
+data Synapse = Synapse{f_Synapse_target :: Maybe Int,f_Synapse_delay :: Maybe Int,f_Synapse_weight :: Maybe Double,f_Synapse_plastic :: Maybe Bool} deriving (Show,Eq,Ord,Typeable)
 write_Synapse oprot rec = do
   writeStructBegin oprot "Synapse"
   case f_Synapse_target rec of {Nothing -> return (); Just _v -> do
@@ -29,6 +29,10 @@ write_Synapse oprot rec = do
   case f_Synapse_weight rec of {Nothing -> return (); Just _v -> do
     writeFieldBegin oprot ("weight",T_DOUBLE,3)
     writeDouble oprot _v
+    writeFieldEnd oprot}
+  case f_Synapse_plastic rec of {Nothing -> return (); Just _v -> do
+    writeFieldBegin oprot ("plastic",T_BOOL,4)
+    writeBool oprot _v
     writeFieldEnd oprot}
   writeFieldStop oprot
   writeStructEnd oprot
@@ -54,13 +58,19 @@ read_Synapse_fields iprot rec = do
         else do
           skip iprot _t3
           read_Synapse_fields iprot rec
+      4 -> if _t3 == T_BOOL then do
+        s <- readBool iprot
+        read_Synapse_fields iprot rec{f_Synapse_plastic=Just s}
+        else do
+          skip iprot _t3
+          read_Synapse_fields iprot rec
       _ -> do
         skip iprot _t3
         readFieldEnd iprot
         read_Synapse_fields iprot rec
 read_Synapse iprot = do
   readStructBegin iprot
-  rec <- read_Synapse_fields iprot (Synapse{f_Synapse_target=Nothing,f_Synapse_delay=Nothing,f_Synapse_weight=Nothing})
+  rec <- read_Synapse_fields iprot (Synapse{f_Synapse_target=Nothing,f_Synapse_delay=Nothing,f_Synapse_weight=Nothing,f_Synapse_plastic=Nothing})
   readStructEnd iprot
   return rec
 data IzhNeuron = IzhNeuron{f_IzhNeuron_index :: Maybe Int,f_IzhNeuron_a :: Maybe Double,f_IzhNeuron_b :: Maybe Double,f_IzhNeuron_c :: Maybe Double,f_IzhNeuron_d :: Maybe Double,f_IzhNeuron_u :: Maybe Double,f_IzhNeuron_v :: Maybe Double,f_IzhNeuron_axon :: Maybe [Synapse]} deriving (Show,Eq,Ord,Typeable)

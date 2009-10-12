@@ -28,7 +28,7 @@ import qualified Nemo_Types as Wire
 
 import Construction.Neuron (Neuron, neuron, terminalsUnordered, ndata)
 import Construction.Izhikevich (IzhNeuron(..))
-import Construction.Synapse (AxonTerminal(AxonTerminal), Static, target, delay, weight)
+import Construction.Synapse (AxonTerminal(AxonTerminal), Static, Synaptic(..))
 import qualified Simulation as Backend (Simulation, Simulation_Iface(..))
 import Simulation.STDP (StdpConf(..))
 import Types (Idx, FiringOutput(..))
@@ -97,7 +97,7 @@ encodeNeuron (idx, n) = Wire.IzhNeuron (Just idx) a b c d u v ss
 
 {- | Convert synapse from wire format to internal format -}
 decodeSynapse :: Wire.Synapse -> AxonTerminal Static
-decodeSynapse ws = AxonTerminal tgt d w ()
+decodeSynapse ws = AxonTerminal tgt d w p ()
     {- note: tried using bang-pattern on ws. This reduced performance -}
     {- note: tried using 'seq' and 'rnf' on all the AxonTerminal fields here,
      - but this did not help with memory usage.  Time-wise it was much the
@@ -106,18 +106,20 @@ decodeSynapse ws = AxonTerminal tgt d w ()
         tgt = fromJust $! Wire.f_Synapse_target ws
         d = fromJust $! Wire.f_Synapse_delay ws
         w = fromJust $! Wire.f_Synapse_weight ws
+        p = fromJust $! Wire.f_Synapse_plastic ws
 
 
 
 
 encodeSynapse :: AxonTerminal Static -> Wire.Synapse
-encodeSynapse s = Wire.Synapse tgt d w
+encodeSynapse s = Wire.Synapse tgt d w p
     {- Note: Tried using rnf/seq on the inputs to Wire.Synapse. This made no
      - difference to encoding performance -}
     where
         tgt = Just $! target s
         d   = Just $! delay s
         w   = Just $! weight s
+        p   = Just $! plastic s
 
 
 decodeStimulus :: Wire.Stimulus -> [Idx]

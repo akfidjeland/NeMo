@@ -37,7 +37,7 @@ module Construction.Axon (
         hPrintConnections,
         -- * Internals, exposed for testing
         present,
-        sort,
+        sort
     ) where
 
 
@@ -51,7 +51,7 @@ import Data.Maybe (isJust)
 import System.IO (Handle, hPutStrLn)
 
 import Construction.Synapse (AxonTerminal(..),
-        delay, target, withTarget, weight, withWeight, Static)
+        Synaptic(..), withTarget, withWeight, Static)
 import Types (Source, Target, Delay, Weight)
 import qualified Util.List as L (replace, maxOr0)
 import qualified Util.Assocs as Assocs (mapElems)
@@ -95,11 +95,18 @@ type AxonS s = Map.Map Delay (AxonD s)
 type AxonD s = Map.Map Target [Leaf s]
 
 -- data Leaf = Leaf {-# UNPACK #-} !Weight {-# UNPACK #-} !s
-type Leaf s = (Weight, s)
+type Leaf s = (Weight, Bool, s)
+
+
+toLeaf :: Terminal s -> Leaf s
+toLeaf s = (weight s, plastic s, atAux s)
+
+eqLeaf :: Eq s => Terminal s -> Leaf s -> Bool
+eqLeaf s (w, p, a) = (w == weight s) && (p == plastic s) && (a == atAux s)
 
 
 withLeafWeight :: (Weight -> Weight) -> Leaf s -> Leaf s
-withLeafWeight f (w, s) = (f w, s)
+withLeafWeight f (w, p, s) = (f w, p, s)
 
 
 
@@ -117,11 +124,10 @@ sort axon@(Sorted _) = axon
 
 {- | Return a list of target/synapse pairs for a bundle of synapses with a
  - fixed delay -}
-synapsesD :: AxonD s -> [(Target, Weight, s)]
+synapsesD :: AxonD s -> [(Target, Weight, Bool, s)]
 synapsesD = concat . map expand . Map.assocs
     where
-        -- expand (tgt, ss) = map ((,) tgt) ss
-        expand (tgt, ss) = map (\(w, pl) -> (tgt, w, pl)) ss
+        expand (tgt, ss) = map (\(w, p, pl) -> (tgt, w, p, pl)) ss
 
 
 {- | Return the number of synapses in a synapse bundle with a fixed delay -}
@@ -144,7 +150,7 @@ terminals :: Axon s -> [Terminal s]
 terminals axon@(Unsorted ss) = terminals $ sort axon
 terminals axon@(Sorted _) = concat $ map wrap $ terminalsByDelay axon
     where
-        wrap (d, ss) = map (\(tgt, w, s) -> AxonTerminal tgt d w s) ss
+        wrap (d, ss) = map (\(tgt, w, p, s) -> AxonTerminal tgt d w p s) ss
 
 
 
@@ -160,10 +166,10 @@ terminalsUnordered axon@(Sorted _) = terminals axon
 
 
 {- | Return all synapses, ordered by delay -}
-terminalsByDelay :: Axon s -> [(Delay, [(Target, Weight, s)])]
+terminalsByDelay :: Axon s -> [(Delay, [(Target, Weight, Bool, s)])]
 terminalsByDelay axon =
     case axon of
-        (Unsorted _)-> terminalsByDelay $ sort axon
+        (Unsorted _) -> terminalsByDelay $ sort axon
         (Sorted ss) -> Assocs.mapElems synapsesD $ Map.toList ss
 
 
@@ -205,11 +211,12 @@ connectSorted = connectSortedWith (++)
 {- | Add a synapse with a specified combining function to use in case two
  - synapses have the same source, target, and delay -}
 connectSortedWith :: ([Leaf s] -> [Leaf s] -> [Leaf s]) -> Terminal s -> AxonS s -> AxonS s
-connectSortedWith f s ss = Map.alter (go (target s) (weight s) (atAux s)) (delay s) ss
+connectSortedWith f s ss = Map.alter (go (target s)) (delay s) ss
     where
-        go t w s Nothing = Just $ Map.singleton t [(w, s)]
-        go t w s (Just ss) =
-           let ss' = Map.insertWith f t [(w, s)] ss in ss' `seq` Just ss'
+        go t Nothing = Just $ Map.singleton t [leaf]
+        go t (Just ss) =
+           let ss' = Map.insertWith f t [leaf] ss in ss' `seq` Just ss'
+        leaf = toLeaf s
 
 
 {- | Add a group of synapses -}
@@ -222,8 +229,7 @@ connectMany ss' (Sorted ss) = Sorted $ foldl' (flip connectSorted) ss ss'
 present :: (Eq s) => Terminal s -> AxonS s -> Bool
 present s ss = isJust found
    where
-       found = find eq =<< Map.lookup (target s) =<< Map.lookup (delay s) ss
-       eq (w, pl) = w == weight s && pl == atAux s
+       found = find (eqLeaf s) =<< Map.lookup (target s) =<< Map.lookup (delay s) ss
 
 
 
@@ -235,8 +241,10 @@ disconnect s axon =
         (Sorted ss) ->
             if present s ss
                 -- TODO: do lookup and delete in one go
-                then Sorted $ Map.adjust (Map.adjust (delete ((weight s, atAux s))) (target s)) (delay s) ss
+                then Sorted $ Map.adjust (Map.adjust (delete leaf) (target s)) (delay s) ss
                 else axon
+    where
+        leaf = toLeaf s
 
 
 {- | Remove the first matching synapse, reporting error in monad if no match is
@@ -288,8 +296,8 @@ withWeights f (Sorted ss) = Sorted $ Map.map (Map.map (map $ withLeafWeight f)) 
 hPrintConnections :: (Show s) => Handle -> Source -> Axon s -> IO ()
 hPrintConnections hdl src axon = do
     forM_ (terminalsByDelay axon) $ \(d, ss) -> do
-        forM_ ss $ \(tgt, w, s) -> do
-            hPutStrLn hdl $ (show src) ++ " -> " ++ (intercalate " " $ [show tgt, show d, show w, show s])
+        forM_ ss $ \(tgt, w, p, s) -> do
+            hPutStrLn hdl $ (show src) ++ " -> " ++ (intercalate " " $ [show tgt, show d, show w, show p, show s])
 
 
 instance (Show s) => Show (Axon s) where
@@ -300,7 +308,8 @@ instance (Show s) => Show (Axon s) where
             showSynapses (s:ss) = shows s . showChar '\n' . showSynapses ss
 
 instance (NFData s) => NFData (Terminal s) where
-    rnf (AxonTerminal t d w a) = rnf t `seq` rnf d `seq` rnf w `seq` rnf a `seq` ()
+    rnf (AxonTerminal t d w p a) =
+        rnf t `seq` rnf d `seq` rnf w `seq` rnf p `seq` rnf a `seq` ()
 
 instance (NFData s) => NFData (Axon s) where
     rnf (Unsorted ss) = (rnf $! toList ss) `seq` ()

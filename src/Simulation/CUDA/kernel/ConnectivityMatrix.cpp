@@ -74,13 +74,14 @@ ConnectivityMatrix::df_planeSize() const
 
 void
 ConnectivityMatrix::setRow(
-        uint sourcePartition,
-        uint sourceNeuron,
-        uint delay,
-        const float* weights,
-        const uint* targetPartition,
-        const uint* targetNeuron,
-        size_t f_length)
+		uint sourcePartition,
+		uint sourceNeuron,
+		uint delay,
+		const float* weights,
+		const uint* targetPartition,
+		const uint* targetNeuron,
+		const uint* isPlastic,
+		size_t f_length)
 {
     if(f_length == 0)
         return;
@@ -103,7 +104,9 @@ ConnectivityMatrix::setRow(
 
 	for(size_t i=0; i<f_length; ++i) {
 		// see connectivityMatrix.cu_h for encoding format
-		if(m_setReverse && weights[i] > 0.0f) { // only do STDP for excitatory synapses
+		//! \todo get plasticity from haskell side
+		if(m_setReverse && isPlastic[i]) {
+		//if(m_setReverse && weights[i] > 0.0f) { // only do STDP for excitatory synapses
 			m_rsynapses[targetPartition[i]]->addSynapse(
 					sourcePartition, sourceNeuron, i,
 					targetNeuron[i], delay);

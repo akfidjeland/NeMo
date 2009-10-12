@@ -15,7 +15,7 @@ import System.Random
 import Text.Printf
 
 import Construction hiding (excitatory, inhibitory, random)
-import Construction.Neuron hiding (synapseCount)
+import Construction.Neuron
 import qualified Construction.Neurons as Neurons (fromList)
 import Options
 import Simulation
@@ -36,15 +36,15 @@ import qualified Util.List as L (chunksOf)
 -- TODO: remove hard-coding here
 isExcitatory idx = idx `mod` 1024 < 820
 
-exSynapse r src tgt = Synapse src tgt delay 0.25 ()
+exSynapse r tgt = AxonTerminal tgt delay 0.25 True ()
     where
         delay = ceiling $ 20.0 * r
--- exSynapse r src tgt = w `seq` Synapse src tgt 1 w ()
+-- exSynapse r tgt = w `seq` AxonTerminal tgt 1 w ()
 --    where w = 0.5 * r
 
 -- TODO: randomise weights here!
-inSynapse _ src tgt = Synapse src tgt 1 (-0.5) ()
--- inSynapse r src tgt = Synapse src tgt 1 ((-1.0)*r) ()
+inSynapse _ tgt = AxonTerminal tgt 1 (-0.5) False ()
+-- inSynapse r tgt = AxonTerminal tgt 1 ((-1.0)*r) ()
 
 -- excitatory neuron
 exN r = mkNeuron2 0.02 b (v + 15*r^2) (8.0-6.0*r^2) u v thalamic
@@ -100,7 +100,7 @@ clusteredNeuron (ex_ngen, ex_sgen) (in_ngen, in_sgen) idx cc cs m p r =
 {- Generate a neuron with some local and some global connections. -}
 clusteredNeuron'
     :: (FT -> IzhNeuron FT)    -- ^ function that generates neuron
-    -> (FT -> Idx -> Idx -> Synapse ())
+    -> (FT -> Target -> AxonTerminal ())
                                -- ^ function that generates synapse
     -> Idx                     -- ^ presynaptic index
     -> Int                     -- ^ cluster count
@@ -114,7 +114,7 @@ clusteredNeuron' ngen sgen pre cc cs m p r = state `seq` neuron state ss
         (nr, r2) = random r
         (sr, r3) = random r2
         state = ngen nr
-        ss = map (sgen sr pre) $ clusteredTargets pre cc cs m p r3
+        ss = map (sgen sr) $ clusteredTargets pre cc cs m p r3
 
 
 {- Produce a list of postsynaptic neurons where a proportion 'p' is selected

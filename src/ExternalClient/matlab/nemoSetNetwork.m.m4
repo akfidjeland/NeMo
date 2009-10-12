@@ -1,4 +1,8 @@
-function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights)
+function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights, plastic)
+
+	if ~exist('plastic')
+		plastic = logical(zeros(size(targets)));
+	end;
 
 	% All postsynaptic indices should be in the network
 	checkTargets(targets, size(a,1));
@@ -9,8 +13,9 @@ function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights)
 	% adjust indices by one as host expects 0-based array indexing
 	st = transpose(int32(targets-1));
 	sw = transpose(weights);
+	sp = transpose(logical(plastic));
 
-	nemo_mex(mex_setNetwork, a, b, c, d, u, v, st, sd, sw);
+	nemo_mex(mex_setNetwork, a, b, c, d, u, v, st, sd, sw, sp);
 end
 
 

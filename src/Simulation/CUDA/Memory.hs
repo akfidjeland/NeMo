@@ -105,7 +105,8 @@ allJust d xs
 data Outbuf = Outbuf {
         weights :: Ptr CFloat,
         pidx    :: Ptr CUInt,
-        nidx    :: Ptr CUInt
+        nidx    :: Ptr CUInt,
+        plasticity :: Ptr CUInt
     }
 
 
@@ -113,7 +114,8 @@ allocOutbuf len = do
     wbuf <- mallocArray len
     pbuf <- mallocArray len
     nbuf <- mallocArray len
-    return $! Outbuf wbuf pbuf nbuf
+    spbuf <- mallocArray len
+    return $! Outbuf wbuf pbuf nbuf spbuf
 
 
 {- | Write all connectivity data to device -}
@@ -126,18 +128,20 @@ loadCMatrix rt att net =
             forM_ (terminalsByDelay n) $ \(delay, ss) -> do
                 let -- isL0 :: (Idx, s) -> Bool
                     -- TODO: force evaluation?
-                    idx (i, _, _) = i
+                    -- TODO: return a proper data type from terminalsByDelay
+                    idx (i, _, _, _) = i
                     isL0 = ((==) pidx) . partitionIdx . deviceIdx att . idx
                 (len0, len1) <- pokeSynapses bufL0 0 bufL1 0 att isL0 ss
                 setRow rtptr bufL0 cmatrixL0 (pidx, nidx) delay len0
                 setRow rtptr bufL1 cmatrixL1 (pidx, nidx) delay len1
     where
-        setRow rtptr buf = setCMDRow rtptr (weights buf) (pidx buf) (nidx buf)
+        setRow rtptr buf = setCMDRow rtptr (weights buf) (pidx buf) (nidx buf) (plasticity buf)
 
 
 
 
-{- | Write a row of synapses (i.e for a single presynaptic/delay) to output buffer -}
+{- | Write a row of synapses (i.e for a single presynaptic/delay) to output
+ - buffer -}
 pokeSynapses _ len0 _ len1 _ _ [] = return (len0, len1)
 pokeSynapses buf0 i0 buf1 i1  att isL0 (s:ss) = do
     if isL0 s
@@ -150,12 +154,14 @@ pokeSynapses buf0 i0 buf1 i1  att isL0 (s:ss) = do
 
 
 {- | Write a single synapse to output buffer -}
-pokeSynapse :: Outbuf -> Int -> ATT -> (Idx, Current, Static) -> IO ()
-pokeSynapse buf i att (target, weight, _) = do
+pokeSynapse :: Outbuf -> Int -> ATT -> (Idx, Current, Bool, Static) -> IO ()
+-- TODO: make use of plasticity here
+pokeSynapse buf i att (target, weight, plastic, _) = do
     pokeElemOff (weights buf) i $! realToFrac $! weight
     let didx = deviceIdx att target
     pokeElemOff (pidx buf) i $! fromIntegral $! partitionIdx didx
     pokeElemOff (nidx buf) i $! fromIntegral $! neuronIdx didx
+    pokeElemOff (plasticity buf) i $! fromBool plastic
 
 
 type DArr = (Ptr CInt, Ptr CInt, Ptr CFloat, Int)
@@ -259,7 +265,8 @@ peekSynapse globalIdx i delay (tp_arr, tn_arr, w_arr, _) = do
             weight <- peekElemOff w_arr i
             let target = globalIdx (fromIntegral tp, fromIntegral tn)
             return $! Just $!
-                AxonTerminal target delay (realToFrac weight) ()
+                -- TODO: get plasticity as well
+                AxonTerminal target delay (realToFrac weight) (weight > 0.0) ()
 
 
 -------------------------------------------------------------------------------

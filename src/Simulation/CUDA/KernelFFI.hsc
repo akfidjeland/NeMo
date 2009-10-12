@@ -129,25 +129,26 @@ deviceDiagnostics rt = do
 
 foreign import ccall unsafe "setCMDRow"
     c_setCMDRow :: Ptr CuRT
-                    -> CSize        -- ^ matrix level: 0 or 1
-                    -> CUInt        -- ^ source partition index
-                    -> CUInt        -- ^ source neuron index
-                    -> CUInt        -- ^ synapse delay
-                    -> Ptr CFloat   -- ^ synapse weights
-                    -> Ptr CUInt    -- ^ target partition indices
-                    -> Ptr CUInt    -- ^ target neuron indices
-                    -> CSize        -- ^ synapses count for this neuron/delay pair
-                    -> IO ()
+                -> CSize        -- ^ matrix level: 0 or 1
+                -> CUInt        -- ^ source partition index
+                -> CUInt        -- ^ source neuron index
+                -> CUInt        -- ^ synapse delay
+                -> Ptr CFloat   -- ^ synapse weights
+                -> Ptr CUInt    -- ^ target partition indices
+                -> Ptr CUInt    -- ^ target neuron indices
+                -> Ptr CUInt    -- ^ per-synapse plasticity
+                -> CSize        -- ^ synapses count for this neuron/delay pair
+                -> IO ()
 
 
-setCMDRow rt wbuf pbuf nbuf level pre delay len =
+setCMDRow rt wbuf pbuf nbuf spbuf level pre delay len =
     when (len > 0) $
     c_setCMDRow rt
         (unCMatrixIndex level)
         (fromIntegral $! partitionIdx pre)
         (fromIntegral $! neuronIdx pre)
         (fromIntegral delay)
-        wbuf pbuf nbuf
+        wbuf pbuf nbuf spbuf
         (fromIntegral $! len)
 
 
