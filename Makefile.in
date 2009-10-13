@@ -129,31 +129,33 @@ $(dist_dir).zip: $(doc_build)/manual.pdf client cabal
 	# include shared thrift libraries as well.
 	(cd dist/build; zip -r $(notdir $@) $(basename $(notdir $@)); cd ../..)
 
+
 #
 # Documentation
 #
 
+doc_src := doc/manual
 
 .PHONY: doc
 doc: $(doc_build)/manual.pdf
 
-# The wiki page includes just a single combined file
-$(doc_build)/functionReference: $(matlab_src)/*.m.help
+.PHONY: doc-clean
+doc-clean:
+	rm -rf $(doc_build)
+
+$(doc_build)/matlab.tex: $(matlab_src)/*.m.help
+	cat $^ | util/matlab-manual-api.sh > $@
+
+$(doc_build)/%.tex: $(doc_src)/%.tex
 	mkdir -p $(dir $@)
-	cat $^ > $@
+	cp --target-directory=$(dir $@) $<
 
-
-$(doc_build)/manual.tex: doc/wiki/MatlabAPI \
-		doc/manual/manual_stylesheet.tex \
-		$(doc_build)/functionReference
-	mkdir -p $(dir $@)
-	cp --target-directory $(dir $@) $(wordlist 1,2,$^)
-	rst2latex --use-latex-docinfo --use-latex-toc --no-section-numbering \
-		--stylesheet=manual_stylesheet.tex \
-		$(doc_build)/MatlabAPI > $@
-
-$(doc_build)/manual.pdf: $(doc_build)/manual.tex
+$(doc_build)/manual.pdf: $(doc_build)/manual.tex \
+		$(doc_build)/title.tex \
+		$(doc_build)/matlab.tex
+	ln -s -f --target-directory=$(doc_build) $(CURDIR)/$(doc_src)/figures
 	(cd $(dir $<); pdflatex $(notdir $<); cd ..)
+
 
 
 # Run after building with cabal

@@ -77,5 +77,5 @@ AC_SUBST(THRIFT)
 ########################
 
 
-AC_CONFIG_FILES([cuda.mk] [nemo.buildinfo] [Makefile])
+AC_CONFIG_FILES([cuda.mk] [nemo.buildinfo] [Makefile] [doc/manual/title.tex])
 AC_OUTPUT
