@@ -20,6 +20,7 @@ import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(..))
 import System.Time (getClockTime, ClockTime(..))
 import System.IO (hPutStrLn, stderr)
+import Text.Printf
 
 import Construction.Connectivity
 import Construction.Construction
@@ -65,12 +66,16 @@ runSimulation seed simOpts net fstimF stdpOpts cudaOpts = do
     hPutStrLn stderr $ "Building done (" ++ show(elapsed startConstruct endConstruct) ++ "s)"
     start <- getCPUTime
     -- TODO: use only a single probe function parameter
-    runSim simOpts net' fstimF (putStrLn . show) cudaOpts stdpOpts
+    runSim simOpts net' fstimF tsv cudaOpts stdpOpts
     end <- getCPUTime
     hPutStrLn stderr $ "Simulation done (" ++ show(elapsed start end) ++ "s)"
     where
         -- Return number of elapsed seconds since start
         elapsed start end = (end - start) `div` 1000000000000
+
+        -- print firing information in tab-separated format
+        tsv :: Int -> FiringOutput -> IO ()
+        tsv t (FiringOutput xs) = mapM_ (\x -> printf "%u\t%u\n" t x) xs
 
 
 

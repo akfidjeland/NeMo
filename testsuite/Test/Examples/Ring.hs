@@ -30,8 +30,8 @@ data RingState = RingState {
 
 -- The ring network should produce a fixed pattern of just a single neuron
 -- firing
-checkFiring :: Int -> Idx -> Int -> IORef RingState -> FiringOutput -> Assertion
-checkFiring size impulse delay ref = \p -> do
+checkFiring :: Int -> Idx -> Int -> IORef RingState -> Time -> FiringOutput -> Assertion
+checkFiring size impulse delay ref = \_ p -> do
     s <- readIORef ref
     let s' = next s
     writeIORef ref s'

@@ -77,7 +77,7 @@ runRegression rtest@(RegressionTest nm _ nf fs be cs rs stdp) f = do
     -- TODO: don't use the same seed twice. Also sync with use in NSim/Construction
     let net = build (fromIntegral rs) nf
     setStdGen $ mkStdGen $ rs -- for stimulus
-    runSim simOpts net fs f (defaults cudaOptions) stdpConf
+    runSim simOpts net fs outfn (defaults cudaOptions) stdpConf
     where
         stdpConf = (defaults stdpOptions) {
                         stdpEnabled = isJust stdp,
@@ -88,6 +88,10 @@ runRegression rtest@(RegressionTest nm _ nf fs be cs rs stdp) f = do
                 optBackend = be,
                 optDuration = Until cs
             }
+
+        -- ignore time when running regression test
+        outfn _ firing = f firing
+
 
 
 testFile :: FilePath -> String -> IO FilePath

@@ -2,7 +2,7 @@
 
 module Simulation.Run (runSim) where
 
-import Control.Monad (forM, mapM_, when)
+import Control.Monad (forM, mapM_, zipWithM, zipWithM_, when)
 import Data.Maybe (isJust)
 
 import Simulation (Simulation_Iface(..))
@@ -18,18 +18,19 @@ import Types
 runSim simOpts net fstimF outfn opts stdpConf = do
     fstim <- firingStimulus fstimF
     sim <- initSim net simOpts opts stdpConf
-    go sim $ sample duration fstim
+    let fs = L.chunksOf chunkSize $ sample duration fstim
+    let ts = L.chunksOf chunkSize [0..]
+    zipWithM (go sim) fs ts
     stop sim
     where
         duration = optDuration simOpts
         freq = stdpFrequency stdpConf
         chunkSize = maybe 1000 id freq
 
-        go sim fstim = do
-            forM (L.chunksOf chunkSize fstim) $ \f -> do
-            probed <- run sim f
+        go sim fs ts = do
+            probed <- run sim fs
             when (isJust freq) $ applyStdp sim 1.0
-            mapM_ outfn probed
+            zipWithM_ outfn ts probed
 
         {- | Apply function for a given duration -}
         sample :: Duration -> [a] -> [a]
