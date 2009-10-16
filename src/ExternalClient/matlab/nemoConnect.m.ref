@@ -37,9 +37,17 @@ function nemoConnect()
 	NEMO_STDP_MAX_WEIGHT = 0;
 
 	% Runtime data
-	global NEMO_FIRINGS;
+	global NEMO_RECENT_FIRINGS;
 	global NEMO_CYCLE;
 
-	NEMO_FIRINGS = [];
 	NEMO_CYCLE = 1;
+
+	% Runtime statistics
+	global NEMO_RTS_FIRED;
+	global NEMO_RTS_LTP;
+	global NEMO_RTS_LTD;
+
+	NEMO_RTS_FIRED = 0;
+	NEMO_RTS_LTP = 0;
+	NEMO_RTS_LTD = 0;
 end

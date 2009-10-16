@@ -1,4 +1,9 @@
-function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights)
+function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights, plastic)
+
+	if exist('plastic')
+		warning('Synapse-specific definition of plasticity not currently supported in reference implementation. All excitatory are assumed plastic');
+	end;
+
 	global NEMO_NEURONS_A;
 	global NEMO_NEURONS_B;
 	global NEMO_NEURONS_C;
@@ -18,4 +23,39 @@ function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights)
 
 	NEMO_MAX_DELAY = max(max(delays));
 	NEMO_CM = sparsify(targets, delays, weights, NEMO_MAX_DELAY, true);
+	ncount = length(a);
+	% TODO: which way should we orient
+	% TODO: limit to size of STDP window
+
+	global NEMO_RECENT_FIRING;
+	NEMO_RECENT_FIRING = logical(zeros(ncount, 64));
+
+	set_reverse(NEMO_CM, NEMO_MAX_DELAY, ncount);
+end
+
+
+
+
+function set_reverse(cm, d_max, ncount)
+
+	global NEMO_RCM_D; % delay for each synapse
+	global NEMO_RCM_N; % index for each presyanptic
+
+	NEMO_RCM_D = cell(ncount);
+	NEMO_RCM_N = cell(ncount);
+
+	for post = 1:ncount
+		ds = [];
+		pre = [];
+		for d = 1:d_max
+			weights = cm{d};
+			% Only include excitatory synapses
+			% TODO: support 'plastic' specification
+			pre0 = find(weights(post,:) > 0);
+			pre = [pre, pre0];
+			ds = [ds, d*ones(size(pre0))];
+		end;
+		NEMO_RCM_D{post} = ds;
+		NEMO_RCM_N{post} = pre;
+	end;
 end

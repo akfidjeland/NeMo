@@ -3,20 +3,33 @@ function nemoApplySTDP(reward)
 	global NEMO_CM;
 	global NEMO_STDP_ACC;
 	global NEMO_MAX_DELAY;
+	global NEMO_STDP_MAX_WEIGHT
 	global NEMO_CYCLE;
 
 	verbose = false;
 
 	for d=1:NEMO_MAX_DELAY
 		% Synapses die once weight reaches 0
-		live = NEMO_CM{d}(NEMO_CM{d} ~= 0);
+		% TODO: make use of 'plastic' matrix here
+		w = NEMO_CM{d};
+		live = find(w > 0);
+		w(live) = w(live) + NEMO_STDP_ACC{d}(live) .* reward;
+		w(live) = min(w(live), NEMO_STDP_MAX_WEIGHT);
+		w(live) = max(w(live), 0);
+		NEMO_CM{d}(live) = w(live);
+
+		%{
+		live = find(NEMO_CM{d} > 0);
 		NEMO_CM{d}(live) = NEMO_CM{d}(live) + NEMO_STDP_ACC{d}(live) .* reward;
 		% TODO: deal with inhibitory and excitatory separately
+		% TODO: only update 'live' synapses
 		NEMO_CM{d} = min(NEMO_CM{d}, NEMO_STDP_MAX_WEIGHT);
+		NEMO_CM{d} = max(NEMO_CM{d}, 0);
 		if verbose
 			logSTDP(NEMO_CYCLE, NEMO_STDP_ACC{d});
 		end;
 		NEMO_STDP_ACC{d}(:) = 0;
+		%}
 	end;
 end
 

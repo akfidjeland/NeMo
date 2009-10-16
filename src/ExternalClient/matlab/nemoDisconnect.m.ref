@@ -30,9 +30,6 @@ function nemoDisconnect()
 	clear NEMO_STDP_POSTFIRE;
 	clear NEMO_STDP_MAX_WEIGHT;
 
-	global NEMO_FIRINGS;
 	global NEMO_CYCLE;
-
-	clear NEMO_FIRINGS;
 	clear NEMO_CYCLE;
 end

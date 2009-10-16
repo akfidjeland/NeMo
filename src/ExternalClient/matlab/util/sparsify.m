@@ -41,16 +41,7 @@ function ret = sparsify(targets, delays, weights, d_max, warnDuplicates)
 		% need to add their weights to get this reference implementation to
 		% work. This is already done by 'sparse'. 
 
-		try 
-			ret{d} = sparse(j, i, w_tmp, n, n);
-		catch me
-			j(j < 1)	
-			size(j(j < 1))
-
-			error('something bad happened');
-			%disp('j too low')
-			%j(j < 1)	
-		end;
+		ret{d} = sparse(j, i, w_tmp, n, n);
 
 		% The presence of the above-mentioned duplicates will cause some
 		% divergence between the reference implementation and the GPU
