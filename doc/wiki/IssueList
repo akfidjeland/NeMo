@@ -14,6 +14,9 @@ Client/server architecture
   server. This requires a threaded server.
 - MultipleParallelSimulations (low priority)
 - add support for specifying current stimulus in server mode (to run on server)
+- allow multiple backend machines
+- allow external clients to connect directly with backend (with a limited
+  interface). 
 
 Network specification/DSL
 -------------------------
@@ -38,8 +41,6 @@ CUDA backend
   half-full and making it a rotating buffer.
 - For cycle counting, we only report data for thread block 0. Get data from all
   and report mean and std. deviation. 
-- Extend max delay to 64, at least when STDP is enabled. The history needs to
-  be long enough to hold delay+dt.
 - Modify mapper to reduce number of sequential loads in L0 delivery. This is a
   small saving, perhaps 5%.
 - In the STDP pruning step we traverse the entire forward matrix. We can speed
@@ -61,7 +62,7 @@ CUDA backend
 - StoreExplicitFiringIndices
 - Simple code issues: add address macros CLUSTER, NEURON; replace
   reinterpret_cast with __float_as_int
-- allow the c parameter to be hard-coded. Often this will be fixed at -65.0.
+- allow the 'c' parameter to be hard-coded. Often this will be fixed at -65.0.
 - consider removing sorting from server again.
 - The firing buffer read (device->host) could be improved. In the average case
   it should be possible to do just a single read containing both the buffer
@@ -101,21 +102,19 @@ MatlabAPI
 
 - add support for thalamic input in the matlab interface
 - add support for per-synapse specification of STDP
+- replace MEX layer with Java.
+
+	- check for ant in autoconf
+	- tie in ant build in main makefile
 
 Build system
 ------------
 
-- Make cabal build invoke cuda build process
-
-- in Makefile, have cuda build check configuration in dist to determine whether
-  or not to build the kernel library
-- add creation of windows install (MSI), possibly using Bamse (from hackage)
+- add creation of windows install (MSI), possibly using Bamse (from hackage) or WiX 
 - add creation of deb installer
+- add source distribution target
 - tie the test framwork into git. require all tests to pass.
-- cmake? We should do some configuration to determine if CUDA is present
 - add tarballing to the build script
-- tie CUDA and MEX builds into the cabal build
-- use a 'client-dist' directory on the local machine 
 
 CPU backend
 -----------
