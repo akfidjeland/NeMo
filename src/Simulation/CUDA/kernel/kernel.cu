@@ -215,7 +215,11 @@ STDP_FN(deliverL0Spikes_)(
 
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
+#ifdef __DEVICE_EMULATION__
+		s_synapsesPerDelay = ALIGN(sf0_maxSynapses, 32);
+#else
 		s_synapsesPerDelay = ALIGN(sf0_maxSynapses, warpSize);
+#endif
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
 	}
@@ -294,12 +298,7 @@ STDP_FN(deliverL0Spikes_)(
 				bool doCommit = false;
 
 				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < sf0_maxSynapses && delayEntry < s_delayBlocks
-#ifdef __DEVICE_EMULATION__	
-						// warp size is 1, so rounding to warp size not as expected
-						&& threadIdx.x < s_synapsesPerDelay * s_delaysPerChunk
-#endif
-				) {
+				if(synapseIdx < sf0_maxSynapses && delayEntry < s_delayBlocks) {
 
 					size_t synapseAddress = 
 						(presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
