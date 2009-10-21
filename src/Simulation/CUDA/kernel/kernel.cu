@@ -52,7 +52,6 @@ STDP_FN(fire)(
 #ifdef __DEVICE_EMULATION__
 	uint cycle,
 #endif
-	bool hasExternalInput,
 	uint s_partitionSize,
 	uint substeps,
 	float substepMult, // substepMul * substeps = 1
@@ -60,12 +59,9 @@ STDP_FN(fire)(
 	float* g_neuronParameters,
 	size_t neuronParametersSize,
 	// input
-	uint32_t* g_fstim,   // externally driven firing
 	float* s_current,    // input current
 	// buffers
-	uint32_t* s_fstim,   // s_T16, so larger than needed
-	uint16_t* s_firingIdx,
-	uint32_t* g_firingOutput) // already offset to current partition
+	uint32_t* s_fstim)   // s_T16, so larger than needed
 {
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
@@ -73,22 +69,6 @@ STDP_FN(fire)(
 	float* g_d = g_neuronParameters + PARAM_D * neuronParametersSize;
 	float* g_u = g_neuronParameters + STATE_U * neuronParametersSize;
 	float* g_v = g_neuronParameters + STATE_V * neuronParametersSize;
-
-	/* The dense firing output is staged in shared memory before being written
-	 * to global memory */
-	clearFiringOutput();
-
-	//__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
-	//! \todo use the same buffer for both input and output
-	/* Make sure s_T16 is large enough */
-	ASSERT(THREADS_PER_BLOCK/2 >= DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32));
-	loadExternalFiring(hasExternalInput, s_partitionSize, pitch1, g_fstim, s_fstim);
-
-	__shared__ uint s_firedCount;
-	if(threadIdx.x == 0) {
-		s_firedCount = 0;
-	}
-	__syncthreads();
 
 	for(uint nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
 
@@ -130,9 +110,6 @@ STDP_FN(fire)(
 				DEBUG_MSG("c%u %u-%u fired (forced: %u) (thread %u)\n",
 						cycle, CURRENT_PARTITION, neuron,
 						forceFiring, threadIdx.x);
-				int idxEntry = atomicAdd(&s_firedCount, 1);
-
-				s_firingIdx[idxEntry] = (uint16_t) neuron;
 				setFiringOutput(neuron);
 			}
 
@@ -140,9 +117,6 @@ STDP_FN(fire)(
 			g_u[neuron] = u;
 		}
 	}
-
-	__syncthreads();
-	writeFiringOutput(g_firingOutput, pitch1);
 }
 
 
@@ -482,21 +456,34 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 5);
 
+	/* The dense firing output is staged in shared memory before being written
+	 * to global memory */
+	clearFiringOutput();
+
+	//__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
+	//! \todo use the same buffer for both input and output
+	/* Make sure s_T16 is large enough */
+	uint32_t* s_fstim = (uint32_t*) s_T16;
+	bool hasExternalInput = g_fstim != 0;
+	ASSERT(THREADS_PER_BLOCK/2 >= DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32));
+	loadExternalFiring(hasExternalInput, s_partitionSize, pitch1, g_fstim, s_fstim);
+
 	STDP_FN(fire)(
 #ifdef __DEVICE_EMULATION__
 			cycle,
 #endif
-			g_fstim != 0,
-            s_partitionSize,
+			s_partitionSize,
 			substeps, s_substepMult,
 			pitch1,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
 			neuronParametersSize,
-			g_fstim, s_current, 
-			(uint32_t*) s_T16,
-			(uint16_t*) s_T32,
-			firingOutput + CURRENT_PARTITION * pitch1);
+			s_current, 
+			s_fstim);
+
 	__syncthreads();
+
+	writeFiringOutput(firingOutput + CURRENT_PARTITION * pitch1, pitch1);
+
 	SET_COUNTER(s_ccMain, 6);
 
 #ifdef STDP
