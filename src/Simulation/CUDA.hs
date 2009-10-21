@@ -1,5 +1,3 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
-
 {- This backend uses a CUDA kernel, which is accessed through a C API. CUDA
  - requires that the computation be split up into *thread blocks*. The logical
  - network is mapped onto this computational topology by defining a number of
@@ -12,7 +10,6 @@ module Simulation.CUDA (initSim, deviceCount) where
 import Control.Monad (when)
 import Control.Monad.Writer (runWriter)
 import Control.Exception (assert)
--- import Data.Either
 import Data.Maybe (fromMaybe)
 import Foreign.ForeignPtr (withForeignPtr)
 

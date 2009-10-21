@@ -89,13 +89,15 @@ applySTDP_(
 							+ (sourceNeuron(rsynapse) * maxDelay + r_delay(rsynapse)-1) * f_pitch   // neuron
 							+ forwardIdx(rsynapse);                                                 // synapse
 
+						ASSERT(gf_offset < f_size);
+
 						float w_old = gf_weight[gf_offset];
 						float w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
 
 						if(w_old != w_new) {
 							gf_weight[gf_offset] = w_new;
-
-							DEBUG_MSG("stdp %+f for synapse %u-%u -> %u-%u\n", w_diff,
+							DEBUG_MSG("stdp %f %+f = %f for synapse %u-%u -> %u-%u\n",
+									w_old, w_diff, w_new,
 									sourcePartition(rsynapse), sourceNeuron(rsynapse),
 									CURRENT_PARTITION, target);
 						}

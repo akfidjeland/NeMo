@@ -201,6 +201,7 @@ applyStdp_(
 			rtdata->stdpFn->maxWeight(),
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
+			//! \todo compute the address of the weight matrix here directly
 			rtdata->cm(cmIdx)->df_synapses(),
 			rtdata->cm(cmIdx)->df_pitch(),
 			rtdata->cm(cmIdx)->df_planeSize());
@@ -236,6 +237,11 @@ applyStdp(RTDATA rtdata, float stdpReward)
 			}
 		}
 	}
+
+	if(assertionsFailed(rtdata->partitionCount, -1)) {
+		fprintf(stderr, "checking assertions\n");
+		clearAssertions();
+	}
 }
 
 
@@ -264,7 +270,7 @@ step(RTDATA rtdata,
 	uint32_t* d_extFiring = 
 		rtdata->setFiringStimulus(extFiringCount, extFiringCIdx, extFiringNIdx);
 
-	 uint32_t* d_fout = rtdata->firingOutput->step();
+	uint32_t* d_fout = rtdata->firingOutput->step();
 
 	if(rtdata->usingStdp()) {
 		//! \todo use a function pointer here. The inputs are the same

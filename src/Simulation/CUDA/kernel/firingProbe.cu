@@ -17,6 +17,7 @@ clearFiringOutput()
 
 
 
+//! \todo could use OUTPUT_BUFFER_SZ instead of pitch here
 /* \param g_firingOutput
  *      Firing output buffer in global memory, offset by 1) cycle and 2)
  *      partition
@@ -39,7 +40,9 @@ void
 setFiringOutput(uint neuron)
 {
 	ASSERT(neuron / 32 < OUTPUT_BUFFER_SZ);
-	atomicOr(s_firingOutput + neuron / 32, 0x1 << (neuron % 32));
+	uint32_t word = neuron / 32;
+	uint32_t mask = 0x1 << (neuron % 32);
+	atomicOr(s_firingOutput + word, mask);
 }
 
 

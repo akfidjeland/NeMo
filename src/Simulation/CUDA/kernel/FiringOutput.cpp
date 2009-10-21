@@ -102,10 +102,11 @@ FiringOutput::populateSparse(
 			for(size_t nword=0; nword < m_pitch; ++nword) {
 
 				/* Within a partition we might go into the padding part of the
-				 * firing buffer.  We rely on the device not leaving any
-				 * garbage in the unused entries */
+				 * firing buffer. We rely on the device not leaving any garbage
+				 * in the unused entries */
 				uint32_t word = hostBuffer[partitionOffset + nword];
 
+				//! \todo skip loop if nothing is set
 				for(size_t nbit=0; nbit < 32; ++nbit) {
 
 					bool fired = word & (1 << nbit);
