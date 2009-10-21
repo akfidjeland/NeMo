@@ -44,20 +44,8 @@ data Thalamic f = Thalamic {
         rng :: StdGen
     } deriving (Show, Eq)
 
-{- | The user can specify parameters to probe, by using a parameter of the the
- - type ProbeFn IzhState. It's tricky to provide a generic function in the user
- - code for probing, since the data structure to use is not known until run-
- - time. The actual implementation of the probing is therefore done using an
- - instance of NeuronProbe -}
-data IzhState = U | V | F deriving (Show)
 
-
-instance (Ord f, Fractional f, Random f, Floating f) => Spiking IzhNeuron f where
-    fired = stateF
-    update = updateIzh
-    addSpike = addSpikeIzh
-    preSpikeDelivery n = maybe n (addThalamic n) $ stateThalamic n
-
+izhPreSpikeDelivery n = maybe n (addThalamic n) $ stateThalamic n
 
 mkNeuron a b c d v = IzhNeuron a b c d u v 0 False Nothing
     where u = b * v
@@ -68,8 +56,8 @@ mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v 0 False s
 mkThalamic s r = Just $ Thalamic s $ mkStdGen $ round $ r * 100000.0
 
 
-updateIzh :: (Ord f, Fractional f) => Bool -> IzhNeuron f -> IzhNeuron f
-updateIzh forceFiring (IzhNeuron a b c d u v i _ th) =
+updateIzh :: Bool -> Current -> IzhNeuron FT -> IzhNeuron FT
+updateIzh forceFiring i (IzhNeuron a b c d u v i' _ th) =
     if v' >= 30.0 || forceFiring
         then (IzhNeuron a b c d (u'+d) c 0 True th)
         else (IzhNeuron a b c d u' v' 0 False th)
@@ -88,8 +76,6 @@ addSpikeIzh :: (Num f) => f -> IzhNeuron f -> IzhNeuron f
 addSpikeIzh w n = n { stateI = i + w }
     where
         i = stateI n
--- addSpikeIzh w (IzhNeuron a b c d u v i f s) =
---    IzhNeuron a b c d u v (i + w) f s
 
 
 {-

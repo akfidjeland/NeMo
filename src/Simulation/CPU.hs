@@ -2,13 +2,15 @@
 
 module Simulation.CPU (initSim) where
 
+import Control.Monad (zipWithM_)
 import Data.Array.IO
 import Data.Array.Base
 
 import Construction.Network
 import qualified Construction.Neurons as Neurons (size, neurons, indices)
 import Construction.Neuron (ndata)
-import Construction.Izhikevich (IzhNeuron)
+-- TODO: add import list
+import Construction.Izhikevich
 import Construction.Spiking
 import Construction.Synapse
 import Simulation
@@ -24,7 +26,8 @@ import qualified Util.Assocs as A (mapElems)
 data CpuSimulation = CpuSimulation {
         network  :: IOArray Idx (IzhNeuron FT),
         synapses :: SynapsesRT,
-        spikes   :: SpikeQueue
+        spikes   :: SpikeQueue,
+        currentAcc :: IOUArray Idx FT
     }
 
 
@@ -49,33 +52,63 @@ initSim net = mkRuntime net
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
-stepSim (CpuSimulation ns ss sq) forcedFiring = do
+stepSim (CpuSimulation ns ss sq iacc) forcedFiring = do
     bounds <- getBounds ns
     let idx = [fst bounds..snd bounds]
-    addCurrent ns =<< deqSpikes sq
+    -- TODO: accumulate current into separate accumulator
+    -- TODO: make use of that value in the state update instead of internal
+    -- TODO: clear current accumulation
+    {-
+    -}
+    updateArray izhPreSpikeDelivery ns
+    nselem <- getElems ns
+    let initI = map stateI nselem
+    zipWithM_ (writeArray iacc) [0..] initI
+    -- clearArray iacc
+    -- TODO: set thalamic input here
+    accCurrent iacc =<< deqSpikes sq
+    ivals <- getElems iacc -- list of current for each neuron
+    -- addCurrent ns =<< deqSpikes sq
     -- TODO: combine the pre-spike delivery and the update function here
-    updateArray preSpikeDelivery ns
     assoc <- getAssocs ns
-    let ns' = zipWith (liftN update) (densify forcedFiring idx) assoc
+    -- let ivals = repeat 0
+    let ns' = zipWith3 (liftN updateIzh) (densify forcedFiring idx) ivals assoc
     mapM_ (uncurry (unsafeWrite ns)) ns'
     assoc' <- getAssocs ns
     let fired = firingIdx assoc'
     enqSpikes sq fired ss
     return $! FiringOutput fired
     where
-        liftN f x (y, z) = (y, f x z)
-        firingIdx assoc = map fst $ filter (fired . snd) assoc
+        liftN f x i (y, z) = (y, f x i z)
+        firingIdx assoc = map fst $ filter (stateF . snd) assoc
+
+{-
+clearArray = setArray 0
+
+setArray val arr = do
+    (mn,mx) <- getBounds arr
+    mapM_ (\i -> writeArray arr i val) [mn..mx]
+-}
+
+{- | Accumulate current for each neuron for spikes due to be delivered right
+ - now -}
+accCurrent :: IOUArray Idx Current -> [(Idx, Current)] -> IO ()
+accCurrent arr current = mapM_ go current
+    where
+        -- go arr (idx, w) = writeArray arr idx . (+w) =<< readArray arr idx
+        go (idx, w) = do
+            i <- readArray arr idx
+            writeArray arr idx (i + w)
 
 
-
-addCurrent
-    :: (MArray a (n FT) m, Spiking n  FT, Ix ix)
-    => a ix (n FT) -> [(ix, Current)] -> m ()
+-- addCurrent
+--    :: (MArray a (n FT) m, Spiking n  FT, Ix ix)
+--    => a ix (n FT) -> [(ix, Current)] -> m ()
 addCurrent arr current = mapM_ (aux arr) current
     where
         aux arr (idx, i) = do
             neuron <- readArray arr idx
-            writeArray arr idx (addSpike i neuron)
+            writeArray arr idx (addSpikeIzh i neuron)
 
 
 {- | Apply function to each neuron and modify in-place -}
@@ -105,7 +138,10 @@ mkRuntime net@(Network ns _) = do
     ns' <- mkRuntimeN ns
     let ss = mkSynapsesRT net
     sq <- mkSpikeQueue net
-    return $! CpuSimulation ns' ss sq
+    -- TODO: do the same bounds checking as for mkRuntimeN
+    iacc <- newListArray (0, Neurons.size ns-1) (repeat 0)
+    return $! CpuSimulation ns' ss sq iacc
+
 
 
 

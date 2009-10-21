@@ -25,7 +25,7 @@ import Control.Monad.Writer
 import Data.List (foldl')
 import qualified Data.Map as Map
 
-import Construction.Izhikevich (IzhNeuron, IzhState)
+import Construction.Izhikevich (IzhNeuron)
 import qualified Construction.Network as Net
 import qualified Construction.Neurons as Neurons (Neurons, empty, toList)
 import qualified Construction.Neuron as N

@@ -20,7 +20,7 @@ import Thrift.Transport.Handle
 import System.IO
 import System.Time (getClockTime)
 
-import Construction.Izhikevich (IzhNeuron, IzhState)
+import Construction.Izhikevich (IzhNeuron)
 import qualified Construction.Network as Network (Network, addNeuron,
         addNeuronGroup, empty, hPrintConnections, idxBounds)
 import Construction.Synapse (Static)
