@@ -9,9 +9,10 @@ import System.IO
 import Test.HUnit
 
 import Test.Construction.Axon (runQC)
-import Test.Examples.Smallworld as Smallworld (tests)
+import Test.Examples.Dense as Dense (tests)
 import Test.Examples.Random1k as Random1k (tests)
 import Test.Examples.Ring as Ring (tests)
+import Test.Examples.Smallworld as Smallworld (tests)
 import Test.Network.Client as TestClient (tests, test_clientSim)
 import Test.Regression (testAll, createAll)
 import Test.Simulation.Run as TestRun (tests)
@@ -25,7 +26,7 @@ import Test.Simulation.CUDA.Memory as Memory (tests)
 
 runQCTests = runQC
 
-regressionTests = [Smallworld.tests, Random1k.tests]
+regressionTests = [Smallworld.tests, Random1k.tests, Dense.tests]
 
 -- | Run all HUnit tests
 runHUnitTests dir = runTestTT $ TestList $ [
