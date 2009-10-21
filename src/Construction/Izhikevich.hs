@@ -25,7 +25,7 @@ data IzhNeuron f = IzhNeuron {
         paramD :: !f,
         stateU :: !f,
         stateV :: !f,         -- ^ membrane potential
-        stateI :: !f,         -- ^ accumulated current
+        -- stateI :: !f,         -- ^ accumulated current
         stateF :: !Bool,
         -- TODO: add strictness?
         stateThalamic :: Maybe (Thalamic f)
@@ -45,22 +45,21 @@ data Thalamic f = Thalamic {
     } deriving (Show, Eq)
 
 
-izhPreSpikeDelivery n = maybe n (addThalamic n) $ stateThalamic n
 
-mkNeuron a b c d v = IzhNeuron a b c d u v 0 False Nothing
+mkNeuron a b c d v = IzhNeuron a b c d u v False Nothing
     where u = b * v
 
-mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v 0 False s
+mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v False s
 
 -- r is typically a floating point in the range [0,1)
 mkThalamic s r = Just $ Thalamic s $ mkStdGen $ round $ r * 100000.0
 
 
 updateIzh :: Bool -> Current -> IzhNeuron FT -> IzhNeuron FT
-updateIzh forceFiring i (IzhNeuron a b c d u v i' _ th) =
+updateIzh forceFiring i (IzhNeuron a b c d u v _ th) =
     if v' >= 30.0 || forceFiring
-        then (IzhNeuron a b c d (u'+d) c 0 True th)
-        else (IzhNeuron a b c d u' v' 0 False th)
+        then (IzhNeuron a b c d (u'+d) c True th)
+        else (IzhNeuron a b c d u' v' False th)
     where
         fired v = v >= 30.0
         (u', v') = f $ f $ f $ f (u, v)
@@ -72,32 +71,16 @@ updateIzh forceFiring i (IzhNeuron a b c d u v i' _ th) =
 
 
 
-addSpikeIzh :: (Num f) => f -> IzhNeuron f -> IzhNeuron f
-addSpikeIzh w n = n { stateI = i + w }
+-- TODO: bring RNG state out of neuron
+thalamicInput :: IzhNeuron FT -> (IzhNeuron FT, Current)
+thalamicInput n = maybe (n, 0) (go n) (stateThalamic n)
+
+go n th = (n { stateThalamic = th' }, i')
     where
-        i = stateI n
-
-
-{-
-thalamicInput :: (Floating f, Random f) => IzhNeuron f -> IO (IzhNeuron f)
-thalamicInput n =
-    maybe
-        (return n)
-        -- (\s -> return n)
-        (\s -> rgauss 0 s >>= \i -> return $ addSpikeIzh i n)
-        (stateSigma n)
--}
-
-addThalamic
-    :: (Floating f, Random f)
-    => IzhNeuron f -> Thalamic f -> IzhNeuron f
-addThalamic n th = n { stateI = i + i', stateThalamic = th' }
-    where
-        (r1, g1) = random $ rng th
-        (r2, g2) = random g1
-        i' = gauss 0.0 (sigma th) (r1, r2)
-        i = stateI n
-        th' = Just $ Thalamic (sigma th) g2
+            (r1, g1) = random $ rng th
+            (r2, g2) = random g1
+            i' = gauss 0.0 (sigma th) (r1, r2)
+            th' = Just $ Thalamic (sigma th) g2
 
 
 -- Return a random gaussian
@@ -107,14 +90,13 @@ gauss mu sigma (r1, r2) =
 
 
 instance NFData f => NFData (IzhNeuron f) where
-    rnf (IzhNeuron a b c d u v i f s) =
+    rnf (IzhNeuron a b c d u v f s) =
         rnf a `seq`
         rnf b `seq`
         rnf c `seq`
         rnf d `seq`
         rnf u `seq`
         rnf v `seq`
-        rnf i `seq`
         rnf f `seq`
         rnf s
 

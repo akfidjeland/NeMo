@@ -69,7 +69,7 @@ decodeNeuron !wn = ss `seq` (idx, neuron n ss)
                 (fromJust $! Wire.f_IzhNeuron_d wn)
                 (fromJust $! Wire.f_IzhNeuron_u wn)
                 (fromJust $! Wire.f_IzhNeuron_v wn)
-                0.0 False Nothing
+                False Nothing
         ss = map' decodeSynapse $! fromJust $! Wire.f_IzhNeuron_axon wn
 
         {- Performance note: Using a strict map rather than a lazy one brought

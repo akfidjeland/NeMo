@@ -55,23 +55,13 @@ stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
 stepSim (CpuSimulation ns ss sq iacc) forcedFiring = do
     bounds <- getBounds ns
     let idx = [fst bounds..snd bounds]
-    -- TODO: accumulate current into separate accumulator
-    -- TODO: make use of that value in the state update instead of internal
-    -- TODO: clear current accumulation
-    {-
-    -}
-    updateArray izhPreSpikeDelivery ns
-    nselem <- getElems ns
-    let initI = map stateI nselem
+    -- TODO: factor out RNG state
+    initI <- updateArray thalamicInput ns
     zipWithM_ (writeArray iacc) [0..] initI
-    -- clearArray iacc
-    -- TODO: set thalamic input here
     accCurrent iacc =<< deqSpikes sq
     ivals <- getElems iacc -- list of current for each neuron
-    -- addCurrent ns =<< deqSpikes sq
     -- TODO: combine the pre-spike delivery and the update function here
     assoc <- getAssocs ns
-    -- let ivals = repeat 0
     let ns' = zipWith3 (liftN updateIzh) (densify forcedFiring idx) ivals assoc
     mapM_ (uncurry (unsafeWrite ns)) ns'
     assoc' <- getAssocs ns
@@ -82,14 +72,7 @@ stepSim (CpuSimulation ns ss sq iacc) forcedFiring = do
         liftN f x i (y, z) = (y, f x i z)
         firingIdx assoc = map fst $ filter (stateF . snd) assoc
 
-{-
-clearArray = setArray 0
-
-setArray val arr = do
-    (mn,mx) <- getBounds arr
-    mapM_ (\i -> writeArray arr i val) [mn..mx]
--}
-
+{
 {- | Accumulate current for each neuron for spikes due to be delivered right
  - now -}
 accCurrent :: IOUArray Idx Current -> [(Idx, Current)] -> IO ()
@@ -101,21 +84,15 @@ accCurrent arr current = mapM_ go current
             writeArray arr idx (i + w)
 
 
--- addCurrent
---    :: (MArray a (n FT) m, Spiking n  FT, Ix ix)
---    => a ix (n FT) -> [(ix, Current)] -> m ()
-addCurrent arr current = mapM_ (aux arr) current
-    where
-        aux arr (idx, i) = do
-            neuron <- readArray arr idx
-            writeArray arr idx (addSpikeIzh i neuron)
-
 
 {- | Apply function to each neuron and modify in-place -}
-updateArray :: (MArray a e' m, MArray a e m, Ix i) => (e -> e) -> a i e -> m ()
-updateArray f xs = getAssocs xs >>= mapM_ (modify xs f)
+updateArray :: (MArray a e' m, MArray a e m, Ix i) => (e -> (e, b)) -> a i e -> m [b]
+updateArray f xs = getAssocs xs >>= mapM (modify xs f)
     where
-        modify xs f (i, e) = writeArray xs i $ f e
+        modify xs f (i, e) = do
+            let (e', val) = f e
+            writeArray xs i e'
+            return $! val
 
 
 
