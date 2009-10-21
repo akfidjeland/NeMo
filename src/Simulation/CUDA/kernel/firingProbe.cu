@@ -43,4 +43,18 @@ setFiringOutput(uint neuron)
 }
 
 
+
+/*! \return Did the given neuron fire this cycle? */
+__device__
+uint32_t
+didFire(uint neuron)
+{
+	//! \todo check that we're in bounds
+	uint32_t word = neuron / 32;
+	uint32_t mask = 0x1 << (neuron % 32);
+	return s_firingOutput[word] & mask;
+}
+
+
+
 #undef OUTPUT_BUFFER_SZ

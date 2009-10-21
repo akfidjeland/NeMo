@@ -194,8 +194,7 @@ updateRegion(
 		uint cycle,
 		uint64_t spikes,
 		uint targetNeuron,
-		uint32_t r_synapse, // used for logging only
-		uint64_t* s_targetRecentFiring)
+		uint32_t r_synapse) // used for logging only
 {
 	/* The potentiation can happen on either side of the firing. We want to
 	 * find the one closest to the firing. We therefore need to compute the
@@ -242,11 +241,9 @@ updateSynapse(
 		uint cycle,               // for debugging only
 		uint32_t r_synapse,
 		uint targetNeuron,
-		uint rfshift,
-		uint64_t* x_sourceFiring, // L0: shared memory; L1: global memory
-		uint64_t* s_targetFiring)
+		uint64_t* x_sourceFiring) // L0: shared memory; L1: global memory
 {
-	int inFlight = rfshift + r_delay(r_synapse) - 1;
+	int inFlight = r_delay(r_synapse) - 1;
 	/* -1 since we do spike arrival before neuron-update and STDP in a single
 	 * simulation cycle */
 
@@ -254,8 +251,8 @@ updateSynapse(
 	uint64_t p_spikes = sourceFiring & s_stdpPotentiation;
 	uint64_t d_spikes = sourceFiring & s_stdpDepression;
 
-	return updateRegion(cycle, p_spikes, targetNeuron, r_synapse, s_targetFiring)
-           + updateRegion(cycle, d_spikes, targetNeuron, r_synapse, s_targetFiring);
+	return updateRegion(cycle, p_spikes, targetNeuron, r_synapse)
+           + updateRegion(cycle, d_spikes, targetNeuron, r_synapse);
 }
 
 
@@ -269,7 +266,6 @@ updateSTDP_(
 	uint64_t* sourceRecentFiring,
 	uint64_t* s_targetRecentFiring,
 	size_t pitch64,
-	uint rfshift, // how much to shift recent firing bits
 	uint partitionSize,
 	DEVICE_UINT_PTR_T* cr_address,
 	DEVICE_UINT_PTR_T* cr_stdp,
@@ -293,7 +289,7 @@ updateSTDP_(
 	for(uint nchunk=0; nchunk < s_nchunkCount; ++nchunk) {
 
 		uint target = nchunk * THREADS_PER_BLOCK + threadIdx.x;
-		const int processingDelay = s_stdpPostFireWindow;
+		const int processingDelay = s_stdpPostFireWindow - 1;
 
 		bool fired = s_targetRecentFiring[target] & (0x1 << processingDelay);
 
@@ -338,10 +334,8 @@ updateSTDP_(
 								cycle,
 								r_sdata,
 								target,
-								rfshift,
 								isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch64
-								     : sourceRecentFiring,
-								s_targetRecentFiring);
+								     : sourceRecentFiring);
 
 						//! \todo perhaps stage diff in output buffers
 						if(w_diff != 0.0f) {

@@ -28,6 +28,23 @@ STDP_FN(setSharedArray)(uint32_t* s_mem, uint32_t val)
 
 
 
+__device__
+void
+STDP_FN(updateHistory)(uint s_partitionSize, uint64_t* s_recentFiring, uint64_t* g_recentFiring)
+{
+	for(uint nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
+		uint neuron = nbase + threadIdx.x;
+		if(neuron < s_partitionSize) {
+			/* Need to update firing history here as we need it in L1 delivery,
+			 * so we can handle 1-cycle delay */
+			s_recentFiring[neuron] = (s_recentFiring[neuron] << 1) | (didFire(neuron) ? 0x1 : 0x0);
+			g_recentFiring[neuron] = s_recentFiring[neuron];
+		}
+	}
+	__syncthreads();
+}
+
+
 
 __device__
 void
@@ -47,8 +64,6 @@ STDP_FN(fire)(
 	float* s_current,    // input current
 	// buffers
 	uint32_t* s_fstim,   // s_T16, so larger than needed
-	uint64_t* s_recentFiring,
-	uint64_t* g_recentFiring,
 	uint16_t* s_firingIdx,
 	uint32_t* g_firingOutput) // already offset to current partition
 {
@@ -100,7 +115,6 @@ STDP_FN(fire)(
 
 			/* s_fstim accessed using broadcast */
 			bool forceFiring = (s_fstim[neuron/32] >> (neuron % 32)) & 0x1;
-			uint32_t firing = 0;
 
 			if(fired || forceFiring) {
 
@@ -113,7 +127,6 @@ STDP_FN(fire)(
 				v = g_c[neuron];
 				u += g_d[neuron];
 
-				firing = 0x1;
 				DEBUG_MSG("c%u %u-%u fired (forced: %u) (thread %u)\n",
 						cycle, CURRENT_PARTITION, neuron,
 						forceFiring, threadIdx.x);
@@ -123,14 +136,8 @@ STDP_FN(fire)(
 				setFiringOutput(neuron);
 			}
 
-			/* We need the (updated) recent firing history for L1 spike
-			 * delivery later, but won't update this further, so we can write
-			 * back to global memory now. */
-			s_recentFiring[neuron] = (s_recentFiring[neuron] << 1) | firing;
-			g_recentFiring[neuron] = s_recentFiring[neuron];
 			g_v[neuron] = v;
 			g_u[neuron] = u;
-
 		}
 	}
 
@@ -487,10 +494,6 @@ STDP_FN(step) (
 			neuronParametersSize,
 			g_fstim, s_current, 
 			(uint32_t*) s_T16,
-			s_recentFiring, 
-			g_recentFiring
-				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
-				+ CURRENT_PARTITION * s_pitch64,
 			(uint16_t*) s_T32,
 			firingOutput + CURRENT_PARTITION * pitch1);
 	__syncthreads();
@@ -502,7 +505,7 @@ STDP_FN(step) (
 			false,
 			s_recentFiring,
 			s_recentFiring,
-			s_pitch32, 1,
+			s_pitch32,
 			s_partitionSize,
 			cr0_address, cr0_stdp, cr0_pitch,
 			s_T32);
@@ -515,13 +518,22 @@ STDP_FN(step) (
 				true,
 				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
 				s_recentFiring,
-				s_pitch64, 0,
+				s_pitch64,
 				s_partitionSize,
 				cr1_address, cr1_stdp, cr1_pitch,
 				s_T32);
 	}
 #endif
 	SET_COUNTER(s_ccMain, 8);
+
+	/* We need the (updated) recent firing history for L1 spike
+	 * delivery later, but won't update this further, so we can write
+	 * back to global memory now. */
+	STDP_FN(updateHistory)(s_partitionSize, s_recentFiring,
+			g_recentFiring
+				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
+				+ CURRENT_PARTITION * s_pitch64);
+	//! \todo add an additional counter?
 
 	if(haveL1) {
 		STDP_FN(deliverL1Spikes_JIT)(
