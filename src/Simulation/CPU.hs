@@ -27,7 +27,8 @@ data CpuSimulation = CpuSimulation {
         network  :: IOArray Idx (IzhNeuron FT),
         synapses :: SynapsesRT,
         spikes   :: SpikeQueue,
-        currentAcc :: IOUArray Idx FT
+        currentAcc :: IOUArray Idx FT,
+        fired :: IOUArray Idx Bool
     }
 
 
@@ -52,7 +53,7 @@ initSim net = mkRuntime net
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
-stepSim (CpuSimulation ns ss sq iacc) forcedFiring = do
+stepSim (CpuSimulation ns ss sq iacc facc) forcedFiring = do
     bounds <- getBounds ns
     let idx = [fst bounds..snd bounds]
     -- TODO: factor out RNG state
@@ -60,19 +61,23 @@ stepSim (CpuSimulation ns ss sq iacc) forcedFiring = do
     zipWithM_ (writeArray iacc) [0..] initI
     accCurrent iacc =<< deqSpikes sq
     ivals <- getElems iacc -- list of current for each neuron
-    -- TODO: combine the pre-spike delivery and the update function here
-    assoc <- getAssocs ns
-    let ns' = zipWith3 (liftN updateIzh) (densify forcedFiring idx) ivals assoc
-    mapM_ (uncurry (unsafeWrite ns)) ns'
-    assoc' <- getAssocs ns
-    let fired = firingIdx assoc'
+    let forced = densify forcedFiring idx
+    zipWithM_ (update ns iacc facc) forced [0..]
+    -- TODO: perhaps generate firing array on the fly
+    assoc' <- getAssocs facc
+    let fired = map fst $ filter snd assoc'
     enqSpikes sq fired ss
     return $! FiringOutput fired
     where
-        liftN f x i (y, z) = (y, f x i z)
-        firingIdx assoc = map fst $ filter (stateF . snd) assoc
+        update ns iacc facc forced idx = do
+            inew <- readArray iacc idx -- accumulated current
+            n <- readArray ns idx
+            let (n', fired) = updateIzh forced inew n
+            -- TODO: use unsafe writes?
+            writeArray ns idx n'
+            writeArray facc idx fired
 
-{
+
 {- | Accumulate current for each neuron for spikes due to be delivered right
  - now -}
 accCurrent :: IOUArray Idx Current -> [(Idx, Current)] -> IO ()
@@ -117,7 +122,8 @@ mkRuntime net@(Network ns _) = do
     sq <- mkSpikeQueue net
     -- TODO: do the same bounds checking as for mkRuntimeN
     iacc <- newListArray (0, Neurons.size ns-1) (repeat 0)
-    return $! CpuSimulation ns' ss sq iacc
+    facc <- newListArray (0, Neurons.size ns-1) (repeat False)
+    return $! CpuSimulation ns' ss sq iacc facc
 
 
 

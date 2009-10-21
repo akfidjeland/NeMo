@@ -25,8 +25,6 @@ data IzhNeuron f = IzhNeuron {
         paramD :: !f,
         stateU :: !f,
         stateV :: !f,         -- ^ membrane potential
-        -- stateI :: !f,         -- ^ accumulated current
-        stateF :: !Bool,
         -- TODO: add strictness?
         stateThalamic :: Maybe (Thalamic f)
     } deriving (Show, Eq)
@@ -46,20 +44,20 @@ data Thalamic f = Thalamic {
 
 
 
-mkNeuron a b c d v = IzhNeuron a b c d u v False Nothing
+mkNeuron a b c d v = IzhNeuron a b c d u v Nothing
     where u = b * v
 
-mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v False s
+mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v s
 
 -- r is typically a floating point in the range [0,1)
 mkThalamic s r = Just $ Thalamic s $ mkStdGen $ round $ r * 100000.0
 
 
-updateIzh :: Bool -> Current -> IzhNeuron FT -> IzhNeuron FT
-updateIzh forceFiring i (IzhNeuron a b c d u v _ th) =
+updateIzh :: Bool -> Current -> IzhNeuron FT -> (IzhNeuron FT, Bool)
+updateIzh forceFiring i (IzhNeuron a b c d u v th) =
     if v' >= 30.0 || forceFiring
-        then (IzhNeuron a b c d (u'+d) c True th)
-        else (IzhNeuron a b c d u' v' False th)
+        then (IzhNeuron a b c d (u'+d) c th, True)
+        else (IzhNeuron a b c d u' v' th, False)
     where
         fired v = v >= 30.0
         (u', v') = f $ f $ f $ f (u, v)
@@ -90,14 +88,13 @@ gauss mu sigma (r1, r2) =
 
 
 instance NFData f => NFData (IzhNeuron f) where
-    rnf (IzhNeuron a b c d u v f s) =
+    rnf (IzhNeuron a b c d u v s) =
         rnf a `seq`
         rnf b `seq`
         rnf c `seq`
         rnf d `seq`
         rnf u `seq`
         rnf v `seq`
-        rnf f `seq`
         rnf s
 
 
