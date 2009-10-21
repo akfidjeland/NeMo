@@ -13,21 +13,30 @@ import Data.Function(on)
 import System.Random
 
 import Construction.Neuron
-import Construction.Spiking
 import Construction.Synapse
 import Types
 
 
+{- | Static parameters and initial state for neuron -}
 data IzhNeuron f = IzhNeuron {
         paramA :: !f,
         paramB :: !f,
         paramC :: !f,
         paramD :: !f,
-        stateU :: !f,
-        stateV :: !f,         -- ^ membrane potential
-        -- TODO: add strictness?
+        initU :: !f,
+        initV :: !f,         -- ^ membrane potential
+        -- initial RNG state for per-neuron process
+        -- TODO: rename
         stateThalamic :: Maybe (Thalamic f)
     } deriving (Show, Eq)
+
+
+-- TODO: unbox this
+data IzhState f = IzhState {
+        stateU :: !f,
+        stateV :: !f
+    }
+
 
 
 stateSigma :: IzhNeuron f -> Maybe f
@@ -53,11 +62,12 @@ mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v s
 mkThalamic s r = Just $ Thalamic s $ mkStdGen $ round $ r * 100000.0
 
 
-updateIzh :: Bool -> Current -> IzhNeuron FT -> (IzhNeuron FT, Bool)
-updateIzh forceFiring i (IzhNeuron a b c d u v th) =
+-- updateIzh :: Bool -> Current -> FT -> FT -> IzhNeuron FT -> (IzhNeuron FT, FT, FT, Bool)
+updateIzh :: Bool -> Current -> IzhState FT -> IzhNeuron FT -> (IzhNeuron FT, IzhState FT, Bool)
+updateIzh forceFiring i (IzhState u v) (IzhNeuron a b c d _ _ th) =
     if v' >= 30.0 || forceFiring
-        then (IzhNeuron a b c d (u'+d) c th, True)
-        else (IzhNeuron a b c d u' v' th, False)
+        then (IzhNeuron a b c d (u'+d) c th, IzhState (u'+d) c, True)
+        else (IzhNeuron a b c d u' v' th, IzhState u' v', False)
     where
         fired v = v >= 30.0
         (u', v') = f $ f $ f $ f (u, v)

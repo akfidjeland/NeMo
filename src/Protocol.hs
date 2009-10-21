@@ -90,8 +90,8 @@ encodeNeuron (idx, n) = Wire.IzhNeuron (Just idx) a b c d u v ss
         b = p paramB
         c = p paramC
         d = p paramD
-        u = p stateU
-        v = p stateV
+        u = p initU
+        v = p initV
         ss = Just $! map encodeSynapse $ terminalsUnordered n
 
 

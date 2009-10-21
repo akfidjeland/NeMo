@@ -28,7 +28,9 @@ data CpuSimulation = CpuSimulation {
         synapses :: SynapsesRT,
         spikes   :: SpikeQueue,
         currentAcc :: IOUArray Idx FT,
-        fired :: IOUArray Idx Bool
+        fired :: IOUArray Idx Bool,
+        currentU :: IOUArray Idx FT,
+        currentV :: IOUArray Idx FT
     }
 
 
@@ -53,7 +55,7 @@ initSim net = mkRuntime net
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
-stepSim (CpuSimulation ns ss sq iacc facc) forcedFiring = do
+stepSim (CpuSimulation ns ss sq iacc facc uacc vacc) forcedFiring = do
     bounds <- getBounds ns
     let idx = [fst bounds..snd bounds]
     -- TODO: factor out RNG state
@@ -72,8 +74,14 @@ stepSim (CpuSimulation ns ss sq iacc facc) forcedFiring = do
         update ns iacc facc forced idx = do
             inew <- readArray iacc idx -- accumulated current
             n <- readArray ns idx
-            let (n', fired) = updateIzh forced inew n
+            -- should perhaps store persistent dynamic state together
+            u <- readArray uacc idx
+            v <- readArray vacc idx
+            let state = IzhState u v
+            let (n', state', fired) = updateIzh forced inew state n
             -- TODO: use unsafe writes?
+            writeArray uacc idx $ stateU state'
+            writeArray vacc idx $ stateV state'
             writeArray ns idx n'
             writeArray facc idx fired
 
@@ -123,7 +131,9 @@ mkRuntime net@(Network ns _) = do
     -- TODO: do the same bounds checking as for mkRuntimeN
     iacc <- newListArray (0, Neurons.size ns-1) (repeat 0)
     facc <- newListArray (0, Neurons.size ns-1) (repeat False)
-    return $! CpuSimulation ns' ss sq iacc facc
+    uacc <- newListArray (0, Neurons.size ns-1) $ map (initU . ndata) $ neurons net
+    vacc <- newListArray (0, Neurons.size ns-1) $ map (initV . ndata) $ neurons net
+    return $! CpuSimulation ns' ss sq iacc facc uacc vacc
 
 
 
