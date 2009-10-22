@@ -12,7 +12,6 @@ import qualified Construction.Neurons as Neurons (size, neurons, indices)
 import Construction.Neuron (ndata)
 -- TODO: add import list
 import Construction.Izhikevich
-import Construction.Spiking
 import Construction.Synapse
 import Simulation
 import Simulation.FiringStimulus

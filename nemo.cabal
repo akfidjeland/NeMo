@@ -46,7 +46,6 @@ executable nemo
                             Construction.Rand,
                             Construction.Randomised.Topology,
                             Construction.Randomised.Synapse,
-                            Construction.Spiking,
                             Construction.Synapse,
                             Construction.Topology,
                             ExternalClient,
