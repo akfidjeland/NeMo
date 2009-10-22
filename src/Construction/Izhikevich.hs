@@ -18,16 +18,16 @@ import Types
 
 
 {- | Static parameters and initial state for neuron -}
-data IzhNeuron f = IzhNeuron {
-        paramA :: !f,
-        paramB :: !f,
-        paramC :: !f,
-        paramD :: !f,
-        initU :: !f,
-        initV :: !f,         -- ^ membrane potential
+data IzhNeuron = IzhNeuron {
+        paramA :: !FT,
+        paramB :: !FT,
+        paramC :: !FT,
+        paramD :: !FT,
+        initU :: !FT,
+        initV :: !FT,         -- ^ membrane potential
         -- initial RNG state for per-neuron process
         -- TODO: rename
-        stateThalamic :: Maybe (Thalamic f)
+        stateThalamic :: Maybe (Thalamic FT)
     } deriving (Show, Eq)
 
 
@@ -39,7 +39,7 @@ data IzhState f = IzhState {
 
 
 
-stateSigma :: IzhNeuron f -> Maybe f
+stateSigma :: IzhNeuron -> Maybe FT
 stateSigma = liftM sigma . stateThalamic
 
 
@@ -62,7 +62,7 @@ mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v s
 mkThalamic s r = Just $ Thalamic s $ mkStdGen $ round $ r * 100000.0
 
 
-updateIzh :: Bool -> Current -> IzhState FT -> IzhNeuron FT -> (IzhState FT, Bool)
+updateIzh :: Bool -> Current -> IzhState FT -> IzhNeuron -> (IzhState FT, Bool)
 updateIzh forceFiring i (IzhState u v) (IzhNeuron a b c d _ _ _) =
     if forceFiring || v' >= 30.0
         then (IzhState (u'+d) c, True)
@@ -95,7 +95,7 @@ gauss mu sigma (r1, r2) =
     mu + sigma * sqrt (-2 * log r1) * cos (2 * pi * r2)
 
 
-instance NFData f => NFData (IzhNeuron f) where
+instance NFData IzhNeuron where
     rnf (IzhNeuron a b c d u v s) =
         rnf a `seq`
         rnf b `seq`

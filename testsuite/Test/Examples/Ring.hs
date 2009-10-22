@@ -54,7 +54,7 @@ checkFiring size impulse delay ref = \_ p -> do
 
 testRing :: Int -> Idx -> Int -> Backend -> Maybe Int -> Assertion
 testRing size impulse delay backend partitionSize = do
-    let net = build 123456 $ ring size delay :: Network (IzhNeuron FT) Static
+    let net = build 123456 $ ring size delay :: Network IzhNeuron Static
         fstim = FiringList [(0, [impulse])]
         -- test = checkFiring size impulse delay
 #if defined(CUDA_ENABLED)

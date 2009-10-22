@@ -56,7 +56,7 @@ instance Simulation_Iface State where
 {- | Initialise simulation and return a function to step through the rest of it -}
 initSim
     :: Maybe Int            -- ^ cluster size which mapper should be forced to use
-    -> Network (IzhNeuron FT) Static
+    -> Network IzhNeuron Static
     -> TemporalResolution
     -> StdpConf
     -> IO State

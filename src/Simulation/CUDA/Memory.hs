@@ -36,7 +36,7 @@ import Util.List (maximumM)
 
 {- Initialise memory on a single device -}
 initMemory
-    :: CuNet (IzhNeuron FT) Static
+    :: CuNet IzhNeuron Static
     -> ATT
     -> Int
     -> Int
@@ -54,7 +54,7 @@ initMemory net att maxProbePeriod dt stdp = do
 loadPartitionNeurons
     :: Ptr CuRT
     -> CSize
-    -> CuPartition (IzhNeuron FT) Static
+    -> CuPartition IzhNeuron Static
     -> IO ()
 loadPartitionNeurons rt pidx partition = do
     forPartition loadA $ listOf paramA
@@ -75,7 +75,7 @@ loadPartitionNeurons rt pidx partition = do
         len = length ns
 
 
-loadAllNeurons :: ForeignPtr CuRT -> CuNet (IzhNeuron FT) Static -> IO ()
+loadAllNeurons :: ForeignPtr CuRT -> CuNet IzhNeuron Static -> IO ()
 loadAllNeurons rt net =
     withForeignPtr rt $ \rtptr -> do
     zipWithM_ (loadPartitionNeurons rtptr) [0..] $ partitions net

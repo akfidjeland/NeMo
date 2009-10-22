@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 module Benchmark (runBenchmark) where
 
 import Prelude
@@ -99,7 +97,7 @@ clusteredNeuron (ex_ngen, ex_sgen) (in_ngen, in_sgen) idx cc cs m p r =
 
 {- Generate a neuron with some local and some global connections. -}
 clusteredNeuron'
-    :: (FT -> IzhNeuron FT)    -- ^ function that generates neuron
+    :: (FT -> IzhNeuron)       -- ^ function that generates neuron
     -> (FT -> Target -> AxonTerminal ())
                                -- ^ function that generates synapse
     -> Idx                     -- ^ presynaptic index
@@ -108,7 +106,7 @@ clusteredNeuron'
     -> Int                     -- ^ synapses per neuron
     -> Float                   -- ^ probability of local connection
     -> StdGen                  -- ^ random number generator
-    -> Neuron (IzhNeuron FT) ()
+    -> Neuron IzhNeuron ()
 clusteredNeuron' ngen sgen pre cc cs m p r = state `seq` neuron state ss
     where
         (nr, r2) = random r
@@ -183,7 +181,7 @@ rtsCvs name (RunTimeStatistics cycles elapsed fired spikes neurons synapses) =
 
 
 {- RTS initialised with network statistics -}
-initRTS :: Network (IzhNeuron FT) () -> RTS
+initRTS :: Network IzhNeuron () -> RTS
 initRTS net = RunTimeStatistics {
         rtsCycles   = 0,
         rtsElapsed  = 0,
@@ -196,7 +194,7 @@ initRTS net = RunTimeStatistics {
 
 data Benchmark = Benchmark {
         bmName     :: String,
-        bmNet      :: Network (IzhNeuron FT) (),
+        bmNet      :: Network IzhNeuron (),
         bmFStim    :: FiringStimulus,
         bmCycles   :: Int
     }

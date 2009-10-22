@@ -25,7 +25,7 @@ import qualified Util.Assocs as A (mapElems)
  - for execution. When executing we need 1) fast random access 2) in-place
  - modification, hence IOArray. -}
 data CpuSimulation = CpuSimulation {
-        network  :: IOArray Idx (IzhNeuron FT),
+        network  :: IOArray Idx IzhNeuron,
         synapses :: SynapsesRT,
         spikes   :: SpikeQueue,
         currentAcc :: IOUArray Idx FT,
@@ -50,7 +50,7 @@ instance Simulation_Iface CpuSimulation where
 
 
 {- | Initialise simulation and return function to step through simuation -}
-initSim :: Network (IzhNeuron FT) Static -> IO CpuSimulation
+initSim :: Network IzhNeuron Static -> IO CpuSimulation
 initSim net = mkRuntime net
 
 

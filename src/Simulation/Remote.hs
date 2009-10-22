@@ -31,7 +31,7 @@ data Remote = Remote {
         ps :: (BinaryProtocol Handle, BinaryProtocol Handle)
     }
 
-type Net = Network.Network (IzhNeuron Double) Static
+type Net = Network.Network IzhNeuron Static
 
 initSim :: HostName -> PortID -> Net -> SimulationOptions -> StdpConf -> IO Remote
 initSim hostName portID net simOpts stdp = do

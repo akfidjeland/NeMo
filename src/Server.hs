@@ -40,7 +40,7 @@ import NemoBackend_Iface
 import qualified Nemo_Types as Wire
 
 
-type Net = Network.Network (IzhNeuron Double) Static
+type Net = Network.Network IzhNeuron Static
 
 {- | The server currently only deals with a single simulation at a time. This
  - goes through two stages: construction and simulation -}

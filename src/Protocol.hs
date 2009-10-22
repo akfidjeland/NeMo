@@ -56,7 +56,7 @@ getConnectivity sim = return . encodeConnectivity =<< Backend.getWeights sim
 
 
 {- | Convert neuron from wire format to internal format -}
-decodeNeuron :: Wire.IzhNeuron -> (Idx, Neuron (IzhNeuron Double) Static)
+decodeNeuron :: Wire.IzhNeuron -> (Idx, Neuron IzhNeuron Static)
 decodeNeuron !wn = ss `seq` (idx, neuron n ss)
     {- note: tried adding 'rnf ss' here, but this does not help memory
      - performance -}
@@ -82,7 +82,7 @@ decodeNeuron !wn = ss `seq` (idx, neuron n ss)
 
 
 {- | Convert neuron from internal format to wire format -}
-encodeNeuron :: (Idx, Neuron (IzhNeuron Double) Static) -> Wire.IzhNeuron
+encodeNeuron :: (Idx, Neuron IzhNeuron Static) -> Wire.IzhNeuron
 encodeNeuron (idx, n) = Wire.IzhNeuron (Just idx) a b c d u v ss
     where
         p f = Just $! f $! ndata n

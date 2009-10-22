@@ -43,7 +43,7 @@ import qualified Protocol (decodeNeuron, run, getConnectivity,
 import Types
 
 
-type Net = Network.Network (IzhNeuron Double) Static
+type Net = Network.Network IzhNeuron Static
 
 data ClientException = ClientTermination
     deriving (Show, Typeable)

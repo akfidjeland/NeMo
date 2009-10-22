@@ -31,7 +31,7 @@ import Types
 data RegressionTest = RegressionTest {
         name     :: String,
         dataFile :: FilePath,
-        netGen   :: Gen (Network (IzhNeuron FT) Static),
+        netGen   :: Gen (Network IzhNeuron Static),
         fstim    :: FiringStimulus,
         backend  :: Backend,
         cycles   :: Time,
