@@ -19,22 +19,21 @@ import Types
 
 {- | Static parameters and initial state for neuron -}
 data IzhNeuron = IzhNeuron {
-        paramA :: !FT,
-        paramB :: !FT,
-        paramC :: !FT,
-        paramD :: !FT,
-        initU :: !FT,
-        initV :: !FT,         -- ^ membrane potential
+        paramA :: {-# UNPACK #-} !FT,
+        paramB :: {-# UNPACK #-} !FT,
+        paramC :: {-# UNPACK #-} !FT,
+        paramD :: {-# UNPACK #-} !FT,
+        initU :: {-# UNPACK #-} !FT,
+        initV :: {-# UNPACK #-} !FT,         -- ^ membrane potential
         -- initial RNG state for per-neuron process
         -- TODO: rename
         stateThalamic :: Maybe (Thalamic FT)
     } deriving (Show, Eq)
 
 
--- TODO: unbox this
 data IzhState f = IzhState {
-        stateU :: !f,
-        stateV :: !f
+        stateU :: {-# UNPACK #-} !f,
+        stateV :: {-# UNPACK #-} !f
     }
 
 
