@@ -5,6 +5,7 @@ module Simulation.CPU (initSim) where
 import Control.Monad (zipWithM_)
 import Data.Array.IO
 import Data.Array.Base
+import System.Random (StdGen)
 
 import Construction.Network
 import qualified Construction.Neurons as Neurons (size, neurons, indices)
@@ -30,7 +31,9 @@ data CpuSimulation = CpuSimulation {
         currentAcc :: IOUArray Idx FT,
         fired :: IOUArray Idx Bool,
         currentU :: IOUArray Idx FT,
-        currentV :: IOUArray Idx FT
+        currentV :: IOUArray Idx FT,
+        -- TODO: also wrap whole array in maybe so we can bypass one pass over array
+        currentRNG :: IOArray Idx (Maybe (Thalamic FT))
     }
 
 
@@ -55,11 +58,10 @@ initSim net = mkRuntime net
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
-stepSim (CpuSimulation ns ss sq iacc facc uacc vacc) forcedFiring = do
+stepSim (CpuSimulation ns ss sq iacc facc uacc vacc rngacc) forcedFiring = do
     bounds <- getBounds ns
     let idx = [fst bounds..snd bounds]
-    -- TODO: factor out RNG state
-    initI <- updateArray thalamicInput ns
+    initI <- updateArray thalamicInput rngacc
     zipWithM_ (writeArray iacc) [0..] initI
     accCurrent iacc =<< deqSpikes sq
     ivals <- getElems iacc -- list of current for each neuron
@@ -78,11 +80,11 @@ stepSim (CpuSimulation ns ss sq iacc facc uacc vacc) forcedFiring = do
             u <- readArray uacc idx
             v <- readArray vacc idx
             let state = IzhState u v
-            let (n', state', fired) = updateIzh forced inew state n
+            -- TODO: change argument order
+            let (state', fired) = updateIzh forced inew state n
             -- TODO: use unsafe writes?
             writeArray uacc idx $ stateU state'
             writeArray vacc idx $ stateV state'
-            writeArray ns idx n'
             writeArray facc idx fired
 
 
@@ -133,7 +135,8 @@ mkRuntime net@(Network ns _) = do
     facc <- newListArray (0, Neurons.size ns-1) (repeat False)
     uacc <- newListArray (0, Neurons.size ns-1) $ map (initU . ndata) $ neurons net
     vacc <- newListArray (0, Neurons.size ns-1) $ map (initV . ndata) $ neurons net
-    return $! CpuSimulation ns' ss sq iacc facc uacc vacc
+    rngacc <- newListArray (0, Neurons.size ns-1) $ map (stateThalamic . ndata) $ neurons net
+    return $! CpuSimulation ns' ss sq iacc facc uacc vacc rngacc
 
 
 

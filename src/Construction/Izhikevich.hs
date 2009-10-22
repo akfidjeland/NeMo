@@ -62,12 +62,11 @@ mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v s
 mkThalamic s r = Just $ Thalamic s $ mkStdGen $ round $ r * 100000.0
 
 
--- updateIzh :: Bool -> Current -> FT -> FT -> IzhNeuron FT -> (IzhNeuron FT, FT, FT, Bool)
-updateIzh :: Bool -> Current -> IzhState FT -> IzhNeuron FT -> (IzhNeuron FT, IzhState FT, Bool)
-updateIzh forceFiring i (IzhState u v) (IzhNeuron a b c d _ _ th) =
-    if v' >= 30.0 || forceFiring
-        then (IzhNeuron a b c d (u'+d) c th, IzhState (u'+d) c, True)
-        else (IzhNeuron a b c d u' v' th, IzhState u' v', False)
+updateIzh :: Bool -> Current -> IzhState FT -> IzhNeuron FT -> (IzhState FT, Bool)
+updateIzh forceFiring i (IzhState u v) (IzhNeuron a b c d _ _ _) =
+    if forceFiring || v' >= 30.0
+        then (IzhState (u'+d) c, True)
+        else (IzhState u' v', False)
     where
         fired v = v >= 30.0
         (u', v') = f $ f $ f $ f (u, v)
@@ -78,17 +77,16 @@ updateIzh forceFiring i (IzhState u v) (IzhNeuron a b c d _ _ th) =
                 u' = u + 0.25 * (a * (b * v' - u))
 
 
-
--- TODO: bring RNG state out of neuron
-thalamicInput :: IzhNeuron FT -> (IzhNeuron FT, Current)
-thalamicInput n = maybe (n, 0) (go n) (stateThalamic n)
-
-go n th = (n { stateThalamic = th' }, i')
+-- thalamicInput n = maybe (n, 0) (go n) (stateThalamic n)
+thalamicInput :: Maybe (Thalamic FT) -> (Maybe (Thalamic FT), Current)
+thalamicInput Nothing = (Nothing, 0)
+thalamicInput (Just (Thalamic s g0)) = (Just (Thalamic s g2), i')
     where
-            (r1, g1) = random $ rng th
-            (r2, g2) = random g1
-            i' = gauss 0.0 (sigma th) (r1, r2)
-            th' = Just $ Thalamic (sigma th) g2
+        (r1, g1) = random g0
+        (r2, g2) = random g1
+        i' = gauss 0.0 s (r1, r2)
+
+
 
 
 -- Return a random gaussian
