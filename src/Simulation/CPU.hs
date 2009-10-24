@@ -11,6 +11,7 @@ import Data.Array.IArray
 import Data.Array.Unboxed
 import Data.Array.Base
 import Data.List (sort)
+import Data.IORef
 import System.Random (StdGen)
 
 import Construction.Network
@@ -33,11 +34,10 @@ data CpuSimulation = CpuSimulation {
         network  :: Array Idx IzhNeuron,
         synapses :: SynapsesRT,
         spikes   :: SpikeQueue,
-        currentAcc :: IOUArray Idx FT,
         currentU :: IOUArray Idx FT,
         currentV :: IOUArray Idx FT,
         -- TODO: also wrap whole array in maybe so we can bypass one pass over array
-        currentRNG :: IOArray Idx (Maybe (Thalamic FT))
+        currentRNG :: IORef (Array Idx (Maybe (Thalamic FT)))
     }
 
 
@@ -62,10 +62,10 @@ initSim net = mkRuntime net
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
-stepSim (CpuSimulation ns ss sq iacc uacc vacc rngacc) forcedFiring = do
+stepSim (CpuSimulation ns ss sq uacc vacc rng) forcedFiring = do
     let bs = bounds ns
     let idx = [fst bs..snd bs]
-    deliverThalamicInput rngacc iacc
+    iacc <- deliverThalamicInput rng
     deliverSpikes iacc sq
     let forced = listArray bs $ densify forcedFiring idx
     fired <- update bs (forced :: UArray Idx Bool) ns iacc uacc vacc
@@ -73,9 +73,15 @@ stepSim (CpuSimulation ns ss sq iacc uacc vacc rngacc) forcedFiring = do
     return $! FiringOutput fired
 
 
-deliverThalamicInput rngacc iacc = do
-    initI <- updateArray thalamicInput rngacc
-    zipWithM_ (writeArray iacc) [0..] initI
+
+
+
+deliverThalamicInput rng_ior = do
+    rng <- readIORef rng_ior
+    let (rng', initI) = unzip $ map thalamicInput $ elems rng
+    let bs = bounds rng
+    writeIORef rng_ior $ listArray bs rng'
+    newListArray bs initI
 
 
 deliverSpikes iacc sq = accCurrent iacc =<< deqSpikes sq
@@ -147,17 +153,6 @@ accCurrent arr current = mapM_ go current
 
 
 
-{- | Apply function to each neuron and modify in-place -}
-updateArray :: (MArray a e' m, MArray a e m, Ix i) => (e -> (e, b)) -> a i e -> m [b]
-updateArray f xs = getAssocs xs >>= mapM (modify xs f)
-    where
-        modify xs f (i, e) = do
-            let (e', val) = f e
-            writeArray xs i e'
-            return $! val
-
-
-
 -------------------------------------------------------------------------------
 -- Runtime simulation data
 -------------------------------------------------------------------------------
@@ -178,11 +173,11 @@ mkRuntime net@(Network ns _) = do
     let ss = mkSynapsesRT net
     sq <- mkSpikeQueue net
     -- TODO: do the same bounds checking as for mkRuntimeN
-    iacc <- newListArray (0, Neurons.size ns-1) (repeat 0)
+    let bs = (0, Neurons.size ns-1)
     uacc <- newListArray (0, Neurons.size ns-1) $ map (initU . ndata) $ neurons net
     vacc <- newListArray (0, Neurons.size ns-1) $ map (initV . ndata) $ neurons net
-    rngacc <- newListArray (0, Neurons.size ns-1) $ map (stateThalamic . ndata) $ neurons net
-    return $! CpuSimulation ns' ss sq iacc uacc vacc rngacc
+    rngacc <- newIORef $ listArray bs $ map (stateThalamic . ndata) $ neurons net
+    return $! CpuSimulation ns' ss sq uacc vacc rngacc
 
 
 
