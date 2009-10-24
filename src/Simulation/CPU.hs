@@ -2,10 +2,15 @@
 
 module Simulation.CPU (initSim) where
 
-import Control.Monad (zipWithM_)
+import GHC.Conc (numCapabilities)
+import Control.Concurrent (forkIO, ThreadId)
+import Control.Concurrent.MVar
+import Control.Monad
 import Data.Array.IO
 import Data.Array.IArray
+import Data.Array.Unboxed
 import Data.Array.Base
+import Data.List (sort)
 import System.Random (StdGen)
 
 import Construction.Network
@@ -60,35 +65,74 @@ stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
 stepSim (CpuSimulation ns ss sq iacc uacc vacc rngacc) forcedFiring = do
     let bs = bounds ns
     let idx = [fst bs..snd bs]
-    initI <- updateArray thalamicInput rngacc
-    zipWithM_ (writeArray iacc) [0..] initI
-    accCurrent iacc =<< deqSpikes sq
-    -- TODO: avoid need to densify
-    let forced = densify forcedFiring idx
-    fired <- update forced ns iacc uacc vacc
+    deliverThalamicInput rngacc iacc
+    deliverSpikes iacc sq
+    let forced = listArray bs $ densify forcedFiring idx
+    fired <- update bs (forced :: UArray Idx Bool) ns iacc uacc vacc
     enqSpikes sq fired ss
     return $! FiringOutput fired
 
 
-update fs !ns !is !us !vs = go fs 0 ns is us vs
+deliverThalamicInput rngacc iacc = do
+    initI <- updateArray thalamicInput rngacc
+    zipWithM_ (writeArray iacc) [0..] initI
+
+
+deliverSpikes iacc sq = accCurrent iacc =<< deqSpikes sq
+
+
+update (bmin, bmax) !fs !ns !is !us !vs = do
+    let ncores = numCapabilities
+    if ncores == 1
+        then go bmin (bmax+1) [] fs ns is us vs
+        else do
+            let chunks = split ncores (bmin, bmax)
+            -- TODO: factor out farming-out function
+            results <- replicateM ncores newEmptyMVar
+            zipWithM_ (\(bmin, bmax) result -> fork result $ go bmin bmax [] fs ns is us vs) chunks results
+            -- TODO: maybe do map in reverse order, in order to make concat cheaper?
+            return . concat =<< mapM takeMVar results
+            where
+                go !idx !idx_end acc !fs !ns !is !us !vs
+                    | idx == idx_end = return $! reverse acc
+                    | otherwise = do
+                        -- TODO: check array indices, at least once?
+                        let n = ns!idx
+                        i <- unsafeRead is idx -- accumulated current
+                        -- should perhaps store persistent dynamic state together, to save on lookups
+                        u <- unsafeRead us idx
+                        v <- unsafeRead vs idx
+                        let forced = fs ! idx
+                        let state = IzhState u v
+                        -- TODO: change argument order
+                        let (state', fired) = updateIzh forced i state n
+                        unsafeWrite us idx $! stateU state'
+                        unsafeWrite vs idx $! stateV state'
+                        if fired
+                            then go (idx+1) idx_end (idx:acc) fs ns is us vs
+                            else go (idx+1) idx_end      acc  fs ns is us vs
+
+
+
+{- Fork a thread and return result via MVar -}
+fork :: MVar a -> IO a -> IO ThreadId
+fork mvar action = forkIO (putMVar mvar =<< action)
+
+
+
+{- split the workload into n chunks -}
+split :: Int -> (Idx, Idx) -> [(Idx, Idx)]
+split n (mn, mx) = map go [0..n-1]
     where
-        go [] _ _ _ _ _ = return []
-        go (forced:fs) !idx !ns !is !us !vs = do
-            -- TODO: check array indices, at least once?
-            let n = ns!idx
-            i <- unsafeRead is idx -- accumulated current
-            -- should perhaps store persistent dynamic state together, to save on lookups
-            u <- unsafeRead us idx
-            v <- unsafeRead vs idx
-            let state = IzhState u v
-            -- TODO: change argument order
-            let (state', fired) = updateIzh forced i state n
-            unsafeWrite us idx $! stateU state'
-            unsafeWrite vs idx $! stateV state'
-            fs <- go fs (idx+1) ns is us vs
-            if fired
-                then return $! idx : fs
-                else return $!       fs
+        len = mx + 1 - mn
+        sz = len `divr` n
+        go chunk = (mn + chunk*sz, mn + min ((chunk+1)*sz) len)
+
+
+{- Integer division rounding up -}
+divr x y = q + if r == 0 then 0 else 1
+    where
+        (q, r) = x `quotRem` y
 
 
 {- | Accumulate current for each neuron for spikes due to be delivered right
