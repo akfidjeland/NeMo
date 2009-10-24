@@ -14,7 +14,7 @@ import Data.List (sort)
 import Data.IORef
 import System.Random (StdGen)
 
-import Construction.Network
+import Construction.Network (Network(Network), neurons)
 import qualified Construction.Neurons as Neurons (size, neurons, indices)
 import Construction.Neuron (ndata)
 -- TODO: add import list
@@ -62,16 +62,21 @@ initSim net = mkRuntime net
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
-stepSim (CpuSimulation ns ss sq uacc vacc rng) forcedFiring = do
+stepSim sim@(CpuSimulation _ _ _ uacc vacc _) forcedFiring = do
+    let ns = network sim
     let bs = bounds ns
     let idx = [fst bs..snd bs]
-    iacc <- deliverThalamicInput rng
+    iacc <- deliverThalamicInput $ currentRNG sim
+    let sq = spikes sim
     deliverSpikes iacc sq
     let forced = listArray bs $ densify forcedFiring idx
-    fired <- update bs (forced :: UArray Idx Bool) ns iacc uacc vacc
-    enqSpikes sq fired ss
+    fired0 <- update bs (forced :: UArray Idx Bool) ns iacc uacc vacc
+    fired1 <- getAssocs fired0
+    let fired = find fired1
+    enqSpikes sq fired $ synapses sim
     return $! FiringOutput fired
-
+    where
+        find = map fst . filter snd
 
 
 
@@ -87,20 +92,22 @@ deliverThalamicInput rng_ior = do
 deliverSpikes iacc sq = accCurrent iacc =<< deqSpikes sq
 
 
-update (bmin, bmax) !fs !ns !is !us !vs = do
+update (bmin, bmax) !ffs !ns !is !us !vs = do
     let ncores = numCapabilities
+    fs <- newListArray (bounds ns) $ repeat False
     if ncores == 1
-        then go bmin (bmax+1) [] fs ns is us vs
+        then go bmin (bmax+1) ffs ns is us vs fs >> return (fs::IOUArray Idx Bool)
         else do
             let chunks = split ncores (bmin, bmax)
             -- TODO: factor out farming-out function
             results <- replicateM ncores newEmptyMVar
-            zipWithM_ (\(bmin, bmax) result -> fork result $ go bmin bmax [] fs ns is us vs) chunks results
+            zipWithM_ (\(bmin, bmax) result -> fork result $ go bmin bmax ffs ns is us vs fs) chunks results
+            mapM_ takeMVar results -- ensure all threads finished
             -- TODO: maybe do map in reverse order, in order to make concat cheaper?
-            return . concat =<< mapM takeMVar results
+            return fs
             where
-                go !idx !idx_end acc !fs !ns !is !us !vs
-                    | idx == idx_end = return $! reverse acc
+                go !idx !idx_end !ffs !ns !is !us !vs !fs
+                    | idx == idx_end = return ()
                     | otherwise = do
                         -- TODO: check array indices, at least once?
                         let n = ns!idx
@@ -108,15 +115,14 @@ update (bmin, bmax) !fs !ns !is !us !vs = do
                         -- should perhaps store persistent dynamic state together, to save on lookups
                         u <- unsafeRead us idx
                         v <- unsafeRead vs idx
-                        let forced = fs ! idx
+                        let forced = ffs ! idx
                         let state = IzhState u v
                         -- TODO: change argument order
                         let (state', fired) = updateIzh forced i state n
                         unsafeWrite us idx $! stateU state'
                         unsafeWrite vs idx $! stateV state'
-                        if fired
-                            then go (idx+1) idx_end (idx:acc) fs ns is us vs
-                            else go (idx+1) idx_end      acc  fs ns is us vs
+                        unsafeWrite fs idx fired
+                        go (idx+1) idx_end ffs ns is us vs fs
 
 
 
@@ -174,8 +180,8 @@ mkRuntime net@(Network ns _) = do
     sq <- mkSpikeQueue net
     -- TODO: do the same bounds checking as for mkRuntimeN
     let bs = (0, Neurons.size ns-1)
-    uacc <- newListArray (0, Neurons.size ns-1) $ map (initU . ndata) $ neurons net
-    vacc <- newListArray (0, Neurons.size ns-1) $ map (initV . ndata) $ neurons net
+    uacc <- newListArray bs $ map (initU . ndata) $ neurons net
+    vacc <- newListArray bs $ map (initV . ndata) $ neurons net
     rngacc <- newIORef $ listArray bs $ map (stateThalamic . ndata) $ neurons net
     return $! CpuSimulation ns' ss sq uacc vacc rngacc
 
