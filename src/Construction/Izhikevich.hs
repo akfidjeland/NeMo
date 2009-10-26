@@ -31,9 +31,10 @@ data IzhNeuron = IzhNeuron {
     } deriving (Show, Eq)
 
 
-data IzhState f = IzhState {
-        stateU :: {-# UNPACK #-} !f,
-        stateV :: {-# UNPACK #-} !f
+-- TODO: perhaps fold 'thalamic' into this data structure?
+data IzhState = IzhState {
+        stateU :: {-# UNPACK #-} !FT,
+        stateV :: {-# UNPACK #-} !FT
     }
 
 
@@ -61,15 +62,17 @@ mkNeuron2 a b c d u v s  = IzhNeuron a b c d u v s
 mkThalamic s r = Just $ Thalamic s $ mkStdGen $ round $ r * 100000.0
 
 
-updateIzh :: Bool -> Current -> IzhState FT -> IzhNeuron -> (IzhState FT, Bool)
-updateIzh forceFiring i (IzhState u v) (IzhNeuron a b c d _ _ _) =
+updateIzh :: Bool -> Current -> IzhState -> IzhNeuron -> (IzhState, Bool)
+updateIzh forceFiring i st@(IzhState u v) (IzhNeuron a b c d _ _ _) =
     if forceFiring || v' >= 30.0
         then (IzhState (u'+d) c, True)
         else (IzhState u' v', False)
     where
         fired v = v >= 30.0
-        (u', v') = f $ f $ f $ f (u, v)
-        f (u, v) = if fired v then (u, v) else (u', v')
+        u' = stateU st'
+        v' = stateV st'
+        st' = f $! f $! f $! f st
+        f st@(IzhState u v) = if fired v then st else IzhState u' v'
             where
                 v' = v + 0.25 * ((0.04*v + 5.0) * v + 140.0 - u + i)
                 -- not sure about use of v' or v here!
