@@ -1,9 +1,11 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Simulation.CPU (initSim) where
 
 import Control.Concurrent.MVar
 import Control.Monad
+import Control.Monad.ST
 import Control.Parallel.Strategies
 import Data.Array.IO
 import Data.Array.IArray
@@ -33,16 +35,21 @@ data CpuSimulation = CpuSimulation {
         network  :: [IzhNeuron],
         synapses :: SynapsesRT,
         spikes   :: SpikeQueue,
-        -- TODO: put the whole thing inside IORef
-        state    :: IORef [IzhState],
+        state    :: [IzhState],
         -- TODO: also wrap whole array in maybe so we can bypass one pass over array
-        currentRNG :: IORef (Array Idx (Maybe (Thalamic FT)))
+        currentRNG :: [Maybe (Thalamic FT)],
+        nbounds :: (Int, Int)
     }
 
 
+type SimState = IORef CpuSimulation
 
-instance Simulation_Iface CpuSimulation where
-    step = stepSim
+instance Simulation_Iface SimState where
+    step sim forced = do
+        st <- readIORef sim
+        (st', firing) <- stepSim st forced
+        writeIORef sim st'
+        return $! firing
     applyStdp _ _ = error "STDP not supported on CPU backend"
     -- TODO: implement these properly. The dummy definitions are needed for testing
     elapsed _ = return 0
@@ -52,40 +59,34 @@ instance Simulation_Iface CpuSimulation where
 
 
 
-{- | Initialise simulation and return function to step through simuation -}
-initSim :: Network IzhNeuron Static -> IO CpuSimulation
-initSim net = mkRuntime net
-
 
 
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
-stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
+stepSim :: CpuSimulation -> [Idx] -> IO (CpuSimulation, FiringOutput)
 stepSim sim forcedFiring = do
     let ns = network sim
-    iacc <- deliverThalamicInput $ currentRNG sim
+    (rng', iacc) <- deliverThalamicInput (nbounds sim) (currentRNG sim)
     let sq = spikes sim
     deliverSpikes iacc sq
     iacc2 <- getElems iacc
     let forced = densify forcedFiring [0..]
-    st <- readIORef $ state sim
-    let (st', fired0) = unzip $ parZipWith4 rwhnf updateIzh forced iacc2 st ns
-    writeIORef (state sim) st'
-    let fired = find $ zip [0..] fired0
+        st = state sim
+        (st', fired0) = unzip $ parZipWith4 rwhnf updateIzh forced iacc2 st ns
+        fired = find $ zip [0..] fired0
     enqSpikes sq fired $ synapses sim
-    return $! rnf fired `seq` FiringOutput fired
+    return $! (sim { state = st', currentRNG = rng' }, FiringOutput fired)
     where
         find = map fst . filter snd
 
 
 
+-- deliverThalamicInput rng = unzip $ map thalamicInput rng
+deliverThalamicInput bs rng = do
+    let (rng', initI) = unzip $ map thalamicInput rng
+    iacc <- newListArray bs initI
+    return $! (rng', iacc)
 
-deliverThalamicInput rng_ior = do
-    rng <- readIORef rng_ior
-    let (rng', initI) = unzip $ map thalamicInput $ elems rng
-    let bs = bounds rng
-    writeIORef rng_ior $ listArray bs rng'
-    newListArray bs initI
 
 
 deliverSpikes iacc sq = accCurrent iacc =<< deqSpikes sq
@@ -132,17 +133,20 @@ mkRuntimeN ns =
 
 
 -- TODO: move out of monad
-mkRuntime net@(Network ns _) = do
+{- | Initialise simulation and return function to step through simuation -}
+initSim :: Network IzhNeuron Static -> IO SimState
+initSim net@(Network ns _) = do
     let ns' = map ndata (Neurons.neurons ns)
     let ss = mkSynapsesRT net
     sq <- mkSpikeQueue net
     -- TODO: do the same bounds checking as for mkRuntimeN
     let bs = (0, Neurons.size ns-1)
-    let us = map (initU . ndata) $ neurons net
-    let vs = map (initV . ndata) $ neurons net
-    state <- newIORef $ zipWith IzhState us vs
-    rngacc <- newIORef $ listArray bs $ map (stateThalamic . ndata) $ neurons net
-    return $! CpuSimulation ns' ss sq state rngacc
+        us = map (initU . ndata) $ neurons net
+        vs = map (initV . ndata) $ neurons net
+        state = zipWith IzhState us vs
+        rng = map (stateThalamic . ndata) $ neurons net
+
+    newIORef $ CpuSimulation ns' ss sq state rng bs
 
 
 
