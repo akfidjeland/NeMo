@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Monad.ST
 import Control.Parallel.Strategies
 import Data.Array.IO
+import Data.Array.ST
 import Data.Array.IArray
 import Data.Array.Unboxed
 import Data.Array.Base
@@ -47,7 +48,7 @@ type SimState = IORef CpuSimulation
 instance Simulation_Iface SimState where
     step sim forced = do
         st <- readIORef sim
-        (st', firing) <- stepSim st forced
+        let (st', firing) = stepSim st forced
         writeIORef sim st'
         return $! firing
     applyStdp _ _ = error "STDP not supported on CPU backend"
@@ -60,36 +61,21 @@ instance Simulation_Iface SimState where
 
 
 
-
 {- | Perform a single simulation step. Update the state of every neuron and
  - propagate spikes -}
-stepSim :: CpuSimulation -> [Idx] -> IO (CpuSimulation, FiringOutput)
-stepSim sim forcedFiring = do
-    let ns = network sim
-    (rng', iacc) <- deliverThalamicInput (nbounds sim) (currentRNG sim)
-    let sq = spikes sim
-    deliverSpikes iacc sq
-    iacc2 <- getElems iacc
-    let forced = densify forcedFiring [0..]
+stepSim :: CpuSimulation -> [Idx] -> (CpuSimulation, FiringOutput)
+stepSim sim forcedFiring =
+    let (rng', initI) = unzip $ map thalamicInput $ currentRNG sim
+        (todeliver, sq1) = deqSpikes $ spikes sim
+        iacc2 = accCurrent (nbounds sim) initI todeliver
+        forced = densify forcedFiring [0..]
         st = state sim
-        (st', fired0) = unzip $ parZipWith4 rwhnf updateIzh forced iacc2 st ns
+        (st', fired0) = unzip $ parZipWith4 rwhnf updateIzh forced iacc2 st (network sim)
         fired = find $ zip [0..] fired0
-    enqSpikes sq fired $ synapses sim
-    return $! (sim { state = st', currentRNG = rng' }, FiringOutput fired)
+        sq' = enqSpikes sq1 fired $ synapses sim
+    in (sim { state = st', currentRNG = rng', spikes = sq' }, FiringOutput fired)
     where
         find = map fst . filter snd
-
-
-
--- deliverThalamicInput rng = unzip $ map thalamicInput rng
-deliverThalamicInput bs rng = do
-    let (rng', initI) = unzip $ map thalamicInput rng
-    iacc <- newListArray bs initI
-    return $! (rng', iacc)
-
-
-
-deliverSpikes iacc sq = accCurrent iacc =<< deqSpikes sq
 
 
 
@@ -97,6 +83,7 @@ deliverSpikes iacc sq = accCurrent iacc =<< deqSpikes sq
  - parallel. -}
 parZipWith4 strat z as bs cs ds =
     zipWith4 z as bs cs ds `using` parList strat
+
 
 {- | Zips together two lists using a function, and evaluates the result list in
  - parallel chunks. -}
@@ -107,13 +94,18 @@ parChunkZipWith4 n strat z as bs cs ds =
 
 {- | Accumulate current for each neuron for spikes due to be delivered right
  - now -}
-accCurrent :: IOUArray Idx Current -> [(Idx, Current)] -> IO ()
-accCurrent arr current = mapM_ go current
+accCurrent :: (Idx, Idx) -> [Current] -> [(Idx, Current)] -> [Current]
+accCurrent bs initI current = elems $ runSTUArray accumulate
     where
+        accumulate :: ST s (STUArray s Idx Current)
+        accumulate = do
+            iacc <- newListArray bs initI
+            mapM_ (go iacc) current
+            return $! iacc
         -- go arr (idx, w) = writeArray arr idx . (+w) =<< readArray arr idx
-        go (idx, w) = do
-            i <- readArray arr idx
-            writeArray arr idx (i + w)
+        go arr (idx, w) = do
+            i <- unsafeRead arr idx
+            unsafeWrite arr idx (i + w)
 
 
 
@@ -122,31 +114,18 @@ accCurrent arr current = mapM_ go current
 -------------------------------------------------------------------------------
 
 
-
--- pre: neurons in ns are numbered consecutively from 0-size ns-1.
-mkRuntimeN ns =
-    if validIdx ns
-        then listArray (0, Neurons.size ns - 1) (map ndata (Neurons.neurons ns))
-        else error "mkRuntimeN: Incorrect indices in neuron map"
-    where
-        validIdx ns = all (uncurry (==)) (zip [0..] (Neurons.indices ns))
-
-
--- TODO: move out of monad
 {- | Initialise simulation and return function to step through simuation -}
 initSim :: Network IzhNeuron Static -> IO SimState
-initSim net@(Network ns _) = do
-    let ns' = map ndata (Neurons.neurons ns)
-    let ss = mkSynapsesRT net
-    sq <- mkSpikeQueue net
-    -- TODO: do the same bounds checking as for mkRuntimeN
-    let bs = (0, Neurons.size ns-1)
+initSim net@(Network ns _) = newIORef $ CpuSimulation ns' ss sq state rng bs
+    where
+        ns' = map ndata (Neurons.neurons ns)
+        ss = mkSynapsesRT net
+        sq = mkSpikeQueue net
+        bs = (0, Neurons.size ns-1)
         us = map (initU . ndata) $ neurons net
         vs = map (initV . ndata) $ neurons net
         state = zipWith IzhState us vs
         rng = map (stateThalamic . ndata) $ neurons net
-
-    newIORef $ CpuSimulation ns' ss sq state rng bs
 
 
 
