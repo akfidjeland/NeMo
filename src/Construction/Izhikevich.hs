@@ -4,7 +4,17 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 
-module Construction.Izhikevich where
+module Construction.Izhikevich (
+    IzhNeuron(..),
+    mkNeuron,
+    mkNeuron2,
+    mkThalamic,
+    IzhState(..),
+    stateSigma,
+    Thalamic(..),
+    updateIzh,
+    thalamicInput
+) where
 -- TODO: export list
 
 import Control.Parallel.Strategies (NFData, rnf)
