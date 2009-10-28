@@ -56,6 +56,7 @@ executable nemo
                             Simulation,
                             Simulation.Backend,
                             Simulation.CPU,
+                            Simulation.CPU.KernelFFI,
                             Simulation.CUDA.Options,
                             Simulation.FiringStimulus,
                             Simulation.Options,
@@ -69,6 +70,10 @@ executable nemo
                             Simulation.STDP.Options,
                             Types,
                             Util.Assocs
+
+    -- CPU simulation kernel written in C
+    include-dirs:           src/Simulation/CPU/kernel
+    c-sources:              src/Simulation/CPU/kernel/update.cpp
 
     if flag(Benchmark)
         other-modules:      Benchmark,
