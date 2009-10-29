@@ -11,6 +11,7 @@ set_network(double a[],
 		double d[],
 		double u[],
 		double v[],
+		double sigma[],
 		unsigned int len);
 
 void delete_network(NETWORK);

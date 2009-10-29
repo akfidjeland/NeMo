@@ -24,21 +24,24 @@ set
     -> [Double] -- ^ d
     -> [Double] -- ^ u
     -> [Double] -- ^ v
+    -> [Double] -- ^ sigma (0 if not input)
     -> IO RT
-set as bs cs ds us vs = do
+set as bs cs ds us vs sigma = do
     c_as <- newListArray bounds $ map realToFrac as
     c_bs <- newListArray bounds $ map realToFrac bs
     c_cs <- newListArray bounds $ map realToFrac cs
     c_ds <- newListArray bounds $ map realToFrac ds
     c_us <- newListArray bounds $ map realToFrac us
     c_vs <- newListArray bounds $ map realToFrac vs
+    c_sigma <- newListArray bounds $ map realToFrac sigma
     withStorableArray c_as $ \as_ptr -> do
     withStorableArray c_bs $ \bs_ptr -> do
     withStorableArray c_cs $ \cs_ptr -> do
     withStorableArray c_ds $ \ds_ptr -> do
     withStorableArray c_us $ \us_ptr -> do
     withStorableArray c_vs $ \vs_ptr -> do
-    c_set_network as_ptr bs_ptr cs_ptr ds_ptr us_ptr vs_ptr c_sz
+    withStorableArray c_sigma $ \sigma_ptr -> do
+    c_set_network as_ptr bs_ptr cs_ptr ds_ptr us_ptr vs_ptr sigma_ptr c_sz
     where
         sz = length as
         c_sz = fromIntegral sz
@@ -52,6 +55,7 @@ foreign import ccall unsafe "set_network" c_set_network
     -> Ptr CDouble -- ^ d
     -> Ptr CDouble -- ^ u
     -> Ptr CDouble -- ^ v
+    -> Ptr CDouble -- ^ sigma
     -> CUInt      -- ^ network size
     -> IO RT
 
