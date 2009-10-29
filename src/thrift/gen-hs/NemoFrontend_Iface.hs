@@ -9,7 +9,7 @@ import Nemo_Types
 
 class NemoFrontend_Iface a where
   setBackend :: a -> Maybe String -> IO ()
-  enableStdp :: a -> Maybe [Double] -> Maybe [Double] -> Maybe Double -> IO ()
+  enableStdp :: a -> Maybe [Double] -> Maybe [Double] -> Maybe Double -> Maybe Double -> IO ()
   enablePipelining :: a -> IO ()
   pipelineLength :: a -> IO PipelineLength
   disableStdp :: a -> IO ()

@@ -202,7 +202,8 @@ enableStdp(RTDATA,
 		uint64_t potentiationBits,
 		uint64_t depressionBits,
 		float* stdpFn,
-		float maxWeight);
+		float maxWeight,
+		float minWeight);
 
 
 //-----------------------------------------------------------------------------

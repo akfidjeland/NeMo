@@ -16,11 +16,14 @@ class StdpFunction
 				uint64_t potentiationBits,
 				uint64_t depressionBits,
 				float* stdpFn,
-				float maxWeight);
+				float maxWeight,
+				float minWeight);
 
 		void configureDevice();
 
 		float maxWeight() const;
+
+		float minWeight() const;
 
 	private:
 
@@ -33,6 +36,7 @@ class StdpFunction
 		uint64_t m_depressionBits; 
 
 		float m_maxWeight;
+		float m_minWeight;
 };
 
 #endif

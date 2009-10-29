@@ -52,14 +52,14 @@ recv_addNeuron ip = do
     Nothing -> return ()
     Just _v -> throw _v
   return ()
-enableStdp (ip,op) arg_prefire arg_postfire arg_maxWeight = do
-  send_enableStdp op arg_prefire arg_postfire arg_maxWeight
+enableStdp (ip,op) arg_prefire arg_postfire arg_maxWeight arg_minWeight = do
+  send_enableStdp op arg_prefire arg_postfire arg_maxWeight arg_minWeight
   recv_enableStdp ip
-send_enableStdp op arg_prefire arg_postfire arg_maxWeight = do
+send_enableStdp op arg_prefire arg_postfire arg_maxWeight arg_minWeight = do
   seq <- seqid
   seqn <- readIORef seq
   writeMessageBegin op ("enableStdp", M_CALL, seqn)
-  write_EnableStdp_args op (EnableStdp_args{f_EnableStdp_args_prefire=Just arg_prefire,f_EnableStdp_args_postfire=Just arg_postfire,f_EnableStdp_args_maxWeight=Just arg_maxWeight})
+  write_EnableStdp_args op (EnableStdp_args{f_EnableStdp_args_prefire=Just arg_prefire,f_EnableStdp_args_postfire=Just arg_postfire,f_EnableStdp_args_maxWeight=Just arg_maxWeight,f_EnableStdp_args_minWeight=Just arg_minWeight})
   writeMessageEnd op
   tFlush (getTransport op)
 recv_enableStdp ip = do

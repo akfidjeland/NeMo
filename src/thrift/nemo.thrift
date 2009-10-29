@@ -54,7 +54,8 @@ service NemoFrontend {
 
 	void enableStdp(1:list<double> prefire,
 			2:list<double> postfire,
-			3:double maxWeight),
+			3:double maxWeight,
+			4:double minWeight),
 
 	void enablePipelining(),
 
@@ -110,7 +111,8 @@ service NemoBackend {
 	void enableStdp(
             1:list<double> prefire,
 			2:list<double> postfire,
-			3:double maxWeight),
+			3:double maxWeight,
+			4:double minWeight),
 
 	# Pipelining should be enabled before construction
 	void enablePipelining(),

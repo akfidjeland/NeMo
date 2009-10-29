@@ -117,7 +117,7 @@ read_AddNeuron_result iprot = do
   rec <- read_AddNeuron_result_fields iprot (AddNeuron_result{f_AddNeuron_result_err=Nothing})
   readStructEnd iprot
   return rec
-data EnableStdp_args = EnableStdp_args{f_EnableStdp_args_prefire :: Maybe [Double],f_EnableStdp_args_postfire :: Maybe [Double],f_EnableStdp_args_maxWeight :: Maybe Double} deriving (Show,Eq,Ord,Typeable)
+data EnableStdp_args = EnableStdp_args{f_EnableStdp_args_prefire :: Maybe [Double],f_EnableStdp_args_postfire :: Maybe [Double],f_EnableStdp_args_maxWeight :: Maybe Double,f_EnableStdp_args_minWeight :: Maybe Double} deriving (Show,Eq,Ord,Typeable)
 write_EnableStdp_args oprot rec = do
   writeStructBegin oprot "EnableStdp_args"
   case f_EnableStdp_args_prefire rec of {Nothing -> return (); Just _v -> do
@@ -130,6 +130,10 @@ write_EnableStdp_args oprot rec = do
     writeFieldEnd oprot}
   case f_EnableStdp_args_maxWeight rec of {Nothing -> return (); Just _v -> do
     writeFieldBegin oprot ("maxWeight",T_DOUBLE,3)
+    writeDouble oprot _v
+    writeFieldEnd oprot}
+  case f_EnableStdp_args_minWeight rec of {Nothing -> return (); Just _v -> do
+    writeFieldBegin oprot ("minWeight",T_DOUBLE,4)
     writeDouble oprot _v
     writeFieldEnd oprot}
   writeFieldStop oprot
@@ -156,13 +160,19 @@ read_EnableStdp_args_fields iprot rec = do
         else do
           skip iprot _t241
           read_EnableStdp_args_fields iprot rec
+      4 -> if _t241 == T_DOUBLE then do
+        s <- readDouble iprot
+        read_EnableStdp_args_fields iprot rec{f_EnableStdp_args_minWeight=Just s}
+        else do
+          skip iprot _t241
+          read_EnableStdp_args_fields iprot rec
       _ -> do
         skip iprot _t241
         readFieldEnd iprot
         read_EnableStdp_args_fields iprot rec
 read_EnableStdp_args iprot = do
   readStructBegin iprot
-  rec <- read_EnableStdp_args_fields iprot (EnableStdp_args{f_EnableStdp_args_prefire=Nothing,f_EnableStdp_args_postfire=Nothing,f_EnableStdp_args_maxWeight=Nothing})
+  rec <- read_EnableStdp_args_fields iprot (EnableStdp_args{f_EnableStdp_args_prefire=Nothing,f_EnableStdp_args_postfire=Nothing,f_EnableStdp_args_maxWeight=Nothing,f_EnableStdp_args_minWeight=Nothing})
   readStructEnd iprot
   return rec
 data EnableStdp_result = EnableStdp_result deriving (Show,Eq,Ord,Typeable)
@@ -545,7 +555,7 @@ process_enableStdp (seqid, iprot, oprot, handler) = do
   readMessageEnd iprot
   rs <- return (EnableStdp_result)
   res <- (do
-    Iface.enableStdp handler (f_EnableStdp_args_prefire args) (f_EnableStdp_args_postfire args) (f_EnableStdp_args_maxWeight args)
+    Iface.enableStdp handler (f_EnableStdp_args_prefire args) (f_EnableStdp_args_postfire args) (f_EnableStdp_args_maxWeight args) (f_EnableStdp_args_minWeight args)
     return rs)
   writeMessageBegin oprot ("enableStdp", M_REPLY, seqid);
   write_EnableStdp_result oprot res

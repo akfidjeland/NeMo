@@ -10,13 +10,15 @@ StdpFunction::StdpFunction(unsigned int preFireWindow,
 		uint64_t potentiationBits,
 		uint64_t depressionBits,
 		float* stdpFn,
-		float maxWeight):
+		float maxWeight,
+		float minWeight):
 	m_function(postFireWindow + preFireWindow, 0.0f),
 	m_preFireWindow(preFireWindow),	
 	m_postFireWindow(postFireWindow),
 	m_potentiationBits(potentiationBits),
 	m_depressionBits(depressionBits),
-	m_maxWeight(maxWeight)
+	m_maxWeight(maxWeight),
+	m_minWeight(minWeight)
 {
 	std::copy(stdpFn, stdpFn + m_function.size(), m_function.begin());
 }
@@ -47,4 +49,12 @@ float
 StdpFunction::maxWeight() const
 {
 	return m_maxWeight;
+}
+
+
+
+float
+StdpFunction::minWeight() const
+{
+	return m_minWeight;
 }

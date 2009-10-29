@@ -199,6 +199,7 @@ applyStdp_(
 			reward,
 			cmIdx,
 			rtdata->stdpFn->maxWeight(),
+			rtdata->stdpFn->minWeight(),
 			rtdata->maxPartitionSize,
 			rtdata->maxDelay(),
 			//! \todo compute the address of the weight matrix here directly

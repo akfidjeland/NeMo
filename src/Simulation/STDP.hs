@@ -27,6 +27,7 @@ data StdpConf = StdpConf {
 
         -- TODO: use Maybe here, to allow max weight be max in current network
         stdpMaxWeight :: Double,
+        stdpMinWeight :: Double,
 
         -- | We may specify a fixed frequency with which STDP should be applied
         stdpFrequency :: Maybe Int
@@ -87,4 +88,4 @@ asymDepression = map f [0..max_dt-1]
 asymStdp :: StdpConf
 {- TODO: may want to use Maybe here for max weight, and default to max in
  - network. The default value here is arbitrary -}
-asymStdp = StdpConf True asymPotentiation asymDepression 100.0 Nothing
+asymStdp = StdpConf True asymPotentiation asymDepression 100.0 (-100.0) Nothing

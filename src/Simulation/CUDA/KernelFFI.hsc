@@ -251,6 +251,7 @@ foreign import ccall unsafe "enableStdp" c_enableStdp
     -> Ptr CFloat  -- ^ lookup-table values (dt -> float) for STDP function,
                    --   length: prefire_len + postfire_len
     -> CFloat      -- ^ max weight: limit for excitatory synapses
+    -> CFloat      -- ^ min weight: limit for inhibitory synapses
     -> IO ()
 
 
@@ -267,6 +268,7 @@ configureStdp rt conf =
         (word64 $ reverse $ depressionMask conf)
         fnLut
         (realToFrac $ stdpMaxWeight conf)
+        (realToFrac $ stdpMinWeight conf)
 
     where
         word64 :: [Bool] -> Word64

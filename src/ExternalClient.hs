@@ -107,10 +107,11 @@ reconfigure m f = do
 
 
 
-setStdpFn :: [Double] -> [Double] -> Double -> Config -> Config
-setStdpFn prefire postfire maxWeight conf = conf { stdpConfig = stdpConfig' }
+setStdpFn :: [Double] -> [Double] -> Double -> Double -> Config -> Config
+setStdpFn prefire postfire maxWeight minWeight conf =
+    conf { stdpConfig = stdpConfig' }
     where
-        stdpConfig' = Protocol.decodeStdpConfig prefire postfire maxWeight
+        stdpConfig' = Protocol.decodeStdpConfig prefire postfire maxWeight minWeight
 
 
 disableStdp' :: Config -> Config
@@ -194,8 +195,8 @@ instance NemoFrontend_Iface ClientState where
     enablePipelining h = do
         putStrLn "enabling pipelining"
         reconfigure h $ withSimConfig Backend.enablePipelining
-    enableStdp h (Just prefire) (Just postfire) (Just maxWeight) =
-        reconfigure h $ setStdpFn prefire postfire maxWeight
+    enableStdp h (Just prefire) (Just postfire) (Just maxWeight) (Just minWeight) =
+        reconfigure h $ setStdpFn prefire postfire maxWeight minWeight
     disableStdp h = reconfigure h $ disableStdp'
     applyStdp h (Just reward) = simulateWithLog "apply STDP" h (\s -> Backend.applyStdp s reward)
     getConnectivity h = simulateWith h Protocol.getConnectivity

@@ -382,7 +382,8 @@ enableSTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	std::vector<double> prefire = vector<double>(numeric(prhs[1]));
 	std::vector<double> postfire = vector<double>(numeric(prhs[2]));
 	double maxWeight = scalar<double>(numeric(prhs[3]));
-	g_client->enableStdp(prefire, postfire, maxWeight);
+	double minWeight = scalar<double>(numeric(prhs[4]));
+	g_client->enableStdp(prefire, postfire, maxWeight, minWeight);
 }
 
 

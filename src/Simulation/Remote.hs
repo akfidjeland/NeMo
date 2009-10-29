@@ -39,7 +39,8 @@ initSim hostName portID net simOpts stdp = do
     let p = BinaryProtocol to
     let ps = (p,p)
     when (stdpEnabled stdp) $
-        Wire.enableStdp ps (prefire stdp) (postfire stdp) (stdpMaxWeight stdp)
+        Wire.enableStdp ps (prefire stdp) (postfire stdp)
+            (stdpMaxWeight stdp) (stdpMinWeight stdp)
     when (optPipelined simOpts) $ Wire.enablePipelining ps
     sendChunks ps 128 $ map encodeNeuron $ Network.toList net
     -- sendEach ps $ map encodeNeuron $ Network.toList net
@@ -73,7 +74,8 @@ instance Simulation_Iface Remote where
 remoteEnableStdp :: Remote -> StdpConf -> IO ()
 remoteEnableStdp r stdp = do
     when (stdpEnabled stdp) $ do
-    Wire.enableStdp (ps r) (prefire stdp) (postfire stdp) (stdpMaxWeight stdp)
+    Wire.enableStdp (ps r) (prefire stdp) (postfire stdp)
+        (stdpMaxWeight stdp) (stdpMinWeight stdp)
 
 
 remoteRun :: Remote -> [[Idx]] -> IO [FiringOutput]

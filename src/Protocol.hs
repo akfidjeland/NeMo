@@ -142,6 +142,6 @@ encodeConnectivity :: Map.Map Idx [AxonTerminal Static] -> Map.Map Int [Wire.Syn
 encodeConnectivity = fmap (fmap encodeSynapse)
 
 
-decodeStdpConfig :: [Double] -> [Double] -> Double -> StdpConf
-decodeStdpConfig prefire postfire maxWeight =
-    StdpConf True prefire postfire maxWeight Nothing
+decodeStdpConfig :: [Double] -> [Double] -> Double -> Double -> StdpConf
+decodeStdpConfig prefire postfire maxWeight minWeight =
+    StdpConf True prefire postfire maxWeight minWeight Nothing

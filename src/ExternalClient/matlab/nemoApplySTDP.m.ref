@@ -16,6 +16,7 @@ function nemoApplySTDP(reward)
 		w(live) = w(live) + NEMO_STDP_ACC{d}(live) .* reward;
 		w(live) = min(w(live), NEMO_STDP_MAX_WEIGHT);
 		w(live) = max(w(live), 0);
+		% TODO: deal with inhibitory and excitatory synapses separately
 		NEMO_CM{d}(live) = w(live);
 
 		%{

@@ -27,7 +27,8 @@ applySTDP_(
 #endif
 	float reward,
 	uint cmIdx, // L0 or L1
-	float maxWeight,
+	float maxWeight, // for excitatory synapses
+	float minWeight, // for inhibitory synapses
 	int maxPartitionSize,
 	int maxDelay,
 	// forward connectivity
@@ -92,7 +93,13 @@ applySTDP_(
 						ASSERT(gf_offset < f_size);
 
 						float w_old = gf_weight[gf_offset];
-						float w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
+						float w_new = 0.0f;
+						w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
+						if(w_old > 0) {
+							w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
+						} else {
+							w_new = fmin(0.0f, fmax(w_old + w_diff, minWeight));
+						}
 
 						if(w_old != w_new) {
 							gf_weight[gf_offset] = w_new;

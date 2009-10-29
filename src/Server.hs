@@ -105,9 +105,9 @@ configureWith (Handler _ m) f = do
         _ -> fail "Configuration commands must be called /before/ starting simulation"
 
 
-serverEnableStdp :: Handler -> [Double] -> [Double] -> Double -> IO ()
-serverEnableStdp h@(Handler log m) prefire postfire mw = do
-    let stdp = Protocol.decodeStdpConfig prefire postfire mw
+serverEnableStdp :: Handler -> [Double] -> [Double] -> Double -> Double -> IO ()
+serverEnableStdp h@(Handler log m) prefire postfire mxw mnw = do
+    let stdp = Protocol.decodeStdpConfig prefire postfire mxw mnw
     configureWithLog h "enabling STDP" $ \conf -> conf { stdpConfig = stdp }
 
 
@@ -167,7 +167,8 @@ instance NemoBackend_Iface Handler where
     addCluster h (Just ns) = serverAddCluster h ns
     addNeuron h (Just n) = constructWith h $ serverAddNeuron n
     startSimulation h = simulateWithLog h "starting simulation" $ const $ return ()
-    enableStdp h (Just pre) (Just post) (Just mw) = serverEnableStdp h pre post mw
+    enableStdp h (Just pre) (Just post) (Just mxw) (Just mnw) =
+        serverEnableStdp h pre post mxw mnw
     enablePipelining h =
         configureWithLog h "enabling pipelining" $ \conf -> conf { pipelined = True }
     run h (Just stim) = simulateWith h $ Protocol.run stim

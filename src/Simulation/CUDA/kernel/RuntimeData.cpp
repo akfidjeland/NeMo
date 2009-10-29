@@ -508,8 +508,9 @@ enableStdp(RTDATA rtdata,
 		uint64_t pbits,
 		uint64_t dbits,
 		float* fn,
-		float maxWeight) // length: prefire + postfire
+		float maxWeight,
+		float minWeight) // length: prefire + postfire
 {
 	rtdata->stdpFn =
-		new StdpFunction(prefire, postfire, pbits, dbits, fn, maxWeight);
+		new StdpFunction(prefire, postfire, pbits, dbits, fn, maxWeight, minWeight);
 }
