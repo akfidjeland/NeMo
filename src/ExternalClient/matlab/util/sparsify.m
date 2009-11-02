@@ -1,5 +1,5 @@
 % Store one sparse matrix per delay
-function ret = sparsify(targets, delays, weights, d_max, warnDuplicates)
+function ret = sparsify(targets, delays, weights, d_max)
 
 	ret = cell(d_max, 1);
 
@@ -39,33 +39,9 @@ function ret = sparsify(targets, delays, weights, d_max, warnDuplicates)
 
 		% It's possible to have synapses with the same pre, post, and delay. We
 		% need to add their weights to get this reference implementation to
-		% work. This is already done by 'sparse'. 
-
+		% work. This is already done by 'sparse'. Note that such duplicate
+		% synapses are still represented in the reverse matrix, so the effect
+		% of STDP is unchanged.
 		ret{d} = sparse(j(current), i(current), wvec(current), n, n);
-
-		% The presence of the above-mentioned duplicates will cause some
-		% divergence between the reference implementation and the GPU
-		% implementation. We issue a warning, to at least let the user know. 
-		if exist('warnDuplicates') && warnDuplicates
-			detectDuplicates(d, ret{d}, j(current), i(current), wvec(current));
-		end;
 	end
-end
-
-
-
-% Issue a warning if there are any duplicate synapses (same pre, post, and delay)
-function detectDuplicates(d, wm, j, i, w)
-
-	duplicates = 0;
-	for n = 1:length(w)
-		if wm(j(n), i(n)) ~= w(n)
-			duplicates = duplicates + 1;
-		end;
-	end;
-
-	if duplicates ~= 0
-		msg = sprintf('Connectivity matrix contains %u duplicates for delay %u', duplicates, d);
-		warning(msg);
-	end;
 end

@@ -128,7 +128,7 @@ function accumulateStdpStatistics(verbose, fid, t)
 	global NEMO_RTS_LTD;
 
 	% Get all neurons which fired in the middle of the STDP window
-	tf = t - length(NEMO_STDP_POSTFIRE);
+	tf = int32(t - length(NEMO_STDP_POSTFIRE));
 
 	% All potentially relevent post-synaptic firings
 
@@ -136,7 +136,7 @@ function accumulateStdpStatistics(verbose, fid, t)
 	history_len = size(NEMO_RECENT_FIRING, 2);
 	post_firings = find(NEMO_RECENT_FIRING(:, rf_idx(tf, history_len)));
 
-	t_offset = - 1 + double(idivide(t, int32(64))) * 64;
+	t_offset = - 1 + idivide(t, int32(64)) * 64;
 
 	stdp_pre_window = length(NEMO_STDP_PREFIRE);
 	stdp_post_window = length(NEMO_STDP_POSTFIRE);
@@ -156,7 +156,7 @@ function accumulateStdpStatistics(verbose, fid, t)
 			% all relevant firings of presynaptic
 			% TODO: pre-compute the indices which could be of interest here
 			% TODO: make sure the lookup is in the 'fast' direction here
-			i_fire = find(NEMO_RECENT_FIRING(pres(p),:));
+			i_fire = int32(find(NEMO_RECENT_FIRING(pres(p),:)));
 
 			if isempty(i_fire)
 				continue;
