@@ -35,19 +35,19 @@ function ret = sparsify(targets, delays, weights, d_max, warnDuplicates)
 
 		% mask out any delays not currently under consideration
 		w_tmp = wvec;
-		w_tmp(dvec ~= d) = 0;
+		current = find(dvec == d);
 
 		% It's possible to have synapses with the same pre, post, and delay. We
 		% need to add their weights to get this reference implementation to
 		% work. This is already done by 'sparse'. 
 
-		ret{d} = sparse(j, i, w_tmp, n, n);
+		ret{d} = sparse(j(current), i(current), wvec(current), n, n);
 
 		% The presence of the above-mentioned duplicates will cause some
 		% divergence between the reference implementation and the GPU
 		% implementation. We issue a warning, to at least let the user know. 
 		if exist('warnDuplicates') && warnDuplicates
-			detectDuplicates(d, ret{d}, j, i, w_tmp)
+			detectDuplicates(d, ret{d}, j(current), i(current), wvec(current));
 		end;
 	end
 end
@@ -56,6 +56,7 @@ end
 
 % Issue a warning if there are any duplicate synapses (same pre, post, and delay)
 function detectDuplicates(d, wm, j, i, w)
+
 	duplicates = 0;
 	for n = 1:length(w)
 		if wm(j(n), i(n)) ~= w(n)
