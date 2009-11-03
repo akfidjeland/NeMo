@@ -14,7 +14,7 @@ function [targets1, delays1, weights1] = mergeDuplicates(targets, delays, weight
 	d_max = max(max(delays));
 
 	% Turning this into a sparse matrix will merge duplicates
-	cm = sparsify(targets, delays, weights, d_max, false);
+	cm = sparsify(targets, delays, weights, d_max);
 
 	targets1 = zeros(size(targets));
 	delays1 = ones(size(delays));

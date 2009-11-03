@@ -147,8 +147,6 @@ function accumulateStdpStatistics(verbose, fid, t)
 		pres = NEMO_RCM_N{post};    % all neurons presynaptic to 'post' ...
 		ds = NEMO_RCM_D{post};      % ... and all their delays
 
-		w_diff = zeros(size(pres));
-
 		for p = 1:numel(pres)
 
 			d = ds(p);
@@ -173,21 +171,24 @@ function accumulateStdpStatistics(verbose, fid, t)
 			dt_prefire = -dt_all(dt_all <= 0 & dt_all > -stdp_pre_window) + 1;
 			dt_postfire = dt_all(dt_all > 0 & dt_all <= stdp_post_window);
 
-			% find minimum for each
+			% TODO: deal with potentiation and depression separately
+
+			w_diff = 0;
 			if ~isempty(dt_prefire)
-				dt_pre = min(dt_prefire);
-				w_diff(p) = NEMO_STDP_PREFIRE(dt_pre);
+				dt_pre = dt_prefire(find(abs(dt_prefire) == min(abs(dt_prefire))));
+				w_diff = NEMO_STDP_PREFIRE(dt_pre);
 				NEMO_RTS_LTP = NEMO_RTS_LTP + 1;
 			end;
 
 			if ~isempty(dt_postfire)
-				dt_post = min(dt_postfire);
-				w_diff(p) = w_diff(p) + NEMO_STDP_POSTFIRE(dt_post);
+				dt_post = dt_postfire(find(abs(dt_postfire) == min(abs(dt_postfire))));
+				w_diff = w_diff + NEMO_STDP_POSTFIRE(dt_post);
 				NEMO_RTS_LTD = NEMO_RTS_LTD + 1;
 			end;
-		end;
 
-		NEMO_STDP_ACC{d}(post,pres) = NEMO_STDP_ACC{d}(post,pres) + w_diff;
+			% TODO: change format of the accumulator, and update accumulator outside the inner loop
+			NEMO_STDP_ACC{d}(post,pres(p)) = NEMO_STDP_ACC{d}(post,pres(p)) + w_diff;
+		end;
 	end;
 end
 

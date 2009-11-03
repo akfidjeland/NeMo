@@ -44,8 +44,8 @@ function set_reverse(targets, delays, plastic, ncount)
 	global NEMO_RCM_D; % delay for each synapse
 	global NEMO_RCM_N; % index for each presyanptic
 
-	NEMO_RCM_D = cell(ncount);
-	NEMO_RCM_N = cell(ncount);
+	NEMO_RCM_D = cell(ncount, 1);
+	NEMO_RCM_N = cell(ncount, 1);
 
 	[ncount scount] = size(targets);
 	pre = repmat([1:ncount]', scount, 1);
@@ -53,6 +53,10 @@ function set_reverse(targets, delays, plastic, ncount)
 	% Ignore all synapses marked invalid (target 0)
 	% Also ignore synapses not marked as 'plastic'
 	valid = find(targets ~= 0 & plastic ~= 0);
+
+	if(isempty(valid))
+		warning('No plastic synapses specified. STDP will have no effect.');
+	end;
 
 	pre_v = pre(valid);
 
