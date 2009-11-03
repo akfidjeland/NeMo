@@ -1,8 +1,9 @@
 function fired = nemoRun(nsteps, fstim)
 
 	% TODO: remove debugging code
-	fid = fopen('firing.dat','wt');
-	%fid = 1;
+	% TODO: use globals for file handles
+	%fid = fopen('firing.dat','wt');
+	fid = 1;
 
 	global NEMO_NEURONS_A;
 	global NEMO_STDP_ENABLED;
@@ -23,7 +24,7 @@ function fired = nemoRun(nsteps, fstim)
 		NEMO_CYCLE = NEMO_CYCLE + 1;
 	end;
 
-	fclose(fid);
+	%fclose(fid);
 end
 
 
@@ -33,7 +34,7 @@ end
 function stim = firing_stimulus(stimulus, t)
 	stim = [];
 	if ~isempty(stimulus)
-		stim = stimulus(stimulus(:,1) == t);
+		stim = stimulus(stimulus(:,1) == t, 2);
 	end;
 end
 
@@ -85,7 +86,7 @@ function firings_out = update_state(verbose, fid, t0, t, stimulated, I)
 	end;
 
 	fired = find(NEMO_NEURONS_V >= 30);
-	fired = sort([fired, stimulated]);
+	fired = sort([fired; stimulated]);
 	if verbose && ~isempty(fired)
 		global NEMO_CYCLE;
 		for i=1:length(fired)
