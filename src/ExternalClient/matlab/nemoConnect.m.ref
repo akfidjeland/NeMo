@@ -46,8 +46,10 @@ function nemoConnect()
 	global NEMO_RTS_FIRED;
 	global NEMO_RTS_LTP;
 	global NEMO_RTS_LTD;
+	global NEMO_RTS_STDP;
 
 	NEMO_RTS_FIRED = 0;
 	NEMO_RTS_LTP = 0;
 	NEMO_RTS_LTD = 0;
+	NEMO_RTS_STDP = 0;
 end

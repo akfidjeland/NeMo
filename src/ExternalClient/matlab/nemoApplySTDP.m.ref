@@ -5,7 +5,13 @@ function nemoApplySTDP(reward)
 	global NEMO_MAX_DELAY;
 	global NEMO_STDP_MAX_WEIGHT;
 	global NEMO_STDP_MIN_WEIGHT;
+	global NEMO_RTS_STDP;
 	global NEMO_CYCLE;
+
+	verbose = false;
+	if(verbose)
+		fid = fopen('stdp.dat','wt');
+	end
 
 	for d=1:NEMO_MAX_DELAY
 
@@ -15,6 +21,8 @@ function nemoApplySTDP(reward)
 		changed = find(NEMO_STDP_ACC{d} ~= 0);
 		w = NEMO_CM{d}(changed);
 		w_init = w;
+
+		NEMO_RTS_STDP = NEMO_RTS_STDP + length(changed);
 
 		if(reward == 1) % common case
 			w = w + NEMO_STDP_ACC{d}(changed);
@@ -31,17 +39,28 @@ function nemoApplySTDP(reward)
 		w(w > 0 & w_init <= 0) = 0;
 
 		NEMO_CM{d}(changed) = w;
-	end;
+
+		if(verbose)
+			%fprintf('d%u: stdp += %u\n', d, length(changed));
+			logSTDP(fid, NEMO_CYCLE, NEMO_STDP_ACC{d}, w_init, w);
+		end
+
+		NEMO_STDP_ACC{d}(changed) = 0;
+	end
+
+	if(verbose)
+		fclose(fid);
+	end
 end
 
 
 
-% TODO: add back tracing
 % Print (to stdout) all weight matrix modifications
-function logSTDP(t, acc)
+function logSTDP(fid, t, acc, w_init, w)
 	ind = find(acc ~= 0);
 	for i=1:length(ind)
 		[post, pre] = ind2sub(size(acc), ind);
-		fprintf('c%u: stdp %u->%u w=%f\n', t, pre(i), post(i), acc(ind(i)));
-	end;
+		fprintf(fid, 'c%u: stdp (%u->%u) %f %+f = %f\n',...
+			t, pre(i), post(i), w_init(i), acc(ind(i)), w(i));
+	end
 end
