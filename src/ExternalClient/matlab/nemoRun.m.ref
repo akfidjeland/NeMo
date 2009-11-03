@@ -99,7 +99,7 @@ function firings_out = update_state(verbose, fid, t0, t, stimulated, I)
 		NEMO_NEURONS_U(fired) = NEMO_NEURONS_U(fired) + d(fired);
 	end;
 
-	firings_out = [t0+0*fired, fired];
+	firings_out = [t0+1+0*fired, fired];
 
 	global NEMO_RTS_FIRED;
 	NEMO_RTS_FIRED = NEMO_RTS_FIRED + numel(fired);
