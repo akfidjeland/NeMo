@@ -6,7 +6,6 @@ function nemoEnableSTDP(prefire, postfire, maxWeight, minWeight)
 	global NEMO_STDP_POSTFIRE;
 	global NEMO_STDP_MAX_WEIGHT;
 	global NEMO_STDP_MIN_WEIGHT;
-	global NEMO_STDP_ACC;
 
 	NEMO_STDP_ENABLED = true;
 	NEMO_STDP_PREFIRE = prefire;
@@ -17,8 +16,4 @@ function nemoEnableSTDP(prefire, postfire, maxWeight, minWeight)
 	if ~size(NEMO_CM)
 		error('STDP enabled before network is set');
 	end;
-
-	% TODO: only set this when we first start simulation
-	% copy structure of cm, setting each element to 0 
-	NEMO_STDP_ACC = cellfun(@(x) x.*0, NEMO_CM, 'UniformOutput', false);
 end

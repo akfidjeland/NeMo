@@ -137,60 +137,100 @@ function accumulateStdpStatistics(verbose, fid, t)
 	history_len = size(NEMO_RECENT_FIRING, 2);
 	post_firings = find(NEMO_RECENT_FIRING(:, rf_idx(tf, history_len)));
 
-	t_offset = - 1 + idivide(t, int32(64)) * 64;
+	% Each column in the recent firing history corresponds to a particular
+	% recent cycle. This is a circular buffer where the beginning (current
+	% cycle) moves around. The t_buffer vector contains the cycle number
+	% corresponding to each column in the buffer.
+	t_buffer = int32(0:63) + idivide(t, int32(64)) * 64;
+	t_buffer(t_buffer > t) = t_buffer(t_buffer > t) - 64;
 
+	% Only some columns in the recent firing history falls into the STDP
+	% window. In addition to excluding cycles outside the window, we also split
+	% the window into potentiation and depression parts.
+	% TODO: align prefire and postfire parts with the column indices
+	% TODO: extract indices where weight is correct 
 	stdp_pre_window = length(NEMO_STDP_PREFIRE);
 	stdp_post_window = length(NEMO_STDP_POSTFIRE);
+	stdp_len = stdp_pre_window + stdp_post_window;
+    %{
+	%stdp_window = [NEMO_STDP_PREFIRE NEMO_STDP_POSTFIRE zeros(1, history_len-stdp_len)];
 
-	for pf = 1:size(post_firings,1) 
+	% now rotate this to align it with buffer indices
+	stdp_window = zeros(1,history_len);
+	% TODO: share with previous useage
+	i_tf = rf_idx(tf, history_len);
+	stdp_window(mod(i_tf:i_tf+stdp_post_window-1, history_len)+1) = NEMO_STDP_POSTFIRE;
+	stdp_window(mod(i_tf-1:-1:i_tf-stdp_pre_window, history_len)+1) = NEMO_STDP_PREFIRE;
+	%stdp_window(mod(i_tf-1:i_tf+stdp_post_window-2, history_len)+1) = NEMO_STDP_POSTFIRE;
+	%stdp_window(mod(i_tf-2:-1:i_tf-stdp_pre_window-1, history_len)+1) = NEMO_STDP_PREFIRE;
+	cycles_all = (stdp_window ~= 0);
+	%cycles_all = find(stdp_window ~= 0);
+    %}
+    
 
-		post = post_firings(pf);    % index of postsynaptic neurons which fired
-		pres = NEMO_RCM_N{post};    % all neurons presynaptic to 'post' ...
-		ds = NEMO_RCM_D{post};      % ... and all their delays
+    for pf = 1:size(post_firings,1) 
 
-		for p = 1:numel(pres)
+		post = post_firings(pf);
 
-			d = ds(p);
+		% All recent firings of presynaptic neurons. Each row corresponds to a
+		% single synapse. There may be several spikes for each synapse       
+		f_pre = NEMO_RECENT_FIRING(NEMO_RCM_N{post},:);                    
+        
+		valid = (f_pre ~= 0);
+		if(~any(any(valid)))
+			continue;
+		end   
+        
+		% Synapses (indices into reverse connectivity) for which we need to
+		% check dt.
+		synapses = find(any(f_pre'));                                      
+        
+		% i_pres and i_tfired are vectors which together describe all the
+		% synapses which may take part in STDP. i_tfired are the bins in the
+		% recent firing history each spike falls in under.
+		[i_pres, i_tfired] = find(f_pre(synapses,:) ~= 0);                 
+        
+		% Since we have store f_pre in row-major order we get incorrect %
+		% orientation on i_pres and i_tfired if we only have a single row.
+		% Therefore, force into column format.
+		i_pres = i_pres(:);
+        
+		%    firing time (pre)     + delay                              - firing time (post)
+		dt = t_buffer(i_tfired(:)) + NEMO_RCM_D{post}(synapses(i_pres)) - tf;
+           
+		% Split spikes into presynaptic and postsynaptic regions. 1, 2, 3 are
+		% column numbers in the accumarray below.
+		% column 1: invalid spikes
+		% column 2: prefire spikes
+		% column 3: postfire spikes
+		subs = ones(size(dt));
+		subs(dt <= 0 & dt > -stdp_pre_window) = 2;
+		subs(dt > 0 & dt <= stdp_post_window) = 3;
+      
+		% Make negative indices 1-based and positive rather than 0-based
+		dt(dt <= 0) = dt(dt <= 0) - 1;
+            
+		% now get minimum for the presynaptic neurons with active spikes
+		% TODO: share the transpose code with earlier loop exit
+		len = length(find(any(f_pre')));
+		dt_sorted = accumarray([i_pres, subs'], abs(dt), [len 3], @min);
+		potentiating = (dt_sorted(:,2) ~= 0);
+		depressing = (dt_sorted(:,3) ~= 0);
 
-			% all relevant firings of presynaptic
-			% TODO: pre-compute the indices which could be of interest here
-			% TODO: make sure the lookup is in the 'fast' direction here
-			i_fire = int32(find(NEMO_RECENT_FIRING(pres(p),:)));
+		% TODO: do the counting conditionally
+		NEMO_RTS_LTP = NEMO_RTS_LTP + length(find(potentiating));
+		NEMO_RTS_LTD = NEMO_RTS_LTD + length(find(depressing));
 
-			if isempty(i_fire)
-				continue;
-			end;
-
-			% compute actual times
-			t_fire = i_fire + t_offset;
-			t_fire(t_fire > t) = t_fire(t_fire > t) - 64;
-
-			% compute dt
-			dt_all = t_fire + d - tf;
-
-			% split into prefire and postfire
-			dt_prefire = -dt_all(dt_all <= 0 & dt_all > -stdp_pre_window) + 1;
-			dt_postfire = dt_all(dt_all > 0 & dt_all <= stdp_post_window);
-
-			% TODO: deal with potentiation and depression separately
-
-			w_diff = 0;
-			if ~isempty(dt_prefire)
-				dt_pre = dt_prefire(find(abs(dt_prefire) == min(abs(dt_prefire))));
-				w_diff = NEMO_STDP_PREFIRE(dt_pre);
-				NEMO_RTS_LTP = NEMO_RTS_LTP + 1;
-			end;
-
-			if ~isempty(dt_postfire)
-				dt_post = dt_postfire(find(abs(dt_postfire) == min(abs(dt_postfire))));
-				w_diff = w_diff + NEMO_STDP_POSTFIRE(dt_post);
-				NEMO_RTS_LTD = NEMO_RTS_LTD + 1;
-			end;
-
-			% TODO: change format of the accumulator, and update accumulator outside the inner loop
-			NEMO_STDP_ACC{d}(post,pres(p)) = NEMO_STDP_ACC{d}(post,pres(p)) + w_diff;
-		end;
-	end;
+        % TODO: store the lookup tables in column format from the start
+		% The 'accumarray' constructs the weight difference vector, with one
+		% entry for each modified synapse. This will merge synapses with both
+		% potentiation and depression.
+		NEMO_STDP_ACC{post}(synapses) = ...
+			NEMO_STDP_ACC{post}(synapses) + ...
+			accumarray([find(potentiating); find(depressing)],...
+				[NEMO_STDP_PREFIRE(dt_sorted(potentiating,2))'; NEMO_STDP_POSTFIRE(dt_sorted(depressing,3))'],...
+				[len 1])';
+   end
 end
 
 

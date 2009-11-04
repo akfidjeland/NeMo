@@ -25,13 +25,11 @@ function nemoConnect()
 
 	% STDP parameters
 	global NEMO_STDP_ENABLED;
-	global NEMO_STDP_ACC; % accumulator
 	global NEMO_STDP_PREFIRE;
 	global NEMO_STDP_POSTFIRE;
 	global NEMO_STDP_MAX_WEIGHT;
 
 	NEMO_STDP_ENABLED = false;
-	NEMO_STDP_ACC = {};
 	NEMO_STDP_PREFIRE = [];
 	NEMO_STDP_POSTFIRE = [];
 	NEMO_STDP_MAX_WEIGHT = 0;
