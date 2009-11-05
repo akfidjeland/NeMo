@@ -11,7 +11,7 @@
 
 #include <stdexcept>
 
-#include <NemoFrontend.h>
+#include <NemoBackend.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -23,7 +23,7 @@ using namespace apache::thrift;
 using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 
-static shared_ptr<NemoFrontendClient> g_client;
+static shared_ptr<NemoBackendClient> g_client;
 static shared_ptr<TTransport> g_transport;
 
 
@@ -128,21 +128,10 @@ stopSimulation(int /*nlhs*/, mxArray** /*plhs*/,
 
 
 
-void
-reset()
-{
-	if(isConnected()) {
-		mexPrintf("resetting nemo\n");
-		g_client->reset();
-	}
-}
-
-
 
 void
 disconnect_()
 {
-	reset();
 	if(g_transport != NULL) {
 		mexPrintf("disconnecting\n");
 		g_transport->close();
@@ -165,13 +154,11 @@ disconnect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	//connect();
-#if 1
 	// redirect thrift error messages
 	GlobalOutput.setOutputFunction(mexWarnMsgTxt); 
 
-	const std::string host = "localhost";
-	int port = 56101;
+	std::string host(mxArrayToString(prhs[1]));
+	int32_t port = scalar<int32_t>(numeric(prhs[2]));
 
 	//! \todo what is this for?
 	bool framed = false;
@@ -188,7 +175,7 @@ connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	}
 
 	shared_ptr<TBinaryProtocol> protocol(new TBinaryProtocol(g_transport));
-	shared_ptr<NemoFrontendClient> client(new NemoFrontendClient(protocol));
+	shared_ptr<NemoBackendClient> client(new NemoBackendClient(protocol));
 	g_client = client;
 
 	try {
@@ -198,21 +185,9 @@ connect(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	} catch (TTransportException& ttx) {
 		error("Connect failed: %s\n", ttx.what());
 	} 
-#endif
 }
 
 
-
-
-
-void
-setBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	checkConnection();
-	//! \todo more careful checking here
-	std::string hostname(mxArrayToString(prhs[1]));
-	g_client->setBackend(hostname);
-}
 
 
 enum { INVALID_TARGET = -1 };
@@ -408,14 +383,6 @@ applySTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	}
 }
 
-
-
-void
-disableSTDP(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	checkConnection();
-	g_client->disableStdp();
-}
 
 
 

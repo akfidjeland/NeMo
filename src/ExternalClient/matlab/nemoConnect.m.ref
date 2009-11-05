@@ -1,6 +1,7 @@
 % just set up all the globals
-function nemoConnect()
+function nemoConnect(host, port)
 
+	% TODO: move initialisation to setNetwork
 	% Neuron parameters
 	global NEMO_NEURONS_A;
 	global NEMO_NEURONS_B;

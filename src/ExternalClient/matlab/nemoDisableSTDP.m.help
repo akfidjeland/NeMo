@@ -1,9 +1,0 @@
-nemoDisableSTDP: disable STDP
------------------------------
-
-::
-
-	nemoDisableSTDP
-
-Disable STDP for all subsequent simulation runs until ``nemoEnableSTDP`` is called.
-

@@ -92,12 +92,12 @@ Synapses can be either potentiated or depressed.
 With STDP enabled,
 	the simulation accumulates a weight change, 
 	which is the sum of potentiation and depression for each synapse. 
-This accumulation takes place every cycle,
+Potentiation always moves the synaptic weight away from zero,
+	which for excitatory synapses is more positive,
+	and for inhibitory synapses is more negative.
+Depression always moves the synapses weight towards zero.
+The accumulation of potentiation and depression statistics takes place every cycle,
 	but the modification of the weight only takes place when explicitly requested.
-%Either the user specifies a fixed frequency at which STDP is applied,
-%	or the user explicitly issues a command to apply it. 
-% In the latter case the user can also supply a reward signal which is
-% multiplied into the accumulated weight change for all neurons.
 
 Generally a synapse is potentiated if a spike arrives shortly before the
 postsynaptic neuron fires. 
@@ -152,17 +152,16 @@ The lowest value for $dt$ on either side of the firing is 0.
 This value indicates that either the firing occurred as soon as possible after the spike
 arrival, 
 	or that the spike arrived as soon as possible after the firing. 
-In the simulation on of these minima will be one cycle,
+In the simulation one of these minima will be one cycle,
 	rather than zero, but which it is depends on whether spike delivery takes place before or after firing during
 the simulation of a single cycle. 
 Both ways are reasonable choices, and the backends may use either.
 
-Synaptic weights are never potentiated beyond the user-specified a maximum weight. 
-Additionally, synapses are never depressed below weight zero. 
-They can thus be deactivated, but will not change from excitatory to inhibitory.
-This latter clamping rule, means that in the current version of \nemo\ 
-plasticity of inhibitory synapses is not well supported.
-This limitation will be lifted in future versions.
+Excitatory synapses are never potentiated beyond the user-specified maximum weight,
+	and is never depressed below zero.
+Likewise, inhibitory synapses are never potentiated beyond the  user-specified minimum weight,
+	and is never depressed above zero.
+Synapses can thus be deactivated, but never change from excitatory to inhibitory or vice versa.
 
 
 %As a practical example, consider an asymmetric STDP scheme specified using the following functions for LTP and LTD:
@@ -227,8 +226,7 @@ A simple script which connects to a server,
 \begin{matlab}
 % ... code that generates the network
  
-nemoConnect;
-nemoSetBackend('axel01.doc.ic.ac.uk');
+nemoConnect('axel01.doc.ic.ac.uk');
 nemoSetNetwork(a, b, c, d, u, v,...
                 targets, delays, weights);
 nemoStartSimulation
@@ -245,8 +243,7 @@ or simpler, if 60 seconds worth of data can be processed (and buffered) at once:
 \begin{matlab}
 %  ... code that generates the network
 
-nemoConnect;
-nemoSetBackend('axel01.doc.ic.ac.uk');
+nemoConnect('axel01.doc.ic.ac.uk');
 nemoSetNetwork(a, b, c, d, u, v,...
                  targets, delays, weights);
 nemoStartSimulation
@@ -269,10 +266,9 @@ To run for 1000ms applying STDP every 50ms, with all excitatory synapses being p
 \begin{matlab}
 % ... code that generates the network
 
-nemoConnect;
-nemoSetBackend('axel01.doc.ic.ac.uk');
+nemoConnect('axel01.doc.ic.ac.uk');
 prefire = 1.0 * exp(-(1:20)./20);
-postfire = 0.8 * exp(-(1:20)./20);
+postfire = -0.8 * exp(-(1:20)./20);
 nemoEnableSTDP(prefire, postfire, 30.0);
 plastic = zeros(size(weights));
 plastic(weights > 0) = 1;

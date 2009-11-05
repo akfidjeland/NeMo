@@ -1,4 +1,0 @@
-function nemoDisableSTDP
-	global NEMO_STDP_ENABLED;
-	NEMO_STDP_ENABLED = false;
-end

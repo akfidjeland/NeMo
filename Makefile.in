@@ -87,7 +87,7 @@ $(matlab_build)/%.mexa64: $(matlab_src)/%.cpp $(thrift_build)/gen-cpp $(autogen)
 	mkdir -p $(dir $@)
 	matlab-mex -I$(thrift_inc) -I$(thrift_build)/gen-cpp -I$(autogen) -lthrift \
 		-o $(matlab_build)/$* \
-		$< $(addprefix $(thrift_build)/gen-cpp/,NemoFrontend.cpp nemo_types.cpp)
+		$< $(addprefix $(thrift_build)/gen-cpp/,NemoBackend.cpp nemo_types.cpp)
 
 
 ifeq (@HAVE_THRIFT_COMPILER@, true)
@@ -151,7 +151,7 @@ $(doc_build)/manual.pdf: $(doc_build)/manual.tex \
 		$(doc_build)/title.tex \
 		$(doc_build)/matlab.tex
 	ln -s -f --target-directory=$(doc_build) $(CURDIR)/$(doc_src)/figures
-	(cd $(dir $<); pdflatex $(notdir $<); cd ..)
+	(cd $(dir $<); pdflatex $(notdir $<); pdflatex $(notdir $<); cd ..)
 
 
 
