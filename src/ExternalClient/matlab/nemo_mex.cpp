@@ -251,6 +251,13 @@ setNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
+void
+resetNeurons(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	mexErrMsgTxt("resetNeurons is not yest supported");
+}
+
+
 
 /* Convert firing stimulus from Matlab matrix to wire format */
 void
