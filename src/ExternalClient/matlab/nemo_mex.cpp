@@ -344,6 +344,14 @@ run(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+clearHistory(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	mexErrMsgTxt("clearHistory is not yest supported");
+}
+
+
+
+void
 pipelineLength(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	PipelineLength pll;

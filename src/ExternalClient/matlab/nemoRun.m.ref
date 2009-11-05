@@ -142,7 +142,7 @@ function accumulateStdpStatistics(verbose, fid, t)
 	% recent cycle. This is a circular buffer where the beginning (current
 	% cycle) moves around. The t_buffer vector contains the cycle number
 	% corresponding to each column in the buffer.
-	t_buffer = int32(0:63) + idivide(t, int32(64)) * 64;
+	t_buffer = int32(0:63) + int32(floor(t/64) * 64);
 	t_buffer(t_buffer > t) = t_buffer(t_buffer > t) - 64;
 
 	stdp_pre_window = length(NEMO_STDP_PREFIRE);
@@ -167,7 +167,7 @@ function accumulateStdpStatistics(verbose, fid, t)
 
 	stdp_regions = [ones(history_len-stdp_len, 1); ... % spikes arriving before STDP window
 	                stdp_pre; ...                      % spikes arriving prior to postsynaptic firing
-	                zeros(1, 1); ...                   % dt = 0, this should not happend
+	                zeros(1, 1); ...                   % dt = 0, this should not happen
 	                stdp_post; ...                     % spikes arriving after postsynaptic firing
 	                ones(NEMO_MAX_DELAY, 1)];          % spikes arrivaing after STDP window
 	stdp_offset = history_len - stdp_len + stdp_pre_window + 1;
