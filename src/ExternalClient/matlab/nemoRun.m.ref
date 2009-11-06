@@ -128,6 +128,7 @@ function accumulateStdpStatistics(verbose, fid, t)
 
 	global NEMO_RTS_LTP;
 	global NEMO_RTS_LTD;
+	global NEMO_RTS_ENABLED;
 
 	% Get all neurons which fired in the middle of the STDP window
 	tf = int32(t - length(NEMO_STDP_POSTFIRE));
@@ -149,6 +150,11 @@ function accumulateStdpStatistics(verbose, fid, t)
 	stdp_post_window = length(NEMO_STDP_POSTFIRE);
 	stdp_len = stdp_pre_window + stdp_post_window;
 
+	% Combined lookup table for whole STDP region
+	% TODO: keep a column format from the start
+	stdp_fn = [NEMO_STDP_PREFIRE(end:-1:1)'; 0; NEMO_STDP_POSTFIRE'];
+
+
 	% The spikes that fall into the potentiation and the depression parts of
 	% the STDP window are handled separately. We classify spikes based on the
 	% 'dt' values. The lookuptable (dt -> class) is precomputed here:
@@ -157,20 +163,19 @@ function accumulateStdpStatistics(verbose, fid, t)
 	% 2: potentiation
 	% 3: depression
 
-	stdp_pre = ones(stdp_pre_window, 1);
-	stdp_pre(sign(NEMO_STDP_PREFIRE) == 1) = 2;
-	stdp_pre(sign(NEMO_STDP_PREFIRE) == -1) = 3;
-
-	stdp_post = ones(stdp_pre_window, 1);
-	stdp_post(sign(NEMO_STDP_POSTFIRE) == 1) = 2;
-	stdp_post(sign(NEMO_STDP_POSTFIRE) == -1) = 3;
+	stdp_regions_valid = ones(size(stdp_fn)); 
+	stdp_regions_valid(sign(stdp_fn) == 1) = 2;
+	stdp_regions_valid(sign(stdp_fn) == -1) = 3;
 
 	stdp_regions = [ones(history_len-stdp_len, 1); ... % spikes arriving before STDP window
-	                stdp_pre; ...                      % spikes arriving prior to postsynaptic firing
-	                zeros(1, 1); ...                   % dt = 0, this should not happen
-	                stdp_post; ...                     % spikes arriving after postsynaptic firing
+	                stdp_regions_valid;...             % spikes arriving inside STDP window
 	                ones(NEMO_MAX_DELAY, 1)];          % spikes arrivaing after STDP window
+
+	% offset when determining regions
 	stdp_offset = history_len - stdp_len + stdp_pre_window + 1;
+
+	% offset when doing the lookup based on (valid) dts
+	stdp_fn_origin = stdp_pre_window + 1;
 
     for pf = 1:size(post_firings,1) 
 
@@ -201,9 +206,8 @@ function accumulateStdpStatistics(verbose, fid, t)
         
 		%    firing time (pre)     + delay                              - firing time (post)
 		dt = t_buffer(i_tfired(:)) + NEMO_RCM_D{post}(synapses(i_pres)) - tf;
-           
 
-		% Make negative indices 1-based and positive rather than 0-based
+		% Make negative indices 1-based rather than 0-based (but still negative)
 		dt(dt <= 0) = dt(dt <= 0) - 1;
 
 		% Split spikes into presynaptic and postsynaptic regions as described above.
@@ -212,26 +216,26 @@ function accumulateStdpStatistics(verbose, fid, t)
 		% now get minimum for the presynaptic neurons with active spikes
 		% TODO: share the transpose code with earlier loop exit
 		len = length(find(any(f_pre')));
-		dt_sorted = accumarray([i_pres, subs], abs(dt), [len 3], @min);
-		potentiating = (dt_sorted(:,2) ~= 0);
-		depressing = (dt_sorted(:,3) ~= 0);
+		dt_sorted = accumarray([subs, i_pres], dt, [3 len], @absmin);
 
-		% TODO: do the counting conditionally
-		NEMO_RTS_LTP = NEMO_RTS_LTP + length(find(potentiating));
-		NEMO_RTS_LTD = NEMO_RTS_LTD + length(find(depressing));
+		if NEMO_RTS_ENABLED
+			NEMO_RTS_LTP = NEMO_RTS_LTP + length(find(dt_sorted(2,:) ~= 0));
+			NEMO_RTS_LTD = NEMO_RTS_LTD + length(find(dt_sorted(3,:) ~= 0));
+		end
 
-        % TODO: store the lookup tables in column format from the start
-		% The 'accumarray' constructs the weight difference vector, with one
-		% entry for each modified synapse. This will merge synapses with both
-		% potentiation and depression.
+		% The summing here combines potentiation and depression spikes for the same synapse
 		NEMO_STDP_ACC{post}(synapses) = ...
 			NEMO_STDP_ACC{post}(synapses) + ...
-			accumarray([find(potentiating); find(depressing)],...
-				[NEMO_STDP_PREFIRE(dt_sorted(potentiating,2))'; NEMO_STDP_POSTFIRE(dt_sorted(depressing,3))'],...
-				[len 1])';
+			sum(stdp_fn(dt_sorted(2:3,:)+stdp_fn_origin));
    end
 end
 
+
+
+function y = absmin(xs)
+	[x, i] = min(abs(xs));
+	y = xs(i);
+end
 
 
 

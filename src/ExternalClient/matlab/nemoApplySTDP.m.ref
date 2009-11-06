@@ -8,6 +8,8 @@ function nemoApplySTDP(reward)
 	global NEMO_RCM_D;
 	global NEMO_RCM_N;
 	global NEMO_CYCLE;
+	global NEMO_MAX_DELAY;
+	global NEMO_RTS_ENABLED;
 
 	verbose = false;
 	if(verbose)
@@ -20,10 +22,11 @@ function nemoApplySTDP(reward)
 		w_diffs = NEMO_STDP_ACC{post};
 		ds = NEMO_RCM_D{post};
 
+		% TODO: use logical indexing here instead
 		changed = find(w_diffs);
 		NEMO_STDP_ACC{post}(changed) = 0;
 
-		% TODO: accumulate an array of updates for each delay, then apply all at once.
+		% Now apply limiting to the weights
 		for i=changed
 
 			pre = pres(i);
@@ -45,11 +48,13 @@ function nemoApplySTDP(reward)
 
 			if(verbose)
 				fprintf(fid, 'c%u: stdp (%u->%u) %f %+f = %f\n',...
-					t, pre, post, w_init, w_diff, w_new);
+					NEMO_CYCLE, pre, post, w_init, w_diff, w_new);
 			end
 		end
 
-		NEMO_RTS_STDP = NEMO_RTS_STDP + length(changed);
+		if NEMO_RTS_ENABLED
+			NEMO_RTS_STDP = NEMO_RTS_STDP + length(changed);
+		end
 	end
 
 	if(verbose)

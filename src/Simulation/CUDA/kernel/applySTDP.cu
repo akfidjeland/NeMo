@@ -103,10 +103,10 @@ applySTDP_(
 
 						if(w_old != w_new) {
 							gf_weight[gf_offset] = w_new;
-							DEBUG_MSG("stdp %f %+f = %f for synapse %u-%u -> %u-%u\n",
-									w_old, w_diff, w_new,
+							DEBUG_MSG("stdp (%u->%u -> %u-%u) %f %+f = %f\n",
 									sourcePartition(rsynapse), sourceNeuron(rsynapse),
-									CURRENT_PARTITION, target);
+									CURRENT_PARTITION, target,
+									w_old, w_diff, w_new);
 						}
 					}
 				}
