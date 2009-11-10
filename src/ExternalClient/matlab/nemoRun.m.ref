@@ -53,7 +53,7 @@ function I = deliver_spikes(t, ncount)
 
 	for delay=1:NEMO_MAX_DELAY
 		weights = NEMO_CM{delay};
-		pres = find(NEMO_RECENT_FIRING(:, rf_idx(t-delay, history_len)));
+		pres = NEMO_RECENT_FIRING(:, rf_idx(t-delay, history_len));
 		I_acc = weights(:,pres);
 		I = I + sum(I_acc,2);
 	end;
@@ -120,10 +120,11 @@ function accumulateStdpStatistics(verbose, fid, t)
 
 	global NEMO_STDP_PREFIRE;
 	global NEMO_STDP_POSTFIRE;
-	global NEMO_STDP_ACC;
 	global NEMO_RECENT_FIRING;
-	global NEMO_RCM_D;
-	global NEMO_RCM_N;
+	global NEMO_RCM;
+	global NEMO_RCM_CHANGED;
+	global NEMO_RCM_VALID;
+	global NEMO_STDP_ACC;
 	global NEMO_MAX_DELAY;
 
 	global NEMO_RTS_LTP;
@@ -135,7 +136,6 @@ function accumulateStdpStatistics(verbose, fid, t)
 
 	% All potentially relevent post-synaptic firings
 
-	global NEMO_RECENT_FIRING;
 	history_len = size(NEMO_RECENT_FIRING, 2);
 	post_firings = find(NEMO_RECENT_FIRING(:, rf_idx(tf, history_len)));
 
@@ -177,45 +177,56 @@ function accumulateStdpStatistics(verbose, fid, t)
 	% offset when doing the lookup based on (valid) dts
 	stdp_fn_origin = stdp_pre_window + 1;
 
-    for pf = 1:size(post_firings,1) 
+	% Pick out only post/delay combination for which postsynaptic neuron fired
+	% and for which there are incoming synapses with the given delay.
+	[posts, ds] = find(NEMO_RCM_VALID(post_firings,:));
 
-		post = post_firings(pf);
+	for i=1:length(posts)
+
+		post = post_firings(posts(i));
+		d = ds(i);
 
 		% All recent firings of presynaptic neurons. Each row corresponds to a
 		% single synapse. There may be several spikes for each synapse       
-		f_pre = NEMO_RECENT_FIRING(NEMO_RCM_N{post},:);                    
-        
-		valid = (f_pre ~= 0);
-		if(~any(any(valid)))
+		pre0 = NEMO_RCM{post,d};
+
+		% f_pre contains one row for each presynaptic neuron, with synapses
+		% converging on postsynaptic.
+		f_pre = NEMO_RECENT_FIRING(pre0,:);
+
+		% Synapses (indices into firing history) for which we need to check dt.
+		% 'synapses' are the row numbers in f_pre which have relevant firings.
+		% TODO: avoid transpose here by storing firing history differently.
+		synapses = (any(f_pre'));
+
+		% It's possible that none of the relevant presynaptic neurons have
+		% fired recently, in which case we give up early.
+		if(~any(synapses))
 			continue;
-		end   
-        
-		% Synapses (indices into reverse connectivity) for which we need to
-		% check dt.
-		synapses = find(any(f_pre'));                                      
-        
+		end
+
 		% i_pres and i_tfired are vectors which together describe all the
-		% synapses which may take part in STDP. i_tfired are the bins in the
+		% spikes which may take part in STDP. i_tfired are the bins in the
 		% recent firing history each spike falls in under.
 		[i_pres, i_tfired] = find(f_pre(synapses,:) ~= 0);                 
-        
-		% Since we have store f_pre in row-major order we get incorrect %
+
+		% Since we have stored f_pre in row-major order we get incorrect
 		% orientation on i_pres and i_tfired if we only have a single row.
 		% Therefore, force into column format.
+		% TODO: make sure this is already in column format
 		i_pres = i_pres(:);
-        
-		%    firing time (pre)     + delay                              - firing time (post)
-		dt = t_buffer(i_tfired(:)) + NEMO_RCM_D{post}(synapses(i_pres)) - tf;
+
+		%    firing time (pre) + delay - firing time (post)
+		dt = t_buffer(i_tfired(:)) + d - tf;
 
 		% Make negative indices 1-based rather than 0-based (but still negative)
 		dt(dt <= 0) = dt(dt <= 0) - 1;
 
 		% Split spikes into presynaptic and postsynaptic regions as described above.
 		subs = stdp_regions(dt + stdp_offset);
-            
+
 		% now get minimum for the presynaptic neurons with active spikes
-		% TODO: share the transpose code with earlier loop exit
-		len = length(find(any(f_pre')));
+		len = length(find(synapses));
 		dt_sorted = accumarray([subs, i_pres], dt, [3 len], @absmin);
 
 		if NEMO_RTS_ENABLED
@@ -223,17 +234,24 @@ function accumulateStdpStatistics(verbose, fid, t)
 			NEMO_RTS_LTD = NEMO_RTS_LTD + length(find(dt_sorted(3,:) ~= 0));
 		end
 
+		NEMO_RCM_CHANGED(post,d) = true;
+
 		% The summing here combines potentiation and depression spikes for the same synapse
-		NEMO_STDP_ACC{post}(synapses) = ...
-			NEMO_STDP_ACC{post}(synapses) + ...
+		NEMO_STDP_ACC{post,d}(synapses) = ...
+			NEMO_STDP_ACC{post,d}(synapses) + ...
 			sum(stdp_fn(dt_sorted(2:3,:)+stdp_fn_origin));
-   end
+
+		if verbose
+			logStdp(fid, 'ltp', t, post, pre0(synapses(dt_sorted(2,:))));
+			logStdp(fid, 'ltd', t, post, pre0(synapses(dt_sorted(3,:))));
+		end
+	end
 end
 
 
 
 function y = absmin(xs)
-	[x, i] = min(abs(xs));
+	[~, i] = min(abs(xs));
 	y = xs(i);
 end
 

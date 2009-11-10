@@ -1,7 +1,7 @@
 function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights, plastic)
 
-	if ~exist('plastic')
-		plastic = logical(zeros(size(targets)));
+	if ~exist('plastic', 'var')
+		plastic = false(size(targets));
 	end;
 
 	global NEMO_NEURONS_A;
@@ -33,24 +33,28 @@ function nemoSetNetwork(a, b, c, d, u, v, targets, delays, weights, plastic)
 	% TODO: limit to size of STDP window
 
 	global NEMO_RECENT_FIRING;
-	NEMO_RECENT_FIRING = logical(zeros(ncount, 64));
+	NEMO_RECENT_FIRING = false(ncount, 64);
 
 	fprintf('Creating reverse connectivity matrix...');
-	set_reverse(targets, delays, plastic, ncount);
+	set_reverse_d(targets, delays, plastic, ncount, NEMO_MAX_DELAY)
 	fprintf('done\n');
 end
 
 
 
-function set_reverse(targets, delays, plastic, ncount)
+% Set reverse matrix split by delay.
+function set_reverse_d(targets, delays, plastic, ncount, d_max)
 
-	global NEMO_RCM_D; % delay for each synapse
-	global NEMO_RCM_N; % index for each presyanptic
+	global NEMO_RCM;
+
 	global NEMO_STDP_ACC;
+	global NEMO_RCM_VALID;
+	global NEMO_RCM_CHANGED;
 
-	NEMO_RCM_D = cell(ncount, 1);
-	NEMO_RCM_N = cell(ncount, 1);
-	NEMO_STDP_ACC = cell(ncount, 1);
+	NEMO_RCM = cell(ncount, d_max);
+	NEMO_STDP_ACC = cell(ncount, d_max);
+	NEMO_RCM_VALID = false(ncount, d_max);
+	NEMO_RCM_CHANGED = false(ncount, d_max);
 
 	[ncount scount] = size(targets);
 	pre = repmat([1:ncount]', scount, 1);
@@ -60,18 +64,22 @@ function set_reverse(targets, delays, plastic, ncount)
 	valid = find(targets ~= 0 & plastic ~= 0);
 
 	if(isempty(valid))
-		warning('No plastic synapses specified. STDP will have no effect.');
+		warning('nemo:info', 'No plastic synapses specified. STDP will have no effect.');
 	end;
 
 	pre_v = pre(valid);
-
-	targets_v = int32(reshape(targets, ncount*scount, 1));
-	NEMO_RCM_N = accumarray(targets_v(valid), pre_v, [ncount 1], @(x) {x'});
-
 	delays_v = int32(reshape(delays, ncount*scount, 1));
-	NEMO_RCM_D = accumarray(targets_v(valid), delays_v(valid), [ncount 1], @(x) {x'});
+	targets_v = int32(reshape(targets, ncount*scount, 1));
+
+	NEMO_RCM = accumarray([targets_v(valid), ...
+		delays_v(valid)], ...
+		pre_v, ...
+		[ncount d_max], @(x) {x'});
 
 	for n=1:ncount
-		NEMO_STDP_ACC{n} = 0 * double(NEMO_RCM_N{n});
+		for d=1:d_max
+			NEMO_STDP_ACC{n,d} = 0 * double(NEMO_RCM{n,d});
+			NEMO_RCM_VALID(n,d) = ~isempty(NEMO_RCM{n,d});
+		end
 	end
 end

@@ -5,60 +5,61 @@ function nemoApplySTDP(reward)
 	global NEMO_STDP_MAX_WEIGHT;
 	global NEMO_STDP_MIN_WEIGHT;
 	global NEMO_RTS_STDP;
-	global NEMO_RCM_D;
-	global NEMO_RCM_N;
-	global NEMO_CYCLE;
-	global NEMO_MAX_DELAY;
+	global NEMO_RCM;
+	%global NEMO_CYCLE;
 	global NEMO_RTS_ENABLED;
+	global NEMO_RCM_CHANGED;
 
 	verbose = false;
 	if(verbose)
 		fid = fopen('stdp.dat','wt');
 	end
 
-	for post=1:length(NEMO_STDP_ACC)
+	[posts, ds] = find(NEMO_RCM_CHANGED);
+	% TODO: may be able to do this better
+	NEMO_RCM_CHANGED = 0;
 
-		pres = NEMO_RCM_N{post};
-		w_diffs = NEMO_STDP_ACC{post};
-		ds = NEMO_RCM_D{post};
+	for i=1:length(posts)
 
-		% TODO: use logical indexing here instead
-		changed = find(w_diffs);
-		NEMO_STDP_ACC{post}(changed) = 0;
+		post = posts(i);
+		d = ds(i);
 
-		% Now apply limiting to the weights
-		for i=changed
+		w_diff = NEMO_STDP_ACC{post,d};
 
-			pre = pres(i);
-			w_diff = w_diffs(i) * reward;
-			d = ds(i);
+		changed = (w_diff ~= 0);
+		NEMO_STDP_ACC{post,d}(changed) = 0;
 
-			w_init = NEMO_CM{d}(post,pre);
-			w_new = w_init + w_diff;
-
-			if(w_init == 0 || sign(w_new) ~= sign(w_init))
-				w_new = 0;
-			elseif(w_new > NEMO_STDP_MAX_WEIGHT)
-				w_new = NEMO_STDP_MAX_WEIGHT;
-			elseif(w_new < NEMO_STDP_MIN_WEIGHT)
-				w_new = NEMO_STDP_MIN_WEIGHT;
-			end
-
-			NEMO_CM{d}(post,pre) = w_new;
-
-			if(verbose)
-				fprintf(fid, 'c%u: stdp (%u->%u) %f %+f = %f\n',...
-					NEMO_CYCLE, pre, post, w_init, w_diff, w_new);
-			end
+		if ~any(changed) || reward == 0
+			continue;
 		end
+
+		pres = NEMO_RCM{post,d}(changed);
+
+		w_init = NEMO_CM{d}(post, pres);
+
+		% TODO: store ACC in same format as input
+		if reward == 1
+			w_new = w_init + w_diff(changed);
+		else % we already know it's not 0
+			w_new = w_init + reward * w_diff(changed);
+		end
+
+		w_new(sign(w_new) ~= sign(w_init)) = 0;
+		w_new(w_new > NEMO_STDP_MAX_WEIGHT) = NEMO_STDP_MAX_WEIGHT;
+		w_new(w_new < NEMO_STDP_MIN_WEIGHT) = NEMO_STDP_MIN_WEIGHT;
+
+		NEMO_CM{d}(post,pres) = w_new;
+
+		% TODO: add back logging
+		%{
+		if(verbose)
+			fprintf(fid, 'c%u: stdp (%u->%u) %f %+f = %f\n',...
+				NEMO_CYCLE, pre, post, w_init, w_diff(changed), w_new);
+		end
+		%}
 
 		if NEMO_RTS_ENABLED
-			NEMO_RTS_STDP = NEMO_RTS_STDP + length(changed);
+			NEMO_RTS_STDP = NEMO_RTS_STDP + length(find(changed));
 		end
 	end
-
-	if(verbose)
-		fclose(fid);
-	end
-
 end
