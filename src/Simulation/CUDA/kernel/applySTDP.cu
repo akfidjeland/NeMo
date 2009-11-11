@@ -94,10 +94,9 @@ applySTDP_(
 
 						float w_old = gf_weight[gf_offset];
 						float w_new = 0.0f;
-						w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
-						if(w_old > 0) {
+						if(w_old > 0.0f) {
 							w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
-						} else {
+						} else if(w_old < 0.0f) {
 							w_new = fmin(0.0f, fmax(w_old + w_diff, minWeight));
 						}
 
