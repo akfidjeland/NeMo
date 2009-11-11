@@ -3,6 +3,7 @@
 
 
 #include <vector>
+#include <stdint.h>
 
 extern "C" {
 #include "cpu_kernel.h"
@@ -52,8 +53,11 @@ struct Network {
 
 	ConnectivityMatrix cm;
 
-	// last cycle's worth of firing, one entry per neuron
+	/* last cycle's worth of firing, one entry per neuron */
 	std::vector<bool_t> fired; 
+
+	/* last 64 cycles worth of firing, one entry per neuron */
+	std::vector<uint64_t> recentFiring;
 
 	// may want to have one rng per neuron or at least per thread
 	std::vector<unsigned int> rng; // fixed length: 4

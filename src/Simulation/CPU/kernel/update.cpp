@@ -109,17 +109,19 @@ updateNeuron(const NParam& param,
 
 
 
+//! \todo move into Network class
 bool_t*
 update(Network* network, unsigned int fstim[], double current[])
 {
 	//! \todo update in parallel?
 	for(size_t n=0; n < network->param.size(); ++n) {
-		network->fired[n] = 
-			updateNeuron(network->param[n],
+		bool fired = updateNeuron(network->param[n],
 					fstim[n],
 					current[n],
 					network->state[n],
 					&network->rng[0]);
+		network->fired[n] = fired;
+		network->recentFiring[n] = (network->recentFiring[n] << 1) | (fired ? 0x1 : 0x0);
 #ifdef VERBOSE
 		if(network->fired[n]) {
 			fprintf(stderr, "n%u fired\n", n);

@@ -17,14 +17,15 @@ Network::Network(
 		double sigma[], //set to 0 if not thalamic input required
 		unsigned int ncount,
 		delay_t maxDelay) :
-	cm(ncount, maxDelay)
+	cm(ncount, maxDelay),
+	fired(ncount, 0),
+	recentFiring(ncount, 0)
 {
 	//! \todo pre-allocate neuron data
 	for(size_t i=0; i < ncount; ++i) {
 		state.push_back(NState(u[i], v[i], sigma[i]));
 		param.push_back(NParam(a[i], b[i], c[i], d[i]));
 	}
-	fired.resize(ncount, 0);
 
 	/* This RNG state vector needs to be filled with initialisation data. Each
 	 * RNG needs 4 32-bit words of seed data. We use just a single RNG now, but
