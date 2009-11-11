@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {- Network where neurons constantly fire. Running this network should flush out
  - buffer overflow errors related to firing -}
 
@@ -12,6 +14,7 @@ import Test.Regression
 
 
 tests = [
+#if defined(CUDA_ENABLED)
     RegressionTest {
         name     = "dense-gpu-1000",
         dataFile = "dense-gpu-1000",
@@ -22,6 +25,7 @@ tests = [
         rngSeed  = 2000,
         stdp     = Nothing
     }
+#endif
   ]
 
 
