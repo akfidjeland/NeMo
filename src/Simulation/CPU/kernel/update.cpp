@@ -2,48 +2,13 @@ extern "C" {
 #include "cpu_kernel.h"
 }
 
-#include <vector>
-#include <math.h>
+#include "Network.hpp"
+#include <cmath>
 
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
 
 //#define VERBOSE
-
-struct NParam {
-
-	NParam(double a, double b, double c, double d) :
-		a(a), b(b), c(c), d(d) {}
-
-	double a;
-	double b;
-	double c;
-	double d;
-};
-
-
-struct NState {
-
-	NState(double u, double v, double sigma) :
-		u(u), v(v), sigma(sigma) {}
-
-	double u;
-	double v;
-	double sigma;
-};
-
-
-struct Network {
-	std::vector<NParam> param;
-	std::vector<NState> state;	
-
-	// last cycle's worth of firing, one entry per neuron
-	std::vector<bool_t> fired; 
-
-	// may want to have one rng per neuron or at least per thread
-	unsigned int rng[4];
-};
-
 
 
 struct Network*
@@ -56,29 +21,8 @@ set_network(double a[],
 		double sigma[], //set to 0 if not thalamic input required
 		unsigned int len)
 {
-	//! \todo pre-allocate neuron data
-	Network* net = new Network();
-	for(size_t i=0; i < len; ++i) {
-		net->state.push_back(NState(u[i], v[i], sigma[i]));
-		net->param.push_back(NParam(a[i], b[i], c[i], d[i]));
-	}
-	net->fired.resize(len, 0);
-
-	/* This RNG state vector needs to be filled with initialisation data. Each
-	 * RNG needs 4 32-bit words of seed data. We use just a single RNG now, but
-	 * should have one per thread for later so that we can get repeatable
-	 * results.
-	 *
-	 * Fill it up from lrand48 -- in practice you would probably use something
-	 * a bit better. */
-	//! \todo move this into ctor of network
-	srand48(0);
-	for(unsigned i=0; i<4; ++i) {
-		net->rng[i] = ((unsigned) lrand48()) << 1;
-	}
-	return net;
+	return new Network(a, b, c, d, u, v, sigma, len);
 }
-
 
 
 void
@@ -173,7 +117,7 @@ update(Network* network, unsigned int fstim[], double current[])
 					fstim[n],
 					current[n],
 					network->state[n],
-					network->rng);
+					&network->rng[0]);
 #ifdef VERBOSE
 		if(network->fired[n]) {
 			fprintf(stderr, "n%u fired\n", n);
