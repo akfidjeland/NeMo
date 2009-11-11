@@ -11,6 +11,7 @@ extern "C" {
 //#define VERBOSE
 
 
+//! \todo move to Network.hpp
 struct Network*
 set_network(double a[],
 		double b[],
@@ -19,9 +20,10 @@ set_network(double a[],
 		double u[],
 		double v[],
 		double sigma[], //set to 0 if not thalamic input required
-		unsigned int len)
+		unsigned int ncount,
+		delay_t maxDelay)
 {
-	return new Network(a, b, c, d, u, v, sigma, len);
+	return new Network(a, b, c, d, u, v, sigma, ncount, maxDelay);
 }
 
 

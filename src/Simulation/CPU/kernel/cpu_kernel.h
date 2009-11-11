@@ -1,9 +1,13 @@
 #ifndef CPU_KERNEL_H
 #define CPU_KERNEL_H
 
-typedef struct Network* NETWORK;
-typedef unsigned int bool_t;
+#include <stddef.h>
+#include "types.h"
 
+typedef struct Network* NETWORK;
+
+
+//! \todo use weight_t here as well? Keep a consisten floating point type
 NETWORK
 set_network(double a[],
 		double b[],
@@ -12,9 +16,19 @@ set_network(double a[],
 		double u[],
 		double v[],
 		double sigma[],
-		unsigned int len);
+		//! \todo use size_t for consistency here
+		unsigned int ncount,
+		delay_t maxDelay);
 
 void delete_network(NETWORK);
+
+
+void add_synapses(NETWORK,
+		nidx_t source,
+		delay_t delay,
+		nidx_t* targets,
+		weight_t* weights,
+		size_t length);
 
 
 /* Update the state of all neurons, returning pointer to per-neuron firing

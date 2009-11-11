@@ -1,10 +1,14 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
+
+#include <vector>
+
 extern "C" {
 #include "cpu_kernel.h"
 }
-#include <vector>
+#include "ConnectivityMatrix.hpp"
+
 
 
 struct NParam {
@@ -40,10 +44,13 @@ struct Network {
 		double u[],
 		double v[],
 		double sigma[], //set to 0 if not thalamic input required
-		unsigned int len);
+		unsigned int ncount,
+		delay_t maxDelay);
 
 	std::vector<NParam> param;
 	std::vector<NState> state;	
+
+	ConnectivityMatrix cm;
 
 	// last cycle's worth of firing, one entry per neuron
 	std::vector<bool_t> fired; 

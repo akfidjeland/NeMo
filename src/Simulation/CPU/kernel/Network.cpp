@@ -2,22 +2,29 @@
 
 #include <cmath>
 
+extern "C" {
+#include "cpu_kernel.h"
+}
 
-Network::Network(double a[],
+
+Network::Network(
+		double a[],
 		double b[],
 		double c[],
 		double d[],
 		double u[],
 		double v[],
 		double sigma[], //set to 0 if not thalamic input required
-		unsigned int len)
+		unsigned int ncount,
+		delay_t maxDelay) :
+	cm(ncount, maxDelay)
 {
 	//! \todo pre-allocate neuron data
-	for(size_t i=0; i < len; ++i) {
+	for(size_t i=0; i < ncount; ++i) {
 		state.push_back(NState(u[i], v[i], sigma[i]));
 		param.push_back(NParam(a[i], b[i], c[i], d[i]));
 	}
-	fired.resize(len, 0);
+	fired.resize(ncount, 0);
 
 	/* This RNG state vector needs to be filled with initialisation data. Each
 	 * RNG needs 4 32-bit words of seed data. We use just a single RNG now, but
@@ -31,4 +38,17 @@ Network::Network(double a[],
 	for(unsigned i=0; i<4; ++i) {
 		rng[i] = ((unsigned) lrand48()) << 1;
 	}
+}
+
+
+
+void
+add_synapses(NETWORK net,
+		nidx_t source,
+		delay_t delay,
+		nidx_t* targets,
+		weight_t* weights,
+		size_t length)
+{
+	net->cm.setRow(source, delay, targets, weights, length);
 }

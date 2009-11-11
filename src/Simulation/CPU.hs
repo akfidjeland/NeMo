@@ -3,13 +3,15 @@
 
 module Simulation.CPU (initSim) where
 
-import Control.Monad (zipWithM_)
+import Control.Monad (forM_)
 import Data.Array.Storable
 import Data.Array.Base
 import Data.IORef
 
-import Construction.Network (Network(Network), neurons)
-import qualified Construction.Neurons as Neurons (size, neurons, indices)
+import qualified Construction.Network as Network
+    (Network(Network), neurons, synapses, maxDelay)
+import qualified Construction.Neurons as Neurons
+    (size, neurons, indices)
 import Construction.Neuron (ndata)
 -- TODO: add import list
 import Construction.Izhikevich
@@ -17,7 +19,8 @@ import Construction.Synapse
 import Simulation
 import Simulation.FiringStimulus
 import Simulation.SpikeQueue as SQ
-import qualified Simulation.CPU.KernelFFI as Kernel (RT, set, update, clear)
+import qualified Simulation.CPU.KernelFFI as Kernel
+    (RT, set, addSynapses, update, clear)
 import Types
 import qualified Util.Assocs as A (mapElems)
 
@@ -87,9 +90,10 @@ accCurrent iacc spikes = do
 
 
 {- | Initialise simulation and return function to step through simuation -}
-initSim :: Network IzhNeuron Static -> IO SimState
-initSim net@(Network ns _) = do
-    rt <- Kernel.set as bs cs ds us vs sigma
+initSim :: Network.Network IzhNeuron Static -> IO SimState
+initSim net@(Network.Network ns _) = do
+    rt <- Kernel.set as bs cs ds us vs sigma $ Network.maxDelay net
+    setConnectivityMatrix rt $ Network.synapses net
     iacc <- newArray bounds 0
     newIORef $ CpuSimulation ss sq iacc rt bounds
     where
@@ -106,6 +110,13 @@ initSim net@(Network ns _) = do
         bounds = (0, Neurons.size ns-1)
 
 
+setConnectivityMatrix rt ss0 =
+    forM_ ss0 $ \(src, ss1) ->
+        forM_ ss1 $ \(delay, ss2) -> do
+            let (targets, weights) = unzip $ map strip ss2
+            Kernel.addSynapses rt src delay targets weights
+    where
+        strip (t, w, _, _) = (t, w)
 
 
 -------------------------------------------------------------------------------
