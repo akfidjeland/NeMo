@@ -7,7 +7,6 @@ import Control.Parallel.Strategies
 import Data.List (foldl', intercalate)
 import System.CPUTime (getCPUTime)
 import System.Exit (exitWith, ExitCode(..))
-import System.FilePath
 import System.IO
 import System.Random
 import Text.Printf

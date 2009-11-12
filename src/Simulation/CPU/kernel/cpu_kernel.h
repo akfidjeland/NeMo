@@ -33,9 +33,13 @@ void add_synapses(NETWORK,
 		size_t length);
 
 
-/* Update the state of all neurons, returning pointer to per-neuron firing
- * vector. The return data is valid until the next call to update. */
-bool_t* update(NETWORK network, unsigned int[], double current[]);
+/*! Update the state of all neurons, returning pointer to per-neuron firing
+ * vector. The return data is valid until the next call to update.
+ *
+ * \param fstim
+ * 		Per-neuron vector indiciating which ones should be stimulated this cycle.
+ */
+bool_t* update(NETWORK network, unsigned int fstim[]);
 
 
 #endif

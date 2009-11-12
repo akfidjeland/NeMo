@@ -130,7 +130,7 @@ updateNeuron(const NParam& param,
 
 
 bool_t*
-Network::step(unsigned int fstim[], double current2[])
+Network::step(unsigned int fstim[])
 {
 	//! \todo use a separate step function instead
 	const std::vector<fp_t>& current = deliverSpikes();

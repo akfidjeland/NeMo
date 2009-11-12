@@ -34,7 +34,7 @@ delete_network(Network* net)
 
 //! \todo move into Network class
 bool_t*
-update(Network* network, unsigned int fstim[], double current2[])
+update(Network* network, unsigned int fstim[])
 {
-	network->step(fstim, current2);
+	network->step(fstim);
 }

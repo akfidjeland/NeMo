@@ -98,15 +98,12 @@ addSynapses rt src delay targets weights = do
 update
     :: RT
     -> (Int, Int)               -- ^ neuron index bounds
-    -- TODO: make this a storable array instead
     -> [Bool]                   -- ^ firing stimulus
-    -> StorableArray Int Double -- ^ current stimulus
     -> IO [Int]                 -- ^ indices of fired neurons
-update rt bs fstim c_current = do
+update rt bs fstim = do
     c_fstim <- newListArray bs $ map fromBool fstim
-    withStorableArray c_current $ \current_ptr -> do
     withStorableArray c_fstim $ \fstim_ptr -> do
-    fired <- peekArray sz =<< c_update rt fstim_ptr current_ptr
+    fired <- peekArray sz =<< c_update rt fstim_ptr
     return $! map fst $ filter snd $ zip [0..] $ map toBool fired
     where
         sz = 1 + snd bs - fst bs
@@ -115,10 +112,6 @@ update rt bs fstim c_current = do
 foreign import ccall unsafe "update" c_update
     :: RT
     -> Ptr CUInt       -- ^ boolean vector of firing stimulus
-    {- Note: this is slightly dodgy. We should really use CDouble here.
-     - However, CDouble is just a newtype of Double, so doing a cast would be
-     - wasteful -}
-    -> Ptr Double      -- ^ input current for each neuron
     -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
 
 

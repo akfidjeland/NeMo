@@ -48,8 +48,7 @@ struct Network {
 		unsigned int ncount,
 		delay_t maxDelay);
 
-	//bool_t* step(unsigned int fstim[]);
-	bool_t* step(unsigned int fstim[], double current2[]);
+	bool_t* step(unsigned int fstim[]);
 
 	/*! Deliver spikes due for delivery */
 	const std::vector<fp_t>& deliverSpikes();
