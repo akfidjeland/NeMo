@@ -29,6 +29,8 @@ class ConnectivityMatrix
 				const weight_t* weights,
 				size_t length);
 
+		const std::vector<Synapse>& getRow(nidx_t source, delay_t) const;
+
 	private:
 
 		/* Synapses are stored per presynaptic and per delay */
@@ -38,7 +40,7 @@ class ConnectivityMatrix
 		size_t m_maxDelay;
 
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */			
-		size_t addressOf(nidx_t, delay_t); 
+		size_t addressOf(nidx_t, delay_t) const;
 };
 
 #endif

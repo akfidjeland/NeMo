@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include "types.h"
 
+//#define DEBUG_TRACE
+
 typedef struct Network* NETWORK;
 
 

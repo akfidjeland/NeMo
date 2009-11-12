@@ -28,9 +28,16 @@ ConnectivityMatrix::setRow(
 
 
 
+const std::vector<Synapse>&
+ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
+{
+	return m_cm[addressOf(source, delay)];
+}
+
+
 
 size_t
-ConnectivityMatrix::addressOf(nidx_t source, delay_t delay)
+ConnectivityMatrix::addressOf(nidx_t source, delay_t delay) const
 {
 	//! \todo use exceptions here instead, so we can signal back to caller
 	// or better yet, just make use of safe code when looking up m_cm 
