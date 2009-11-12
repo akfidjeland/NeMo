@@ -13,7 +13,7 @@ import Construction.Izhikevich
 import Construction.Synapse (Static)
 import Simulation
 import qualified Simulation.CPU.KernelFFI as Kernel
-    (RT, set, addSynapses, update, clear)
+    (RT, set, addSynapses, step, clear)
 import Types
 
 
@@ -45,7 +45,7 @@ instance Simulation_Iface CpuSimulation where
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
 stepSim sim forcedFiring =
     let fstim = densify forcedFiring [0..] in
-    return . FiringOutput =<< Kernel.update (rt sim) (nbounds sim) fstim
+    return . FiringOutput =<< Kernel.step (rt sim) (nbounds sim) fstim
 
 
 

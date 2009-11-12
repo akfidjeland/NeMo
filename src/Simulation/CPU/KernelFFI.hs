@@ -1,8 +1,8 @@
-{- | Wrapper for C simulation kernel -}
+{- | Wrapper for C-based simulation kernel -}
 
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module Simulation.CPU.KernelFFI (RT, set, update, addSynapses, clear) where
+module Simulation.CPU.KernelFFI (RT, set, step, addSynapses, clear) where
 
 import Control.Exception (assert)
 import Control.Monad (when)
@@ -61,7 +61,7 @@ set as bs cs ds us vs sigma maxDelay = do
         bounds = (0, sz-1)
 
 
-foreign import ccall unsafe "set_network" c_set_network
+foreign import ccall unsafe "cpu_set_network" c_set_network
     :: Ptr CDouble -- ^ a
     -> Ptr CDouble -- ^ b
     -> Ptr CDouble -- ^ c
@@ -74,7 +74,7 @@ foreign import ccall unsafe "set_network" c_set_network
     -> IO RT
 
 
-foreign import ccall unsafe "add_synapses" c_add_synapses
+foreign import ccall unsafe "cpu_add_synapses" c_add_synapses
     :: RT
     -> CIdx
     -> CDelay
@@ -95,24 +95,24 @@ addSynapses rt src delay targets weights = do
 
 
 {- | Perform a single simulation step -}
-update
+step
     :: RT
     -> (Int, Int)               -- ^ neuron index bounds
     -> [Bool]                   -- ^ firing stimulus
     -> IO [Int]                 -- ^ indices of fired neurons
-update rt bs fstim = do
+step rt bs fstim = do
     c_fstim <- newListArray bs $ map fromBool fstim
     withStorableArray c_fstim $ \fstim_ptr -> do
-    fired <- peekArray sz =<< c_update rt fstim_ptr
+    fired <- peekArray sz =<< c_step rt fstim_ptr
     return $! map fst $ filter snd $ zip [0..] $ map toBool fired
     where
         sz = 1 + snd bs - fst bs
 
 
-foreign import ccall unsafe "update" c_update
+foreign import ccall unsafe "cpu_step" c_step
     :: RT
     -> Ptr CUInt       -- ^ boolean vector of firing stimulus
     -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
 
 
-foreign import ccall unsafe "delete_network" clear :: RT -> IO ()
+foreign import ccall unsafe "cpu_delete_network" clear :: RT -> IO ()

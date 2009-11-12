@@ -1,11 +1,7 @@
-#include "Network.hpp"
-
-
 #include <cmath>
 
-extern "C" {
-#include "cpu_kernel.h"
-}
+#include "Network.hpp"
+
 
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
@@ -21,9 +17,10 @@ Network::Network(
 		double sigma[], //set to 0 if not thalamic input required
 		unsigned int ncount,
 		delay_t maxDelay) :
-	cm(ncount, maxDelay),
-	recentFiring(ncount, 0),
-	current(ncount, 0),
+	m_cm(ncount, maxDelay),
+	m_recentFiring(ncount, 0),
+	m_current(ncount, 0),
+	m_rng(4, 0),
 	m_fired(ncount, 0),
 	m_neuronCount(ncount),
 	m_maxDelay(maxDelay),
@@ -31,8 +28,8 @@ Network::Network(
 {
 	//! \todo pre-allocate neuron data
 	for(size_t i=0; i < ncount; ++i) {
-		state.push_back(NState(u[i], v[i], sigma[i]));
-		param.push_back(NParam(a[i], b[i], c[i], d[i]));
+		m_state.push_back(NState(u[i], v[i], sigma[i]));
+		m_param.push_back(NParam(a[i], b[i], c[i], d[i]));
 	}
 
 	/* This RNG state vector needs to be filled with initialisation data. Each
@@ -43,9 +40,8 @@ Network::Network(
 	 * Fill it up from lrand48 -- in practice you would probably use something
 	 * a bit better. */
 	srand48(0);
-	rng.resize(4);
 	for(unsigned i=0; i<4; ++i) {
-		rng[i] = ((unsigned) lrand48()) << 1;
+		m_rng[i] = ((unsigned) lrand48()) << 1;
 	}
 }
 
@@ -128,23 +124,36 @@ updateNeuron(const NParam& param,
 
 
 
+void
+Network::setCMRow(nidx_t source, delay_t delay,
+			const nidx_t* targets, const weight_t* weights, size_t length)
+{
+	m_cm.setRow(source, delay, targets, weights, length);
+}
+
+
 
 bool_t*
 Network::step(unsigned int fstim[])
 {
-	//! \todo use a separate step function instead
-	const std::vector<fp_t>& current = deliverSpikes();
+	deliverSpikes();
+	update(fstim);
+}
 
+
+
+bool_t*
+Network::update(unsigned int fstim[])
+{
 	//! \todo update in parallel?
-	//! \todo factor out the update
-	for(size_t n=0; n < param.size(); ++n) {
-		bool fired = updateNeuron(param[n],
+	for(size_t n=0; n < m_param.size(); ++n) {
+		bool fired = updateNeuron(m_param[n],
 					fstim[n],
-					current[n],
-					state[n],
-					&rng[0]);
+					m_current[n],
+					m_state[n],
+					&m_rng[0]);
 		m_fired[n] = fired;
-		recentFiring[n] = (recentFiring[n] << 1) | (fired ? 0x1 : 0x0);
+		m_recentFiring[n] = (m_recentFiring[n] << 1) | (fired ? 0x1 : 0x0);
 
 #ifdef DEBUG_TRACE
 		if(fired) {
@@ -167,12 +176,12 @@ Network::deliverSpikes()
 	 * may be needed for STDP */
 	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_maxDelay);
 
-	std::fill(current.begin(), current.end(), 0);
+	std::fill(m_current.begin(), m_current.end(), 0);
 
 	for(size_t source=0; source < m_neuronCount; ++source) {
 
 		//! \todo make use of delay bits here to avoid looping
-		uint64_t f = recentFiring[source] & validSpikes;
+		uint64_t f = m_recentFiring[source] & validSpikes;
 
 		//! \todo add sanity check to make sure that ffsll takes 64-bit
 		int delay = 0;
@@ -185,35 +194,21 @@ Network::deliverSpikes()
 		}
 	}
 
-	return current;
+	return m_current;
 }
 
 
 void
-Network::deliverSpikesOne(
-		nidx_t source, delay_t delay)
+Network::deliverSpikesOne(nidx_t source, delay_t delay)
 {
-	const std::vector<Synapse>& ss = cm.getRow(source, delay);
+	const std::vector<Synapse>& ss = m_cm.getRow(source, delay);
 
 	for(std::vector<Synapse>::const_iterator s = ss.begin();
 			s != ss.end(); ++s) {
-		current[s->target] += s->weight;
+		m_current[s->target] += s->weight;
 #ifdef DEBUG_TRACE
 		fprintf(stderr, "c%u: n%u -> n%u: %+f (delay %u)\n",
 				m_cycle, source, s->target, s->weight, delay);
 #endif
 	}
-}
-
-
-
-void
-add_synapses(NETWORK net,
-		nidx_t source,
-		delay_t delay,
-		nidx_t* targets,
-		weight_t* weights,
-		size_t length)
-{
-	net->cm.setRow(source, delay, targets, weights, length);
 }

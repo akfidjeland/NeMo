@@ -73,7 +73,7 @@ executable nemo
 
     -- CPU simulation kernel written in C
     include-dirs:           src/Simulation/CPU/kernel
-    c-sources:              src/Simulation/CPU/kernel/update.cpp,
+    c-sources:              src/Simulation/CPU/kernel/cpu_kernel.cpp
                             src/Simulation/CPU/kernel/Network.cpp
                             src/Simulation/CPU/kernel/ConnectivityMatrix.cpp
     extra-libraries:        stdc++

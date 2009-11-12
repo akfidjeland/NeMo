@@ -11,7 +11,7 @@ typedef struct Network* NETWORK;
 
 //! \todo use weight_t here as well? Keep a consisten floating point type
 NETWORK
-set_network(double a[],
+cpu_set_network(double a[],
 		double b[],
 		double c[],
 		double d[],
@@ -22,10 +22,10 @@ set_network(double a[],
 		unsigned int ncount,
 		delay_t maxDelay);
 
-void delete_network(NETWORK);
+void cpu_delete_network(NETWORK);
 
 
-void add_synapses(NETWORK,
+void cpu_add_synapses(NETWORK,
 		nidx_t source,
 		delay_t delay,
 		nidx_t* targets,
@@ -33,13 +33,27 @@ void add_synapses(NETWORK,
 		size_t length);
 
 
-/*! Update the state of all neurons, returning pointer to per-neuron firing
- * vector. The return data is valid until the next call to update.
+
+/*! Perform a single simulation step by delivering spikes and updating the
+ * state of all neurons.
+ *
+ * \return
+ * 		pointer to per-neuron firing vector. The return data is valid until the
+ * 		next call to update.
  *
  * \param fstim
  * 		Per-neuron vector indiciating which ones should be stimulated this cycle.
  */
+bool_t* cpu_step(NETWORK network, unsigned int fstim[]);
+
+
+/* The step function above will do both the spike delivery and update. However,
+ * it can sometimes be desirable to call these individually, e.g. for profiling
+ * reasons. If so, call 'deliver_spikes', then 'update' */
+
+void cpu_deliver_spikes(NETWORK network);
 bool_t* update(NETWORK network, unsigned int fstim[]);
+
 
 
 #endif

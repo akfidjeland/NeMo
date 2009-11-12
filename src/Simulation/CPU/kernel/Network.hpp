@@ -5,9 +5,6 @@
 #include <vector>
 #include <stdint.h>
 
-extern "C" {
-#include "cpu_kernel.h"
-}
 #include "ConnectivityMatrix.hpp"
 
 
@@ -38,36 +35,45 @@ struct NState {
 
 struct Network {
 
-	Network(double a[],
-		double b[],
-		double c[],
-		double d[],
-		double u[],
-		double v[],
-		double sigma[], //set to 0 if not thalamic input required
-		unsigned int ncount,
-		delay_t maxDelay);
+	public:
 
-	bool_t* step(unsigned int fstim[]);
+		Network(double a[],
+			double b[],
+			double c[],
+			double d[],
+			double u[],
+			double v[],
+			double sigma[], //set to 0 if not thalamic input required
+			unsigned int ncount,
+			delay_t maxDelay);
 
-	/*! Deliver spikes due for delivery */
-	const std::vector<fp_t>& deliverSpikes();
+		/*! Add synapses for a particular presynaptic neuron and a particular delay */
+		void setCMRow(nidx_t source, delay_t delay,
+				const nidx_t* targets, const weight_t* weights, size_t length);
 
-	std::vector<NParam> param;
-	std::vector<NState> state;	
+		/*! Deliver spikes and update neuron state */
+		bool_t* step(unsigned int fstim[]);
 
-	ConnectivityMatrix cm;
+		/*! Update state of all neurons */
+		bool_t* update(unsigned int fstim[]);
 
-	/* last 64 cycles worth of firing, one entry per neuron */
-	std::vector<uint64_t> recentFiring;
-
-	/* accumulated current from incoming spikes for each neuron */
-	std::vector<fp_t> current;
-
-	// may want to have one rng per neuron or at least per thread
-	std::vector<unsigned int> rng; // fixed length: 4
+		/*! Deliver spikes due for delivery */
+		const std::vector<fp_t>& deliverSpikes();
 
 	private:
+
+		std::vector<NParam> m_param;
+		std::vector<NState> m_state;
+		ConnectivityMatrix m_cm;
+
+		/* last 64 cycles worth of firing, one entry per neuron */
+		std::vector<uint64_t> m_recentFiring;
+
+		/* accumulated current from incoming spikes for each neuron */
+		std::vector<fp_t> m_current;
+
+		// may want to have one rng per neuron or at least per thread
+		std::vector<unsigned int> m_rng; // fixed length: 4
 
 		/* last cycle's worth of firing, one entry per neuron */
 		std::vector<bool_t> m_fired;
