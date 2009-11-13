@@ -32,6 +32,10 @@ flag Benchmark
     description:            Create binary which runs benchmarks
     default:                False
 
+flag Single
+    description:            Use single-precisison floating points in the CPU backend
+    default:                False
+
 
 executable nemo
     main-is:                Nemo.hs
@@ -77,6 +81,9 @@ executable nemo
                             src/Simulation/CPU/kernel/Network.cpp
                             src/Simulation/CPU/kernel/ConnectivityMatrix.cpp
     extra-libraries:        stdc++
+    if flag(Single)
+        cpp-options:        -DCPU_SINGLE_PRECISION
+        cc-options:         -DCPU_SINGLE_PRECISION
 
     if flag(Benchmark)
         other-modules:      Benchmark,
@@ -110,7 +117,7 @@ executable nemo
     if flag(Matlab)
         cpp-options:        -DMATLAB_ENABLED
 
-    -- We have several test scripts. These should really be replaced by scripts
+    -- We have several example scripts. These should really be replaced by scripts
     -- which are loaded dynamically by the main nemo binary.
     if flag(examples)
         other-modules:      Examples.Random1k,

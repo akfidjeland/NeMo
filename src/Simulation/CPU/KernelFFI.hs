@@ -1,5 +1,6 @@
 {- | Wrapper for C-based simulation kernel -}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module Simulation.CPU.KernelFFI (RT, set, step, addSynapses, clear) where
@@ -15,14 +16,17 @@ import Foreign.Ptr
 import Types
 
 
-
 {- Opaque handle to network stored in foreign code -}
 data ForeignData = ForeignData
 
 type RT = Ptr ForeignData
 
 type CIdx = CUInt
+#if defined(CPU_SINGLE_PRECISION)
+type CFt = CFloat
+#else
 type CFt = CDouble
+#endif
 type CDelay = CUInt
 type CWeight = CFt
 
@@ -62,14 +66,14 @@ set as bs cs ds us vs sigma maxDelay = do
 
 
 foreign import ccall unsafe "cpu_set_network" c_set_network
-    :: Ptr CDouble -- ^ a
-    -> Ptr CDouble -- ^ b
-    -> Ptr CDouble -- ^ c
-    -> Ptr CDouble -- ^ d
-    -> Ptr CDouble -- ^ u
-    -> Ptr CDouble -- ^ v
-    -> Ptr CDouble -- ^ sigma
-    -> CUInt       -- ^ network size
+    :: Ptr CFt     -- ^ a
+    -> Ptr CFt     -- ^ b
+    -> Ptr CFt     -- ^ c
+    -> Ptr CFt     -- ^ d
+    -> Ptr CFt     -- ^ u
+    -> Ptr CFt     -- ^ v
+    -> Ptr CFt     -- ^ sigma
+    -> CSize       -- ^ network size
     -> CDelay      -- ^ max delay
     -> IO RT
 

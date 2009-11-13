@@ -11,24 +11,24 @@
 
 struct NParam {
 
-	NParam(double a, double b, double c, double d) :
+	NParam(fp_t a, fp_t b, fp_t c, fp_t d) :
 		a(a), b(b), c(c), d(d) {}
 
-	double a;
-	double b;
-	double c;
-	double d;
+	fp_t a;
+	fp_t b;
+	fp_t c;
+	fp_t d;
 };
 
 
 struct NState {
 
-	NState(double u, double v, double sigma) :
+	NState(fp_t u, fp_t v, fp_t sigma) :
 		u(u), v(v), sigma(sigma) {}
 
-	double u;
-	double v;
-	double sigma;
+	fp_t u;
+	fp_t v;
+	fp_t sigma;
 };
 
 
@@ -37,14 +37,14 @@ struct Network {
 
 	public:
 
-		Network(double a[],
-			double b[],
-			double c[],
-			double d[],
-			double u[],
-			double v[],
-			double sigma[], //set to 0 if not thalamic input required
-			unsigned int ncount,
+		Network(fp_t a[],
+			fp_t b[],
+			fp_t c[],
+			fp_t d[],
+			fp_t u[],
+			fp_t v[],
+			fp_t sigma[], //set to 0 if not thalamic input required
+			size_t ncount,
 			delay_t maxDelay);
 
 		/*! Add synapses for a particular presynaptic neuron and a particular delay */

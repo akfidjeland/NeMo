@@ -4,23 +4,21 @@
 #include <stddef.h>
 #include "types.h"
 
-//#define DEBUG_TRACE
 
 typedef struct Network* NETWORK;
 
 
-//! \todo use weight_t here as well? Keep a consisten floating point type
 NETWORK
-cpu_set_network(double a[],
-		double b[],
-		double c[],
-		double d[],
-		double u[],
-		double v[],
-		double sigma[],
-		//! \todo use size_t for consistency here
-		unsigned int ncount,
+cpu_set_network(fp_t a[],
+		fp_t b[],
+		fp_t c[],
+		fp_t d[],
+		fp_t u[],
+		fp_t v[],
+		fp_t sigma[],
+		size_t ncount,
 		delay_t maxDelay);
+
 
 void cpu_delete_network(NETWORK);
 
@@ -53,7 +51,6 @@ bool_t* cpu_step(NETWORK network, unsigned int fstim[]);
 
 void cpu_deliver_spikes(NETWORK network);
 bool_t* update(NETWORK network, unsigned int fstim[]);
-
 
 
 #endif

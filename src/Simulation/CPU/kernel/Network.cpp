@@ -8,14 +8,14 @@
 
 
 Network::Network(
-		double a[],
-		double b[],
-		double c[],
-		double d[],
-		double u[],
-		double v[],
-		double sigma[], //set to 0 if not thalamic input required
-		unsigned int ncount,
+		fp_t a[],
+		fp_t b[],
+		fp_t c[],
+		fp_t d[],
+		fp_t u[],
+		fp_t v[],
+		fp_t sigma[], //set to 0 if thalamic input not required
+		size_t ncount,
 		delay_t maxDelay) :
 	m_cm(ncount, maxDelay),
 	m_recentFiring(ncount, 0),
@@ -80,20 +80,20 @@ inline
 bool_t
 updateNeuron(const NParam& param,
 		unsigned int stimulated,
-		double I,
+		fp_t I,
 		NState& state,
 		unsigned* rng)
 {
 	bool fired = false;
 
-	double a = param.a;
-	double b = param.b;
-	double u = state.u;
-	double v = state.v;
+	fp_t a = param.a;
+	fp_t b = param.b;
+	fp_t u = state.u;
+	fp_t v = state.v;
 
 	/* thalamic input */
 	if(state.sigma != 0.0f) {
-		I += state.sigma * (double) rng_genGaussian(rng);
+		I += state.sigma * (fp_t) rng_genGaussian(rng);
 	}
 
 	//! \todo explicitly unroll
