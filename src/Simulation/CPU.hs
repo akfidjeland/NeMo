@@ -5,24 +5,20 @@ module Simulation.CPU (initSim) where
 import Control.Monad (forM_)
 
 import qualified Construction.Network as Network
-    (Network(Network), neurons, synapses, maxDelay)
+    (Network(Network), synapses, maxDelay)
 import qualified Construction.Neurons as Neurons
-    (size, neurons, indices)
+    (size, neurons)
 import Construction.Neuron (ndata)
 import Construction.Izhikevich
 import Construction.Synapse (Static)
 import Simulation
 import qualified Simulation.CPU.KernelFFI as Kernel
-    (RT, set, addSynapses, step, clear)
 import Types
 
 
-{- The Network data type is used when constructing the net, but is not suitable
- - for execution. When executing we need 1) fast random access 2) in-place
- - modification, hence IOArray. -}
 data CpuSimulation = CpuSimulation {
         rt       :: Kernel.RT,
-        nbounds  :: (Int, Int)
+        fstim    :: Kernel.StimulusBuffer
     }
 
 
@@ -44,8 +40,7 @@ instance Simulation_Iface CpuSimulation where
  - propagate spikes -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
 stepSim sim forcedFiring =
-    let fstim = densify forcedFiring [0..] in
-    return . FiringOutput =<< Kernel.step (rt sim) (nbounds sim) fstim
+    return . FiringOutput =<< Kernel.step (rt sim) (fstim sim) forcedFiring
 
 
 
@@ -54,12 +49,12 @@ stepSim sim forcedFiring =
 -------------------------------------------------------------------------------
 
 
-{- | Initialise simulation and return function to step through simuation -}
 initSim :: Network.Network IzhNeuron Static -> IO CpuSimulation
 initSim net@(Network.Network ns _) = do
     rt <- Kernel.set as bs cs ds us vs sigma $ Network.maxDelay net
     setConnectivityMatrix rt $ Network.synapses net
-    return $ CpuSimulation rt bounds
+    fstim <- Kernel.newStimulusBuffer $ Neurons.size ns
+    return $ CpuSimulation rt fstim
     where
         ns' = map ndata (Neurons.neurons ns)
         as = map paramA ns'
@@ -69,7 +64,6 @@ initSim net@(Network.Network ns _) = do
         us = map initU ns'
         vs = map initV ns'
         sigma = map (maybe 0.0 id . stateSigma) ns'
-        bounds = (0, Neurons.size ns-1)
 
 
 
@@ -80,20 +74,3 @@ setConnectivityMatrix rt ss0 =
             Kernel.addSynapses rt src delay targets weights
     where
         strip (t, w, _, _) = (t, w)
-
-
--------------------------------------------------------------------------------
--- Simulation utility functions
--------------------------------------------------------------------------------
-
-
-{- pre: sorted xs
-        sorted ys
-        xs `subset` ys -}
-densify :: (Ord ix) => [ix] -> [ix] -> [Bool]
-densify [] ys = map (\_ -> False) ys
-densify xs [] = error "densify: sparse list contains out-of-bounds indices"
-densify (x:xs) (y:ys)
-        | x > y     = False : (densify (x:xs) ys)
-        | x == y    = True : (densify xs ys)
-        | otherwise = error "densify: sparse list does not match dense list"

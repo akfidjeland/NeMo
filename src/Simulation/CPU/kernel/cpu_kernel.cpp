@@ -22,7 +22,7 @@ cpu_set_network(fp_t a[],
 
 
 void
-cpu_add_synapses(NETWORK net,
+cpu_add_synapses(Network* net,
 		nidx_t source,
 		delay_t delay,
 		nidx_t* targets,

@@ -50,7 +50,7 @@ bool_t* cpu_step(NETWORK network, unsigned int fstim[]);
  * reasons. If so, call 'deliver_spikes', then 'update' */
 
 void cpu_deliver_spikes(NETWORK network);
-bool_t* update(NETWORK network, unsigned int fstim[]);
+bool_t* cpu_update(NETWORK network, unsigned int fstim[]);
 
 
 #endif

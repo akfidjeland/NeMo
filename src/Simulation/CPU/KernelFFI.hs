@@ -3,15 +3,25 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module Simulation.CPU.KernelFFI (RT, set, step, addSynapses, clear) where
+module Simulation.CPU.KernelFFI (
+    RT,
+    StimulusBuffer,
+    newStimulusBuffer,
+    set,
+    step,
+    addSynapses,
+    clear)
+where
 
+import Control.Applicative
 import Control.Exception (assert)
-import Control.Monad (when)
+import Control.Monad (when, zipWithM_)
 import Data.Array.Storable
 import Foreign.C.Types
 import Foreign.Marshal.Array (peekArray, withArrayLen)
 import Foreign.Marshal.Utils (fromBool, toBool)
 import Foreign.Ptr
+import Foreign.Storable
 
 import Types
 
@@ -20,6 +30,14 @@ import Types
 data ForeignData = ForeignData
 
 type RT = Ptr ForeignData
+
+{- We pre-allocate a buffer to store firing stimulus. This is to avoid repeated
+ - allocation. -}
+type StimulusBuffer = StorableArray Int CUInt
+
+newStimulusBuffer :: Int -> IO StimulusBuffer
+newStimulusBuffer ncount = newListArray (0, ncount-1) $ repeat 0
+
 
 type CIdx = CUInt
 #if defined(CPU_SINGLE_PRECISION)
@@ -101,19 +119,38 @@ addSynapses rt src delay targets weights = do
 {- | Perform a single simulation step -}
 step
     :: RT
-    -> (Int, Int)               -- ^ neuron index bounds
-    -> [Bool]                   -- ^ firing stimulus
+    -> StorableArray Int CUInt  -- ^ buffer for firing stimulus
+    -> [Int]                    -- ^ indices of stimulated neurons
     -> IO [Int]                 -- ^ indices of fired neurons
-step rt bs fstim = do
-    c_fstim <- newListArray bs $ map fromBool fstim
-    withStorableArray c_fstim $ \fstim_ptr -> do
-    fired <- peekArray sz =<< c_step rt fstim_ptr
+step rt c_fstim fstim = do
+    bounds <- getBounds c_fstim
+    let sz = 1 + snd bounds - fst bounds
+    c_deliver_spikes rt
+    {- To avoid having to pass over the whole array of firing stimulus we just
+     - flip the status of the ones which are affected this cycle. -}
+    fired <- withElemsSet c_fstim fstim $ \arr -> do
+        withStorableArray arr $ \ptr -> c_update rt ptr >>= peekArray sz
     return $! map fst $ filter snd $ zip [0..] $ map toBool fired
+
+
+{- | Run computation with certain values of array set, then reset the array -}
+withElemsSet :: (Ix i) => StorableArray i CUInt -> [i] -> (StorableArray i CUInt -> IO a) -> IO a
+withElemsSet arr idx f = write 1 *> f arr <* write 0
     where
-        sz = 1 + snd bs - fst bs
+        write val = mapM_ (\i -> writeArray arr i val) idx
+
 
 
 foreign import ccall unsafe "cpu_step" c_step
+    :: RT
+    -> Ptr CUInt       -- ^ boolean vector of firing stimulus
+    -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
+
+
+foreign import ccall unsafe "cpu_deliver_spikes" c_deliver_spikes :: RT -> IO ()
+
+
+foreign import ccall unsafe "cpu_update" c_update
     :: RT
     -> Ptr CUInt       -- ^ boolean vector of firing stimulus
     -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
