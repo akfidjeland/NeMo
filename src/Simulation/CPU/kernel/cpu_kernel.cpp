@@ -42,7 +42,7 @@ cpu_delete_network(Network* net)
 
 
 
-bool_t*
+void
 cpu_step(Network* network, unsigned int fstim[])
 {
 	network->step(fstim);
@@ -66,8 +66,13 @@ cpu_update(Network* network, unsigned int fstim[])
 
 
 
-bool_t*
-cpu_read_firing(Network* network)
+void
+cpu_read_firing(Network* network,
+		unsigned int** neuronIdx,
+		unsigned int* nfired)
 {
-	network->readFiring();
+	const std::vector<unsigned int>& firings = network->readFiring();
+	*neuronIdx = const_cast<unsigned int*>(&firings[0]);
+	*nfired = firings.size();
 }
+

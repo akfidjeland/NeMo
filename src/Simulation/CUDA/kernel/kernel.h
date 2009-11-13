@@ -130,7 +130,7 @@ getCM(RTDATA rtdata,
  * The three arrays together form a vector of 3-tuples specifying cycle,
  * partition index, and neuron index for all the fired neurons. 
  *
- * The last to output variables contain the number of neurons and the number of
+ * The last two output variables contain the number of neurons and the number of
  * cycles for which we have firing.
  */
 void

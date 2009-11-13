@@ -19,8 +19,7 @@ import Types
 -- TODO: move this into Kernel
 data CpuSimulation = CpuSimulation {
         rt       :: Kernel.RT,
-        fstim    :: Kernel.StimulusBuffer,
-        ncount   :: Int
+        fstim    :: Kernel.StimulusBuffer
     }
 
 
@@ -50,7 +49,7 @@ stepSim_ sim forcedFiring = Kernel.step (rt sim) (fstim sim) forcedFiring
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
 stepSim sim fstim = do
     stepSim_ sim fstim
-    return . FiringOutput =<< Kernel.readFiring (rt sim) (ncount sim)
+    return . FiringOutput =<< Kernel.readFiring (rt sim)
 
 
 
@@ -64,7 +63,7 @@ initSim net@(Network.Network ns _) = do
     rt <- Kernel.set as bs cs ds us vs sigma $ Network.maxDelay net
     setConnectivityMatrix rt $ Network.synapses net
     fstim <- Kernel.newStimulusBuffer $ ncount
-    return $ CpuSimulation rt fstim ncount
+    return $ CpuSimulation rt fstim
     where
         ns' = map ndata (Neurons.neurons ns)
         as = map paramA ns'

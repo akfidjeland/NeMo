@@ -52,7 +52,7 @@ struct Network {
 				const nidx_t* targets, const weight_t* weights, size_t length);
 
 		/*! Deliver spikes and update neuron state */
-		const bool_t* step(unsigned int fstim[]);
+		void step(unsigned int fstim[]);
 
 		/*! Update state of all neurons */
 		void update(unsigned int fstim[]);
@@ -60,7 +60,7 @@ struct Network {
 		/*! Deliver spikes due for delivery */
 		const std::vector<fp_t>& deliverSpikes();
 
-		const bool_t* readFiring() const;
+		const std::vector<unsigned int>& readFiring() const;
 
 	private:
 
@@ -77,8 +77,9 @@ struct Network {
 		// may want to have one rng per neuron or at least per thread
 		std::vector<unsigned int> m_rng; // fixed length: 4
 
-		/* last cycle's worth of firing, one entry per neuron */
-		std::vector<bool_t> m_fired;
+		/* compacted firing for the last cycle's worth of firing, one entry per
+		 * fired neuron */
+		std::vector<unsigned int> m_fired;
 
 		size_t m_neuronCount;
 

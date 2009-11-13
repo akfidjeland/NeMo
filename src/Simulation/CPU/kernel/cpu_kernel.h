@@ -33,16 +33,14 @@ void cpu_add_synapses(NETWORK,
 
 
 /*! Perform a single simulation step by delivering spikes and updating the
- * state of all neurons.
- *
- * \return
- * 		pointer to per-neuron firing vector. The return data is valid until the
- * 		next call to update.
+ * state of all neurons. No firings are returned. Instead these are read using
+ * cpu_read_firing.
  *
  * \param fstim
- * 		Per-neuron vector indiciating which ones should be stimulated this cycle.
+ * 		Per-neuron vector indiciating which ones should be stimulated (forced
+ * 		to fire) this cycle.
  */
-bool_t* cpu_step(NETWORK network, unsigned int fstim[]);
+void cpu_step(NETWORK network, unsigned int fstim[]);
 
 
 
@@ -55,9 +53,16 @@ void cpu_deliver_spikes(NETWORK network);
 void cpu_update(NETWORK network, unsigned int fstim[]);
 
 
-/*! \return
- * 		Vector with firing (pre-neuron boolean) for the last cycle
+/*!
+ * \param fired
+ * 		indices of neurons which fired. This array should not be modified, and
+ * 		is safe to access until the next call to cpu_step.
+ * \param nfired
+ * 		number of neurons which fired
  */
-bool_t* cpu_read_firing(NETWORK network);
+void
+cpu_read_firing(NETWORK network,
+		unsigned int** fired,
+		unsigned int* nfired);
 
 #endif

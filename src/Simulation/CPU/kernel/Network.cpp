@@ -21,7 +21,6 @@ Network::Network(
 	m_recentFiring(ncount, 0),
 	m_current(ncount, 0),
 	m_rng(4, 0),
-	m_fired(ncount, 0),
 	m_neuronCount(ncount),
 	m_maxDelay(maxDelay),
 	m_cycle(0)
@@ -77,7 +76,7 @@ rng_genGaussian(unsigned* rngState)
 
 //! \todo move into NState class
 inline
-bool_t
+bool
 updateNeuron(const NParam& param,
 		unsigned int stimulated,
 		fp_t I,
@@ -133,12 +132,11 @@ Network::setCMRow(nidx_t source, delay_t delay,
 
 
 
-const bool_t*
+void
 Network::step(unsigned int fstim[])
 {
 	deliverSpikes();
 	update(fstim);
-	return readFiring();
 }
 
 
@@ -146,6 +144,7 @@ Network::step(unsigned int fstim[])
 void
 Network::update(unsigned int fstim[])
 {
+	m_fired.clear();
 	//! \todo update in parallel?
 	for(size_t n=0; n < m_param.size(); ++n) {
 		bool fired = updateNeuron(m_param[n],
@@ -153,14 +152,14 @@ Network::update(unsigned int fstim[])
 					m_current[n],
 					m_state[n],
 					&m_rng[0]);
-		m_fired[n] = fired;
 		m_recentFiring[n] = (m_recentFiring[n] << 1) | (fired ? 0x1 : 0x0);
 
-#ifdef DEBUG_TRACE
 		if(fired) {
+			m_fired.push_back(n);
+#ifdef DEBUG_TRACE
 			fprintf(stderr, "c%u: n%u fired\n", m_cycle, n);
-		}
 #endif
+		}
 	}
 
 	m_cycle++;
@@ -168,10 +167,10 @@ Network::update(unsigned int fstim[])
 
 
 
-const bool_t*
+const std::vector<unsigned int>&
 Network::readFiring() const
 {
-	return &m_fired[0];
+	return m_fired;
 }
 
 

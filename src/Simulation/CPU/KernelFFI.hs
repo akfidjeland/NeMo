@@ -16,15 +16,15 @@ where
 
 import Control.Applicative
 import Control.Exception (assert)
-import Control.Monad (when, zipWithM_)
+import Control.Monad (when)
 import Data.Array.Storable
 import Foreign.C.Types
+import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Array (peekArray, withArrayLen)
-import Foreign.Marshal.Utils (fromBool, toBool)
 import Foreign.Ptr
-import Foreign.Storable
+import Foreign.Storable (peek)
 
-import Types
+import Types (Source, Delay, Target, Weight)
 
 
 {- Opaque handle to network stored in foreign code -}
@@ -129,10 +129,14 @@ step rt c_fstim fstim = do
     withElemsSet c_fstim fstim $ \arr -> withStorableArray arr (c_update rt)
 
 
-readFiring :: RT -> Int -> IO [Int]
-readFiring rt ncount = do
-    fired <- peekArray ncount =<< c_read_firing rt
-    return $! map fst $ filter snd $ zip [0..] $ map toBool fired
+readFiring :: RT -> IO [Int]
+readFiring rt = do
+    alloca $ \arr_ptr -> do
+    alloca $ \len_ptr -> do
+    c_read_firing rt arr_ptr len_ptr
+    c_fired <- peek arr_ptr
+    c_len <- peek len_ptr
+    return . map fromIntegral =<< peekArray (fromIntegral c_len) c_fired
 
 
 {- | Run computation with certain values of array set, then reset the array -}
@@ -141,12 +145,6 @@ withElemsSet arr idx f = write 1 *> f arr <* write 0
     where
         write val = mapM_ (\i -> writeArray arr i val) idx
 
-
-
-foreign import ccall unsafe "cpu_step" c_step
-    :: RT
-    -> Ptr CUInt       -- ^ boolean vector of firing stimulus
-    -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
 
 
 foreign import ccall unsafe "cpu_deliver_spikes" c_deliver_spikes :: RT -> IO ()
@@ -160,6 +158,9 @@ foreign import ccall unsafe "cpu_update" c_update
 
 foreign import ccall unsafe "cpu_read_firing" c_read_firing
     :: RT
-    -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
+    -> Ptr (Ptr CUInt) -- ^ neuron indices of fired neurons
+    -> Ptr (CUInt)     -- ^ number of fired neurons
+    -> IO ()
+
 
 foreign import ccall unsafe "cpu_delete_network" clear :: RT -> IO ()
