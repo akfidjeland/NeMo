@@ -133,16 +133,17 @@ Network::setCMRow(nidx_t source, delay_t delay,
 
 
 
-bool_t*
+const bool_t*
 Network::step(unsigned int fstim[])
 {
 	deliverSpikes();
 	update(fstim);
+	return readFiring();
 }
 
 
 
-bool_t*
+void
 Network::update(unsigned int fstim[])
 {
 	//! \todo update in parallel?
@@ -163,10 +164,16 @@ Network::update(unsigned int fstim[])
 	}
 
 	m_cycle++;
-
-	return &m_fired[0];
-
 }
+
+
+
+const bool_t*
+Network::readFiring() const
+{
+	return &m_fired[0];
+}
+
 
 
 const std::vector<fp_t>&

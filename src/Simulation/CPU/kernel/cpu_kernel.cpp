@@ -50,7 +50,15 @@ cpu_step(Network* network, unsigned int fstim[])
 
 
 
-bool_t*
+void
+cpu_deliver_spikes(Network* network)
+{
+	network->deliverSpikes();
+}
+
+
+
+void
 cpu_update(Network* network, unsigned int fstim[])
 {
 	network->update(fstim);
@@ -58,8 +66,8 @@ cpu_update(Network* network, unsigned int fstim[])
 
 
 
-void
-cpu_deliver_spikes(Network* network)
+bool_t*
+cpu_read_firing(Network* network)
 {
-	network->deliverSpikes();
+	network->readFiring();
 }

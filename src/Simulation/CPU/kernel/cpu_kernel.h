@@ -45,12 +45,19 @@ void cpu_add_synapses(NETWORK,
 bool_t* cpu_step(NETWORK network, unsigned int fstim[]);
 
 
+
 /* The step function above will do both the spike delivery and update. However,
  * it can sometimes be desirable to call these individually, e.g. for profiling
- * reasons. If so, call 'deliver_spikes', then 'update' */
+ * reasons. If so, call 'deliver_spikes', then 'update', and finally
+ * 'read_firing' (optional) */
 
 void cpu_deliver_spikes(NETWORK network);
-bool_t* cpu_update(NETWORK network, unsigned int fstim[]);
+void cpu_update(NETWORK network, unsigned int fstim[]);
 
+
+/*! \return
+ * 		Vector with firing (pre-neuron boolean) for the last cycle
+ */
+bool_t* cpu_read_firing(NETWORK network);
 
 #endif

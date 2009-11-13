@@ -9,6 +9,7 @@ module Simulation.CPU.KernelFFI (
     newStimulusBuffer,
     set,
     step,
+    readFiring,
     addSynapses,
     clear)
 where
@@ -116,20 +117,21 @@ addSynapses rt src delay targets weights = do
         c_int = fromIntegral
 
 
-{- | Perform a single simulation step -}
-step
-    :: RT
-    -> StorableArray Int CUInt  -- ^ buffer for firing stimulus
-    -> [Int]                    -- ^ indices of stimulated neurons
-    -> IO [Int]                 -- ^ indices of fired neurons
+
+type FiringStimulus = [Int]
+
+{- | Perform a single simulation step, ignoring output. -}
+step :: RT -> StimulusBuffer -> FiringStimulus -> IO ()
 step rt c_fstim fstim = do
-    bounds <- getBounds c_fstim
-    let sz = 1 + snd bounds - fst bounds
     c_deliver_spikes rt
     {- To avoid having to pass over the whole array of firing stimulus we just
      - flip the status of the ones which are affected this cycle. -}
-    fired <- withElemsSet c_fstim fstim $ \arr -> do
-        withStorableArray arr $ \ptr -> c_update rt ptr >>= peekArray sz
+    withElemsSet c_fstim fstim $ \arr -> withStorableArray arr (c_update rt)
+
+
+readFiring :: RT -> Int -> IO [Int]
+readFiring rt ncount = do
+    fired <- peekArray ncount =<< c_read_firing rt
     return $! map fst $ filter snd $ zip [0..] $ map toBool fired
 
 
@@ -153,7 +155,11 @@ foreign import ccall unsafe "cpu_deliver_spikes" c_deliver_spikes :: RT -> IO ()
 foreign import ccall unsafe "cpu_update" c_update
     :: RT
     -> Ptr CUInt       -- ^ boolean vector of firing stimulus
-    -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
+    -> IO ()
 
+
+foreign import ccall unsafe "cpu_read_firing" c_read_firing
+    :: RT
+    -> IO (Ptr CUInt)  -- ^ boolean vector of fired neurons
 
 foreign import ccall unsafe "cpu_delete_network" clear :: RT -> IO ()

@@ -16,15 +16,18 @@ import qualified Simulation.CPU.KernelFFI as Kernel
 import Types
 
 
+-- TODO: move this into Kernel
 data CpuSimulation = CpuSimulation {
         rt       :: Kernel.RT,
-        fstim    :: Kernel.StimulusBuffer
+        fstim    :: Kernel.StimulusBuffer,
+        ncount   :: Int
     }
 
 
 
 instance Simulation_Iface CpuSimulation where
     step = stepSim
+    step_ = stepSim_
     applyStdp _ _ = error "STDP not supported on CPU backend"
     -- TODO: implement these properly. The dummy definitions are needed for testing
     elapsed _ = return 0
@@ -37,10 +40,17 @@ instance Simulation_Iface CpuSimulation where
 
 
 {- | Perform a single simulation step. Update the state of every neuron and
- - propagate spikes -}
+ - propagate spikes. Do not return firing. -}
+stepSim_ :: CpuSimulation -> [Idx] -> IO ()
+stepSim_ sim forcedFiring = Kernel.step (rt sim) (fstim sim) forcedFiring
+
+
+{- | - Perform a single simulation step. Update the state of every neuron and
+ - propagate spikes. Return firing. -}
 stepSim :: CpuSimulation -> [Idx] -> IO FiringOutput
-stepSim sim forcedFiring =
-    return . FiringOutput =<< Kernel.step (rt sim) (fstim sim) forcedFiring
+stepSim sim fstim = do
+    stepSim_ sim fstim
+    return . FiringOutput =<< Kernel.readFiring (rt sim) (ncount sim)
 
 
 
@@ -53,8 +63,8 @@ initSim :: Network.Network IzhNeuron Static -> IO CpuSimulation
 initSim net@(Network.Network ns _) = do
     rt <- Kernel.set as bs cs ds us vs sigma $ Network.maxDelay net
     setConnectivityMatrix rt $ Network.synapses net
-    fstim <- Kernel.newStimulusBuffer $ Neurons.size ns
-    return $ CpuSimulation rt fstim
+    fstim <- Kernel.newStimulusBuffer $ ncount
+    return $ CpuSimulation rt fstim ncount
     where
         ns' = map ndata (Neurons.neurons ns)
         as = map paramA ns'
@@ -64,6 +74,7 @@ initSim net@(Network.Network ns _) = do
         us = map initU ns'
         vs = map initV ns'
         sigma = map (maybe 0.0 id . stateSigma) ns'
+        ncount = Neurons.size ns
 
 
 

@@ -52,13 +52,15 @@ struct Network {
 				const nidx_t* targets, const weight_t* weights, size_t length);
 
 		/*! Deliver spikes and update neuron state */
-		bool_t* step(unsigned int fstim[]);
+		const bool_t* step(unsigned int fstim[]);
 
 		/*! Update state of all neurons */
-		bool_t* update(unsigned int fstim[]);
+		void update(unsigned int fstim[]);
 
 		/*! Deliver spikes due for delivery */
 		const std::vector<fp_t>& deliverSpikes();
+
+		const bool_t* readFiring() const;
 
 	private:
 
