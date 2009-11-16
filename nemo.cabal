@@ -36,6 +36,10 @@ flag Single
     description:            Use single-precisison floating points in the CPU backend
     default:                False
 
+flag ProfileCPU
+    description:            Profile the c-based CPU backend
+    default:                False
+
 
 executable nemo
     main-is:                Nemo.hs
@@ -81,9 +85,14 @@ executable nemo
                             src/Simulation/CPU/kernel/Network.cpp
                             src/Simulation/CPU/kernel/ConnectivityMatrix.cpp
     extra-libraries:        stdc++
+
     if flag(Single)
         cpp-options:        -DCPU_SINGLE_PRECISION
         cc-options:         -DCPU_SINGLE_PRECISION
+
+    if flag(ProfileCPU)
+        cc-options:         -pg
+        ghc-options:        -optl=-pg
 
     if flag(Benchmark)
         other-modules:      Benchmark,
