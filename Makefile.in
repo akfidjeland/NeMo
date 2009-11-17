@@ -130,29 +130,24 @@ $(dist_dir).zip: $(doc_build)/manual.pdf client cabal
 #
 # Documentation
 #
+#
+.PHONY: doc
+doc: doc/manual/manual.pdf
 
 doc_src := doc/manual
 
-.PHONY: doc
-doc: $(doc_build)/manual.pdf
+doc/manual/manual.pdf: $(doc_src)/matlab.tex 
+	(cd doc/manual; make; cd ../..)
 
 .PHONY: doc-clean
 doc-clean:
-	rm -rf $(doc_build)
+	(cd doc/manual; make clean; cd ../..)
 
-$(doc_build)/matlab.tex: $(matlab_src)/*.m.help
+$(doc_src)/matlab.tex: $(matlab_src)/*.m.help
 	cat $^ | util/matlab-manual-api.sh > $@
 
-$(doc_build)/%.tex: $(doc_src)/%.tex
-	mkdir -p $(dir $@)
-	cp --target-directory=$(dir $@) $<
-
-$(doc_build)/manual.pdf: $(doc_build)/manual.tex \
-		$(doc_build)/title.tex \
-		$(doc_build)/matlab.tex
-	ln -s -f --target-directory=$(doc_build) $(CURDIR)/$(doc_src)/figures
-	(cd $(dir $<); pdflatex $(notdir $<); pdflatex $(notdir $<); cd ..)
-
+$(doc_build)/manual.pdf: $(doc_src)/manual.pdf
+	cp --target-directory $(dir $@) $<
 
 
 .PHONY: install

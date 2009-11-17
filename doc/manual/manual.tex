@@ -170,18 +170,72 @@ Synapses can thus be deactivated, but never change from excitatory to inhibitory
 
 %\section{Simulation backends}
 
-\section{External frontends}
+\section{Running \nemo}
 
-\nemo\ can be controlled by external frontends. 
-Currently the only supported such frontend is Matlab,
-	but additional frontends are planned for Java, and Python (PyNN). 
+\nemo\ runs as a server process which serves client requests for constructing and running a network. 
+\nemo\ thus requires an external client to control the simulation.
+The interface uses a thrift protocol \cite{slee07thrift},
+	which allows clients written in a number of languages including 
+		Java,
+		C++,
+		Python,
+		Perl, and 
+		Haskell.
+\nemo\ comes bundled with a Matlab interface (Section~\ref{api:matlab}).
+Currently the only supported such frontend is Matlab.
+Additional frontends are planned for Java and for Python (using a PyNN interface \cite{davison08pynn}). 
+
+% TODO: add appendix with protocol
+
+Figure~\ref{fig:rpc:basic} shows the basic setup.
+The client communicates with the server using thrift over a TCP/IP transport.
+The server uses one of several backends,
+	such as one using the CPU, a GPU, or perhaps a cluster of computers.
+The choice of backend is determined when the server is started,
+	but does not affect the usage from the clients point of view.
+
+\begin{figure}
+	\includegraphics[width=\textwidth]{figures/rpc/basic}
+	\caption{Communication between client and \nemo} 
+	\label{fig:rpc:basic}
+\end{figure}
+
+
+\subsection{Pipelining}
+
+Network communication can have significant overheads when running a simulation,
+	especially if the client uses a very fine-grained control of the simulation,
+	such as requesting data for every simulation step.
+Pipelining can be used to reduce such overheads,
+	by overlapping processing on the server with network traffic. 
+
+In the non-pipelined setup shown in Figure~\ref{fig:rpc:basic},
+	three main steps take place every time the client issues a simulation command: 
+		the request is sent to the server,
+		the server does some processing, and
+		the reply is sent back to the client.
+In a pipelined simulation (Figure~\ref{fig:rpc:pipelined}),
+	these steps take place concurrently.
+The request from the client is sent to and buffered on the client,
+	while at the same time the server performs processing based on the previous
+	request, 
+	and sends the results based on the request from two steps ago. 
+The data returned from the server for a single remote procedure call,
+	is thus delayed by a few cycles.
+
+\begin{figure}
+	\includegraphics[width=\textwidth]{figures/rpc/pipelined_thrift}
+	\caption{Pipelined communication between client and \nemo} 
+	\label{fig:rpc:basic}
+\end{figure}
 
 \subsection{Matlab API}
+\label{api:matlab}
 
 \subsubsection{Installation}
 
 The Matlab frontend is a collection of m-files and a pre-compiled binary, packed up in an archive.
-To simply unpack to archive somewhere sensible and make sure the directory is on the matlab path,
+To simply unpack to archive somewhere sensible and make sure the directory is on the Matlab path,
 	which can be set in Matlab using \command{addpath <install-dir>}.
 The \command{nemo} binary must be started externally prior to use.
 This inconvenience will be removed in future versions.
@@ -323,9 +377,7 @@ The following reference documentation is also available from inside matlab by ca
 
 \input{matlab}
 
-% installation instructions
-
-
-% include auto-generated Matlab reference
+\bibliographystyle{abbrv}
+\bibliography{manual}
 
 \end{document}

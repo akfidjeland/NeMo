@@ -1,0 +1,18 @@
+digraph RPC {
+
+	rankdir=LR
+
+	client [shape=record, label="<t>|client|<b>", style=filled, fillcolor=gray, color=gray]
+	server [shape=record, label="<t>|server|<b>", style=filled, fillcolor=gray, color=gray]
+	backend [shape=record, label="<t>|backend|<b>", style=filled, fillcolor=gray, color=gray]
+
+	// label TCP/IP
+	ifdef(`pipeline_thrift', `edge [arrowhead=oboxnormal]',  `edge [arrowhead=normal]')
+	client:t -> server:t
+	server:b -> client:b [label = "thrift over TCP/IP" ]
+	
+	ifdef(`pipeline_backend', `edge [arrowhead=oboxnormal]',  `edge [arrowhead=normal]')
+	server:t -> backend:t
+	backend:b -> server:b
+}
+
