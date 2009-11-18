@@ -8,31 +8,6 @@
 #include "ConnectivityMatrix.hpp"
 
 
-
-struct NParam {
-
-	NParam(fp_t a, fp_t b, fp_t c, fp_t d) :
-		a(a), b(b), c(c), d(d) {}
-
-	fp_t a;
-	fp_t b;
-	fp_t c;
-	fp_t d;
-};
-
-
-struct NState {
-
-	NState(fp_t u, fp_t v, fp_t sigma) :
-		u(u), v(v), sigma(sigma) {}
-
-	fp_t u;
-	fp_t v;
-	fp_t sigma;
-};
-
-
-
 struct Network {
 
 	public:
@@ -47,7 +22,8 @@ struct Network {
 			size_t ncount,
 			delay_t maxDelay);
 
-		/*! Add synapses for a particular presynaptic neuron and a particular delay */
+		/*! Add synapses for a particular presynaptic neuron and a particular
+		 * delay */
 		void setCMRow(nidx_t source, delay_t delay,
 				const nidx_t* targets, const weight_t* weights, size_t length);
 
@@ -58,14 +34,24 @@ struct Network {
 		void update(unsigned int fstim[]);
 
 		/*! Deliver spikes due for delivery */
-		const std::vector<fp_t>& deliverSpikes();
+		void deliverSpikes();
 
 		const std::vector<unsigned int>& readFiring() const;
 
 	private:
 
-		std::vector<NParam> m_param;
-		std::vector<NState> m_state;
+		//! \todo enforce 16-byte allignment to support vectorisation
+		std::vector<fp_t> m_a;
+		std::vector<fp_t> m_b;
+		std::vector<fp_t> m_c;
+		std::vector<fp_t> m_d;
+
+		std::vector<fp_t> m_u;
+		std::vector<fp_t> m_v;
+		std::vector<fp_t> m_sigma;
+
+		std::vector<unsigned int> m_pfired;
+
 		ConnectivityMatrix m_cm;
 
 		/* last 64 cycles worth of firing, one entry per neuron */

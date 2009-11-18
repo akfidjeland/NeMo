@@ -17,6 +17,14 @@ Network::Network(
 		fp_t sigma[], //set to 0 if thalamic input not required
 		size_t ncount,
 		delay_t maxDelay) :
+	m_a(ncount),
+	m_b(ncount),
+	m_c(ncount),
+	m_d(ncount),
+	m_u(ncount),
+	m_v(ncount),
+	m_sigma(ncount),
+	m_pfired(ncount, 0),
 	m_cm(ncount, maxDelay),
 	m_recentFiring(ncount, 0),
 	m_current(ncount, 0),
@@ -25,11 +33,13 @@ Network::Network(
 	m_maxDelay(maxDelay),
 	m_cycle(0)
 {
-	//! \todo pre-allocate neuron data
-	for(size_t i=0; i < ncount; ++i) {
-		m_state.push_back(NState(u[i], v[i], sigma[i]));
-		m_param.push_back(NParam(a[i], b[i], c[i], d[i]));
-	}
+	std::copy(a, a + ncount, m_a.begin());
+	std::copy(b, b + ncount, m_b.begin());
+	std::copy(c, c + ncount, m_c.begin());
+	std::copy(d, d + ncount, m_d.begin());
+	std::copy(u, u + ncount, m_u.begin());
+	std::copy(v, v + ncount, m_v.begin());
+	std::copy(sigma, sigma + ncount, m_sigma.begin());
 
 	/* This RNG state vector needs to be filled with initialisation data. Each
 	 * RNG needs 4 32-bit words of seed data. We use just a single RNG now, but
@@ -74,55 +84,6 @@ rng_genGaussian(unsigned* rngState)
 
 
 
-//! \todo move into NState class
-inline
-bool
-updateNeuron(const NParam& param,
-		unsigned int stimulated,
-		fp_t I,
-		NState& state,
-		unsigned* rng)
-{
-	bool fired = false;
-
-	fp_t a = param.a;
-	fp_t b = param.b;
-	fp_t u = state.u;
-	fp_t v = state.v;
-
-	/* thalamic input */
-	if(state.sigma != 0.0f) {
-		I += state.sigma * (fp_t) rng_genGaussian(rng);
-	}
-
-	//! \todo explicitly unroll
-	//! \todo put SUBSTEPS into static
-	for(unsigned int t=0; t<SUBSTEPS; ++t) {
-		//! \todo just exit from loop if fired
-		if(!fired) {
-			v += SUBSTEP_MULT * ((0.04*v + 5.0) * v + 140.0 - u + I);
-			/*! \todo: could pre-multiply this with a, when initialising memory */
-			u += SUBSTEP_MULT * (a * (b*v - u));
-			fired = v >= 30.0;
-		}
-	}
-
-	fired |= stimulated;
-
-	if(fired) {
-		v = param.c;
-		u += param.d;
-	}
-
-	state.u = u;
-	state.v = v;
-
-	return fired ? 1 : 0;
-}
-
-
-
-
 void
 Network::setCMRow(nidx_t source, delay_t delay,
 			const nidx_t* targets, const weight_t* weights, size_t length)
@@ -145,21 +106,37 @@ void
 Network::update(unsigned int fstim[])
 {
 	m_fired.clear();
-	//! \todo update in parallel?
-	for(size_t n=0; n < m_param.size(); ++n) {
-		bool fired = updateNeuron(m_param[n],
-					fstim[n],
-					m_current[n],
-					m_state[n],
-					&m_rng[0]);
-		m_recentFiring[n] = (m_recentFiring[n] << 1) | (fired ? 0x1 : 0x0);
 
-		if(fired) {
+	for(int n=0; n < m_neuronCount; n+=1) {
+
+		m_pfired[n] = 0;
+
+		/* thalamic input */
+		if(m_sigma[n] != 0.0f) {
+			m_current[n] += m_sigma[n] * (fp_t) rng_genGaussian(&m_rng[0]);
+		}
+
+		for(unsigned int t=0; t<SUBSTEPS; ++t) {
+			if(!m_pfired[n]) {
+				m_v[n] += SUBSTEP_MULT * ((0.04* m_v[n] + 5.0) * m_v[n] + 140.0 - m_u[n] + m_current[n]);
+				/*! \todo: could pre-multiply this with a, when initialising memory */
+				m_u[n] += SUBSTEP_MULT * (m_a[n] * (m_b[n] * m_v[n] - m_u[n]));
+				m_pfired[n] = m_v[n] >= 30.0;
+			}
+		}
+
+		m_pfired[n] |= fstim[n];
+
+		if(m_pfired[n]) {
+			m_v[n] = m_c[n];
+			m_u[n] += m_d[n];
 			m_fired.push_back(n);
 #ifdef DEBUG_TRACE
 			fprintf(stderr, "c%u: n%u fired\n", m_cycle, n);
 #endif
 		}
+
+		m_recentFiring[n] = (m_recentFiring[n] << 1) | (uint64_t) m_pfired[n];
 	}
 
 	m_cycle++;
@@ -175,7 +152,7 @@ Network::readFiring() const
 
 
 
-const std::vector<fp_t>&
+void
 Network::deliverSpikes()
 {
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
@@ -199,8 +176,6 @@ Network::deliverSpikes()
 			deliverSpikesOne(source, delay);
 		}
 	}
-
-	return m_current;
 }
 
 
