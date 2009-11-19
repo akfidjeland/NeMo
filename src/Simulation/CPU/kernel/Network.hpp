@@ -10,6 +10,7 @@
 
 #include "ConnectivityMatrix.hpp"
 #include "Timer.hpp"
+#include "RNG.hpp"
 
 #ifdef PTHREADS_ENABLED
 
@@ -99,7 +100,7 @@ struct Network {
 		std::vector<fp_t> m_current;
 
 		// may want to have one rng per neuron or at least per thread
-		std::vector<unsigned int> m_rng; // fixed length: 4
+		RNG m_rng;
 
 		/* compacted firing for the last cycle's worth of firing, one entry per
 		 * fired neuron */

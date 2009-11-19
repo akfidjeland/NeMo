@@ -89,6 +89,7 @@ executable nemo
     c-sources:              src/Simulation/CPU/kernel/cpu_kernel.cpp
                             src/Simulation/CPU/kernel/Network.cpp
                             src/Simulation/CPU/kernel/ConnectivityMatrix.cpp
+                            src/Simulation/CPU/kernel/RNG.cpp
     extra-libraries:        stdc++
 
     if flag(Single)

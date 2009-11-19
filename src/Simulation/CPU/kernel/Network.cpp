@@ -32,7 +32,6 @@ Network::Network(
 	m_cm(ncount, maxDelay),
 	m_recentFiring(ncount, 0),
 	m_current(ncount, 0),
-	m_rng(4, 0),
 	m_neuronCount(ncount),
 	m_maxDelay(maxDelay),
 	m_cycle(0)
@@ -48,18 +47,6 @@ Network::Network(
 #ifdef PTHREADS_ENABLED
 	initThreads();
 #endif
-
-	/* This RNG state vector needs to be filled with initialisation data. Each
-	 * RNG needs 4 32-bit words of seed data. We use just a single RNG now, but
-	 * should have one per thread for later so that we can get repeatable
-	 * results.
-	 *
-	 * Fill it up from lrand48 -- in practice you would probably use something
-	 * a bit better. */
-	srand48(0);
-	for(unsigned i=0; i<4; ++i) {
-		m_rng[i] = ((unsigned) lrand48()) << 1;
-	}
 }
 
 
@@ -99,32 +86,6 @@ Network::initThreads()
 
 #endif
 
-
-unsigned
-rng_genUniform(unsigned* rngState)
-{
-	unsigned t = (rngState[0]^(rngState[0]<<11));
-	rngState[0] = rngState[1];
-	rngState[1] = rngState[2];
-	rngState[2] = rngState[3];
-	rngState[3] = (rngState[3]^(rngState[3]>>19))^(t^(t>>8));
-	return rngState[3];
-}
-
-
-
-/* For various reasons this generates a pair of samples for each call. If nesc.
- * then you can just stash one of them somewhere until the next time it is
- * needed or something.  */
-float
-rng_genGaussian(unsigned* rngState)
-{
-	float a = rng_genUniform(rngState) * 1.4629180792671596810513378043098e-9f;
-	float b = rng_genUniform(rngState) * 0.00000000023283064365386962890625f;
-	float r = sqrtf(-2*logf(1-b));
-	// cosf(a) * r // ignore the second random
-	return sinf(a) * r;
-}
 
 
 
@@ -194,11 +155,11 @@ start_thread(void* job_in)
 void
 Network::deliverThalamic()
 {
-	//! \todo could do this in parallel if we add per-neuron RNG state
+	//! \todo could do this in parallel if we add per-thread RNG state
 	for(int n=0; n < m_neuronCount; n++) {
 		/* thalamic input */
 		if(m_sigma[n] != 0.0f) {
-			m_current[n] += m_sigma[n] * (fp_t) rng_genGaussian(&m_rng[0]);
+			m_current[n] += m_sigma[n] * (fp_t) m_rng.gaussian();
 		}
 	}
 }
