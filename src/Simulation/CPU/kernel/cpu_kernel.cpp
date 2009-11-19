@@ -76,3 +76,18 @@ cpu_read_firing(Network* network,
 	*nfired = firings.size();
 }
 
+
+
+long int
+cpu_elapsed_ms(Network* network)
+{
+	return network->elapsed();
+}
+
+
+
+void
+cpu_reset_timer(Network* network)
+{
+	network->resetTimer();
+}

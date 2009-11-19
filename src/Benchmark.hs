@@ -272,8 +272,7 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
     t0 <- getCPUTime
     run_ sim $ replicate runCycles []
     t1 <- getCPUTime
-    -- t <- elapsed sim
-    let t = (t1 - t0) `div` 1000000000
+    t <- elapsed sim
     hPutStrLn stderr $ "Elapsed: " ++ show t
     hPutStrLn stderr $ (show ((t1-t0) `div` 1000000000)) ++ " vs " ++ show t
     stop sim

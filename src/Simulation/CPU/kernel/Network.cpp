@@ -251,6 +251,11 @@ Network::readFiring() const
 void
 Network::deliverSpikes()
 {
+	//! \todo reset the timer somewhere more sensible
+	if(m_cycle == 0) {
+		resetTimer();
+	}
+
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
 	 * may be needed for STDP */
 	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_maxDelay);
@@ -288,4 +293,20 @@ Network::deliverSpikesOne(nidx_t source, delay_t delay)
 				m_cycle, source, s->target, s->weight, delay);
 #endif
 	}
+}
+
+
+
+long
+Network::elapsed()
+{
+	return m_timer.elapsed();
+}
+
+
+
+void
+Network::resetTimer()
+{
+	m_timer.reset();
 }

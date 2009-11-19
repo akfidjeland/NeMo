@@ -65,4 +65,13 @@ cpu_read_firing(NETWORK network,
 		unsigned int** fired,
 		unsigned int* nfired);
 
+
+
+/*! \return number of milliseconds elapsed between beginning of first kernel
+ * invocation and the end of the last */
+long int cpu_elapsed_ms(NETWORK);
+
+
+void cpu_reset_timer(NETWORK);
+
 #endif

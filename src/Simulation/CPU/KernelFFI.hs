@@ -11,6 +11,8 @@ module Simulation.CPU.KernelFFI (
     step,
     readFiring,
     addSynapses,
+    elapsedMs,
+    resetTimer,
     clear)
 where
 
@@ -164,3 +166,9 @@ foreign import ccall unsafe "cpu_read_firing" c_read_firing
 
 
 foreign import ccall unsafe "cpu_delete_network" clear :: RT -> IO ()
+
+foreign import ccall unsafe "cpu_reset_timer" resetTimer :: RT -> IO ()
+
+foreign import ccall unsafe "cpu_elapsed_ms" c_elapsed_ms :: RT -> IO CLong
+
+elapsedMs rt = return . fromIntegral =<< c_elapsed_ms rt

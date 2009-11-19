@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "ConnectivityMatrix.hpp"
+#include "Timer.hpp"
 
 #ifdef PTHREADS_ENABLED
 struct Job {
@@ -51,6 +52,12 @@ struct Network {
 		void deliverSpikes();
 
 		const std::vector<unsigned int>& readFiring() const;
+
+		/*! \return number of milliseconds of wall-clock time elapsed since first
+		 * simulation step */
+		long int elapsed();
+
+		void resetTimer();
 
 	private:
 
@@ -104,6 +111,8 @@ struct Network {
 		void processFired();
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
+
+		Timer m_timer;
 };
 
 
