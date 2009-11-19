@@ -1,11 +1,23 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
+#ifdef PTHREADS_ENABLED
+#include <pthread.h>
+#endif
 
 #include <vector>
 #include <stdint.h>
 
 #include "ConnectivityMatrix.hpp"
+
+#ifdef PTHREADS_ENABLED
+struct Job {
+	size_t start;
+	size_t end;
+	unsigned int* fstim;
+	struct Network* net;
+};
+#endif
 
 
 struct Network {
@@ -21,6 +33,8 @@ struct Network {
 			fp_t sigma[], //set to 0 if not thalamic input required
 			size_t ncount,
 			delay_t maxDelay);
+
+		~Network();
 
 		/*! Add synapses for a particular presynaptic neuron and a particular
 		 * delay */
@@ -67,11 +81,27 @@ struct Network {
 		 * fired neuron */
 		std::vector<unsigned int> m_fired;
 
+#ifdef PTHREADS_ENABLED
+		//! \todo allow user to determine number of threads
+		static const int m_nthreads = 4;
+		pthread_t m_thread[m_nthreads];
+		pthread_attr_t m_thread_attr[m_nthreads];
+		Job m_job[m_nthreads];
+
+		void initThreads();
+
+		friend void* start_thread(void*);
+#endif
+
 		size_t m_neuronCount;
 
 		delay_t m_maxDelay;
 
 		uint m_cycle;
+
+		void deliverThalamic();
+		void updateRange(int begin, int end, unsigned int* fstim);
+		void processFired();
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 };

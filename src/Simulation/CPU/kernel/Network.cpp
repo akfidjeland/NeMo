@@ -1,4 +1,8 @@
 #include <cmath>
+#include <algorithm>
+#ifdef PTHREADS_ENABLED
+#include <sched.h> // for setting thread affinity
+#endif
 
 #include "Network.hpp"
 
@@ -41,6 +45,10 @@ Network::Network(
 	std::copy(v, v + ncount, m_v.begin());
 	std::copy(sigma, sigma + ncount, m_sigma.begin());
 
+#ifdef PTHREADS_ENABLED
+	initThreads();
+#endif
+
 	/* This RNG state vector needs to be filled with initialisation data. Each
 	 * RNG needs 4 32-bit words of seed data. We use just a single RNG now, but
 	 * should have one per thread for later so that we can get repeatable
@@ -54,6 +62,43 @@ Network::Network(
 	}
 }
 
+
+Network::~Network()
+{
+#ifdef PTHREADS_ENABLED
+	for(int i=0; i<m_nthreads; ++i) {
+		pthread_attr_destroy(&m_thread_attr[i]);
+	}
+#endif
+}
+
+
+#ifdef PTHREADS_ENABLED
+
+/* Initialise threads, but do not start them. Set the attributes, esp. thread
+ * affinity, and pre-allocate work */
+void
+Network::initThreads()
+{
+	int nthreads = m_nthreads;
+	for(int i=0; i<nthreads; ++i) {
+		pthread_attr_init(&m_thread_attr[i]);
+		pthread_attr_setdetachstate(&m_thread_attr[i], PTHREAD_CREATE_JOINABLE);
+		cpu_set_t cpuset;
+		CPU_ZERO(&cpuset);
+		CPU_SET(i, &cpuset);
+		pthread_attr_setaffinity_np(&m_thread_attr[i], sizeof(cpu_set_t), &cpuset);
+
+		size_t jobSize = m_neuronCount/nthreads;
+		m_job[i].start = i * jobSize;
+		//! \todo deal with special cases for small number of neurons
+		m_job[i].end = std::min((i+1) * jobSize, m_neuronCount);
+		m_job[i].fstim = NULL;
+		m_job[i].net = this;
+	}
+}
+
+#endif
 
 
 unsigned
@@ -103,18 +148,11 @@ Network::step(unsigned int fstim[])
 
 
 void
-Network::update(unsigned int fstim[])
+Network::updateRange(int start, int end, unsigned int fstim[])
 {
-	m_fired.clear();
-
-	for(int n=0; n < m_neuronCount; n+=1) {
+	for(int n=start; n < end; n++) {
 
 		m_pfired[n] = 0;
-
-		/* thalamic input */
-		if(m_sigma[n] != 0.0f) {
-			m_current[n] += m_sigma[n] * (fp_t) rng_genGaussian(&m_rng[0]);
-		}
 
 		for(unsigned int t=0; t<SUBSTEPS; ++t) {
 			if(!m_pfired[n]) {
@@ -127,6 +165,43 @@ Network::update(unsigned int fstim[])
 
 		m_pfired[n] |= fstim[n];
 
+		m_recentFiring[n] = (m_recentFiring[n] << 1) | (uint64_t) m_pfired[n];
+	}
+}
+
+
+
+#ifdef PTHREADS_ENABLED
+
+void*
+start_thread(void* job_in)
+{
+	Job* job = static_cast<Job*>(job_in);
+	(job->net)->updateRange(job->start, job->end, job->fstim);
+	pthread_exit(NULL);
+}
+
+#endif
+
+
+void
+Network::deliverThalamic()
+{
+	//! \todo could do this in parallel if we add per-neuron RNG state
+	for(int n=0; n < m_neuronCount; n++) {
+		/* thalamic input */
+		if(m_sigma[n] != 0.0f) {
+			m_current[n] += m_sigma[n] * (fp_t) rng_genGaussian(&m_rng[0]);
+		}
+	}
+}
+
+
+
+void
+Network::processFired()
+{
+	for(int n=0; n < m_neuronCount; ++n) {
 		if(m_pfired[n]) {
 			m_v[n] = m_c[n];
 			m_u[n] += m_d[n];
@@ -135,10 +210,31 @@ Network::update(unsigned int fstim[])
 			fprintf(stderr, "c%u: n%u fired\n", m_cycle, n);
 #endif
 		}
-
-		m_recentFiring[n] = (m_recentFiring[n] << 1) | (uint64_t) m_pfired[n];
 	}
+}
 
+
+
+void
+Network::update(unsigned int fstim[])
+{
+	m_fired.clear();
+
+	deliverThalamic();
+
+#ifdef PTHREADS_ENABLED
+	for(int i=0; i<m_nthreads; ++i) {
+		m_job[i].fstim = &fstim[0];
+		pthread_create(&m_thread[i], &m_thread_attr[i], start_thread, (void*) &m_job[i]);
+	}
+	for(int i=0; i<m_nthreads; ++i) {
+		pthread_join(m_thread[i], NULL);
+	}
+#else
+	updateRange(0, m_neuronCount, fstim);
+#endif
+
+	processFired();
 	m_cycle++;
 }
 
