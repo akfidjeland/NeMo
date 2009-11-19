@@ -12,12 +12,29 @@
 #include "Timer.hpp"
 
 #ifdef PTHREADS_ENABLED
+
+/* We don't actually know the line size. Current (2009) processors seem to use
+ * 64B, so go with that. */
+//! \todo perhaps use 256B. There should be no performance hit and it's more future-proof
+#define ASSUMED_CACHE_LINE_SIZE 64
+
 struct Job {
+
+	Job(): start(0), end(0), fstim(NULL), net(NULL) {}
+
+	Job(size_t start, size_t end, size_t ncount, struct Network* net) :
+		start(start), end(end), fstim(NULL), net(net) {
+	}
+
 	size_t start;
 	size_t end;
+
+	// intput - full vector
 	unsigned int* fstim;
+
 	struct Network* net;
-};
+
+} __attribute((aligned(ASSUMED_CACHE_LINE_SIZE)));
 #endif
 
 
@@ -51,7 +68,7 @@ struct Network {
 		/*! Deliver spikes due for delivery */
 		void deliverSpikes();
 
-		const std::vector<unsigned int>& readFiring() const;
+		const std::vector<unsigned int>& readFiring();
 
 		/*! \return number of milliseconds of wall-clock time elapsed since first
 		 * simulation step */
@@ -93,7 +110,7 @@ struct Network {
 		static const int m_nthreads = 4;
 		pthread_t m_thread[m_nthreads];
 		pthread_attr_t m_thread_attr[m_nthreads];
-		Job m_job[m_nthreads];
+		Job* m_job[m_nthreads];
 
 		void initThreads();
 
@@ -107,8 +124,7 @@ struct Network {
 		uint m_cycle;
 
 		void deliverThalamic();
-		void updateRange(int begin, int end, unsigned int* fstim);
-		void processFired();
+		void updateRange(int begin, int end, const unsigned int fstim[]);
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 

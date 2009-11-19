@@ -90,11 +90,10 @@ Network::initThreads()
 		pthread_attr_setaffinity_np(&m_thread_attr[i], sizeof(cpu_set_t), &cpuset);
 
 		size_t jobSize = m_neuronCount/nthreads;
-		m_job[i].start = i * jobSize;
+		size_t start = i * jobSize;
 		//! \todo deal with special cases for small number of neurons
-		m_job[i].end = std::min((i+1) * jobSize, m_neuronCount);
-		m_job[i].fstim = NULL;
-		m_job[i].net = this;
+		size_t end = std::min((i+1) * jobSize, m_neuronCount);
+		m_job[i] = new Job(start, end, m_neuronCount, this);
 	}
 }
 
@@ -148,7 +147,7 @@ Network::step(unsigned int fstim[])
 
 
 void
-Network::updateRange(int start, int end, unsigned int fstim[])
+Network::updateRange(int start, int end, const unsigned int fstim[])
 {
 	for(int n=start; n < end; n++) {
 
@@ -164,8 +163,16 @@ Network::updateRange(int start, int end, unsigned int fstim[])
 		}
 
 		m_pfired[n] |= fstim[n];
-
 		m_recentFiring[n] = (m_recentFiring[n] << 1) | (uint64_t) m_pfired[n];
+
+		if(m_pfired[n]) {
+			m_v[n] = m_c[n];
+			m_u[n] += m_d[n];
+#ifdef DEBUG_TRACE
+			fprintf(stderr, "c%u: n%u fired\n", m_cycle, n);
+#endif
+		}
+
 	}
 }
 
@@ -198,34 +205,16 @@ Network::deliverThalamic()
 
 
 
-void
-Network::processFired()
-{
-	for(int n=0; n < m_neuronCount; ++n) {
-		if(m_pfired[n]) {
-			m_v[n] = m_c[n];
-			m_u[n] += m_d[n];
-			m_fired.push_back(n);
-#ifdef DEBUG_TRACE
-			fprintf(stderr, "c%u: n%u fired\n", m_cycle, n);
-#endif
-		}
-	}
-}
-
-
 
 void
 Network::update(unsigned int fstim[])
 {
-	m_fired.clear();
-
 	deliverThalamic();
 
 #ifdef PTHREADS_ENABLED
 	for(int i=0; i<m_nthreads; ++i) {
-		m_job[i].fstim = &fstim[0];
-		pthread_create(&m_thread[i], &m_thread_attr[i], start_thread, (void*) &m_job[i]);
+		m_job[i]->fstim = &fstim[0];
+		pthread_create(&m_thread[i], &m_thread_attr[i], start_thread, (void*) m_job[i]);
 	}
 	for(int i=0; i<m_nthreads; ++i) {
 		pthread_join(m_thread[i], NULL);
@@ -234,15 +223,20 @@ Network::update(unsigned int fstim[])
 	updateRange(0, m_neuronCount, fstim);
 #endif
 
-	processFired();
 	m_cycle++;
 }
 
 
 
 const std::vector<unsigned int>&
-Network::readFiring() const
+Network::readFiring()
 {
+	m_fired.clear();
+	for(int n=0; n < m_neuronCount; ++n) {
+		if(m_pfired[n]) {
+			m_fired.push_back(n);
+		}
+	}
 	return m_fired;
 }
 
