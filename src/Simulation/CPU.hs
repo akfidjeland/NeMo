@@ -5,7 +5,7 @@ module Simulation.CPU (initSim) where
 import Control.Monad (forM_)
 
 import qualified Construction.Network as Network
-    (Network(Network), synapses, maxDelay)
+    (Network(Network), synapses)
 import qualified Construction.Neurons as Neurons
     (size, neurons)
 import Construction.Neuron (ndata)
@@ -59,7 +59,7 @@ stepSim sim fstim = do
 
 initSim :: Network.Network IzhNeuron Static -> IO CpuSimulation
 initSim net@(Network.Network ns _) = do
-    rt <- Kernel.set as bs cs ds us vs sigma $ Network.maxDelay net
+    rt <- Kernel.set as bs cs ds us vs sigma
     setConnectivityMatrix rt $ Network.synapses net
     fstim <- Kernel.newStimulusBuffer $ ncount
     return $ CpuSimulation rt fstim

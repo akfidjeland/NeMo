@@ -52,8 +52,7 @@ struct Network {
 			fp_t u[],
 			fp_t v[],
 			fp_t sigma[], //set to 0 if not thalamic input required
-			size_t ncount,
-			delay_t maxDelay);
+			size_t ncount);
 
 		~Network();
 
@@ -121,8 +120,6 @@ struct Network {
 #endif
 
 		size_t m_neuronCount;
-
-		delay_t m_maxDelay;
 
 		uint m_cycle;
 

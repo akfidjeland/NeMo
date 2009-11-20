@@ -60,10 +60,8 @@ set
     -> [Double] -- ^ u
     -> [Double] -- ^ v
     -> [Double] -- ^ sigma (0 if not input)
-    -- TODO: remove need to pass in max delay
-    -> Int      -- ^ max delay
     -> IO RT
-set as bs cs ds us vs sigma maxDelay = do
+set as bs cs ds us vs sigma = do
     c_as <- newListArray bounds $ map realToFrac as
     c_bs <- newListArray bounds $ map realToFrac bs
     c_cs <- newListArray bounds $ map realToFrac cs
@@ -78,11 +76,10 @@ set as bs cs ds us vs sigma maxDelay = do
     withStorableArray c_us $ \us_ptr -> do
     withStorableArray c_vs $ \vs_ptr -> do
     withStorableArray c_sigma $ \sigma_ptr -> do
-    c_set_network as_ptr bs_ptr cs_ptr ds_ptr us_ptr vs_ptr sigma_ptr c_sz c_maxDelay
+    c_set_network as_ptr bs_ptr cs_ptr ds_ptr us_ptr vs_ptr sigma_ptr c_sz
     where
         sz = length as
         c_sz = fromIntegral sz
-        c_maxDelay = fromIntegral maxDelay
         bounds = (0, sz-1)
 
 
@@ -95,7 +92,6 @@ foreign import ccall unsafe "cpu_set_network" c_set_network
     -> Ptr CFt     -- ^ v
     -> Ptr CFt     -- ^ sigma
     -> CSize       -- ^ network size
-    -> CDelay      -- ^ max delay
     -> IO RT
 
 

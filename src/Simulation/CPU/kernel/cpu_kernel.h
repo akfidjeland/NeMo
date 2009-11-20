@@ -16,8 +16,7 @@ cpu_set_network(fp_t a[],
 		fp_t u[],
 		fp_t v[],
 		fp_t sigma[],
-		size_t ncount,
-		delay_t maxDelay);
+		size_t ncount);
 
 
 void cpu_delete_network(NETWORK);

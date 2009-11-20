@@ -55,6 +55,8 @@ class ConnectivityMatrix
 
 		void finalize();
 
+		delay_t maxDelay() const { return m_maxDelay; }
+
 	private:
 
 		/* During network construction we accumulate data in a map. This way we

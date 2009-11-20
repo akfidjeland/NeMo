@@ -19,8 +19,7 @@ Network::Network(
 		fp_t u[],
 		fp_t v[],
 		fp_t sigma[], //set to 0 if thalamic input not required
-		size_t ncount,
-		delay_t maxDelay) :
+		size_t ncount) :
 	m_a(ncount),
 	m_b(ncount),
 	m_c(ncount),
@@ -33,7 +32,6 @@ Network::Network(
 	m_recentFiring(ncount, 0),
 	m_current(ncount, 0),
 	m_neuronCount(ncount),
-	m_maxDelay(maxDelay),
 	m_cycle(0)
 {
 	std::copy(a, a + ncount, m_a.begin());
@@ -202,7 +200,7 @@ Network::deliverSpikes()
 
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
 	 * may be needed for STDP */
-	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_maxDelay);
+	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_cm.maxDelay());
 
 	std::fill(m_current.begin(), m_current.end(), 0);
 
