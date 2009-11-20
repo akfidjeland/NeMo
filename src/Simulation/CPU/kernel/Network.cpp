@@ -29,7 +29,7 @@ Network::Network(
 	m_v(ncount),
 	m_sigma(ncount),
 	m_pfired(ncount, 0),
-	m_cm(ncount, maxDelay),
+	m_cm(ncount),
 	m_recentFiring(ncount, 0),
 	m_current(ncount, 0),
 	m_neuronCount(ncount),
@@ -197,6 +197,7 @@ Network::deliverSpikes()
 	//! \todo reset the timer somewhere more sensible
 	if(m_cycle == 0) {
 		resetTimer();
+		m_cm.finalize();
 	}
 
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
@@ -226,14 +227,17 @@ Network::deliverSpikes()
 void
 Network::deliverSpikesOne(nidx_t source, delay_t delay)
 {
-	const std::vector<Synapse>& ss = m_cm.getRow(source, delay);
+	const Row& row = m_cm.getRow(source, delay);
+	const Synapse* ss = row.data;
 
-	for(std::vector<Synapse>::const_iterator s = ss.begin();
-			s != ss.end(); ++s) {
-		m_current[s->target] += s->weight;
+	/* could use pointer-arithmetic here, but profiling seems to indicate that
+	 * it gives no advantage */
+	for(int i=0; i < row.len; ++i) {
+		const Synapse& s = ss[i];
+		m_current[s.target] += s.weight;
 #ifdef DEBUG_TRACE
 		fprintf(stderr, "c%u: n%u -> n%u: %+f (delay %u)\n",
-				m_cycle, source, s->target, s->weight, delay);
+				m_cycle, source, s.target, s.weight, delay);
 #endif
 	}
 }
