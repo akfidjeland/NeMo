@@ -35,6 +35,8 @@ struct Job {
 
 	struct Network* net;
 
+	RNG rng;
+
 } __attribute((aligned(ASSUMED_CACHE_LINE_SIZE)));
 #endif
 
@@ -124,8 +126,7 @@ struct Network {
 
 		uint m_cycle;
 
-		void deliverThalamic();
-		void updateRange(int begin, int end, const unsigned int fstim[]);
+		void updateRange(int begin, int end, const unsigned int fstim[], RNG* rng);
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 

@@ -108,9 +108,13 @@ Network::step(unsigned int fstim[])
 
 
 void
-Network::updateRange(int start, int end, const unsigned int fstim[])
+Network::updateRange(int start, int end, const unsigned int fstim[], RNG* rng)
 {
 	for(int n=start; n < end; n++) {
+
+		if(m_sigma[n] != 0.0f) {
+			m_current[n] += m_sigma[n] * (fp_t) rng->gaussian();
+		}
 
 		m_pfired[n] = 0;
 
@@ -145,33 +149,17 @@ void*
 start_thread(void* job_in)
 {
 	Job* job = static_cast<Job*>(job_in);
-	(job->net)->updateRange(job->start, job->end, job->fstim);
+	(job->net)->updateRange(job->start, job->end, job->fstim, &job->rng);
 	pthread_exit(NULL);
 }
 
 #endif
 
 
-void
-Network::deliverThalamic()
-{
-	//! \todo could do this in parallel if we add per-thread RNG state
-	for(int n=0; n < m_neuronCount; n++) {
-		/* thalamic input */
-		if(m_sigma[n] != 0.0f) {
-			m_current[n] += m_sigma[n] * (fp_t) m_rng.gaussian();
-		}
-	}
-}
-
-
-
 
 void
 Network::update(unsigned int fstim[])
 {
-	deliverThalamic();
-
 #ifdef PTHREADS_ENABLED
 	for(int i=0; i<m_nthreads; ++i) {
 		m_job[i]->fstim = &fstim[0];
@@ -181,7 +169,7 @@ Network::update(unsigned int fstim[])
 		pthread_join(m_thread[i], NULL);
 	}
 #else
-	updateRange(0, m_neuronCount, fstim);
+	updateRange(0, m_neuronCount, fstim, &m_rng);
 #endif
 
 	m_cycle++;
