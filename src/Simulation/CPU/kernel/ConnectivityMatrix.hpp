@@ -29,10 +29,11 @@ struct ForwardIdx
 struct Row
 {
 	Row() : len(0), data(NULL) {}
-	Row(const Synapse* data, size_t len) : data(data), len(len) {}
+
+	Row(Synapse* data, size_t len) : data(data), len(len) {}
 
 	size_t len;
-	const Synapse* data;
+	Synapse* data; // freed in ConnectivityMatrix destructor
 };
 
 
@@ -42,6 +43,8 @@ class ConnectivityMatrix
 	public:
 
 		ConnectivityMatrix(size_t neuronCount);
+
+		~ConnectivityMatrix();
 
 		/*! Add synapses for a particular presynaptic neuron and a particular delay */
 		void setRow(
@@ -59,10 +62,15 @@ class ConnectivityMatrix
 
 	private:
 
+		/* Need to deal with manually allocated 'row' memory if we want to copy
+		 * the whole CM around, so just don't */
+		ConnectivityMatrix(const ConnectivityMatrix&);
+		ConnectivityMatrix& operator=(const ConnectivityMatrix&);
+
 		/* During network construction we accumulate data in a map. This way we
 		 * don't need to know the number of neurons or the number of delays in
 		 * advance */
-		std::map< ForwardIdx, std::vector<Synapse> > m_acc;
+		std::map<ForwardIdx, Row> m_acc;
 
 		/* At run-time however, we want the fastest possible lookup of the
 		 * rows. We therefore use a vector with linear addressing. This just

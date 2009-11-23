@@ -1,9 +1,13 @@
 #include "ConnectivityMatrix.hpp"
+
 #include <assert.h>
+#include <stdlib.h>
+
+#include "common.h"
 
 
 bool
-operator< (const ForwardIdx& a, const ForwardIdx& b)
+operator<(const ForwardIdx& a, const ForwardIdx& b)
 {
 	return a.source < b.source || (a.source == b.source && a.delay < b.delay);
 }
@@ -14,6 +18,21 @@ ConnectivityMatrix::ConnectivityMatrix(size_t neuronCount):
 	m_maxDelay(0),
 	m_finalized(false)
 { }
+
+
+
+ConnectivityMatrix::~ConnectivityMatrix()
+{
+	/* The 'Row' struct does not have its own destructor, to keep things a bit
+	 * simpler, so need to clean up here. */
+	for(std::map<ForwardIdx, Row>::const_iterator i = m_acc.begin();
+			i != m_acc.end(); ++i) {
+		Synapse* data = i->second.data;
+		if(data != NULL) {
+			free(data);
+		}
+	}
+}
 
 
 
@@ -28,30 +47,22 @@ ConnectivityMatrix::setRow(
 {
 	assert(delay > 0);
 
-	std::vector<Synapse>& ss = m_acc[ForwardIdx(source, delay)];
+	Row& ss = m_acc[ForwardIdx(source, delay)];
 
-	ss.reserve(len);
+	/* It's not clear whether alligning this data to cache lines have any
+	 * effect on performance, but it can't hurt either. */
+	//! \todo only do alligned allocation if posix_memalign is available
+	int error = posix_memalign((void**)&ss.data,
+			ASSUMED_CACHE_LINE_SIZE,
+			len*sizeof(Synapse)); \
+	//! \todo deal with allocation errors
+	ss.len = len;
+
 	for(size_t i=0; i<len; ++i) {
-		ss.push_back(Synapse(weights[i], targets[i]));
+		ss.data[i] = Synapse(weights[i], targets[i]);
 	}
 
 	m_maxDelay = std::max(m_maxDelay, delay);
-}
-
-
-
-Row
-createRow(const std::map< ForwardIdx, std::vector<Synapse> >& acc,
-		nidx_t source, delay_t delay)
-{
-	Row ret; // defaults to empty row
-	std::map<ForwardIdx, std::vector<Synapse> >::const_iterator row =
-			acc.find(ForwardIdx(source ,delay));
-	if(row != acc.end()) {
-		ret.len = row->second.size();
-		ret.data = &(row->second)[0];
-	}
-	return ret;
 }
 
 
@@ -64,7 +75,12 @@ ConnectivityMatrix::finalize()
 
 		for(int n=0; n < m_neuronCount; ++n) {
 			for(int d=1; d <= m_maxDelay; ++d) {
-				m_cm[addressOf(n,d)] = createRow(m_acc, n, d);
+				std::map<ForwardIdx, Row>::const_iterator row = m_acc.find(ForwardIdx(n, d));
+				if(row != m_acc.end()) {
+					m_cm[addressOf(n,d)] = row->second;
+				} else {
+					m_cm[addressOf(n,d)] = Row(); // defaults to empty row
+				}
 			}
 		}
 		m_finalized = true;
