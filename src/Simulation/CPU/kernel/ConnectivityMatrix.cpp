@@ -3,8 +3,13 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <algorithm>
+
 #include "common.h"
 
+
+namespace nemo {
+	namespace cpu {
 
 bool
 operator<(const ForwardIdx& a, const ForwardIdx& b)
@@ -13,8 +18,7 @@ operator<(const ForwardIdx& a, const ForwardIdx& b)
 }
 
 
-ConnectivityMatrix::ConnectivityMatrix(size_t neuronCount):
-	m_neuronCount(neuronCount),
+ConnectivityMatrix::ConnectivityMatrix():
 	m_maxDelay(0),
 	m_finalized(false)
 { }
@@ -63,6 +67,7 @@ ConnectivityMatrix::setRow(
 	}
 
 	m_maxDelay = std::max(m_maxDelay, delay);
+	m_sourceIndices.insert(source);
 }
 
 
@@ -70,16 +75,18 @@ ConnectivityMatrix::setRow(
 void
 ConnectivityMatrix::finalize()
 {
-	if(!m_finalized) {
-		m_cm.resize(m_neuronCount * m_maxDelay);
+	if(!m_finalized && !m_sourceIndices.empty()) {
 
-		for(int n=0; n < m_neuronCount; ++n) {
-			for(int d=1; d <= m_maxDelay; ++d) {
+		nidx_t maxIdx = *(std::max_element(m_sourceIndices.begin(), m_sourceIndices.end()));
+		m_cm.resize((maxIdx+1) * m_maxDelay);
+
+		for(nidx_t n=0; n <= maxIdx; ++n) {
+			for(delay_t d=1; d <= m_maxDelay; ++d) {
 				std::map<ForwardIdx, Row>::const_iterator row = m_acc.find(ForwardIdx(n, d));
 				if(row != m_acc.end()) {
-					m_cm[addressOf(n,d)] = row->second;
+					m_cm.at(addressOf(n,d)) = row->second;
 				} else {
-					m_cm[addressOf(n,d)] = Row(); // defaults to empty row
+					m_cm.at(addressOf(n,d)) = Row(); // defaults to empty row
 				}
 			}
 		}
@@ -95,18 +102,9 @@ const Row&
 ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 {
 	assert(m_finalized);
-	return m_cm[addressOf(source, delay)];
+	return m_cm.at(addressOf(source, delay));
 }
 
 
-
-size_t
-ConnectivityMatrix::addressOf(nidx_t source, delay_t delay) const
-{
-	//! \todo use exceptions here instead, so we can signal back to caller
-	// or better yet, just make use of safe code when looking up m_acc
-	assert(source < m_neuronCount);
-	assert(delay > 0);
-	assert(delay <= m_maxDelay);
-	return source * m_maxDelay + delay - 1;
-}
+	} // namespace cpu
+} // namespace nemo

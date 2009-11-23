@@ -5,7 +5,10 @@
 #include "types.h"
 
 
-typedef struct Network* NETWORK;
+// typedef struct Network* NETWORK;
+
+// opaque pointer
+typedef void* NETWORK;
 
 
 NETWORK

@@ -3,8 +3,12 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include "types.h"
+
+namespace nemo {
+	namespace cpu {
 
 struct Synapse
 {
@@ -42,7 +46,7 @@ class ConnectivityMatrix
 {
 	public:
 
-		ConnectivityMatrix(size_t neuronCount);
+		ConnectivityMatrix();
 
 		~ConnectivityMatrix();
 
@@ -80,11 +84,25 @@ class ConnectivityMatrix
 
 		bool m_finalized;
 
-		size_t m_neuronCount;
+		std::set<nidx_t> m_sourceIndices;
 		delay_t m_maxDelay;
 
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */
 		size_t addressOf(nidx_t, delay_t) const;
 };
+
+
+
+inline
+size_t
+ConnectivityMatrix::addressOf(nidx_t source, delay_t delay) const
+{
+	return source * m_maxDelay + delay - 1;
+}
+
+
+}
+}
+
 
 #endif

@@ -13,6 +13,9 @@
 #include "RNG.hpp"
 #include "common.h"
 
+namespace nemo {
+	namespace cpu {
+
 #ifdef PTHREADS_ENABLED
 
 
@@ -88,9 +91,11 @@ struct Network {
 		std::vector<fp_t> m_v;
 		std::vector<fp_t> m_sigma;
 
+
+
 		std::vector<unsigned int> m_pfired;
 
-		ConnectivityMatrix m_cm;
+		nemo::cpu::ConnectivityMatrix m_cm;
 
 		/* last 64 cycles worth of firing, one entry per neuron */
 		std::vector<uint64_t> m_recentFiring;
@@ -126,7 +131,10 @@ struct Network {
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 
 		Timer m_timer;
+
 };
 
 
+	} // namespace cpu
+} // namespace nemo
 #endif

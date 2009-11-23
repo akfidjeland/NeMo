@@ -5,7 +5,7 @@ extern "C" {
 #include "Network.hpp"
 
 
-struct Network*
+NETWORK
 cpu_set_network(fp_t a[],
 		fp_t b[],
 		fp_t c[],
@@ -15,62 +15,63 @@ cpu_set_network(fp_t a[],
 		fp_t sigma[], //set to 0 if not thalamic input required
 		size_t ncount)
 {
-	return new Network(a, b, c, d, u, v, sigma, ncount);
+	return new nemo::cpu::Network(a, b, c, d, u, v, sigma, ncount);
 }
 
 
 
 void
-cpu_add_synapses(Network* net,
+cpu_add_synapses(NETWORK net,
 		nidx_t source,
 		delay_t delay,
 		nidx_t* targets,
 		weight_t* weights,
 		size_t length)
 {
-	net->setCMRow(source, delay, targets, weights, length);
+	static_cast<nemo::cpu::Network*>(net)->setCMRow(source, delay, targets, weights, length);
 }
 
 
 
 void
-cpu_delete_network(Network* net)
+cpu_delete_network(NETWORK net)
 {
-	delete net; 
+	delete static_cast<nemo::cpu::Network*>(net);
 }
 
 
 
 void
-cpu_step(Network* network, unsigned int fstim[])
+cpu_step(NETWORK network, unsigned int fstim[])
 {
-	network->step(fstim);
+	static_cast<nemo::cpu::Network*>(network)->step(fstim);
 }
 
 
 
 void
-cpu_deliver_spikes(Network* network)
+cpu_deliver_spikes(NETWORK network)
 {
-	network->deliverSpikes();
+	static_cast<nemo::cpu::Network*>(network)->deliverSpikes();
 }
 
 
 
 void
-cpu_update(Network* network, unsigned int fstim[])
+cpu_update(NETWORK network, unsigned int fstim[])
 {
-	network->update(fstim);
+	static_cast<nemo::cpu::Network*>(network)->update(fstim);
 }
 
 
 
 void
-cpu_read_firing(Network* network,
+cpu_read_firing(NETWORK network,
 		unsigned int** neuronIdx,
 		unsigned int* nfired)
 {
-	const std::vector<unsigned int>& firings = network->readFiring();
+	const std::vector<unsigned int>& firings =
+		static_cast<nemo::cpu::Network*>(network)->readFiring();
 	*neuronIdx = const_cast<unsigned int*>(&firings[0]);
 	*nfired = firings.size();
 }
@@ -78,15 +79,15 @@ cpu_read_firing(Network* network,
 
 
 long int
-cpu_elapsed_ms(Network* network)
+cpu_elapsed_ms(NETWORK network)
 {
-	return network->elapsed();
+	return static_cast<nemo::cpu::Network*>(network)->elapsed();
 }
 
 
 
 void
-cpu_reset_timer(Network* network)
+cpu_reset_timer(NETWORK network)
 {
-	network->resetTimer();
+	(static_cast<nemo::cpu::Network*>(network))->resetTimer();
 }

@@ -11,6 +11,9 @@
 #define SUBSTEP_MULT 0.25
 
 
+namespace nemo {
+	namespace cpu {
+
 Network::Network(
 		fp_t a[],
 		fp_t b[],
@@ -28,7 +31,7 @@ Network::Network(
 	m_v(ncount),
 	m_sigma(ncount),
 	m_pfired(ncount, 0),
-	m_cm(ncount),
+	m_cm(),
 	m_recentFiring(ncount, 0),
 	m_current(ncount, 0),
 	m_neuronCount(ncount),
@@ -255,3 +258,7 @@ Network::resetTimer()
 {
 	m_timer.reset();
 }
+
+
+	} // namespace cpu
+} // namespace nemo
