@@ -11,6 +11,14 @@
 typedef void* NETWORK;
 
 
+/* Create a new empty network. Use cpu_add_neuron and cpu_add_synapse to
+ * construct the network */
+NETWORK
+cpu_new_network();
+
+
+/* Create a new network with all the neurons initialized. Connectivity can be
+ * added using cpu_add_synapses. */
 NETWORK
 cpu_set_network(fp_t a[],
 		fp_t b[],
@@ -22,7 +30,13 @@ cpu_set_network(fp_t a[],
 		size_t ncount);
 
 
-void cpu_delete_network(NETWORK);
+void cpu_start_simulation(NETWORK);
+
+
+void cpu_add_neuron(NETWORK,
+		nidx_t idx,
+		fp_t a, fp_t b, fp_t c, fp_t d,
+		fp_t u, fp_t v, fp_t sigma);
 
 
 void cpu_add_synapses(NETWORK,
@@ -46,16 +60,19 @@ void cpu_step(NETWORK network, unsigned int fstim[]);
 
 
 
-/* The step function above will do both the spike delivery and update. However,
- * it can sometimes be desirable to call these individually, e.g. for profiling
- * reasons. If so, call 'deliver_spikes', then 'update', and finally
- * 'read_firing' (optional) */
-
+/*!
+ * The step function above will do both the spike delivery and update. However,
+ * it can sometimes be desirable to call these individually, e.g. if profiling.
+ * If so, call 'deliver_spikes', then 'update'.
+ */
 void cpu_deliver_spikes(NETWORK network);
 void cpu_update(NETWORK network, unsigned int fstim[]);
 
 
+
 /*!
+ * Return list of fired neurons for the most recent simulation cycle.
+ *
  * \param fired
  * 		indices of neurons which fired. This array should not be modified, and
  * 		is safe to access until the next call to cpu_step.
@@ -75,5 +92,7 @@ long int cpu_elapsed_ms(NETWORK);
 
 
 void cpu_reset_timer(NETWORK);
+
+void cpu_delete_network(NETWORK);
 
 #endif

@@ -7,10 +7,13 @@ module Simulation.CPU.KernelFFI (
     RT,
     StimulusBuffer,
     newStimulusBuffer,
-    set,
+    newNetwork,
+    setNetwork,
+    addNeuron,
+    addSynapses,
+    start,
     step,
     readFiring,
-    addSynapses,
     elapsedMs,
     resetTimer,
     clear)
@@ -52,7 +55,10 @@ type CDelay = CUInt
 type CWeight = CFt
 
 
-set
+foreign import ccall unsafe "cpu_new_network" newNetwork :: IO RT
+
+
+setNetwork
     :: [Double] -- ^ a
     -> [Double] -- ^ b
     -> [Double] -- ^ c
@@ -61,26 +67,17 @@ set
     -> [Double] -- ^ v
     -> [Double] -- ^ sigma (0 if not input)
     -> IO RT
-set as bs cs ds us vs sigma = do
-    c_as <- newListArray bounds $ map realToFrac as
-    c_bs <- newListArray bounds $ map realToFrac bs
-    c_cs <- newListArray bounds $ map realToFrac cs
-    c_ds <- newListArray bounds $ map realToFrac ds
-    c_us <- newListArray bounds $ map realToFrac us
-    c_vs <- newListArray bounds $ map realToFrac vs
-    c_sigma <- newListArray bounds $ map realToFrac sigma
-    withStorableArray c_as $ \as_ptr -> do
-    withStorableArray c_bs $ \bs_ptr -> do
-    withStorableArray c_cs $ \cs_ptr -> do
-    withStorableArray c_ds $ \ds_ptr -> do
-    withStorableArray c_us $ \us_ptr -> do
-    withStorableArray c_vs $ \vs_ptr -> do
-    withStorableArray c_sigma $ \sigma_ptr -> do
-    c_set_network as_ptr bs_ptr cs_ptr ds_ptr us_ptr vs_ptr sigma_ptr c_sz
+setNetwork as bs cs ds us vs sigma = do
+    rt <- newNetwork
+    zipWithM8_ (addNeuron rt) [0..] as bs cs ds us vs sigma
+    return rt
     where
-        sz = length as
-        c_sz = fromIntegral sz
-        bounds = (0, sz-1)
+        zipWithM8_ f a1 a2 a3 a4 a5 a6 a7 a8 =
+            sequence_ (zipWith8 f a1 a2 a3 a4 a5 a6 a7 a8)
+        zipWith8 z (a:as) (b:bs) (c:cs) (d:ds) (e:es) (f:fs) (g:gs) (h:hs)
+                           =  z a b c d e f g h : zipWith8 z as bs cs ds es fs gs hs
+        zipWith8 _ _ _ _ _ _ _ _ _ = []
+
 
 
 foreign import ccall unsafe "cpu_set_network" c_set_network
@@ -95,14 +92,25 @@ foreign import ccall unsafe "cpu_set_network" c_set_network
     -> IO RT
 
 
-foreign import ccall unsafe "cpu_add_synapses" c_add_synapses
+addNeuron
+    :: RT -> Int
+    -> Double -> Double -> Double -> Double
+    -> Double -> Double -> Double
+    -> IO ()
+addNeuron rt idx a b c d u v s =
+    c_add_neuron rt (fromIntegral idx) (cast a) (cast b) (cast c) (cast d) (cast u) (cast v) (cast s)
+    where
+        cast = realToFrac
+
+
+foreign import ccall unsafe "cpu_add_neuron" c_add_neuron
     :: RT
     -> CIdx
-    -> CDelay
-    -> Ptr CIdx
-    -> Ptr CWeight
-    -> CSize
+    -> CFt -> CFt -> CFt -> CFt -- a, b, c, d
+    -> CFt -> CFt -> CFt        -- u, v, sigma
     -> IO ()
+
+
 
 addSynapses :: RT -> Source -> Delay -> [Target] -> [Weight] -> IO ()
 addSynapses rt src delay targets weights = do
@@ -114,6 +122,19 @@ addSynapses rt src delay targets weights = do
     where
         c_int = fromIntegral
 
+
+foreign import ccall unsafe "cpu_add_synapses" c_add_synapses
+    :: RT
+    -> CIdx
+    -> CDelay
+    -> Ptr CIdx
+    -> Ptr CWeight
+    -> CSize
+    -> IO ()
+
+
+{- | Finalize construction and set up run-time data structures -}
+foreign import ccall unsafe "cpu_start_simulation" start :: RT -> IO ()
 
 
 type FiringStimulus = [Int]

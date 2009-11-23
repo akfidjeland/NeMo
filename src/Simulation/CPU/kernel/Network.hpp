@@ -30,7 +30,7 @@ struct Job {
 	size_t start;
 	size_t end;
 
-	// intput - full vector
+	// input - full vector
 	unsigned int* fstim;
 
 	struct Network* net;
@@ -42,9 +42,23 @@ struct Job {
 #endif
 
 
+struct Neuron {
+
+	Neuron(): a(0), b(0), c(0), d(0), u(0), v(0), sigma(0) {}
+
+	Neuron(fp_t a, fp_t b, fp_t c, fp_t d, fp_t u, fp_t v, fp_t sigma) :
+		a(a), b(b), c(c), d(d), u(u), v(v), sigma(sigma) {}
+
+	fp_t a, b, c, d, u, v, sigma;
+};
+
+
 struct Network {
 
 	public:
+
+		/*! Create an empty network which can be added to incrementally */
+		Network();
 
 		Network(fp_t a[],
 			fp_t b[],
@@ -57,10 +71,18 @@ struct Network {
 
 		~Network();
 
+		/*! Add a single neuron */
+		void addNeuron(nidx_t neuronIndex,
+				fp_t a, fp_t b, fp_t c, fp_t d,
+				fp_t u, fp_t v, fp_t sigma);
+
 		/*! Add synapses for a particular presynaptic neuron and a particular
 		 * delay */
-		void setCMRow(nidx_t source, delay_t delay,
+		void addSynapses(nidx_t source, delay_t delay,
 				const nidx_t* targets, const weight_t* weights, size_t length);
+
+		/*! Set up runtime data structures after network construction is complete */
+		void startSimulation();
 
 		/*! Deliver spikes and update neuron state */
 		void step(unsigned int fstim[]);
@@ -81,6 +103,18 @@ struct Network {
 
 	private:
 
+		/* The network is constructed incrementally. */
+		std::map<nidx_t, Neuron> m_acc;
+		bool m_constructing;
+
+		/* When all neurons are added, calling finalize will move data into
+		 * runtime data structures */
+		void finalize();
+
+		void allocateNeuronData(size_t neuronCount);
+
+		/* At run-time data is put into linear matrices for vectorizable
+		 * operations */
 		//! \todo enforce 16-byte allignment to support vectorisation
 		std::vector<fp_t> m_a;
 		std::vector<fp_t> m_b;
@@ -92,6 +126,7 @@ struct Network {
 		std::vector<fp_t> m_sigma;
 
 
+		void allocateRuntimeData(size_t neuronCount);
 
 		std::vector<unsigned int> m_pfired;
 

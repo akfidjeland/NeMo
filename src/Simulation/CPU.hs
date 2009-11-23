@@ -31,7 +31,7 @@ instance Simulation_Iface CpuSimulation where
     elapsed sim = Kernel.elapsedMs $ rt sim
     resetTimer sim = Kernel.resetTimer $ rt sim
     getWeights _ = error "getWeights not supported on CPU backend"
-    start _ = return ()
+    start = Kernel.start . rt
     stop = Kernel.clear . rt
 
 
@@ -59,7 +59,7 @@ stepSim sim fstim = do
 
 initSim :: Network.Network IzhNeuron Static -> IO CpuSimulation
 initSim net@(Network.Network ns _) = do
-    rt <- Kernel.set as bs cs ds us vs sigma
+    rt <- Kernel.setNetwork as bs cs ds us vs sigma
     setConnectivityMatrix rt $ Network.synapses net
     fstim <- Kernel.newStimulusBuffer $ ncount
     return $ CpuSimulation rt fstim

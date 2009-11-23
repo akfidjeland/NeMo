@@ -5,6 +5,15 @@ extern "C" {
 #include "Network.hpp"
 
 
+
+NETWORK
+cpu_new_network()
+{
+	return new nemo::cpu::Network();
+}
+
+
+
 NETWORK
 cpu_set_network(fp_t a[],
 		fp_t b[],
@@ -21,6 +30,17 @@ cpu_set_network(fp_t a[],
 
 
 void
+cpu_add_neuron(NETWORK net,
+		nidx_t idx,
+		fp_t a, fp_t b, fp_t c, fp_t d,
+		fp_t u, fp_t v, fp_t sigma)
+{
+	static_cast<nemo::cpu::Network*>(net)->addNeuron(idx, a, b, c, d, u, v, sigma);
+}
+
+
+
+void
 cpu_add_synapses(NETWORK net,
 		nidx_t source,
 		delay_t delay,
@@ -28,15 +48,15 @@ cpu_add_synapses(NETWORK net,
 		weight_t* weights,
 		size_t length)
 {
-	static_cast<nemo::cpu::Network*>(net)->setCMRow(source, delay, targets, weights, length);
+	static_cast<nemo::cpu::Network*>(net)->addSynapses(source, delay, targets, weights, length);
 }
 
 
 
 void
-cpu_delete_network(NETWORK net)
+cpu_start_simulation(NETWORK network)
 {
-	delete static_cast<nemo::cpu::Network*>(net);
+	static_cast<nemo::cpu::Network*>(network)->startSimulation();
 }
 
 
@@ -91,3 +111,14 @@ cpu_reset_timer(NETWORK network)
 {
 	(static_cast<nemo::cpu::Network*>(network))->resetTimer();
 }
+
+
+
+void
+cpu_delete_network(NETWORK net)
+{
+	delete static_cast<nemo::cpu::Network*>(net);
+}
+
+
+
