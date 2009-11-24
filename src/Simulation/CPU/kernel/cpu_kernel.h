@@ -5,8 +5,6 @@
 #include "types.h"
 
 
-// typedef struct Network* NETWORK;
-
 // opaque pointer
 typedef void* NETWORK;
 
@@ -30,16 +28,19 @@ cpu_set_network(fp_t a[],
 		size_t ncount);
 
 
-void cpu_start_simulation(NETWORK);
+status_t
+cpu_start_simulation(NETWORK);
 
 
-void cpu_add_neuron(NETWORK,
+status_t
+cpu_add_neuron(NETWORK,
 		nidx_t idx,
 		fp_t a, fp_t b, fp_t c, fp_t d,
 		fp_t u, fp_t v, fp_t sigma);
 
 
-void cpu_add_synapses(NETWORK,
+status_t
+cpu_add_synapses(NETWORK,
 		nidx_t source,
 		delay_t delay,
 		nidx_t* targets,
@@ -56,7 +57,7 @@ void cpu_add_synapses(NETWORK,
  * 		Per-neuron vector indiciating which ones should be stimulated (forced
  * 		to fire) this cycle.
  */
-void cpu_step(NETWORK network, unsigned int fstim[]);
+status_t cpu_step(NETWORK network, unsigned int fstim[]);
 
 
 
@@ -65,8 +66,8 @@ void cpu_step(NETWORK network, unsigned int fstim[]);
  * it can sometimes be desirable to call these individually, e.g. if profiling.
  * If so, call 'deliver_spikes', then 'update'.
  */
-void cpu_deliver_spikes(NETWORK network);
-void cpu_update(NETWORK network, unsigned int fstim[]);
+status_t cpu_deliver_spikes(NETWORK network);
+status_t cpu_update(NETWORK network, unsigned int fstim[]);
 
 
 
@@ -79,7 +80,7 @@ void cpu_update(NETWORK network, unsigned int fstim[]);
  * \param nfired
  * 		number of neurons which fired
  */
-void
+status_t
 cpu_read_firing(NETWORK network,
 		unsigned int** fired,
 		unsigned int* nfired);
@@ -91,8 +92,13 @@ cpu_read_firing(NETWORK network,
 long int cpu_elapsed_ms(NETWORK);
 
 
-void cpu_reset_timer(NETWORK);
+status_t cpu_reset_timer(NETWORK);
 
 void cpu_delete_network(NETWORK);
+
+
+/* If a runtime error occurred (indicated via status_t return of some other
+ * function), this function returns a description of the last error */
+const char* cpu_last_error(NETWORK);
 
 #endif

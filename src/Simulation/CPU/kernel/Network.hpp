@@ -101,6 +101,8 @@ struct Network {
 
 		void resetTimer();
 
+		size_t neuronCount() const { return m_neuronCount; }
+
 	private:
 
 		/* The network is constructed incrementally. */

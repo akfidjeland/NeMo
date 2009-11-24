@@ -1,8 +1,8 @@
 #ifdef PTHREADS_ENABLED
 #include <sched.h> // for setting thread affinity
 #endif
-#include <assert.h>
 
+#include <stdexcept>
 #include <cmath>
 #include <algorithm>
 
@@ -99,9 +99,14 @@ Network::addNeuron(nidx_t neuronIndex,
 				fp_t a, fp_t b, fp_t c, fp_t d,
 				fp_t u, fp_t v, fp_t sigma)
 {
-	//! \todo use exceptions here instead
-	assert(m_constructing);
-	assert(m_acc.find(neuronIndex) == m_acc.end());
+	if(!m_constructing) {
+		fprintf(stderr, "already have %u neurons\n", m_acc.size());
+		throw std::runtime_error("attempt to add neuron after construction complete");
+	}
+	if(m_acc.find(neuronIndex) != m_acc.end()) {
+		//! \todo construct a sensible error message here using sstream
+		throw std::runtime_error("duplicate neuron index");
+	}
 	m_acc[neuronIndex] = Neuron(a, b, c, d, u, v, sigma);
 }
 
@@ -122,7 +127,9 @@ Network::finalize()
 		 * to be able to deal with invalid neurons, but should make sure to set
 		 * the values to some sensible default. For now, just throw an error if
 		 * the range of neuron indices is non-contigous. */
-		assert(m_neuronCount == maxIdx + 1 - minIdx);
+		if(m_neuronCount != maxIdx + 1 - minIdx) {
+			throw std::runtime_error("neuron indices form a non-contigous range");
+		}
 
 		allocateNeuronData(m_neuronCount);
 

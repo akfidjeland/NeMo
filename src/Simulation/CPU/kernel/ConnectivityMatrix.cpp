@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <stdexcept>
 #include <algorithm>
 
 #include "common.h"
@@ -49,7 +50,9 @@ ConnectivityMatrix::setRow(
 		const weight_t* weights,
 		size_t len)
 {
-	assert(delay > 0);
+	if(delay <= 0) {
+		throw std::domain_error("zero or negative delay in connectivity matrix construction");
+	}
 
 	Row& ss = m_acc[ForwardIdx(source, delay)];
 
