@@ -18,6 +18,7 @@ import ExternalClient (runExternalClient)
 import Options
 import Protocol (defaultPort)
 import Server (runServer)
+import Simulation.Options (simOptions, BackendOptions(..))
 import Simulation.STDP.Options (stdpOptions)
 #if defined(TEST_ENABLED)
 import Test.RunTests (runTests)
@@ -49,14 +50,14 @@ runBackendServer :: [String] -> IO ()
 runBackendServer args0 = do
     (args, commonOpts) <- startOptProcessing args0
     serverOpts  <- processOptGroup serverOptions args
-    -- simOpts     <- processOptGroup (simOptions LocalBackends) args
+    simOpts     <- processOptGroup (simOptions LocalBackends) args
     -- cudaOpts    <- processOptGroup cudaOptions args
     endOptProcessing args
     -- let verbose = optVerbose commonOpts
     -- TODO: pass in options from command line
     let reps = optRepetition serverOpts
         port = optPort serverOpts
-    runServer reps stderr (defaults stdpOptions) port
+    runServer reps stderr simOpts (defaults stdpOptions) port
 
 
 data Command

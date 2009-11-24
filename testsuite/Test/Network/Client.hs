@@ -35,7 +35,7 @@ test_clientSim = TestLabel "comparing client/server with local" $ TestCase $ do
         logfile = logdir </> "TestClient.log"
     createDirectoryIfMissing True logdir
     bracket (openFile logfile WriteMode) (hClose) $ \logTo -> do
-    serverThread <- forkOS $ runServer Once logTo (defaults stdpOptions) testPort
+    serverThread <- forkOS $ runServer Once logTo (simOpts CPU 4) (defaults stdpOptions) testPort
     yield
     let sim1 = \f -> runSim (simOpts CPU 4) net
                         fstim f (defaults cudaOptions) (defaults stdpOptions)

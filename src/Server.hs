@@ -15,8 +15,6 @@ import Network.Socket.Internal (PortNumber)
 import Thrift
 import Thrift.Protocol.Binary
 import Thrift.Transport.Handle
--- TODO: undo!
--- import System.IO (Handle, hPutStrLn)
 import System.IO
 import System.Time (getClockTime)
 
@@ -51,13 +49,16 @@ data ServerState
 
 
 data Config = Config {
-        stdpConfig :: StdpConf,
-        pipelined :: Bool
+        simOptions :: SimulationOptions,
+        stdpConfig :: StdpConf
     }
 
 
-newConfig :: StdpConf -> Config
-newConfig s = Config s False -- pipelining disabled by default
+
+setPipelining :: Bool -> Config -> Config
+setPipelining val conf = conf { simOptions = opt' }
+    where
+        opt' = (simOptions conf) { optPipelined = val }
 
 
 
@@ -128,15 +129,11 @@ simulateWith (Handler _ m) f = do
             file <- openFile "cm.dat" WriteMode
             Network.hPrintConnections file net
             hClose file
-            sim <- initSim net (simConfig conf) cudaOpts (stdpConfig conf)
+            sim <- initSim net (simOptions conf) cudaOpts (stdpConfig conf)
             ret <- f sim
             writeIORef m $! Simulating sim
             return $! ret
     where
-
-        -- TODO: make this backend options instead of cudaOpts
-        -- TODO: perhaps we want to be able to send this to server?
-        simConfig conf = SimulationOptions Forever 4 defaultBackend $ pipelined conf
         cudaOpts = defaults cudaOptions
 
         initError :: CE.SomeException -> IO a
@@ -170,7 +167,7 @@ instance NemoBackend_Iface Handler where
     enableStdp h (Just pre) (Just post) (Just mxw) (Just mnw) =
         serverEnableStdp h pre post mxw mnw
     enablePipelining h =
-        configureWithLog h "enabling pipelining" $ \conf -> conf { pipelined = True }
+        configureWithLog h "enabling pipelining" $ setPipelining True
     run h (Just stim) = simulateWith h $ Protocol.run stim
     pipelineLength h = simulateWithLog h "pipeline length query" $ Protocol.pipelineLength
 
@@ -193,10 +190,10 @@ instance CE.Exception StopSimulation
 {- | A binary non-threaded server, which only deals with requests from a single
  - external client at a time. Typically invoked as either 'runServer Forever'
  - or 'runServer Once' (if it should terminate after serving a single client). -}
-runServer :: Duration -> Handle -> StdpConf -> PortID -> IO ()
-runServer ntimes hdl stdpOptions port = do
+runServer :: Duration -> Handle -> SimulationOptions -> StdpConf -> PortID -> IO ()
+runServer ntimes hdl simOptions stdpOptions port = do
     logTime hdl "started"
-    let conf = newConfig stdpOptions
+    let conf = Config simOptions stdpOptions
     socket <- listenOn port
     -- TODO: forkIO here, keep mvar showing simulation in use
     repeated ntimes $ do

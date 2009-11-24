@@ -77,13 +77,14 @@ simDescr backend = local ++ if backend == AllBackends then remote else []
     where
         local = [
 
+            -- TODO: specifying a duration only makes sense in batch mode
             Option ['t'] ["time"]    (ReqArg readDuration "INT")
                 "duration of simulation in cycles (at 1ms resolution)",
 
-            Option [] ["temporal-subresolution"]
+            Option [] ["euler-steps"]
                 (ReqArg (\a o -> return o { optTempSubres = read a }) "INT")
                 (withDefault (optTempSubres simDefaults)
-                    "number of substeps per normal time step"),
+                    "number of euler method steps per full simulation cycle"),
 
 #if defined(CUDA_ENABLED)
             Option [] ["gpu"]
