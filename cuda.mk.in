@@ -31,6 +31,7 @@ STATIC_LIB := libcuIzhikevich.a
 
 
 verbose = 1
+INCLUDES += -Isrc/Simulation/common
 include cuda_common.mk
 NVCCFLAGS += --host-compilation=c++ --ptxas-options="-v" --maxrregcount 32 # --keep
 

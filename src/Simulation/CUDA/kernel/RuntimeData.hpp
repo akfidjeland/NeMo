@@ -4,10 +4,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <ctime>
 #include "NVector.hpp"
 #include "SMatrix.hpp"
 #include "kernel.cu_h"
+#include <Timer.hpp>
+
 
 struct RuntimeData
 {
@@ -117,8 +118,7 @@ struct RuntimeData
 		/* True if host buffers have not been copied to device */
 		bool m_deviceDirty;
 
-		struct timeval m_start; // set before first step
-		struct timeval m_end;   // set after every step
+		nemo::Timer m_timer;
 
 		bool m_haveL1Connections;
 

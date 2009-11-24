@@ -14,7 +14,6 @@ extern "C" {
 
 #include <vector>
 #include <assert.h>
-#include <sys/time.h>
 
 
 
@@ -284,26 +283,18 @@ RuntimeData::cycle() const
 
 
 long
-timevalToMs(struct timeval& tv)
-{
-    return 1000 * tv.tv_sec + tv.tv_usec / 1000;
-}
-
-long
 RuntimeData::elapsed()
 {
     syncSimulation(this);
-    gettimeofday(&m_end, NULL);
-    struct timeval m_res;
-    timersub(&m_end, &m_start, &m_res);
-    return timevalToMs(m_res);
+	return m_timer.elapsed();
 }
+
 
 
 void
 RuntimeData::setStart()
 {
-    gettimeofday(&m_start, NULL);
+	m_timer.reset();
 }
 
 

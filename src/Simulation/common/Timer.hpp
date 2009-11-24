@@ -2,6 +2,8 @@
 
 #include <sys/time.h>
 
+namespace nemo {
+
 /*! \brief Simple timer mesauring wall-clock time */
 class Timer 
 {
@@ -39,6 +41,8 @@ void
 Timer::reset()
 {
     gettimeofday(&m_start, NULL);
+}
+
 }
 
 #endif
