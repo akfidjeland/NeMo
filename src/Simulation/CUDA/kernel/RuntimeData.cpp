@@ -105,6 +105,16 @@ RuntimeData::maxDelay() const
 }
 
 
+
+extern void
+configureStdp(
+		uint preFireWindow,
+		uint postFireWindow,
+		uint64_t potentiationBits,
+		uint64_t depressionBits,
+		float* stdpFn);
+
+
 void
 RuntimeData::moveToDevice()
 {
@@ -116,7 +126,11 @@ RuntimeData::moveToDevice()
 		}
 		thalamicInput->moveToDevice();
 		if(stdpFn != NULL) {
-			stdpFn->configureDevice();
+			configureStdp(stdpFn->preFireWindow(),
+					stdpFn->postFireWindow(),
+					stdpFn->potentiationBits(),
+					stdpFn->depressionBits(),
+					const_cast<float*>(&stdpFn->function()[0]));
 		}
 	    m_deviceDirty = false;
 	}
@@ -503,5 +517,5 @@ enableStdp(RTDATA rtdata,
 		float minWeight) // length: prefire + postfire
 {
 	rtdata->stdpFn =
-		new StdpFunction(prefire, postfire, pbits, dbits, fn, maxWeight, minWeight);
+		new nemo::StdpFunction(prefire, postfire, pbits, dbits, fn, maxWeight, minWeight);
 }

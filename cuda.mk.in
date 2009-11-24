@@ -19,7 +19,7 @@ CU_INC = kernel.cu \
 # CUDA source files (compiled with cudacc)
 CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN))
 CU_DEPS     := $(addprefix $(SRCDIR),$(CU_INC))
-CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringOutput.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp RSMatrix.cpp StdpFunction.cpp)
+CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringOutput.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp RSMatrix.cpp)
 CFILES		:= $(addprefix $(SRCDIR),kernel.c)
 
 

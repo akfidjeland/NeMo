@@ -7,7 +7,9 @@
 #include "NVector.hpp"
 #include "SMatrix.hpp"
 #include "kernel.cu_h"
+
 #include <Timer.hpp>
+#include <StdpFunction.hpp>
 
 
 struct RuntimeData
@@ -95,10 +97,11 @@ struct RuntimeData
 	 * memory, so this value could be useful for diagnostic purposes */
 	size_t d_allocated() const;
 
-		class StdpFunction* stdpFn;
+		class nemo::StdpFunction* stdpFn;
 		// should be private, but have problems with friend with C linkage
 
 	private :
+
 
 		uint m_maxDelay;
 
