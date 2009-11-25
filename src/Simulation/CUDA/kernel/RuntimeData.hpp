@@ -9,7 +9,7 @@
 #include "kernel.cu_h"
 
 #include <Timer.hpp>
-#include <StdpFunction.hpp>
+#include <STDP.hpp>
 
 
 struct RuntimeData
@@ -97,7 +97,7 @@ struct RuntimeData
 	 * memory, so this value could be useful for diagnostic purposes */
 	size_t d_allocated() const;
 
-		class nemo::StdpFunction stdpFn;
+		class nemo::STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
 
 	private :

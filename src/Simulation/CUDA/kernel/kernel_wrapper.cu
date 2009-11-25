@@ -14,6 +14,8 @@ extern "C" {
 #include "kernel.h"
 }
 
+#include <STDP.hpp>
+
 #include "util.h"
 #include "time.hpp"
 #include "error.cu"
@@ -24,7 +26,6 @@ extern "C" {
 #include "firingProbe.cu"
 #include "RuntimeData.hpp"
 #include "CycleCounters.hpp"
-#include "StdpFunction.hpp"
 #include "partitionConfiguration.cu"
 #include "cycleCounting.cu"
 #include "ThalamicInput.hpp"

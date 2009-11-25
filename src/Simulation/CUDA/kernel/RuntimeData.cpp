@@ -8,7 +8,6 @@ extern "C" {
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
 #include "ThalamicInput.hpp"
-#include "StdpFunction.hpp"
 #include "util.h"
 #include "log.hpp"
 
