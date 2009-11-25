@@ -6,8 +6,6 @@ module Simulation.STDP (
     stdpWindow,
     prefireWindow,
     postfireWindow,
-    potentiationMask,
-    depressionMask,
     Reward,
     plastic
 ) where
@@ -50,19 +48,6 @@ postfireWindow = length . postfire
 
 stdpWindow :: StdpConf -> Int
 stdpWindow stdp = prefireWindow stdp + postfireWindow stdp
-
-
-{- | Mask specifying what cycles in the STDP window correspond to potentiation.
- - The first element is at the beginning of the window -}
-potentiationMask :: StdpConf -> [Bool]
-potentiationMask conf = map (>0.0) $ (reverse $ prefire conf) ++ (postfire conf)
-
-{- | Mask specifying what cycles in the STDP window correspond to depression.
- - The first element is at the beginning of the window -}
-depressionMask :: StdpConf -> [Bool]
-depressionMask conf = map (<0.0) $ (reverse $ prefire conf) ++ (postfire conf)
-
-
 
 
 {- "Standard" potentiation and depression for asymetric STDP.

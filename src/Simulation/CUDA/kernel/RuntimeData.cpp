@@ -29,7 +29,6 @@ RuntimeData::RuntimeData(
 		unsigned int maxReadPeriod) :
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
-	stdpFn(NULL),
 	m_maxDelay(maxDelay),
 	m_cm(CM_COUNT, (ConnectivityMatrix*) NULL),
 	m_pitch32(0),
@@ -91,9 +90,6 @@ RuntimeData::~RuntimeData()
 			delete *i;
 		}
 	}
-	if(stdpFn != NULL) {
-		delete stdpFn;
-	}
 }
 
 
@@ -125,12 +121,12 @@ RuntimeData::moveToDevice()
 			(*i)->moveToDevice();
 		}
 		thalamicInput->moveToDevice();
-		if(stdpFn != NULL) {
-			configureStdp(stdpFn->preFireWindow(),
-					stdpFn->postFireWindow(),
-					stdpFn->potentiationBits(),
-					stdpFn->depressionBits(),
-					const_cast<float*>(&stdpFn->function()[0]));
+		if(stdpFn.enabled()) {
+			configureStdp(stdpFn.preFireWindow(),
+					stdpFn.postFireWindow(),
+					stdpFn.potentiationBits(),
+					stdpFn.depressionBits(),
+					const_cast<float*>(&stdpFn.function()[0]));
 		}
 	    m_deviceDirty = false;
 	}
@@ -322,7 +318,7 @@ RuntimeData::setStart()
 bool
 RuntimeData::usingStdp() const
 {
-	return stdpFn != NULL;
+	return stdpFn.enabled();
 }
 
 
@@ -506,16 +502,15 @@ flushFiringBuffer(RTDATA rtdata)
 //-----------------------------------------------------------------------------
 
 
+
 void
 enableStdp(RTDATA rtdata,
-		uint prefire,
-		uint postfire,
-		uint64_t pbits,
-		uint64_t dbits,
-		float* fn,
-		float maxWeight,
-		float minWeight) // length: prefire + postfire
+		unsigned int pre_len,
+		unsigned int post_len,
+		float* pre_fn,
+		float* post_fn,
+		float w_max,
+		float w_min)
 {
-	rtdata->stdpFn =
-		new nemo::StdpFunction(prefire, postfire, pbits, dbits, fn, maxWeight, minWeight);
+	nemo::configure_stdp(rtdata->stdpFn, pre_len, post_len, pre_fn, post_fn, w_max, w_min);
 }

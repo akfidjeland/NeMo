@@ -41,9 +41,7 @@ import Foreign.Storable (peek)
 
 import Simulation.CUDA.Address
 import Simulation.CUDA.State (State(..), CuRT)
-import Simulation.STDP (StdpConf(..),
-            prefireWindow, postfireWindow,
-            potentiationMask, depressionMask)
+import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow)
 
 #include <kernel.h>
 
@@ -239,42 +237,29 @@ stepNonBuffering sim fstim = do
 -- STDP
 -------------------------------------------------------------------------------
 
-
 foreign import ccall unsafe "enableStdp" c_enableStdp
     :: Ptr CuRT
     -> CUInt       -- ^ length of pre-fire part of STDP window
     -> CUInt       -- ^ length of post-fire part of STDP window
-    -> Word64      -- ^ bit-mask indicating the part of the STDP window which
-                   --   is potentiation
-    -> Word64      -- ^ bit-mask indicating the part of the STDP window which
-                   --   is depression
-    -> Ptr CFloat  -- ^ lookup-table values (dt -> float) for STDP function,
-                   --   length: prefire_len + postfire_len
+    -> Ptr CFloat  -- ^ lookup-table values (dt -> float) for STDP function prefire,
+    -> Ptr CFloat  -- ^ lookup-table values (dt -> float) for STDP function postfire,
     -> CFloat      -- ^ max weight: limit for excitatory synapses
     -> CFloat      -- ^ min weight: limit for inhibitory synapses
     -> IO ()
-
 
 configureStdp :: ForeignPtr CuRT -> StdpConf -> IO ()
 configureStdp rt conf =
     when (stdpEnabled conf) $ do
     withForeignPtr rt $ \rt_ptr -> do
-    let lut = map realToFrac $ reverse (prefire conf) ++ (postfire conf)
-    withArray lut $ \fnLut -> do
+    withArray (map realToFrac $ prefire conf) $ \prefire_ptr -> do
+    withArray (map realToFrac $ postfire conf) $ \postfire_ptr -> do
     c_enableStdp rt_ptr
         (fromIntegral $ prefireWindow conf)
         (fromIntegral $ postfireWindow conf)
-        (word64 $ reverse $ potentiationMask conf)
-        (word64 $ reverse $ depressionMask conf)
-        fnLut
+        prefire_ptr
+        postfire_ptr
         (realToFrac $ stdpMaxWeight conf)
         (realToFrac $ stdpMinWeight conf)
-
-    where
-        word64 :: [Bool] -> Word64
-        word64 bits = foldl' set 0 $ zip bits [0..]
-
-        set w (b, i) = if b then setBit w i else w
 
 
 foreign import ccall unsafe "applyStdp"
