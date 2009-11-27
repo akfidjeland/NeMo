@@ -3,8 +3,7 @@
 
 module Simulation.CUDA.Memory (
     initMemory,
-    getWeights,
-    freeRT
+    getWeights
 ) where
 
 
@@ -14,7 +13,6 @@ import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
 import qualified Data.Map as Map (Map, fromList)
 import Foreign.C.Types
-import Foreign.ForeignPtr
 import Foreign.Marshal.Array (mallocArray)
 import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
@@ -75,10 +73,8 @@ loadPartitionNeurons rt pidx partition = do
         len = length ns
 
 
-loadAllNeurons :: ForeignPtr CuRT -> CuNet IzhNeuron Static -> IO ()
-loadAllNeurons rt net =
-    withForeignPtr rt $ \rtptr -> do
-    zipWithM_ (loadPartitionNeurons rtptr) [0..] $ partitions net
+loadAllNeurons :: Ptr CuRT -> CuNet IzhNeuron Static -> IO ()
+loadAllNeurons rt net = zipWithM_ (loadPartitionNeurons rt) [0..] $ partitions net
 
 
 {- | Return just a list with Nothing replaced by default value. If all are
@@ -119,8 +115,7 @@ allocOutbuf len = do
 
 
 {- | Write all connectivity data to device -}
-loadCMatrix rt att net =
-    withForeignPtr rt $ \rtptr -> do
+loadCMatrix rt att net = do
     bufL0 <- allocOutbuf $ maxL0Pitch net
     bufL1 <- allocOutbuf $ maxL1Pitch net
     forM_ (partitionAssocs net) $ \(pidx, p) -> do
@@ -132,10 +127,10 @@ loadCMatrix rt att net =
                     idx (i, _, _, _) = i
                     isL0 = ((==) pidx) . partitionIdx . deviceIdx att . idx
                 (len0, len1) <- pokeSynapses bufL0 0 bufL1 0 att isL0 ss
-                setRow rtptr bufL0 cmatrixL0 (pidx, nidx) delay len0
-                setRow rtptr bufL1 cmatrixL1 (pidx, nidx) delay len1
+                setRow rt bufL0 cmatrixL0 (pidx, nidx) delay len0
+                setRow rt bufL1 cmatrixL1 (pidx, nidx) delay len1
     where
-        setRow rtptr buf = setCMDRow rtptr (weights buf) (pidx buf) (nidx buf) (plasticity buf)
+        setRow rt buf = setCMDRow rt (weights buf) (pidx buf) (nidx buf) (plasticity buf)
 
 
 
@@ -173,7 +168,7 @@ pitch (_, _, _, p) = p
 {- | Get (possibly modified) connectivity matrix back from device -}
 getWeights :: State -> IO (Map.Map Idx [AxonTerminal Static])
 getWeights sim = do
-    withForeignPtr (rt sim) $ \rt_ptr -> do
+    let rt_ptr = rt sim
     darr0 <- getCM rt_ptr cmatrixL0
     darr1 <- getCM rt_ptr cmatrixL1
     ns <- peekPartitions
@@ -273,6 +268,7 @@ peekSynapse globalIdx i delay (tp_arr, tn_arr, w_arr, _) = do
 -- Runtime data
 -------------------------------------------------------------------------------
 
+-- TODO: move to KernelFFI
 foreign import ccall unsafe "allocRuntimeData"
     c_allocRT
         :: CSize  -- ^ partition count
@@ -286,16 +282,12 @@ foreign import ccall unsafe "allocRuntimeData"
         -> IO (Ptr CuRT)
 
 
-foreign import ccall unsafe "freeRuntimeData"
-    freeRT :: Ptr CuRT -> IO ()
-
-
-allocRT :: CuNet n s -> Int -> IO (Int, [Int], Delay, ForeignPtr CuRT)
+allocRT :: CuNet n s -> Int -> IO (Int, [Int], Delay, Ptr CuRT)
 allocRT net maxProbePeriod = do
     let pcount = partitionCount net
         psizes = partitionSizes net
         dmax   = maxNetworkDelay net
-    ptr <- c_allocRT
+    rt <- c_allocRT
         (fromIntegral pcount)
         (fromIntegral $! either error id $ maximumM psizes)
         (fromIntegral $! dmax)
@@ -305,5 +297,4 @@ allocRT net maxProbePeriod = do
         -- TODO: compute properly how large the buffers should be
         64768 -- L1 queue size
         (fromIntegral maxProbePeriod)
-    rt <- newForeignPtr_ ptr
     return $! (pcount, psizes, dmax, rt)

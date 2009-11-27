@@ -3,6 +3,7 @@
 module Simulation.CUDA.KernelFFI (
     stepBuffering,
     stepNonBuffering,
+    readFiring,
     applyStdp,
     setCMDRow,
     getCM,
@@ -10,6 +11,7 @@ module Simulation.CUDA.KernelFFI (
     deviceDiagnostics,
     syncSimulation,
     printCycleCounters,
+    freeRT,
     CuRT,
     CMatrixIndex,
     cmatrixL0,
@@ -32,22 +34,24 @@ import Data.Bits (setBit)
 import Data.List (foldl')
 import Data.Word (Word64)
 import Foreign.C.Types
-import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import Foreign.Marshal.Alloc (alloca)
-import Foreign.Marshal.Array (withArray)
+import Foreign.Marshal.Array (peekArray)
 import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
 import Foreign.Storable (peek)
 
+import qualified Simulation.CommonFFI as CommonFFI
+    (configureStdp, ConfigureStdp)
 import Simulation.CUDA.Address
 import Simulation.CUDA.State (State(..), CuRT)
-import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow)
+
+import Types (Time)
 
 #include <kernel.h>
 
 
 
-{- In the interface we manipulate/construction different connectivity matrices
+{- In the interface we manipulate/construct different connectivity matrices
  - using a numeric index -}
 newtype CMatrixIndex = CMatrixIndex { unCMatrixIndex :: CSize }
 
@@ -94,6 +98,11 @@ loadThalamicInputSigma rt pidx len arr = do
     withStorableArray arr $ \ptr -> do
     c_loadThalamicInputSigma rt pidx (fromIntegral len) ptr
 
+
+-- free the device, clear all memory in Sim
+foreign import ccall unsafe "freeRuntimeData" freeRT :: Ptr CuRT -> IO ()
+
+
 -------------------------------------------------------------------------------
 -- Kernel configuration
 -------------------------------------------------------------------------------
@@ -110,18 +119,15 @@ foreign import ccall unsafe "maxPartitionSize" c_maxPartitionSize :: CInt -> CUI
 
 
 {- | Force copy of data to device -}
-foreign import ccall unsafe "copyToDevice" c_copyToDevice :: Ptr CuRT -> IO ()
-
-copyToDevice rt = withForeignPtr rt c_copyToDevice
+foreign import ccall unsafe "copyToDevice" copyToDevice :: Ptr CuRT -> IO ()
 
 
 foreign import ccall unsafe "allocatedDeviceMemory"
     c_allocatedDeviceMemory :: Ptr CuRT -> IO CSize
 
-deviceDiagnostics :: ForeignPtr CuRT -> IO String
+deviceDiagnostics :: Ptr CuRT -> IO String
 deviceDiagnostics rt = do
-    withForeignPtr rt $ \rtptr -> do
-    dmem <- c_allocatedDeviceMemory rtptr
+    dmem <- c_allocatedDeviceMemory rt
     return $ "Allocated device memory: " ++ show dmem ++ "B"
 
 
@@ -215,9 +221,7 @@ stepBuffering sim fstim = do
     fsNIdxArr <- newListArray fbounds (map (fromIntegral . neuronIdx) fstim)
     withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
-    withForeignPtr (rt sim)      $ \rtPtr     -> do
-    kernelStatus <- c_step rtPtr
-        (dt sim) (fromIntegral flen) fsPIdxPtr fsNIdxPtr
+    kernelStatus <- c_step (rt sim) (dt sim) (fromIntegral flen) fsPIdxPtr fsNIdxPtr
     when (kernelStatus /= 0) $ fail "Backend error"
     where
         {- Run possibly failing computation, and propagate any errors with
@@ -230,7 +234,52 @@ stepNonBuffering sim fstim = do
     stepBuffering sim fstim
     -- the simulation always records firing, so we just flush the buffer after
     -- the fact to avoid overflow.
-    withForeignPtr (rt sim) c_flushFiringBuffer
+    c_flushFiringBuffer (rt sim)
+
+
+
+foreign import ccall unsafe "readFiring"
+    c_readFiring :: Ptr CuRT
+        -> Ptr (Ptr CUInt) -- cycles
+        -> Ptr (Ptr CUInt) -- partition idx
+        -> Ptr (Ptr CUInt) -- neuron idx
+        -> Ptr CUInt       -- number of fired neurons
+        -> Ptr CUInt       -- number of cycles
+        -> IO ()
+
+
+{- Return both the length of firing as well as a compact list of firings in
+ - device indices -}
+readFiring :: Ptr CuRT -> IO (Int, [(Time, DeviceIdx)])
+readFiring rt = do
+    alloca $ \cyclesPtr -> do
+    alloca $ \pidxPtr   -> do
+    alloca $ \nidxPtr   -> do
+    alloca $ \nfiredPtr -> do
+    alloca $ \ncyclesPtr -> do
+    c_readFiring rt cyclesPtr pidxPtr nidxPtr nfiredPtr ncyclesPtr
+    nfired <- return . fromIntegral =<< peek nfiredPtr
+    cycles <- peekArray nfired =<< peek cyclesPtr
+    pidx <- peekArray nfired =<< peek pidxPtr
+    nidx <- peekArray nfired =<< peek nidxPtr
+    ncycles <- peek ncyclesPtr
+    return $! (fromIntegral ncycles, zipWith3 fired cycles pidx nidx)
+    where
+        fired c p n = (fromIntegral c, (fromIntegral p, fromIntegral n))
+
+
+{- | Only return the firing count. This should be much faster -}
+readFiringCount :: Ptr CuRT -> IO Int
+readFiringCount rt = do
+    alloca $ \cyclesPtr  -> do
+    alloca $ \pidxPtr    -> do
+    alloca $ \nidxPtr    -> do
+    alloca $ \nfiredPtr  -> do
+    alloca $ \ncyclesPtr -> do
+    c_readFiring rt cyclesPtr pidxPtr nidxPtr nfiredPtr ncyclesPtr
+    nfired <- peek nfiredPtr
+    return $! fromIntegral nfired
+
 
 
 -------------------------------------------------------------------------------
@@ -238,33 +287,13 @@ stepNonBuffering sim fstim = do
 -------------------------------------------------------------------------------
 
 foreign import ccall unsafe "enableStdp" c_enableStdp
-    :: Ptr CuRT
-    -> CUInt       -- ^ length of pre-fire part of STDP window
-    -> CUInt       -- ^ length of post-fire part of STDP window
-    -> Ptr CFloat  -- ^ lookup-table values (dt -> float) for STDP function prefire,
-    -> Ptr CFloat  -- ^ lookup-table values (dt -> float) for STDP function postfire,
-    -> CFloat      -- ^ max weight: limit for excitatory synapses
-    -> CFloat      -- ^ min weight: limit for inhibitory synapses
-    -> IO ()
+    :: CommonFFI.ConfigureStdp CuRT CFloat
 
-configureStdp :: ForeignPtr CuRT -> StdpConf -> IO ()
-configureStdp rt conf =
-    when (stdpEnabled conf) $ do
-    withForeignPtr rt $ \rt_ptr -> do
-    withArray (map realToFrac $ prefire conf) $ \prefire_ptr -> do
-    withArray (map realToFrac $ postfire conf) $ \postfire_ptr -> do
-    c_enableStdp rt_ptr
-        (fromIntegral $ prefireWindow conf)
-        (fromIntegral $ postfireWindow conf)
-        prefire_ptr
-        postfire_ptr
-        (realToFrac $ stdpMaxWeight conf)
-        (realToFrac $ stdpMinWeight conf)
+configureStdp = CommonFFI.configureStdp c_enableStdp
 
 
 foreign import ccall unsafe "applyStdp"
     c_applyStdp :: Ptr CuRT -> CFloat -> IO ()
-
 
 applyStdp :: Ptr CuRT -> Double -> IO ()
 applyStdp rt reward = c_applyStdp rt $ realToFrac reward
@@ -276,10 +305,8 @@ applyStdp rt reward = c_applyStdp rt $ realToFrac reward
 -------------------------------------------------------------------------------
 
 
-foreign import ccall unsafe "printCycleCounters" c_printCycleCounters
+foreign import ccall unsafe "printCycleCounters" printCycleCounters
     :: Ptr CuRT -> IO ()
-
-printCycleCounters sim = withForeignPtr (rt sim) c_printCycleCounters
 
 
 -------------------------------------------------------------------------------

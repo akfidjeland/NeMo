@@ -4,7 +4,7 @@
 module Simulation.CUDA.State (State(..), CuRT) where
 
 import Foreign.C.Types (CInt)
-import Foreign.ForeignPtr (ForeignPtr)
+import Foreign.Ptr (Ptr)
 import Simulation.CUDA.Address (ATT)
 
 import Types (Delay)
@@ -20,5 +20,5 @@ data State = State {
         maxDelay :: Delay,
         dt       :: CInt,           -- ^ number of steps in neuron update
         att      :: ATT,
-        rt       :: ForeignPtr CuRT -- ^ kernel runtime data
+        rt       :: Ptr CuRT -- ^ kernel runtime data
     }
