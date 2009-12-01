@@ -1,4 +1,6 @@
-{-# LANGUAGE CPP, ForeignFunctionInterface #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Simulation.CUDA.KernelFFI (
     stepBuffering,
@@ -40,8 +42,7 @@ import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
 import Foreign.Storable (peek)
 
-import qualified Simulation.CommonFFI as CommonFFI
-    (configureStdp, ConfigureStdp, applyStdp)
+import Simulation.CommonFFI
 import Simulation.CUDA.Address
 import Simulation.CUDA.State (State(..), CuRT)
 
@@ -286,17 +287,18 @@ readFiringCount rt = do
 -- STDP
 -------------------------------------------------------------------------------
 
-foreign import ccall unsafe "enableStdp" c_enableStdp
-    :: CommonFFI.ConfigureStdp CuRT CFloat
-
-configureStdp = CommonFFI.configureStdp c_enableStdp
+foreign import ccall unsafe "enableStdp"
+    c_enableStdp :: Ptr rt -> CUInt -> CUInt
+        -> Ptr CFloat -> Ptr CFloat -> CFloat -> CFloat -> IO ()
 
 
 foreign import ccall unsafe "applyStdp"
     c_applyStdp :: Ptr CuRT -> CFloat -> IO ()
 
-applyStdp = CommonFFI.applyStdp c_applyStdp
 
+instance ForeignKernel CuRT CFloat where
+    ffi_enable_stdp = c_enableStdp
+    ffi_apply_stdp = c_applyStdp
 
 
 -------------------------------------------------------------------------------

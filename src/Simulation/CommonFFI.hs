@@ -1,8 +1,13 @@
-{- | Common FFI interface for different backends -}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+
+{- | Common interface for simulator backends controlled via the FFI -}
 
 module Simulation.CommonFFI (
-    ConfigureStdp, configureStdp,
-    ApplyStdp, applyStdp)
+    ForeignKernel(..),
+    configureStdp,
+    applyStdp
+    )
 where
 
 import Control.Monad (when)
@@ -14,27 +19,31 @@ import Foreign.Storable (Storable)
 import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow)
 
 
--- TODO: turn this into a class for a foreign interface
+class (Fractional f, Storable f) => ForeignKernel rt f | rt -> f where
+
+    ffi_enable_stdp
+        :: Ptr rt -- ^ pointer to foreign data structure containing simulation runtime
+        -> CUInt  -- ^ length of pre-fire part of STDP window
+        -> CUInt  -- ^ length of post-fire part of STDP window
+        -> Ptr f  -- ^ lookup-table values (dt -> float) for STDP function prefire,
+        -> Ptr f  -- ^ lookup-table values (dt -> float) for STDP function postfire,
+        -> f      -- ^ max weight: limit for excitatory synapses
+        -> f      -- ^ min weight: limit for inhibitory synapses
+        -> IO ()
+
+    ffi_apply_stdp
+        :: Ptr rt
+        -> f      -- ^ reward
+        -> IO ()
 
 
-{- Type of foreign function for configuring STDP -}
-type ConfigureStdp rt float
-    =  Ptr rt      -- ^ pointer to foreign data structure containing simulation runtime
-    -> CUInt       -- ^ length of pre-fire part of STDP window
-    -> CUInt       -- ^ length of post-fire part of STDP window
-    -> Ptr float   -- ^ lookup-table values (dt -> float) for STDP function prefire,
-    -> Ptr float   -- ^ lookup-table values (dt -> float) for STDP function postfire,
-    -> float       -- ^ max weight: limit for excitatory synapses
-    -> float       -- ^ min weight: limit for inhibitory synapses
-    -> IO ()
 
-
-configureStdp :: (Storable f, Fractional f) => ConfigureStdp rt f -> Ptr rt -> StdpConf -> IO ()
-configureStdp c_enable_stdp rt conf =
+configureStdp :: ForeignKernel rt f => Ptr rt -> StdpConf -> IO ()
+configureStdp rt conf =
     when (stdpEnabled conf) $ do
     withArray (map realToFrac $ prefire conf) $ \prefire_ptr -> do
     withArray (map realToFrac $ postfire conf) $ \postfire_ptr -> do
-    c_enable_stdp rt
+    ffi_enable_stdp rt
         (fromIntegral $ prefireWindow conf)
         (fromIntegral $ postfireWindow conf)
         prefire_ptr
@@ -43,9 +52,5 @@ configureStdp c_enable_stdp rt conf =
         (realToFrac $ stdpMinWeight conf)
 
 
-
-type ApplyStdp rt float = Ptr rt -> float -> IO ()
-
-
-applyStdp :: (Fractional f) => ApplyStdp rt f -> Ptr rt -> Double -> IO ()
-applyStdp c_apply_stdp rt reward = c_apply_stdp rt $ realToFrac reward
+applyStdp :: (ForeignKernel rt f, Fractional f) => Ptr rt -> Double -> IO ()
+applyStdp rt reward = ffi_apply_stdp rt $ realToFrac reward
