@@ -148,7 +148,7 @@ loadStdpParameters()
  * incoming spike than the firing currently under consideration. */
 __device__
 uint
-closestPreFire(uint64_t spikes, uint targetNeuron)
+closestPreFire(uint64_t spikes)
 {
 	int dt =  __ffsll(spikes >> s_stdpPostFireWindow);
 	return dt ? (uint) dt-1 : STDP_NO_APPLICATION;
@@ -158,7 +158,7 @@ closestPreFire(uint64_t spikes, uint targetNeuron)
 
 __device__
 uint
-closestPostFire(uint64_t spikes, uint targetNeuron)
+closestPostFire(uint64_t spikes)
 {
 	int dt = __clzll(spikes << (64 - s_stdpPostFireWindow));
 	return spikes ? (uint) dt : STDP_NO_APPLICATION;
@@ -199,8 +199,8 @@ updateRegion(
 	/* The potentiation can happen on either side of the firing. We want to
 	 * find the one closest to the firing. We therefore need to compute the
 	 * prefire and postfire dt's separately. */
-	uint dt_pre = closestPreFire(spikes, targetNeuron);
-	uint dt_post = closestPostFire(spikes, targetNeuron);
+	uint dt_pre = closestPreFire(spikes);
+	uint dt_post = closestPostFire(spikes);
 
 	/* For logging. Positive values: post-fire, negative values: pre-fire */
 #if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
@@ -272,18 +272,18 @@ updateSTDP_(
 	DEVICE_UINT_PTR_T* cr_pitch,
 	uint32_t* s_firingIdx) // thread buffer
 {
-    __shared__ uint s_schunkCount; // number of chunks for synapse-parallel execution
-    __shared__ uint s_nchunkCount; // number of chunks for neuron-parallel execution
+	__shared__ uint s_schunkCount; // number of chunks for synapse-parallel execution
+	__shared__ uint s_nchunkCount; // number of chunks for neuron-parallel execution
 
 	uint r_maxSynapses = cr_pitch[CURRENT_PARTITION];
 
-    //! \todo factor this out and share with integrate step
-    if(threadIdx.x == 0) {
-        // deal with at most one postsynaptic neuron in one chunk
+	//! \todo factor this out and share with integrate step
+	if(threadIdx.x == 0) {
+	// deal with at most one postsynaptic neuron in one chunk
 		s_schunkCount = DIV_CEIL(r_maxSynapses, THREADS_PER_BLOCK); // per-partition size
 		s_nchunkCount = DIV_CEIL(partitionSize, THREADS_PER_BLOCK);
-    }
-    __syncthreads();
+	}
+	__syncthreads();
 
 	/* Determine what postsynaptic neurons needs processing in small batches */
 	for(uint nchunk=0; nchunk < s_nchunkCount; ++nchunk) {
