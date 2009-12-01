@@ -85,7 +85,7 @@ class STDP
 		uint64_t m_depressionBits; 
 
 		uint64_t m_prefireBits;
-		uint64_t m_postfirebits;
+		uint64_t m_postfireBits;
 
 		T m_maxWeight;
 		T m_minWeight;

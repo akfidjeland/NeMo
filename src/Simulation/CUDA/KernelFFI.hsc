@@ -41,7 +41,7 @@ import Foreign.Ptr
 import Foreign.Storable (peek)
 
 import qualified Simulation.CommonFFI as CommonFFI
-    (configureStdp, ConfigureStdp)
+    (configureStdp, ConfigureStdp, applyStdp)
 import Simulation.CUDA.Address
 import Simulation.CUDA.State (State(..), CuRT)
 
@@ -295,8 +295,7 @@ configureStdp = CommonFFI.configureStdp c_enableStdp
 foreign import ccall unsafe "applyStdp"
     c_applyStdp :: Ptr CuRT -> CFloat -> IO ()
 
-applyStdp :: Ptr CuRT -> Double -> IO ()
-applyStdp rt reward = c_applyStdp rt $ realToFrac reward
+applyStdp = CommonFFI.applyStdp c_applyStdp
 
 
 

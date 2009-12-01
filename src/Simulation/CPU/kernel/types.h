@@ -14,6 +14,7 @@ typedef double fp_t;
 
 typedef fp_t weight_t;
 typedef unsigned int nidx_t;
+typedef unsigned int sidx_t;
 typedef unsigned int delay_t;
 
 

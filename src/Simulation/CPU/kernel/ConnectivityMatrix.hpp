@@ -22,10 +22,12 @@ struct Synapse
 
 struct RSynapse
 {
-	RSynapse(nidx_t s, delay_t d) : source(s), delay(d) {}
+	RSynapse(nidx_t src, delay_t d, sidx_t s) :
+		source(src), delay(d), synapse(s) {}
 
 	nidx_t source;
 	delay_t delay;
+	sidx_t synapse;
 };
 
 
@@ -87,6 +89,8 @@ class ConnectivityMatrix
 
 		Incoming& getIncoming(nidx_t target);
 
+		void applyStdp(double minWeight, double maxWeight, double reward=1.0);
+
 		void finalize();
 
 		delay_t maxDelay() const { return m_maxDelay; }
@@ -118,8 +122,13 @@ class ConnectivityMatrix
 		std::set<nidx_t> m_sourceIndices;
 		delay_t m_maxDelay;
 
+		weight_t* weight(const RSynapse&);
+
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */
 		size_t addressOf(nidx_t, delay_t) const;
+
+		void applyStdpOne(nidx_t post, Incoming&,
+				double minWeight, double maxWeight, double reward=1.0);
 };
 
 

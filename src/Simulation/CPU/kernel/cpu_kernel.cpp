@@ -183,6 +183,14 @@ cpu_read_firing(NETWORK network,
 
 
 
+status_t
+cpu_apply_stdp(NETWORK network, double reward)
+{
+	SAFE_CALL(network, applyStdp(reward));
+}
+
+
+
 long int
 cpu_elapsed_ms(NETWORK network)
 {

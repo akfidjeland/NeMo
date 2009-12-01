@@ -1,6 +1,9 @@
 {- | Common FFI interface for different backends -}
 
-module Simulation.CommonFFI (ConfigureStdp, configureStdp) where
+module Simulation.CommonFFI (
+    ConfigureStdp, configureStdp,
+    ApplyStdp, applyStdp)
+where
 
 import Control.Monad (when)
 import Foreign.C.Types (CUInt)
@@ -9,6 +12,9 @@ import Foreign.Ptr (Ptr)
 import Foreign.Storable (Storable)
 
 import Simulation.STDP (StdpConf(..), prefireWindow, postfireWindow)
+
+
+-- TODO: turn this into a class for a foreign interface
 
 
 {- Type of foreign function for configuring STDP -}
@@ -35,3 +41,11 @@ configureStdp c_enable_stdp rt conf =
         postfire_ptr
         (realToFrac $ stdpMaxWeight conf)
         (realToFrac $ stdpMinWeight conf)
+
+
+
+type ApplyStdp rt float = Ptr rt -> float -> IO ()
+
+
+applyStdp :: (Fractional f) => ApplyStdp rt f -> Ptr rt -> Double -> IO ()
+applyStdp c_apply_stdp rt reward = c_apply_stdp rt $ realToFrac reward

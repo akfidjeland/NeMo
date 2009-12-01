@@ -98,6 +98,10 @@ cpu_read_firing(NETWORK network,
 
 
 
+status_t
+cpu_apply_stdp(NETWORK network, double reward);
+
+
 /*! \return number of milliseconds elapsed between beginning of first kernel
  * invocation and the end of the last */
 long int cpu_elapsed_ms(NETWORK);

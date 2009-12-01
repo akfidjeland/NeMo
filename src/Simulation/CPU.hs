@@ -29,7 +29,7 @@ data CpuSimulation = CpuSimulation {
 instance Simulation_Iface CpuSimulation where
     step = stepSim
     step_ = stepSim_
-    applyStdp _ _ = error "STDP not supported on CPU backend"
+    applyStdp sim reward = Kernel.applyStdp (rt sim) reward
     elapsed sim = Kernel.elapsedMs $ rt sim
     resetTimer sim = Kernel.resetTimer $ rt sim
     getWeights _ = error "getWeights not supported on CPU backend"

@@ -70,7 +70,7 @@ ConnectivityMatrix::setRow(
 		ss.data[i] = Synapse(weights[i], targets[i]);
 		if(plastic[i]) {
 			Incoming& inc = m_racc[targets[i]];
-			inc.addresses.push_back(RSynapse(source, delay));
+			inc.addresses.push_back(RSynapse(source, delay, i));
 			inc.w_diff.push_back(0.0);
 		}
 	}
@@ -122,6 +122,71 @@ ConnectivityMatrix::getIncoming(nidx_t target)
 	assert(m_finalized);
 	return m_racc.find(target)->second;
 }
+
+
+
+void
+ConnectivityMatrix::applyStdp(double minWeight, double maxWeight, double reward)
+{
+	if(reward != 0.0) {
+		for(std::map<nidx_t, Incoming>::iterator i = m_racc.begin();
+				i != m_racc.end(); ++i) {
+			applyStdpOne(i->first, i->second, minWeight, maxWeight, reward);
+		}
+	} else {
+		for(std::map<nidx_t, Incoming>::iterator i = m_racc.begin();
+				i != m_racc.end(); ++i) {
+			std::fill(i->second.w_diff.begin(), i->second.w_diff.end(), 0.0);
+		}
+	}
+}
+
+
+
+weight_t*
+ConnectivityMatrix::weight(const RSynapse& r_idx)
+{
+	Row& row = m_cm.at(addressOf(r_idx.source, r_idx.delay));
+	assert(r_idx.synapse < row.len);
+	return &row.data[r_idx.synapse].weight;
+}
+
+
+void
+ConnectivityMatrix::applyStdpOne(nidx_t target,
+		Incoming& incoming,
+		double minWeight,
+		double maxWeight,
+		double reward)
+{
+	assert(incoming.addresses.size() == incoming.w_diff.size());
+
+	for(size_t s = 0; s < incoming.addresses.size(); ++s) {
+
+		const RSynapse& rsynapse = incoming.addresses[s];
+
+		weight_t w_diff = incoming.w_diff[s];
+
+		weight_t* w_old = weight(rsynapse);
+		weight_t w_new = 0.0;
+		if(*w_old > 0.0f) {
+			w_new = std::min(maxWeight, std::max(*w_old + w_diff, 0.0));
+		} else if(*w_old < 0.0) {
+			w_new = std::min(0.0, std::max(*w_old + w_diff, minWeight));
+		}
+
+		if(*w_old != w_new) {
+#ifdef DEBUG_TRACE
+			fprintf(stderr, "stdp (%u -> %u) %f %+f = %f\n",
+					rsynapse.source, target, *w_old, w_diff, w_new);
+#endif
+			*w_old = w_new;
+		}
+
+		incoming.w_diff[s] = 0;
+	}
+}
+
 
 
 	} // namespace cpu

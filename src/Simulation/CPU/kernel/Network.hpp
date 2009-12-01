@@ -98,6 +98,8 @@ struct Network {
 
 		const std::vector<unsigned int>& readFiring();
 
+		void applyStdp(double reward);
+
 		/*! \return number of milliseconds of wall-clock time elapsed since first
 		 * simulation step */
 		long int elapsed();

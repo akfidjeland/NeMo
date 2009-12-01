@@ -1,5 +1,4 @@
 {- | Wrapper for C-based simulation kernel -}
-
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 
@@ -15,6 +14,7 @@ module Simulation.CPU.KernelFFI (
     start,
     step,
     readFiring,
+    applyStdp,
     elapsedMs,
     resetTimer,
     clear)
@@ -33,7 +33,6 @@ import Foreign.Ptr
 import Foreign.Storable (peek)
 
 import qualified Simulation.CommonFFI as CommonFFI
-    (configureStdp, ConfigureStdp)
 import Types (Source, Delay, Target, Weight)
 
 #include <cpu_kernel.h>
@@ -162,11 +161,17 @@ foreign import ccall unsafe "cpu_add_synapses" c_add_synapses
     -> IO CStatus
 
 
+-- TODO: use same name: either configure or enable
+configureStdp = CommonFFI.configureStdp c_enable_stdp
+
 foreign import ccall unsafe "cpu_enable_stdp" c_enable_stdp
     :: CommonFFI.ConfigureStdp ForeignData CDouble
 
--- TODO: use same name: either configure or enable
-configureStdp = CommonFFI.configureStdp c_enable_stdp
+
+applyStdp = CommonFFI.applyStdp c_apply_stdp
+
+foreign import ccall unsafe "cpu_apply_stdp" c_apply_stdp
+    :: CommonFFI.ApplyStdp ForeignData CDouble
 
 
 {- | Finalize construction and set up run-time data structures -}

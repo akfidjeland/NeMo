@@ -6,4 +6,6 @@
 //! \todo perhaps use 256B. There should be no performance hit and it's more future-proof
 #define ASSUMED_CACHE_LINE_SIZE 64
 
+//#define DEBUG_TRACE
+
 #endif

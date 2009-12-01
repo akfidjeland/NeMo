@@ -1,6 +1,7 @@
 //! \file STDP.ipp
 
 #include <algorithm>
+#include <stdexcept>
 #include <assert.h>
 
 namespace nemo {

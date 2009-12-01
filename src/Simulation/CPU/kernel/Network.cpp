@@ -15,7 +15,6 @@
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
 
-//#define DEBUG_TRACE
 
 namespace nemo {
 	namespace cpu {
@@ -303,6 +302,14 @@ Network::readFiring()
 		}
 	}
 	return m_fired;
+}
+
+
+
+void
+Network::applyStdp(double reward)
+{
+	m_cm.applyStdp(m_stdp.minWeight(), m_stdp.maxWeight(), reward);
 }
 
 
