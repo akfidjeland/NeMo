@@ -29,6 +29,16 @@ cpu_set_network(fp_t a[],
 
 
 status_t
+cpu_enable_stdp(NETWORK,
+		size_t pre_len,
+		size_t post_len,
+		double* pre_fn,
+		double* post_fn,
+		double maxWeight,
+		double minWeight);
+
+
+status_t
 cpu_start_simulation(NETWORK);
 
 
@@ -43,8 +53,9 @@ status_t
 cpu_add_synapses(NETWORK,
 		nidx_t source,
 		delay_t delay,
-		nidx_t* targets,
-		weight_t* weights,
+		nidx_t targets[],
+		weight_t weights[],
+		unsigned int is_plastic[],
 		size_t length);
 
 

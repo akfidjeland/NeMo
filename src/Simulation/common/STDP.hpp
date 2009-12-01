@@ -9,7 +9,6 @@
 namespace nemo {
 
 /*! \brief User-configurable STDP function */
-//! \todo template this for different FT types
 template<typename T>
 class STDP
 {
@@ -36,6 +35,12 @@ class STDP
 		T maxWeight() const { return m_maxWeight; }
 		T minWeight() const { return m_minWeight; }
 
+		/*! \return value of STDP function at the given (negative) value of dt */
+		T lookupPre(int dt) const;
+
+		/*! \return value of STDP function at the given (positive) value of dt */
+		T lookupPost(int dt) const;
+
 		/*! \return length of prefire part of STDP window */
 		unsigned int preFireWindow() const { return m_preFireWindow; }
 
@@ -49,6 +54,14 @@ class STDP
 		/*! \return bit mask indicating which cycles correspond to depression.  */
 		uint64_t depressionBits() const { return m_depressionBits; }
 
+		/*! \return bit mask indicating which cycles correspond to postfire
+		 * part of STDP window. */
+		uint64_t preFireBits() const { return m_prefireBits; }
+
+		/*! \return bit mask indicating which cycles correspond to prefire
+		 * part of STDP window. */
+		uint64_t postFireBits() const { return m_postfireBits; }
+
 		/*! \return the STDP function lookup-table */
 		const std::vector<T>& function() const { return m_function; }
 
@@ -56,13 +69,23 @@ class STDP
 
 	private:
 
+		//! \todo compute the full function only on demand?
 		std::vector<T> m_function;
+
+		/* pre-fire part of STDP function, from dt=-1 and down */
+		std::vector<T> m_fnPre;
+
+		/* pre-fire part of STDP function, from dt=+1 and up */
+		std::vector<T> m_fnPost;
 
 		unsigned int m_preFireWindow;
 		unsigned int m_postFireWindow;
 
 		uint64_t m_potentiationBits;
 		uint64_t m_depressionBits; 
+
+		uint64_t m_prefireBits;
+		uint64_t m_postfirebits;
 
 		T m_maxWeight;
 		T m_minWeight;

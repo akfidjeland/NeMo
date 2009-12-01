@@ -11,7 +11,9 @@ import qualified Construction.Neurons as Neurons
 import Construction.Neuron (ndata)
 import Construction.Izhikevich
 import Construction.Synapse (Static)
+import Data.List (unzip4)
 import Simulation
+import Simulation.STDP (StdpConf)
 import qualified Simulation.CPU.KernelFFI as Kernel
 import Types
 
@@ -57,11 +59,15 @@ stepSim sim fstim = do
 -------------------------------------------------------------------------------
 
 
-initSim :: Network.Network IzhNeuron Static -> IO CpuSimulation
-initSim net@(Network.Network ns _) = do
+initSim
+    :: Network.Network IzhNeuron Static
+    -> StdpConf
+    -> IO CpuSimulation
+initSim net@(Network.Network ns _) stdp = do
     rt <- Kernel.setNetwork as bs cs ds us vs sigma
     setConnectivityMatrix rt $ Network.synapses net
     fstim <- Kernel.newStimulusBuffer $ ncount
+    Kernel.configureStdp rt stdp
     return $ CpuSimulation rt fstim
     where
         ns' = map ndata (Neurons.neurons ns)
@@ -79,7 +85,5 @@ initSim net@(Network.Network ns _) = do
 setConnectivityMatrix rt ss0 =
     forM_ ss0 $ \(src, ss1) ->
         forM_ ss1 $ \(delay, ss2) -> do
-            let (targets, weights) = unzip $ map strip ss2
-            Kernel.addSynapses rt src delay targets weights
-    where
-        strip (t, w, _, _) = (t, w)
+            let (targets, weights, plastic, _) = unzip4 ss2
+            Kernel.addSynapses rt src delay targets weights plastic

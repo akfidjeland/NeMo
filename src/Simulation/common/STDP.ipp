@@ -1,6 +1,7 @@
 //! \file STDP.ipp
 
 #include <algorithm>
+#include <assert.h>
 
 namespace nemo {
 
@@ -13,6 +14,28 @@ STDP<T>::STDP(
 			T maxWeight)
 {
 	configure(prefire, postfire, minWeight, maxWeight);
+}
+
+
+
+template<typename T>
+T
+STDP<T>::lookupPre(int dt) const
+{
+	assert(dt >= 0);
+	assert(dt < m_preFireWindow);
+	return m_fnPre.at(dt);
+}
+
+
+
+template<typename T>
+T
+STDP<T>::lookupPost(int dt) const
+{
+	assert(dt >= 0);
+	assert(dt < m_postFireWindow);
+	return m_fnPost.at(dt);
 }
 
 
@@ -33,18 +56,23 @@ STDP<T>::configure(
 			T minWeight,
 			T maxWeight)
 {
+	m_fnPre = prefire;
+	m_fnPost = postfire;
+
 	m_preFireWindow = prefire.size();
 	m_postFireWindow = postfire.size();
 
-	//! \todo check that length is < 64
+	//! \todo This constraint is too weak. Also need to consider max delay in
+	//network here
+	if(m_preFireWindow + m_postFireWindow > 64) {
+		throw std::runtime_error("size of STDP window too large");
+	}
 
 	// create combined function
 	m_function.clear();
 	std::copy(prefire.rbegin(), prefire.rend(), std::back_inserter(m_function));
 	std::copy(postfire.begin(), postfire.end(), std::back_inserter(m_function));
 
-
-	//! \todo to test make sure this matches the existing mask
 	m_potentiationBits = 0;
 	m_depressionBits = 0;
 
@@ -60,7 +88,11 @@ STDP<T>::configure(
 
 	m_minWeight = minWeight;
 	m_maxWeight = maxWeight;
+
+	m_prefireBits = (~(uint64_t(~0) << uint64_t(preFireWindow()))) << uint64_t(postFireWindow());
+	m_postfireBits = ~(uint64_t(~0) << uint64_t(postFireWindow()));
 }
+
 
 
 /* Helper function for c interfaces */

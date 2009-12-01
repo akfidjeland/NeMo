@@ -2,6 +2,9 @@
 #include <sched.h> // for setting thread affinity
 #endif
 
+//! \todo remove debugging code
+#include <assert.h>
+
 #include <stdexcept>
 #include <cmath>
 #include <algorithm>
@@ -12,6 +15,7 @@
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
 
+//#define DEBUG_TRACE
 
 namespace nemo {
 	namespace cpu {
@@ -186,9 +190,10 @@ Network::allocateRuntimeData(size_t ncount)
 
 void
 Network::addSynapses(nidx_t source, delay_t delay,
-			const nidx_t* targets, const weight_t* weights, size_t length)
+			const nidx_t targets[], const weight_t weights[],
+			const uint plastic[], size_t length)
 {
-	m_cm.setRow(source, delay, targets, weights, length);
+	m_cm.setRow(source, delay, targets, weights, plastic, length);
 }
 
 
@@ -279,6 +284,10 @@ Network::update(unsigned int fstim[])
 	updateRange(0, m_neuronCount, fstim, &m_rng);
 #endif
 
+	if(m_stdp.enabled()) {
+		accumulateStdp();
+	}
+
 	m_cycle++;
 }
 
@@ -331,6 +340,7 @@ Network::deliverSpikes()
 }
 
 
+
 void
 Network::deliverSpikesOne(nidx_t source, delay_t delay)
 {
@@ -346,6 +356,135 @@ Network::deliverSpikesOne(nidx_t source, delay_t delay)
 		fprintf(stderr, "c%u: n%u -> n%u: %+f (delay %u)\n",
 				m_cycle, source, s.target, s.weight, delay);
 #endif
+	}
+}
+
+
+
+
+const uint STDP_NO_APPLICATION = uint(~0);
+
+/*! \return
+ *		shortest delay (shortest delay = 0) between spike arrival and firing of
+ *		this neuron or largest representable delay if STDP not appliccable.
+ *
+ * STDP is not applicable if the postsynaptic neuron also fired closer to the
+ * incoming spike than the firing currently under consideration. */
+//! \todo move this into STDP class?
+inline
+uint
+closestPreFire(uint64_t spikes, uint postfireLen)
+{
+	//! \todo make sure ffsll is 64-bit safe
+	int dt =  ffsll(spikes >> postfireLen);
+	return dt ? (uint) dt-1 : STDP_NO_APPLICATION;
+}
+
+
+
+//! \todo use one of the other bit-twiddling hacks from http://graphics.stanford.edu/~seander/bithacks.html
+//! The interesting bits are near the beginning, so ought to be able to do this faster
+/* MSB=0, LSB=63 */
+inline
+uint
+clzll(uint64_t v)
+{
+	uint r = 0;
+	while (v >>= 1) {
+		r++;
+	}
+	return 63 - r;
+}
+
+
+inline
+uint
+closestPostFire(uint64_t spikes, uint postfireLen)
+{
+	int dt = clzll(spikes << uint64_t(64 - postfireLen));
+	return spikes ? (uint) dt : STDP_NO_APPLICATION;
+}
+
+
+
+weight_t
+Network::updateRegion(
+		uint64_t spikes,
+		nidx_t source,
+		nidx_t target)
+{
+	/* The potentiation can happen on either side of the firing. We want to
+	 * find the one closest to the firing. We therefore need to compute the
+	 * prefire and postfire dt's separately. */
+	weight_t w_diff = 0.0;
+
+	if(spikes) {
+
+		uint dt_pre = closestPreFire(spikes & m_stdp.preFireBits(), m_stdp.postFireWindow());
+		uint dt_post = closestPostFire(spikes & m_stdp.postFireBits(), m_stdp.postFireWindow());
+
+		if(dt_pre < dt_post) {
+			w_diff = m_stdp.lookupPre(dt_pre);
+#ifdef DEBUG_TRACE
+			fprintf(stderr, "c%u %s: %u -> %u %+f (dt=%d)\n",
+					m_cycle, "ltp", source, target, w_diff, dt_pre);
+#endif
+		} else if(dt_post < dt_pre) {
+			w_diff = m_stdp.lookupPost(dt_post);
+#ifdef DEBUG_TRACE
+			fprintf(stderr, "c%u %s: %u -> %u %+f (dt=%d)\n",
+					m_cycle, "ltd", source, target, w_diff, dt_post);
+#endif
+		}
+		// if neither is applicable dt_post == dt_pre == STDP_NO_APPLICATION
+	}
+	return w_diff;
+
+}
+
+
+
+void
+Network::accumulateStdp()
+{
+	/* Every cycle we process potentiation/depression relating to postsynaptic
+	 * firings in the middle of the STDP window */
+	uint64_t MASK = uint64_t(1) << m_stdp.postFireWindow();
+
+	for(nidx_t post = 0; post < m_neuronCount; ++post) {
+		if(m_recentFiring[post] & MASK) {
+
+			Incoming& incoming = m_cm.getIncoming(post);
+			const std::vector<RSynapse>& addresses = incoming.addresses;
+			std::vector<weight_t>& w_diffs = incoming.w_diff;
+
+			for(size_t s = 0; s < addresses.size(); ++s) {
+
+				nidx_t pre = addresses[s].source;
+				uint64_t preFiring = m_recentFiring[pre] >> addresses[s].delay;
+				uint64_t p_spikes = preFiring & m_stdp.potentiationBits();
+				uint64_t d_spikes = preFiring & m_stdp.depressionBits();
+
+				weight_t w_diff =
+						updateRegion(p_spikes, pre, post) +
+						updateRegion(d_spikes, pre, post);
+				if(w_diff != 0.0) {
+					w_diffs[s] += w_diff;
+				}
+			}
+
+		}
+	}
+}
+
+
+void
+Network::configureStdp(const STDP<double>& conf)
+{
+	if(m_constructing) {
+		m_stdp = conf;
+	} else {
+		throw std::runtime_error("configuring STDP during simulation is not supported");
 	}
 }
 

@@ -9,9 +9,11 @@
 #include <stdint.h>
 
 #include "ConnectivityMatrix.hpp"
-#include "Timer.hpp"
 #include "RNG.hpp"
 #include "common.h"
+
+#include <Timer.hpp>
+#include <STDP.hpp>
 
 namespace nemo {
 	namespace cpu {
@@ -79,7 +81,8 @@ struct Network {
 		/*! Add synapses for a particular presynaptic neuron and a particular
 		 * delay */
 		void addSynapses(nidx_t source, delay_t delay,
-				const nidx_t* targets, const weight_t* weights, size_t length);
+				const nidx_t targets[], const weight_t weights[],
+				const uint plastic[], size_t length);
 
 		/*! Set up runtime data structures after network construction is complete */
 		void startSimulation();
@@ -102,6 +105,8 @@ struct Network {
 		void resetTimer();
 
 		size_t neuronCount() const { return m_neuronCount; }
+
+		void configureStdp(const STDP<double>& conf);
 
 	private:
 
@@ -126,7 +131,6 @@ struct Network {
 		std::vector<fp_t> m_u;
 		std::vector<fp_t> m_v;
 		std::vector<fp_t> m_sigma;
-
 
 		void allocateRuntimeData(size_t neuronCount);
 
@@ -167,8 +171,13 @@ struct Network {
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 
+		void accumulateStdp();
+
 		Timer m_timer;
 
+		STDP<double> m_stdp;
+
+		weight_t updateRegion(uint64_t spikes, nidx_t source, nidx_t target);
 };
 
 

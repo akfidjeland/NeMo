@@ -46,8 +46,9 @@ void
 ConnectivityMatrix::setRow(
 		nidx_t source,
 		delay_t delay,
-		const nidx_t* targets,
-		const weight_t* weights,
+		const nidx_t targets[],
+		const weight_t weights[],
+		const uint plastic[],
 		size_t len)
 {
 	if(delay <= 0) {
@@ -67,6 +68,11 @@ ConnectivityMatrix::setRow(
 
 	for(size_t i=0; i<len; ++i) {
 		ss.data[i] = Synapse(weights[i], targets[i]);
+		if(plastic[i]) {
+			Incoming& inc = m_racc[targets[i]];
+			inc.addresses.push_back(RSynapse(source, delay));
+			inc.w_diff.push_back(0.0);
+		}
 	}
 
 	m_maxDelay = std::max(m_maxDelay, delay);
@@ -106,6 +112,15 @@ ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 {
 	assert(m_finalized);
 	return m_cm.at(addressOf(source, delay));
+}
+
+
+
+Incoming&
+ConnectivityMatrix::getIncoming(nidx_t target)
+{
+	assert(m_finalized);
+	return m_racc.find(target)->second;
 }
 
 

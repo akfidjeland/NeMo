@@ -19,6 +19,29 @@ struct Synapse
 };
 
 
+
+struct RSynapse
+{
+	RSynapse(nidx_t s, delay_t d) : source(s), delay(d) {}
+
+	nidx_t source;
+	delay_t delay;
+};
+
+
+
+/* All incoming synapses for a particular neuron */
+struct Incoming
+{
+	/* Lookup information for reverse synapses */
+	std::vector<RSynapse> addresses;
+
+	/* Accumulated weight difference */
+	std::vector<weight_t> w_diff;
+};
+
+
+
 struct ForwardIdx
 {
 	ForwardIdx(nidx_t source, delay_t delay) : source(source), delay(delay) {}
@@ -26,6 +49,7 @@ struct ForwardIdx
 	nidx_t source;
 	delay_t delay;
 };
+
 
 
 
@@ -54,11 +78,14 @@ class ConnectivityMatrix
 		void setRow(
 				nidx_t source,
 				delay_t delay,
-				const nidx_t* targets,
-				const weight_t* weights,
+				const nidx_t targets[],
+				const weight_t weights[],
+				const uint plastic[],
 				size_t length);
 
 		const Row& getRow(nidx_t source, delay_t) const;
+
+		Incoming& getIncoming(nidx_t target);
 
 		void finalize();
 
@@ -75,6 +102,10 @@ class ConnectivityMatrix
 		 * don't need to know the number of neurons or the number of delays in
 		 * advance */
 		std::map<ForwardIdx, Row> m_acc;
+
+		/* For the reverse matrix we don't need to group by delay */
+		//! \todo move into std::vector when finalizing
+		std::map<nidx_t, Incoming> m_racc;
 
 		/* At run-time however, we want the fastest possible lookup of the
 		 * rows. We therefore use a vector with linear addressing. This just

@@ -7,7 +7,6 @@ module Simulation.Backend (
     module Simulation.Options
 ) where
 
-import Control.Monad (when)
 import System.IO (hPutStrLn, stderr)
 
 import Construction.Network (isEmpty)
@@ -30,8 +29,7 @@ initSim net simOpts cudaOpts stdpConf = do
       else case backend of
         -- TODO: add temporal resolution to CPU simulation
         CPU -> do
-            when (stdpEnabled stdpConf) $ fail "STDP not supported for CPU backend"
-            return . BS =<< CPU.initSim net
+            return . BS =<< CPU.initSim net stdpConf
 #if defined(CUDA_ENABLED)
         CUDA ->
             return . BS =<< CUDA.initSim (optPartitionSize cudaOpts) net dt stdpConf

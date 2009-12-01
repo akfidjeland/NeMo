@@ -5,6 +5,8 @@ extern "C" {
 #include <string>
 #include <stdexcept>
 
+#include <STDP.hpp>
+
 #include "Network.hpp"
 
 
@@ -104,13 +106,28 @@ status_t
 cpu_add_synapses(NETWORK net,
 		nidx_t source,
 		delay_t delay,
-		nidx_t* targets,
-		weight_t* weights,
+		nidx_t targets[],
+		weight_t weights[],
+		unsigned int is_plastic[],
 		size_t length)
 {
-	SAFE_CALL(net, addSynapses(source, delay, targets, weights, length));
+	SAFE_CALL(net, addSynapses(source, delay, targets, weights, is_plastic, length));
 }
 
+
+status_t
+cpu_enable_stdp(NETWORK network,
+		size_t pre_len,
+		size_t post_len,
+		double* pre_fn,
+		double* post_fn,
+		double w_max,
+		double w_min)
+{
+	nemo::STDP<double> conf;
+	nemo::configure_stdp<double>(conf, pre_len, post_len, pre_fn, post_fn, w_max, w_min);
+	SAFE_CALL(network, configureStdp(conf));
+}
 
 
 status_t

@@ -68,6 +68,7 @@ executable nemo
                             Server,
                             Simulation,
                             Simulation.Backend,
+                            Simulation.CommonFFI,
                             Simulation.CPU,
                             Simulation.CPU.KernelFFI,
                             Simulation.CUDA.Options,

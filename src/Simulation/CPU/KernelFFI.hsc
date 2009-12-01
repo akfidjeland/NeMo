@@ -11,6 +11,7 @@ module Simulation.CPU.KernelFFI (
     setNetwork,
     addNeuron,
     addSynapses,
+    configureStdp,
     start,
     step,
     readFiring,
@@ -27,9 +28,12 @@ import Foreign.C.Types
 import Foreign.C.String (CString, peekCString)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Array (peekArray, withArrayLen)
+import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
 import Foreign.Storable (peek)
 
+import qualified Simulation.CommonFFI as CommonFFI
+    (configureStdp, ConfigureStdp)
 import Types (Source, Delay, Target, Weight)
 
 #include <cpu_kernel.h>
@@ -134,25 +138,35 @@ foreign import ccall unsafe "cpu_add_neuron" c_add_neuron
 
 
 
-addSynapses :: RT -> Source -> Delay -> [Target] -> [Weight] -> IO ()
-addSynapses rt src delay targets weights = do
+addSynapses :: RT -> Source -> Delay -> [Target] -> [Weight] -> [Bool] -> IO ()
+addSynapses rt src delay targets weights plastic = do
     withArrayLen (map fromIntegral targets) $ \tlen tptr -> do
     withArrayLen (map realToFrac weights) $ \wlen wptr -> do
+    withArrayLen (map fromBool plastic) $ \plen pptr -> do
     assert (wlen == tlen) $ do
+    assert (wlen == plen) $ do
     when (wlen > 0) $ do
-    callKernel_ rt $ c_add_synapses rt (c_int src) (c_int delay) tptr wptr (fromIntegral wlen)
+    callKernel_ rt $ c_add_synapses rt (c_int src) (c_int delay) tptr wptr pptr (fromIntegral wlen)
     where
         c_int = fromIntegral
 
 
 foreign import ccall unsafe "cpu_add_synapses" c_add_synapses
     :: RT
-    -> CIdx
+    -> CIdx        -- ^ source
     -> CDelay
-    -> Ptr CIdx
+    -> Ptr CIdx    -- ^ targets
     -> Ptr CWeight
-    -> CSize
+    -> Ptr CUInt   -- ^ per-synapse plasticity (bools)
+    -> CSize       -- ^ number of targets
     -> IO CStatus
+
+
+foreign import ccall unsafe "cpu_enable_stdp" c_enable_stdp
+    :: CommonFFI.ConfigureStdp ForeignData CDouble
+
+-- TODO: use same name: either configure or enable
+configureStdp = CommonFFI.configureStdp c_enable_stdp
 
 
 {- | Finalize construction and set up run-time data structures -}
