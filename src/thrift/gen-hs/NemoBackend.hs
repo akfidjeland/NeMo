@@ -175,22 +175,32 @@ read_EnableStdp_args iprot = do
   rec <- read_EnableStdp_args_fields iprot (EnableStdp_args{f_EnableStdp_args_prefire=Nothing,f_EnableStdp_args_postfire=Nothing,f_EnableStdp_args_maxWeight=Nothing,f_EnableStdp_args_minWeight=Nothing})
   readStructEnd iprot
   return rec
-data EnableStdp_result = EnableStdp_result deriving (Show,Eq,Ord,Typeable)
+data EnableStdp_result = EnableStdp_result{f_EnableStdp_result_err :: Maybe ConstructionError} deriving (Show,Eq,Ord,Typeable)
 write_EnableStdp_result oprot rec = do
   writeStructBegin oprot "EnableStdp_result"
+  case f_EnableStdp_result_err rec of {Nothing -> return (); Just _v -> do
+    writeFieldBegin oprot ("err",T_STRUCT,1)
+    write_ConstructionError oprot _v
+    writeFieldEnd oprot}
   writeFieldStop oprot
   writeStructEnd oprot
 read_EnableStdp_result_fields iprot rec = do
   (_,_t256,_id257) <- readFieldBegin iprot
   if _t256 == T_STOP then return rec else
     case _id257 of 
+      1 -> if _t256 == T_STRUCT then do
+        s <- (read_ConstructionError iprot)
+        read_EnableStdp_result_fields iprot rec{f_EnableStdp_result_err=Just s}
+        else do
+          skip iprot _t256
+          read_EnableStdp_result_fields iprot rec
       _ -> do
         skip iprot _t256
         readFieldEnd iprot
         read_EnableStdp_result_fields iprot rec
 read_EnableStdp_result iprot = do
   readStructBegin iprot
-  rec <- read_EnableStdp_result_fields iprot (EnableStdp_result{})
+  rec <- read_EnableStdp_result_fields iprot (EnableStdp_result{f_EnableStdp_result_err=Nothing})
   readStructEnd iprot
   return rec
 data EnablePipelining_args = EnablePipelining_args deriving (Show,Eq,Ord,Typeable)
@@ -553,10 +563,13 @@ process_addNeuron (seqid, iprot, oprot, handler) = do
 process_enableStdp (seqid, iprot, oprot, handler) = do
   args <- read_EnableStdp_args iprot
   readMessageEnd iprot
-  rs <- return (EnableStdp_result)
-  res <- (do
-    Iface.enableStdp handler (f_EnableStdp_args_prefire args) (f_EnableStdp_args_postfire args) (f_EnableStdp_args_maxWeight args) (f_EnableStdp_args_minWeight args)
-    return rs)
+  rs <- return (EnableStdp_result Nothing)
+  res <- (Control.Exception.catch
+    (do
+      Iface.enableStdp handler (f_EnableStdp_args_prefire args) (f_EnableStdp_args_postfire args) (f_EnableStdp_args_maxWeight args) (f_EnableStdp_args_minWeight args)
+      return rs)
+    (\e  -> 
+      return rs{f_EnableStdp_result_err =Just e}))
   writeMessageBegin oprot ("enableStdp", M_REPLY, seqid);
   write_EnableStdp_result oprot res
   writeMessageEnd oprot

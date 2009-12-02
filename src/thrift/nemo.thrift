@@ -112,7 +112,8 @@ service NemoBackend {
             1:list<double> prefire,
 			2:list<double> postfire,
 			3:double maxWeight,
-			4:double minWeight),
+			4:double minWeight)
+		throws (1:ConstructionError err),
 
 	# Pipelining should be enabled before construction
 	void enablePipelining(),

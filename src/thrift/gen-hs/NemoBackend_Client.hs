@@ -71,6 +71,9 @@ recv_enableStdp ip = do
     else return ()
   res <- read_EnableStdp_result ip
   readMessageEnd ip
+  case f_EnableStdp_result_err res of
+    Nothing -> return ()
+    Just _v -> throw _v
   return ()
 enablePipelining (ip,op) = do
   send_enablePipelining op

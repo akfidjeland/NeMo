@@ -61,6 +61,8 @@ setPipelining val conf = conf { simOptions = opt' }
         opt' = (simOptions conf) { optPipelined = val }
 
 
+constructionError msg = CE.throwIO $! Wire.ConstructionError $! Just msg
+
 
 {- Apply function as long as we're in constuction mode -}
 constructWith :: Handler -> (Net -> Net) -> IO ()
@@ -71,7 +73,7 @@ constructWith (Handler _ m) f = do
             net' <- return $! f net
             st' <- return $! Constructing conf net'
             net' `seq` st' `seq` writeIORef m st'
-        _ -> fail "trying to construct during simulation"
+        _ -> constructionError "trying to construct during simulation"
 
 
 -- TODO: share with frontend code
@@ -86,12 +88,11 @@ serverAddCluster (Handler log m) ns = do
     log "add cluster"
     st <- readIORef m
     case st of
-        (Simulating _) -> CE.throwIO $! Wire.ConstructionError $!
-            Just $! "simulation command called before construction complete"
         (Constructing conf !net) -> do
             net' <- return $! foldl' (flip serverAddNeuron) net ns
             st' <- return $! Constructing conf net'
             writeIORef m st'
+        _ -> constructionError "trying to construct during simulation"
 
 
 configureWithLog :: Handler -> String -> (Config -> Config) -> IO ()
@@ -103,7 +104,8 @@ configureWith (Handler _ m) f = do
     st <- readIORef m
     case st of
         Constructing conf net -> writeIORef m $! Constructing (f conf) net
-        _ -> fail "Configuration commands must be called /before/ starting simulation"
+        _ -> constructionError $!
+                "Configuration commands must be called /before/ starting simulation"
 
 
 serverEnableStdp :: Handler -> [Double] -> [Double] -> Double -> Double -> IO ()
@@ -139,7 +141,7 @@ simulateWith (Handler _ m) f = do
         initError :: CE.SomeException -> IO a
         initError e = do
             putStrLn $ "initialisation error: " ++ show e
-            CE.throwIO $ Wire.ConstructionError $ Just $ show e
+            constructionError (show e)
 
 
 
@@ -171,7 +173,7 @@ instance NemoBackend_Iface Handler where
     run h (Just stim) = simulateWith h $ Protocol.run stim
     pipelineLength h = simulateWithLog h "pipeline length query" $ Protocol.pipelineLength
 
-    applyStdp h (Just reward) = simulateWithLog h "apply STDP" (\s -> Backend.applyStdp s reward)
+    applyStdp h (Just reward) = simulateWithLog h ("apply STDP " ++ (show reward)) (\s -> Backend.applyStdp s reward)
     getConnectivity h = simulateWithLog h "returning connectivity" Protocol.getConnectivity
 
     {- This is a bit of a clunky way to get out of the serving of a single
