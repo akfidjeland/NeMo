@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <assert.h>
 
+#include "bitops.h"
+
 namespace nemo {
 
 
@@ -41,6 +43,28 @@ STDP<T>::lookupPost(int dt) const
 
 
 
+template<typename T>
+uint
+STDP<T>::closestPreFire(uint64_t arrivals) const
+{
+	uint64_t validArrivals = arrivals & m_preFireBits;
+	int dt =  ctz64(validArrivals >> m_postFireWindow);
+	return validArrivals ? (uint) dt : STDP_NO_APPLICATION;
+}
+
+
+
+template<typename T>
+uint
+STDP<T>::closestPostFire(uint64_t arrivals) const
+{
+	uint64_t validArrivals = arrivals & m_postFireBits;
+	int dt = clz64(validArrivals << uint64_t(64 - m_postFireWindow));
+	return validArrivals ? (uint) dt : STDP_NO_APPLICATION;
+}
+
+
+
 inline
 void
 setBit(size_t bit, uint64_t& word)
@@ -63,8 +87,8 @@ STDP<T>::configure(
 	m_preFireWindow = prefire.size();
 	m_postFireWindow = postfire.size();
 
-	//! \todo This constraint is too weak. Also need to consider max delay in
-	//network here
+	/*! \todo This constraint is too weak. Also need to consider max delay in
+	 * network here */
 	if(m_preFireWindow + m_postFireWindow > 64) {
 		throw std::runtime_error("size of STDP window too large");
 	}
@@ -90,8 +114,8 @@ STDP<T>::configure(
 	m_minWeight = minWeight;
 	m_maxWeight = maxWeight;
 
-	m_prefireBits = (~(uint64_t(~0) << uint64_t(preFireWindow()))) << uint64_t(postFireWindow());
-	m_postfireBits = ~(uint64_t(~0) << uint64_t(postFireWindow()));
+	m_preFireBits = (~(uint64_t(~0) << uint64_t(preFireWindow()))) << uint64_t(postFireWindow());
+	m_postFireBits = ~(uint64_t(~0) << uint64_t(postFireWindow()));
 }
 
 

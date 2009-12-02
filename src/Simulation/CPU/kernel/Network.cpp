@@ -69,6 +69,8 @@ Network::~Network()
 }
 
 
+
+
 #ifdef PTHREADS_ENABLED
 
 /* Initialise threads, but do not start them. Set the attributes, esp. thread
@@ -368,52 +370,6 @@ Network::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 
-
-const uint STDP_NO_APPLICATION = uint(~0);
-
-/*! \return
- *		shortest delay (shortest delay = 0) between spike arrival and firing of
- *		this neuron or largest representable delay if STDP not appliccable.
- *
- * STDP is not applicable if the postsynaptic neuron also fired closer to the
- * incoming spike than the firing currently under consideration. */
-//! \todo move this into STDP class?
-inline
-uint
-closestPreFire(uint64_t spikes, uint postfireLen)
-{
-	//! \todo make sure ffsll is 64-bit safe
-	int dt =  ffsll(spikes >> postfireLen);
-	return dt ? (uint) dt-1 : STDP_NO_APPLICATION;
-}
-
-
-
-//! \todo use one of the other bit-twiddling hacks from http://graphics.stanford.edu/~seander/bithacks.html
-//! The interesting bits are near the beginning, so ought to be able to do this faster
-/* MSB=0, LSB=63 */
-inline
-uint
-clzll(uint64_t v)
-{
-	uint r = 0;
-	while (v >>= 1) {
-		r++;
-	}
-	return 63 - r;
-}
-
-
-inline
-uint
-closestPostFire(uint64_t spikes, uint postfireLen)
-{
-	int dt = clzll(spikes << uint64_t(64 - postfireLen));
-	return spikes ? (uint) dt : STDP_NO_APPLICATION;
-}
-
-
-
 weight_t
 Network::updateRegion(
 		uint64_t spikes,
@@ -427,8 +383,8 @@ Network::updateRegion(
 
 	if(spikes) {
 
-		uint dt_pre = closestPreFire(spikes & m_stdp.preFireBits(), m_stdp.postFireWindow());
-		uint dt_post = closestPostFire(spikes & m_stdp.postFireBits(), m_stdp.postFireWindow());
+		uint dt_pre = m_stdp.closestPreFire(spikes);
+		uint dt_post = m_stdp.closestPostFire(spikes);
 
 		if(dt_pre < dt_post) {
 			w_diff = m_stdp.lookupPre(dt_pre);
@@ -446,7 +402,6 @@ Network::updateRegion(
 		// if neither is applicable dt_post == dt_pre == STDP_NO_APPLICATION
 	}
 	return w_diff;
-
 }
 
 

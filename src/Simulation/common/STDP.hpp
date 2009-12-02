@@ -56,16 +56,24 @@ class STDP
 
 		/*! \return bit mask indicating which cycles correspond to postfire
 		 * part of STDP window. */
-		uint64_t preFireBits() const { return m_prefireBits; }
+		uint64_t preFireBits() const { return m_preFireBits; }
 
 		/*! \return bit mask indicating which cycles correspond to prefire
 		 * part of STDP window. */
-		uint64_t postFireBits() const { return m_postfireBits; }
+		uint64_t postFireBits() const { return m_postFireBits; }
+
+		/*! \return dt of first spike closest to post-firing, /before/ post-firing. */
+		uint closestPreFire(uint64_t arrivals) const;
+
+		/*! \return dt of first spike closest to post-firing, /after/ post-firing. */
+		uint closestPostFire(uint64_t arrivals) const;
 
 		/*! \return the STDP function lookup-table */
 		const std::vector<T>& function() const { return m_function; }
 
 		bool enabled() const { return m_function.size() > 0; }
+
+		static const uint STDP_NO_APPLICATION = uint(~0);
 
 	private:
 
@@ -84,8 +92,8 @@ class STDP
 		uint64_t m_potentiationBits;
 		uint64_t m_depressionBits; 
 
-		uint64_t m_prefireBits;
-		uint64_t m_postfireBits;
+		uint64_t m_preFireBits;
+		uint64_t m_postFireBits;
 
 		T m_maxWeight;
 		T m_minWeight;
