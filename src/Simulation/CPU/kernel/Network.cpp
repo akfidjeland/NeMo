@@ -416,9 +416,8 @@ Network::accumulateStdp()
 	for(nidx_t post = 0; post < m_neuronCount; ++post) {
 		if(m_recentFiring[post] & MASK) {
 
-			Incoming& incoming = m_cm.getIncoming(post);
-			const std::vector<RSynapse>& addresses = incoming.addresses;
-			std::vector<weight_t>& w_diffs = incoming.w_diff;
+			const ConnectivityMatrix::Incoming& addresses = m_cm.getIncoming(post);
+			ConnectivityMatrix::Accumulator& w_diffs = m_cm.getWAcc(post);
 
 			for(size_t s = 0; s < addresses.size(); ++s) {
 

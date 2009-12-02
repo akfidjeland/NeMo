@@ -32,21 +32,10 @@ struct RSynapse
 
 
 
-/* All incoming synapses for a particular neuron */
-struct Incoming
-{
-	/* Lookup information for reverse synapses */
-	std::vector<RSynapse> addresses;
-
-	/* Accumulated weight difference */
-	std::vector<weight_t> w_diff;
-};
-
-
-
 struct ForwardIdx
 {
-	ForwardIdx(nidx_t source, delay_t delay) : source(source), delay(delay) {}
+	ForwardIdx(nidx_t source, delay_t delay) :
+		source(source), delay(delay) {}
 
 	nidx_t source;
 	delay_t delay;
@@ -76,6 +65,13 @@ class ConnectivityMatrix
 
 		~ConnectivityMatrix();
 
+		/* address information for incoming synapses to a single neuron */
+		typedef std::vector<RSynapse> Incoming;
+
+		/* weight accumulation for incoming synapses to a single neuron */
+		typedef std::vector<weight_t> Accumulator;
+
+
 		/*! Add synapses for a particular presynaptic neuron and a particular delay */
 		void setRow(
 				nidx_t source,
@@ -87,7 +83,9 @@ class ConnectivityMatrix
 
 		const Row& getRow(nidx_t source, delay_t) const;
 
-		Incoming& getIncoming(nidx_t target);
+		const Incoming& getIncoming(nidx_t target);
+
+		Accumulator& getWAcc(nidx_t target);
 
 		void applyStdp(double minWeight, double maxWeight, double reward=1.0);
 
@@ -110,6 +108,7 @@ class ConnectivityMatrix
 		/* For the reverse matrix we don't need to group by delay */
 		//! \todo move into std::vector when finalizing
 		std::map<nidx_t, Incoming> m_racc;
+		std::vector<Accumulator> m_wdiff;
 
 		/* At run-time however, we want the fastest possible lookup of the
 		 * rows. We therefore use a vector with linear addressing. This just
@@ -117,7 +116,10 @@ class ConnectivityMatrix
 		 * finalize which must be called prior to getRow being called */
 		std::vector<Row> m_cm;
 
+
 		bool m_finalized;
+		void finalizeForward();
+		void finalizeReverse();
 
 		std::set<nidx_t> m_sourceIndices;
 		delay_t m_maxDelay;
