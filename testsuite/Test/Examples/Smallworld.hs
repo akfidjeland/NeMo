@@ -44,6 +44,12 @@ tests = [
     defaultTest {
         name     = "smallworld-cpu-1000",
         dataFile = "smallworld-cpu-1000"
-    }
+    },
 
+    defaultTest {
+        name     = "smallworld-cpu-1000-stdp",
+        dataFile = "smallworld-cpu-1000-stdp",
+        backend  = CPU,
+        stdp     = Just 50
+    }
   ]
