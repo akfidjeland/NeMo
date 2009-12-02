@@ -94,6 +94,11 @@ executable nemo
                             src/Simulation/CPU/kernel/RNG.cpp
     extra-libraries:        stdc++
 
+    if flag(Debug)
+        cc-options:         -g
+    else
+        cc-options:         -DNDEBUG
+
     if flag(Single)
         cpp-options:        -DCPU_SINGLE_PRECISION
         cc-options:         -DCPU_SINGLE_PRECISION
