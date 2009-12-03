@@ -160,7 +160,7 @@ struct Network {
 		pthread_attr_t m_thread_attr[m_nthreads];
 		Job* m_job[m_nthreads];
 
-		void initThreads();
+		void initThreads(size_t ncount);
 
 		friend void* start_thread(void*);
 #endif
