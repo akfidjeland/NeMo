@@ -71,6 +71,21 @@ AC_SUBST(HAVE_THRIFT_COMPILER)
 AC_SUBST(THRIFT)
 
 
+########################
+# Check for pthreads
+########################
+
+m4_include([m4/ax_pthread.m4])
+PTHREADS_ENABLED=false
+PTHREADS_ENABLED_HS="--" # i.e. comment out pthread-related parts of buildinfo file
+ACX_PTHREAD([PTHREADS_ENABLED=true])
+
+if test $PTHREADS_ENABLED = "true"; then
+    PTHREADS_ENABLED_HS=
+fi
+
+AC_SUBST(PTHREADS_ENABLED_HS)
+
 
 ########################
 # Generate output

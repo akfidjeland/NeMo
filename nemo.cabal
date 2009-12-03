@@ -40,11 +40,6 @@ flag ProfileCPU
     description:            Profile the c-based CPU backend
     default:                False
 
--- TODO: use autoconf for this instead
-flag PThreads
-    description:            Use pthreads for parallel CPU backend
-    default:                False
-
 
 executable nemo
     main-is:                Nemo.hs
@@ -106,9 +101,6 @@ executable nemo
     if flag(ProfileCPU)
         cc-options:         -pg
         ghc-options:        -optl=-pg
-
-    if flag(PThreads)
-        cc-options:         -DPTHREADS_ENABLED
 
     if flag(Benchmark)
         other-modules:      Benchmark,
