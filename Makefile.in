@@ -85,7 +85,7 @@ $(matlab_build)/mex/%.m: $(autogen)/mex_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_
 
 
 # Generate Matlab reference source files from source and documentation
-$(matlab_build)/reference/%.m: $(matlab_src)/%.m.ref $(matlab_src)/%.help.m
+$(matlab_build)/reference/%.m: $(matlab_src)/%.reference.m $(matlab_src)/%.help.m
 	mkdir -p $(dir $@)
 	$(matlab_src)/m-help $(word 2, $^) > $@
 	cat $< >> $@
