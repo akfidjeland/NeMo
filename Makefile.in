@@ -79,20 +79,20 @@ $(autogen)/mex_fn_lut.%: $(matlab_src)/gen_fn.py $(matlab_src)/*.m.m4
 
 # Generate Matlab files from source, documentation, and function LUT
 # TODO: combine these two
-$(matlab_build)/mex/%.m: $(autogen)/mex_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.m.help
+$(matlab_build)/mex/%.m: $(autogen)/mex_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.help.m
 	$(matlab_src)/m-help $(word 3, $^) > $@
 	m4 $(wordlist 1, 2, $^) >> $@
 
 
 # Generate Matlab reference source files from source and documentation
-$(matlab_build)/reference/%.m: $(matlab_src)/%.m.ref $(matlab_src)/%.m.help
+$(matlab_build)/reference/%.m: $(matlab_src)/%.m.ref $(matlab_src)/%.help.m
 	mkdir -p $(dir $@)
 	$(matlab_src)/m-help $(word 2, $^) > $@
 	cat $< >> $@
 
 
 # Generate Matlab reference source files from source and documentation
-$(matlab_build)/java/%.m: $(matlab_src)/%.java.m $(matlab_src)/%.m.help
+$(matlab_build)/java/%.m: $(matlab_src)/%.java.m $(matlab_src)/%.help.m
 	mkdir -p $(dir $@)
 	$(matlab_src)/m-help $(word 2, $^) > $@
 	cat $< >> $@
@@ -160,7 +160,7 @@ doc/manual/manual.pdf: $(doc_src)/matlab.tex
 doc-clean:
 	(cd doc/manual; make clean; cd ../..)
 
-$(doc_src)/matlab.tex: $(matlab_src)/*.m.help
+$(doc_src)/matlab.tex: $(matlab_src)/*.help.m
 	cat $^ | util/matlab-manual-api.sh > $@
 
 $(doc_build)/manual.pdf: $(doc_src)/manual.pdf
