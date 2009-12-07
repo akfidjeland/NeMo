@@ -52,11 +52,16 @@ matlab_m_files := $(basename $(basename $(notdir $(wildcard $(matlab_src)/*.m.m4
 matlab_ref_utils := $(addprefix $(matlab_src)/util/,sparsify.m mergeDuplicates.m)
 
 .PHONY: matlab
-matlab: matlab-mex matlab-reference
+matlab: matlab-mex matlab-reference matlab-java
 
 matlab-mex: \
 		$(matlab_build)/mex/nemo_mex.mexa64 \
-		$(patsubst %,$(matlab_build)/mex/%.m,$(matlab_m_files)) \
+		$(patsubst %,$(matlab_build)/mex/%.m,$(matlab_m_files))
+
+matlab-java: $(matlab_build)/java/nemo.jar
+
+$(matlab_build)/java/nemo.jar: antbuild.xml $(thrift_build)/gen-java
+	ant -f antbuild.xml
 
 matlab-reference: $(patsubst %,$(matlab_build)/reference/%.m,$(matlab_m_files)) $(matlab_ref_utils)
 	mkdir -p $(matlab_build)
