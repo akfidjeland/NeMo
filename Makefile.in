@@ -38,7 +38,7 @@ cabal: $(thrift_build)/gen-hs
 
 endif
 
-client: matlab-client
+client: matlab
 
 autogen := dist/build/autogen
 
@@ -51,10 +51,12 @@ matlab_m_files := $(basename $(basename $(notdir $(wildcard $(matlab_src)/*.m.m4
 # (No preprocessing required.)
 matlab_ref_utils := $(addprefix $(matlab_src)/util/,sparsify.m mergeDuplicates.m)
 
+.PHONY: matlab
+matlab: matlab-mex matlab-reference
 
-matlab-client: $(matlab_build)/nemo_mex.mexa64 \
-		$(patsubst %,$(matlab_build)/%.m,$(matlab_m_files)) \
-		matlab-reference
+matlab-mex: \
+		$(matlab_build)/mex/nemo_mex.mexa64 \
+		$(patsubst %,$(matlab_build)/mex/%.m,$(matlab_m_files)) \
 
 matlab-reference: $(patsubst %,$(matlab_build)/reference/%.m,$(matlab_m_files)) $(matlab_ref_utils)
 	mkdir -p $(matlab_build)
@@ -69,7 +71,8 @@ $(autogen)/mex_fn_lut.%: $(matlab_src)/gen_fn.py $(matlab_src)/*.m.m4
 
 
 # Generate Matlab files from source, documentation, and function LUT
-$(matlab_build)/%.m: $(autogen)/mex_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.m.help
+# TODO: combine these two
+$(matlab_build)/mex/%.m: $(autogen)/mex_fn_lut.m4 $(matlab_src)/%.m.m4 $(matlab_src)/%.m.help
 	$(matlab_src)/m-help $(word 3, $^) > $@
 	m4 $(wordlist 1, 2, $^) >> $@
 
@@ -83,10 +86,10 @@ $(matlab_build)/reference/%.m: $(matlab_src)/%.m.ref $(matlab_src)/%.m.help
 
 # TODO: detect the default extension for matlab-mex
 # TODO: windows build
-$(matlab_build)/%.mexa64: $(matlab_src)/%.cpp $(thrift_build)/gen-cpp $(autogen)/mex_fn_lut.hpp
+$(matlab_build)/mex/%.mexa64: $(matlab_src)/%.cpp $(thrift_build)/gen-cpp $(autogen)/mex_fn_lut.hpp
 	mkdir -p $(dir $@)
 	matlab-mex -I$(thrift_inc) -I$(thrift_build)/gen-cpp -I$(autogen) -lthrift \
-		-o $(matlab_build)/$* \
+		-o $(matlab_build)/mex/$* \
 		$< $(addprefix $(thrift_build)/gen-cpp/,NemoBackend.cpp nemo_types.cpp)
 
 
@@ -130,7 +133,7 @@ $(dist_dir).zip: $(doc_build)/manual.pdf client cabal
 #
 # Documentation
 #
-#
+
 .PHONY: doc
 doc: doc/manual/manual.pdf
 
