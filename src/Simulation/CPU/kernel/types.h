@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <nemo_types.h>
+
 typedef enum {
 	STATUS_OK,
 	STATUS_ERROR
@@ -13,9 +15,7 @@ typedef double fp_t;
 #endif
 
 typedef fp_t weight_t;
-typedef unsigned int nidx_t;
 typedef unsigned int sidx_t;
-typedef unsigned int delay_t;
 
 
 #endif

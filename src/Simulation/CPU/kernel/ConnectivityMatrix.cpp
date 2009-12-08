@@ -12,12 +12,6 @@
 namespace nemo {
 	namespace cpu {
 
-bool
-operator<(const ForwardIdx& a, const ForwardIdx& b)
-{
-	return a.source < b.source || (a.source == b.source && a.delay < b.delay);
-}
-
 
 ConnectivityMatrix::ConnectivityMatrix():
 	m_maxDelay(0),

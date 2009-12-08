@@ -6,6 +6,7 @@
 #include <set>
 
 #include "types.h"
+#include <nemo_types.hpp>
 
 namespace nemo {
 	namespace cpu {
@@ -28,17 +29,6 @@ struct RSynapse
 	nidx_t source;
 	delay_t delay;
 	sidx_t synapse;
-};
-
-
-
-struct ForwardIdx
-{
-	ForwardIdx(nidx_t source, delay_t delay) :
-		source(source), delay(delay) {}
-
-	nidx_t source;
-	delay_t delay;
 };
 
 
