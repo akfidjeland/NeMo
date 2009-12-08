@@ -9,6 +9,7 @@
 
 #include <nemo_types.hpp>
 #include "SMatrix.hpp"
+#include "SynapseGroup.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
 
@@ -120,7 +121,7 @@ class ConnectivityMatrixImpl
 
 		bool m_setReverse;
 
-		//std::map<nemo::ForwardIdx, class SynapseGroup> m_fsynapses2;
+		std::map<nemo::ForwardIdx, SynapseGroup> m_fsynapses2;
 
 		/* The user may want to read back the modified weight matrix. We then
 		 * need the corresponding non-compressed addresses as well. The shape

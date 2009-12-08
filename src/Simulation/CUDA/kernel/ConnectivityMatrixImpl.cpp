@@ -117,15 +117,12 @@ ConnectivityMatrixImpl::setRow(
 	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, abuf, FCM_ADDRESS);
 	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, wbuf, FCM_WEIGHT);
 
-
-#if 0
 	m_fsynapses2[nemo::ForwardIdx(sourcePartition, delay)].addSynapses(
 			sourceNeuron,
 			f_length,
 			targetPartition,
 			targetNeuron,
 			weights);
-#endif
 
 	uint32_t delayBits = m_delayBits.getNeuron(sourcePartition, sourceNeuron);
 	delayBits |= 0x1 << (delay-1);

@@ -23,12 +23,16 @@ SMatrix<T>::SMatrix(
 {
 	size_t width = maxSynapsesPerDelay;
 	size_t height = planeCount * partitionCount * maxPartitionSize * maxDelay;
+#if 0
 	fprintf(stderr, "SMatrix: height = %u (%u planes of %u partitions each with size %u each with %u delays\n",
 			height, planeCount, partitionCount, maxPartitionSize, maxDelay);
+#endif
 	size_t bytePitch = 0;
+#if 0
 	fprintf(stderr, "SMatrix: allocating %u bytes (w%u x h%u x %u)\n",
 			height * width * sizeof(T),
 			height,  width,  sizeof(T));
+#endif
 	CUDA_SAFE_CALL(
 			cudaMallocPitch((void**)&m_deviceData, 
 				&bytePitch, 
