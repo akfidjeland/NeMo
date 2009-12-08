@@ -16,11 +16,23 @@ CU_INC = kernel.cu \
 		 applySTDP.cu \
 		 thalamicInput.cu
 
+CC_SRC = L1SpikeQueue.cpp \
+		 FiringOutput.cpp \
+		 RuntimeData.cpp \
+		 ConnectivityMatrix.cpp \
+		 ConnectivityMatrixImpl.cpp \
+		 time.cpp \
+		 CycleCounters.cpp \
+		 ThalamicInput.cpp \
+		 RSMatrix.cpp \
+		 SynapseGroup.cpp
+
 
 # CUDA source files (compiled with cudacc)
 CUFILES		:= $(addprefix $(SRCDIR),$(CU_MAIN))
 CU_DEPS     := $(addprefix $(SRCDIR),$(CU_INC))
-CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringOutput.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp RSMatrix.cpp)
+#CCFILES     := $(addprefix $(SRCDIR),L1SpikeQueue.cpp FiringOutput.cpp RuntimeData.cpp ConnectivityMatrix.cpp time.cpp CycleCounters.cpp ThalamicInput.cpp RSMatrix.cpp)
+CCFILES     := $(addprefix $(SRCDIR),$(CC_SRC))
 CFILES		:= $(addprefix $(SRCDIR),kernel.c)
 
 

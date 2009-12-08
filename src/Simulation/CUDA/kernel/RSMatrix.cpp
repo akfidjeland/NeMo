@@ -24,6 +24,7 @@ RSMatrix::allocateDeviceMemory()
 	size_t bytePitch = 0;
 
 	uint32_t* deviceData = NULL;
+	fprintf(stderr, "RSMatrix: allocating %u bytes\n", desiredPitch * height);
 	CUDA_SAFE_CALL(
 			cudaMallocPitch((void**) &deviceData,
 				&bytePitch,

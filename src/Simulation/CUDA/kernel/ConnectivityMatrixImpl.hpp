@@ -1,15 +1,16 @@
-#ifndef CONNECTIVITY_MATRIX_HPP
-#define CONNECTIVITY_MATRIX_HPP
+#ifndef CONNECTIVITY_MATRIX_IMPL_HPP
+#define CONNECTIVITY_MATRIX_IMPL_HPP
 
 #include <stdint.h>
 #include <stddef.h>
+#include <cuda_runtime.h>
 
-#include <vector>
+#include <map>
 
+#include <nemo_types.hpp>
+#include "SMatrix.hpp"
+#include "NVector.hpp"
 #include "kernel.cu_h"
-
-
-typedef unsigned int uint;
 
 /*! \brief Connectivity matrix
  *
@@ -33,11 +34,11 @@ typedef unsigned int uint;
  * Furthermore, functions are prefixed 'd' or 'h' depending on whether it
  * affects data on the device or on the host.
  */
-struct ConnectivityMatrix
+class ConnectivityMatrixImpl
 {
-	public :
+	public:
 
-		ConnectivityMatrix(
+		ConnectivityMatrixImpl(
 				size_t partitionCount,
 				size_t maxPartitionSize,
 				size_t maxDelay,
@@ -95,12 +96,46 @@ struct ConnectivityMatrix
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
 
-	private :
+	private:
 
-		/* We use PIMPL here, so that we can include this header in regular
-		 * CUDA code. Internally we use shared_ptr, which causes build errors
-		 * for CUDA */
-		class ConnectivityMatrixImpl* m_impl;
+		SMatrix<uint> m_fsynapses;
+
+		/* We also accumulate the firing delay bits that are used in the spike
+		 * delivery */
+		NVector<uint64_t> m_delayBits;
+
+		size_t m_partitionCount;
+		size_t m_maxPartitionSize;
+
+		unsigned int m_maxDelay;
+
+		/* As we fill the matrix, we accumulate per-partition statistics which
+		 * can be used for later configuration */
+		std::vector<uint> m_maxSynapsesPerDelay;
+
+		/* For STDP we need a reverse matrix storing source neuron, source
+		 * partition, and delay. The reverse connectivity is stored sepearately
+		 * for each partition */
+		std::vector<class RSMatrix*> m_rsynapses;
+
+		bool m_setReverse;
+
+		//std::map<nemo::ForwardIdx, class SynapseGroup> m_fsynapses2;
+
+		/* The user may want to read back the modified weight matrix. We then
+		 * need the corresponding non-compressed addresses as well. The shape
+		 * of each of these is exactly that of the weights on the device.
+		 * Invalid entries have both partition and neuron set to InvalidNeuron.
+		 * */
+		std::vector<int> mf_targetPartition;
+		std::vector<int> mf_targetNeuron;
+
+		/* The weight matrix is the only bit of data which needs to be read
+		 * from the device. This is only allocated if the user requests this
+		 * data.  */
+		std::vector<uint32_t> mf_weights;
+
+		static const int InvalidNeuron;
 };
 
 #endif
