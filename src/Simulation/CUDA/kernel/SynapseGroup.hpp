@@ -74,7 +74,6 @@ class SynapseGroup
 
 		/* For each presynaptic neuron we store a row containing all its
 		 * outgoing synapses */
-		//std::map<nidx_t, int> mh_synapses;
 		std::map<nidx_t, Row> mh_synapses;
 
 		/*! On the device, the synapses are stored one row per presynaptic

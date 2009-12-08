@@ -154,6 +154,11 @@ ConnectivityMatrixImpl::moveToDevice()
 	for(uint p=0; p < m_partitionCount; ++p){
 		m_rsynapses[p]->moveToDevice();
 	}
+
+	for(fcm_t::iterator i = m_fsynapses2.begin();
+			i != m_fsynapses2.end(); ++i) {
+		i->second.moveToDevice(m_maxPartitionSize);
+	}
 }
 
 

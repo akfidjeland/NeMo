@@ -121,7 +121,8 @@ class ConnectivityMatrixImpl
 
 		bool m_setReverse;
 
-		std::map<nemo::ForwardIdx, SynapseGroup> m_fsynapses2;
+		typedef std::map<nemo::ForwardIdx, SynapseGroup> fcm_t;
+		fcm_t m_fsynapses2;
 
 		/* The user may want to read back the modified weight matrix. We then
 		 * need the corresponding non-compressed addresses as well. The shape

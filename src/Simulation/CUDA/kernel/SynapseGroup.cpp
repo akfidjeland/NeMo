@@ -62,6 +62,10 @@ SynapseGroup::maxSynapsesPerNeuron() const
 boost::shared_ptr<SynapseGroup::synapse_t>
 SynapseGroup::moveToDevice(size_t partitionSize)
 {
+	if(mh_synapses.empty()) {
+		return boost::shared_ptr<SynapseGroup::synapse_t>();
+	}
+
 	m_partitionSize = partitionSize;
 
 	size_t desiredPitch = maxSynapsesPerNeuron() * sizeof(synapse_t);
