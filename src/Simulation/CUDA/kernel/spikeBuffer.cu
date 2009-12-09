@@ -1,3 +1,6 @@
+#ifndef SPIKE_BUFFER_CU
+#define SPIKE_BUFFER_CU
+
 //! \file spikeBuffer.cu
 
 /* For L1 delivery spikes are delivered via global memory. To reduce the number
@@ -292,3 +295,5 @@ s_sbFlushAll(
 		g_heads[g_offset] = s_heads[targetPartition];
 	}
 }
+
+#endif

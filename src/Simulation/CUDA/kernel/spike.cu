@@ -73,17 +73,13 @@ packSpike_STDP(
 		float weight)
 {
 	IN_RANGE(sourceNeuron, NEURON_BITS);
-//#ifdef STDP
 	IN_RANGE(targetNeuron, NEURON_BITS);
 	IN_RANGE(delay, DELAY_BITS);
 	IN_RANGE(sourceSynapse, SPIKE_SYNAPSE_BITS);
-//#endif
 	uint address =
-//#ifdef STDP
 		sourceSynapse << (NEURON_BITS*2 + DELAY_BITS) |
 		delay << (NEURON_BITS*2)                      |
 		sourceNeuron << NEURON_BITS                   |
-//#endif
 		targetNeuron;
 	return make_uint2(address, __float_as_int(weight));
 }

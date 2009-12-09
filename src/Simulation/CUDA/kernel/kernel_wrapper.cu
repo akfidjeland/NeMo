@@ -31,84 +31,9 @@ extern "C" {
 #include "ThalamicInput.hpp"
 #include "applySTDP.cu"
 
-
-//=============================================================================
-// Double buffering
-//=============================================================================
-
-/* The current cycle indicates which half of the double buffer is for reading
- * and which is for writing */
-__device__
-uint
-readBuffer(uint cycle)
-{
-    return (cycle & 0x1) ^ 0x1;
-}
-
-
-__device__
-uint
-writeBuffer(uint cycle)
-{
-    return cycle & 0x1;
-}
-
-
-
-//=============================================================================
-// Firing 
-//=============================================================================
-
-
-/*! The external firing stimulus is densely packed with one bit per neuron.
- * Thus only the low-order threads need to read this data, and we need to
- * sync.  */  
-__device__
-void
-loadExternalFiring(
-        bool hasExternalInput,
-		int s_partitionSize,
-		size_t pitch,
-		uint32_t* g_firing,
-		uint32_t* s_firing)
-{
-	if(threadIdx.x < DIV_CEIL(s_partitionSize, 32)) {
-		if(hasExternalInput) {
-			s_firing[threadIdx.x] =
-                g_firing[blockIdx.x * pitch + threadIdx.x];
-		} else {
-			s_firing[threadIdx.x] = 0;
-		}
-	}
-	__syncthreads();
-}
-
-
-
-template<typename T>
-__device__
-void
-loadSharedArray(int partitionSize, size_t pitch, T* g_arr, T* s_arr)
-{
-	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
-		uint neuron = nbase + threadIdx.x;
-		if(neuron < partitionSize) {
-			s_arr[neuron] = g_arr[(blockIdx.x * pitch) + neuron];
-		}
-	}
-}
-
-
-
-/* We need two versions of some device functions... */
 #include "thalamicInput.cu"
-#include "spike.cu"
-#include "spikeBuffer.cu"
-#include "stdp.cu" // only used if STDP enabled
-
-
-
 #include "kernel.cu"
+#include "stdp.cu" // only used if STDP enabled
 
 #define STDP
 #include "L1SpikeQueue.cu"

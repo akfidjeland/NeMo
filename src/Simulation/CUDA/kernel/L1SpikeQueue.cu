@@ -5,6 +5,8 @@
 #   include <assert.h>
 #   include <stdio.h>
 #endif
+#include "spike.cu"
+#include "spikeBuffer.cu"
 
 #undef STDP_FN
 #ifdef STDP

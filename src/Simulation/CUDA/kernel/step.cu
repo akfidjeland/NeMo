@@ -5,6 +5,7 @@
 #define STDP_FN(f) f ## _static
 #endif
 
+
 /*! Combined integrate and fire using sparse connectivity matrix, a single step
 * updates the state (u and v) of each neuron and produces spikes to be used in
 * the next simulation cycle. 
