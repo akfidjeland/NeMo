@@ -123,6 +123,50 @@ STDP_FN(fire)(
 
 __device__
 void
+STDP_FN(deliverSpike)(
+		//! \todo change to uint
+		int presynaptic,
+		uint maxDelay,
+		//! \todo change to uint
+		uint32_t delay,
+		uint f0_pitch,
+		uint synapseIdx,
+		uint* gf0_address,
+		float* gf0_weight,
+		float* s_current)
+{
+	//! \todo factor addressing out into separate function
+	size_t synapseAddress = (presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
+	float weight = gf0_weight[synapseAddress];
+
+	/*! \todo only load address if it will actually be used.  For benchmarks
+	 * this made little difference, presumably because all neurons have same
+	 * number of synapses.  Experiment! */
+	uint sdata = gf0_address[synapseAddress];
+	uint postsynaptic = targetNeuron(sdata);
+
+	bool doCommit = weight != 0.0f;
+
+	/* Since multiple spikes may terminate at the same postsynaptic neuron,
+	 * some care must be taken to avoid a race condition in the current update.
+	 *
+	 * Since we only deal with a single delay at a time, there should be no
+	 * race conditions resulting from multiple synapses terminating at the same
+	 * postsynaptic neuron.  Within a single delay, there should be no race
+	 * conditions, if the mapper has done its job */
+
+	if(doCommit) {
+		s_current[postsynaptic] += weight;
+		DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
+				cycle, presynaptic, postsynaptic, weight);
+	}
+}
+
+
+
+//! \todo move out of kernel.cu, so as to avoid STDP_FN
+__device__
+void
 STDP_FN(deliverL0Spikes_)(
 #ifdef __DEVICE_EMULATION__
 	uint cycle,
@@ -211,43 +255,15 @@ STDP_FN(deliverL0Spikes_)(
 				uint32_t delay = s_delays[delayIdx];
 				for(uint chunk = 0; chunk < s_chunksPerDelay; ++chunk) {
 
-				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < sf0_maxSynapses) {
-
-					size_t synapseAddress = 
-						(presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
-					float weight = gf0_weight[synapseAddress];
-
-					/*! \todo only load address if it will actually be used.
-					 * For benchmarks this made little difference, presumably
-					 * because all neurons have same number of synapses.
-					 * Experiment! */
-					uint sdata = gf0_address[synapseAddress];
-					uint postsynaptic = targetNeuron(sdata);
-
-					bool doCommit = weight != 0.0f;
-
-					/* Since multiple spikes may terminate at the same
-					 * postsynaptic neuron, some care must be taken to avoid a
-					 * race condition in the current update.
-					 *
-					 * Since we only deal with a single delay at a time, there
-					 * should be no race conditions resulting from multiple
-					 * synapses terminating at the same postsynaptic neuron.
-					 * Within a single delay, there should be no race
-					 * conditions, if the mapper has done its job
-					 */
-
-					if(doCommit) {
-						s_current[postsynaptic] += weight;
-						DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
-								cycle, presynaptic, postsynaptic, weight);
+					//! \todo consider using per-neuron maximum here instead
+					if(synapseIdx < sf0_maxSynapses) {
+						STDP_FN(deliverSpike)(presynaptic, maxDelay, delay, f0_pitch, synapseIdx,
+								gf0_address, gf0_weight, s_current);
 					}
+					__syncthreads();
 				}
-				__syncthreads();
-			}
 			}
 		}
 	}
