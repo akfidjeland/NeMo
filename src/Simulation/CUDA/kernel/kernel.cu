@@ -181,19 +181,29 @@ fire(
 
 
 __device__
-void
-deliverSpike(
+size_t
+synapseAddress(
 		uint presynaptic,
 		uint maxDelay,
 		uint delay,
 		uint f0_pitch,
-		uint synapseIdx,
+		uint synapseIdx)
+{
+	return (presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
+
+}
+
+__device__
+void
+deliverSpike(
+		size_t synapseAddress,
+		uint presynaptic,
 		uint* gf0_address,
 		float* gf0_weight,
 		float* s_current)
 {
 	//! \todo factor addressing out into separate function
-	size_t synapseAddress = (presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
+	//size_t synapseAddress = (presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
 	float weight = gf0_weight[synapseAddress];
 
 	/*! \todo only load address if it will actually be used.  For benchmarks
@@ -298,27 +308,19 @@ deliverL0Spikes_(
 			}
 			__syncthreads();
 
-			/* The delay pitch may vary between networks, or between partitions.
-			 * Even with sequential processing of presynaptic neurons, we want to
-			 * maximise parallel processing of incoming spikes from different
-			 * delays. We have two situations: 
-			 *
-			 * 1) if the delay pitch is more than half the block size we process
-			 *    each delay sequentially
-			 * 2) if the delay pitch is less than or equal to half the block size
-			 *    we process multiple delays in parallel 
-			 */
 			for(uint delayIdx = 0; delayIdx < s_delayCount; ++delayIdx) {
 
 				uint delay = s_delays[delayIdx];
+
 				for(uint chunk = 0; chunk < s_chunksPerDelay; ++chunk) {
 
 					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
 					//! \todo consider using per-neuron maximum here instead
 					if(synapseIdx < sf0_maxSynapses) {
-						deliverSpike(presynaptic, maxDelay, delay, f0_pitch, synapseIdx,
-								gf0_address, gf0_weight, s_current);
+						deliverSpike(
+								synapseAddress(presynaptic, maxDelay, delay, f0_pitch, synapseIdx),
+								presynaptic, gf0_address, gf0_weight, s_current);
 					}
 					__syncthreads();
 				}
