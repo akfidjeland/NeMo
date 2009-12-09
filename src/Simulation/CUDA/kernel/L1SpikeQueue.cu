@@ -96,7 +96,7 @@ STDP_FN(gatherL1Spikes_JIT_)(
 		uint2* g_sb,
 		size_t sbPitch,
 		uint* g_heads,
-        size_t headPitch,
+		size_t headPitch,
 		float* s_current,
 		uint* s_heads /* s_P32 */ )
 {
@@ -217,124 +217,124 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 			for(uint delayIdx = 0; delayIdx < s_delayCount; ++delayIdx) {
 
-			uint delay = s_delays[delayIdx];
+				uint delay = s_delays[delayIdx];
 
-			for(uint chunk=0; chunk < s_chunksPerDelay; ++chunk) {
+				for(uint chunk=0; chunk < s_chunksPerDelay; ++chunk) {
 
-				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-				float weight;
-				uint target;
-				uint bufferOffset = 0; // relative to beginning of output buffer slot
-				uint bufferIdx = 0;
-				bool doCommit = false;
+					float weight;
+					uint target;
+					uint bufferOffset = 0; // relative to beginning of output buffer slot
+					uint bufferIdx = 0;
+					bool doCommit = false;
 
-				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < sf1_maxSynapses) {
-					size_t synapseAddress =
-						(presynaptic * maxDelay + delay) * f1_pitch + synapseIdx;
-					weight = gf1_weights[synapseAddress];
+					//! \todo consider using per-neuron maximum here instead
+					if(synapseIdx < sf1_maxSynapses) {
+						size_t synapseAddress =
+							(presynaptic * maxDelay + delay) * f1_pitch + synapseIdx;
+						weight = gf1_weights[synapseAddress];
 
-					if(weight != 0.0f) {
-						doCommit = true;
-						target = gf1_address[synapseAddress];
-						bufferIdx =
-							s_sbBufferIdx(targetPartition(target),
-								s_buffersPerPartition);
-						bufferOffset = atomicAdd(s_sheads + bufferIdx, 1);
-					}
-				}
-
-				/* For L1 delivery there's no race condition in the scatter
-				 * step, but if care is not taken here, we get one in the
-				 * gather step, as multiple spikes may converge on the same
-				 * postsynaptic neuron at the same time.
-				 *
-				 * While we don't need to worry about race conditions, we /do/
-				 * need to worry about memory bandwidth. A single firing neuron
-				 * can generate spikes reaching many different targets, spread
-				 * over multiple target partitions. If we naïvely deal with one
-				 * firing neuron at a time and write the spike to the global
-				 * memory spike queue directly, we end up with a large number
-				 * of non-coalesced writes.
-				 *
-				 * To reduce this problem, we buffer outgoing data on a per
-				 * target-partition basis. The buffers are kept as small as is
-				 * reasonable (one warp) and then flushed as needed. */
-
-				/* In the worst case, every thread writes to the same target
-				 * partition, which means the buffer will easily overflow. We
-				 * therefore need to interleave the filling of the output
-				 * buffer with its flushing */
-
-				//! \todo factor out
-				__shared__ uint s_flushCount;
-				//! \todo use shared memory for this
-				__shared__ uint s_flushPartition[MAX_BUFFER_COUNT];
-				do {
-					/* ensure loop condition is not changed while threads are
-					 * in different loop iterations */
-					__syncthreads();
-
-					/* Write one batch of data to output buffers, up to the
-					 * limit of the buffer */
-					if(doCommit && bufferOffset < BUFFER_SZ) {
-						//! \todo do some compression here to avoid race conditions later
-						s_outbuf[bufferIdx * BUFFER_SZ + bufferOffset] =
-							STDP_FN(packSpike)(
-									presynaptic,
-									delay,
-									synapseIdx,
-									targetNeuron(target),
-									weight);
-						doCommit = false;
-						DEBUG_MSG("Buffering L1 current %f for synapse "
-								"%u-%u -> %u-%u (after unknown delay, buffer %u[%u])\n",
-								weight, CURRENT_PARTITION, presynaptic,
-								targetPartition(target), targetNeuron(target),
-								bufferIdx, bufferOffset);
-					} else {
-						bufferOffset -= BUFFER_SZ; // prepare to write to buffer on subsequent loop iteration
+						if(weight != 0.0f) {
+							doCommit = true;
+							target = gf1_address[synapseAddress];
+							bufferIdx =
+								s_sbBufferIdx(targetPartition(target),
+										s_buffersPerPartition);
+							bufferOffset = atomicAdd(s_sheads + bufferIdx, 1);
+						}
 					}
 
-					/* Determine how many buffers are now full and need flushing */
-					if(threadIdx.x == 0) {
-						s_flushCount = 0;
-					}
-					__syncthreads();
+					/* For L1 delivery there's no race condition in the scatter
+					 * step, but if care is not taken here, we get one in the
+					 * gather step, as multiple spikes may converge on the same
+					 * postsynaptic neuron at the same time.
+					 *
+					 * While we don't need to worry about race conditions, we /do/
+					 * need to worry about memory bandwidth. A single firing neuron
+					 * can generate spikes reaching many different targets, spread
+					 * over multiple target partitions. If we naïvely deal with one
+					 * firing neuron at a time and write the spike to the global
+					 * memory spike queue directly, we end up with a large number
+					 * of non-coalesced writes.
+					 *
+					 * To reduce this problem, we buffer outgoing data on a per
+					 * target-partition basis. The buffers are kept as small as is
+					 * reasonable (one warp) and then flushed as needed. */
+
+					/* In the worst case, every thread writes to the same target
+					 * partition, which means the buffer will easily overflow. We
+					 * therefore need to interleave the filling of the output
+					 * buffer with its flushing */
 
 					//! \todo factor out
-					{
-						ASSERT(MAX_BUFFER_COUNT <= THREADS_PER_BLOCK);
-						uint bufferIdx = threadIdx.x;
-						if(bufferIdx < s_bufferCount) {
-							if(s_sheads[bufferIdx] >= BUFFER_SZ) {
-								s_sheads[bufferIdx] -= BUFFER_SZ;
-								uint next = atomicInc(&s_flushCount, MAX_BUFFER_COUNT);
-								s_flushPartition[next] = bufferIdx;
-							}
+					__shared__ uint s_flushCount;
+					//! \todo use shared memory for this
+					__shared__ uint s_flushPartition[MAX_BUFFER_COUNT];
+					do {
+						/* ensure loop condition is not changed while threads are
+						 * in different loop iterations */
+						__syncthreads();
+
+						/* Write one batch of data to output buffers, up to the
+						 * limit of the buffer */
+						if(doCommit && bufferOffset < BUFFER_SZ) {
+							//! \todo do some compression here to avoid race conditions later
+							s_outbuf[bufferIdx * BUFFER_SZ + bufferOffset] =
+								STDP_FN(packSpike)(
+										presynaptic,
+										delay,
+										synapseIdx,
+										targetNeuron(target),
+										weight);
+							doCommit = false;
+							DEBUG_MSG("Buffering L1 current %f for synapse "
+									"%u-%u -> %u-%u (after unknown delay, buffer %u[%u])\n",
+									weight, CURRENT_PARTITION, presynaptic,
+									targetPartition(target), targetNeuron(target),
+									bufferIdx, bufferOffset);
+						} else {
+							bufferOffset -= BUFFER_SZ; // prepare to write to buffer on subsequent loop iteration
+						}
+
+						/* Determine how many buffers are now full and need flushing */
+						if(threadIdx.x == 0) {
+							s_flushCount = 0;
 						}
 						__syncthreads();
-					}
 
-					/* Flush buffers */
-					for(uint flush_i=0; flush_i < s_flushCount; flush_i += BUFFERS_PER_BLOCK) {
-						uint i = flush_i + threadIdx.x / THREADS_PER_BUFFER;
-						bool validBuffer = i < s_flushCount;
-						s_sbFlush(
-								validBuffer,
-								s_flushPartition[i],
-								writeBufferIdx,
-								s_buffersPerPartition,
-								BUFFER_SZ, // flush whole buffer
-								s_gheads,
-								s_outbuf,
-								g_sb, sbPitch);
-					}
-				} while(s_flushCount);
-				/* ensure every thread has left the loop, before re-entering it */
-				__syncthreads();
-			}
+						//! \todo factor out
+						{
+							ASSERT(MAX_BUFFER_COUNT <= THREADS_PER_BLOCK);
+							uint bufferIdx = threadIdx.x;
+							if(bufferIdx < s_bufferCount) {
+								if(s_sheads[bufferIdx] >= BUFFER_SZ) {
+									s_sheads[bufferIdx] -= BUFFER_SZ;
+									uint next = atomicInc(&s_flushCount, MAX_BUFFER_COUNT);
+									s_flushPartition[next] = bufferIdx;
+								}
+							}
+							__syncthreads();
+						}
+
+						/* Flush buffers */
+						for(uint flush_i=0; flush_i < s_flushCount; flush_i += BUFFERS_PER_BLOCK) {
+							uint i = flush_i + threadIdx.x / THREADS_PER_BUFFER;
+							bool validBuffer = i < s_flushCount;
+							s_sbFlush(
+									validBuffer,
+									s_flushPartition[i],
+									writeBufferIdx,
+									s_buffersPerPartition,
+									BUFFER_SZ, // flush whole buffer
+									s_gheads,
+									s_outbuf,
+									g_sb, sbPitch);
+						}
+					} while(s_flushCount);
+					/* ensure every thread has left the loop, before re-entering it */
+					__syncthreads();
+				}
 			}
 		}
 	}
