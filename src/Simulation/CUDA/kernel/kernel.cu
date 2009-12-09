@@ -121,50 +121,6 @@ STDP_FN(fire)(
 
 
 
-/* Add current to current accumulation buffer
- *
- * Since multiple spikes may terminate at the same postsynaptic neuron, some
- * care must be taken to avoid a race condition in the current update.
- *
- * We only deal with a single delay at a time, to avoid race condition
- * resulting from multiple synapses terminating at the same postsynaptic
- * neuron. Within a single delay, there should be no race conditions, if the
- * mapper has done its job
- *
- * It's possible to do this using mutexes based on shared memory atomics.
- * However, this was found to be slightly slower (12% overhead vs 10% overhead
- * wrt no work-around for race condition) and makes use of a sizable amount of
- * precious shared memory for the mutex data.  */
-
-/*! \todo we can increase the amount of parallel execution here by identifying
- * (at map time) delay blocks which have no potential race conditions. We can
- * thus assign a "commit number" to each delay block and do these in parallel */
-__device__
-void
-STDP_FN(commitCurrent_)(
-#ifdef __DEVICE_EMULATION__
-		uint cycle,
-#endif
-		bool doCommit,
-		uint delayEntry,
-		uint s_delayBlocks,
-		uint presynaptic,
-		uint postsynaptic,
-		float weight,
-		float* s_current)
-{
-	for(uint commit=0; commit < s_delayBlocks; ++commit) {
-		if(delayEntry == commit && doCommit) {
-			s_current[postsynaptic] += weight;
-			DEBUG_MSG("c%u L0 n%u -> n%u %f\n",
-					cycle, presynaptic, postsynaptic, weight);
-		}
-		__syncthreads();
-	}
-}
-
-
-
 __device__
 void
 STDP_FN(deliverL0Spikes_)(
@@ -185,24 +141,16 @@ STDP_FN(deliverL0Spikes_)(
 	uint*  gf0_address =          gf0_cm + FCM_ADDRESS  * f0_size;
 	float* gf0_weight  = (float*) gf0_cm + FCM_WEIGHT   * f0_size;
 
-	/*! \note This is the maximum number of chunks required for this whole
-	 * cluster. It should be possible to reduce this for rows with few entries.
-	 * Perhaps better to just save the number of chunks in constant memory. It
-	 * would depend on the chunk size, though. */
-	__shared__ int s_chunkCount;
-	__shared__ int s_synapsesPerDelay;
-	__shared__ int s_delaysPerChunk;
 	__shared__ int s_chunksPerDelay;
 
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
 #ifdef __DEVICE_EMULATION__
-		s_synapsesPerDelay = ALIGN(sf0_maxSynapses, 32);
+		int synapsesPerDelay = ALIGN(sf0_maxSynapses, 32);
 #else
-		s_synapsesPerDelay = ALIGN(sf0_maxSynapses, warpSize);
+		int synapsesPerDelay = ALIGN(sf0_maxSynapses, warpSize);
 #endif
-		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
-		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
+		s_chunksPerDelay = DIV_CEIL(synapsesPerDelay, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
 
@@ -228,28 +176,29 @@ STDP_FN(deliverL0Spikes_)(
 			s_arrivalBits[nextFree] = arrivals;
 		}
 		__syncthreads();
+
 		/* We now have the indices of the firing of THREADS_PER_BLOCK
 		 * presynaptic neurons */
 		for(int i=0; i<s_firingCount; ++i) {
 
 			int presynaptic = s_firingIdx[i];
 
-			__shared__ uint s_delayBlocks;
+			__shared__ uint s_delays[MAX_DELAY];
+			__shared__ uint s_delayCount;
+
 			if(threadIdx.x == 0) {
-				s_delayBlocks = 0;
-				uint32_t arrivalBits = s_arrivalBits[i];
+				s_delayCount = 0;
+			}
+			__syncthreads();
 
-				//! \todo can do this in parallel?
-				while(arrivalBits) {
-
-					int arrivalDelay = __ffs(arrivalBits) - 1;
-					s_arrivals[s_delayBlocks] = arrivalDelay;
-					arrivalBits &= ~(0x1 << arrivalDelay);
-					s_delayBlocks += 1;
+			/* The common situation will be for there not to be too many delay
+			 * blocks due for delivery. It's thus better to do this in parallel
+			 * with shared atomics rather than a loop for a single thread. */
+			if(threadIdx.x < MAX_DELAY) {
+				if(s_arrivalBits[i] & (0x1 << threadIdx.x)) {
+					int nextFree = atomicAdd(&s_delayCount, 1);
+					s_delays[nextFree] = threadIdx.x;
 				}
-				s_chunkCount = s_delaysPerChunk == 0 ?
-					s_delayBlocks * s_chunksPerDelay :  // >= 1 chunk(s) per delay
-					DIV_CEIL(s_delayBlocks, s_delaysPerChunk);  // multiple delays per chunk
 			}
 			__syncthreads();
 
@@ -263,50 +212,48 @@ STDP_FN(deliverL0Spikes_)(
 			 * 2) if the delay pitch is less than or equal to half the block size
 			 *    we process multiple delays in parallel 
 			 */
-			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
+			for(uint delayIdx = 0; delayIdx < s_delayCount; ++delayIdx) {
 
-				uint delayEntry = s_delaysPerChunk == 0 ?
-					chunk / s_chunksPerDelay :
-					threadIdx.x / s_synapsesPerDelay;
-				uint32_t delay = s_arrivals[delayEntry];
-				/* Offset /within/ a delay block */
-				uint synapseIdx = s_delaysPerChunk == 0 ?
-					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
-					(threadIdx.x % s_synapsesPerDelay);
+				uint32_t delay = s_delays[delayIdx];
+				for(uint chunk = 0; chunk < s_chunksPerDelay; ++chunk) {
 
-				float weight;
-				uint postsynaptic;
-				bool doCommit = false;
+				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
 				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < sf0_maxSynapses && delayEntry < s_delayBlocks) {
+				if(synapseIdx < sf0_maxSynapses) {
 
 					size_t synapseAddress = 
 						(presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
-					weight = gf0_weight[synapseAddress];
+					float weight = gf0_weight[synapseAddress];
 
 					/*! \todo only load address if it will actually be used.
 					 * For benchmarks this made little difference, presumably
 					 * because all neurons have same number of synapses.
 					 * Experiment! */
 					uint sdata = gf0_address[synapseAddress];
-					postsynaptic = targetNeuron(sdata);
+					uint postsynaptic = targetNeuron(sdata);
 
-					doCommit = weight != 0.0f;
+					bool doCommit = weight != 0.0f;
+
+					/* Since multiple spikes may terminate at the same
+					 * postsynaptic neuron, some care must be taken to avoid a
+					 * race condition in the current update.
+					 *
+					 * Since we only deal with a single delay at a time, there
+					 * should be no race conditions resulting from multiple
+					 * synapses terminating at the same postsynaptic neuron.
+					 * Within a single delay, there should be no race
+					 * conditions, if the mapper has done its job
+					 */
+
+					if(doCommit) {
+						s_current[postsynaptic] += weight;
+						DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
+								cycle, presynaptic, postsynaptic, weight);
+					}
 				}
-
-				STDP_FN(commitCurrent_)(
-#ifdef __DEVICE_EMULATION__
-						cycle,
-#endif
-						doCommit, delayEntry, s_delayBlocks,
-						presynaptic, postsynaptic, weight, s_current);
-
-				/* We need a barrier *outside* the loop to avoid threads
-				 * reaching the barrier (inside the loop), then having thread 0
-				 * race ahead and changing s_delayBlocks before all threads
-				 * have left the loop. */
 				__syncthreads();
+			}
 			}
 		}
 	}
