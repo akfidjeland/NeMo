@@ -124,11 +124,9 @@ STDP_FN(fire)(
 __device__
 void
 STDP_FN(deliverSpike)(
-		//! \todo change to uint
-		int presynaptic,
+		uint presynaptic,
 		uint maxDelay,
-		//! \todo change to uint
-		uint32_t delay,
+		uint delay,
 		uint f0_pitch,
 		uint synapseIdx,
 		uint* gf0_address,
@@ -192,7 +190,7 @@ STDP_FN(deliverL0Spikes_)(
 	}
 	__syncthreads();
 
-	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
+	for(uint preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
 		__shared__ int s_firingCount;
 		if(threadIdx.x == 0) {
@@ -200,7 +198,7 @@ STDP_FN(deliverL0Spikes_)(
 		}
 		__syncthreads();
 
-		int candidate = preOffset + threadIdx.x;
+		uint candidate = preOffset + threadIdx.x;
 
 		/* It might seem a good idea to load firing delays from global memory
 		 * inside the if-clause, so as to avoid memory traffic when little
@@ -219,7 +217,7 @@ STDP_FN(deliverL0Spikes_)(
 		 * presynaptic neurons */
 		for(int i=0; i<s_firingCount; ++i) {
 
-			int presynaptic = s_firingIdx[i];
+			uint presynaptic = s_firingIdx[i];
 
 			__shared__ uint s_delays[MAX_DELAY];
 			__shared__ uint s_delayCount;
@@ -252,7 +250,7 @@ STDP_FN(deliverL0Spikes_)(
 			 */
 			for(uint delayIdx = 0; delayIdx < s_delayCount; ++delayIdx) {
 
-				uint32_t delay = s_delays[delayIdx];
+				uint delay = s_delays[delayIdx];
 				for(uint chunk = 0; chunk < s_chunksPerDelay; ++chunk) {
 
 					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
