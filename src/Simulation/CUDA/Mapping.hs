@@ -62,9 +62,9 @@ mapNetworkATT psize gidx = (mkATT ncount pcount psize gidx didx, pcount)
  - supported by the kernel (given some configuration) and the request of the
  - user. partitionSize determines this size and logs a message if the user
  - request is over-ridden.  -}
-targetPartitionSize :: Bool -> Maybe Int -> Writer Log Int
-targetPartitionSize usingStdp userSz = do
-    let maxSz = Kernel.maxPartitionSize usingStdp
+targetPartitionSize :: Maybe Int -> Writer Log Int
+targetPartitionSize userSz = do
+    let maxSz = Kernel.maxPartitionSize
     maybe (return maxSz) (validateUserSz maxSz) userSz
     where
         validateUserSz maxSz userSz =
@@ -176,7 +176,7 @@ mapNetwork
     -- TODO: we may want to use Seq String here instead
     -> Writer Log (CuNet n s, ATT)
 mapNetwork net@(Net.Network ns _) stdp psizeReq = do
-    psize <- targetPartitionSize stdp psizeReq
+    psize <- targetPartitionSize psizeReq
     let (att, pcount) = mapNetworkATT psize $ Net.indices net
         d_ns = cuNetwork att stdp pcount psize ns
     logMsg $ "Network size: " ++ show (Net.size net)

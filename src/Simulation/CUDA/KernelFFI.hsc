@@ -108,10 +108,8 @@ foreign import ccall unsafe "freeRuntimeData" freeRT :: Ptr CuRT -> IO ()
 -- Kernel configuration
 -------------------------------------------------------------------------------
 
-maxPartitionSize :: Bool -> Int
-maxPartitionSize = fromIntegral . c_maxPartitionSize . fromBool
-
-foreign import ccall unsafe "maxPartitionSize" c_maxPartitionSize :: CInt -> CUInt
+maxPartitionSize :: Int
+maxPartitionSize = #const MAX_PARTITION_SIZE
 
 
 -------------------------------------------------------------------------------

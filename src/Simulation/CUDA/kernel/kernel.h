@@ -30,10 +30,6 @@ typedef int status_t;
 void configurePartitionSize(size_t clusters, const unsigned int* maxIdx);
 
 
-/*! \return the maximum partition size, for the given configuration */
-unsigned int maxPartitionSize(int useSTDP);
-
-
 //-----------------------------------------------------------------------------
 // RUNTIME DATA
 //-----------------------------------------------------------------------------
