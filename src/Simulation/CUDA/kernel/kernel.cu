@@ -232,6 +232,37 @@ deliverSpike(
 
 
 
+/*! For a given word containing arrival bits, i.e. bits indicating for what
+ * delays spikes are due for delivery, set a vector of relevant delays.
+ *
+ * \param s_delayCount
+ *		Shared memory scalar
+ * \param s_delays
+ *		Shared memory vector at least as long as maximum delays
+ */
+__device__
+void
+listDelays_(uint64_t arrivalBits, uint* s_delayCount, uint* s_delays)
+{
+	if(threadIdx.x == 0) {
+		*s_delayCount = 0;
+	}
+	__syncthreads();
+
+	/* The common situation will be for there not to be too many delay blocks
+	 * due for delivery. It's thus better to do this in parallel with shared
+	 * atomics rather than a loop for a single thread. */
+	if(threadIdx.x < MAX_DELAY) {
+		if(arrivalBits & (0x1 << threadIdx.x)) {
+			int nextFree = atomicAdd(s_delayCount, 1);
+			s_delays[nextFree] = threadIdx.x;
+		}
+	}
+	__syncthreads();
+}
+
+
+
 //! \todo move out of kernel.cu, so as to avoid STDP_FN
 __device__
 void
@@ -292,21 +323,7 @@ deliverL0Spikes_(
 			__shared__ uint s_delays[MAX_DELAY];
 			__shared__ uint s_delayCount;
 
-			if(threadIdx.x == 0) {
-				s_delayCount = 0;
-			}
-			__syncthreads();
-
-			/* The common situation will be for there not to be too many delay
-			 * blocks due for delivery. It's thus better to do this in parallel
-			 * with shared atomics rather than a loop for a single thread. */
-			if(threadIdx.x < MAX_DELAY) {
-				if(s_arrivalBits[i] & (0x1 << threadIdx.x)) {
-					int nextFree = atomicAdd(&s_delayCount, 1);
-					s_delays[nextFree] = threadIdx.x;
-				}
-			}
-			__syncthreads();
+			listDelays_(s_arrivalBits[i], &s_delayCount, s_delays);
 
 			for(uint delayIdx = 0; delayIdx < s_delayCount; ++delayIdx) {
 
