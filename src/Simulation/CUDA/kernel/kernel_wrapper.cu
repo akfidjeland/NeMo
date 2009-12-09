@@ -41,11 +41,13 @@ extern "C" {
 
 
 
+//! \todo remove this function. It is no longer needed
 uint
 maxPartitionSize(int useSTDP)
 {
-    return useSTDP == 0 ? MAX_PARTITION_SIZE : MAX_PARTITION_SIZE_STDP;
+	return MAX_PARTITION_SIZE;
 }
+
 
 //-----------------------------------------------------------------------------
 
@@ -121,25 +123,22 @@ loadSharedArray(int partitionSize, size_t pitch, T* g_arr, T* s_arr)
 
 
 
-//=============================================================================
-// Current buffer
-//=============================================================================
-// The current buffer stores (in shared memory) the accumulated current for
-// each neuron in the block 
-//=============================================================================
-
-
 /* We need two versions of some device functions... */
 #include "thalamicInput.cu"
 #include "spike.cu"
 #include "spikeBuffer.cu"
 #include "stdp.cu" // only used if STDP enabled
+
+
+
+#include "kernel.cu"
+
 #define STDP
 #include "L1SpikeQueue.cu"
-#include "kernel.cu"
+#include "step.cu"
 #undef STDP
 #include "L1SpikeQueue.cu"
-#include "kernel.cu"
+#include "step.cu"
 
 
 /* Force all asynchronously launced kernels to complete before returning */
