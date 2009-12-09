@@ -144,13 +144,7 @@ STDP_FN(deliverL0Spikes_)(
 	__shared__ int s_chunksPerDelay;
 
 	if(threadIdx.x == 0) {
-		//! \todo do we need to round to block size if multiple chunks per delay?
-#ifdef __DEVICE_EMULATION__
-		int synapsesPerDelay = ALIGN(sf0_maxSynapses, 32);
-#else
-		int synapsesPerDelay = ALIGN(sf0_maxSynapses, warpSize);
-#endif
-		s_chunksPerDelay = DIV_CEIL(synapsesPerDelay, THREADS_PER_BLOCK);
+		s_chunksPerDelay = DIV_CEIL(sf0_maxSynapses, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
 
