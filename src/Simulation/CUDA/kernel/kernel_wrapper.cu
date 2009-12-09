@@ -31,15 +31,6 @@ extern "C" {
 #include "ThalamicInput.hpp"
 #include "applySTDP.cu"
 
-#define SLOW_32B_INTS
-
-#ifdef SLOW_32B_INTS
-#define mul24(a,b) __mul24(a,b)
-#else
-#define mul24(a,b) a*b
-#endif
-
-
 
 //=============================================================================
 // Double buffering
@@ -100,11 +91,9 @@ void
 loadSharedArray(int partitionSize, size_t pitch, T* g_arr, T* s_arr)
 {
 	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
-
 		uint neuron = nbase + threadIdx.x;
-
 		if(neuron < partitionSize) {
-			s_arr[neuron] = g_arr[mul24(blockIdx.x, pitch) + neuron];
+			s_arr[neuron] = g_arr[(blockIdx.x * pitch) + neuron];
 		}
 	}
 }
