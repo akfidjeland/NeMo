@@ -113,6 +113,7 @@ STDP_FN(gatherL1Spikes_JIT_)(
 }
 
 
+
 /* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
  * out or use a code generator to avoid repetition */
 __device__
@@ -141,17 +142,10 @@ STDP_FN(deliverL1Spikes_JIT)(
 	uint*  gf1_address =          gf1_cm + FCM_ADDRESS * f1_size;
 	float* gf1_weights = (float*) gf1_cm + FCM_WEIGHT  * f1_size;
 
-	/*! \note This is the maximum number of chunks required for this whole
-	 * cluster. It should be possible to reduce this for rows with few entries.
-	 * Perhaps better to just save the number of chunks in constant memory. It
-	 * would depend on the chunk size, though. */
-	__shared__ uint s_chunkCount;
-
 	/* L1 spikes are delivered via a global memory buffer. Writes to these
 	 * buffers may be quite scattered. To reduce the impact of non-coalesced
 	 * writes we stage spike data in shared memory before writing it to global
-	 * memory.
-	 */
+	 * memory. */
 
 	/* For the output buffers, multiple buffers may be dedicated to the same
 	 * global buffer. This is to avoid a sequential bottleneck when we have
@@ -177,7 +171,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 	__shared__ uint s_synapsesPerDelay;
 	__shared__ uint s_chunksPerDelay;
-	__shared__ uint s_delaysPerChunk;
 	if(threadIdx.x == 0) {
 		//! \todo do we need to round to block size if multiple chunks per delay?
 #ifdef __DEVICE_EMULATION__
@@ -186,7 +179,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 		s_synapsesPerDelay = ALIGN(sf1_maxSynapses, warpSize);
 #endif
 		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
-		s_delaysPerChunk = THREADS_PER_BLOCK / s_synapsesPerDelay;
 		s_buffersPerPartition = s_sbBuffersPerPartition();
 		s_bufferCount = s_sbCount();
 	}
@@ -218,43 +210,18 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 			int presynaptic = s_firingIdx[i];
 
-			__shared__ uint s_delayBlocks;
-			if(threadIdx.x == 0) {
-				s_delayBlocks = 0;
-				uint32_t arrivalBits = s_arrivalBits[i];
+			__shared__ uint s_delays[MAX_DELAY];
+			__shared__ uint s_delayCount;
 
-				while(arrivalBits) {
-					int arrivalDelay = __ffs(arrivalBits) - 1;
-					s_arrivals[s_delayBlocks] = arrivalDelay;
-					arrivalBits &= ~(0x1 << arrivalDelay);
-					s_delayBlocks += 1;
-				}
-				s_chunkCount = s_delaysPerChunk == 0 ?
-					s_delayBlocks * s_chunksPerDelay :  // >= 1 chunk(s) per delay
-					DIV_CEIL(s_delayBlocks, s_delaysPerChunk);  // multiple delays per chunk
-			}
-			__syncthreads();
+			listDelays_(s_arrivalBits[i], &s_delayCount, s_delays);
 
-			/* The delay pitch may vary between networks, or between partitions.
-			 * Even with sequential processing of presynaptic neurons, we want to
-			 * maximise parallel processing of incoming spikes from different
-			 * delays. We have two situations:
-			 *
-			 * 1) if the delay pitch is more than half the block size we process
-			 *    each delay sequentially
-			 * 2) if the delay pitch is less than or equal to half the block size
-			 *    we process multiple delays in parallel
-			 */
-			for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
+			for(uint delayIdx = 0; delayIdx < s_delayCount; ++delayIdx) {
 
-				uint delayEntry = s_delaysPerChunk == 0 ?
-					chunk / s_chunksPerDelay :
-					threadIdx.x / s_synapsesPerDelay;
-				uint32_t delay = s_arrivals[delayEntry];
-				/* Offset /within/ a delay block */
-				uint synapseIdx = s_delaysPerChunk == 0 ?
-					(chunk % s_chunksPerDelay) * THREADS_PER_BLOCK + threadIdx.x :
-					(threadIdx.x % s_synapsesPerDelay);
+			uint delay = s_delays[delayIdx];
+
+			for(uint chunk=0; chunk < s_chunksPerDelay; ++chunk) {
+
+				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
 				float weight;
 				uint target;
@@ -263,7 +230,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 				bool doCommit = false;
 
 				//! \todo consider using per-neuron maximum here instead
-				if(synapseIdx < sf1_maxSynapses && delayEntry < s_delayBlocks) {
+				if(synapseIdx < sf1_maxSynapses) {
 					size_t synapseAddress =
 						(presynaptic * maxDelay + delay) * f1_pitch + synapseIdx;
 					weight = gf1_weights[synapseAddress];
@@ -283,7 +250,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 				 * gather step, as multiple spikes may converge on the same
 				 * postsynaptic neuron at the same time.
 				 *
-				 * While we don't need to worry about race conditions, we _do_
+				 * While we don't need to worry about race conditions, we /do/
 				 * need to worry about memory bandwidth. A single firing neuron
 				 * can generate spikes reaching many different targets, spread
 				 * over multiple target partitions. If we naïvely deal with one
@@ -367,6 +334,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 				} while(s_flushCount);
 				/* ensure every thread has left the loop, before re-entering it */
 				__syncthreads();
+			}
 			}
 		}
 	}
