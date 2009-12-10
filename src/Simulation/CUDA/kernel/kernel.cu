@@ -1,4 +1,5 @@
 #include "cycle.cu"
+#include "dispatchTable.cu"
 
 //=============================================================================
 // Double buffering

@@ -57,7 +57,7 @@ struct ConnectivityMatrix
 				size_t length);
 
 		/* Copy data to device and clear host buffers */
-		void moveToDevice();
+		void moveToDevice(bool isL0);
 
 		/* Copy data from device to host */
 		void copyToHost(

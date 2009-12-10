@@ -3,11 +3,11 @@
 #include "SynapseGroup.hpp"
 #include "connectivityMatrix.cu_h"
 #include "util.h"
+#include "kernel.cu_h"
 
 
 SynapseGroup::SynapseGroup() :
 	md_bpitch(0),
-	m_partitionSize(0),
 	m_allocated(0)
 { }
 
@@ -60,16 +60,14 @@ SynapseGroup::maxSynapsesPerNeuron() const
 
 
 boost::shared_ptr<SynapseGroup::synapse_t>
-SynapseGroup::moveToDevice(size_t partitionSize)
+SynapseGroup::moveToDevice()
 {
 	if(mh_synapses.empty()) {
 		return boost::shared_ptr<SynapseGroup::synapse_t>();
 	}
 
-	m_partitionSize = partitionSize;
-
 	size_t desiredPitch = maxSynapsesPerNeuron() * sizeof(synapse_t);
-	size_t height = FCM_SUBMATRICES * partitionSize;
+	size_t height = FCM_SUBMATRICES * MAX_PARTITION_SIZE;
 
 	synapse_t* d_data = NULL;
 
@@ -86,20 +84,23 @@ SynapseGroup::moveToDevice(size_t partitionSize)
 	size_t wordPitch = md_bpitch / sizeof(synapse_t);
 	std::vector<synapse_t> h_data(wordPitch * height, 0); 
 
-	std::vector<synapse_t>::iterator astart = 
-			h_data.begin() + FCM_ADDRESS * partitionSize * wordPitch;
-	std::vector<synapse_t>::iterator wstart =
-			h_data.begin() + FCM_WEIGHT * partitionSize * wordPitch;
+	synapse_t* astart = &h_data[0] + FCM_ADDRESS * MAX_PARTITION_SIZE * wordPitch;
+	synapse_t* wstart = &h_data[0] + FCM_WEIGHT  * MAX_PARTITION_SIZE * wordPitch;
 
 	for(std::map<nidx_t, Row>::const_iterator r = mh_synapses.begin();
 			r != mh_synapses.end(); ++r) {
 
 		nidx_t sourceNeuron = r->first;
 		const Row row = r->second;
-		size_t row_idx = wordPitch * sourceNeuron;
+		size_t row_idx = sourceNeuron * wordPitch;
 
-		std::copy(row.addresses.begin(), row.addresses.end(), astart + row_idx);
-		std::copy(row.weights.begin(), row.weights.end(), wstart + row_idx);
+		assert(row.addresses.size() == row.weights.size());
+		assert(row.addresses.size() * sizeof(synapse_t) <= md_bpitch);
+
+		/*! note that std::copy won't work as it will silently cast floats to integers */
+		memcpy(astart + row_idx, &row.addresses[0], row.addresses.size() * sizeof(synapse_t));
+		memcpy(wstart + row_idx, &row.weights[0], row.weights.size() * sizeof(synapse_t));
+
 	}
 
 	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], m_allocated, cudaMemcpyHostToDevice));
@@ -114,7 +115,7 @@ SynapseGroup::moveToDevice(size_t partitionSize)
 size_t
 SynapseGroup::planeSize() const
 {
-	return m_partitionSize * md_bpitch;
+	return MAX_PARTITION_SIZE * md_bpitch;
 }
 
 
@@ -138,5 +139,5 @@ SynapseGroup::bpitch() const
 size_t
 SynapseGroup::wpitch() const
 {
-	return md_bpitch * sizeof(synapse_t);
+	return md_bpitch / sizeof(synapse_t);
 }

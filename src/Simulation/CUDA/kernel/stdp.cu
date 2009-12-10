@@ -1,5 +1,3 @@
-//#include <vector>
-
 #include "log.hpp"
 #include "error.cu"
 #include "cycle.cu"

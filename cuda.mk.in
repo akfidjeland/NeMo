@@ -11,6 +11,7 @@ CU_INC = kernel.cu \
 		 cycleCounting.cu \
 		 error.cu \
 		 connectivityMatrix.cu \
+		 dispatchTable.cu \
 		 step.cu \
 		 stdp.cu \
 		 applySTDP.cu \

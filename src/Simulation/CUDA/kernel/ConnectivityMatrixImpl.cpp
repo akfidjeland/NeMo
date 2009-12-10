@@ -5,6 +5,7 @@
 #include "RSMatrix.hpp"
 #include "SynapseGroup.hpp"
 #include "connectivityMatrix.cu_h"
+#include "dispatchTable.cu_h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -145,7 +146,7 @@ ConnectivityMatrixImpl::setRow(
 
 
 void
-ConnectivityMatrixImpl::moveToDevice()
+ConnectivityMatrixImpl::moveToDevice(bool isL0)
 {
 	m_delayBits.moveToDevice();
 	/* The forward connectivity is retained as the address and weight data are
@@ -157,7 +158,11 @@ ConnectivityMatrixImpl::moveToDevice()
 
 	for(fcm_t::iterator i = m_fsynapses2.begin();
 			i != m_fsynapses2.end(); ++i) {
-		i->second.moveToDevice(m_maxPartitionSize);
+		i->second.moveToDevice();
+	}
+
+	if(isL0) {
+		f0_setDispatchTable();
 	}
 }
 
@@ -268,6 +273,7 @@ ConnectivityMatrixImpl::d_allocated() const
 
 
 /* Pack a device pointer to a 32-bit value */
+//! \todo replace with non-template version
 template<typename T>
 DEVICE_UINT_PTR_T
 devicePointer(T ptr)
@@ -322,4 +328,38 @@ const std::vector<DEVICE_UINT_PTR_T>
 ConnectivityMatrixImpl::r_partitionStdp() const
 {
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_stdp));
+}
+
+
+
+void
+ConnectivityMatrixImpl::f0_setDispatchTable()
+{
+	//! \todo remove magic
+	size_t delayCount = 64;
+
+	size_t width = m_partitionCount;
+	size_t height = delayCount;
+	size_t size = width * height;
+
+	fcm_ref_t null = fcm_packReference(0, 0);
+	std::vector<fcm_ref_t> table(size, null);
+
+	for(fcm_t::const_iterator i = m_fsynapses2.begin();
+			i != m_fsynapses2.end(); ++i) {
+
+		nemo::ForwardIdx fidx = i->first;
+		const SynapseGroup& sg = i->second;
+
+		// x: delay, y : partition
+		size_t addr = fidx.source * delayCount + (fidx.delay-1);
+
+		void* fcm_addr = sg.d_address();
+		size_t fcm_pitch = sg.wpitch();
+		table.at(addr) = fcm_packReference(fcm_addr, fcm_pitch);
+	}
+
+	cudaArray* f0_dispatch =
+		::f0_setDispatchTable(m_partitionCount, delayCount, table);
+	mf0_dispatch = boost::shared_ptr<cudaArray>(f0_dispatch, cudaFreeArray);
 }

@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 
 #include <map>
+#include <boost/shared_ptr.hpp>
 
 #include <nemo_types.hpp>
 #include "SMatrix.hpp"
@@ -59,7 +60,7 @@ class ConnectivityMatrixImpl
 				size_t length);
 
 		/* Copy data to device and clear host buffers */
-		void moveToDevice();
+		void moveToDevice(bool isL0);
 
 		/* Copy data from device to host */
 		void copyToHost(
@@ -93,6 +94,7 @@ class ConnectivityMatrixImpl
 		size_t d_allocated() const;
 
 		/* Per-partition addressing */
+		//! \todo no need to return this, set directly, as done in f0_setDispatchTable
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
@@ -138,6 +140,10 @@ class ConnectivityMatrixImpl
 		std::vector<uint32_t> mf_weights;
 
 		static const int InvalidNeuron;
+
+		void f0_setDispatchTable();
+
+		boost::shared_ptr<cudaArray> mf0_dispatch;
 };
 
 #endif

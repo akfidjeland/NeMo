@@ -46,7 +46,7 @@ class SynapseGroup
 				const float weight[]);
 
 		/*! Move to device and free host data. Return pointer to device data.*/
-		boost::shared_ptr<uint32_t> moveToDevice(size_t partitionSize);
+		boost::shared_ptr<uint32_t> moveToDevice();
 
 		/* There are two planes (one for addresses and one for weights, the
 		 * size of which can be determined based on the (fixed) partition size
@@ -62,10 +62,13 @@ class SynapseGroup
 		/*! \return row pitch on the device (in bytes) */
 		size_t bpitch() const;
 
-	private:
-
 		/* On the device both address and weight data is squeezed into 32b */
 		typedef uint32_t synapse_t;
+
+		/*! \return address of synapse group on device */
+		synapse_t* d_address() const { return md_synapses.get(); }
+
+	private:
 
 		struct Row {
 			std::vector<synapse_t> addresses; 
@@ -81,8 +84,6 @@ class SynapseGroup
 		 * row */
 		boost::shared_ptr<synapse_t> md_synapses;
 		size_t md_bpitch;
-
-		size_t m_partitionSize;
 
 		size_t m_allocated; // bytes on device
 

@@ -115,10 +115,8 @@ RuntimeData::moveToDevice()
 {
 	if(m_deviceDirty) {
 		neuronParameters->moveToDevice();
-		for(std::vector<ConnectivityMatrix*>::iterator i = m_cm.begin();
-			i != m_cm.end(); ++i) {
-			(*i)->moveToDevice();
-		}
+		m_cm[CM_L0]->moveToDevice(true);
+		m_cm[CM_L1]->moveToDevice(false);
 		thalamicInput->moveToDevice();
 		if(stdpFn.enabled()) {
 			configureStdp(stdpFn.preFireWindow(),

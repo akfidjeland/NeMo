@@ -35,9 +35,9 @@ ConnectivityMatrix::setRow(
 
 
 void
-ConnectivityMatrix::moveToDevice()
+ConnectivityMatrix::moveToDevice(bool isL0)
 {
-	m_impl->moveToDevice();
+	m_impl->moveToDevice(isL0);
 }
 
 
