@@ -1,3 +1,4 @@
+#include "cycle.cu"
 
 //=============================================================================
 // Double buffering
@@ -108,9 +109,6 @@ updateHistory(uint s_partitionSize, uint64_t* s_recentFiring, uint64_t* g_recent
 __device__
 void
 fire(
-#ifdef __DEVICE_EMULATION__
-	uint cycle,
-#endif
 	uint s_partitionSize,
 	uint substeps,
 	float substepMult, // substepMul * substeps = 1
@@ -167,7 +165,7 @@ fire(
 				u += g_d[neuron];
 
 				DEBUG_MSG("c%u %u-%u fired (forced: %u) (thread %u)\n",
-						cycle, CURRENT_PARTITION, neuron,
+						s_cycle, CURRENT_PARTITION, neuron,
 						forceFiring, threadIdx.x);
 				setFiringOutput(neuron);
 			}
@@ -225,7 +223,7 @@ deliverSpike(
 	if(doCommit) {
 		s_current[postsynaptic] += weight;
 		DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
-				cycle, presynaptic, postsynaptic, weight);
+				s_cycle, presynaptic, postsynaptic, weight);
 	}
 }
 
@@ -267,9 +265,6 @@ listDelays_(uint64_t arrivalBits, uint* s_delayCount, uint* s_delays)
 __device__
 void
 deliverL0Spikes_(
-#ifdef __DEVICE_EMULATION__
-	uint cycle,
-#endif
 	uint maxDelay,
 	uint partitionSize,
 	uint sf0_maxSynapses,

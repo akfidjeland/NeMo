@@ -1,3 +1,5 @@
+#include "cycle.cu"
+
 #undef STDP_FN
 #ifdef STDP
 #define STDP_FN(f) f ## _STDP
@@ -77,6 +79,9 @@ STDP_FN(step) (
 	__shared__ float s_substepMult;
 
 	if(threadIdx.x == 0) {
+#ifdef __DEVICE_EMULATION__
+		s_cycle = cycle;
+#endif
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
 		sf0_maxSynapsesPerDelay = cf0_maxSynapsesPerDelay[CURRENT_PARTITION];
 		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
@@ -133,9 +138,6 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 4);
 
 	deliverL0Spikes_(
-#ifdef __DEVICE_EMULATION__
-			cycle,
-#endif
 			s_maxDelay,
 			s_partitionSize,
 			sf0_maxSynapsesPerDelay,
@@ -159,9 +161,6 @@ STDP_FN(step) (
 	loadExternalFiring(hasExternalInput, s_partitionSize, pitch1, g_fstim, s_fstim);
 
 	fire(
-#ifdef __DEVICE_EMULATION__
-			cycle,
-#endif
 			s_partitionSize,
 			substeps, s_substepMult,
 			pitch1,
@@ -178,7 +177,6 @@ STDP_FN(step) (
 
 #ifdef STDP
 	updateSTDP_(
-			cycle,
 			false,
 			s_recentFiring,
 			s_recentFiring,
@@ -191,7 +189,6 @@ STDP_FN(step) (
 #ifdef STDP
 	if(haveL1) {
 		updateSTDP_(
-				cycle,
 				true,
 				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
 				s_recentFiring,

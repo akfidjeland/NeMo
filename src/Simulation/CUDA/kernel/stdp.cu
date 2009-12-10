@@ -1,7 +1,8 @@
-#include <vector>
+//#include <vector>
 
 #include "log.hpp"
 #include "error.cu"
+#include "cycle.cu"
 #include "util.h"
 
 
@@ -170,18 +171,18 @@ closestPostFire(uint64_t spikes)
 
 __device__
 void
-logStdp(uint cycle, int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
+logStdp(int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
 {
 	const char* type[] = { "ltd", "ltp" };
 
 	if(w_diff != 0.0f) {
 		fprintf(stderr, "c%u %s: %u-%u -> %u-%u %+f (dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
-				cycle, type[w_diff > 0.0f],
+				s_cycle, type[w_diff > 0.0f],
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
 				CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse),
 				w_diff,
-				cycle - s_stdpPostFireWindow + dt,
-				cycle - s_stdpPostFireWindow);
+				s_cycle - s_stdpPostFireWindow + dt,
+				s_cycle - s_stdpPostFireWindow);
 	}
 }
 
@@ -191,7 +192,6 @@ logStdp(uint cycle, int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
 __device__
 float
 updateRegion(
-		uint cycle,
 		uint64_t spikes,
 		uint targetNeuron,
 		uint32_t r_synapse) // used for logging only
@@ -223,7 +223,7 @@ updateRegion(
 		// if neither is applicable dt_post == dt_pre
 	}
 #if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
-	logStdp(cycle, dt_log, w_diff, targetNeuron, r_synapse);
+	logStdp(dt_log, w_diff, targetNeuron, r_synapse);
 #endif
 	return w_diff;
 }
@@ -238,7 +238,6 @@ updateRegion(
 __device__
 float
 updateSynapse(
-		uint cycle,               // for debugging only
 		uint32_t r_synapse,
 		uint targetNeuron,
 		uint64_t* x_sourceFiring) // L0: shared memory; L1: global memory
@@ -251,8 +250,8 @@ updateSynapse(
 	uint64_t p_spikes = sourceFiring & s_stdpPotentiation;
 	uint64_t d_spikes = sourceFiring & s_stdpDepression;
 
-	return updateRegion(cycle, p_spikes, targetNeuron, r_synapse)
-           + updateRegion(cycle, d_spikes, targetNeuron, r_synapse);
+	return updateRegion(p_spikes, targetNeuron, r_synapse)
+           + updateRegion(d_spikes, targetNeuron, r_synapse);
 }
 
 
@@ -261,7 +260,6 @@ updateSynapse(
 __device__
 void
 updateSTDP_(
-	uint cycle,
 	bool isL1, // hack to work out how to address recent firing bits
 	uint64_t* sourceRecentFiring,
 	uint64_t* s_targetRecentFiring,
@@ -331,7 +329,6 @@ updateSTDP_(
 						 * non-coalesced. */
 						//! \todo consider using a cache for L1 firing history
 						float w_diff = updateSynapse(
-								cycle,
 								r_sdata,
 								target,
 								isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch64
