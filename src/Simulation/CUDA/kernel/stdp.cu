@@ -177,7 +177,7 @@ logStdp(int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
 		fprintf(stderr, "c%u %s: %u-%u -> %u-%u %+f (dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
 				s_cycle, type[w_diff > 0.0f],
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
-				CURRENT_PARTITION, targetNeuron, dt, r_delay(r_synapse),
+				CURRENT_PARTITION, targetNeuron, dt, r_delay1(r_synapse),
 				w_diff,
 				s_cycle - s_stdpPostFireWindow + dt,
 				s_cycle - s_stdpPostFireWindow);
@@ -240,7 +240,7 @@ updateSynapse(
 		uint targetNeuron,
 		uint64_t* x_sourceFiring) // L0: shared memory; L1: global memory
 {
-	int inFlight = r_delay(r_synapse) - 1;
+	int inFlight = r_delay0(r_synapse);
 	/* -1 since we do spike arrival before neuron-update and STDP in a single
 	 * simulation cycle */
 

@@ -178,7 +178,6 @@ fire(
 }
 
 
-#define NEW_FCM
 
 __device__
 size_t
@@ -192,14 +191,6 @@ synapseAddress(
 	return (presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
 }
 
-
-
-__device__
-size_t
-synapseAddress2(uint presynaptic, uint f0_pitch, uint synapseIdx)
-{
-	return presynaptic * f0_pitch + synapseIdx;
-}
 
 
 __device__
@@ -358,7 +349,7 @@ deliverL0Spikes_(
 #ifdef NEW_FCM
 					if(synapseIdx < f0_pitch(fcm)) {
 						deliverSpike(
-								synapseAddress2(presynaptic, f0_pitch(fcm), synapseIdx),
+								f_synapseOffset(presynaptic, f0_pitch(fcm), synapseIdx),
 								presynaptic, f0_address(fcm), f0_weights(fcm), s_current);
 					}
 #else

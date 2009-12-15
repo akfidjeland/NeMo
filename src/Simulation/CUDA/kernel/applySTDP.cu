@@ -5,6 +5,8 @@
 #include "cycleCounting.cu"
 #include "connectivityMatrix.cu"
 #include "util.h"
+#include "dispatchTable.cu"
+
 
 /*! Apply STDP 
  * 
@@ -84,13 +86,24 @@ applySTDP_(
 
 						gr_stdp[gr_offset] = 0.0f;
 
+#ifdef NEW_FCM
+						//! \todo load this into smem exactly once
+						fcm_ref_t fcm = getFCM(sourcePartition(rsynapse), r_delay0(rsynapse));
+						ASSERT(f0_base(fcm) != 0x0);
+						ASSERT(forwardIdx(rsynapse) < f0_pitch(fcm));
+						//! \todo share method with kernel.cu:synapesAddress2
+						size_t gf_offset = f_synapseOffset(sourceNeuron(rsynapse), f0_pitch(fcm), forwardIdx(rsynapse));
+						ASSERT(gf_offset < f0_size(fcm));
+						gf_weight = f0_weights(fcm);
+#else
+
 						//! \todo refactor
 						size_t gf_offset
 							= sourcePartition(rsynapse) * maxPartitionSize * maxDelay * f_pitch     // partition
 							+ (sourceNeuron(rsynapse) * maxDelay + r_delay(rsynapse)-1) * f_pitch   // neuron
 							+ forwardIdx(rsynapse);                                                 // synapse
-
 						ASSERT(gf_offset < f_size);
+#endif
 
 						float w_old = gf_weight[gf_offset];
 						float w_new = 0.0f;

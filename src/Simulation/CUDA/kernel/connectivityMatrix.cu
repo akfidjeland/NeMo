@@ -90,11 +90,28 @@ forwardIdx(uint rsynapse)
 }
 
 
+
+__device__
+size_t
+f_synapseOffset(uint presynaptic, uint f0_pitch, uint synapseIdx)
+{
+	return presynaptic * f0_pitch + synapseIdx;
+}
+
+
 __device__
 uint
-r_delay(uint rsynapse)
+r_delay1(uint rsynapse)
 {
     return rsynapse & DELAY_MASK; 
+}
+
+
+__device__
+uint
+r_delay0(uint rsynapse)
+{
+	return r_delay1(rsynapse) - 1;
 }
 
 
