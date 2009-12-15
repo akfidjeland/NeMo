@@ -33,6 +33,14 @@ f0_base(fcm_ref_t r)
 
 
 
+/*! \return	size (in words) of one plane of the given connectivity matrix */
+__device__
+size_t
+f0_size(fcm_ref_t r)
+{
+	return MAX_PARTITION_SIZE * f0_pitch(r);
+}
+
 
 
 /*!
@@ -90,11 +98,13 @@ fcm_packReference(void* address, size_t pitch)
 texture<fcm_ref_t, 2, cudaReadModeElementType> tf0_refs;
 
 
+
+/*! \param delay0 0-based delay (i.e. delay in ms - 1) */
 __device__
 fcm_ref_t
-getFCM(uint partition, uint delay)
+getFCM(uint partition, uint delay0)
 {
-	return tex2D(tf0_refs, (float) delay, (float) partition);
+	return tex2D(tf0_refs, (float) delay0, (float) partition);
 }
 
 

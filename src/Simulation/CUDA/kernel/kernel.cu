@@ -178,6 +178,7 @@ fire(
 }
 
 
+#define NEW_FCM
 
 __device__
 size_t
@@ -189,8 +190,17 @@ synapseAddress(
 		uint synapseIdx)
 {
 	return (presynaptic * maxDelay + delay) * f0_pitch + synapseIdx;
-
 }
+
+
+
+__device__
+size_t
+synapseAddress2(uint presynaptic, uint f0_pitch, uint synapseIdx)
+{
+	return presynaptic * f0_pitch + synapseIdx;
+}
+
 
 __device__
 void
@@ -269,7 +279,7 @@ deliverL0Spikes_(
 	uint maxDelay,
 	uint partitionSize,
 	uint sf0_maxSynapses,
-	uint* gf0_cm, uint f0_pitch, uint f0_size,
+	uint* gf0_cm, uint f0_pitch_in, uint f0_size,
 	uint64_t* s_recentFiring,
 	uint64_t* g_firingDelays,
 	float* s_current,
@@ -277,8 +287,10 @@ deliverL0Spikes_(
 	uint32_t* s_arrivalBits,
 	uint32_t* s_arrivals)
 {
+#ifndef NEW_FCM
 	uint*  gf0_address =          gf0_cm + FCM_ADDRESS  * f0_size;
 	float* gf0_weight  = (float*) gf0_cm + FCM_WEIGHT   * f0_size;
+#endif
 
 	__shared__ int s_chunksPerDelay;
 
@@ -286,6 +298,8 @@ deliverL0Spikes_(
 		s_chunksPerDelay = DIV_CEIL(sf0_maxSynapses, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
+
+	//! \todo load dispatch tables from tmem to smem here
 
 	for(uint preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
@@ -325,16 +339,35 @@ deliverL0Spikes_(
 
 				uint delay = s_delays[delayIdx];
 
+#ifdef NEW_FCM
+				//! \todo load this for all relevant delays earlier, at the beginning of the function
+				// share the loading code with applyStdp
+				__shared__ fcm_ref_t fcm;
+				if(threadIdx.x == 0) {
+					fcm = getFCM(CURRENT_PARTITION, delay);
+					ASSERT(f0_base(fcm) != 0x0);
+				}
+				__syncthreads();
+#endif
+
 				for(uint chunk = 0; chunk < s_chunksPerDelay; ++chunk) {
 
 					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-					//! \todo consider using per-neuron maximum here instead
+					//! \todo consider using per-neuron maximum here instead (or as well)
+#ifdef NEW_FCM
+					if(synapseIdx < f0_pitch(fcm)) {
+						deliverSpike(
+								synapseAddress2(presynaptic, f0_pitch(fcm), synapseIdx),
+								presynaptic, f0_address(fcm), f0_weights(fcm), s_current);
+					}
+#else
 					if(synapseIdx < sf0_maxSynapses) {
 						deliverSpike(
-								synapseAddress(presynaptic, maxDelay, delay, f0_pitch, synapseIdx),
+								synapseAddress(presynaptic, maxDelay, delay, f0_pitch_in, synapseIdx),
 								presynaptic, gf0_address, gf0_weight, s_current);
 					}
+#endif
 					__syncthreads();
 				}
 			}
