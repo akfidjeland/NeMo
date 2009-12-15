@@ -59,6 +59,16 @@ f0_address(fcm_ref_t ref)
 
 
 
+//! \todo rename
+__device__
+uint*
+f0_address2(uint32_t* base, size_t pitch)
+{
+	return base + FCM_ADDRESS * MAX_PARTITION_SIZE * pitch;
+}
+
+
+
 /*!
  * \param ref
  *		Reference to connectivity matrix block for a particular partition/delay
@@ -73,6 +83,14 @@ f0_weights(fcm_ref_t ref)
 	return (float*) f0_base(ref) + FCM_WEIGHT * MAX_PARTITION_SIZE * f0_pitch(ref);
 }
 
+
+
+__device__
+float*
+f0_weights2(uint32_t* base, size_t pitch)
+{
+	return (float*) base + FCM_WEIGHT * MAX_PARTITION_SIZE * pitch;
+}
 
 
 __host__
