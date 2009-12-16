@@ -161,9 +161,7 @@ ConnectivityMatrixImpl::moveToDevice(bool isL0)
 		i->second.moveToDevice();
 	}
 
-	if(isL0) {
-		f0_setDispatchTable();
-	}
+	f_setDispatchTable(isL0);
 }
 
 
@@ -333,7 +331,7 @@ ConnectivityMatrixImpl::r_partitionStdp() const
 
 
 void
-ConnectivityMatrixImpl::f0_setDispatchTable()
+ConnectivityMatrixImpl::f_setDispatchTable(bool isL0)
 {
 	//! \todo remove magic
 	size_t delayCount = 64;
@@ -359,7 +357,11 @@ ConnectivityMatrixImpl::f0_setDispatchTable()
 		table.at(addr) = fcm_packReference(fcm_addr, fcm_pitch);
 	}
 
-	cudaArray* f0_dispatch =
-		::f0_setDispatchTable(m_partitionCount, delayCount, table);
-	mf0_dispatch = boost::shared_ptr<cudaArray>(f0_dispatch, cudaFreeArray);
+	cudaArray* f_dispatch;
+	if(isL0) {
+		f_dispatch = ::f0_setDispatchTable(m_partitionCount, delayCount, table);
+	} else {
+		f_dispatch = ::f1_setDispatchTable(m_partitionCount, delayCount, table);
+	}
+	mf_dispatch = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
 }

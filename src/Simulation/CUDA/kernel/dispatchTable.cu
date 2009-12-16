@@ -114,6 +114,7 @@ fcm_packReference(void* address, size_t pitch)
 
 
 texture<fcm_ref_t, 2, cudaReadModeElementType> tf0_refs;
+texture<fcm_ref_t, 2, cudaReadModeElementType> tf1_refs;
 
 
 
@@ -127,7 +128,26 @@ getFCM(uint partition, uint delay0)
 
 
 
- __host__
+__host__
+cudaArray*
+copyTable(size_t width,
+		size_t height,
+		const std::vector<fcm_ref_t>& h_table,
+		const cudaChannelFormatDesc* channelDesc)
+{
+	assert(h_table.size() == width * height);
+
+	cudaArray* d_table;
+	CUDA_SAFE_CALL(cudaMallocArray(&d_table, channelDesc, width, height));
+
+	size_t bytes = height * width * sizeof(fcm_ref_t);
+	CUDA_SAFE_CALL(cudaMemcpyToArray(d_table, 0, 0, &h_table[0], bytes, cudaMemcpyHostToDevice));
+	return d_table;
+}
+
+
+
+__host__
 cudaArray*
 f0_setDispatchTable(
 		size_t partitionCount,
@@ -135,26 +155,35 @@ f0_setDispatchTable(
 		const std::vector<fcm_ref_t>& h_table)
 {
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<fcm_ref_t>();
-
-	size_t width = delayCount;
-	size_t height = partitionCount;
-
-	assert(h_table.size() == width * height);
-
-	cudaArray* d_table;
-	CUDA_SAFE_CALL(cudaMallocArray(&d_table, &channelDesc, width, height));
-
-	size_t bytes = height * width * sizeof(fcm_ref_t);
-	CUDA_SAFE_CALL(cudaMemcpyToArray(d_table, 0, 0, &h_table[0], bytes, cudaMemcpyHostToDevice));
-
+	cudaArray* d_table =
+		copyTable(delayCount, partitionCount, h_table, &channelDesc);
 	// set texture parameters
 	tf0_refs.addressMode[0] = cudaAddressModeClamp;
 	tf0_refs.addressMode[1] = cudaAddressModeClamp;
 	tf0_refs.filterMode = cudaFilterModePoint;
 	tf0_refs.normalized = false;
-
 	CUDA_SAFE_CALL(cudaBindTextureToArray(tf0_refs, d_table, channelDesc));
+	return d_table;
+}
 
+
+
+__host__
+cudaArray*
+f1_setDispatchTable(
+		size_t partitionCount,
+		size_t delayCount,
+		const std::vector<fcm_ref_t>& h_table)
+{
+	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<fcm_ref_t>();
+	cudaArray* d_table =
+		copyTable(delayCount, partitionCount, h_table, &channelDesc);
+	// set texture parameters
+	tf1_refs.addressMode[0] = cudaAddressModeClamp;
+	tf1_refs.addressMode[1] = cudaAddressModeClamp;
+	tf1_refs.filterMode = cudaFilterModePoint;
+	tf1_refs.normalized = false;
+	CUDA_SAFE_CALL(cudaBindTextureToArray(tf1_refs, d_table, channelDesc));
 	return d_table;
 }
 

@@ -141,9 +141,9 @@ class ConnectivityMatrixImpl
 
 		static const int InvalidNeuron;
 
-		void f0_setDispatchTable();
+		void f_setDispatchTable(bool isL0);
 
-		boost::shared_ptr<cudaArray> mf0_dispatch;
+		boost::shared_ptr<cudaArray> mf_dispatch;
 };
 
 #endif
