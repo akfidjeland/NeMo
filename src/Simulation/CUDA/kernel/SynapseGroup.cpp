@@ -66,7 +66,12 @@ SynapseGroup::moveToDevice()
 		return boost::shared_ptr<SynapseGroup::synapse_t>();
 	}
 
-	size_t desiredPitch = maxSynapsesPerNeuron() * sizeof(synapse_t);
+	/* Aligning pitch to warp size should have no negative impact on memory
+	 * bandwidth, but can reduce thread divergence. On a network with 2k
+	 * neurons with 2M synapses (1.8M L0, 0.2M L1) we find a small throughput
+	 * improvement (from 61M spike deliveries per second to 63M). */
+	const size_t WARP_SIZE = 32;
+	size_t desiredPitch = ALIGN(maxSynapsesPerNeuron() * sizeof(synapse_t), WARP_SIZE);
 	size_t height = FCM_SUBMATRICES * MAX_PARTITION_SIZE;
 
 	synapse_t* d_data = NULL;
