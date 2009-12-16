@@ -232,6 +232,27 @@ s_sbFlush(
 		size_t base = g_sbBase(sbPitch, CURRENT_PARTITION, targetPartition, writeBufferIdx);
 		uint data = s_outbuf32[outbufferIdx * BUFFER_SZ * 2 + t_offset];
 
+#define CHECK_L1_RACE_CONDITION
+#if defined(__DEVICE_EMULATION__) && defined(CHECK_L1_RACE_CONDITION)
+		if(t_offset < BUFFER_SZ) {
+			spike_t thisSpike = s_outbuf64[outbufferIdx * BUFFER_SZ + t_offset];
+			uint thisTarget = spikeTargetNeuron(thisSpike);
+			for(uint i = 0; i < BUFFER_SZ; ++i) {
+				spike_t otherSpike = s_outbuf64[outbufferIdx * BUFFER_SZ + i];
+				uint otherTarget = spikeTargetNeuron(otherSpike);
+				if(i != t_offset && thisTarget != 0) {
+					if(spikeTargetNeuron(thisSpike) == spikeTargetNeuron(otherSpike)) {
+						DEBUG_MSG("c%u: Detected potential race condition when flushing L1 buffer\n", s_cycle);
+						DEBUG_MSG("Entry %u and %u in buffer p%u -> p%u both target p%un%u\n",
+								t_offset, i, CURRENT_PARTITION, targetPartition,
+								targetPartition, spikeTargetNeuron(thisSpike));
+					}
+					ASSERT(spikeTargetNeuron(thisSpike) != spikeTargetNeuron(otherSpike));
+				}
+			}
+		}
+#endif
+
 		g_sb32[2 * (base + g_offset[t_buf]) + t_offset] = data;
 #ifdef __DEVICE_EMULATION__
 		if(threadIdx.x % 2 == 1) {
