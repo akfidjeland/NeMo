@@ -20,8 +20,6 @@
 
 #include <vector>
 
-#define NEW_FCM
-	
 #ifdef __DEVICE_EMULATION__
 typedef uint4 fcm_ref_t; // one of the fields is unused, but uint3 can't be used for textures
 #else

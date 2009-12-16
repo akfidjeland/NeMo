@@ -52,26 +52,6 @@ ConnectivityMatrix::copyToHost(
 }
 
 
-uint*
-ConnectivityMatrix::df_synapses() const
-{
-	return m_impl->df_synapses();
-}
-
-
-size_t
-ConnectivityMatrix::df_pitch() const
-{
-	return m_impl->df_pitch();
-}
-
-
-size_t
-ConnectivityMatrix::df_planeSize() const
-{
-	return m_impl->df_planeSize();
-}
-
 
 uint64_t*
 ConnectivityMatrix::df_delayBits() const

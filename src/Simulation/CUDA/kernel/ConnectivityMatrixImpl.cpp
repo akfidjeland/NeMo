@@ -51,28 +51,6 @@ ConnectivityMatrixImpl::df_delayBits() const
 }
 
 
-
-uint*
-ConnectivityMatrixImpl::df_synapses() const
-{
-	return m_fsynapses.d_data();
-}
-
-
-size_t
-ConnectivityMatrixImpl::df_pitch() const
-{
-	return m_fsynapses.delayPitch();
-}
-
-
-size_t 
-ConnectivityMatrixImpl::df_planeSize() const
-{
-	return m_fsynapses.size();
-}
-
-
 void
 ConnectivityMatrixImpl::setRow(
 		uint sourcePartition,

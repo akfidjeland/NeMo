@@ -97,13 +97,7 @@ applyStdp_(
 			reward,
 			cmIdx,
 			rtdata->stdpFn.maxWeight(),
-			rtdata->stdpFn.minWeight(),
-			rtdata->maxPartitionSize,
-			rtdata->maxDelay(),
-			//! \todo compute the address of the weight matrix here directly
-			rtdata->cm(cmIdx)->df_synapses(),
-			rtdata->cm(cmIdx)->df_pitch(),
-			rtdata->cm(cmIdx)->df_planeSize());
+			rtdata->stdpFn.minWeight());
 
 	if(trace) {
 		rtdata->cm(cmIdx)->df_clear(FCM_STDP_TRACE);

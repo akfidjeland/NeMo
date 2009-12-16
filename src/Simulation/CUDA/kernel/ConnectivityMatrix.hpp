@@ -66,15 +66,6 @@ struct ConnectivityMatrix
 				float* f_weights[],
 				size_t* pitch);
 
-		/*! \return device data for connectivity */
-		uint* df_synapses() const;
-
-		/*! \return device row pitch (in words) */
-		size_t df_pitch() const;
-
-		/*! \return the size (in words) for each CM plane (including padding) */
-		size_t df_planeSize() const;
-
 		/*! \return device delay bit data */
 		uint64_t* df_delayBits() const;
 

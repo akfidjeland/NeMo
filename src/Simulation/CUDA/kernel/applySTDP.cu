@@ -28,16 +28,11 @@ applySTDP_(
 	size_t ccPitch,
 #endif
 	float reward,
-	uint cmIdx, // L0 or L1
+	uint cmIdx,      // L0 or L1
 	float maxWeight, // for excitatory synapses
-	float minWeight, // for inhibitory synapses
-	int maxPartitionSize,
-	int maxDelay,
-	// forward connectivity
-	uint* gf_cm,
-	size_t f_pitch,
-	size_t f_size)
-	/*! \note reverse connectivity addresses are found in constant memory */
+	float minWeight) // for inhibitory synapses
+	/*! \note reverse connectivity addresses are found in constant memory,
+	 * while forward connectivity addresses are found in texture memory */
 {
 	SET_COUNTER(s_ccApplySTDP, 0);
 
@@ -62,8 +57,6 @@ applySTDP_(
 	}
 	__syncthreads();
 
-	float* gf_weight = (float*) gf_cm + FCM_WEIGHT * f_size;
-
 	for(uint target=0; target < s_partitionSize; ++target) {
 		for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
 
@@ -86,7 +79,6 @@ applySTDP_(
 
 						gr_stdp[gr_offset] = 0.0f;
 
-#ifdef NEW_FCM
 						//! \todo load this into smem exactly once
 						fcm_ref_t fcm = getFCM(cmIdx, sourcePartition(rsynapse), r_delay0(rsynapse));
 						ASSERT(f0_base(fcm) != 0x0);
@@ -94,16 +86,7 @@ applySTDP_(
 						//! \todo share method with kernel.cu:synapesAddress2
 						size_t gf_offset = f_synapseOffset(sourceNeuron(rsynapse), f0_pitch(fcm), forwardIdx(rsynapse));
 						ASSERT(gf_offset < f0_size(fcm));
-						gf_weight = f0_weights(fcm);
-#else
-
-						//! \todo refactor
-						size_t gf_offset
-							= sourcePartition(rsynapse) * maxPartitionSize * maxDelay * f_pitch     // partition
-							+ (sourceNeuron(rsynapse) * maxDelay + r_delay(rsynapse)-1) * f_pitch   // neuron
-							+ forwardIdx(rsynapse);                                                 // synapse
-						ASSERT(gf_offset < f_size);
-#endif
+						float* gf_weight = f0_weights(fcm);
 
 						float w_old = gf_weight[gf_offset];
 						float w_new = 0.0f;
