@@ -27,8 +27,6 @@
 #define NPARAM_maxPartitionSize 0
 #define NPARAM_maxDelay         1
 #define NPARAM_pitch32          2
-#define NPARAM_f0_pitch         3
-#define NPARAM_f0_size          4
 #define NPARAM_f1_pitch         5
 #define NPARAM_f1_size          6
 #define NPARAM_pitch64          7
@@ -45,8 +43,6 @@ __shared__ uint s_networkParameters[NPARAM_COUNT];
 #define s_maxDelay         s_networkParameters[NPARAM_maxDelay]
 #define s_pitch32          s_networkParameters[NPARAM_pitch32]
 #define s_pitch64          s_networkParameters[NPARAM_pitch64]
-#define sf0_pitch          s_networkParameters[NPARAM_f0_pitch]
-#define sf0_size           s_networkParameters[NPARAM_f0_size]
 #define sf1_pitch          s_networkParameters[NPARAM_f1_pitch]
 #define sf1_size           s_networkParameters[NPARAM_f1_size]
 
@@ -62,8 +58,7 @@ configureKernel(RTDATA rtdata)
 	SET_CONSTANT(maxDelay,  rtdata->maxDelay());
 	SET_CONSTANT(pitch32,   rtdata->pitch32());
 	SET_CONSTANT(pitch64,   rtdata->pitch64());
-	SET_CONSTANT(f0_pitch,  rtdata->cm(CM_L0)->df_pitch());
-	SET_CONSTANT(f0_size,   rtdata->cm(CM_L0)->df_planeSize());
+	//! \todo can remove df_pitch and df_planeSize public methods when removing old L1 FCM
 	SET_CONSTANT(f1_pitch,  rtdata->cm(CM_L1)->df_pitch());
 	SET_CONSTANT(f1_size,   rtdata->cm(CM_L1)->df_planeSize());
 	CUDA_SAFE_CALL(
@@ -88,7 +83,6 @@ loadNetworkParameters()
 
 /* Per-partition configuration */
 
-__constant__ uint cf0_maxSynapsesPerDelay[MAX_THREAD_BLOCKS];
 __constant__ uint cf1_maxSynapsesPerDelay[MAX_THREAD_BLOCKS];
 
 template<class T>

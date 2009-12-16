@@ -64,8 +64,6 @@ copyToDevice(RTDATA rtdata)
 		clearAssertions();
 		rtdata->moveToDevice();
 		configureKernel(rtdata);
-		configurePartition(cf0_maxSynapsesPerDelay,
-			rtdata->cm(CM_L0)->f_maxSynapsesPerDelay());
 		configurePartition(cf1_maxSynapsesPerDelay,
 			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
 		//! \todo move to RSMatrix.cpp, considering that we need to call it twice (L0 and L1)

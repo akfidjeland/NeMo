@@ -74,7 +74,6 @@ STDP_FN(step) (
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
-	__shared__ uint sf0_maxSynapsesPerDelay;
 	__shared__ uint sf1_maxSynapsesPerDelay;
 	__shared__ float s_substepMult;
 
@@ -86,7 +85,6 @@ STDP_FN(step) (
 		s_cycle = cycle;
 #endif
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-		sf0_maxSynapsesPerDelay = cf0_maxSynapsesPerDelay[CURRENT_PARTITION];
 		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
@@ -141,10 +139,7 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 4);
 
 	deliverL0Spikes_(
-			s_maxDelay,
 			s_partitionSize,
-			sf0_maxSynapsesPerDelay,
-			gf0_cm + f_partitionRow * sf0_pitch, sf0_pitch, sf0_size,
 			s_recentFiring,
 			gf0_delays + CURRENT_PARTITION * s_pitch64,
 			s_current, s_T16, s_T32, s_D32,
