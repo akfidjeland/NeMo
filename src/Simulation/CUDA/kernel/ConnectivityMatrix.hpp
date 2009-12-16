@@ -78,10 +78,6 @@ struct ConnectivityMatrix
 		/*! \return device delay bit data */
 		uint64_t* df_delayBits() const;
 
-		/*! \return vector specifying maximum synapses per delay (<= pitch) for
-		 * each partition */
-		const std::vector<uint>& f_maxSynapsesPerDelay() const;
-
 		/*! Clear one plane of connectivity matrix on the device */
 		void df_clear(size_t submatrix);
 		void clearStdpAccumulator();
@@ -101,6 +97,7 @@ struct ConnectivityMatrix
 		 * CUDA code. Internally we use shared_ptr, which causes build errors
 		 * for CUDA */
 		class ConnectivityMatrixImpl* m_impl;
+
 };
 
 #endif

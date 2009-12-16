@@ -64,8 +64,6 @@ copyToDevice(RTDATA rtdata)
 		clearAssertions();
 		rtdata->moveToDevice();
 		configureKernel(rtdata);
-		configurePartition(cf1_maxSynapsesPerDelay,
-			rtdata->cm(CM_L1)->f_maxSynapsesPerDelay());
 		//! \todo move to RSMatrix.cpp, considering that we need to call it twice (L0 and L1)
         configureReverseAddressing(
                 rtdata->cm(CM_L0)->r_partitionPitch(),
@@ -184,11 +182,7 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceRngState(),
 				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
-				// L0 forward connectivity
-				rtdata->cm(CM_L0)->df_synapses(),
 				rtdata->cm(CM_L0)->df_delayBits(),
-				// L1 forward connectivity 
-				rtdata->cm(CM_L1)->df_synapses(),
 				rtdata->cm(CM_L1)->df_delayBits(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
@@ -214,11 +208,7 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceSigma(),
                 //! \todo get size directly from rtdata
 				rtdata->neuronParameters->size(),
-				// L0 connectivity matrix
-				rtdata->cm(CM_L0)->df_synapses(),
 				rtdata->cm(CM_L0)->df_delayBits(),
-				// L1 connectivity matrix
-				rtdata->cm(CM_L1)->df_synapses(),
 				rtdata->cm(CM_L1)->df_delayBits(),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),

@@ -80,13 +80,6 @@ ConnectivityMatrix::df_delayBits() const
 }
 
 
-const std::vector<uint>&
-ConnectivityMatrix::f_maxSynapsesPerDelay() const
-{
-	return m_impl->f_maxSynapsesPerDelay();
-}
-
-
 void
 ConnectivityMatrix::df_clear(size_t submatrix)
 {

@@ -32,9 +32,8 @@ STDP_FN(step) (
 		//! \todo combine with g_neuronParameters
 		float* g_sigma,
 		size_t neuronParametersSize,
-		// connectivity
-		uint* gf0_cm, uint64_t* gf0_delays,
-		uint* gf1_cm, uint64_t* gf1_delays,
+		uint64_t* gf0_delays,
+		uint64_t* gf1_delays,
 		// L1 spike queue
 		uint2* gSpikeQueue,
 		size_t sqPitch,
@@ -74,7 +73,6 @@ STDP_FN(step) (
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
-	__shared__ uint sf1_maxSynapsesPerDelay;
 	__shared__ float s_substepMult;
 
 	__shared__ uint32_t* s_fcmAddr[MAX_DELAY];
@@ -85,7 +83,6 @@ STDP_FN(step) (
 		s_cycle = cycle;
 #endif
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-		sf1_maxSynapsesPerDelay = cf1_maxSynapsesPerDelay[CURRENT_PARTITION];
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
 	__syncthreads();
@@ -95,11 +92,6 @@ STDP_FN(step) (
 #ifdef STDP
 	loadStdpParameters();
 #endif
-	/* Within a connection matrix plane, partitionRow is the row offset of the
-	 * current partition. The offset in /words/ differ between forward/reverse
-	 * and level 0/1 as they have different row pitches */
-	size_t f_partitionRow = CURRENT_PARTITION * s_maxPartitionSize * s_maxDelay;
-
 	SET_COUNTER(s_ccMain, 1);
 
     //! \todo no need to clear array here, if loading thalamic input
@@ -210,12 +202,8 @@ STDP_FN(step) (
 
 	if(haveL1) {
 		STDP_FN(deliverL1Spikes_JIT)(
-				s_maxDelay,
-                writeBuffer(cycle),
+				writeBuffer(cycle),
 				s_partitionSize,
-				//! \todo need to call this differently from wrapper
-				sf1_maxSynapsesPerDelay,
-				gf1_cm + f_partitionRow * sf1_pitch, sf1_pitch, sf1_size,
 				s_recentFiring,
 				gf1_delays + CURRENT_PARTITION * s_pitch64,
 				(uint2*) s_M1KA, // used for s_current previously, now use for staging outgoing spikes

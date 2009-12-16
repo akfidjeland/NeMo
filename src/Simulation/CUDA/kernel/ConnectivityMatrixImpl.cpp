@@ -29,7 +29,6 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
     m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(maxDelay),
-	m_maxSynapsesPerDelay(partitionCount, 0),
 	m_setReverse(setReverse),
 	mf_targetPartition(
 			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
@@ -130,8 +129,6 @@ ConnectivityMatrixImpl::setRow(
 	m_delayBits.setNeuron(sourcePartition, sourceNeuron, delayBits);
 
 	m_maxDelay = std::max(m_maxDelay, delay);
-	m_maxSynapsesPerDelay[sourcePartition] =
-		std::max(m_maxSynapsesPerDelay[sourcePartition], (uint) f_length);
 
 	{
 		size_t offset = m_fsynapses.offset(sourcePartition, sourceNeuron, delay, 0);
@@ -182,14 +179,6 @@ ConnectivityMatrixImpl::copyToHost(
 	*f_targetNeurons = &mf_targetNeuron[0];
 	assert(sizeof(float) == sizeof(uint));
 	*f_weights = (float*) &mf_weights[0];
-}
-
-
-
-const std::vector<uint>&
-ConnectivityMatrixImpl::f_maxSynapsesPerDelay() const
-{
-	return m_maxSynapsesPerDelay;
 }
 
 

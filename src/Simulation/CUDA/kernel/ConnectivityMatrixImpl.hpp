@@ -81,10 +81,6 @@ class ConnectivityMatrixImpl
 		/*! \return device delay bit data */
 		uint64_t* df_delayBits() const;
 
-		/*! \return vector specifying maximum synapses per delay (<= pitch) for
-		 * each partition */
-		const std::vector<uint>& f_maxSynapsesPerDelay() const;
-
 		/*! Clear one plane of connectivity matrix on the device */
 		void df_clear(size_t submatrix);
 		void clearStdpAccumulator();
@@ -111,10 +107,6 @@ class ConnectivityMatrixImpl
 		size_t m_maxPartitionSize;
 
 		unsigned int m_maxDelay;
-
-		/* As we fill the matrix, we accumulate per-partition statistics which
-		 * can be used for later configuration */
-		std::vector<uint> m_maxSynapsesPerDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and delay. The reverse connectivity is stored sepearately

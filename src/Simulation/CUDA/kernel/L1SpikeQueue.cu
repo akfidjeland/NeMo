@@ -113,21 +113,14 @@ STDP_FN(gatherL1Spikes_JIT_)(
 }
 
 
-#define NEW_FCM1
-
-
-
 
 /* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
  * out or use a code generator to avoid repetition */
 __device__
 void
 STDP_FN(deliverL1Spikes_JIT)(
-	uint maxDelay,
 	uint writeBufferIdx,
 	uint partitionSize,
-	uint sf1_maxSynapses,
-	uint* gf1_cm, uint f1_pitch, uint f1_size,
 	uint64_t* s_recentFiring,
 	uint64_t* g_firingDelays,
 	// L1 spike queue
@@ -145,11 +138,6 @@ STDP_FN(deliverL1Spikes_JIT)(
 	uint32_t* s_fcmAddr[],
 	ushort2 s_fcmPitch[])
 {
-#ifndef NEW_FCM1
-	uint*  gf1_address =          gf1_cm + FCM_ADDRESS * f1_size;
-	float* gf1_weights = (float*) gf1_cm + FCM_WEIGHT  * f1_size;
-#endif
-
 	/* L1 spikes are delivered via a global memory buffer. Writes to these
 	 * buffers may be quite scattered. To reduce the impact of non-coalesced
 	 * writes we stage spike data in shared memory before writing it to global
@@ -177,25 +165,13 @@ STDP_FN(deliverL1Spikes_JIT)(
 	__shared__ uint s_bufferCount;
 	__shared__ uint s_buffersPerPartition;
 
-	__shared__ uint s_synapsesPerDelay;
-	__shared__ uint s_chunksPerDelay;
 	if(threadIdx.x == 0) {
-		//! \todo do we need to round to block size if multiple chunks per delay?
-#ifdef __DEVICE_EMULATION__
-		s_synapsesPerDelay = ALIGN(sf1_maxSynapses, 32);
-#else
-		s_synapsesPerDelay = ALIGN(sf1_maxSynapses, warpSize);
-#endif
-		s_chunksPerDelay = DIV_CEIL(s_synapsesPerDelay, THREADS_PER_BLOCK);
 		s_buffersPerPartition = s_sbBuffersPerPartition();
 		s_bufferCount = s_sbCount();
 	}
 	__syncthreads();
 
-#ifdef NEW_FCM1
 	loadDispatchTable_(1, s_fcmAddr, s_fcmPitch);
-#endif
-
 
 	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
@@ -231,12 +207,7 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 				uint delay = s_delays[delayIdx];
 
-#ifdef NEW_FCM1
-				for(uint chunk=0; chunk < s_fcmPitch[delay].y; ++chunk)
-#else
-				for(uint chunk=0; chunk < s_chunksPerDelay; ++chunk)
-#endif
-				{
+				for(uint chunk=0; chunk < s_fcmPitch[delay].y; ++chunk) {
 
 					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
@@ -247,30 +218,18 @@ STDP_FN(deliverL1Spikes_JIT)(
 					bool doCommit = false;
 
 					//! \todo consider using per-neuron maximum here instead
-#ifdef NEW_FCM1
-					if(synapseIdx < s_fcmPitch[delay].x)
-#else
-					if(synapseIdx < sf1_maxSynapses)
-#endif
-					{
-#ifdef NEW_FCM1
+					if(synapseIdx < s_fcmPitch[delay].x) {
 						//! \todo compute base address earlier
 						float* gf1_weights =
 							f0_weights2(s_fcmAddr[delay], s_fcmPitch[delay].x);
 						size_t synapseAddress =
 							f_synapseOffset(presynaptic, s_fcmPitch[delay].x, synapseIdx);
-#else
-						size_t synapseAddress =
-							(presynaptic * maxDelay + delay) * f1_pitch + synapseIdx;
-#endif
 						weight = gf1_weights[synapseAddress];
 
 						if(weight != 0.0f) {
 							doCommit = true;
-#ifdef NEW_FCM1
 							//! \todo perhaps put address in smem earlier
 							uint* gf1_address = f0_address2(s_fcmAddr[delay], s_fcmPitch[delay].x);
-#endif
 							target = gf1_address[synapseAddress];
 							bufferIdx = s_sbBufferIdx(targetPartition(target), s_buffersPerPartition);
 							bufferOffset = atomicAdd(s_sheads + bufferIdx, 1);
