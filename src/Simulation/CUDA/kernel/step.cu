@@ -78,6 +78,9 @@ STDP_FN(step) (
 	__shared__ uint sf1_maxSynapsesPerDelay;
 	__shared__ float s_substepMult;
 
+	__shared__ uint32_t* s_fcmAddr[MAX_DELAY];
+	__shared__ ushort2 s_fcmPitch[MAX_DELAY]; // ... and pre-computed chunk count
+
 	if(threadIdx.x == 0) {
 #ifdef __DEVICE_EMULATION__
 		s_cycle = cycle;
@@ -144,7 +147,8 @@ STDP_FN(step) (
 			gf0_cm + f_partitionRow * sf0_pitch, sf0_pitch, sf0_size,
 			s_recentFiring,
 			gf0_delays + CURRENT_PARTITION * s_pitch64,
-			s_current, s_T16, s_T32, s_D32);
+			s_current, s_T16, s_T32, s_D32,
+			s_fcmAddr, s_fcmPitch);
 
 	SET_COUNTER(s_ccMain, 5);
 
@@ -226,7 +230,8 @@ STDP_FN(step) (
 				sqPitch,
 				gSpikeQueueHeads,
 				sqHeadPitch,
-				s_T16, s_T32, s_D32, s_P32);
+				s_T16, s_T32, s_D32, s_P32,
+				s_fcmAddr, s_fcmPitch);
 	}
 
 	SET_COUNTER(s_ccMain, 9);

@@ -276,7 +276,9 @@ deliverL0Spikes_(
 	float* s_current,
 	uint16_t* s_firingIdx,
 	uint32_t* s_arrivalBits,
-	uint32_t* s_arrivals)
+	uint32_t* s_arrivals,
+	uint32_t* s_fcmAddr[],
+	ushort2 s_fcmPitch[])
 {
 #ifndef NEW_FCM
 	uint*  gf0_address =          gf0_cm + FCM_ADDRESS  * f0_size;
@@ -289,16 +291,7 @@ deliverL0Spikes_(
 	}
 	__syncthreads();
 #else
-	//! \todo factor out
-	__shared__ uint32_t* s_fcmAddr[MAX_DELAY];
-	__shared__ ushort2 s_fcmPitch[MAX_DELAY]; // ... and pre-computed chunk count
-	if(threadIdx.x < MAX_DELAY) {
-		fcm_ref_t fcm = getFCM(CURRENT_PARTITION, threadIdx.x);
-		s_fcmAddr[threadIdx.x] = f0_base(fcm);
-		s_fcmPitch[threadIdx.x].x = f0_pitch(fcm);
-		s_fcmPitch[threadIdx.x].y = DIV_CEIL(f0_pitch(fcm), THREADS_PER_BLOCK);
-	}
-	__syncthreads();
+	loadDispatchTable_(0, s_fcmAddr, s_fcmPitch);
 #endif
 
 	for(uint preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
@@ -373,3 +366,4 @@ deliverL0Spikes_(
 	}
 	__syncthreads();
 }
+

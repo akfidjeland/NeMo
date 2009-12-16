@@ -113,6 +113,10 @@ STDP_FN(gatherL1Spikes_JIT_)(
 }
 
 
+#define NEW_FCM1
+
+
+
 
 /* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
  * out or use a code generator to avoid repetition */
@@ -137,10 +141,14 @@ STDP_FN(deliverL1Spikes_JIT)(
 	uint32_t* s_arrivalBits,
 	uint32_t* s_arrivals,
 	/* In global memory there is one buffer per source-target partition pair */
-	uint32_t* s_gheads /* s_P32 */)
+	uint32_t* s_gheads /* s_P32 */,
+	uint32_t* s_fcmAddr[],
+	ushort2 s_fcmPitch[])
 {
+#ifndef NEW_FCM1
 	uint*  gf1_address =          gf1_cm + FCM_ADDRESS * f1_size;
 	float* gf1_weights = (float*) gf1_cm + FCM_WEIGHT  * f1_size;
+#endif
 
 	/* L1 spikes are delivered via a global memory buffer. Writes to these
 	 * buffers may be quite scattered. To reduce the impact of non-coalesced
@@ -184,6 +192,10 @@ STDP_FN(deliverL1Spikes_JIT)(
 	}
 	__syncthreads();
 
+#ifdef NEW_FCM1
+	loadDispatchTable_(1, s_fcmAddr, s_fcmPitch);
+#endif
+
 
 	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
@@ -219,28 +231,48 @@ STDP_FN(deliverL1Spikes_JIT)(
 
 				uint delay = s_delays[delayIdx];
 
-				for(uint chunk=0; chunk < s_chunksPerDelay; ++chunk) {
+#ifdef NEW_FCM1
+				for(uint chunk=0; chunk < s_fcmPitch[delay].y; ++chunk)
+#else
+				for(uint chunk=0; chunk < s_chunksPerDelay; ++chunk)
+#endif
+				{
 
 					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-					float weight;
+					float weight = 0.0f;
 					uint target;
 					uint bufferOffset = 0; // relative to beginning of output buffer slot
 					uint bufferIdx = 0;
 					bool doCommit = false;
 
 					//! \todo consider using per-neuron maximum here instead
-					if(synapseIdx < sf1_maxSynapses) {
+#ifdef NEW_FCM1
+					if(synapseIdx < s_fcmPitch[delay].x)
+#else
+					if(synapseIdx < sf1_maxSynapses)
+#endif
+					{
+#ifdef NEW_FCM1
+						//! \todo compute base address earlier
+						float* gf1_weights =
+							f0_weights2(s_fcmAddr[delay], s_fcmPitch[delay].x);
+						size_t synapseAddress =
+							f_synapseOffset(presynaptic, s_fcmPitch[delay].x, synapseIdx);
+#else
 						size_t synapseAddress =
 							(presynaptic * maxDelay + delay) * f1_pitch + synapseIdx;
+#endif
 						weight = gf1_weights[synapseAddress];
 
 						if(weight != 0.0f) {
 							doCommit = true;
+#ifdef NEW_FCM1
+							//! \todo perhaps put address in smem earlier
+							uint* gf1_address = f0_address2(s_fcmAddr[delay], s_fcmPitch[delay].x);
+#endif
 							target = gf1_address[synapseAddress];
-							bufferIdx =
-								s_sbBufferIdx(targetPartition(target),
-										s_buffersPerPartition);
+							bufferIdx = s_sbBufferIdx(targetPartition(target), s_buffersPerPartition);
 							bufferOffset = atomicAdd(s_sheads + bufferIdx, 1);
 						}
 					}

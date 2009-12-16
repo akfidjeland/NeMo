@@ -88,7 +88,7 @@ applySTDP_(
 
 #ifdef NEW_FCM
 						//! \todo load this into smem exactly once
-						fcm_ref_t fcm = getFCM(sourcePartition(rsynapse), r_delay0(rsynapse));
+						fcm_ref_t fcm = getFCM(cmIdx, sourcePartition(rsynapse), r_delay0(rsynapse));
 						ASSERT(f0_base(fcm) != 0x0);
 						ASSERT(forwardIdx(rsynapse) < f0_pitch(fcm));
 						//! \todo share method with kernel.cu:synapesAddress2

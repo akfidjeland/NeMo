@@ -121,9 +121,13 @@ texture<fcm_ref_t, 2, cudaReadModeElementType> tf1_refs;
 /*! \param delay0 0-based delay (i.e. delay in ms - 1) */
 __device__
 fcm_ref_t
-getFCM(uint partition, uint delay0)
+getFCM(uint level, uint partition, uint delay0)
 {
-	return tex2D(tf0_refs, (float) delay0, (float) partition);
+	if(level == 0) {
+		return tex2D(tf0_refs, (float) delay0, (float) partition);
+	} else {
+		return tex2D(tf1_refs, (float) delay0, (float) partition);
+	}
 }
 
 
@@ -185,6 +189,25 @@ f1_setDispatchTable(
 	tf1_refs.normalized = false;
 	CUDA_SAFE_CALL(cudaBindTextureToArray(tf1_refs, d_table, channelDesc));
 	return d_table;
+}
+
+
+
+/* At run-time we can load the relevant part of the dispatch table from texture
+ * memory to shared memory. Both the shared memory arrays here should be of
+ * length MAX_DELAY */
+//! \todo make level a template parameter
+__device__
+void
+loadDispatchTable_(uint level, uint32_t* s_fcmAddr[], ushort2 s_fcmPitch[])
+{
+	if(threadIdx.x < MAX_DELAY) {
+		fcm_ref_t fcm = getFCM(level, CURRENT_PARTITION, threadIdx.x);
+		s_fcmAddr[threadIdx.x] = f0_base(fcm);
+		s_fcmPitch[threadIdx.x].x = f0_pitch(fcm);
+		s_fcmPitch[threadIdx.x].y = DIV_CEIL(f0_pitch(fcm), THREADS_PER_BLOCK);
+	}
+	__syncthreads();
 }
 
 #endif
