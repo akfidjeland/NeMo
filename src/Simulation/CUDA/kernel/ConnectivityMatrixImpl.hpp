@@ -75,8 +75,6 @@ class ConnectivityMatrixImpl
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
 
-		// void printSTDPTrace();
-
 		size_t d_allocated() const;
 
 		/* Per-partition addressing */

@@ -161,48 +161,6 @@ ConnectivityMatrixImpl::copyToHost(
 
 
 
-//! \todo use this type in connectivityMatrix.cu
-typedef union
-{
-    uint32_t dword_value;
-    float float_value;
-} synapse_t;
-
-
-#if 0
-void
-ConnectivityMatrixImpl::printSTDPTrace()
-{
-    m_fsynapses.copyToHost(FCM_STDP_TRACE);
-    for(uint sourcePartition=0; sourcePartition<m_partitionCount; ++sourcePartition) {
-        //! \todo could speed up traversal by using delay bits and max pitch
-        for(uint sourceNeuron=0; sourceNeuron<m_maxPartitionSize; ++sourceNeuron) {
-            for(uint delay=1; delay<=m_maxDelay; ++delay) {
-                size_t pitch = m_fsynapses.delayPitch();
-                //for(uint synapseIdx=0; synapseIdx<m_maxSynapsesPerDelay[sourcePartition]; ++synapseIdx)
-                for(uint synapseIdx=0; synapseIdx<pitch; ++synapseIdx) 
-                {
-                    synapse_t w_tmp;
-                    w_tmp.dword_value = m_fsynapses.h_lookup(sourcePartition, sourceNeuron, delay,
-                            synapseIdx, FCM_STDP_TRACE);
-                    float w = w_tmp.float_value;
-                    if(w != 0.0f) {
-                        uint synapse = m_fsynapses.h_lookup(sourcePartition,
-                                        sourceNeuron, delay, synapseIdx, FCM_ADDRESS);
-                        fprintf(stderr, "STDP: weight[%u-%u -> %u-%u] = %f\n",
-                                sourcePartition, sourceNeuron,
-                                targetPartition(synapse), targetNeuron(synapse), w);
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
-
-
-
-
 void
 ConnectivityMatrixImpl::clearStdpAccumulator()
 {
