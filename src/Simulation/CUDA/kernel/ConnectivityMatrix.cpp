@@ -60,12 +60,6 @@ ConnectivityMatrix::df_delayBits() const
 }
 
 
-void
-ConnectivityMatrix::df_clear(size_t submatrix)
-{
-	return m_impl->df_clear(submatrix);
-}
-
 
 void
 ConnectivityMatrix::clearStdpAccumulator()

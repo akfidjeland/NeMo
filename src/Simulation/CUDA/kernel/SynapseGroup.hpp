@@ -68,6 +68,9 @@ class SynapseGroup
 		/*! \return address of synapse group on device */
 		synapse_t* d_address() const { return md_synapses.get(); }
 
+		/*! \return number of bytes allocated on device */
+		size_t d_allocated() const { return m_allocated; }
+
 	private:
 
 		struct Row {

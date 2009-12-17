@@ -202,13 +202,6 @@ ConnectivityMatrixImpl::printSTDPTrace()
 
 
 
-void
-ConnectivityMatrixImpl::df_clear(size_t plane)
-{
-	m_fsynapses.d_fill(0, plane);
-}
-
-
 
 void
 ConnectivityMatrixImpl::clearStdpAccumulator()
@@ -230,9 +223,16 @@ ConnectivityMatrixImpl::d_allocated() const
 		rcm += (*i)->d_allocated();
 	}
 
-	return m_fsynapses.d_allocated()
+	size_t fcm = 0;
+	for(fcm_t::const_iterator i = m_fsynapses2.begin();
+			i != m_fsynapses2.end(); ++i) {
+		fcm += i->second.d_allocated();
+	}
+
+	return
+		m_fsynapses.d_allocated()
 		+ m_delayBits.d_allocated()
-		+ rcm;
+		+ fcm + rcm;
 }
 
 

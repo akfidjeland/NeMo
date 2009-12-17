@@ -100,7 +100,8 @@ applyStdp_(
 			rtdata->stdpFn.minWeight());
 
 	if(trace) {
-		rtdata->cm(cmIdx)->df_clear(FCM_STDP_TRACE);
+		//! \todo implement his method in the new format
+		assert(false);
 	}
 }
 

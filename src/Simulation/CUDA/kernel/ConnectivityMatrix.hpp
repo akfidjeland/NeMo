@@ -70,7 +70,6 @@ struct ConnectivityMatrix
 		uint64_t* df_delayBits() const;
 
 		/*! Clear one plane of connectivity matrix on the device */
-		void df_clear(size_t submatrix);
 		void clearStdpAccumulator();
 
 		// void printSTDPTrace();
