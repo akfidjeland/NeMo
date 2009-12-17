@@ -35,6 +35,7 @@ isExcitatory idx = idx `mod` 1024 < 820
 
 exSynapse r tgt = AxonTerminal tgt delay 0.25 True ()
     where
+        -- delay = 1
         delay = ceiling $ 20.0 * r
 -- exSynapse r tgt = w `seq` AxonTerminal tgt 1 w ()
 --    where w = 0.5 * r
@@ -109,9 +110,10 @@ clusteredNeuron'
 clusteredNeuron' ngen sgen pre cc cs m p r = state `seq` neuron state ss
     where
         (nr, r2) = random r
-        (sr, r3) = random r2
+        (r3, r4) = split r2
+        sr = randoms r3
         state = ngen nr
-        ss = map (sgen sr) $ clusteredTargets pre cc cs m p r3
+        ss = zipWith sgen sr $ clusteredTargets pre cc cs m p r4
 
 
 {- Produce a list of postsynaptic neurons where a proportion 'p' is selected
