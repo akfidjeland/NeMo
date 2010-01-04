@@ -29,7 +29,8 @@ RuntimeData::RuntimeData(
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
 	m_maxDelay(maxDelay),
-	m_cm(CM_COUNT, (ConnectivityMatrix*) NULL),
+	m_cm0(NULL),
+	m_cm1(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
 	m_deviceDirty(true),
@@ -53,14 +54,14 @@ RuntimeData::RuntimeData(
 	//! \todo seed properly from outside function
 	thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
 
-	m_cm[CM_L0] = new ConnectivityMatrix(
+	m_cm0 = new ConnectivityMatrix(
 			partitionCount,
 			maxPartitionSize,
 			maxDelay,
 			maxL0SynapsesPerDelay,
 			setReverse);
 
-	m_cm[CM_L1] = new ConnectivityMatrix(
+	m_cm1 = new ConnectivityMatrix(
 			partitionCount,
 			maxPartitionSize,
 			maxDelay,
@@ -83,12 +84,8 @@ RuntimeData::~RuntimeData()
 	delete firingStimulus;
 	delete thalamicInput;
 	delete cycleCounters;
-	for(std::vector<ConnectivityMatrix*>::iterator i = m_cm.begin();
-			i != m_cm.end(); ++i) {
-		if(*i != NULL) {
-			delete *i;
-		}
-	}
+	delete m_cm0;
+	delete m_cm1;
 }
 
 
@@ -115,8 +112,8 @@ RuntimeData::moveToDevice()
 {
 	if(m_deviceDirty) {
 		neuronParameters->moveToDevice();
-		m_cm[CM_L0]->moveToDevice(true);
-		m_cm[CM_L1]->moveToDevice(false);
+		m_cm0->moveToDevice(true);
+		m_cm1->moveToDevice(false);
 		thalamicInput->moveToDevice();
 		if(stdpFn.enabled()) {
 			configureStdp(stdpFn.preFireWindow(),
@@ -150,11 +147,13 @@ RuntimeData::haveL1Connections() const
 struct ConnectivityMatrix*
 RuntimeData::cm(size_t idx) const
 {
-	if(idx >= CM_COUNT) {
-		ERROR("RuntimeData::cm: invalid connectivity matrix (%u) requested", (uint) idx);
-		return NULL;
+	switch(idx) {
+		case 0 : return m_cm0;
+		case 1 : return m_cm1;
+		default :
+			ERROR("RuntimeData::cm: invalid connectivity matrix (%u) requested", (uint) idx);
+			return NULL;
 	}
-	return m_cm[idx];
 }
 
 
@@ -246,10 +245,8 @@ RuntimeData::d_allocated() const
 	total += neuronParameters ? neuronParameters->d_allocated() : 0;
 	total += firingOutput     ? firingOutput->d_allocated()     : 0;
 	total += thalamicInput    ? thalamicInput->d_allocated()    : 0;
-	for(std::vector<ConnectivityMatrix*>::const_iterator i = m_cm.begin();
-			i != m_cm.end(); ++i) {
-		total += *i ?  (*i)->d_allocated() : 0;
-	}
+	total += m_cm0            ? m_cm0->d_allocated()            : 0;
+	total += m_cm1            ? m_cm1->d_allocated()            : 0;
 	return total;
 }
 

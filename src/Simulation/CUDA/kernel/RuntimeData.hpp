@@ -106,8 +106,8 @@ struct RuntimeData
 
 		uint32_t m_cycle;
 
-		// see kernel.h for enumeration of connectivity matrices
-		std::vector<struct ConnectivityMatrix*> m_cm;
+		ConnectivityMatrix* m_cm0;
+		ConnectivityMatrix* m_cm1;
 
 		cudaDeviceProp m_deviceProperties;
 
