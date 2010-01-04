@@ -55,10 +55,10 @@ class ConnectivityMatrixImpl
 				uint sourcePartition,
 				uint sourceNeuron,
 				uint delay,
-				const float* f_weights,
-				const uint* f_targetPartition,
-				const uint* f_targetNeuron,
-				const uchar* f_isPlastic,
+				const uint* targetPartition,
+				const uint* targetNeuron,
+				const float* weights,
+				const uchar* plastic,
 				size_t length);
 
 		/* Copy data to device and clear host buffers */

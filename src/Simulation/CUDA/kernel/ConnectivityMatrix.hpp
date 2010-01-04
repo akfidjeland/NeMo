@@ -53,9 +53,9 @@ struct ConnectivityMatrix
 				uint sourcePartition,
 				uint sourceNeuron,
 				uint delay,
-				const float* f_weights,
 				const uint* f_targetPartition,
 				const uint* f_targetNeuron,
+				const float* f_weights,
 				const uchar* f_isPlastic,
 				size_t length);
 

@@ -48,9 +48,9 @@ ConnectivityMatrixImpl::setRow(
 		uint sourcePartition,
 		uint sourceNeuron,
 		uint delay,
-		const float* weights,
 		const uint* targetPartition,
 		const uint* targetNeuron,
+		const float* weights,
 		const uchar* isPlastic,
 		size_t f_length)
 {

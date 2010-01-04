@@ -136,9 +136,9 @@ foreign import ccall unsafe "setCMDRow"
                 -> CUInt        -- ^ source partition index
                 -> CUInt        -- ^ source neuron index
                 -> CUInt        -- ^ synapse delay
-                -> Ptr CFloat   -- ^ synapse weights
                 -> Ptr CUInt    -- ^ target partition indices
                 -> Ptr CUInt    -- ^ target neuron indices
+                -> Ptr CFloat   -- ^ synapse weights
                 -> Ptr CUChar   -- ^ per-synapse plasticity
                 -> CSize        -- ^ synapses count for this neuron/delay pair
                 -> IO ()
@@ -151,7 +151,7 @@ setCMDRow rt wbuf pbuf nbuf spbuf level pre delay len =
         (fromIntegral $! partitionIdx pre)
         (fromIntegral $! neuronIdx pre)
         (fromIntegral delay)
-        wbuf pbuf nbuf spbuf
+        pbuf nbuf wbuf spbuf
         (fromIntegral $! len)
 
 

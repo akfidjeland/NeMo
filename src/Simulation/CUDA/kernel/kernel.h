@@ -99,9 +99,9 @@ setCMDRow(RTDATA rtdata,
 		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
-		float* weights,
 		unsigned int* targetPartition,
 		unsigned int* targetNeuron,
+		float* weights,
 		unsigned char* isPlastic,
 		size_t length);
 
