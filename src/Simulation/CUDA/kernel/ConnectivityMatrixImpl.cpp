@@ -17,12 +17,6 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
 		size_t maxDelay,
 		size_t maxSynapsesPerDelay,
 		bool setReverse) :
-	m_fsynapses(partitionCount,
-			maxPartitionSize,
-			maxDelay,
-			maxSynapsesPerDelay,
-			true,
-			FCM_SUBMATRICES),
     m_delayBits(partitionCount, maxPartitionSize, true),
     m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
@@ -77,7 +71,7 @@ ConnectivityMatrixImpl::setRow(
 		}
 	}
 
-	m_fsynapses2[nemo::ForwardIdx(sourcePartition, delay)].addSynapses(
+	m_fsynapses[nemo::ForwardIdx(sourcePartition, delay)].addSynapses(
 			sourceNeuron,
 			f_length,
 			targetPartition,
@@ -102,8 +96,8 @@ ConnectivityMatrixImpl::moveToDevice(bool isL0)
 		m_rsynapses[p]->moveToDevice();
 	}
 
-	for(fcm_t::iterator i = m_fsynapses2.begin();
-			i != m_fsynapses2.end(); ++i) {
+	for(fcm_t::iterator i = m_fsynapses.begin();
+			i != m_fsynapses.end(); ++i) {
 		i->second.moveToDevice();
 	}
 
@@ -123,8 +117,8 @@ ConnectivityMatrixImpl::getRow(
 		weight_t* weight[],
 		uchar* plastic[])
 {
-	fcm_t::iterator group = m_fsynapses2.find(nemo::ForwardIdx(sourcePartition, delay));
-	if(group != m_fsynapses2.end()) {
+	fcm_t::iterator group = m_fsynapses.find(nemo::ForwardIdx(sourcePartition, delay));
+	if(group != m_fsynapses.end()) {
 		return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
 	} else {
 		partition = NULL;
@@ -157,15 +151,12 @@ ConnectivityMatrixImpl::d_allocated() const
 	}
 
 	size_t fcm = 0;
-	for(fcm_t::const_iterator i = m_fsynapses2.begin();
-			i != m_fsynapses2.end(); ++i) {
+	for(fcm_t::const_iterator i = m_fsynapses.begin();
+			i != m_fsynapses.end(); ++i) {
 		fcm += i->second.d_allocated();
 	}
 
-	return
-		m_fsynapses.d_allocated()
-		+ m_delayBits.d_allocated()
-		+ fcm + rcm;
+	return m_delayBits.d_allocated() + fcm + rcm;
 }
 
 
@@ -243,8 +234,8 @@ ConnectivityMatrixImpl::f_setDispatchTable(bool isL0)
 	fcm_ref_t null = fcm_packReference(0, 0);
 	std::vector<fcm_ref_t> table(size, null);
 
-	for(fcm_t::const_iterator i = m_fsynapses2.begin();
-			i != m_fsynapses2.end(); ++i) {
+	for(fcm_t::const_iterator i = m_fsynapses.begin();
+			i != m_fsynapses.end(); ++i) {
 
 		nemo::ForwardIdx fidx = i->first;
 		const SynapseGroup& sg = i->second;

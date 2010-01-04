@@ -12,8 +12,7 @@
 
 /*! \brief Sparse synapse matrix in reverse format for a single partition
  *
- * Synapses in this matrix are stored on a per-target basis. Unlike in SMatrix
- * there is no further sub-division into separate delays.
+ * Synapses in this matrix are stored on a per-target basis.
  *
  * The reverse matrix has two planes: one for reverse addressing and one for
  * accumulating STDP statistics (LTP and LTD).

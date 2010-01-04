@@ -11,7 +11,6 @@
 #include <nemo_types.hpp>
 #include "nemo_cuda_types.h"
 #include "kernel.h" // for synapse type used in interface
-#include "SMatrix.hpp"
 #include "SynapseGroup.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
@@ -90,10 +89,7 @@ class ConnectivityMatrixImpl
 
 	private:
 
-		//! \todo remove this. It's no longer needed
-		SMatrix<uint> m_fsynapses;
-
-		/* We also accumulate the firing delay bits that are used in the spike
+		/* We accumulate the firing delay bits that are used in the spike
 		 * delivery */
 		NVector<uint64_t> m_delayBits;
 
@@ -110,7 +106,7 @@ class ConnectivityMatrixImpl
 		bool m_setReverse;
 
 		typedef std::map<nemo::ForwardIdx, SynapseGroup> fcm_t;
-		fcm_t m_fsynapses2;
+		fcm_t m_fsynapses;
 
 		/* The weight matrix is the only bit of data which needs to be read
 		 * from the device. This is only allocated if the user requests this

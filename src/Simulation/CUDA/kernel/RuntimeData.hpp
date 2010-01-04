@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "NVector.hpp"
-#include "SMatrix.hpp"
 #include "kernel.cu_h"
 
 #include <Timer.hpp>
