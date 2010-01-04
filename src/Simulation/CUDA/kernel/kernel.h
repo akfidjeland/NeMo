@@ -96,24 +96,27 @@ loadThalamicInputSigma(RTDATA rt,
 void
 setCMDRow(RTDATA rtdata,
 		size_t cmIdx,
-		unsigned int sourceCluster,
+		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
 		float* weights,
 		unsigned int* targetPartition,
 		unsigned int* targetNeuron,
-		unsigned int* isPlastic,
+		unsigned char* isPlastic,
 		size_t length);
 
 
-/*! Read connectivity matrix back from device. */
-void
-getCM(RTDATA rtdata,
+/*! Read connectivity matrix back from device for a single neuron and delay. */
+size_t
+getCMDRow(RTDATA rtdata,
 		size_t cmIdx,
-		int** targetPartitions,
-		int** targetNeurons,
-		float** weights,
-		size_t* pitch);
+		unsigned int sourcePartition,
+		unsigned int sourceNeuron,
+		unsigned int delay,
+		unsigned int* targetPartition[],
+		unsigned int* targetNeuron[],
+		float* weights[],
+		unsigned char* plastic[]);
 
 
 //-----------------------------------------------------------------------------

@@ -20,7 +20,7 @@ ConnectivityMatrix::setRow(
 		const float* f_weights,
 		const uint* f_targetPartition,
 		const uint* f_targetNeuron,
-		const uint* f_isPlastic,
+		const uchar* f_isPlastic,
 		size_t length)
 {
 	m_impl->setRow(sourcePartition,
@@ -41,14 +41,20 @@ ConnectivityMatrix::moveToDevice(bool isL0)
 }
 
 
-void
-ConnectivityMatrix::copyToHost(
-		int* f_targetPartition[],
-		int* f_targetNeuron[],
-		float* f_weights[],
-		size_t* pitch)
+
+size_t
+ConnectivityMatrix::getRow(
+		pidx_t sourcePartition,
+		nidx_t sourceNeuron,
+		delay_t delay,
+		uint currentCycle,
+		pidx_t* partition[],
+		nidx_t* neuron[],
+		weight_t* weight[],
+		uchar* plastic[])
 {
-	m_impl->copyToHost(f_targetPartition, f_targetNeuron, f_weights, pitch);
+	return m_impl->getRow(sourcePartition, sourceNeuron, delay,
+			currentCycle, partition, neuron, weight, plastic);
 }
 
 

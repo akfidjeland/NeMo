@@ -8,7 +8,7 @@ module Simulation.CUDA.KernelFFI (
     readFiring,
     applyStdp,
     setCMDRow,
-    getCM,
+    getCMDRow,
     copyToDevice,
     deviceDiagnostics,
     syncSimulation,
@@ -38,7 +38,7 @@ import Data.Word (Word64)
 import Foreign.C.Types
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Array (peekArray)
-import Foreign.Marshal.Utils (fromBool)
+import Foreign.Marshal.Utils (fromBool, toBool)
 import Foreign.Ptr
 import Foreign.Storable (peek)
 
@@ -46,7 +46,7 @@ import Simulation.CommonFFI
 import Simulation.CUDA.Address
 import Simulation.CUDA.State (State(..), CuRT)
 
-import Types (Time)
+import Types (Time, Delay, Weight)
 
 #include <kernel.h>
 
@@ -139,7 +139,7 @@ foreign import ccall unsafe "setCMDRow"
                 -> Ptr CFloat   -- ^ synapse weights
                 -> Ptr CUInt    -- ^ target partition indices
                 -> Ptr CUInt    -- ^ target neuron indices
-                -> Ptr CUInt    -- ^ per-synapse plasticity
+                -> Ptr CUChar   -- ^ per-synapse plasticity
                 -> CSize        -- ^ synapses count for this neuron/delay pair
                 -> IO ()
 
@@ -156,28 +156,48 @@ setCMDRow rt wbuf pbuf nbuf spbuf level pre delay len =
 
 
 
-foreign import ccall unsafe "getCM"
-    c_getCM :: Ptr CuRT
+foreign import ccall unsafe "getCMDRow" c_getCMDRow
+        :: Ptr CuRT
         -> CSize            -- ^ matrix level: 0 or 1
-        -> Ptr (Ptr CInt)   -- ^ synapse target partitions
-        -> Ptr (Ptr CInt)   -- ^ synapse target neurons
+        -> CUInt            -- ^ source partition
+        -> CUInt            -- ^ source neuron
+        -> CUInt            -- ^ delay
+        -> Ptr (Ptr CUInt)  -- ^ target partitions
+        -> Ptr (Ptr CUInt)  -- ^ target neurons
         -> Ptr (Ptr CFloat) -- ^ synapse weights
-        -> Ptr CSize        -- ^ pitch of each row (synapses per delay)
-        -> IO ()
+        -> Ptr (Ptr CUChar) -- ^ synapse plasticity
+        -> IO CSize         -- ^ length of returned array
 
 
-getCM :: Ptr CuRT -> CMatrixIndex -> IO (Ptr CInt, Ptr CInt, Ptr CFloat, Int)
-getCM rt lvl = do
-    alloca $ \p_ptr   -> do
-    alloca $ \n_ptr   -> do
-    alloca $ \w_ptr   -> do
-    alloca $ \len_ptr -> do
-    c_getCM rt (unCMatrixIndex lvl) p_ptr n_ptr w_ptr len_ptr
-    p   <- peek p_ptr
-    n   <- peek n_ptr
-    w   <- peek w_ptr
-    len <- peek len_ptr
-    return $! (p, n, w, fromIntegral len)
+
+{- | Get (possibly modified) synapses for a single neuron and delay -}
+getCMDRow
+    :: Ptr CuRT
+    -> CMatrixIndex             -- ^ level 0 or 1
+    -> PartitionIdx             -- ^ source partition
+    -> NeuronIdx                -- ^ source neuron
+    -> Delay                    -- ^ delay
+    -> IO [(DeviceIdx, Weight, Bool)] -- ^ synapses
+getCMDRow rt lvl sp sn d = do
+    alloca $ \p_ptr -> do
+    alloca $ \n_ptr -> do
+    alloca $ \w_ptr -> do
+    alloca $ \s_ptr -> do -- plasticity
+    c_len <- c_getCMDRow rt
+            (unCMatrixIndex lvl)
+            (fromIntegral sp)
+            (fromIntegral sn)
+            (fromIntegral d)
+            p_ptr n_ptr w_ptr s_ptr
+    let len = fromIntegral c_len
+    p_list <- peekWith fromIntegral len p_ptr
+    n_list <- peekWith fromIntegral len n_ptr
+    w_list <- peekWith realToFrac len w_ptr
+    s_list <- peekWith toBool len s_ptr
+    let didx = zip p_list n_list
+    return $! zip3 didx w_list s_list
+    where
+        peekWith f len ptr = (return . map f) =<< peekArray len =<< peek ptr
 
 
 

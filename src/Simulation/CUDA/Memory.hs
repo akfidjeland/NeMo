@@ -8,15 +8,15 @@ module Simulation.CUDA.Memory (
 
 
 
-import Control.Monad (zipWithM_, zipWithM, forM_)
+import Control.Monad (zipWithM_, forM_)
 import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
-import qualified Data.Map as Map (Map, fromList)
+import qualified Data.Map as Map (Map, fromList, empty)
 import Foreign.C.Types
 import Foreign.Marshal.Array (mallocArray)
 import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
-import Foreign.Storable (pokeElemOff, peekElemOff)
+import Foreign.Storable (pokeElemOff)
 
 import Construction.Neuron (terminalsByDelay)
 import Construction.Izhikevich (IzhNeuron(..), stateSigma)
@@ -102,7 +102,7 @@ data Outbuf = Outbuf {
         weights :: Ptr CFloat,
         pidx    :: Ptr CUInt,
         nidx    :: Ptr CUInt,
-        plasticity :: Ptr CUInt
+        plasticity :: Ptr CUChar
     }
 
 
@@ -167,101 +167,29 @@ pitch (_, _, _, p) = p
 
 {- | Get (possibly modified) connectivity matrix back from device -}
 getWeights :: State -> IO (Map.Map Idx [AxonTerminal Static])
-getWeights sim = do
-    let rt_ptr = rt sim
-    darr0 <- getCM rt_ptr cmatrixL0
-    darr1 <- getCM rt_ptr cmatrixL1
-    ns <- peekPartitions
-            (globalIdx $ att sim)
-            (pcount sim)
-            (psize sim)
-            (maxDelay sim)
-            darr0 darr1
-    return $! Map.fromList $ concat ns
+getWeights sim = (return . Map.fromList) =<< mapM (getNWeights sim) (deviceIndices (att sim))
 
 
--- for each partition in network
-peekPartitions globalIdx pcount psizes d_max darr0 darr1 = zipWithM go [0..] psizes
+-- return data for a single neuron (all delays)
+getNWeights :: State -> DeviceIdx -> IO (Idx, [AxonTerminal Static])
+getNWeights sim sdidx = do
+    sgidx <- globalIdxM (att sim) sdidx
+    ss <- (return . concat) =<< mapM (getNDWeights sim sdidx) [1..maxDelay sim]
+    return $! (sgidx, ss)
+
+
+-- return data for a single neuron (single delay)
+getNDWeights :: State -> DeviceIdx -> Delay -> IO [AxonTerminal Static]
+getNDWeights sim source d = do
+    let sp = partitionIdx source
+    let sn = neuronIdx source
+    w0 <- getCMDRow (rt sim) cmatrixL0 sp sn d
+    w1 <- getCMDRow (rt sim) cmatrixL1 sp sn d
+    return $! map pack $ w0 ++ w1
     where
-        go p_idx psize = do
-            let s_idx0 = poffset p_idx psize darr0
-            let s_idx1 = poffset p_idx psize darr1
-            peekNeurons globalIdx p_idx 0 psize d_max s_idx0 s_idx1 darr0 darr1
-        poffset p psize darr = p * maxPSize * d_max * pitch darr
-        maxPSize = either error id $ maximumM psizes
-
-
--- for each neuron in partition
-peekNeurons globalIdx p_idx n_idx n_max d_max s_idx0 s_idx1 darr0 darr1 =
-    go 0 s_idx0 s_idx1
-    where
-        go n_idx s_idx0 s_idx1
-            -- TODO have some way to determine end of partition, for small
-            -- partitions
-            | n_idx == n_max = return []
-            | otherwise      = do
-                let n_gidx = globalIdx (p_idx, n_idx)
-                ss <- peekDelays globalIdx d_max s_idx0 s_idx1 darr0 darr1
-                ns <- go (n_idx+1) (step s_idx0 darr0) (step s_idx1 darr1)
-                return $! (n_gidx, concat ss) : ns
-        step s_idx darr = s_idx + d_max * pitch darr
-
-
--- for each delay in neuron
-peekDelays globalIdx d_max s_idx0 s_idx1 darr0 darr1 = go 1 s_idx0 s_idx1
-    where
-        go d s_idx0 s_idx1
-            | d > d_max = return []
-            | otherwise  = do
-                s0  <- peekAxon globalIdx d s_idx0 darr0
-                s1  <- peekAxon globalIdx d s_idx1 darr1
-                ss  <- go (d+1) (s_idx0 + pitch darr0) (s_idx1 + pitch darr1)
-                return $! s0 : s1 : ss
-
-
-{- | Get synapses for a specific delay -}
-peekAxon
-    :: (DeviceIdx -> Idx)
-    -> Delay
-    -> Int        -- ^ current synapse
-    -> DArr       -- ^ device data
-    -> IO [AxonTerminal Static]
-peekAxon globalIdx d i darr = go i (i + pitch darr)
-    where
-        go i end
-            | i == end  = return []
-            | otherwise = do
-                s  <- peekSynapse globalIdx i d darr
-                ss <- go (i+1) end
-                case s of
-                    -- TODO: ok to assume all null synapses at end
-                    Nothing -> return $! ss
-                    Just s  -> return $! (s:ss)
-
-
-{- | Synapses pointing to the null neuron are considered inactive -}
--- TODO: get this value from kernel
-nullIdx = (== (-1))
-
-
-{- | Get a single synapse out of c-array -}
-peekSynapse
-    :: (DeviceIdx -> Idx)
-    -> Int
-    -> Delay
-    -> DArr
-    -> IO (Maybe (AxonTerminal Static))
-peekSynapse globalIdx i delay (tp_arr, tn_arr, w_arr, _) = do
-    tp <- peekElemOff tp_arr i
-    if nullIdx tp
-        then return $! Nothing
-        else do
-            tn     <- peekElemOff tn_arr i
-            weight <- peekElemOff w_arr i
-            let target = globalIdx (fromIntegral tp, fromIntegral tn)
-            return $! Just $!
-                -- TODO: get plasticity as well
-                AxonTerminal target delay (realToFrac weight) (weight > 0.0) ()
+        pack :: (DeviceIdx, Weight, Bool) -> AxonTerminal Static
+        pack (didx, w, plastic) =
+            AxonTerminal (globalIdx (att sim) didx) d w plastic ()
 
 
 -------------------------------------------------------------------------------

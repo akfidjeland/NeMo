@@ -10,6 +10,7 @@
 #include <map>
 
 #include <nemo_types.h>
+#include "nemo_cuda_types.h"
 
 
 /*! \brief A somewhat arbitrary collection of synapses 
@@ -22,12 +23,6 @@
 class SynapseGroup 
 {
 	public:
-		
-		//! \todo move this into separate file and share across project
-		typedef uint pidx_t;
-		//typedef uint32_t pidx_t;
-		//typedef uint32_t nidx_t;
-		typedef float weight_t;
 
 		/*! Create an empty synapse group */
 		SynapseGroup();
@@ -36,14 +31,16 @@ class SynapseGroup
 		void addSynapse(nidx_t sourceNeuron,
 				pidx_t targetPartition,
 				nidx_t targetNeuron,
-				float weight);
+				float weight,
+				uchar plastic);
 
 		/*! Add several synapses with the same source neuron */
 		void addSynapses(nidx_t sourceNeuron,
 				size_t ncount,
 				const pidx_t targetPartition[],
 				const nidx_t targetNeuron[],
-				const float weight[]);
+				const float weight[],
+				const uchar plastic[]);
 
 		/*! Move to device and free host data. Return pointer to device data.*/
 		boost::shared_ptr<uint32_t> moveToDevice();
@@ -71,6 +68,18 @@ class SynapseGroup
 		/*! \return number of bytes allocated on device */
 		size_t d_allocated() const { return m_allocated; }
 
+		/*! Set weights for a particular neuron in the form of 3 vectors
+		 * (partition, neuron, weight).
+		 * \return
+		 * 		length of vectors
+		 */
+		size_t getWeights(nidx_t sourceNeuron,
+				uint currentCycle,
+				pidx_t* partition[],
+				nidx_t* neuron[],
+				weight_t* weight[],
+				uchar* plastic[]);
+
 	private:
 
 		struct Row {
@@ -91,6 +100,19 @@ class SynapseGroup
 		size_t m_allocated; // bytes on device
 
 		size_t maxSynapsesPerNeuron() const;
+
+		/* The user may want to read back the modified weight matrix. We then
+		 * need the corresponding non-compressed addresses as well. The shape
+		 * of each of these is exactly that of the weights on the device.
+		 * Invalid entries have both partition and neuron set to InvalidNeuron.
+		 */
+		std::map<int, std::vector<pidx_t> > mf_targetPartition;
+		std::map<int, std::vector<nidx_t> > mf_targetNeuron;
+		std::map<int, std::vector<uchar> > mf_plastic;
+		std::vector<synapse_t> mf_weights; // in device format
+
+		/* We make sure to only copy each datum at most once per cycle */
+		uint m_lastSync;
 };
 
 #endif

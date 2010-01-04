@@ -9,6 +9,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include <nemo_types.hpp>
+#include "nemo_cuda_types.h"
+#include "kernel.h" // for synapse type used in interface
 #include "SMatrix.hpp"
 #include "SynapseGroup.hpp"
 #include "NVector.hpp"
@@ -56,18 +58,21 @@ class ConnectivityMatrixImpl
 				const float* f_weights,
 				const uint* f_targetPartition,
 				const uint* f_targetNeuron,
-				const uint* f_isPlastic,
+				const uchar* f_isPlastic,
 				size_t length);
 
 		/* Copy data to device and clear host buffers */
 		void moveToDevice(bool isL0);
 
-		/* Copy data from device to host */
-		void copyToHost(
-				int* f_targetPartition[],
-				int* f_targetNeuron[],
-				float* f_weights[],
-				size_t* pitch);
+		size_t getRow(
+				pidx_t sourcePartition,
+				nidx_t sourceNeuron,
+				delay_t delay,
+				uint currentCycle,
+				pidx_t* partition[],
+				nidx_t* neuron[],
+				weight_t* weight[],
+				uchar* plastic[]);
 
 		/*! \return device delay bit data */
 		uint64_t* df_delayBits() const;
@@ -85,6 +90,7 @@ class ConnectivityMatrixImpl
 
 	private:
 
+		//! \todo remove this. It's no longer needed
 		SMatrix<uint> m_fsynapses;
 
 		/* We also accumulate the firing delay bits that are used in the spike
@@ -106,20 +112,10 @@ class ConnectivityMatrixImpl
 		typedef std::map<nemo::ForwardIdx, SynapseGroup> fcm_t;
 		fcm_t m_fsynapses2;
 
-		/* The user may want to read back the modified weight matrix. We then
-		 * need the corresponding non-compressed addresses as well. The shape
-		 * of each of these is exactly that of the weights on the device.
-		 * Invalid entries have both partition and neuron set to InvalidNeuron.
-		 * */
-		std::vector<int> mf_targetPartition;
-		std::vector<int> mf_targetNeuron;
-
 		/* The weight matrix is the only bit of data which needs to be read
 		 * from the device. This is only allocated if the user requests this
 		 * data.  */
 		std::vector<uint32_t> mf_weights;
-
-		static const int InvalidNeuron;
 
 		void f_setDispatchTable(bool isL0);
 

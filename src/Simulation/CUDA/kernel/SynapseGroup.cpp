@@ -8,7 +8,8 @@
 
 SynapseGroup::SynapseGroup() :
 	md_bpitch(0),
-	m_allocated(0)
+	m_allocated(0),
+	m_lastSync(-1)
 { }
 
 
@@ -18,12 +19,17 @@ SynapseGroup::addSynapse(
 		nidx_t sourceNeuron,
 		pidx_t partition,
 		nidx_t neuron,
-		float weight)
+		float weight,
+		uchar plastic)
 {
 	Row& row = mh_synapses[sourceNeuron];
 	row.addresses.push_back(f_packSynapse(partition, neuron));
 	row.weights.push_back(weight);
 	assert(row.addresses.size() == row.weights.size());
+
+	mf_targetPartition[sourceNeuron].push_back(partition);
+	mf_targetNeuron[sourceNeuron].push_back(neuron);
+	mf_plastic[sourceNeuron].push_back(plastic);
 }
 
 
@@ -35,13 +41,18 @@ SynapseGroup::addSynapses(
 		size_t ncount,
 		const pidx_t partition[],
 		const nidx_t neuron[],
-		const float weight[])
+		const float weight[],
+		const uchar plastic[])
 {
 	Row& row = mh_synapses[sourceNeuron];
 	for(size_t n = 0; n < ncount; ++n) {
 		row.addresses.push_back(f_packSynapse(partition[n], neuron[n]));
 		row.weights.push_back(weight[n]);
 	}
+
+	std::copy(partition, partition+ncount, back_inserter(mf_targetPartition[sourceNeuron]));
+	std::copy(neuron, neuron+ncount, back_inserter(mf_targetNeuron[sourceNeuron]));
+	std::copy(plastic, plastic+ncount, back_inserter(mf_plastic[sourceNeuron]));
 	assert(row.addresses.size() == row.weights.size());
 }
 
@@ -105,14 +116,56 @@ SynapseGroup::moveToDevice()
 		/*! note that std::copy won't work as it will silently cast floats to integers */
 		memcpy(astart + row_idx, &row.addresses[0], row.addresses.size() * sizeof(synapse_t));
 		memcpy(wstart + row_idx, &row.weights[0], row.weights.size() * sizeof(synapse_t));
-
 	}
 
 	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], m_allocated, cudaMemcpyHostToDevice));
-	
+
 	mh_synapses.clear();
 	md_synapses = boost::shared_ptr<synapse_t>(d_data, cudaFree);	
 	return md_synapses;
+}
+
+
+
+size_t
+SynapseGroup::getWeights(
+		nidx_t sourceNeuron,
+		uint currentCycle,
+		pidx_t* partition[],
+		nidx_t* neuron[],
+		weight_t* weight[],
+		uchar* plastic[])
+{
+	if(mf_targetPartition.find(sourceNeuron) == mf_targetPartition.end()) {
+		partition = NULL;
+		neuron = NULL;
+		weight = NULL;
+		return 0;
+	}
+
+	size_t w_planeSize = planeSize() / sizeof(synapse_t);
+
+	if(mf_weights.empty()) {
+		mf_weights.resize(w_planeSize, 0);
+	}
+
+	if(currentCycle != m_lastSync) {
+		// if we haven't already synced this cycle, do so now
+		CUDA_SAFE_CALL(cudaMemcpy(&mf_weights[0],
+					md_synapses.get() + FCM_WEIGHT * w_planeSize,
+					w_planeSize, cudaMemcpyDeviceToHost));
+	}
+
+	assert(sizeof(weight_t) == sizeof(synapse_t));
+
+	*weight = (weight_t*) &mf_weights[sourceNeuron * wpitch()];
+	*partition = &mf_targetPartition[sourceNeuron][0];
+	*neuron = &mf_targetNeuron[sourceNeuron][0];
+	*plastic = &mf_plastic[sourceNeuron][0];
+
+	assert(mf_targetPartition[sourceNeuron].size() <= wpitch());
+
+	return mf_targetPartition[sourceNeuron].size();
 }
 
 

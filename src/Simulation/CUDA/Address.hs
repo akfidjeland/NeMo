@@ -2,13 +2,14 @@
  -
  - When the network is constructed, each neuron has a unique address. The user
  - specifies probes etc. in terms of these addresses. The network may be
- - transformed however, when mapping onto the simulation backend. We therefore
+ - transformed, however, when mapping onto the simulation backend. We therefore
  - need a map from the original indices to the backend-specific indices.
  -
- - On the device neurons are grouped in clusters. The addressing of neurons is
- - therefore hierarchical. The size of each cluster is architecture-dependent.
- - We use a tuple here rather than a custom data type, in order to auto-derive
- - Ix (for mapping onto flat address space), saving us some effort. -}
+ - On the device neurons are grouped in partitions. The addressing of neurons
+ - is therefore hierarchical. The size of each partition is architecture-
+ - dependent.  We use a tuple here rather than a custom data type, in order to
+ - auto-derive Ix (for mapping onto flat address space), saving us some effort.
+ -}
 
 module Simulation.CUDA.Address (
     -- * Hierarchical addressing
@@ -23,7 +24,9 @@ module Simulation.CUDA.Address (
     globalIdx,
     globalIdxM,
     deviceIdx,
-    deviceIdxM
+    deviceIdxM,
+    -- * Enumeration
+    deviceIndices
 ) where
 
 import Control.Monad
@@ -89,3 +92,8 @@ idxLookup from arr idx =
     if inRange (bounds arr) idx
         then maybe (fail $ "invalid neuron: " ++ show idx) return $ arr!idx
         else fail $ "invalid " ++ from ++ " index (" ++ show idx ++ ")"
+
+
+-- | All specified device indices in table
+deviceIndices :: ATT -> [DeviceIdx]
+deviceIndices = catMaybes . elems . g2d

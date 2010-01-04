@@ -22,6 +22,7 @@ import Simulation.CUDA.KernelFFI (copyToDevice)
 import Simulation.STDP.Options (stdpOptions)
 import Types (FT)
 
+
 tests = TestLabel "CUDA memory" $ TestList [
             testWeightQuery
         ]
@@ -50,9 +51,10 @@ testWeightQuery = TestCase $ do
 
     {- The neuron will be different, since getWeights just puts dummy neurons
      - in the network. The synapses should be exactly the same, though -}
-    let sorted = sort $ concat $ Map.elems ns
-    let sorted' = sort $ concat $ Map.elems ns'
-    zipWithM_ (assertEqual "Synapses of each neuron before and after writing to device") sorted sorted'
+    -- TODO: compare this for every presynaptic
+    let sorted = sort $ Map.assocs ns
+    let sorted' = sort $ Map.assocs ns'
+    zipWithM_ comparePresynaptic sorted sorted'
 
     where
 
@@ -62,3 +64,11 @@ testWeightQuery = TestCase $ do
         viaCFloat :: Double -> Double
         viaCFloat x = realToFrac x'
             where x' = realToFrac x :: CFloat
+
+        comparePresynaptic (k, ss) (k', ss') = do
+            let sorted = sort ss
+                sorted' = sort ss'
+                msg = "Synapses for " ++ show k
+            assertEqual "Presynaptic neuron " k k'
+            zipWithM_ (assertEqual msg) sorted sorted'
+

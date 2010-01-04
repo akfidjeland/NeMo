@@ -11,8 +11,6 @@
 #include <stdexcept>
 
 
-const int ConnectivityMatrixImpl::InvalidNeuron = -1;
-
 ConnectivityMatrixImpl::ConnectivityMatrixImpl(
         size_t partitionCount,
         size_t maxPartitionSize,
@@ -29,13 +27,7 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
     m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(maxDelay),
-	m_setReverse(setReverse),
-	mf_targetPartition(
-			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
-			ConnectivityMatrixImpl::InvalidNeuron),
-	mf_targetNeuron(
-			partitionCount * maxPartitionSize * maxDelay * m_fsynapses.delayPitch(),
-			ConnectivityMatrixImpl::InvalidNeuron)
+	m_setReverse(setReverse)
 {
 	for(uint p = 0; p < partitionCount; ++p) {
 		m_rsynapses.push_back(new RSMatrix(maxPartitionSize));
@@ -59,7 +51,7 @@ ConnectivityMatrixImpl::setRow(
 		const float* weights,
 		const uint* targetPartition,
 		const uint* targetNeuron,
-		const uint* isPlastic,
+		const uchar* isPlastic,
 		size_t f_length)
 {
     if(f_length == 0)
@@ -77,46 +69,27 @@ ConnectivityMatrixImpl::setRow(
 		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
 	}
 
-    //! \todo allocate this only once!
-	std::vector<uint> abuf(m_fsynapses.delayPitch(), 0);
-	std::vector<uint> wbuf(m_fsynapses.delayPitch(), 0);
-
 	for(size_t i=0; i<f_length; ++i) {
-		// see connectivityMatrix.cu_h for encoding format
 		if(m_setReverse && isPlastic[i]) {
 			m_rsynapses[targetPartition[i]]->addSynapse(
 					sourcePartition, sourceNeuron, i,
 					targetNeuron[i], delay);
 		}
-		wbuf[i] = reinterpret_cast<const uint32_t&>(weights[i]);
-		abuf[i] = f_packSynapse(targetPartition[i], targetNeuron[i]);
 	}
-
-	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, abuf, FCM_ADDRESS);
-	m_fsynapses.setDelayRow(sourcePartition, sourceNeuron, delay, wbuf, FCM_WEIGHT);
 
 	m_fsynapses2[nemo::ForwardIdx(sourcePartition, delay)].addSynapses(
 			sourceNeuron,
 			f_length,
 			targetPartition,
 			targetNeuron,
-			weights);
+			weights,
+			isPlastic);
 
 	uint32_t delayBits = m_delayBits.getNeuron(sourcePartition, sourceNeuron);
 	delayBits |= 0x1 << (delay-1);
 	m_delayBits.setNeuron(sourcePartition, sourceNeuron, delayBits);
 
 	m_maxDelay = std::max(m_maxDelay, delay);
-
-	{
-		size_t offset = m_fsynapses.offset(sourcePartition, sourceNeuron, delay, 0);
-		std::copy(targetPartition,
-				targetPartition + f_length,
-				mf_targetPartition.begin() + offset);
-		std::copy(targetNeuron,
-				targetNeuron + f_length,
-				mf_targetNeuron.begin() + offset);
-	}
 }
 
 
@@ -124,9 +97,7 @@ void
 ConnectivityMatrixImpl::moveToDevice(bool isL0)
 {
 	m_delayBits.moveToDevice();
-	/* The forward connectivity is retained as the address and weight data are
-	 * needed if we do STDP tracing (along with the trace matrix itself). */
-	m_fsynapses.copyToDevice();
+
 	for(uint p=0; p < m_partitionCount; ++p){
 		m_rsynapses[p]->moveToDevice();
 	}
@@ -141,22 +112,26 @@ ConnectivityMatrixImpl::moveToDevice(bool isL0)
 
 
 
-void
-ConnectivityMatrixImpl::copyToHost(
-				int* f_targetPartitions[],
-				int* f_targetNeurons[],
-				float* f_weights[],
-				size_t* pitch)
+size_t
+ConnectivityMatrixImpl::getRow(
+		pidx_t sourcePartition,
+		nidx_t sourceNeuron,
+		delay_t delay,
+		uint currentCycle,
+		pidx_t* partition[],
+		nidx_t* neuron[],
+		weight_t* weight[],
+		uchar* plastic[])
 {
-	*pitch = m_fsynapses.delayPitch();
-	if(mf_weights.empty()){
-		mf_weights.resize(m_fsynapses.size(), 0.0f);
+	fcm_t::iterator group = m_fsynapses2.find(nemo::ForwardIdx(sourcePartition, delay));
+	if(group != m_fsynapses2.end()) {
+		return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
+	} else {
+		partition = NULL;
+		neuron = NULL;
+		weight = NULL;
+		return 0;
 	}
-	m_fsynapses.copyToHost(FCM_WEIGHT, mf_weights);
-	*f_targetPartitions = &mf_targetPartition[0];
-	*f_targetNeurons = &mf_targetNeuron[0];
-	assert(sizeof(float) == sizeof(uint));
-	*f_weights = (float*) &mf_weights[0];
 }
 
 

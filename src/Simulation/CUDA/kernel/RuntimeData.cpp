@@ -405,6 +405,7 @@ loadThalamicInputSigma(RTDATA rt,
  * postsynaptic neuron in the same bank. */
 
 
+//! \todo change order (weight last) for consistency with getCMDRow
 void
 setCMDRow(RTDATA rtdata,
 		size_t cmIdx,
@@ -414,7 +415,7 @@ setCMDRow(RTDATA rtdata,
 		float* weights,
 		unsigned int* targetPartition,
 		unsigned int* targetNeuron,
-		unsigned int* isPlastic,
+		unsigned char* isPlastic,
 		size_t length)
 {
 	rtdata->cm(cmIdx)->setRow(
@@ -430,16 +431,22 @@ setCMDRow(RTDATA rtdata,
 
 
 
-void
-getCM(RTDATA rtdata,
+size_t
+getCMDRow(RTDATA rtdata,
 		size_t cmIdx,
-		int* targetPartitions[],
-		int* targetNeurons[],
+		unsigned int sourcePartition,
+		unsigned int sourceNeuron,
+		unsigned int delay,
+		unsigned int* targetPartition[],
+		unsigned int* targetNeuron[],
 		float* weights[],
-		size_t* pitch)
+		unsigned char* plastic[])
 {
-	rtdata->cm(cmIdx)->copyToHost(targetPartitions, targetNeurons, weights, pitch);
+	return rtdata->cm(cmIdx)->getRow(sourcePartition, sourceNeuron, delay,
+			rtdata->cycle(), targetPartition, targetNeuron, weights, plastic);
 }
+
+
 
 
 //-----------------------------------------------------------------------------

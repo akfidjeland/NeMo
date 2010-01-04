@@ -6,10 +6,13 @@
 
 #include <vector>
 
+#include <nemo_types.h>
+#include "nemo_cuda_types.h"
 #include "kernel.cu_h"
 
 
-typedef unsigned int uint;
+//typedef unsigned int uint;
+//typedef unsigned char uchar;
 
 /*! \brief Connectivity matrix
  *
@@ -53,18 +56,23 @@ struct ConnectivityMatrix
 				const float* f_weights,
 				const uint* f_targetPartition,
 				const uint* f_targetNeuron,
-				const uint* f_isPlastic,
+				const uchar* f_isPlastic,
 				size_t length);
 
 		/* Copy data to device and clear host buffers */
 		void moveToDevice(bool isL0);
 
 		/* Copy data from device to host */
-		void copyToHost(
-				int* f_targetPartition[],
-				int* f_targetNeuron[],
-				float* f_weights[],
-				size_t* pitch);
+		size_t getRow(
+				pidx_t sourcePartition,
+				nidx_t sourceNeuron,
+				delay_t delay,
+				uint currentCycle,
+				pidx_t* targetPartition[],
+				nidx_t* targetNeuron[],
+				weight_t* weight[],
+				uchar* plastic[]);
+
 
 		/*! \return device delay bit data */
 		uint64_t* df_delayBits() const;
