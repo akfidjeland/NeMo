@@ -46,6 +46,17 @@ class ConnectivityMatrixImpl
 				size_t maxPartitionSize,
 				bool setReverse);
 
+		/* Add a single synapse to both forward and reverse matrix */
+		void addSynapse(
+				size_t level,
+				pidx_t sourcePartition,
+				nidx_t sourceNeuron,
+				delay_t delay,
+				pidx_t targetPartition,
+				nidx_t targetNeuron,
+				float weight,
+				uchar isPlastic);
+
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(
@@ -105,11 +116,12 @@ class ConnectivityMatrixImpl
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and delay. The reverse connectivity is stored sepearately
 		 * for each partition */
-		std::vector<class RSMatrix*> m0_rsynapses;
-		std::vector<class RSMatrix*> m1_rsynapses;
+		typedef std::vector<class RSMatrix*> rcm_t;
+		rcm_t m0_rsynapses;
+		rcm_t m1_rsynapses;
 
-		std::vector<class RSMatrix*>& rsynapses(size_t lvl);
-		const std::vector<class RSMatrix*>& const_rsynapses(size_t lvl) const;
+		rcm_t& rsynapses(size_t lvl);
+		const rcm_t& const_rsynapses(size_t lvl) const;
 
 		bool m_setReverse;
 

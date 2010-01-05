@@ -14,7 +14,7 @@ SynapseGroup::SynapseGroup() :
 
 
 
-void
+sidx_t
 SynapseGroup::addSynapse(
 		nidx_t sourceNeuron,
 		pidx_t partition,
@@ -25,11 +25,14 @@ SynapseGroup::addSynapse(
 	Row& row = mh_synapses[sourceNeuron];
 	row.addresses.push_back(f_packSynapse(partition, neuron));
 	row.weights.push_back(weight);
+
 	assert(row.addresses.size() == row.weights.size());
 
 	mf_targetPartition[sourceNeuron].push_back(partition);
 	mf_targetNeuron[sourceNeuron].push_back(neuron);
 	mf_plastic[sourceNeuron].push_back(plastic);
+
+	return row.addresses.size() - 1;
 }
 
 

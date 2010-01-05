@@ -27,8 +27,12 @@ class SynapseGroup
 		/*! Create an empty synapse group */
 		SynapseGroup();
 
-		/*! Add a single synapse */
-		void addSynapse(nidx_t sourceNeuron,
+		/*! Add a single synapse to the synapse group
+		 *
+		 * \return
+		 * 		Index (location within a row) of the synapse that was just adde
+		 */
+		sidx_t addSynapse(nidx_t sourceNeuron,
 				pidx_t targetPartition,
 				nidx_t targetNeuron,
 				float weight,

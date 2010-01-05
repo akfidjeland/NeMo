@@ -86,6 +86,43 @@ ConnectivityMatrixImpl::fsynapses(size_t lvl)
 
 
 
+
+/* Add a single synapse to both forward and reverse matrix */
+void
+ConnectivityMatrixImpl::addSynapse(
+		size_t level, // 0 or 1
+		pidx_t sourcePartition,
+		nidx_t sourceNeuron,
+		delay_t delay,
+		pidx_t targetPartition,
+		nidx_t targetNeuron,
+		float weight,
+		uchar isPlastic)
+{
+	//! \todo make sure caller checks validity of sourcePartition
+
+	if(delay > MAX_DELAY || delay == 0) {
+		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
+	}
+
+	SynapseGroup& fgroup = fsynapses(level)[nemo::ForwardIdx(sourcePartition, delay)];
+	sidx_t sidx = fgroup.addSynapse(sourceNeuron, targetPartition, targetNeuron, weight, isPlastic);
+
+	if(m_setReverse && isPlastic) {
+		RSMatrix* rgroup = rsynapses(level)[targetPartition];
+		rgroup->addSynapse(sourcePartition, sourceNeuron, sidx, targetNeuron, delay);
+	}
+
+	//! \todo factor out delayBits as a separate class
+	uint32_t dbits = delayBits(level).getNeuron(sourcePartition, sourceNeuron);
+	dbits |= 0x1 << (delay-1);
+	delayBits(level).setNeuron(sourcePartition, sourceNeuron, dbits);
+
+	m_maxDelay = std::max(m_maxDelay, delay);
+
+}
+
+
 void
 ConnectivityMatrixImpl::setRow(
 		size_t level, // 0 or 1
@@ -111,29 +148,10 @@ ConnectivityMatrixImpl::setRow(
 		ERROR("source neuron index out of range");
 	}
 
-	if(delay > MAX_DELAY || delay == 0) {
-		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
-	}
-
 	for(size_t i=0; i<f_length; ++i) {
-		if(m_setReverse && isPlastic[i]) {
-			rsynapses(level)[targetPartition[i]]->addSynapse(
-					sourcePartition, sourceNeuron, i,
-					targetNeuron[i], delay);
-		}
+		addSynapse(level, sourcePartition, sourceNeuron, delay,
+				targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
 	}
-
-	fsynapses(level)[nemo::ForwardIdx(sourcePartition, delay)].addSynapses(
-			sourceNeuron,
-			f_length,
-			targetPartition,
-			targetNeuron,
-			weights,
-			isPlastic);
-
-	uint32_t dbits = delayBits(level).getNeuron(sourcePartition, sourceNeuron);
-	dbits |= 0x1 << (delay-1);
-	delayBits(level).setNeuron(sourcePartition, sourceNeuron, dbits);
 
 	m_maxDelay = std::max(m_maxDelay, delay);
 }
