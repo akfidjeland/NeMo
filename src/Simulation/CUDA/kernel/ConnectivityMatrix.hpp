@@ -40,7 +40,6 @@ struct ConnectivityMatrix
 		ConnectivityMatrix(
 				size_t partitionCount,
 				size_t maxPartitionSize,
-				size_t maxDelay,
 				bool setReverse);
 
 		/* Set row in both forward and reverse matrix. The input should be
@@ -82,6 +81,8 @@ struct ConnectivityMatrix
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
+
+		delay_t maxDelay() const;
 
 	private :
 

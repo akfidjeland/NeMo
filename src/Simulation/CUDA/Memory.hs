@@ -201,7 +201,6 @@ foreign import ccall unsafe "allocRuntimeData"
     c_allocRT
         :: CSize  -- ^ partition count
         -> CSize  -- ^ max partition size
-        -> CUInt  -- ^ max delay (L0 and L1)
         -> CSize  -- ^ max L1 synapses per delay
         -> CUInt  -- ^ set reverse matrix (bool)
         -> CSize  -- ^ l1 spike queue entry size
@@ -217,7 +216,6 @@ allocRT net maxProbePeriod = do
     rt <- c_allocRT
         (fromIntegral pcount)
         (fromIntegral $! either error id $ maximumM psizes)
-        (fromIntegral $! dmax)
         (fromIntegral $! maxL1Pitch net)
         (fromBool $ usingStdp net)
         -- TODO: compute properly how large the buffers should be

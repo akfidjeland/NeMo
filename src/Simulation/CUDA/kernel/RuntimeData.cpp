@@ -19,7 +19,6 @@ extern "C" {
 RuntimeData::RuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-        uint maxDelay,
 		size_t maxL1SynapsesPerDelay,
 		bool setReverse,
 		//! \todo determine the entry size inside allocator
@@ -27,7 +26,6 @@ RuntimeData::RuntimeData(
 		unsigned int maxReadPeriod) :
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
-	m_maxDelay(maxDelay),
 	m_cm0(NULL),
 	m_cm1(NULL),
 	m_pitch32(0),
@@ -56,13 +54,11 @@ RuntimeData::RuntimeData(
 	m_cm0 = new ConnectivityMatrix(
 			partitionCount,
 			maxPartitionSize,
-			maxDelay,
 			setReverse);
 
 	m_cm1 = new ConnectivityMatrix(
 			partitionCount,
 			maxPartitionSize,
-			maxDelay,
 			setReverse);
 
 	setPitch();
@@ -90,7 +86,7 @@ RuntimeData::~RuntimeData()
 uint
 RuntimeData::maxDelay() const
 {
-    return m_maxDelay;
+	return std::max(m_cm0->maxDelay(), m_cm1->maxDelay());
 }
 
 
@@ -327,7 +323,6 @@ RTDATA
 allocRuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-		uint maxDelay,
 		size_t maxL1SynapsesPerDelay,
 		uint setReverse,
 		//! \todo determine the entry size inside allocator
@@ -337,7 +332,6 @@ allocRuntimeData(
 	return new RuntimeData(
 			partitionCount,
 			maxPartitionSize,
-			maxDelay,
 			maxL1SynapsesPerDelay,
 			(bool) setReverse,
 			l1SQEntrySize,

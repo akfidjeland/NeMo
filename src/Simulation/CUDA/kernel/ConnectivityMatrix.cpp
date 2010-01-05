@@ -4,11 +4,9 @@
 ConnectivityMatrix::ConnectivityMatrix(
         size_t partitionCount,
         size_t maxPartitionSize,
-		size_t maxDelay,
 		bool setReverse) :
 	m_impl(new ConnectivityMatrixImpl(partitionCount,
-		maxPartitionSize, maxDelay,
-		setReverse)) {}
+		maxPartitionSize, setReverse)) {}
 
 
 void
@@ -98,4 +96,11 @@ const std::vector<DEVICE_UINT_PTR_T>
 ConnectivityMatrix::r_partitionStdp() const
 {
 	return m_impl->r_partitionStdp();
+}
+
+
+delay_t
+ConnectivityMatrix::maxDelay() const
+{
+	return m_impl->maxDelay();
 }

@@ -16,7 +16,6 @@ struct RuntimeData
 	RuntimeData(
 			size_t partitionCount,
 			size_t maxPartitionSize,
-			uint maxDelay,
 			size_t maxL1SynapsesPerDelay,
 			bool setReverse,
 			//! \todo determine the entry size inside allocator
@@ -101,7 +100,6 @@ struct RuntimeData
 	private :
 
 
-		uint m_maxDelay;
 
 		uint32_t m_cycle;
 

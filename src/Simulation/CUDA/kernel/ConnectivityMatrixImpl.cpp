@@ -14,12 +14,11 @@
 ConnectivityMatrixImpl::ConnectivityMatrixImpl(
         size_t partitionCount,
         size_t maxPartitionSize,
-		size_t maxDelay,
 		bool setReverse) :
     m_delayBits(partitionCount, maxPartitionSize, true),
     m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
-    m_maxDelay(maxDelay),
+    m_maxDelay(0),
 	m_setReverse(setReverse)
 {
 	for(uint p = 0; p < partitionCount; ++p) {
@@ -58,7 +57,7 @@ ConnectivityMatrixImpl::setRow(
 		ERROR("source neuron index out of range");
 	}
 
-	if(delay > m_maxDelay || delay == 0) {
+	if(delay > MAX_DELAY || delay == 0) {
 		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
 	}
 

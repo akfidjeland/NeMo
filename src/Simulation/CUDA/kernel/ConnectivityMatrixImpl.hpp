@@ -44,7 +44,6 @@ class ConnectivityMatrixImpl
 		ConnectivityMatrixImpl(
 				size_t partitionCount,
 				size_t maxPartitionSize,
-				size_t maxDelay,
 				bool setReverse);
 
 		/* Set row in both forward and reverse matrix. The input should be
@@ -58,6 +57,8 @@ class ConnectivityMatrixImpl
 				const float* weights,
 				const uchar* plastic,
 				size_t length);
+
+		delay_t maxDelay() const { return m_maxDelay; }
 
 		/* Copy data to device and clear host buffers */
 		void moveToDevice(bool isL0);
@@ -95,7 +96,7 @@ class ConnectivityMatrixImpl
 		size_t m_partitionCount;
 		size_t m_maxPartitionSize;
 
-		unsigned int m_maxDelay;
+		delay_t m_maxDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and delay. The reverse connectivity is stored sepearately
