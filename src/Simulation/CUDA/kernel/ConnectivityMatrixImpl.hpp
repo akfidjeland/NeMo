@@ -45,7 +45,6 @@ class ConnectivityMatrixImpl
 				size_t partitionCount,
 				size_t maxPartitionSize,
 				size_t maxDelay,
-				size_t maxSynapsesPerDelay,
 				bool setReverse);
 
 		/* Set row in both forward and reverse matrix. The input should be

@@ -51,7 +51,6 @@ allocRuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
 		unsigned int maxDelay,
-		size_t maxL0SynapsesPerDelay,
 		size_t maxL1SynapsesPerDelay,
 		unsigned int setReverse,
 		//! \todo determine the entry size inside allocator

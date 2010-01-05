@@ -5,10 +5,9 @@ ConnectivityMatrix::ConnectivityMatrix(
         size_t partitionCount,
         size_t maxPartitionSize,
 		size_t maxDelay,
-		size_t maxSynapsesPerDelay,
 		bool setReverse) :
 	m_impl(new ConnectivityMatrixImpl(partitionCount,
-		maxPartitionSize, maxDelay, maxSynapsesPerDelay,
+		maxPartitionSize, maxDelay,
 		setReverse)) {}
 
 

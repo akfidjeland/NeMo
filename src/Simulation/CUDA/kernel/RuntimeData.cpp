@@ -20,7 +20,6 @@ RuntimeData::RuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
         uint maxDelay,
-		size_t maxL0SynapsesPerDelay,
 		size_t maxL1SynapsesPerDelay,
 		bool setReverse,
 		//! \todo determine the entry size inside allocator
@@ -58,14 +57,12 @@ RuntimeData::RuntimeData(
 			partitionCount,
 			maxPartitionSize,
 			maxDelay,
-			maxL0SynapsesPerDelay,
 			setReverse);
 
 	m_cm1 = new ConnectivityMatrix(
 			partitionCount,
 			maxPartitionSize,
 			maxDelay,
-			maxL1SynapsesPerDelay,
 			setReverse);
 
 	setPitch();
@@ -331,7 +328,6 @@ allocRuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
 		uint maxDelay,
-		size_t maxL0SynapsesPerDelay,
 		size_t maxL1SynapsesPerDelay,
 		uint setReverse,
 		//! \todo determine the entry size inside allocator
@@ -342,7 +338,6 @@ allocRuntimeData(
 			partitionCount,
 			maxPartitionSize,
 			maxDelay,
-			maxL0SynapsesPerDelay,
 			maxL1SynapsesPerDelay,
 			(bool) setReverse,
 			l1SQEntrySize,
@@ -402,7 +397,6 @@ loadThalamicInputSigma(RTDATA rt,
  * postsynaptic neuron in the same bank. */
 
 
-//! \todo change order (weight last) for consistency with getCMDRow
 void
 setCMDRow(RTDATA rtdata,
 		size_t cmIdx,

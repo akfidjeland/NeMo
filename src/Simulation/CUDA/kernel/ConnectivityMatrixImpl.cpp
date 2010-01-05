@@ -15,7 +15,6 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
         size_t partitionCount,
         size_t maxPartitionSize,
 		size_t maxDelay,
-		size_t maxSynapsesPerDelay,
 		bool setReverse) :
     m_delayBits(partitionCount, maxPartitionSize, true),
     m_partitionCount(partitionCount),

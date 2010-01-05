@@ -17,7 +17,6 @@ struct RuntimeData
 			size_t partitionCount,
 			size_t maxPartitionSize,
 			uint maxDelay,
-			size_t maxL0SynapsesPerDelay,
 			size_t maxL1SynapsesPerDelay,
 			bool setReverse,
 			//! \todo determine the entry size inside allocator

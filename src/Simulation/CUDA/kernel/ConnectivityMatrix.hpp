@@ -11,9 +11,6 @@
 #include "kernel.cu_h"
 
 
-//typedef unsigned int uint;
-//typedef unsigned char uchar;
-
 /*! \brief Connectivity matrix
  *
  * The connectivity matrix (CM) specifies how neurons are connected. The CM has
@@ -44,7 +41,6 @@ struct ConnectivityMatrix
 				size_t partitionCount,
 				size_t maxPartitionSize,
 				size_t maxDelay,
-				size_t maxSynapsesPerDelay,
 				bool setReverse);
 
 		/* Set row in both forward and reverse matrix. The input should be
