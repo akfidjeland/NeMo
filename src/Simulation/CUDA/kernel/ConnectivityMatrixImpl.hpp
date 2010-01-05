@@ -49,6 +49,7 @@ class ConnectivityMatrixImpl
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(
+				size_t level,
 				uint sourcePartition,
 				uint sourceNeuron,
 				uint delay,
@@ -61,9 +62,10 @@ class ConnectivityMatrixImpl
 		delay_t maxDelay() const { return m_maxDelay; }
 
 		/* Copy data to device and clear host buffers */
-		void moveToDevice(bool isL0);
+		void moveToDevice();
 
 		size_t getRow(
+				size_t level,
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
 				delay_t delay,
@@ -74,7 +76,7 @@ class ConnectivityMatrixImpl
 				uchar* plastic[]);
 
 		/*! \return device delay bit data */
-		uint64_t* df_delayBits() const;
+		uint64_t* df_delayBits(size_t level);
 
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
@@ -83,15 +85,17 @@ class ConnectivityMatrixImpl
 
 		/* Per-partition addressing */
 		//! \todo no need to return this, set directly, as done in f0_setDispatchTable
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
-
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch(size_t lvl) const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t lvl) const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t lvl) const;
 	private:
 
 		/* We accumulate the firing delay bits that are used in the spike
 		 * delivery */
-		NVector<uint64_t> m_delayBits;
+		NVector<uint64_t> m0_delayBits;
+		NVector<uint64_t> m1_delayBits;
+
+		NVector<uint64_t>& delayBits(size_t lvl);
 
 		size_t m_partitionCount;
 		size_t m_maxPartitionSize;
@@ -101,21 +105,24 @@ class ConnectivityMatrixImpl
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and delay. The reverse connectivity is stored sepearately
 		 * for each partition */
-		std::vector<class RSMatrix*> m_rsynapses;
+		std::vector<class RSMatrix*> m0_rsynapses;
+		std::vector<class RSMatrix*> m1_rsynapses;
+
+		std::vector<class RSMatrix*>& rsynapses(size_t lvl);
+		const std::vector<class RSMatrix*>& const_rsynapses(size_t lvl) const;
 
 		bool m_setReverse;
 
 		typedef std::map<nemo::ForwardIdx, SynapseGroup> fcm_t;
-		fcm_t m_fsynapses;
+		fcm_t m0_fsynapses;
+		fcm_t m1_fsynapses;
 
-		/* The weight matrix is the only bit of data which needs to be read
-		 * from the device. This is only allocated if the user requests this
-		 * data.  */
-		std::vector<uint32_t> mf_weights;
+		fcm_t& fsynapses(size_t lvl);
 
 		void f_setDispatchTable(bool isL0);
 
-		boost::shared_ptr<cudaArray> mf_dispatch;
+		boost::shared_ptr<cudaArray> mf0_dispatch;
+		boost::shared_ptr<cudaArray> mf1_dispatch;
 };
 
 #endif

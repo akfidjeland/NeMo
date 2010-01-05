@@ -45,6 +45,7 @@ struct ConnectivityMatrix
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(
+				size_t level,
 				uint sourcePartition,
 				uint sourceNeuron,
 				uint delay,
@@ -55,10 +56,11 @@ struct ConnectivityMatrix
 				size_t length);
 
 		/* Copy data to device and clear host buffers */
-		void moveToDevice(bool isL0);
+		void moveToDevice();
 
 		/* Copy data from device to host */
 		size_t getRow(
+				size_t level,
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
 				delay_t delay,
@@ -70,7 +72,7 @@ struct ConnectivityMatrix
 
 
 		/*! \return device delay bit data */
-		uint64_t* df_delayBits() const;
+		uint64_t* df_delayBits(size_t level);
 
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
@@ -78,9 +80,9 @@ struct ConnectivityMatrix
 		size_t d_allocated() const;
 
 		/* Per-partition addressing */
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch(size_t level) const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t level) const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t level) const;
 
 		delay_t maxDelay() const;
 

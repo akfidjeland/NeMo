@@ -26,8 +26,7 @@ RuntimeData::RuntimeData(
 		unsigned int maxReadPeriod) :
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
-	m_cm0(NULL),
-	m_cm1(NULL),
+	m_cm(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
 	m_deviceDirty(true),
@@ -37,6 +36,7 @@ RuntimeData::RuntimeData(
 	cudaGetDevice(&device);
 	cudaGetDeviceProperties(&m_deviceProperties, device);
 
+	//! \todo set queue size last, when finalising data
 	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize, maxL1SynapsesPerDelay);
 	firingOutput = new FiringOutput(partitionCount, maxPartitionSize, maxReadPeriod);
 
@@ -51,15 +51,7 @@ RuntimeData::RuntimeData(
 	//! \todo seed properly from outside function
 	thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
 
-	m_cm0 = new ConnectivityMatrix(
-			partitionCount,
-			maxPartitionSize,
-			setReverse);
-
-	m_cm1 = new ConnectivityMatrix(
-			partitionCount,
-			maxPartitionSize,
-			setReverse);
+	m_cm = new ConnectivityMatrix(partitionCount, maxPartitionSize, setReverse);
 
 	setPitch();
 
@@ -77,8 +69,7 @@ RuntimeData::~RuntimeData()
 	delete firingStimulus;
 	delete thalamicInput;
 	delete cycleCounters;
-	delete m_cm0;
-	delete m_cm1;
+	delete m_cm;
 }
 
 
@@ -86,7 +77,7 @@ RuntimeData::~RuntimeData()
 uint
 RuntimeData::maxDelay() const
 {
-	return std::max(m_cm0->maxDelay(), m_cm1->maxDelay());
+	return m_cm->maxDelay();
 }
 
 
@@ -105,8 +96,7 @@ RuntimeData::moveToDevice()
 {
 	if(m_deviceDirty) {
 		neuronParameters->moveToDevice();
-		m_cm0->moveToDevice(true);
-		m_cm1->moveToDevice(false);
+		m_cm->moveToDevice();
 		thalamicInput->moveToDevice();
 		if(stdpFn.enabled()) {
 			configureStdp(stdpFn.preFireWindow(),
@@ -138,17 +128,10 @@ RuntimeData::haveL1Connections() const
 
 
 struct ConnectivityMatrix*
-RuntimeData::cm(size_t idx) const
+RuntimeData::cm() const
 {
-	switch(idx) {
-		case 0 : return m_cm0;
-		case 1 : return m_cm1;
-		default :
-			ERROR("RuntimeData::cm: invalid connectivity matrix (%u) requested", (uint) idx);
-			return NULL;
-	}
+	return m_cm;
 }
-
 
 
 
@@ -238,8 +221,7 @@ RuntimeData::d_allocated() const
 	total += neuronParameters ? neuronParameters->d_allocated() : 0;
 	total += firingOutput     ? firingOutput->d_allocated()     : 0;
 	total += thalamicInput    ? thalamicInput->d_allocated()    : 0;
-	total += m_cm0            ? m_cm0->d_allocated()            : 0;
-	total += m_cm1            ? m_cm1->d_allocated()            : 0;
+	total += m_cm             ? m_cm->d_allocated()             : 0;
 	return total;
 }
 
@@ -390,7 +372,6 @@ loadThalamicInputSigma(RTDATA rt,
  * is thus possible to have several threads within a warp accessing a
  * postsynaptic neuron in the same bank. */
 
-
 void
 setCMDRow(RTDATA rtdata,
 		size_t cmIdx,
@@ -403,7 +384,8 @@ setCMDRow(RTDATA rtdata,
 		unsigned char* isPlastic,
 		size_t length)
 {
-	rtdata->cm(cmIdx)->setRow(
+	rtdata->cm()->setRow(
+		cmIdx,
 		sourcePartition,
 		sourceNeuron,
 		delay,
@@ -427,7 +409,7 @@ getCMDRow(RTDATA rtdata,
 		float* weights[],
 		unsigned char* plastic[])
 {
-	return rtdata->cm(cmIdx)->getRow(sourcePartition, sourceNeuron, delay,
+	return rtdata->cm()->getRow(cmIdx, sourcePartition, sourceNeuron, delay,
 			rtdata->cycle(), targetPartition, targetNeuron, weights, plastic);
 }
 

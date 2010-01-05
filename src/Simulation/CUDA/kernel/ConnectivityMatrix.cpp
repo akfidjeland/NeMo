@@ -11,6 +11,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 void
 ConnectivityMatrix::setRow(
+		size_t level,
 		uint sourcePartition,
 		uint sourceNeuron,
 		uint delay,
@@ -20,7 +21,8 @@ ConnectivityMatrix::setRow(
 		const uchar* f_isPlastic,
 		size_t length)
 {
-	m_impl->setRow(sourcePartition,
+	m_impl->setRow(level,
+		sourcePartition,
 		sourceNeuron,
 		delay,
 		f_targetPartition,
@@ -31,16 +33,18 @@ ConnectivityMatrix::setRow(
 }
 
 
+
 void
-ConnectivityMatrix::moveToDevice(bool isL0)
+ConnectivityMatrix::moveToDevice()
 {
-	m_impl->moveToDevice(isL0);
+	m_impl->moveToDevice();
 }
 
 
 
 size_t
 ConnectivityMatrix::getRow(
+		size_t level,
 		pidx_t sourcePartition,
 		nidx_t sourceNeuron,
 		delay_t delay,
@@ -50,16 +54,16 @@ ConnectivityMatrix::getRow(
 		weight_t* weight[],
 		uchar* plastic[])
 {
-	return m_impl->getRow(sourcePartition, sourceNeuron, delay,
-			currentCycle, partition, neuron, weight, plastic);
+	return m_impl->getRow(level, sourcePartition, sourceNeuron,
+			delay, currentCycle, partition, neuron, weight, plastic);
 }
 
 
 
 uint64_t*
-ConnectivityMatrix::df_delayBits() const
+ConnectivityMatrix::df_delayBits(size_t level)
 {
-	return m_impl->df_delayBits();
+	return m_impl->df_delayBits(level);
 }
 
 
@@ -79,23 +83,23 @@ ConnectivityMatrix::d_allocated() const
 
 
 const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrix::r_partitionPitch() const
+ConnectivityMatrix::r_partitionPitch(size_t level) const
 {
-	return m_impl->r_partitionPitch();
+	return m_impl->r_partitionPitch(level);
 }
 
 
 const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrix::r_partitionAddress() const
+ConnectivityMatrix::r_partitionAddress(size_t level) const
 {
-	return m_impl->r_partitionAddress();
+	return m_impl->r_partitionAddress(level);
 }
 
 
 const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrix::r_partitionStdp() const
+ConnectivityMatrix::r_partitionStdp(size_t level) const
 {
-	return m_impl->r_partitionStdp();
+	return m_impl->r_partitionStdp(level);
 }
 
 

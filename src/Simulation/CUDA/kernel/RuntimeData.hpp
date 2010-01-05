@@ -50,8 +50,7 @@ struct RuntimeData
 
 	class ThalamicInput* thalamicInput;
 
-	/*! \return connectivity matrix with given index */
-	struct ConnectivityMatrix* cm(size_t idx) const;
+	struct ConnectivityMatrix* cm() const;
 
 	size_t maxPartitionSize;
 	size_t partitionCount;
@@ -100,11 +99,9 @@ struct RuntimeData
 	private :
 
 
-
 		uint32_t m_cycle;
 
-		ConnectivityMatrix* m_cm0;
-		ConnectivityMatrix* m_cm1;
+		struct ConnectivityMatrix* m_cm;
 
 		cudaDeviceProp m_deviceProperties;
 

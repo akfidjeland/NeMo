@@ -66,12 +66,12 @@ copyToDevice(RTDATA rtdata)
 		configureKernel(rtdata);
 		//! \todo move to RSMatrix.cpp, considering that we need to call it twice (L0 and L1)
         configureReverseAddressing(
-                rtdata->cm(CM_L0)->r_partitionPitch(),
-                rtdata->cm(CM_L0)->r_partitionAddress(),
-                rtdata->cm(CM_L0)->r_partitionStdp(),
-                rtdata->cm(CM_L1)->r_partitionPitch(),
-                rtdata->cm(CM_L1)->r_partitionAddress(),
-                rtdata->cm(CM_L1)->r_partitionStdp());
+                rtdata->cm()->r_partitionPitch(0),
+                rtdata->cm()->r_partitionAddress(0),
+                rtdata->cm()->r_partitionStdp(0),
+                rtdata->cm()->r_partitionPitch(1),
+                rtdata->cm()->r_partitionAddress(1),
+                rtdata->cm()->r_partitionStdp(1));
 		rtdata->setStart();
 	}
 }
@@ -120,10 +120,7 @@ applyStdp(RTDATA rtdata, float stdpReward)
 
 	if(rtdata->usingStdp()) {
 		if(stdpReward == 0.0f) {
-			rtdata->cm(CM_L0)->clearStdpAccumulator();
-			if(rtdata->haveL1Connections()) {
-				rtdata->cm(CM_L1)->clearStdpAccumulator();
-			}
+			rtdata->cm()->clearStdpAccumulator();
 		} else  {
 			applyStdp_(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);
 			if(rtdata->haveL1Connections()) {
@@ -177,8 +174,8 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceRngState(),
 				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
-				rtdata->cm(CM_L0)->df_delayBits(),
-				rtdata->cm(CM_L1)->df_delayBits(),
+				rtdata->cm()->df_delayBits(0),
+				rtdata->cm()->df_delayBits(1),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),
@@ -203,8 +200,8 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceSigma(),
                 //! \todo get size directly from rtdata
 				rtdata->neuronParameters->size(),
-				rtdata->cm(CM_L0)->df_delayBits(),
-				rtdata->cm(CM_L1)->df_delayBits(),
+				rtdata->cm()->df_delayBits(0),
+				rtdata->cm()->df_delayBits(1),
 				// L1 spike queue
 				rtdata->spikeQueue->data(),
 				rtdata->spikeQueue->pitch(),
