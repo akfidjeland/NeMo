@@ -15,7 +15,6 @@ typedef double fp_t;
 #endif
 
 typedef fp_t weight_t;
-typedef unsigned int sidx_t;
 
 
 #endif

@@ -96,7 +96,7 @@ ConnectivityMatrixImpl::addSynapse(
 		delay_t delay,
 		pidx_t targetPartition,
 		nidx_t targetNeuron,
-		float weight,
+		weight_t weight,
 		uchar isPlastic)
 {
 	//! \todo make sure caller checks validity of sourcePartition
@@ -124,6 +124,38 @@ ConnectivityMatrixImpl::addSynapse(
 
 
 void
+ConnectivityMatrixImpl::addSynapse0(pidx_t sp, nidx_t sn, delay_t d,
+		pidx_t tp, nidx_t tn, weight_t w, uchar plastic)
+{
+	addSynapse(0, sp, sn, d, tp, tn, w, plastic);
+}
+
+
+
+void
+ConnectivityMatrixImpl::addSynapse1(
+		pidx_t sourcePartition,
+		nidx_t sourceNeuron,
+		delay_t delay,
+		pidx_t targetPartition,
+		nidx_t targetNeuron,
+		weight_t weight,
+		uchar plastic)
+{
+	addSynapse(1, sourcePartition, sourceNeuron, delay,
+			targetPartition, targetNeuron, weight, plastic);
+
+	SynapseGroup& fgroup = m1_fsynapses2[ForwardIdx1(sourcePartition, targetPartition, delay)];
+	/* targetPartition not strictly needed here, but left in (in place of
+	 * padding) for better code re-use */
+	fgroup.addSynapse(sourceNeuron, targetPartition, targetNeuron, weight, plastic);
+
+	//! \todo add forward index to new reverse matrix
+}
+
+
+
+void
 ConnectivityMatrixImpl::setRow(
 		size_t level, // 0 or 1
 		uint sourcePartition,
@@ -148,12 +180,21 @@ ConnectivityMatrixImpl::setRow(
 		ERROR("source neuron index out of range");
 	}
 
-	for(size_t i=0; i<f_length; ++i) {
-		addSynapse(level, sourcePartition, sourceNeuron, delay,
-				targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
+	switch(level) {
+		case 0 :
+			for(size_t i=0; i<f_length; ++i) {
+				addSynapse0(sourcePartition, sourceNeuron, delay,
+						targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
+			}
+			break;
+		case 1 :
+			for(size_t i=0; i<f_length; ++i) {
+				addSynapse1(sourcePartition, sourceNeuron, delay,
+						targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
+			}
+			break;
+		default : ERROR("invalid connectivity matrix level");
 	}
-
-	m_maxDelay = std::max(m_maxDelay, delay);
 }
 
 
@@ -176,6 +217,11 @@ ConnectivityMatrixImpl::moveToDevice()
 
 	for(fcm_t::iterator i = m1_fsynapses.begin();
 			i != m1_fsynapses.end(); ++i) {
+		i->second.moveToDevice();
+	}
+
+	for(fcm1_t::iterator i = m1_fsynapses2.begin();
+			i != m1_fsynapses2.end(); ++i) {
 		i->second.moveToDevice();
 	}
 

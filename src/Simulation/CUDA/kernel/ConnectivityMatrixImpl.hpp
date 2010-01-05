@@ -15,6 +15,39 @@
 #include "NVector.hpp"
 #include "kernel.cu_h"
 
+
+struct ForwardIdx1
+{
+	ForwardIdx1(pidx_t source, pidx_t target, delay_t delay) :
+		source(source), target(target), delay(delay) {}
+
+	pidx_t source;
+	pidx_t target;
+	delay_t delay;
+};
+
+
+
+inline
+bool
+operator<(const ForwardIdx1& a, const ForwardIdx1& b)
+{
+	if(a.source < b.source) {
+		return true;
+	} else if (a.source == b.source ) {
+		if(a.target < b.target) {
+			return true;
+		} else if (a.target == b.target && a.delay < b.delay) {
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		return false;
+	}
+}
+
+
 /*! \brief Connectivity matrix
  *
  * The connectivity matrix (CM) specifies how neurons are connected. The CM has
@@ -45,17 +78,6 @@ class ConnectivityMatrixImpl
 				size_t partitionCount,
 				size_t maxPartitionSize,
 				bool setReverse);
-
-		/* Add a single synapse to both forward and reverse matrix */
-		void addSynapse(
-				size_t level,
-				pidx_t sourcePartition,
-				nidx_t sourceNeuron,
-				delay_t delay,
-				pidx_t targetPartition,
-				nidx_t targetNeuron,
-				float weight,
-				uchar isPlastic);
 
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
@@ -99,7 +121,38 @@ class ConnectivityMatrixImpl
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch(size_t lvl) const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t lvl) const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t lvl) const;
+
 	private:
+
+		/* Add a single synapse to both forward and reverse matrix */
+		void addSynapse(
+				size_t level,
+				pidx_t sourcePartition,
+				nidx_t sourceNeuron,
+				delay_t delay,
+				pidx_t targetPartition,
+				nidx_t targetNeuron,
+				weight_t weight,
+				uchar isPlastic);
+
+		/* Add a single synapse to both forward and reverse matrix */
+		void addSynapse0(
+				pidx_t sourcePartition,
+				nidx_t sourceNeuron,
+				delay_t delay,
+				pidx_t targetPartition,
+				nidx_t targetNeuron,
+				weight_t weight,
+				uchar isPlastic);
+
+		void addSynapse1(
+				pidx_t sourcePartition,
+				nidx_t sourceNeuron,
+				delay_t delay,
+				pidx_t targetPartition,
+				nidx_t targetNeuron,
+				weight_t weight,
+				uchar isPlastic);
 
 		/* We accumulate the firing delay bits that are used in the spike
 		 * delivery */
@@ -128,6 +181,10 @@ class ConnectivityMatrixImpl
 		typedef std::map<nemo::ForwardIdx, SynapseGroup> fcm_t;
 		fcm_t m0_fsynapses;
 		fcm_t m1_fsynapses;
+
+		// new format: smaller groups by source/target/delay
+		typedef std::map<ForwardIdx1, SynapseGroup> fcm1_t;
+		fcm1_t m1_fsynapses2;
 
 		fcm_t& fsynapses(size_t lvl);
 
