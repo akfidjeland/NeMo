@@ -228,6 +228,7 @@ ConnectivityMatrixImpl::moveToDevice()
 	//! \todo tidy interface here
 	f_setDispatchTable(true);
 	f_setDispatchTable(false);
+	f1_setDispatchTable();
 }
 
 
@@ -362,10 +363,41 @@ ConnectivityMatrixImpl::r_partitionStdp(size_t lvl) const
 
 
 void
+ConnectivityMatrixImpl::f1_setDispatchTable()
+{
+	size_t delayCount = MAX_DELAY;
+
+	size_t xdim = m_partitionCount;
+	size_t ydim = m_partitionCount;
+	size_t zdim = delayCount;
+	size_t size = xdim * ydim * zdim;
+
+	fcm_ref_t null = fcm_packReference(0, 0);
+	std::vector<fcm_ref_t> table(size, null);
+
+	for(fcm1_t::const_iterator i = m1_fsynapses2.begin(); i != m1_fsynapses2.end(); ++i) {
+
+		ForwardIdx1 fidx = i->first;
+		const SynapseGroup& sg = i->second;
+
+		// x: delay, y : target partition, z : source partition
+		size_t addr = (fidx.source * m_partitionCount + fidx.target) * delayCount + (fidx.delay-1);
+
+		void* fcm_addr = sg.d_address();
+		size_t fcm_pitch = sg.wpitch();
+		table.at(addr) = fcm_packReference(fcm_addr, fcm_pitch);
+	}
+
+	cudaArray* f_dispatch = ::f1_setDispatchTable2(m_partitionCount, delayCount, table);
+	mf1_dispatch2 = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
+}
+
+
+
+void
 ConnectivityMatrixImpl::f_setDispatchTable(bool isL0)
 {
-	//! \todo remove magic
-	size_t delayCount = 64;
+	size_t delayCount = MAX_DELAY;
 
 	size_t width = m_partitionCount;
 	size_t height = delayCount;

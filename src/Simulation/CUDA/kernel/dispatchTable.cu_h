@@ -49,6 +49,12 @@ f1_setDispatchTable(
 		size_t delayCount,
 		const std::vector<fcm_ref_t>& h_table);
 
+cudaArray*
+f1_setDispatchTable2(
+		size_t partitionCount,
+		size_t delayCount,
+		const std::vector<fcm_ref_t>& h_table);
+
 
 /*! 
  * \param devicePtr

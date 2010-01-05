@@ -116,6 +116,9 @@ fcm_packReference(void* address, size_t pitch)
 texture<fcm_ref_t, 2, cudaReadModeElementType> tf0_refs;
 texture<fcm_ref_t, 2, cudaReadModeElementType> tf1_refs;
 
+//! \todo rename once we have removed old format
+texture<fcm_ref_t, 3, cudaReadModeElementType> tf1_refs2;
+
 
 
 /*! \param delay0 0-based delay (i.e. delay in ms - 1) */
@@ -192,6 +195,38 @@ f1_setDispatchTable(
 }
 
 
+
+__host__
+cudaArray*
+f1_setDispatchTable2(
+		size_t partitionCount,
+		size_t delayCount,
+		const std::vector<fcm_ref_t>& h_table)
+{
+	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<fcm_ref_t>();
+
+	cudaArray* d_table;
+	cudaExtent ext = make_cudaExtent(delayCount, partitionCount, partitionCount);
+	CUDA_SAFE_CALL(cudaMalloc3DArray(&d_table, &channelDesc, ext));
+
+	cudaMemcpy3DParms copyParams = {0};
+	copyParams.extent = ext;
+	copyParams.kind = cudaMemcpyHostToDevice;
+	copyParams.dstArray = d_table;
+	copyParams.srcPtr = make_cudaPitchedPtr(
+			(void*)&h_table[0],
+			ext.width * sizeof(fcm_ref_t), ext.width, ext.height);
+	CUDA_SAFE_CALL(cudaMemcpy3D(&copyParams));
+
+	// set texture parameters
+	tf1_refs2.addressMode[0] = cudaAddressModeClamp;
+	tf1_refs2.addressMode[1] = cudaAddressModeClamp;
+	tf1_refs2.addressMode[2] = cudaAddressModeClamp;
+	tf1_refs2.filterMode = cudaFilterModePoint;
+	tf1_refs2.normalized = false;
+	CUDA_SAFE_CALL(cudaBindTextureToArray(tf1_refs2, d_table, channelDesc));
+	return d_table;
+}
 
 /* At run-time we can load the relevant part of the dispatch table from texture
  * memory to shared memory. Both the shared memory arrays here should be of

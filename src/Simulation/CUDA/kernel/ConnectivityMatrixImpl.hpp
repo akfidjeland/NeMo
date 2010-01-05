@@ -189,9 +189,11 @@ class ConnectivityMatrixImpl
 		fcm_t& fsynapses(size_t lvl);
 
 		void f_setDispatchTable(bool isL0);
+		void f1_setDispatchTable();
 
 		boost::shared_ptr<cudaArray> mf0_dispatch;
 		boost::shared_ptr<cudaArray> mf1_dispatch;
+		boost::shared_ptr<cudaArray> mf1_dispatch2;
 };
 
 #endif
