@@ -1,0 +1,31 @@
+#ifndef TARGET_PARTITIONS_CU_H
+#define TARGET_PARTITIONS_CU_H
+
+/* For L1 spike delivery we need to know to which target partitions each firing
+ * neuron has outgoing synapses. We store this information in a matrix indexed
+ * by partition, neuron, and delay. Each entry is a row listing partition
+ * targets. Empty entries are set to -1. */
+
+#include <cuda_runtime.h>
+
+#include "nemo_cuda_types.h"
+
+
+/* Support up to 128 partitions */
+typedef unsigned char targetp_t;
+
+const targetp_t INVALID_PTARGET = ~0; 
+
+__host__ void setTargetPitch(size_t targetPitch);
+
+/* Return address at beginning of given row */
+__host__ __device__ 
+size_t
+targetIdx(pidx_t partition,
+		nidx_t neuron,
+		delay_t delay,
+		size_t partitionSize,
+		size_t pitch);
+
+
+#endif

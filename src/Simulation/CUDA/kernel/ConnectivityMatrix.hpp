@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include <nemo_types.h>
 #include "nemo_cuda_types.h"
 #include "kernel.cu_h"
 

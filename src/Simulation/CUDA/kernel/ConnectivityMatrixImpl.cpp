@@ -146,9 +146,12 @@ ConnectivityMatrixImpl::addSynapse1(
 			targetPartition, targetNeuron, weight, plastic);
 
 	SynapseGroup& fgroup = m1_fsynapses2[ForwardIdx1(sourcePartition, targetPartition, delay)];
+
 	/* targetPartition not strictly needed here, but left in (in place of
 	 * padding) for better code re-use */
 	fgroup.addSynapse(sourceNeuron, targetPartition, targetNeuron, weight, plastic);
+
+	m_targetp.addTargetPartition(sourcePartition, sourceNeuron, delay, targetPartition);
 
 	//! \todo add forward index to new reverse matrix
 }
@@ -198,6 +201,7 @@ ConnectivityMatrixImpl::setRow(
 }
 
 
+
 void
 ConnectivityMatrixImpl::moveToDevice()
 {
@@ -229,6 +233,8 @@ ConnectivityMatrixImpl::moveToDevice()
 	f_setDispatchTable(true);
 	f_setDispatchTable(false);
 	f1_setDispatchTable();
+
+	m_targetp.moveToDevice(m_partitionCount, m_maxPartitionSize);
 }
 
 

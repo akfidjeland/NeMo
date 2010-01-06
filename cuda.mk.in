@@ -15,7 +15,8 @@ CU_INC = kernel.cu \
 		 step.cu \
 		 stdp.cu \
 		 applySTDP.cu \
-		 thalamicInput.cu
+		 thalamicInput.cu \
+		 targetPartitions.cu
 
 CC_SRC = L1SpikeQueue.cpp \
 		 FiringOutput.cpp \
@@ -26,7 +27,8 @@ CC_SRC = L1SpikeQueue.cpp \
 		 CycleCounters.cpp \
 		 ThalamicInput.cpp \
 		 RSMatrix.cpp \
-		 SynapseGroup.cpp
+		 SynapseGroup.cpp \
+		 TargetPartitions.cpp
 
 
 # CUDA source files (compiled with cudacc)

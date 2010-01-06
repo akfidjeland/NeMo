@@ -8,14 +8,15 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 
-#include <nemo_types.hpp>
 #include "nemo_cuda_types.h"
 #include "kernel.h" // for synapse type used in interface
 #include "SynapseGroup.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
+#include "TargetPartitions.hpp"
 
 
+//! \todo replace with boost::tuple<3>
 struct ForwardIdx1
 {
 	ForwardIdx1(pidx_t source, pidx_t target, delay_t delay) :
@@ -194,6 +195,10 @@ class ConnectivityMatrixImpl
 		boost::shared_ptr<cudaArray> mf0_dispatch;
 		boost::shared_ptr<cudaArray> mf1_dispatch;
 		boost::shared_ptr<cudaArray> mf1_dispatch2;
+
+		/* For L1 delivery we need to keep track of all target partitions for
+		 * each neuron */
+		TargetPartitions m_targetp;
 };
 
 #endif

@@ -30,6 +30,7 @@ extern "C" {
 #include "cycleCounting.cu"
 #include "ThalamicInput.hpp"
 #include "applySTDP.cu"
+#include "targetPartitions.cu"
 
 #include "thalamicInput.cu"
 #include "kernel.cu"
