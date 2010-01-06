@@ -8,12 +8,14 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 
+#include <nemo_types.hpp>
 #include "nemo_cuda_types.h"
 #include "kernel.h" // for synapse type used in interface
 #include "SynapseGroup.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
 #include "TargetPartitions.hpp"
+#include "L1SpikeBuffer.hpp"
 
 
 //! \todo replace with boost::tuple<3>
@@ -199,6 +201,9 @@ class ConnectivityMatrixImpl
 		/* For L1 delivery we need to keep track of all target partitions for
 		 * each neuron */
 		TargetPartitions m_targetp;
+
+		/* We also need device memory for the firing queue */
+		L1SpikeBuffer m_spikeBuffer;
 };
 
 #endif

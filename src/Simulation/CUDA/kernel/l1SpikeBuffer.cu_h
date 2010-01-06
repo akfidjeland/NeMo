@@ -1,0 +1,16 @@
+#ifndef L1_SPIKE_BUFFER_CU_H
+#define L1_SPIKE_BUFFER_CU_H
+
+#include <cuda_runtime.h>
+
+/* Each entry in the queue needs to indicate
+ *
+ * 1. source partition (7b)
+ * 2. source neuron (10b)
+ * 3. delay (6b)
+ */
+typedef uchar4 l1spike_t;
+
+__host__ void setBufferPitch(size_t pitch);
+
+#endif

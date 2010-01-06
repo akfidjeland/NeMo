@@ -31,6 +31,7 @@ extern "C" {
 #include "ThalamicInput.hpp"
 #include "applySTDP.cu"
 #include "targetPartitions.cu"
+#include "l1SpikeBuffer.cu"
 
 #include "thalamicInput.cu"
 #include "kernel.cu"

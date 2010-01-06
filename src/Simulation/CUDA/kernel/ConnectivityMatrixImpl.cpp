@@ -1,14 +1,14 @@
 #include "ConnectivityMatrixImpl.hpp"
 
+#include <algorithm>
+#include <stdexcept>
+
 #include "util.h"
 #include "log.hpp"
 #include "RSMatrix.hpp"
 #include "SynapseGroup.hpp"
 #include "connectivityMatrix.cu_h"
 #include "dispatchTable.cu_h"
-
-#include <algorithm>
-#include <stdexcept>
 
 
 ConnectivityMatrixImpl::ConnectivityMatrixImpl(
@@ -235,6 +235,7 @@ ConnectivityMatrixImpl::moveToDevice()
 	f1_setDispatchTable();
 
 	m_targetp.moveToDevice(m_partitionCount, m_maxPartitionSize);
+	m_spikeBuffer.allocate(m_partitionCount);
 }
 
 
