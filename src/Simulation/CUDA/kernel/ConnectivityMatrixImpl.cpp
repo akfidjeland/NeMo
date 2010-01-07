@@ -74,60 +74,34 @@ ConnectivityMatrixImpl::const_rsynapses(size_t lvl) const
 
 
 
-ConnectivityMatrixImpl::fcm_t&
-ConnectivityMatrixImpl::fsynapses(size_t lvl)
-{
-	switch(lvl) {
-		case 0: return m0_fsynapses;
-		case 1: return m1_fsynapses;
-		default : ERROR("invalid connectivity matrix index");
-	}
-}
-
-
-
-
-/* Add a single synapse to both forward and reverse matrix */
 void
-ConnectivityMatrixImpl::addSynapse(
-		size_t level, // 0 or 1
-		pidx_t sourcePartition,
-		nidx_t sourceNeuron,
-		delay_t delay,
-		pidx_t targetPartition,
-		nidx_t targetNeuron,
-		weight_t weight,
-		uchar isPlastic)
+ConnectivityMatrixImpl::addSynapse0(pidx_t sp, nidx_t sn, delay_t delay,
+		pidx_t tp, nidx_t tn, weight_t w, uchar plastic)
 {
 	//! \todo make sure caller checks validity of sourcePartition
-
 	if(delay > MAX_DELAY || delay == 0) {
 		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
 	}
 
-	SynapseGroup& fgroup = fsynapses(level)[nemo::ForwardIdx(sourcePartition, delay)];
-	sidx_t sidx = fgroup.addSynapse(sourceNeuron, targetPartition, targetNeuron, weight, isPlastic);
+	assert(sp == tp);
+	//! \todo change to using boost::tuple here instead
+	SynapseGroup& fgroup = m1_fsynapses2[ForwardIdx1(sp, tp, delay)];
 
-	if(m_setReverse && isPlastic) {
-		RSMatrix* rgroup = rsynapses(level)[targetPartition];
-		rgroup->addSynapse(sourcePartition, sourceNeuron, sidx, targetNeuron, delay);
+	/* targetPartition not strictly needed here, but left in (in place of
+	 * padding) for better code re-use */
+	sidx_t sidx = fgroup.addSynapse(sn, tp, tn, w, plastic);
+
+	if(m_setReverse && plastic) {
+		RSMatrix* rgroup = rsynapses(0)[tp];
+		rgroup->addSynapse(sp, sn, sidx, tn, delay);
 	}
 
 	//! \todo factor out delayBits as a separate class
-	uint32_t dbits = delayBits(level).getNeuron(sourcePartition, sourceNeuron);
+	uint32_t dbits = delayBits(0).getNeuron(sp, sn);
 	dbits |= 0x1 << (delay-1);
-	delayBits(level).setNeuron(sourcePartition, sourceNeuron, dbits);
+	delayBits(0).setNeuron(sp, sn, dbits);
 
 	m_maxDelay = std::max(m_maxDelay, delay);
-
-}
-
-
-void
-ConnectivityMatrixImpl::addSynapse0(pidx_t sp, nidx_t sn, delay_t d,
-		pidx_t tp, nidx_t tn, weight_t w, uchar plastic)
-{
-	addSynapse(0, sp, sn, d, tp, tn, w, plastic);
 }
 
 
@@ -142,18 +116,41 @@ ConnectivityMatrixImpl::addSynapse1(
 		weight_t weight,
 		uchar plastic)
 {
-	addSynapse(1, sourcePartition, sourceNeuron, delay,
-			targetPartition, targetNeuron, weight, plastic);
+	// old format
+	//
+	//! \todo make sure caller checks validity of sourcePartition
+	if(delay > MAX_DELAY || delay == 0) {
+		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
+	}
 
+	SynapseGroup& fgroup = m1_fsynapses[nemo::ForwardIdx(sourcePartition, delay)];
+	sidx_t sidx = fgroup.addSynapse(sourceNeuron, targetPartition, targetNeuron, weight, plastic);
+
+	size_t level = 1;
+	if(m_setReverse && plastic) {
+		RSMatrix* rgroup = rsynapses(level)[targetPartition];
+		rgroup->addSynapse(sourcePartition, sourceNeuron, sidx, targetNeuron, delay);
+	}
+
+	//! \todo factor out delayBits as a separate class
+	uint32_t dbits = delayBits(level).getNeuron(sourcePartition, sourceNeuron);
+	dbits |= 0x1 << (delay-1);
+	delayBits(level).setNeuron(sourcePartition, sourceNeuron, dbits);
+
+	m_maxDelay = std::max(m_maxDelay, delay);
+
+	// new format (not yet used)
+	{
 	SynapseGroup& fgroup = m1_fsynapses2[ForwardIdx1(sourcePartition, targetPartition, delay)];
 
 	/* targetPartition not strictly needed here, but left in (in place of
 	 * padding) for better code re-use */
 	fgroup.addSynapse(sourceNeuron, targetPartition, targetNeuron, weight, plastic);
+	}
 
 	m_targetp.addTargetPartition(sourcePartition, sourceNeuron, delay, targetPartition);
 
-	//! \todo add forward index to new reverse matrix
+	//! \todo add forward index to new reverse matrix (see addSynapse0)
 }
 
 
@@ -213,12 +210,6 @@ ConnectivityMatrixImpl::moveToDevice()
 		m1_rsynapses[p]->moveToDevice();
 	}
 
-	//! \todo refactor
-	for(fcm_t::iterator i = m0_fsynapses.begin();
-			i != m0_fsynapses.end(); ++i) {
-		i->second.moveToDevice();
-	}
-
 	for(fcm_t::iterator i = m1_fsynapses.begin();
 			i != m1_fsynapses.end(); ++i) {
 		i->second.moveToDevice();
@@ -230,7 +221,6 @@ ConnectivityMatrixImpl::moveToDevice()
 	}
 
 	//! \todo tidy interface here
-	f_setDispatchTable(true);
 	f_setDispatchTable(false);
 	f1_setDispatchTable();
 
@@ -252,14 +242,28 @@ ConnectivityMatrixImpl::getRow(
 		weight_t* weight[],
 		uchar* plastic[])
 {
-	fcm_t::iterator group = fsynapses(lvl).find(nemo::ForwardIdx(sourcePartition, delay));
-	if(group != fsynapses(lvl).end()) {
-		return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
+	//! \todo simplify this again once old FCM format removed
+	if(lvl == 0) {
+		fcm1_t::iterator group = m1_fsynapses2.find(ForwardIdx1(sourcePartition, sourcePartition, delay));
+		if(group != m1_fsynapses2.end()) {
+			return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
+		} else {
+			partition = NULL;
+			neuron = NULL;
+			weight = NULL;
+			return 0;
+		}
 	} else {
-		partition = NULL;
-		neuron = NULL;
-		weight = NULL;
-		return 0;
+		// old FCM format
+		fcm_t::iterator group = m1_fsynapses.find(nemo::ForwardIdx(sourcePartition, delay));
+		if(group != m1_fsynapses.end()) {
+			return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
+		} else {
+			partition = NULL;
+			neuron = NULL;
+			weight = NULL;
+			return 0;
+		}
 	}
 }
 
@@ -292,19 +296,13 @@ ConnectivityMatrixImpl::d_allocated() const
 		rcm1 += (*i)->d_allocated();
 	}
 
-	size_t fcm0 = 0;
-	for(fcm_t::const_iterator i = m0_fsynapses.begin();
-			i != m0_fsynapses.end(); ++i) {
-		fcm0 += i->second.d_allocated();
-	}
-
 	size_t fcm1 = 0;
 	for(fcm_t::const_iterator i = m1_fsynapses.begin();
 			i != m1_fsynapses.end(); ++i) {
 		fcm1 += i->second.d_allocated();
 	}
 
-	return m0_delayBits.d_allocated() + m1_delayBits.d_allocated() + fcm0 + fcm1 + rcm0 + rcm1;
+	return m0_delayBits.d_allocated() + m1_delayBits.d_allocated() + fcm1 + rcm0 + rcm1;
 }
 
 
@@ -404,6 +402,11 @@ ConnectivityMatrixImpl::f1_setDispatchTable()
 void
 ConnectivityMatrixImpl::f_setDispatchTable(bool isL0)
 {
+	assert(!isL0);
+	if(isL0) {
+		return;
+	}
+
 	size_t delayCount = MAX_DELAY;
 
 	size_t width = m_partitionCount;
@@ -413,9 +416,8 @@ ConnectivityMatrixImpl::f_setDispatchTable(bool isL0)
 	fcm_ref_t null = fcm_packReference(0, 0);
 	std::vector<fcm_ref_t> table(size, null);
 
-	size_t lvl = isL0 ? 0 : 1;
-	for(fcm_t::const_iterator i = fsynapses(lvl).begin();
-			i != fsynapses(lvl).end(); ++i) {
+	for(fcm_t::const_iterator i = m1_fsynapses.begin();
+			i != m1_fsynapses.end(); ++i) {
 
 		nemo::ForwardIdx fidx = i->first;
 		const SynapseGroup& sg = i->second;
@@ -428,10 +430,7 @@ ConnectivityMatrixImpl::f_setDispatchTable(bool isL0)
 		table.at(addr) = fcm_packReference(fcm_addr, fcm_pitch);
 	}
 
-	if(isL0) {
-		cudaArray* f_dispatch = ::f0_setDispatchTable(m_partitionCount, delayCount, table);
-		mf0_dispatch = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
-	} else {
+	if(!isL0) {
 		cudaArray* f_dispatch = ::f1_setDispatchTable(m_partitionCount, delayCount, table);
 		mf1_dispatch = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
 	}

@@ -113,7 +113,6 @@ fcm_packReference(void* address, size_t pitch)
 }
 
 
-texture<fcm_ref_t, 2, cudaReadModeElementType> tf0_refs;
 texture<fcm_ref_t, 2, cudaReadModeElementType> tf1_refs;
 
 //! \todo rename once we have removed old format
@@ -126,11 +125,17 @@ __device__
 fcm_ref_t
 getFCM(uint level, uint partition, uint delay0)
 {
-	if(level == 0) {
-		return tex2D(tf0_refs, (float) delay0, (float) partition);
-	} else {
-		return tex2D(tf1_refs, (float) delay0, (float) partition);
-	}
+	ASSERT(level == 1);
+	return tex2D(tf1_refs, (float) delay0, (float) partition);
+}
+
+
+
+__device__
+fcm_ref_t
+getFCM2(uint sourcePartition, uint targetPartition, uint delay0)
+{
+	return tex3D(tf1_refs2, (float) delay0, (float) targetPartition, (float) sourcePartition);
 }
 
 
@@ -146,30 +151,8 @@ copyTable(size_t width,
 
 	cudaArray* d_table;
 	CUDA_SAFE_CALL(cudaMallocArray(&d_table, channelDesc, width, height));
-
 	size_t bytes = height * width * sizeof(fcm_ref_t);
 	CUDA_SAFE_CALL(cudaMemcpyToArray(d_table, 0, 0, &h_table[0], bytes, cudaMemcpyHostToDevice));
-	return d_table;
-}
-
-
-
-__host__
-cudaArray*
-f0_setDispatchTable(
-		size_t partitionCount,
-		size_t delayCount,
-		const std::vector<fcm_ref_t>& h_table)
-{
-	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<fcm_ref_t>();
-	cudaArray* d_table =
-		copyTable(delayCount, partitionCount, h_table, &channelDesc);
-	// set texture parameters
-	tf0_refs.addressMode[0] = cudaAddressModeClamp;
-	tf0_refs.addressMode[1] = cudaAddressModeClamp;
-	tf0_refs.filterMode = cudaFilterModePoint;
-	tf0_refs.normalized = false;
-	CUDA_SAFE_CALL(cudaBindTextureToArray(tf0_refs, d_table, channelDesc));
 	return d_table;
 }
 
@@ -238,6 +221,22 @@ loadDispatchTable_(uint level, uint32_t* s_fcmAddr[], ushort2 s_fcmPitch[])
 {
 	if(threadIdx.x < MAX_DELAY) {
 		fcm_ref_t fcm = getFCM(level, CURRENT_PARTITION, threadIdx.x);
+		s_fcmAddr[threadIdx.x] = f0_base(fcm);
+		s_fcmPitch[threadIdx.x].x = f0_pitch(fcm);
+		s_fcmPitch[threadIdx.x].y = DIV_CEIL(f0_pitch(fcm), THREADS_PER_BLOCK);
+	}
+	__syncthreads();
+}
+
+
+/* For L0 delivery, we load for all delays  */
+//! \todo rename after cleanup
+__device__
+void
+loadDispatchTable2_L0_(uint32_t* s_fcmAddr[], ushort2 s_fcmPitch[])
+{
+	if(threadIdx.x < MAX_DELAY) {
+		fcm_ref_t fcm = getFCM2(CURRENT_PARTITION, CURRENT_PARTITION, threadIdx.x);
 		s_fcmAddr[threadIdx.x] = f0_base(fcm);
 		s_fcmPitch[threadIdx.x].x = f0_pitch(fcm);
 		s_fcmPitch[threadIdx.x].y = DIV_CEIL(f0_pitch(fcm), THREADS_PER_BLOCK);

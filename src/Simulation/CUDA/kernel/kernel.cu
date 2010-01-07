@@ -261,7 +261,7 @@ deliverL0Spikes_(
 	uint32_t* s_fcmAddr[],
 	ushort2 s_fcmPitch[])
 {
-	loadDispatchTable_(0, s_fcmAddr, s_fcmPitch);
+	loadDispatchTable2_L0_(s_fcmAddr, s_fcmPitch);
 
 	for(uint preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 

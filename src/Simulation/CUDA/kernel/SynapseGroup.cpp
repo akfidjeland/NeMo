@@ -60,6 +60,7 @@ SynapseGroup::addSynapses(
 }
 
 
+
 size_t
 SynapseGroup::maxSynapsesPerNeuron() const
 {

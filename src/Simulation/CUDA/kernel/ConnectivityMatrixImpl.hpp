@@ -128,17 +128,6 @@ class ConnectivityMatrixImpl
 	private:
 
 		/* Add a single synapse to both forward and reverse matrix */
-		void addSynapse(
-				size_t level,
-				pidx_t sourcePartition,
-				nidx_t sourceNeuron,
-				delay_t delay,
-				pidx_t targetPartition,
-				nidx_t targetNeuron,
-				weight_t weight,
-				uchar isPlastic);
-
-		/* Add a single synapse to both forward and reverse matrix */
 		void addSynapse0(
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
@@ -182,19 +171,15 @@ class ConnectivityMatrixImpl
 		bool m_setReverse;
 
 		typedef std::map<nemo::ForwardIdx, SynapseGroup> fcm_t;
-		fcm_t m0_fsynapses;
 		fcm_t m1_fsynapses;
 
 		// new format: smaller groups by source/target/delay
 		typedef std::map<ForwardIdx1, SynapseGroup> fcm1_t;
 		fcm1_t m1_fsynapses2;
 
-		fcm_t& fsynapses(size_t lvl);
-
 		void f_setDispatchTable(bool isL0);
 		void f1_setDispatchTable();
 
-		boost::shared_ptr<cudaArray> mf0_dispatch;
 		boost::shared_ptr<cudaArray> mf1_dispatch;
 		boost::shared_ptr<cudaArray> mf1_dispatch2;
 
