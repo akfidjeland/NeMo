@@ -7,6 +7,7 @@
 
 #include <map>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <nemo_types.hpp>
 #include "nemo_cuda_types.h"
@@ -16,39 +17,6 @@
 #include "kernel.cu_h"
 #include "TargetPartitions.hpp"
 #include "L1SpikeBuffer.hpp"
-
-
-//! \todo replace with boost::tuple<3>
-struct ForwardIdx1
-{
-	ForwardIdx1(pidx_t source, pidx_t target, delay_t delay) :
-		source(source), target(target), delay(delay) {}
-
-	pidx_t source;
-	pidx_t target;
-	delay_t delay;
-};
-
-
-
-inline
-bool
-operator<(const ForwardIdx1& a, const ForwardIdx1& b)
-{
-	if(a.source < b.source) {
-		return true;
-	} else if (a.source == b.source ) {
-		if(a.target < b.target) {
-			return true;
-		} else if (a.target == b.target && a.delay < b.delay) {
-			return true;
-		} else {
-			return false;
-		}
-	} else {
-		return false;
-	}
-}
 
 
 /*! \brief Connectivity matrix
@@ -174,7 +142,8 @@ class ConnectivityMatrixImpl
 		fcm_t m1_fsynapses;
 
 		// new format: smaller groups by source/target/delay
-		typedef std::map<ForwardIdx1, SynapseGroup> fcm1_t;
+		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
+		typedef std::map<fcm_key_t, SynapseGroup> fcm1_t;
 		fcm1_t m1_fsynapses2;
 
 		void f_setDispatchTable(bool isL0);

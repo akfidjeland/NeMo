@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include "boost/tuple/tuple_comparison.hpp"
 
 #include "util.h"
 #include "log.hpp"
@@ -74,6 +75,14 @@ ConnectivityMatrixImpl::const_rsynapses(size_t lvl) const
 
 
 
+
+boost::tuple<pidx_t, pidx_t, delay_t>
+make_fcm_key(pidx_t source, pidx_t target, delay_t delay)
+{
+	return boost::tuple<pidx_t, pidx_t, delay_t>(source, target, delay);
+}
+
+
 void
 ConnectivityMatrixImpl::addSynapse0(pidx_t sp, nidx_t sn, delay_t delay,
 		pidx_t tp, nidx_t tn, weight_t w, uchar plastic)
@@ -84,8 +93,7 @@ ConnectivityMatrixImpl::addSynapse0(pidx_t sp, nidx_t sn, delay_t delay,
 	}
 
 	assert(sp == tp);
-	//! \todo change to using boost::tuple here instead
-	SynapseGroup& fgroup = m1_fsynapses2[ForwardIdx1(sp, tp, delay)];
+	SynapseGroup& fgroup = m1_fsynapses2[make_fcm_key(sp, tp, delay)];
 
 	/* targetPartition not strictly needed here, but left in (in place of
 	 * padding) for better code re-use */
@@ -141,7 +149,7 @@ ConnectivityMatrixImpl::addSynapse1(
 
 	// new format (not yet used)
 	{
-	SynapseGroup& fgroup = m1_fsynapses2[ForwardIdx1(sourcePartition, targetPartition, delay)];
+	SynapseGroup& fgroup = m1_fsynapses2[make_fcm_key(sourcePartition, targetPartition, delay)];
 
 	/* targetPartition not strictly needed here, but left in (in place of
 	 * padding) for better code re-use */
@@ -244,7 +252,7 @@ ConnectivityMatrixImpl::getRow(
 {
 	//! \todo simplify this again once old FCM format removed
 	if(lvl == 0) {
-		fcm1_t::iterator group = m1_fsynapses2.find(ForwardIdx1(sourcePartition, sourcePartition, delay));
+		fcm1_t::iterator group = m1_fsynapses2.find(make_fcm_key(sourcePartition, sourcePartition, delay));
 		if(group != m1_fsynapses2.end()) {
 			return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
 		} else {
@@ -382,11 +390,14 @@ ConnectivityMatrixImpl::f1_setDispatchTable()
 
 	for(fcm1_t::const_iterator i = m1_fsynapses2.begin(); i != m1_fsynapses2.end(); ++i) {
 
-		ForwardIdx1 fidx = i->first;
+		fcm_key_t fidx = i->first;
 		const SynapseGroup& sg = i->second;
 
 		// x: delay, y : target partition, z : source partition
-		size_t addr = (fidx.source * m_partitionCount + fidx.target) * delayCount + (fidx.delay-1);
+		pidx_t source = boost::tuples::get<0>(fidx);
+		pidx_t target = boost::tuples::get<1>(fidx);
+		delay_t delay = boost::tuples::get<2>(fidx);
+		size_t addr = (source * m_partitionCount + target) * delayCount + (delay-1);
 
 		void* fcm_addr = sg.d_address();
 		size_t fcm_pitch = sg.wpitch();
