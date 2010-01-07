@@ -16,13 +16,13 @@ L1SpikeBuffer::allocate(size_t partitionCount)
 
 	/* The queue has one entry for incoming spikes for each partition */
 	assert(partitionCount < MAX_PARTITION_COUNT);
-	size_t height = partitionCount;
+	size_t height = partitionCount * MAX_DELAY;
 
 	/* We're extremely conservative in the sizing of each buffer: it can
 	 * support every neuron firing every cycle. */
 	/*! \todo relax this constraint. We'll end up using a very large amount of
 	 * space when using a large number of partitions */
-	size_t width = partitionCount * MAX_PARTITION_SIZE * MAX_DELAY;
+	size_t width = partitionCount * MAX_PARTITION_SIZE;
 
 	l1spike_t* d_buffer;
 	size_t pitch;

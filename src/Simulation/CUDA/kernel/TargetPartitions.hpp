@@ -27,7 +27,7 @@ class TargetPartitions
 		boost::shared_ptr<targetp_t> md_arr; // device data
 		size_t m_pitch;
 
-		typedef boost::tuple<pidx_t, nidx_t, delay_t> key_t;
+		typedef boost::tuple<pidx_t, nidx_t> key_t;
 		typedef std::set<targetp_t> row_t;
 		typedef std::map<key_t, row_t> map_t;
 

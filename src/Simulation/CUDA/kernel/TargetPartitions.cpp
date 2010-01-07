@@ -15,8 +15,8 @@ TargetPartitions::addTargetPartition(
 		delay_t delay,
 		pidx_t targetPartition)
 {
-	key_t key(sourcePartition, sourceNeuron, delay);
-	m_acc[key].insert(targetPartition);
+	key_t key(sourcePartition, sourceNeuron);
+	m_acc[key].insert(make_targetp(targetPartition, delay));
 }
 
 
@@ -38,7 +38,7 @@ TargetPartitions::moveToDevice(size_t partitionCount, size_t partitionSize)
 {
 	using namespace boost::tuples;
 
-	size_t height = partitionCount * partitionSize * MAX_DELAY;
+	size_t height = partitionCount * partitionSize;
 	size_t width = maxPitch() * sizeof(targetp_t);
 
 	// allocate device memory
@@ -48,7 +48,7 @@ TargetPartitions::moveToDevice(size_t partitionCount, size_t partitionSize)
 
 	// allocate temporary host memory
 	size_t wpitch = m_pitch / sizeof(targetp_t);
-	std::vector<targetp_t> h_arr(height * wpitch, INVALID_PTARGET);
+	std::vector<targetp_t> h_arr(height * wpitch, INVALID_TARGETP);
 
 	// fill host memory
 	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
@@ -58,8 +58,7 @@ TargetPartitions::moveToDevice(size_t partitionCount, size_t partitionSize)
 
 		assert(targets.size() <= wpitch);
 
-		size_t addr = targetIdx(get<0>(key), get<1>(key), get<2>(key),
-						partitionSize, wpitch);
+		size_t addr = targetIdx(get<0>(key), get<1>(key), partitionSize, wpitch);
 		std::copy(targets.begin(), targets.end(), h_arr.begin() + addr);
 	}
 

@@ -11,10 +11,14 @@
 #include "nemo_cuda_types.h"
 
 
-/* Support up to 128 partitions */
-typedef unsigned char targetp_t;
+/* Support up to 128 partitions and 256 delays. */
+typedef uchar2 targetp_t;
 
-const targetp_t INVALID_PTARGET = ~0; 
+__host__ targetp_t make_targetp(pidx_t partition, delay_t delay);
+
+const targetp_t INVALID_TARGETP = { 0, 0 };
+
+__host__ bool operator<(const targetp_t& a, const targetp_t& b);
 
 __host__ void setTargetPitch(size_t targetPitch);
 
@@ -23,7 +27,6 @@ __host__ __device__
 size_t
 targetIdx(pidx_t partition,
 		nidx_t neuron,
-		delay_t delay,
 		size_t partitionSize,
 		size_t pitch);
 
