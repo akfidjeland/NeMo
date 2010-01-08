@@ -1,6 +1,7 @@
 #include "ConnectivityMatrix.hpp"
 #include "ConnectivityMatrixImpl.hpp"
 
+
 ConnectivityMatrix::ConnectivityMatrix(
         size_t partitionCount,
         size_t maxPartitionSize,
@@ -107,4 +108,36 @@ delay_t
 ConnectivityMatrix::maxDelay() const
 {
 	return m_impl->maxDelay();
+}
+
+
+
+targetp_t*
+ConnectivityMatrix::outgoing() const
+{
+	return m_impl->outgoing();
+}
+
+
+
+uint*
+ConnectivityMatrix::outgoingCount() const
+{
+	return m_impl->outgoingCount();
+}
+
+
+
+l1spike_t*
+ConnectivityMatrix::incoming() const
+{
+	return m_impl->incoming();
+}
+
+
+
+uint*
+ConnectivityMatrix::incomingHeads() const
+{
+	return m_impl->incomingHeads();
 }

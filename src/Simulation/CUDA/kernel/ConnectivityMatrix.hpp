@@ -8,6 +8,8 @@
 
 #include "nemo_cuda_types.h"
 #include "kernel.cu_h"
+#include "targetPartitions.cu_h"
+#include "l1SpikeBuffer.cu_h"
 
 
 /*! \brief Connectivity matrix
@@ -84,6 +86,11 @@ struct ConnectivityMatrix
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t level) const;
 
 		delay_t maxDelay() const;
+
+		targetp_t* outgoing() const;
+		uint* outgoingCount() const;
+		l1spike_t* incoming() const;
+		uint* incomingHeads() const;
 
 	private :
 

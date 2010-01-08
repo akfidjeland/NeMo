@@ -183,6 +183,12 @@ step(RTDATA rtdata,
 				rtdata->spikeQueue->pitch(),
 				rtdata->spikeQueue->heads(),
 				rtdata->spikeQueue->headPitch(),
+#ifdef NEW_L1
+				rtdata->cm()->outgoingCount(),
+				rtdata->cm()->outgoing(),
+				rtdata->cm()->incomingHeads(),
+				rtdata->cm()->incoming(),
+#endif
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),
@@ -209,6 +215,12 @@ step(RTDATA rtdata,
 				rtdata->spikeQueue->pitch(),
 				rtdata->spikeQueue->heads(),
 				rtdata->spikeQueue->headPitch(),
+#ifdef NEW_L1
+				rtdata->cm()->outgoingCount(),
+				rtdata->cm()->outgoing(),
+				rtdata->cm()->incomingHeads(),
+				rtdata->cm()->incoming(),
+#endif
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),

@@ -20,12 +20,18 @@ class TargetPartitions
 				delay_t delay,
 				pidx_t targetPartition);
 
-		void moveToDevice(size_t partitionCount, size_t partitionSize);
+		void moveToDevice(size_t partitionCount);
+
+		targetp_t* data() const { return md_arr.get(); }
+
+		uint* count() const { return md_rowLength.get(); }
 
 	private :
 
-		boost::shared_ptr<targetp_t> md_arr; // device data
-		size_t m_pitch;
+		boost::shared_ptr<targetp_t> md_arr;  // device data
+		size_t m_pitch;                       // max pitch
+
+		boost::shared_ptr<uint> md_rowLength; // per-neuron pitch
 
 		typedef boost::tuple<pidx_t, nidx_t> key_t;
 		typedef std::set<targetp_t> row_t;

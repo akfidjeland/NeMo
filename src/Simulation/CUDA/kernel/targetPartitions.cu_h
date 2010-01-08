@@ -22,12 +22,12 @@ __host__ bool operator<(const targetp_t& a, const targetp_t& b);
 
 __host__ void setTargetPitch(size_t targetPitch);
 
+
 /* Return address at beginning of given row */
 __host__ __device__ 
 size_t
 targetIdx(pidx_t partition,
 		nidx_t neuron,
-		size_t partitionSize,
 		size_t pitch);
 
 

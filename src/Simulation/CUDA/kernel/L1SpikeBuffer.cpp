@@ -18,19 +18,21 @@ L1SpikeBuffer::allocate(size_t partitionCount)
 	assert(partitionCount < MAX_PARTITION_COUNT);
 	size_t height = partitionCount * MAX_DELAY;
 
-	/* We're extremely conservative in the sizing of each buffer: it can
-	 * support every neuron firing every cycle. */
+	/* Each buffer entry (for a particular source partition) is of a fixed size
+	 * to siplify the rotating buffer code. This is very conservative. In fact
+	 * the buffer is large enough that every neuron can fire every cycle */
 	/*! \todo relax this constraint. We'll end up using a very large amount of
 	 * space when using a large number of partitions */
-	size_t width = partitionCount * MAX_PARTITION_SIZE;
+	size_t width = partitionCount * MAX_PARTITION_COUNT * sizeof(l1spike_t);
 
 	l1spike_t* d_buffer;
-	size_t pitch;
-	CUDA_SAFE_CALL(cudaMallocPitch((void**)&d_buffer, &pitch, width, height));
+	size_t bpitch;
+	CUDA_SAFE_CALL(cudaMallocPitch((void**)&d_buffer, &bpitch, width, height));
 	m_buffer = boost::shared_ptr<l1spike_t>(d_buffer);
 
 	/* We don't need to clear the queue. It will generally be full of garbage
 	 * anyway. The queue heads must be used to determine what's valid data */
 
-	setBufferPitch(pitch);
+	size_t wpitch = bpitch / sizeof(l1spike_t);
+	setBufferPitch(wpitch);
 }

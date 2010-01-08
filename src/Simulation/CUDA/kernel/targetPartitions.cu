@@ -3,7 +3,7 @@
 
 #include "targetPartitions.cu_h"
 
-__constant__ size_t c_targetpPitch;
+__constant__ size_t c_targetpPitch; // word pitch
 
 
 __host__
@@ -43,11 +43,50 @@ size_t
 targetIdx(
 		pidx_t partition,
 		nidx_t neuron,
-		delay_t delay,
-		size_t partitionSize,
 		size_t pitch)
 {
-	return ((partition * partitionSize + neuron) * MAX_DELAY + delay) * pitch;
+	//! \todo factor out addressing function and share with the 'counts' function
+	return (partition * MAX_PARTITION_SIZE + neuron) * pitch;
+}
+
+
+
+__device__
+uint
+job_targetPartition(targetp_t job)
+{
+	return (uint) job.x;
+}
+
+
+
+__device__
+uint
+job_delay(targetp_t job)
+{
+	return (uint) job.y;
+}
+
+
+
+__device__
+targetp_t
+targetPartitions(uint presynaptic,
+		uint jobIdx,
+		targetp_t* g_targets)
+{
+	size_t addr = targetIdx(CURRENT_PARTITION, presynaptic, c_targetpPitch);
+	return g_targets[addr + jobIdx];
+}
+
+
+
+/*! \return the number of jobs for a particular firing neuron in the current partition */
+__device__
+uint
+jobCount(uint presynaptic, uint* g_jobCounts)
+{
+	return g_jobCounts[CURRENT_PARTITION * MAX_PARTITION_SIZE + presynaptic];
 }
 
 

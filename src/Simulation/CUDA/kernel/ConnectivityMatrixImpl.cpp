@@ -232,7 +232,7 @@ ConnectivityMatrixImpl::moveToDevice()
 	f_setDispatchTable(false);
 	f1_setDispatchTable();
 
-	m_targetp.moveToDevice(m_partitionCount, m_maxPartitionSize);
+	m_targetp.moveToDevice(m_partitionCount);
 	m_spikeBuffer.allocate(m_partitionCount);
 }
 

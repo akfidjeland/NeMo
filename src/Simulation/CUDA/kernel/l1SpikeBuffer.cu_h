@@ -11,6 +11,6 @@
  */
 typedef uchar4 l1spike_t;
 
-__host__ void setBufferPitch(size_t pitch);
+__host__ void setBufferPitch(size_t wordPitch);
 
 #endif

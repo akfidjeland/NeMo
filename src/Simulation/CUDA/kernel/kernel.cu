@@ -247,7 +247,6 @@ listDelays_(uint64_t arrivalBits, uint* s_delayCount, uint* s_delays)
 
 
 
-//! \todo move out of kernel.cu, so as to avoid STDP_FN
 __device__
 void
 deliverL0Spikes_(
@@ -323,3 +322,86 @@ deliverL0Spikes_(
 	__syncthreads();
 }
 
+
+
+
+// New L1 scatter function
+/* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
+ * out or use a code generator to avoid repetition */
+__device__
+void
+l1scatter(
+		uint cycle,
+		uint partitionSize,
+		uint64_t* s_recentFiring,
+		uint16_t* s_firingIdx,
+		uint* g_outgoingCount,
+		targetp_t* g_outgoing,
+		uint* g_incomingHeads,
+		l1spike_t* g_incoming)
+{
+	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
+
+		__shared__ uint s_firingCount;
+
+		if(threadIdx.x == 0) {
+			s_firingCount = 0;
+		}
+		__syncthreads();
+
+		/*! \todo merge this step with the dumping to firing output. We can
+		 * then get rid of the whole outer loop here */
+		int candidate = preOffset + threadIdx.x;
+		if(s_recentFiring[candidate] & 0x1) {
+			int nextFree = atomicAdd(&s_firingCount, 1);
+			s_firingIdx[nextFree] = candidate;
+		}
+		__syncthreads();
+
+		//! \todo pre-load the outgoing count for each firing neuron (s_len and s_blocks)
+
+		/* We now have the indices of the firing of THREADS_PER_BLOCK
+		 * presynaptic neurons */
+		for(uint i=0; i<s_firingCount; ++i) {
+
+			int presynaptic = s_firingIdx[i];
+
+			__shared__ uint s_len;
+			__shared__ uint s_blocks;
+			if(threadIdx.x == 0) {
+				s_len = jobCount(presynaptic, g_outgoingCount);
+				s_blocks = DIV_CEIL(s_len, THREADS_PER_BLOCK);
+			}
+			__syncthreads();
+
+			for(uint block = 0; block < s_blocks; ++block) {
+
+				uint jobIdx = block * THREADS_PER_BLOCK + threadIdx.x;
+
+				if(jobIdx < s_len) {
+
+					targetp_t job = targetPartitions(presynaptic, jobIdx, g_outgoing);
+
+					uint delay = job_delay(job);
+
+					ASSERT(delay > 0);
+
+					uint targetPartition = job_targetPartition(job);
+					//! \todo factor address calculation into shared function
+					size_t headEntry = targetPartition * partitionSize + delay;
+					uint offset = atomicInc(g_incomingHeads + headEntry, c_l1BufferPitch-1);
+
+					ASSERT(offset < c_l1BufferPitch);
+
+					size_t base = l1BufferStart(targetPartition, cycle, delay);
+					g_incoming[base + offset] =
+						spikeBatch(CURRENT_PARTITION, presynaptic, delay);
+
+					DEBUG_MSG("c%u spike group p%u -> p%u (delay %u)\n",
+							cycle, CURRENT_PARTITION, targetPartition, delay);
+				}
+			}
+			__syncthreads(); // so s_blocks is not updated
+		}
+	}
+}

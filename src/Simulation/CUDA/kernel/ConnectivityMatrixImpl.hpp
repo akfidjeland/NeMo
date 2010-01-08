@@ -93,6 +93,22 @@ class ConnectivityMatrixImpl
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t lvl) const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t lvl) const;
 
+		/*! \return pointer to device data containing outgoing spike data for
+		 * each neuron */
+		targetp_t* outgoing() const { return m_targetp.data(); }
+
+		/*! \return pointer to device data containing the number of outgoing
+		 * spike groups for each neuron */
+		uint* outgoingCount() const { return m_targetp.count(); }
+
+		/*! \return pointer to device data continaing incoming spike group
+		 * buffer for each partition */
+		l1spike_t* incoming() const { return m_spikeBuffer.buffer(); }
+
+		/*! \return pointer to device data containing the queue heads (i.e.
+		 * the fill) for the incoming spike buffer */
+		uint* incomingHeads() const { return m_spikeBuffer.heads(); }
+
 	private:
 
 		/* Add a single synapse to both forward and reverse matrix */

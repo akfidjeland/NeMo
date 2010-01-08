@@ -39,6 +39,13 @@ STDP_FN(step) (
 		size_t sqPitch,
 		unsigned int* gSpikeQueueHeads,
 		size_t sqHeadPitch,
+		// new L1 spike delivery
+#ifdef NEW_L1
+		uint* g_outgoingCount,
+		targetp_t* g_outgoing,
+		uint* g_incomingHeads,
+		l1spike_t* g_incoming,
+#endif
 		// firing stimulus
 		uint32_t* g_fstim,
 		size_t pitch1,
@@ -198,7 +205,8 @@ STDP_FN(step) (
 			g_recentFiring
 				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
 				+ CURRENT_PARTITION * s_pitch64);
-	//! \todo add an additional counter?
+
+	SET_COUNTER(s_ccMain, 9);
 
 	if(haveL1) {
 		STDP_FN(deliverL1Spikes_JIT)(
@@ -217,6 +225,19 @@ STDP_FN(step) (
 				s_fcmAddr, s_fcmPitch);
 	}
 
-	SET_COUNTER(s_ccMain, 9);
+	SET_COUNTER(s_ccMain, 10);
+
+#ifdef NEW_L1
+	l1scatter(
+			cycle,
+			s_partitionSize,
+			s_recentFiring,
+			s_T16,
+			g_outgoingCount,
+			g_outgoing,
+			g_incomingHeads,
+			g_incoming);
+#endif
+	SET_COUNTER(s_ccMain, 11);
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

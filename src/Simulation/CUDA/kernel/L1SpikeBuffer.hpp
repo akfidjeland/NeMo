@@ -13,6 +13,10 @@ class L1SpikeBuffer
 
 		void allocate(size_t partitionCount);
 
+		l1spike_t* buffer() const { return m_buffer.get(); }
+
+		uint* heads() const { return m_heads.get(); }
+
 	private :
 
 		boost::shared_ptr<l1spike_t> m_buffer;
