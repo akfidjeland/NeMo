@@ -156,7 +156,7 @@ ConnectivityMatrixImpl::addSynapse1(
 	fgroup.addSynapse(sourceNeuron, targetPartition, targetNeuron, weight, plastic);
 	}
 
-	m_targetp.addTargetPartition(sourcePartition, sourceNeuron, delay, targetPartition);
+	m_outgoing.addSynapseGroup(sourcePartition, sourceNeuron, delay, targetPartition);
 
 	//! \todo add forward index to new reverse matrix (see addSynapse0)
 }
@@ -232,8 +232,8 @@ ConnectivityMatrixImpl::moveToDevice()
 	f_setDispatchTable(false);
 	f1_setDispatchTable();
 
-	m_targetp.moveToDevice(m_partitionCount);
-	m_spikeBuffer.allocate(m_partitionCount);
+	m_outgoing.moveToDevice(m_partitionCount);
+	m_incoming.allocate(m_partitionCount);
 }
 
 

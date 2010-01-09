@@ -42,9 +42,9 @@ STDP_FN(step) (
 		// new L1 spike delivery
 #ifdef NEW_L1
 		uint* g_outgoingCount,
-		targetp_t* g_outgoing,
+		outgoing_t* g_outgoing,
 		uint* g_incomingHeads,
-		l1spike_t* g_incoming,
+		incoming_t* g_incoming,
 #endif
 		// firing stimulus
 		uint32_t* g_fstim,

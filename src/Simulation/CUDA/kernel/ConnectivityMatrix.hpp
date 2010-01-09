@@ -87,9 +87,9 @@ struct ConnectivityMatrix
 
 		delay_t maxDelay() const;
 
-		targetp_t* outgoing() const;
+		outgoing_t* outgoing() const;
 		uint* outgoingCount() const;
-		l1spike_t* incoming() const;
+		incoming_t* incoming() const;
 		uint* incomingHeads() const;
 
 	private :

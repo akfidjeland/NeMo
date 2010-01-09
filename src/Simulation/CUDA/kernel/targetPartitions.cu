@@ -3,12 +3,12 @@
 
 #include "targetPartitions.cu_h"
 
-__constant__ size_t c_targetpPitch; // word pitch
+__constant__ size_t c_outgoingPitch; // word pitch
 
 
 __host__
-targetp_t
-make_targetp(pidx_t partition, delay_t delay)
+outgoing_t
+make_outgoing(pidx_t partition, delay_t delay)
 {
 	assert(partition < MAX_PARTITION_COUNT);
 	assert(delay < MAX_DELAY);
@@ -21,7 +21,7 @@ make_targetp(pidx_t partition, delay_t delay)
 
 __host__
 bool
-operator<(const targetp_t& a, const targetp_t& b)
+operator<(const outgoing_t& a, const outgoing_t& b)
 {
 	return a.x < b.x || (a.x == b.x && a.y < b.y);
 }
@@ -30,9 +30,9 @@ operator<(const targetp_t& a, const targetp_t& b)
 
 __host__
 void
-setTargetPitch(size_t targetPitch)
+setOutgoingPitch(size_t targetPitch)
 {
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_targetpPitch,
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_outgoingPitch,
 				&targetPitch, sizeof(size_t), 0, cudaMemcpyHostToDevice));
 }
 
@@ -40,10 +40,7 @@ setTargetPitch(size_t targetPitch)
 
 __host__ __device__
 size_t
-targetIdx(
-		pidx_t partition,
-		nidx_t neuron,
-		size_t pitch)
+outgoingRow(pidx_t partition, nidx_t neuron, size_t pitch)
 {
 	//! \todo factor out addressing function and share with the 'counts' function
 	return (partition * MAX_PARTITION_SIZE + neuron) * pitch;
@@ -53,40 +50,42 @@ targetIdx(
 
 __device__
 uint
-job_targetPartition(targetp_t job)
+outgoingTargetPartition(outgoing_t out)
 {
-	return (uint) job.x;
+	return (uint) out.x;
 }
 
 
 
 __device__
 uint
-job_delay(targetp_t job)
+outgoingDelay(outgoing_t out)
 {
-	return (uint) job.y;
+	return (uint) out.y;
 }
 
 
 
 __device__
-targetp_t
-targetPartitions(uint presynaptic,
+outgoing_t
+outgoing(uint presynaptic,
 		uint jobIdx,
-		targetp_t* g_targets)
+		outgoing_t* g_targets)
 {
-	size_t addr = targetIdx(CURRENT_PARTITION, presynaptic, c_targetpPitch);
+	size_t addr = outgoingRow(CURRENT_PARTITION, presynaptic, c_outgoingPitch);
 	return g_targets[addr + jobIdx];
 }
 
 
 
-/*! \return the number of jobs for a particular firing neuron in the current partition */
+/*! \return
+ *		the number of jobs for a particular firing neuron in the current
+ *		partition */
 __device__
 uint
-jobCount(uint presynaptic, uint* g_jobCounts)
+outgoingCount(uint presynaptic, uint* g_counts)
 {
-	return g_jobCounts[CURRENT_PARTITION * MAX_PARTITION_SIZE + presynaptic];
+	return g_counts[CURRENT_PARTITION * MAX_PARTITION_SIZE + presynaptic];
 }
 
 

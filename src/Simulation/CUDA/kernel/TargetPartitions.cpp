@@ -9,20 +9,20 @@
 
 
 void 
-TargetPartitions::addTargetPartition(
+Outgoing::addSynapseGroup(
 		pidx_t sourcePartition,
 		nidx_t sourceNeuron,
 		delay_t delay,
 		pidx_t targetPartition)
 {
 	key_t key(sourcePartition, sourceNeuron);
-	m_acc[key].insert(make_targetp(targetPartition, delay));
+	m_acc[key].insert(make_outgoing(targetPartition, delay));
 }
 
 
 
 size_t
-TargetPartitions::maxPitch() const
+Outgoing::maxPitch() const
 {
 	size_t pitch = 0;
 	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
@@ -34,21 +34,21 @@ TargetPartitions::maxPitch() const
 
 
 void
-TargetPartitions::moveToDevice(size_t partitionCount)
+Outgoing::moveToDevice(size_t partitionCount)
 {
 	using namespace boost::tuples;
 
 	size_t height = partitionCount * MAX_PARTITION_SIZE;
-	size_t width = maxPitch() * sizeof(targetp_t);
+	size_t width = maxPitch() * sizeof(outgoing_t);
 
 	// allocate device memory for table
-	targetp_t* d_arr;
+	outgoing_t* d_arr;
 	CUDA_SAFE_CALL(cudaMallocPitch((void**)&d_arr, &m_pitch, width, height));
-	md_arr = boost::shared_ptr<targetp_t>(d_arr, cudaFree);
+	md_arr = boost::shared_ptr<outgoing_t>(d_arr, cudaFree);
 
 	// allocate temporary host memory for table
-	size_t wpitch = m_pitch / sizeof(targetp_t);
-	std::vector<targetp_t> h_arr(height * wpitch, INVALID_TARGETP);
+	size_t wpitch = m_pitch / sizeof(outgoing_t);
+	std::vector<outgoing_t> h_arr(height * wpitch, INVALID_OUTGOING);
 
 	// allocate temporary host memory for row lengths
 	std::vector<uint> h_rowLength(height, 0);
@@ -64,7 +64,7 @@ TargetPartitions::moveToDevice(size_t partitionCount)
 		pidx_t partition = get<0>(key);
 		nidx_t neuron = get<1>(key);
 
-		size_t t_addr = targetIdx(partition, neuron, wpitch);
+		size_t t_addr = outgoingRow(partition, neuron, wpitch);
 		std::copy(targets.begin(), targets.end(), h_arr.begin() + t_addr);
 
 		//! \todo move this into shared __device__/__host__ function
@@ -77,7 +77,7 @@ TargetPartitions::moveToDevice(size_t partitionCount)
 
 	// copy table from host to device
 	CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * m_pitch, cudaMemcpyHostToDevice));
-	setTargetPitch(wpitch);
+	setOutgoingPitch(wpitch);
 
 	// allocate device memory for row lengths
 	uint* d_rowLength;

@@ -9,8 +9,8 @@
  * 2. source neuron (10b)
  * 3. delay (6b)
  */
-typedef uchar4 l1spike_t;
+typedef uchar4 incoming_t;
 
-__host__ void setBufferPitch(size_t wordPitch);
+__host__ void setIncomingPitch(size_t wordPitch);
 
 #endif

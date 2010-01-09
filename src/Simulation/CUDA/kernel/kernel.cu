@@ -336,9 +336,9 @@ l1scatter(
 		uint64_t* s_recentFiring,
 		uint16_t* s_firingIdx,
 		uint* g_outgoingCount,
-		targetp_t* g_outgoing,
+		outgoing_t* g_outgoing,
 		uint* g_incomingHeads,
-		l1spike_t* g_incoming)
+		incoming_t* g_incoming)
 {
 	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
@@ -369,7 +369,7 @@ l1scatter(
 			__shared__ uint s_len;
 			__shared__ uint s_blocks;
 			if(threadIdx.x == 0) {
-				s_len = jobCount(presynaptic, g_outgoingCount);
+				s_len = outgoingCount(presynaptic, g_outgoingCount);
 				s_blocks = DIV_CEIL(s_len, THREADS_PER_BLOCK);
 			}
 			__syncthreads();
@@ -380,22 +380,23 @@ l1scatter(
 
 				if(jobIdx < s_len) {
 
-					targetp_t job = targetPartitions(presynaptic, jobIdx, g_outgoing);
+					outgoing_t sout = outgoing(presynaptic, jobIdx, g_outgoing);
 
-					uint delay = job_delay(job);
+					uint delay = outgoingDelay(sout);
 
 					ASSERT(delay > 0);
 
-					uint targetPartition = job_targetPartition(job);
+					uint targetPartition = outgoingTargetPartition(sout);
 					//! \todo factor address calculation into shared function
 					size_t headEntry = targetPartition * partitionSize + delay;
-					uint offset = atomicInc(g_incomingHeads + headEntry, c_l1BufferPitch-1);
+					//! \todo pre-compute this
+					uint offset = atomicInc(g_incomingHeads + headEntry, c_incomingPitch-1);
 
-					ASSERT(offset < c_l1BufferPitch);
+					ASSERT(offset < c_incomingPitch);
 
 					size_t base = l1BufferStart(targetPartition, cycle, delay);
 					g_incoming[base + offset] =
-						spikeBatch(CURRENT_PARTITION, presynaptic, delay);
+						make_incoming(CURRENT_PARTITION, presynaptic, delay);
 
 					DEBUG_MSG("c%u spike group p%u -> p%u (delay %u)\n",
 							cycle, CURRENT_PARTITION, targetPartition, delay);

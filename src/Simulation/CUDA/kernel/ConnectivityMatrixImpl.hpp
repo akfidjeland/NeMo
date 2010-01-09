@@ -95,19 +95,19 @@ class ConnectivityMatrixImpl
 
 		/*! \return pointer to device data containing outgoing spike data for
 		 * each neuron */
-		targetp_t* outgoing() const { return m_targetp.data(); }
+		outgoing_t* outgoing() const { return m_outgoing.data(); }
 
 		/*! \return pointer to device data containing the number of outgoing
 		 * spike groups for each neuron */
-		uint* outgoingCount() const { return m_targetp.count(); }
+		uint* outgoingCount() const { return m_outgoing.count(); }
 
 		/*! \return pointer to device data continaing incoming spike group
 		 * buffer for each partition */
-		l1spike_t* incoming() const { return m_spikeBuffer.buffer(); }
+		incoming_t* incoming() const { return m_incoming.buffer(); }
 
 		/*! \return pointer to device data containing the queue heads (i.e.
 		 * the fill) for the incoming spike buffer */
-		uint* incomingHeads() const { return m_spikeBuffer.heads(); }
+		uint* incomingHeads() const { return m_incoming.heads(); }
 
 	private:
 
@@ -170,10 +170,10 @@ class ConnectivityMatrixImpl
 
 		/* For L1 delivery we need to keep track of all target partitions for
 		 * each neuron */
-		TargetPartitions m_targetp;
+		Outgoing m_outgoing;
 
 		/* We also need device memory for the firing queue */
-		L1SpikeBuffer m_spikeBuffer;
+		Incoming m_incoming;
 };
 
 #endif

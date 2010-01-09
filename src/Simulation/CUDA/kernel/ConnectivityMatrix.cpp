@@ -112,7 +112,7 @@ ConnectivityMatrix::maxDelay() const
 
 
 
-targetp_t*
+outgoing_t*
 ConnectivityMatrix::outgoing() const
 {
 	return m_impl->outgoing();
@@ -128,7 +128,7 @@ ConnectivityMatrix::outgoingCount() const
 
 
 
-l1spike_t*
+incoming_t*
 ConnectivityMatrix::incoming() const
 {
 	return m_impl->incoming();

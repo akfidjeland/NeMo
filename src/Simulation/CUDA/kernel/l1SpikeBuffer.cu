@@ -5,14 +5,14 @@
 #include "l1SpikeBuffer.cu_h"
 
 
-__constant__ size_t c_l1BufferPitch; // word pitch
+__constant__ size_t c_incomingPitch; // word pitch
 
 
 __host__
 void
-setBufferPitch(size_t pitch)
+setIncomingPitch(size_t pitch)
 {
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_l1BufferPitch,
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_incomingPitch,
 				&pitch, sizeof(size_t), 0, cudaMemcpyHostToDevice));
 }
 
@@ -34,15 +34,15 @@ __device__
 uint
 l1BufferStart(uint targetPartition, uint cycle, uint delay1)
 {
-	return (targetPartition * MAX_DELAY + l1BufferIndex(cycle, delay1)) * c_l1BufferPitch;
+	return (targetPartition * MAX_DELAY + l1BufferIndex(cycle, delay1)) * c_incomingPitch;
 }
 
 
 
 /*! \return incoming spike group from a particular source */
 __device__
-l1spike_t
-spikeBatch(uint sourcePartition, uint sourceNeuron, uint delay)
+incoming_t
+make_incoming(uint sourcePartition, uint sourceNeuron, uint delay)
 {
 	ASSERT(sourcePartition < (1<<8));
 	ASSERT(sourceNeuron < (1<<16));

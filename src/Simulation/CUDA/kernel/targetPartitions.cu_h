@@ -11,22 +11,27 @@
 #include "nemo_cuda_types.h"
 
 
-/* Support up to 128 partitions and 256 delays. */
-typedef uchar2 targetp_t;
+/* Each outgoing spike group specifies
+ *
+ * 1. target partition (up to 256)
+ * 2. delay (up to 256)
+ */
+typedef uchar2 outgoing_t;
 
-__host__ targetp_t make_targetp(pidx_t partition, delay_t delay);
+__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay);
 
-const targetp_t INVALID_TARGETP = { 0, 0 };
+const outgoing_t INVALID_OUTGOING = { 0, 0 };
 
-__host__ bool operator<(const targetp_t& a, const targetp_t& b);
+__host__ bool operator<(const outgoing_t& a, const outgoing_t& b);
 
-__host__ void setTargetPitch(size_t targetPitch);
+__host__ void setOutgoingPitch(size_t targetPitch);
 
 
 /* Return address at beginning of given row */
 __host__ __device__ 
 size_t
-targetIdx(pidx_t partition,
+outgoingRow(
+		pidx_t partition,
 		nidx_t neuron,
 		size_t pitch);
 
