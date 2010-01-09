@@ -1,4 +1,4 @@
-#include "L1SpikeBuffer.hpp"
+#include "Incoming.hpp"
 
 #include "util.h"
 #include "kernel.cu_h"

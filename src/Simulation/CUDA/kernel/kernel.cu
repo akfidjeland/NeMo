@@ -394,7 +394,7 @@ l1scatter(
 
 					ASSERT(offset < c_incomingPitch);
 
-					size_t base = l1BufferStart(targetPartition, cycle, delay);
+					size_t base = incomingBufferStart(targetPartition, cycle, delay);
 					g_incoming[base + offset] =
 						make_incoming(CURRENT_PARTITION, presynaptic, delay);
 

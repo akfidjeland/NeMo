@@ -6,7 +6,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "targetPartitions.cu_h"
+#include "outgoing.cu_h"
 
 class Outgoing
 {

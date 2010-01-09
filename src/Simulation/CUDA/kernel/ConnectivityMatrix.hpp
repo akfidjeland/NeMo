@@ -8,8 +8,8 @@
 
 #include "nemo_cuda_types.h"
 #include "kernel.cu_h"
-#include "targetPartitions.cu_h"
-#include "l1SpikeBuffer.cu_h"
+#include "outgoing.cu_h"
+#include "incoming.cu_h"
 
 
 /*! \brief Connectivity matrix

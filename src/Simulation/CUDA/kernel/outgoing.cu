@@ -1,7 +1,7 @@
 #ifndef TARGET_PARTITIONS_CU
 #define TARGET_PARTITIONS_CU
 
-#include "targetPartitions.cu_h"
+#include "outgoing.cu_h"
 
 __constant__ size_t c_outgoingPitch; // word pitch
 

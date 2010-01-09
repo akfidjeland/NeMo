@@ -15,8 +15,8 @@
 #include "SynapseGroup.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
-#include "TargetPartitions.hpp"
-#include "L1SpikeBuffer.hpp"
+#include "Outgoing.hpp"
+#include "Incoming.hpp"
 
 
 /*! \brief Connectivity matrix

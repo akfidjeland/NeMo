@@ -3,7 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "l1SpikeBuffer.cu_h"
+#include "incoming.cu_h"
 
 class Incoming
 {

@@ -2,7 +2,7 @@
 #define L1_SPIKE_BUFFER_CU
 
 #include "kernel.cu_h"
-#include "l1SpikeBuffer.cu_h"
+#include "incoming.cu_h"
 
 
 __constant__ size_t c_incomingPitch; // word pitch
@@ -21,7 +21,7 @@ setIncomingPitch(size_t pitch)
 /*! \return the buffer number to use for the given delay, given current cycle */
 __device__
 uint
-l1BufferIndex(uint cycle, uint delay1)
+incomingSlot(uint cycle, uint delay1)
 {
 	return (cycle + delay1) % MAX_DELAY;
 }
@@ -32,9 +32,9 @@ l1BufferIndex(uint cycle, uint delay1)
  * particular targetPartition and a particular delay. */
 __device__
 uint
-l1BufferStart(uint targetPartition, uint cycle, uint delay1)
+incomingBufferStart(uint targetPartition, uint cycle, uint delay1)
 {
-	return (targetPartition * MAX_DELAY + l1BufferIndex(cycle, delay1)) * c_incomingPitch;
+	return (targetPartition * MAX_DELAY + incomingSlot(cycle, delay1)) * c_incomingPitch;
 }
 
 
