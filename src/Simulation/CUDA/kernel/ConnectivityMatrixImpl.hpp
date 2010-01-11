@@ -69,7 +69,6 @@ class ConnectivityMatrixImpl
 		void moveToDevice();
 
 		size_t getRow(
-				size_t level,
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
 				delay_t delay,
@@ -172,6 +171,13 @@ class ConnectivityMatrixImpl
 
 		/* We also need device memory for the firing queue */
 		Incoming m_incoming;
+
+		/* When the user requests a row of synapses we need to combine data
+		 * from several synapse groups */
+		std::vector<pidx_t> mf_targetPartition;
+		std::vector<nidx_t> mf_targetNeuron;
+		std::vector<uchar> mf_plastic;
+		std::vector<weight_t> mf_weights;
 };
 
 #endif

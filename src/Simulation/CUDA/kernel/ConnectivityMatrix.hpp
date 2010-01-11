@@ -61,7 +61,6 @@ struct ConnectivityMatrix
 
 		/* Copy data from device to host */
 		size_t getRow(
-				size_t level,
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
 				delay_t delay,

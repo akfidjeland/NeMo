@@ -183,9 +183,8 @@ getNDWeights :: State -> DeviceIdx -> Delay -> IO [AxonTerminal Static]
 getNDWeights sim source d = do
     let sp = partitionIdx source
     let sn = neuronIdx source
-    w0 <- getCMDRow (rt sim) cmatrixL0 sp sn d
-    w1 <- getCMDRow (rt sim) cmatrixL1 sp sn d
-    return $! map pack $ w0 ++ w1
+    ws <- getCMDRow (rt sim) sp sn d
+    return $! map pack $ ws
     where
         pack :: (DeviceIdx, Weight, Bool) -> AxonTerminal Static
         pack (didx, w, plastic) =

@@ -374,7 +374,6 @@ setCMDRow(RTDATA rtdata,
 
 size_t
 getCMDRow(RTDATA rtdata,
-		size_t cmIdx,
 		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
@@ -383,7 +382,7 @@ getCMDRow(RTDATA rtdata,
 		float* weights[],
 		unsigned char* plastic[])
 {
-	return rtdata->cm()->getRow(cmIdx, sourcePartition, sourceNeuron, delay,
+	return rtdata->cm()->getRow(sourcePartition, sourceNeuron, delay,
 			rtdata->cycle(), targetPartition, targetNeuron, weights, plastic);
 }
 

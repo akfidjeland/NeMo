@@ -238,7 +238,6 @@ ConnectivityMatrixImpl::moveToDevice()
 
 size_t
 ConnectivityMatrixImpl::getRow(
-		size_t lvl,
 		pidx_t sourcePartition,
 		nidx_t sourceNeuron,
 		delay_t delay,
@@ -248,29 +247,39 @@ ConnectivityMatrixImpl::getRow(
 		weight_t* weight[],
 		uchar* plastic[])
 {
-	//! \todo simplify this again once old FCM format removed
-	if(lvl == 0) {
-		fcm1_t::iterator group = m1_fsynapses2.find(make_fcm_key(sourcePartition, sourcePartition, delay));
+	mf_targetPartition.clear();
+	mf_targetNeuron.clear();
+	mf_weights.clear();
+	mf_plastic.clear();
+
+	size_t rowLength = 0;
+
+	// get all synapse groups for which this neuron is present
+	for(pidx_t targetPartition = 0; targetPartition < m_partitionCount; ++targetPartition) {
+		fcm1_t::iterator group = m1_fsynapses2.find(make_fcm_key(sourcePartition, targetPartition, delay));
 		if(group != m1_fsynapses2.end()) {
-			return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
-		} else {
-			partition = NULL;
-			neuron = NULL;
-			weight = NULL;
-			return 0;
-		}
-	} else {
-		// old FCM format
-		fcm_t::iterator group = m1_fsynapses.find(nemo::ForwardIdx(sourcePartition, delay));
-		if(group != m1_fsynapses.end()) {
-			return group->second.getWeights(sourceNeuron, currentCycle, partition, neuron, weight, plastic);
-		} else {
-			partition = NULL;
-			neuron = NULL;
-			weight = NULL;
-			return 0;
+
+			pidx_t* pbuf;
+			nidx_t* nbuf;
+			weight_t* wbuf;
+			uchar* sbuf;
+
+			size_t len = group->second.getWeights(sourceNeuron, currentCycle, &pbuf, &nbuf, &wbuf, &sbuf);
+
+			std::copy(pbuf, pbuf+len, back_inserter(mf_targetPartition));
+			std::copy(nbuf, nbuf+len, back_inserter(mf_targetNeuron));
+			std::copy(wbuf, wbuf+len, back_inserter(mf_weights));
+			std::copy(sbuf, sbuf+len, back_inserter(mf_plastic));
+
+			rowLength += len;
 		}
 	}
+
+	*partition = &mf_targetPartition[0];
+	*neuron = &mf_targetNeuron[0];
+	*weight = &mf_weights[0];
+	*plastic = &mf_plastic[0];
+	return rowLength;
 }
 
 

@@ -45,7 +45,6 @@ ConnectivityMatrix::moveToDevice()
 
 size_t
 ConnectivityMatrix::getRow(
-		size_t level,
 		pidx_t sourcePartition,
 		nidx_t sourceNeuron,
 		delay_t delay,
@@ -55,7 +54,7 @@ ConnectivityMatrix::getRow(
 		weight_t* weight[],
 		uchar* plastic[])
 {
-	return m_impl->getRow(level, sourcePartition, sourceNeuron,
+	return m_impl->getRow(sourcePartition, sourceNeuron,
 			delay, currentCycle, partition, neuron, weight, plastic);
 }
 

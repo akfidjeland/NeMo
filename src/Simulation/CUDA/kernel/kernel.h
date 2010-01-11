@@ -104,7 +104,6 @@ setCMDRow(RTDATA rtdata,
 /*! Read connectivity matrix back from device for a single neuron and delay. */
 size_t
 getCMDRow(RTDATA rtdata,
-		size_t cmIdx,
 		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,

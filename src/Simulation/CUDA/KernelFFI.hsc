@@ -158,7 +158,6 @@ setCMDRow rt wbuf pbuf nbuf spbuf level pre delay len =
 
 foreign import ccall unsafe "getCMDRow" c_getCMDRow
         :: Ptr CuRT
-        -> CSize            -- ^ matrix level: 0 or 1
         -> CUInt            -- ^ source partition
         -> CUInt            -- ^ source neuron
         -> CUInt            -- ^ delay
@@ -173,18 +172,16 @@ foreign import ccall unsafe "getCMDRow" c_getCMDRow
 {- | Get (possibly modified) synapses for a single neuron and delay -}
 getCMDRow
     :: Ptr CuRT
-    -> CMatrixIndex             -- ^ level 0 or 1
     -> PartitionIdx             -- ^ source partition
     -> NeuronIdx                -- ^ source neuron
     -> Delay                    -- ^ delay
     -> IO [(DeviceIdx, Weight, Bool)] -- ^ synapses
-getCMDRow rt lvl sp sn d = do
+getCMDRow rt sp sn d = do
     alloca $ \p_ptr -> do
     alloca $ \n_ptr -> do
     alloca $ \w_ptr -> do
     alloca $ \s_ptr -> do -- plasticity
     c_len <- c_getCMDRow rt
-            (unCMatrixIndex lvl)
             (fromIntegral sp)
             (fromIntegral sn)
             (fromIntegral d)
