@@ -111,16 +111,8 @@ class ConnectivityMatrixImpl
 	private:
 
 		/* Add a single synapse to both forward and reverse matrix */
-		void addSynapse0(
-				pidx_t sourcePartition,
-				nidx_t sourceNeuron,
-				delay_t delay,
-				pidx_t targetPartition,
-				nidx_t targetNeuron,
-				weight_t weight,
-				uchar isPlastic);
-
-		void addSynapse1(
+		void addSynapse(
+				size_t lvl,
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
 				delay_t delay,
