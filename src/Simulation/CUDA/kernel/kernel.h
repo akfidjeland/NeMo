@@ -50,10 +50,7 @@ RTDATA
 allocRuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-		size_t maxL1SynapsesPerDelay,
 		unsigned int setReverse,
-		//! \todo determine the entry size inside allocator
-		size_t l1SQEntrySize,
 		unsigned int maxReadPeriod);
 
 void freeRuntimeData(RTDATA);

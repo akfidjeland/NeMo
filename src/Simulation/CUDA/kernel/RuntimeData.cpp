@@ -3,7 +3,6 @@
 extern "C" {
 #include "kernel.h"
 }
-#include "L1SpikeQueue.hpp"
 #include "FiringOutput.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
@@ -19,25 +18,19 @@ extern "C" {
 RuntimeData::RuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-		size_t maxL1SynapsesPerDelay,
 		bool setReverse,
-		//! \todo determine the entry size inside allocator
-		size_t l1SQEntrySize,
 		unsigned int maxReadPeriod) :
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
 	m_cm(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
-	m_deviceDirty(true),
-	m_haveL1Connections(partitionCount != 1 && l1SQEntrySize != 0)
+	m_deviceDirty(true)
 {
 	int device;
 	cudaGetDevice(&device);
 	cudaGetDeviceProperties(&m_deviceProperties, device);
 
-	//! \todo set queue size last, when finalising data
-	spikeQueue = new L1SpikeQueue(partitionCount, l1SQEntrySize, maxL1SynapsesPerDelay);
 	firingOutput = new FiringOutput(partitionCount, maxPartitionSize, maxReadPeriod);
 
 	recentFiring = new NVector<uint64_t>(partitionCount, maxPartitionSize, false, 2);
@@ -62,7 +55,6 @@ RuntimeData::RuntimeData(
 
 RuntimeData::~RuntimeData()
 {
-	delete spikeQueue;
 	delete firingOutput;
 	delete recentFiring;
 	delete neuronParameters;
@@ -116,14 +108,6 @@ RuntimeData::deviceDirty() const
 {
 	return m_deviceDirty;
 }
-
-
-bool
-RuntimeData::haveL1Connections() const
-{
-	return m_haveL1Connections;
-}
-
 
 
 
@@ -215,7 +199,6 @@ size_t
 RuntimeData::d_allocated() const
 {
 	size_t total = 0;
-	total += spikeQueue       ? spikeQueue->d_allocated()       : 0;
 	total += firingStimulus   ? firingStimulus->d_allocated()   : 0;
 	total += recentFiring     ? recentFiring->d_allocated()     : 0;
 	total += neuronParameters ? neuronParameters->d_allocated() : 0;
@@ -305,19 +288,10 @@ RTDATA
 allocRuntimeData(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-		size_t maxL1SynapsesPerDelay,
 		uint setReverse,
-		//! \todo determine the entry size inside allocator
-		size_t l1SQEntrySize,
 		uint maxReadPeriod)
 {
-	return new RuntimeData(
-			partitionCount,
-			maxPartitionSize,
-			maxL1SynapsesPerDelay,
-			(bool) setReverse,
-			l1SQEntrySize,
-			maxReadPeriod);
+	return new RuntimeData(partitionCount, maxPartitionSize, (bool) setReverse, maxReadPeriod);
 }
 
 

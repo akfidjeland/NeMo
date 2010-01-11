@@ -33,19 +33,11 @@ STDP_FN(step) (
 		float* g_sigma,
 		size_t neuronParametersSize,
 		uint64_t* gf0_delays,
-		uint64_t* gf1_delays,
-		// L1 spike queue
-		uint2* gSpikeQueue,
-		size_t sqPitch,
-		unsigned int* gSpikeQueueHeads,
-		size_t sqHeadPitch,
-		// new L1 spike delivery
-#ifdef NEW_L1
+		// L1 delivery
 		uint* g_outgoingCount,
 		outgoing_t* g_outgoing,
 		uint* g_incomingHeads,
 		incoming_t* g_incoming,
-#endif
 		// firing stimulus
 		uint32_t* g_fstim,
 		size_t pitch1,
@@ -72,11 +64,6 @@ STDP_FN(step) (
 
 	/* Per-delay buffer */
 	__shared__ uint32_t s_D32[MAX_DELAY];
-
-#ifndef NEW_L1
-	/* Per-partition buffer */
-	__shared__ uint32_t s_P32[MAX_PARTITION_COUNT];
-#endif
 
 	uint64_t* s_recentFiring = s_M1KB;
 
@@ -125,25 +112,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 3);
 
-	bool haveL1 = gSpikeQueue != NULL;
-#ifndef NEW_L1
-	if(haveL1) {
-		STDP_FN(gatherL1Spikes_JIT_)(
-				readBuffer(cycle),
-				gSpikeQueue,
-				sqPitch,
-				gSpikeQueueHeads,
-				sqHeadPitch,
-				s_current,
-				s_P32);
-	}
-#else
-	l1gather(
-			cycle,
-			g_incomingHeads,
-			g_incoming,
-			s_current);
-#endif
+	l1gather(cycle, g_incomingHeads, g_incoming, s_current);
 
 	SET_COUNTER(s_ccMain, 4);
 
@@ -184,6 +153,8 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 6);
 
 #ifdef STDP
+	/*! \todo since we use the same FCM for both L0 and L1, we could
+	 * potentially use a single RCM and do all STDP in one go */
 	updateSTDP_(
 			false,
 			s_recentFiring,
@@ -195,16 +166,14 @@ STDP_FN(step) (
 #endif
 	SET_COUNTER(s_ccMain, 7);
 #ifdef STDP
-	if(haveL1) {
-		updateSTDP_(
-				true,
-				g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
-				s_recentFiring,
-				s_pitch64,
-				s_partitionSize,
-				cr1_address, cr1_stdp, cr1_pitch,
-				s_T32);
-	}
+	updateSTDP_(
+			true,
+			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
+			s_recentFiring,
+			s_pitch64,
+			s_partitionSize,
+			cr1_address, cr1_stdp, cr1_pitch,
+			s_T32);
 #endif
 	SET_COUNTER(s_ccMain, 8);
 
@@ -218,28 +187,6 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 9);
 
-#ifndef NEW_L1
-	if(haveL1) {
-		STDP_FN(deliverL1Spikes_JIT)(
-				writeBuffer(cycle),
-				s_partitionSize,
-				s_recentFiring,
-				gf1_delays + CURRENT_PARTITION * s_pitch64,
-				(uint2*) s_M1KA, // used for s_current previously, now use for staging outgoing spikes
-				//! \todo compile-time assertions to make sure we're not overflowing here
-				//! \todo fix naming!
-				gSpikeQueue,
-				sqPitch,
-				gSpikeQueueHeads,
-				sqHeadPitch,
-				s_T16, s_T32, s_D32, s_P32,
-				s_fcmAddr, s_fcmPitch);
-	}
-#endif
-
-	SET_COUNTER(s_ccMain, 10);
-
-#ifdef NEW_L1
 	l1scatter(
 			cycle,
 			s_partitionSize,
@@ -249,7 +196,7 @@ STDP_FN(step) (
 			g_outgoing,
 			g_incomingHeads,
 			g_incoming);
-#endif
-	SET_COUNTER(s_ccMain, 11);
+	SET_COUNTER(s_ccMain, 10);
+
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

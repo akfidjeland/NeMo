@@ -27,8 +27,7 @@ const char* durationNames[] = {
 	"L0 LTP",
 	"L1 LTP",
 	"update history",
-	"L1 scatter",
-	"L1 scatter (2)"
+	"L1 scatter"
 };
 
 

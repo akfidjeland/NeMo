@@ -228,8 +228,6 @@ ConnectivityMatrixImpl::moveToDevice()
 		i->second.moveToDevice();
 	}
 
-	//! \todo tidy interface here
-	f_setDispatchTable(false);
 	f1_setDispatchTable();
 
 	m_outgoing.moveToDevice(m_partitionCount);
@@ -304,13 +302,13 @@ ConnectivityMatrixImpl::d_allocated() const
 		rcm1 += (*i)->d_allocated();
 	}
 
-	size_t fcm1 = 0;
-	for(fcm_t::const_iterator i = m1_fsynapses.begin();
-			i != m1_fsynapses.end(); ++i) {
-		fcm1 += i->second.d_allocated();
+	size_t fcm = 0;
+	for(fcm1_t::const_iterator i = m1_fsynapses2.begin();
+			i != m1_fsynapses2.end(); ++i) {
+		fcm += i->second.d_allocated();
 	}
 
-	return m0_delayBits.d_allocated() + m1_delayBits.d_allocated() + fcm1 + rcm0 + rcm1;
+	return m0_delayBits.d_allocated() + m1_delayBits.d_allocated() + fcm + rcm0 + rcm1;
 }
 
 
@@ -406,43 +404,4 @@ ConnectivityMatrixImpl::f1_setDispatchTable()
 
 	cudaArray* f_dispatch = ::f1_setDispatchTable2(m_partitionCount, delayCount, table);
 	mf1_dispatch2 = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
-}
-
-
-
-void
-ConnectivityMatrixImpl::f_setDispatchTable(bool isL0)
-{
-	assert(!isL0);
-	if(isL0) {
-		return;
-	}
-
-	size_t delayCount = MAX_DELAY;
-
-	size_t width = m_partitionCount;
-	size_t height = delayCount;
-	size_t size = width * height;
-
-	fcm_ref_t null = fcm_packReference(0, 0);
-	std::vector<fcm_ref_t> table(size, null);
-
-	for(fcm_t::const_iterator i = m1_fsynapses.begin();
-			i != m1_fsynapses.end(); ++i) {
-
-		nemo::ForwardIdx fidx = i->first;
-		const SynapseGroup& sg = i->second;
-
-		// x: delay, y : partition
-		size_t addr = fidx.source * delayCount + (fidx.delay-1);
-
-		void* fcm_addr = sg.d_address();
-		size_t fcm_pitch = sg.wpitch();
-		table.at(addr) = fcm_packReference(fcm_addr, fcm_pitch);
-	}
-
-	if(!isL0) {
-		cudaArray* f_dispatch = ::f1_setDispatchTable(m_partitionCount, delayCount, table);
-		mf1_dispatch = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
-	}
 }

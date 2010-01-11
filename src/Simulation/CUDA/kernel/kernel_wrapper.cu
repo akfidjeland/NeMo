@@ -20,7 +20,6 @@ extern "C" {
 #include "time.hpp"
 #include "error.cu"
 #include "log.hpp"
-#include "L1SpikeQueue.hpp"
 #include "connectivityMatrix.cu"
 #include "FiringOutput.hpp"
 #include "firingProbe.cu"
@@ -38,10 +37,8 @@ extern "C" {
 #include "stdp.cu" // only used if STDP enabled
 
 #define STDP
-#include "L1SpikeQueue.cu"
 #include "step.cu"
 #undef STDP
-#include "L1SpikeQueue.cu"
 #include "step.cu"
 
 
@@ -125,9 +122,7 @@ applyStdp(RTDATA rtdata, float stdpReward)
 			rtdata->cm()->clearStdpAccumulator();
 		} else  {
 			applyStdp_(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);
-			if(rtdata->haveL1Connections()) {
-				applyStdp_(dimGrid, dimBlock, rtdata, CM_L1, stdpReward, false);
-			}
+			applyStdp_(dimGrid, dimBlock, rtdata, CM_L1, stdpReward, false);
 		}
 	}
 
@@ -177,18 +172,11 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
 				rtdata->cm()->df_delayBits(0),
-				rtdata->cm()->df_delayBits(1),
 				// L1 spike queue
-				rtdata->spikeQueue->data(),
-				rtdata->spikeQueue->pitch(),
-				rtdata->spikeQueue->heads(),
-				rtdata->spikeQueue->headPitch(),
-#ifdef NEW_L1
 				rtdata->cm()->outgoingCount(),
 				rtdata->cm()->outgoing(),
 				rtdata->cm()->incomingHeads(),
 				rtdata->cm()->incoming(),
-#endif
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),
@@ -209,18 +197,11 @@ step(RTDATA rtdata,
                 //! \todo get size directly from rtdata
 				rtdata->neuronParameters->size(),
 				rtdata->cm()->df_delayBits(0),
-				rtdata->cm()->df_delayBits(1),
 				// L1 spike queue
-				rtdata->spikeQueue->data(),
-				rtdata->spikeQueue->pitch(),
-				rtdata->spikeQueue->heads(),
-				rtdata->spikeQueue->headPitch(),
-#ifdef NEW_L1
 				rtdata->cm()->outgoingCount(),
 				rtdata->cm()->outgoing(),
 				rtdata->cm()->incomingHeads(),
 				rtdata->cm()->incoming(),
-#endif
 				// firing stimulus
 				d_extFiring,
 				rtdata->firingStimulus->wordPitch(),

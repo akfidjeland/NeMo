@@ -16,10 +16,7 @@ struct RuntimeData
 	RuntimeData(
 			size_t partitionCount,
 			size_t maxPartitionSize,
-			size_t maxL1SynapsesPerDelay,
 			bool setReverse,
-			//! \todo determine the entry size inside allocator
-			size_t l1SQEntrySize,
 			unsigned int maxReadPeriod);
 
 	~RuntimeData();
@@ -34,11 +31,6 @@ struct RuntimeData
 	 * device */
 	bool deviceDirty() const;
 
-	/*! \return true if there are *any* L1 connections, i.e. connections
-	 * crossing partition boundaries */
-	bool haveL1Connections() const;
-
-	struct L1SpikeQueue* spikeQueue;
 	struct FiringOutput* firingOutput;
 
 	NVector<uint64_t>* recentFiring;
@@ -115,8 +107,6 @@ struct RuntimeData
 		bool m_deviceDirty;
 
 		nemo::Timer m_timer;
-
-		bool m_haveL1Connections;
 
 		// no need for getters for a single use
 		friend void configureDevice(RuntimeData*);

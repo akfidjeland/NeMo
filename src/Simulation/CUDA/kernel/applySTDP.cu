@@ -7,9 +7,6 @@
 #include "util.h"
 #include "dispatchTable.cu"
 
-//! \todo remove this once NEW_L1 is universally applied
-#include "kernel.cu_h"
-
 
 /*! Apply STDP 
  * 
@@ -83,16 +80,8 @@ applySTDP_(
 						gr_stdp[gr_offset] = 0.0f;
 
 						//! \todo load this into smem exactly once
-#ifndef NEW_L1
-						fcm_ref_t fcm;
-						if(cmIdx == 0) {
-							fcm = getFCM2(sourcePartition(rsynapse), CURRENT_PARTITION, r_delay0(rsynapse));
-						} else {
-							fcm = getFCM(cmIdx, sourcePartition(rsynapse), r_delay0(rsynapse));
-						}
-#else
 						fcm_ref_t fcm = getFCM2(sourcePartition(rsynapse), CURRENT_PARTITION, r_delay0(rsynapse));
-#endif
+
 						ASSERT(f0_base(fcm) != 0x0);
 						ASSERT(forwardIdx(rsynapse) < f0_pitch(fcm));
 						//! \todo share method with kernel.cu:synapesAddress2

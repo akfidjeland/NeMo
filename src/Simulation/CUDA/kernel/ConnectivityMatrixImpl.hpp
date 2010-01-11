@@ -162,10 +162,8 @@ class ConnectivityMatrixImpl
 		typedef std::map<fcm_key_t, SynapseGroup> fcm1_t;
 		fcm1_t m1_fsynapses2;
 
-		void f_setDispatchTable(bool isL0);
 		void f1_setDispatchTable();
 
-		boost::shared_ptr<cudaArray> mf1_dispatch;
 		boost::shared_ptr<cudaArray> mf1_dispatch2;
 
 		/* For L1 delivery we need to keep track of all target partitions for

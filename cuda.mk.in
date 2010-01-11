@@ -5,7 +5,6 @@ CU_MAIN = kernel_wrapper.cu
 
 # CUDA source files which are #included in main kernel source file
 CU_INC = kernel.cu \
-		 L1SpikeQueue.cu \
 		 firingProbe.cu \
 		 partitionConfiguration.cu \
 		 cycleCounting.cu \
@@ -19,8 +18,7 @@ CU_INC = kernel.cu \
 		 outgoing.cu \
 		 incoming.cu
 
-CC_SRC = L1SpikeQueue.cpp \
-		 FiringOutput.cpp \
+CC_SRC = FiringOutput.cpp \
 		 RuntimeData.cpp \
 		 ConnectivityMatrix.cpp \
 		 ConnectivityMatrixImpl.cpp \
