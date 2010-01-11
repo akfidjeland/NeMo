@@ -73,8 +73,10 @@ STDP_FN(step) (
 	/* Per-delay buffer */
 	__shared__ uint32_t s_D32[MAX_DELAY];
 
+#ifndef NEW_L1
 	/* Per-partition buffer */
 	__shared__ uint32_t s_P32[MAX_PARTITION_COUNT];
+#endif
 
 	uint64_t* s_recentFiring = s_M1KB;
 
