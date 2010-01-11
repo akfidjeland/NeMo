@@ -208,6 +208,7 @@ deliverSpike(
 
 	if(doCommit) {
 		s_current[postsynaptic] += weight;
+		//! \todo add partition numbers here as well. This is not only for L1 any more
 		DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
 				s_cycle, presynaptic, postsynaptic, weight);
 	}
@@ -387,10 +388,9 @@ l1scatter(
 					ASSERT(delay > 0);
 
 					uint targetPartition = outgoingTargetPartition(sout);
-					//! \todo factor address calculation into shared function
-					size_t headEntry = targetPartition * partitionSize + delay;
+					size_t headsAddr = incomingCountAddr(targetPartition, cycle, delay);
 					//! \todo pre-compute this
-					uint offset = atomicInc(g_incomingHeads + headEntry, c_incomingPitch-1);
+					uint offset = atomicInc(g_incomingHeads + headsAddr, c_incomingPitch-1);
 
 					ASSERT(offset < c_incomingPitch);
 
@@ -398,11 +398,76 @@ l1scatter(
 					g_incoming[base + offset] =
 						make_incoming(CURRENT_PARTITION, presynaptic, delay);
 
-					DEBUG_MSG("c%u spike group p%u -> p%u (delay %u)\n",
-							cycle, CURRENT_PARTITION, targetPartition, delay);
+					DEBUG_MSG("c%u spike group p%un%u -> p%u (delay %u)\n",
+							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay);
 				}
 			}
 			__syncthreads(); // so s_blocks is not updated
 		}
 	}
 }
+
+
+
+__device__
+void
+l1gather(
+		uint cycle,
+		uint* g_incomingCount,
+		incoming_t* g_incoming,
+		float* s_current)
+{
+	__shared__ uint s_incomingCount;
+	if(threadIdx.x == 0) {
+		size_t addr = incomingCountAddr(CURRENT_PARTITION, cycle, 0);
+		s_incomingCount = g_incomingCount[addr];
+		g_incomingCount[addr] = 0;
+	}
+	__syncthreads();
+
+	//! \todo load several (at least a warp) of incoming data at the same time
+
+	for(uint group = 0; group < s_incomingCount; ++group) {
+
+		//! \todo load this in parallel outside for loop
+		__shared__ uint sourceNeuron;
+		__shared__ uint32_t* sf1_cm;
+		__shared__ size_t sf1_pitch;
+		__shared__ size_t s_chunks;
+
+		if(threadIdx.x == 0) {
+			incoming_t sgin = getIncoming(cycle, group, g_incoming);
+			uint delay = incomingDelay(sgin);
+			sourceNeuron = incomingNeuron(sgin);
+			uint sourcePartition = incomingPartition(sgin);
+			fcm_ref_t fcm = getFCM2(sourcePartition, CURRENT_PARTITION, delay-1);
+			sf1_cm = f0_base(fcm);
+			ASSERT(sf1_cm != 0x0);
+			sf1_pitch = f0_pitch(fcm);
+			s_chunks = DIV_CEIL(sf1_pitch, THREADS_PER_BLOCK);
+#if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
+			DEBUG_MSG("c%u incoming spike group p%u -> p%u (delay %u) (%u synapses, %u chunks)\n",
+					cycle, sourcePartition, CURRENT_PARTITION, delay, sf1_pitch, s_chunks);
+#endif
+		}
+		__syncthreads();
+
+		for(uint chunk = 0; chunk < s_chunks; ++chunk) {
+
+			uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+
+			if(synapseIdx < sf1_pitch) {
+				deliverSpike(
+						f_synapseOffset(sourceNeuron, sf1_pitch, synapseIdx),
+						sourceNeuron,
+						f0_address2(sf1_cm, sf1_pitch),
+						f0_weights2(sf1_cm, sf1_pitch),
+						s_current);
+			}
+			__syncthreads();
+		}
+
+		__syncthreads(); // to avoid overwriting s_chunks
+	}
+}
+

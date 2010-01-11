@@ -124,6 +124,7 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 3);
 
 	bool haveL1 = gSpikeQueue != NULL;
+#ifndef NEW_L1
 	if(haveL1) {
 		STDP_FN(gatherL1Spikes_JIT_)(
 				readBuffer(cycle),
@@ -134,6 +135,13 @@ STDP_FN(step) (
 				s_current,
 				s_P32);
 	}
+#else
+	l1gather(
+			cycle,
+			g_incomingHeads,
+			g_incoming,
+			s_current);
+#endif
 
 	SET_COUNTER(s_ccMain, 4);
 
@@ -208,6 +216,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 9);
 
+#ifndef NEW_L1
 	if(haveL1) {
 		STDP_FN(deliverL1Spikes_JIT)(
 				writeBuffer(cycle),
@@ -224,6 +233,7 @@ STDP_FN(step) (
 				s_T16, s_T32, s_D32, s_P32,
 				s_fcmAddr, s_fcmPitch);
 	}
+#endif
 
 	SET_COUNTER(s_ccMain, 10);
 

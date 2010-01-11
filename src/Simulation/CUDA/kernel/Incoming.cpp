@@ -9,7 +9,7 @@ Incoming::allocate(size_t partitionCount)
 {
 	// allocate space for the incoming count
 	uint* d_count;
-	size_t len = ALIGN(partitionCount, 32) * sizeof(uint);
+	size_t len = ALIGN(partitionCount * MAX_DELAY, 32) * sizeof(uint);
 	CUDA_SAFE_CALL(cudaMalloc((void**)&d_count, len));
 	CUDA_SAFE_CALL(cudaMemset(d_count, 0, len));
 	m_count = boost::shared_ptr<uint>(d_count, cudaFree);

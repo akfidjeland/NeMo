@@ -39,6 +39,16 @@ incomingBufferStart(uint targetPartition, uint cycle, uint delay1)
 
 
 
+__device__
+incoming_t
+getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
+{
+	return g_incoming[incomingBufferStart(CURRENT_PARTITION, cycle, 0) + offset];
+}
+
+
+
+
 /*! \return incoming spike group from a particular source */
 __device__
 incoming_t
@@ -48,10 +58,45 @@ make_incoming(uint sourcePartition, uint sourceNeuron, uint delay)
 	ASSERT(sourceNeuron < (1<<16));
 	ASSERT(delay < (1<<8));
 	return make_uchar4(
-			(uchar) sourcePartition,
-			(uchar) sourceNeuron >> 8,   // MSB
-			(uchar) sourceNeuron & 0xff, // LSB
-			(uchar) delay);
+			uchar(sourcePartition),
+			uchar(sourceNeuron >> 8),   // MSB
+			uchar(sourceNeuron & 0xff), // LSB
+			uchar(delay));
+}
+
+
+__device__
+uint
+incomingDelay(incoming_t in)
+{
+	return (uint) in.w;
+}
+
+
+__device__
+uint
+incomingPartition(incoming_t in)
+{
+	return (uint) in.x;
+}
+
+
+
+__device__
+uint
+incomingNeuron(incoming_t in)
+{
+	return (((uint) in.y) << 8) | ((uint) in.z);
+}
+
+
+
+/*! \return address into matrix with number of incoming synapse groups */
+__device__
+size_t
+incomingCountAddr(uint targetPartition, uint cycle, uint delay1)
+{
+	return targetPartition * MAX_DELAY + incomingSlot(cycle, delay1);
 }
 
 
