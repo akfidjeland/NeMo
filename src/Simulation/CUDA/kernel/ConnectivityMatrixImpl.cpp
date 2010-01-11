@@ -92,7 +92,7 @@ ConnectivityMatrixImpl::addSynapse(size_t lvl, pidx_t sp, nidx_t sn, delay_t del
 		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
 	}
 
-	SynapseGroup& fgroup = m1_fsynapses2[make_fcm_key(sp, tp, delay)];
+	SynapseGroup& fgroup = m_fsynapses[make_fcm_key(sp, tp, delay)];
 
 	/* targetPartition not strictly needed here, but left in (in place of
 	 * padding) for better code re-use */
@@ -160,12 +160,12 @@ ConnectivityMatrixImpl::moveToDevice()
 		m1_rsynapses[p]->moveToDevice();
 	}
 
-	for(fcm1_t::iterator i = m1_fsynapses2.begin();
-			i != m1_fsynapses2.end(); ++i) {
+	for(fcm_t::iterator i = m_fsynapses.begin();
+			i != m_fsynapses.end(); ++i) {
 		i->second.moveToDevice();
 	}
 
-	f1_setDispatchTable();
+	f_setDispatchTable();
 
 	m_outgoing.moveToDevice(m_partitionCount);
 	m_incoming.allocate(m_partitionCount);
@@ -193,8 +193,8 @@ ConnectivityMatrixImpl::getRow(
 
 	// get all synapse groups for which this neuron is present
 	for(pidx_t targetPartition = 0; targetPartition < m_partitionCount; ++targetPartition) {
-		fcm1_t::iterator group = m1_fsynapses2.find(make_fcm_key(sourcePartition, targetPartition, delay));
-		if(group != m1_fsynapses2.end()) {
+		fcm_t::iterator group = m_fsynapses.find(make_fcm_key(sourcePartition, targetPartition, delay));
+		if(group != m_fsynapses.end()) {
 
 			pidx_t* pbuf;
 			nidx_t* nbuf;
@@ -249,8 +249,8 @@ ConnectivityMatrixImpl::d_allocated() const
 	}
 
 	size_t fcm = 0;
-	for(fcm1_t::const_iterator i = m1_fsynapses2.begin();
-			i != m1_fsynapses2.end(); ++i) {
+	for(fcm_t::const_iterator i = m_fsynapses.begin();
+			i != m_fsynapses.end(); ++i) {
 		fcm += i->second.d_allocated();
 	}
 
@@ -320,7 +320,7 @@ ConnectivityMatrixImpl::r_partitionStdp(size_t lvl) const
 
 
 void
-ConnectivityMatrixImpl::f1_setDispatchTable()
+ConnectivityMatrixImpl::f_setDispatchTable()
 {
 	size_t delayCount = MAX_DELAY;
 
@@ -332,7 +332,7 @@ ConnectivityMatrixImpl::f1_setDispatchTable()
 	fcm_ref_t null = fcm_packReference(0, 0);
 	std::vector<fcm_ref_t> table(size, null);
 
-	for(fcm1_t::const_iterator i = m1_fsynapses2.begin(); i != m1_fsynapses2.end(); ++i) {
+	for(fcm_t::const_iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
 
 		fcm_key_t fidx = i->first;
 		const SynapseGroup& sg = i->second;
@@ -348,6 +348,6 @@ ConnectivityMatrixImpl::f1_setDispatchTable()
 		table.at(addr) = fcm_packReference(fcm_addr, fcm_pitch);
 	}
 
-	cudaArray* f_dispatch = ::f1_setDispatchTable2(m_partitionCount, delayCount, table);
-	mf1_dispatch2 = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
+	cudaArray* f_dispatch = ::f_setDispatchTable(m_partitionCount, delayCount, table);
+	mf_dispatch = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
 }

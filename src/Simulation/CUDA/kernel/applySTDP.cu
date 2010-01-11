@@ -80,14 +80,14 @@ applySTDP_(
 						gr_stdp[gr_offset] = 0.0f;
 
 						//! \todo load this into smem exactly once
-						fcm_ref_t fcm = getFCM2(sourcePartition(rsynapse), CURRENT_PARTITION, r_delay0(rsynapse));
+						fcm_ref_t fcm = getFCM(sourcePartition(rsynapse), CURRENT_PARTITION, r_delay0(rsynapse));
 
-						ASSERT(f0_base(fcm) != 0x0);
-						ASSERT(forwardIdx(rsynapse) < f0_pitch(fcm));
+						ASSERT(f_base(fcm) != 0x0);
+						ASSERT(forwardIdx(rsynapse) < f_pitch(fcm));
 						//! \todo share method with kernel.cu:synapesAddress2
-						size_t gf_offset = f_synapseOffset(sourceNeuron(rsynapse), f0_pitch(fcm), forwardIdx(rsynapse));
-						ASSERT(gf_offset < f0_size(fcm));
-						float* gf_weight = f0_weights(fcm);
+						size_t gf_offset = f_synapseOffset(sourceNeuron(rsynapse), f_pitch(fcm), forwardIdx(rsynapse));
+						ASSERT(gf_offset < f_size(fcm));
+						float* gf_weight = f_weights(fcm);
 
 						float w_old = gf_weight[gf_offset];
 						float w_new = 0.0f;

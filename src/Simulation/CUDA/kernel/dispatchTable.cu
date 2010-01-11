@@ -10,7 +10,7 @@
  */
 __device__
 size_t
-f0_pitch(fcm_ref_t r)
+f_pitch(fcm_ref_t r)
 {
 	return (size_t) r.x;
 }
@@ -19,7 +19,7 @@ f0_pitch(fcm_ref_t r)
 
 __device__
 uint32_t*
-f0_base(fcm_ref_t r)
+f_base(fcm_ref_t r)
 {
 #ifdef __DEVICE_EMULATION__
 	uint64_t ptr = r.z;
@@ -36,37 +36,20 @@ f0_base(fcm_ref_t r)
 /*! \return	size (in words) of one plane of the given connectivity matrix */
 __device__
 size_t
-f0_size(fcm_ref_t r)
+f_size(fcm_ref_t ref)
 {
-	return MAX_PARTITION_SIZE * f0_pitch(r);
+	return MAX_PARTITION_SIZE * f_pitch(ref);
 }
 
 
 
-/*!
- * \param ref
- *		Reference to connectivity matrix block for a particular partition/delay
- * \return
- * 		Address of the beginning of the addressing part of connectivity matrix
- * 		block specified by \a ref
- */
-__device__
-uint*
-f0_address(fcm_ref_t ref)
-{
-	return f0_base(ref) + FCM_ADDRESS * MAX_PARTITION_SIZE * f0_pitch(ref);
-}
-
-
-
-//! \todo rename
 /* \return
  * 		Address of the beginning of the addressing part of forward connectivity
  * 		matrix block.
  */
 __device__
 uint*
-f0_address2(uint32_t* base, size_t pitch)
+f_address(uint32_t* base, size_t pitch)
 {
 	return base + FCM_ADDRESS * MAX_PARTITION_SIZE * pitch;
 }
@@ -82,9 +65,9 @@ f0_address2(uint32_t* base, size_t pitch)
  */
 __device__
 float*
-f0_weights(fcm_ref_t ref)
+f_weights(fcm_ref_t ref)
 {
-	return (float*) f0_base(ref) + FCM_WEIGHT * MAX_PARTITION_SIZE * f0_pitch(ref);
+	return (float*) f_base(ref) + FCM_WEIGHT * MAX_PARTITION_SIZE * f_pitch(ref);
 }
 
 
@@ -95,7 +78,7 @@ f0_weights(fcm_ref_t ref)
  */
 __device__
 float*
-f0_weights2(uint32_t* base, size_t pitch)
+f_weights(uint32_t* base, size_t pitch)
 {
 	return (float*) base + FCM_WEIGHT * MAX_PARTITION_SIZE * pitch;
 }
@@ -122,23 +105,22 @@ fcm_packReference(void* address, size_t pitch)
 }
 
 
-//! \todo rename once we have removed old format
-texture<fcm_ref_t, 3, cudaReadModeElementType> tf1_refs2;
+texture<fcm_ref_t, 3, cudaReadModeElementType> tf_refs;
 
 
 
 __device__
 fcm_ref_t
-getFCM2(uint sourcePartition, uint targetPartition, uint delay0)
+getFCM(uint sourcePartition, uint targetPartition, uint delay0)
 {
-	return tex3D(tf1_refs2, (float) delay0, (float) targetPartition, (float) sourcePartition);
+	return tex3D(tf_refs, (float) delay0, (float) targetPartition, (float) sourcePartition);
 }
 
 
 
 __host__
 cudaArray*
-f1_setDispatchTable2(
+f_setDispatchTable(
 		size_t partitionCount,
 		size_t delayCount,
 		const std::vector<fcm_ref_t>& h_table)
@@ -159,28 +141,27 @@ f1_setDispatchTable2(
 	CUDA_SAFE_CALL(cudaMemcpy3D(&copyParams));
 
 	// set texture parameters
-	tf1_refs2.addressMode[0] = cudaAddressModeClamp;
-	tf1_refs2.addressMode[1] = cudaAddressModeClamp;
-	tf1_refs2.addressMode[2] = cudaAddressModeClamp;
-	tf1_refs2.filterMode = cudaFilterModePoint;
-	tf1_refs2.normalized = false;
-	CUDA_SAFE_CALL(cudaBindTextureToArray(tf1_refs2, d_table, channelDesc));
+	tf_refs.addressMode[0] = cudaAddressModeClamp;
+	tf_refs.addressMode[1] = cudaAddressModeClamp;
+	tf_refs.addressMode[2] = cudaAddressModeClamp;
+	tf_refs.filterMode = cudaFilterModePoint;
+	tf_refs.normalized = false;
+	CUDA_SAFE_CALL(cudaBindTextureToArray(tf_refs, d_table, channelDesc));
 	return d_table;
 }
 
 
 
-/* For L0 delivery, we load for all delays  */
-//! \todo rename after cleanup
+/*! Load L0 dispatch table for all delays */
 __device__
 void
-loadDispatchTable2_L0_(uint32_t* s_fcmAddr[], ushort2 s_fcmPitch[])
+loadDispatchTable_L0_(uint32_t* s_fcmAddr[], ushort2 s_fcmPitch[])
 {
 	if(threadIdx.x < MAX_DELAY) {
-		fcm_ref_t fcm = getFCM2(CURRENT_PARTITION, CURRENT_PARTITION, threadIdx.x);
-		s_fcmAddr[threadIdx.x] = f0_base(fcm);
-		s_fcmPitch[threadIdx.x].x = f0_pitch(fcm);
-		s_fcmPitch[threadIdx.x].y = DIV_CEIL(f0_pitch(fcm), THREADS_PER_BLOCK);
+		fcm_ref_t fcm = getFCM(CURRENT_PARTITION, CURRENT_PARTITION, threadIdx.x);
+		s_fcmAddr[threadIdx.x] = f_base(fcm);
+		s_fcmPitch[threadIdx.x].x = f_pitch(fcm);
+		s_fcmPitch[threadIdx.x].y = DIV_CEIL(f_pitch(fcm), THREADS_PER_BLOCK);
 	}
 	__syncthreads();
 }

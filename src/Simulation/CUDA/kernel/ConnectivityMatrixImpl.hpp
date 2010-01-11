@@ -145,17 +145,15 @@ class ConnectivityMatrixImpl
 
 		bool m_setReverse;
 
-		typedef std::map<nemo::ForwardIdx, SynapseGroup> fcm_t;
-		fcm_t m1_fsynapses;
-
-		// new format: smaller groups by source/target/delay
+		/* The connectivity matrix is stored in small blocks specific to a
+		 * combination of source partiton, target partition and delay */
 		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
-		typedef std::map<fcm_key_t, SynapseGroup> fcm1_t;
-		fcm1_t m1_fsynapses2;
+		typedef std::map<fcm_key_t, SynapseGroup> fcm_t;
+		fcm_t m_fsynapses;
 
-		void f1_setDispatchTable();
+		void f_setDispatchTable();
 
-		boost::shared_ptr<cudaArray> mf1_dispatch2;
+		boost::shared_ptr<cudaArray> mf_dispatch;
 
 		/* For L1 delivery we need to keep track of all target partitions for
 		 * each neuron */

@@ -261,7 +261,7 @@ deliverL0Spikes_(
 	uint32_t* s_fcmAddr[],
 	ushort2 s_fcmPitch[])
 {
-	loadDispatchTable2_L0_(s_fcmAddr, s_fcmPitch);
+	loadDispatchTable_L0_(s_fcmAddr, s_fcmPitch);
 
 	for(uint preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
 
@@ -311,8 +311,8 @@ deliverL0Spikes_(
 						deliverSpike(
 							f_synapseOffset(presynaptic, s_fcmPitch[delay].x, synapseIdx),
 							presynaptic, 
-							f0_address2(s_fcmAddr[delay], s_fcmPitch[delay].x),
-							f0_weights2(s_fcmAddr[delay], s_fcmPitch[delay].x),
+							f_address(s_fcmAddr[delay], s_fcmPitch[delay].x),
+							f_weights(s_fcmAddr[delay], s_fcmPitch[delay].x),
 							s_current);
 					}
 					__syncthreads();
@@ -431,6 +431,7 @@ l1gather(
 
 		//! \todo load this in parallel outside for loop
 		__shared__ uint sourceNeuron;
+		//! \todo could just store the ref_t directly here
 		__shared__ uint32_t* sf1_cm;
 		__shared__ size_t sf1_pitch;
 		__shared__ size_t s_chunks;
@@ -440,10 +441,10 @@ l1gather(
 			uint delay = incomingDelay(sgin);
 			sourceNeuron = incomingNeuron(sgin);
 			uint sourcePartition = incomingPartition(sgin);
-			fcm_ref_t fcm = getFCM2(sourcePartition, CURRENT_PARTITION, delay-1);
-			sf1_cm = f0_base(fcm);
+			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
+			sf1_cm = f_base(fcm);
 			ASSERT(sf1_cm != 0x0);
-			sf1_pitch = f0_pitch(fcm);
+			sf1_pitch = f_pitch(fcm);
 			s_chunks = DIV_CEIL(sf1_pitch, THREADS_PER_BLOCK);
 #if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
 			DEBUG_MSG("c%u incoming spike group p%u -> p%u (delay %u) (%u synapses, %u chunks)\n",
@@ -460,8 +461,8 @@ l1gather(
 				deliverSpike(
 						f_synapseOffset(sourceNeuron, sf1_pitch, synapseIdx),
 						sourceNeuron,
-						f0_address2(sf1_cm, sf1_pitch),
-						f0_weights2(sf1_cm, sf1_pitch),
+						f_address(sf1_cm, sf1_pitch),
+						f_weights(sf1_cm, sf1_pitch),
 						s_current);
 			}
 			__syncthreads();
