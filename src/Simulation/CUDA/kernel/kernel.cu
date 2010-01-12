@@ -326,7 +326,6 @@ deliverL0Spikes_(
 
 
 
-// New L1 scatter function
 /* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
  * out or use a code generator to avoid repetition */
 __device__
@@ -415,9 +414,13 @@ l1gather(
 		uint cycle,
 		uint* g_incomingCount,
 		incoming_t* g_incoming,
+		uint16_t s_sourceNeuron[],
+		uint32_t* sf1_cm[],
+		ushort2 sf1_pitch[],
 		float* s_current)
 {
 	__shared__ uint s_incomingCount;
+
 	if(threadIdx.x == 0) {
 		size_t addr = incomingCountAddr(CURRENT_PARTITION, cycle, 0);
 		s_incomingCount = g_incomingCount[addr];
@@ -425,50 +428,63 @@ l1gather(
 	}
 	__syncthreads();
 
-	//! \todo load several (at least a warp) of incoming data at the same time
+	/*! \note Could use THREADS_PER_BLOCK here, but we're bit low on shared
+	 * memory. Doubling the group size (to 2*MAX_DELAY) did not have any
+	 * measurable effect on performance, however. */
+	const size_t GROUP_SIZE = MAX_DELAY;
 
-	for(uint group = 0; group < s_incomingCount; ++group) {
+	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
 
-		//! \todo load this in parallel outside for loop
-		__shared__ uint sourceNeuron;
-		//! \todo could just store the ref_t directly here
-		__shared__ uint32_t* sf1_cm;
-		__shared__ size_t sf1_pitch;
-		__shared__ size_t s_chunks;
+		__shared__ size_t s_groupSize;
+
+		//! \todo perhaps do the unpacking inside the loop?
+		//! \todo factor this out, perhaps sharing code with loadDispatchTable_L0_
+		uint group = groupBase + threadIdx.x;
 
 		if(threadIdx.x == 0) {
-			incoming_t sgin = getIncoming(cycle, group, g_incoming);
-			uint delay = incomingDelay(sgin);
-			sourceNeuron = incomingNeuron(sgin);
-			uint sourcePartition = incomingPartition(sgin);
-			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
-			sf1_cm = f_base(fcm);
-			ASSERT(sf1_cm != 0x0);
-			sf1_pitch = f_pitch(fcm);
-			s_chunks = DIV_CEIL(sf1_pitch, THREADS_PER_BLOCK);
-#if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
-			DEBUG_MSG("c%u incoming spike group p%u -> p%u (delay %u) (%u synapses, %u chunks)\n",
-					cycle, sourcePartition, CURRENT_PARTITION, delay, sf1_pitch, s_chunks);
-#endif
+			s_groupSize =
+				(group + GROUP_SIZE) > s_incomingCount
+				? s_incomingCount % GROUP_SIZE
+				: GROUP_SIZE;
+			DEBUG_MSG("c%u: group size=%u, incoming=%u\n", cycle, s_groupSize, s_incomingCount);
 		}
 		__syncthreads();
 
-		for(uint chunk = 0; chunk < s_chunks; ++chunk) {
-
-			uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
-
-			if(synapseIdx < sf1_pitch) {
-				deliverSpike(
-						f_synapseOffset(sourceNeuron, sf1_pitch, synapseIdx),
-						sourceNeuron,
-						f_address(sf1_cm, sf1_pitch),
-						f_weights(sf1_cm, sf1_pitch),
-						s_current);
-			}
-			__syncthreads();
+		if(threadIdx.x < s_groupSize) {
+			incoming_t sgin = getIncoming(cycle, group, g_incoming);
+			uint delay = incomingDelay(sgin);
+			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
+			uint sourcePartition = incomingPartition(sgin);
+			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
+			sf1_cm[threadIdx.x] = f_base(fcm);
+			ASSERT(sf1_cm[threadIdx.x] != 0x0);
+			//! \todo use better naming here
+			sf1_pitch[threadIdx.x].x = f_pitch(fcm);
+			//! \todo perhaps this is not needed at all?
+			sf1_pitch[threadIdx.x].y = DIV_CEIL(f_pitch(fcm), THREADS_PER_BLOCK);
+			DEBUG_MSG("c%u incoming spike group p%u -> p%u (delay %u) (%u synapses, %u chunks)\n",
+					cycle, sourcePartition, CURRENT_PARTITION, delay, sf1_pitch[threadIdx.x].x, sf1_pitch[threadIdx.x].y);
 		}
 
-		__syncthreads(); // to avoid overwriting s_chunks
+		__syncthreads();
+
+		for(uint groupOffset = 0; groupOffset < s_groupSize; ++groupOffset) {
+
+			for(uint chunk = 0; chunk < sf1_pitch[groupOffset].y; ++chunk) {
+
+				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+
+				if(synapseIdx < sf1_pitch[groupOffset].x) {
+					deliverSpike(
+							f_synapseOffset(s_sourceNeuron[groupOffset], sf1_pitch[groupOffset].x, synapseIdx),
+							s_sourceNeuron[groupOffset],
+							f_address(sf1_cm[groupOffset], sf1_pitch[groupOffset].x),
+							f_weights(sf1_cm[groupOffset], sf1_pitch[groupOffset].x),
+							s_current);
+				}
+				__syncthreads();
+			}
+		}
+		__syncthreads(); // to avoid overwriting s_groupSize
 	}
 }
-
