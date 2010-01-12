@@ -19,11 +19,11 @@ Incoming::allocate(size_t partitionCount)
 	size_t height = partitionCount * MAX_DELAY;
 
 	/* Each buffer entry (for a particular source partition) is of a fixed size
-	 * to siplify the rotating buffer code. This is very conservative. In fact
+	 * to simplify the rotating buffer code. This is very conservative. In fact
 	 * the buffer is large enough that every neuron can fire every cycle */
 	/*! \todo relax this constraint. We'll end up using a very large amount of
 	 * space when using a large number of partitions */
-	size_t width = partitionCount * MAX_PARTITION_COUNT * sizeof(incoming_t);
+	size_t width = partitionCount * MAX_PARTITION_SIZE * sizeof(incoming_t);
 
 	incoming_t* d_buffer;
 	size_t bpitch;

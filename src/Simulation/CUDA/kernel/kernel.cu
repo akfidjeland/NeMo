@@ -388,8 +388,7 @@ l1scatter(
 
 					uint targetPartition = outgoingTargetPartition(sout);
 					size_t headsAddr = incomingCountAddr(targetPartition, cycle, delay);
-					//! \todo pre-compute this
-					uint offset = atomicInc(g_incomingHeads + headsAddr, c_incomingPitch-1);
+					uint offset = atomicAdd(g_incomingHeads + headsAddr, 1);
 
 					ASSERT(offset < c_incomingPitch);
 
@@ -397,8 +396,8 @@ l1scatter(
 					g_incoming[base + offset] =
 						make_incoming(CURRENT_PARTITION, presynaptic, delay);
 
-					DEBUG_MSG("c%u spike group p%un%u -> p%u (delay %u)\n",
-							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay);
+					DEBUG_MSG("c%u spike group p%un%u -> p%u (delay %u) (buffer entry %u/%u)\n",
+							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay, offset, c_incomingPitch);
 				}
 			}
 			__syncthreads(); // so s_blocks is not updated
