@@ -21,13 +21,12 @@ const char* durationNames[] = {
 	"init",
 	"random input",
 	"load firing",
-	"L1 gather",
-	"deliver L0",
+	"spike gather",
 	"fire",
 	"L0 LTP",
 	"L1 LTP",
 	"update history",
-	"L1 scatter"
+	"spike scatter"
 };
 
 

@@ -62,9 +62,6 @@ STDP_FN(step) (
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
 	__shared__ uint32_t s_T32[THREADS_PER_BLOCK];
 
-	/* Per-delay buffer */
-	__shared__ uint32_t s_D32[MAX_DELAY];
-
 	uint64_t* s_recentFiring = s_M1KB;
 
 	/* Per-partition parameters */
@@ -118,15 +115,6 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 4);
 
-	deliverL0Spikes_(
-			s_partitionSize,
-			s_recentFiring,
-			gf0_delays + CURRENT_PARTITION * s_pitch64,
-			s_current, s_T16, s_T32, s_D32,
-			s_fcmAddr, s_fcmPitch);
-
-	SET_COUNTER(s_ccMain, 5);
-
 	/* The dense firing output is staged in shared memory before being written
 	 * to global memory */
 	clearFiringOutput();
@@ -152,7 +140,7 @@ STDP_FN(step) (
 
 	writeFiringOutput(firingOutput + CURRENT_PARTITION * pitch1, pitch1);
 
-	SET_COUNTER(s_ccMain, 6);
+	SET_COUNTER(s_ccMain, 5);
 
 #ifdef STDP
 	/*! \todo since we use the same FCM for both L0 and L1, we could
@@ -166,7 +154,7 @@ STDP_FN(step) (
 			cr0_address, cr0_stdp, cr0_pitch,
 			s_T32);
 #endif
-	SET_COUNTER(s_ccMain, 7);
+	SET_COUNTER(s_ccMain, 6);
 #ifdef STDP
 	updateSTDP_(
 			true,
@@ -177,7 +165,7 @@ STDP_FN(step) (
 			cr1_address, cr1_stdp, cr1_pitch,
 			s_T32);
 #endif
-	SET_COUNTER(s_ccMain, 8);
+	SET_COUNTER(s_ccMain, 7);
 
 	/* We need the (updated) recent firing history for L1 spike
 	 * delivery later, but won't update this further, so we can write
@@ -187,7 +175,7 @@ STDP_FN(step) (
 				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
 				+ CURRENT_PARTITION * s_pitch64);
 
-	SET_COUNTER(s_ccMain, 9);
+	SET_COUNTER(s_ccMain, 8);
 
 	l1scatter(
 			cycle,
@@ -198,7 +186,7 @@ STDP_FN(step) (
 			g_outgoing,
 			g_incomingHeads,
 			g_incoming);
-	SET_COUNTER(s_ccMain, 10);
+	SET_COUNTER(s_ccMain, 9);
 
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

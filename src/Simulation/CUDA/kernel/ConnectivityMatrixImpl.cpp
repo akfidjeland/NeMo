@@ -141,9 +141,7 @@ ConnectivityMatrixImpl::setRow(
 	for(size_t i=0; i<f_length; ++i) {
 		addSynapse(level, sourcePartition, sourceNeuron, delay,
 				targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
-		if(level == 1) {
-			m_outgoing.addSynapseGroup(sourcePartition, sourceNeuron, delay, targetPartition[i]);
-		}
+		m_outgoing.addSynapseGroup(sourcePartition, sourceNeuron, delay, targetPartition[i]);
 	}
 }
 
