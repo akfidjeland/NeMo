@@ -78,9 +78,6 @@ class ConnectivityMatrixImpl
 				weight_t* weight[],
 				uchar* plastic[]);
 
-		/*! \return device delay bit data */
-		uint64_t* df_delayBits(size_t level);
-
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
 
@@ -120,13 +117,6 @@ class ConnectivityMatrixImpl
 				nidx_t targetNeuron,
 				weight_t weight,
 				uchar isPlastic);
-
-		/* We accumulate the firing delay bits that are used in the spike
-		 * delivery */
-		NVector<uint64_t> m0_delayBits;
-		NVector<uint64_t> m1_delayBits;
-
-		NVector<uint64_t>& delayBits(size_t lvl);
 
 		size_t m_partitionCount;
 		size_t m_maxPartitionSize;

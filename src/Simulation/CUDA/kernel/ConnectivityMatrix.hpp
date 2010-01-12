@@ -70,10 +70,6 @@ struct ConnectivityMatrix
 				weight_t* weight[],
 				uchar* plastic[]);
 
-
-		/*! \return device delay bit data */
-		uint64_t* df_delayBits(size_t level);
-
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
 

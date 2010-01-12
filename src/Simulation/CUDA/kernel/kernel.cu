@@ -216,116 +216,6 @@ deliverSpike(
 
 
 
-
-/*! For a given word containing arrival bits, i.e. bits indicating for what
- * delays spikes are due for delivery, set a vector of relevant delays.
- *
- * \param s_delayCount
- *		Shared memory scalar
- * \param s_delays
- *		Shared memory vector at least as long as maximum delays
- */
-__device__
-void
-listDelays_(uint64_t arrivalBits, uint* s_delayCount, uint* s_delays)
-{
-	if(threadIdx.x == 0) {
-		*s_delayCount = 0;
-	}
-	__syncthreads();
-
-	/* The common situation will be for there not to be too many delay blocks
-	 * due for delivery. It's thus better to do this in parallel with shared
-	 * atomics rather than a loop for a single thread. */
-	if(threadIdx.x < MAX_DELAY) {
-		if(arrivalBits & (0x1 << threadIdx.x)) {
-			int nextFree = atomicAdd(s_delayCount, 1);
-			s_delays[nextFree] = threadIdx.x;
-		}
-	}
-	__syncthreads();
-}
-
-
-
-__device__
-void
-deliverL0Spikes_(
-	uint partitionSize,
-	uint64_t* s_recentFiring,
-	uint64_t* g_firingDelays,
-	float* s_current,
-	uint16_t* s_firingIdx,
-	uint32_t* s_arrivalBits,
-	uint32_t* s_arrivals,
-	uint32_t* s_fcmAddr[],
-	ushort2 s_fcmPitch[])
-{
-	loadDispatchTable_L0_(s_fcmAddr, s_fcmPitch);
-
-	for(uint preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
-
-		__shared__ int s_firingCount;
-		if(threadIdx.x == 0) {
-			s_firingCount = 0;
-		}
-		__syncthreads();
-
-		uint candidate = preOffset + threadIdx.x;
-
-		/* It might seem a good idea to load firing delays from global memory
-		 * inside the if-clause, so as to avoid memory traffic when little
-		 * firing occurs.  In practice, however, this was found to increase
-		 * execution time (when not firing) by 68%. It's not clear why this is
-		 * so. */ 
-		uint64_t arrivals = s_recentFiring[candidate] & g_firingDelays[candidate];
-		if(arrivals && candidate < partitionSize) {
-			int nextFree = atomicAdd(&s_firingCount, 1);
-			s_firingIdx[nextFree] = candidate;
-			s_arrivalBits[nextFree] = arrivals;
-		}
-		__syncthreads();
-
-		/* We now have the indices of the firing of THREADS_PER_BLOCK
-		 * presynaptic neurons */
-		for(int i=0; i<s_firingCount; ++i) {
-
-			uint presynaptic = s_firingIdx[i];
-
-			__shared__ uint s_delays[MAX_DELAY];
-			__shared__ uint s_delayCount;
-
-			listDelays_(s_arrivalBits[i], &s_delayCount, s_delays);
-
-			for(uint delayIdx = 0; delayIdx < s_delayCount; ++delayIdx) {
-
-				uint delay = s_delays[delayIdx];
-
-				for(uint chunk = 0; chunk < s_fcmPitch[delay].y; ++chunk) {
-
-					uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
-
-					//! \todo consider using per-neuron maximum here instead (or as well)
-					if(synapseIdx < s_fcmPitch[delay].x) {
-						ASSERT(s_fcmAddr[delay] != 0x0);
-						deliverSpike(
-							f_synapseOffset(presynaptic, s_fcmPitch[delay].x, synapseIdx),
-							presynaptic, 
-							f_address(s_fcmAddr[delay], s_fcmPitch[delay].x),
-							f_weights(s_fcmAddr[delay], s_fcmPitch[delay].x),
-							s_current);
-					}
-					__syncthreads();
-				}
-			}
-		}
-	}
-	__syncthreads();
-}
-
-
-
-
 /* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
  * out or use a code generator to avoid repetition */
 __device__
@@ -437,7 +327,6 @@ l1gather(
 		__shared__ size_t s_groupSize;
 
 		//! \todo perhaps do the unpacking inside the loop?
-		//! \todo factor this out, perhaps sharing code with loadDispatchTable_L0_
 		uint group = groupBase + threadIdx.x;
 
 		if(threadIdx.x == 0) {
@@ -449,6 +338,7 @@ l1gather(
 		}
 		__syncthreads();
 
+		//! \todo factor this out
 		if(threadIdx.x < s_groupSize) {
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
 			uint delay = incomingDelay(sgin);

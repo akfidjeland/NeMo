@@ -60,14 +60,6 @@ ConnectivityMatrix::getRow(
 
 
 
-uint64_t*
-ConnectivityMatrix::df_delayBits(size_t level)
-{
-	return m_impl->df_delayBits(level);
-}
-
-
-
 void
 ConnectivityMatrix::clearStdpAccumulator()
 {

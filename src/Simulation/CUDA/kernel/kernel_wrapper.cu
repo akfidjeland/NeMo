@@ -171,7 +171,6 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceRngState(),
 				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
-				rtdata->cm()->df_delayBits(0),
 				// L1 spike queue
 				rtdata->cm()->outgoingCount(),
 				rtdata->cm()->outgoing(),
@@ -196,7 +195,6 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceSigma(),
                 //! \todo get size directly from rtdata
 				rtdata->neuronParameters->size(),
-				rtdata->cm()->df_delayBits(0),
 				// L1 spike queue
 				rtdata->cm()->outgoingCount(),
 				rtdata->cm()->outgoing(),

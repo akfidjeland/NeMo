@@ -150,20 +150,4 @@ f_setDispatchTable(
 	return d_table;
 }
 
-
-
-/*! Load L0 dispatch table for all delays */
-__device__
-void
-loadDispatchTable_L0_(uint32_t* s_fcmAddr[], ushort2 s_fcmPitch[])
-{
-	if(threadIdx.x < MAX_DELAY) {
-		fcm_ref_t fcm = getFCM(CURRENT_PARTITION, CURRENT_PARTITION, threadIdx.x);
-		s_fcmAddr[threadIdx.x] = f_base(fcm);
-		s_fcmPitch[threadIdx.x].x = f_pitch(fcm);
-		s_fcmPitch[threadIdx.x].y = DIV_CEIL(f_pitch(fcm), THREADS_PER_BLOCK);
-	}
-	__syncthreads();
-}
-
 #endif

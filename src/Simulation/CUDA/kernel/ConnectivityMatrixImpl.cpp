@@ -16,8 +16,6 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
         size_t partitionCount,
         size_t maxPartitionSize,
 		bool setReverse) :
-    m0_delayBits(partitionCount, maxPartitionSize, true),
-    m1_delayBits(partitionCount, maxPartitionSize, true),
     m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(0),
@@ -26,26 +24,6 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
 	for(uint p = 0; p < partitionCount; ++p) {
 		m0_rsynapses.push_back(new RSMatrix(maxPartitionSize));
 		m1_rsynapses.push_back(new RSMatrix(maxPartitionSize));
-	}
-}
-
-
-
-uint64_t*
-ConnectivityMatrixImpl::df_delayBits(size_t level)
-{
-	return delayBits(level).deviceData();
-}
-
-
-
-NVector<uint64_t>&
-ConnectivityMatrixImpl::delayBits(size_t lvl)
-{
-	switch(lvl) {
-		case 0 : return m0_delayBits;
-		case 1 : return m1_delayBits;
-		default : ERROR("invalid connectivity matrix index");
 	}
 }
 
@@ -103,11 +81,6 @@ ConnectivityMatrixImpl::addSynapse(size_t lvl, pidx_t sp, nidx_t sn, delay_t del
 		rgroup->addSynapse(sp, sn, sidx, tn, delay);
 	}
 
-	//! \todo factor out delayBits as a separate class
-	uint32_t dbits = delayBits(lvl).getNeuron(sp, sn);
-	dbits |= 0x1 << (delay-1);
-	delayBits(lvl).setNeuron(sp, sn, dbits);
-
 	m_maxDelay = std::max(m_maxDelay, delay);
 }
 
@@ -150,9 +123,6 @@ ConnectivityMatrixImpl::setRow(
 void
 ConnectivityMatrixImpl::moveToDevice()
 {
-	m0_delayBits.moveToDevice();
-	m1_delayBits.moveToDevice();
-
 	for(uint p=0; p < m_partitionCount; ++p){
 		m0_rsynapses[p]->moveToDevice();
 		m1_rsynapses[p]->moveToDevice();
@@ -252,7 +222,7 @@ ConnectivityMatrixImpl::d_allocated() const
 		fcm += i->second.d_allocated();
 	}
 
-	return m0_delayBits.d_allocated() + m1_delayBits.d_allocated() + fcm + rcm0 + rcm1;
+	return fcm + rcm0 + rcm1;
 }
 
 

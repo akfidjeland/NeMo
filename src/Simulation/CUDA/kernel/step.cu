@@ -32,7 +32,6 @@ STDP_FN(step) (
 		//! \todo combine with g_neuronParameters
 		float* g_sigma,
 		size_t neuronParametersSize,
-		uint64_t* gf0_delays,
 		// L1 delivery
 		uint* g_outgoingCount,
 		outgoing_t* g_outgoing,
@@ -60,7 +59,9 @@ STDP_FN(step) (
 
 	/* Per-thread buffers */
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
+#ifdef STDP
 	__shared__ uint32_t s_T32[THREADS_PER_BLOCK];
+#endif
 
 	uint64_t* s_recentFiring = s_M1KB;
 
