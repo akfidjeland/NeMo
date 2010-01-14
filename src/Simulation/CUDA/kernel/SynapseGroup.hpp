@@ -106,9 +106,7 @@ class SynapseGroup
 
 		/* The user may want to read back the modified weight matrix. We then
 		 * need the corresponding non-compressed addresses as well. The shape
-		 * of each of these is exactly that of the weights on the device.
-		 * Invalid entries have both partition and neuron set to InvalidNeuron.
-		 */
+		 * of each of these is exactly that of the weights on the device. */
 		std::map<int, std::vector<pidx_t> > mf_targetPartition;
 		std::map<int, std::vector<nidx_t> > mf_targetNeuron;
 		std::map<int, std::vector<uchar> > mf_plastic;

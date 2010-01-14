@@ -86,7 +86,9 @@ SynapseGroup::moveToDevice()
 	 * neurons with 2M synapses (1.8M L0, 0.2M L1) we find a small throughput
 	 * improvement (from 61M spike deliveries per second to 63M). */
 	const size_t WARP_SIZE = 32;
-	size_t desiredPitch = ALIGN(maxSynapsesPerNeuron() * sizeof(synapse_t), WARP_SIZE);
+	size_t minWordPitch = maxSynapsesPerNeuron();
+	size_t alignedWordPitch = ALIGN(minWordPitch, WARP_SIZE);
+	size_t desiredBytePitch = alignedWordPitch * sizeof(synapse_t);
 	size_t height = FCM_SUBMATRICES * MAX_PARTITION_SIZE;
 
 	synapse_t* d_data = NULL;
@@ -94,7 +96,7 @@ SynapseGroup::moveToDevice()
 	CUDA_SAFE_CALL(
 			cudaMallocPitch((void**) &d_data,
 				&md_bpitch,
-				desiredPitch,
+				desiredBytePitch,
 				height));
 	m_allocated = md_bpitch * height;
 
