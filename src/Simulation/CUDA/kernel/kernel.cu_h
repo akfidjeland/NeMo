@@ -19,6 +19,13 @@
 #define SYNAPSE_BITS (32-NEURON_BITS-PARTITION_BITS-DELAY_BITS)
 #define MAX_SYNAPSES_PER_DELAY (1<<SYNAPSE_BITS)
 
+#define SYNAPSE_WARP_BITS 8
+#define MAX_SYNAPSE_WARPS (1<<SYNAPSE_WARP_BITS)
+
+// Note that this warp count may not be correct, although it matches the warp
+// count for current high-end devices
+#define WARP_SIZE 32
+
 #define PARTITION_COUNT gridDim.x
 #define CURRENT_PARTITION blockIdx.x
 

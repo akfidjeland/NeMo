@@ -72,7 +72,9 @@ Outgoing::moveToDevice(size_t partitionCount)
 			tkey_t tkey = r->first;
 			pidx_t targetPartition = get<0>(tkey);
 			delay_t delay = get<1>(tkey);
-			h_arr[t_addr + j] = make_outgoing(targetPartition, delay);
+			//! \todo add run-time test that warp-size is as expected
+			uint warps = DIV_CEIL(r->second, WARP_SIZE);
+			h_arr[t_addr + j] = make_outgoing(targetPartition, delay, warps);
 		}
 
 		//! \todo move this into shared __device__/__host__ function
