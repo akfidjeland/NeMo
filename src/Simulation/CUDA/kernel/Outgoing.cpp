@@ -9,14 +9,15 @@
 
 
 void 
-Outgoing::addSynapseGroup(
+Outgoing::addSynapse(
 		pidx_t sourcePartition,
 		nidx_t sourceNeuron,
 		delay_t delay,
 		pidx_t targetPartition)
 {
-	key_t key(sourcePartition, sourceNeuron);
-	m_acc[key].insert(make_outgoing(targetPartition, delay));
+	skey_t skey(sourcePartition, sourceNeuron);
+	tkey_t tkey(targetPartition, delay);
+	m_acc[skey][tkey] += 1;
 }
 
 
@@ -56,8 +57,8 @@ Outgoing::moveToDevice(size_t partitionCount)
 	// fill host memory
 	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
 
-		key_t key = i->first;
-		const row_t& targets = i->second;
+		skey_t key = i->first;
+		const targets_t& targets = i->second;
 
 		assert(targets.size() <= wpitch);
 
@@ -65,7 +66,14 @@ Outgoing::moveToDevice(size_t partitionCount)
 		nidx_t neuron = get<1>(key);
 
 		size_t t_addr = outgoingRow(partition, neuron, wpitch);
-		std::copy(targets.begin(), targets.end(), h_arr.begin() + t_addr);
+
+		size_t j = 0;
+		for(targets_t::const_iterator r = targets.begin(); r != targets.end(); ++r, ++j) {
+			tkey_t tkey = r->first;
+			pidx_t targetPartition = get<0>(tkey);
+			delay_t delay = get<1>(tkey);
+			h_arr[t_addr + j] = make_outgoing(targetPartition, delay);
+		}
 
 		//! \todo move this into shared __device__/__host__ function
 		size_t r_addr = partition * MAX_PARTITION_SIZE + neuron;

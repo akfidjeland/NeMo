@@ -14,7 +14,7 @@ class Outgoing
 
 		// default ctor is fine here
 
-		void addSynapseGroup(
+		void addSynapse(
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
 				delay_t delay,
@@ -33,9 +33,11 @@ class Outgoing
 
 		boost::shared_ptr<uint> md_rowLength; // per-neuron pitch
 
-		typedef boost::tuple<pidx_t, nidx_t> key_t;
-		typedef std::set<outgoing_t> row_t;
-		typedef std::map<key_t, row_t> map_t;
+		typedef boost::tuple<pidx_t, delay_t> tkey_t;
+		typedef std::map<tkey_t, uint> targets_t;
+
+		typedef boost::tuple<pidx_t, nidx_t> skey_t;
+		typedef std::map<skey_t, targets_t> map_t;
 
 		map_t m_acc;
 
