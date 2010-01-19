@@ -69,10 +69,6 @@ STDP_FN(step) (
 	__shared__ uint s_partitionSize;
 	__shared__ float s_substepMult;
 
-	//! \todo remove s_fcmAddr and use per-thread storage for this instead
-	__shared__ uint32_t* s_fcmAddr[MAX_DELAY];
-	__shared__ ushort2 s_fcmPitch[MAX_DELAY]; // ... and pre-computed chunk count
-
 	if(threadIdx.x == 0) {
 #ifdef __DEVICE_EMULATION__
 		s_cycle = cycle;
@@ -111,8 +107,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 3);
 
-	l1gather(cycle, g_incomingHeads, g_incoming,
-			s_T16, s_fcmAddr, s_fcmPitch, s_current);
+	l1gather(cycle, g_incomingHeads, g_incoming, s_T16, s_current);
 
 	SET_COUNTER(s_ccMain, 4);
 

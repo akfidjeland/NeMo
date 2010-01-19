@@ -306,8 +306,6 @@ l1gather(
 		uint* g_incomingCount,
 		incoming_t* g_incoming,
 		uint16_t s_sourceNeuron[],
-		uint32_t* sf1_cm[],
-		ushort2 sf1_pitch[],
 		float* s_current)
 {
 	__shared__ uint s_incomingCount;
@@ -319,13 +317,16 @@ l1gather(
 	}
 	__syncthreads();
 
-	//! \todo could this smem be re-used?
-	__shared__ uint s_synapseCount[MAX_DELAY]; // for each incoming group
-
 	/*! \note Could use THREADS_PER_BLOCK here, but we're bit low on shared
 	 * memory. Doubling the group size (to 2*MAX_DELAY) did not have any
 	 * measurable effect on performance, however. */
-	const size_t GROUP_SIZE = MAX_DELAY;
+#define GROUP_SIZE (2*MAX_DELAY)
+
+	//! \todo could this smem be re-used?
+	//__shared__ uint s_synapseCount[GROUP_SIZE]; // for each incoming group
+	__shared__ uint s_warpCount[GROUP_SIZE]; // for each incoming group
+	__shared__ uint32_t* sf_cm[GROUP_SIZE];
+	__shared__ ushort2 sf_pitch[GROUP_SIZE];
 
 	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
 
@@ -348,33 +349,35 @@ l1gather(
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
 			uint delay = incomingDelay(sgin);
 			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
-			s_synapseCount[threadIdx.x] = incomingWarps(sgin) * WARP_SIZE;
+			//s_synapseCount[threadIdx.x] = incomingWarps(sgin) * WARP_SIZE;
+			s_warpCount[threadIdx.x] = incomingWarps(sgin);
 			uint sourcePartition = incomingPartition(sgin);
 			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
-			sf1_cm[threadIdx.x] = f_base(fcm);
-			ASSERT(sf1_cm[threadIdx.x] != 0x0);
-			//! \todo use better naming here
-			sf1_pitch[threadIdx.x].x = f_pitch(fcm);
+			sf_cm[threadIdx.x] = f_base(fcm);
+			ASSERT(sf_cm[threadIdx.x] != 0x0);
+			sf_pitch[threadIdx.x].x = f_pitch(fcm);
 			//! \todo perhaps this is not needed at all?
-			sf1_pitch[threadIdx.x].y = DIV_CEIL(s_synapseCount[threadIdx.x], THREADS_PER_BLOCK);
+			sf_pitch[threadIdx.x].y = DIV_CEIL(s_warpCount[threadIdx.x] * WARP_SIZE, THREADS_PER_BLOCK);
 			DEBUG_MSG("c%u incoming spike group p%u -> p%u (delay %u) (%u synapses, %u chunks)\n",
-					cycle, sourcePartition, CURRENT_PARTITION, delay, sf1_pitch[threadIdx.x].x, sf1_pitch[threadIdx.x].y);
+					cycle, sourcePartition, CURRENT_PARTITION, delay,
+					sf_pitch[threadIdx.x].x,
+					sf_pitch[threadIdx.x].y);
 		}
 
 		__syncthreads();
 
 		for(uint groupOffset = 0; groupOffset < s_groupSize; ++groupOffset) {
 
-			for(uint chunk = 0; chunk < sf1_pitch[groupOffset].y; ++chunk) {
+			for(uint chunk = 0; chunk < sf_pitch[groupOffset].y; ++chunk) {
 
 				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-				if(synapseIdx < s_synapseCount[groupOffset]) {
+				if(synapseIdx < s_warpCount[groupOffset] * WARP_SIZE) {
 					deliverSpike(
-							f_synapseOffset(s_sourceNeuron[groupOffset], sf1_pitch[groupOffset].x, synapseIdx),
+							f_synapseOffset(s_sourceNeuron[groupOffset], sf_pitch[groupOffset].x, synapseIdx),
 							s_sourceNeuron[groupOffset],
-							f_address(sf1_cm[groupOffset], sf1_pitch[groupOffset].x),
-							f_weights(sf1_cm[groupOffset], sf1_pitch[groupOffset].x),
+							f_address(sf_cm[groupOffset], sf_pitch[groupOffset].x),
+							f_weights(sf_cm[groupOffset], sf_pitch[groupOffset].x),
 							s_current);
 				}
 			}
