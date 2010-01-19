@@ -85,7 +85,6 @@ SynapseGroup::moveToDevice()
 	 * bandwidth, but can reduce thread divergence. On a network with 2k
 	 * neurons with 2M synapses (1.8M L0, 0.2M L1) we find a small throughput
 	 * improvement (from 61M spike deliveries per second to 63M). */
-	const size_t WARP_SIZE = 32;
 	size_t minWordPitch = maxSynapsesPerNeuron();
 	size_t alignedWordPitch = ALIGN(minWordPitch, WARP_SIZE);
 	size_t desiredBytePitch = alignedWordPitch * sizeof(synapse_t);

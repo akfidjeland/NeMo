@@ -284,7 +284,9 @@ l1scatter(
 
 					size_t base = incomingBufferStart(targetPartition, cycle, delay);
 					g_incoming[base + offset] =
-						make_incoming(CURRENT_PARTITION, presynaptic, delay);
+						make_incoming(CURRENT_PARTITION, presynaptic,
+								delay,
+								outgoingWarps(sout));
 
 					DEBUG_MSG("c%u spike group p%un%u -> p%u (delay %u) (buffer entry %u/%u)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay, offset, c_incomingPitch);
@@ -317,6 +319,9 @@ l1gather(
 	}
 	__syncthreads();
 
+	//! \todo could this smem be re-used?
+	__shared__ uint s_synapseCount[MAX_DELAY]; // for each incoming group
+
 	/*! \note Could use THREADS_PER_BLOCK here, but we're bit low on shared
 	 * memory. Doubling the group size (to 2*MAX_DELAY) did not have any
 	 * measurable effect on performance, however. */
@@ -343,6 +348,7 @@ l1gather(
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
 			uint delay = incomingDelay(sgin);
 			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
+			s_synapseCount[threadIdx.x] = incomingWarps(sgin) * WARP_SIZE;
 			uint sourcePartition = incomingPartition(sgin);
 			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
 			sf1_cm[threadIdx.x] = f_base(fcm);
@@ -350,7 +356,7 @@ l1gather(
 			//! \todo use better naming here
 			sf1_pitch[threadIdx.x].x = f_pitch(fcm);
 			//! \todo perhaps this is not needed at all?
-			sf1_pitch[threadIdx.x].y = DIV_CEIL(f_pitch(fcm), THREADS_PER_BLOCK);
+			sf1_pitch[threadIdx.x].y = DIV_CEIL(s_synapseCount[threadIdx.x], THREADS_PER_BLOCK);
 			DEBUG_MSG("c%u incoming spike group p%u -> p%u (delay %u) (%u synapses, %u chunks)\n",
 					cycle, sourcePartition, CURRENT_PARTITION, delay, sf1_pitch[threadIdx.x].x, sf1_pitch[threadIdx.x].y);
 		}
@@ -363,7 +369,7 @@ l1gather(
 
 				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
-				if(synapseIdx < sf1_pitch[groupOffset].x) {
+				if(synapseIdx < s_synapseCount[groupOffset]) {
 					deliverSpike(
 							f_synapseOffset(s_sourceNeuron[groupOffset], sf1_pitch[groupOffset].x, synapseIdx),
 							s_sourceNeuron[groupOffset],
@@ -371,8 +377,8 @@ l1gather(
 							f_weights(sf1_cm[groupOffset], sf1_pitch[groupOffset].x),
 							s_current);
 				}
-				__syncthreads();
 			}
+			__syncthreads();
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
 	}

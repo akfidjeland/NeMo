@@ -52,13 +52,14 @@ getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
 /*! \return incoming spike group from a particular source */
 __device__
 incoming_t
-make_incoming(uint sourcePartition, uint sourceNeuron, uint delay)
+make_incoming(uint sourcePartition, uint sourceNeuron, uint delay, uint warps)
 {
 	ASSERT(sourcePartition < (1<<PARTITION_BITS));
 	ASSERT(sourceNeuron < (1<<NEURON_BITS));
 	ASSERT(delay < (1<<DELAY_BITS));
+	ASSERT(warps < (1<<SYNAPSE_WARP_BITS));
 
-	return (incoming_t) { sourcePartition, sourceNeuron, delay };
+	return (incoming_t) { sourcePartition, sourceNeuron, delay, warps };
 }
 
 
@@ -88,6 +89,15 @@ incomingNeuron(incoming_t in)
 
 
 
+__device__
+uint
+incomingWarps(incoming_t in)
+{
+	return in.warps;
+}
+
+
+
 /*! \return address into matrix with number of incoming synapse groups */
 __device__
 size_t
@@ -95,6 +105,7 @@ incomingCountAddr(uint targetPartition, uint cycle, uint delay1)
 {
 	return targetPartition * MAX_DELAY + incomingSlot(cycle, delay1);
 }
+
 
 
 #endif

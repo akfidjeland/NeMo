@@ -2,12 +2,18 @@
 #define L1_SPIKE_BUFFER_CU_H
 
 #include <cuda_runtime.h>
+#include "kernel.cu_h"
+
+/*! \todo using bitfields is slower than explicit bit-packing. We're already
+ * packing these bits very tightly. If we need to use more than 32b, we might
+ * as well use a short4. */
 
 struct incoming_t
-{;
+{
 	unsigned int source_partition:PARTITION_BITS;
 	unsigned int source_neuron:NEURON_BITS;
 	unsigned int delay:DELAY_BITS;
+	unsigned int warps:SYNAPSE_WARP_BITS;
 };
 
 #if PARTITION_BITS + NEURON_BITS + DELAY_BITS > 32
