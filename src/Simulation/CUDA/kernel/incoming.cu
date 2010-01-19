@@ -54,14 +54,11 @@ __device__
 incoming_t
 make_incoming(uint sourcePartition, uint sourceNeuron, uint delay)
 {
-	ASSERT(sourcePartition < (1<<8));
-	ASSERT(sourceNeuron < (1<<16));
-	ASSERT(delay < (1<<8));
-	return make_uchar4(
-			uchar(sourcePartition),
-			uchar(sourceNeuron >> 8),   // MSB
-			uchar(sourceNeuron & 0xff), // LSB
-			uchar(delay));
+	ASSERT(sourcePartition < (1<<PARTITION_BITS));
+	ASSERT(sourceNeuron < (1<<NEURON_BITS));
+	ASSERT(delay < (1<<DELAY_BITS));
+
+	return (incoming_t) { sourcePartition, sourceNeuron, delay };
 }
 
 
@@ -69,7 +66,7 @@ __device__
 uint
 incomingDelay(incoming_t in)
 {
-	return (uint) in.w;
+	return in.delay;
 }
 
 
@@ -77,7 +74,7 @@ __device__
 uint
 incomingPartition(incoming_t in)
 {
-	return (uint) in.x;
+	return in.source_partition;
 }
 
 
@@ -86,7 +83,7 @@ __device__
 uint
 incomingNeuron(incoming_t in)
 {
-	return (((uint) in.y) << 8) | ((uint) in.z);
+	return in.source_neuron;
 }
 
 

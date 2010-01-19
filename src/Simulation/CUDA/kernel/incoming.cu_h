@@ -3,13 +3,17 @@
 
 #include <cuda_runtime.h>
 
-/* Each entry in the queue needs to indicate
- *
- * 1. source partition (7b)
- * 2. source neuron (10b)
- * 3. delay (6b)
- */
-typedef uchar4 incoming_t;
+struct incoming_t
+{;
+	unsigned int source_partition:PARTITION_BITS;
+	unsigned int source_neuron:NEURON_BITS;
+	unsigned int delay:DELAY_BITS;
+};
+
+#if PARTITION_BITS + NEURON_BITS + DELAY_BITS > 32
+#	error "bitpacking overflow of incoming_t data type"
+#endif
+
 
 __host__ void setIncomingPitch(size_t wordPitch);
 
