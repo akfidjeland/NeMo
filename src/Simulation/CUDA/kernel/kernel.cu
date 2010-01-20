@@ -179,43 +179,6 @@ fire(
 
 
 
-__device__
-void
-deliverSpike(
-		size_t synapseAddress,
-		uint presynaptic,
-		uint* gf0_address,
-		float* gf0_weight,
-		float* s_current)
-{
-	float weight = gf0_weight[synapseAddress];
-
-	/*! \todo only load address if it will actually be used.  For benchmarks
-	 * this made little difference, presumably because all neurons have same
-	 * number of synapses.  Experiment! */
-	uint sdata = gf0_address[synapseAddress];
-	uint postsynaptic = targetNeuron(sdata);
-
-	bool doCommit = weight != 0.0f;
-
-	/* Since multiple spikes may terminate at the same postsynaptic neuron,
-	 * some care must be taken to avoid a race condition in the current update.
-	 *
-	 * Since we only deal with a single delay at a time, there should be no
-	 * race conditions resulting from multiple synapses terminating at the same
-	 * postsynaptic neuron.  Within a single delay, there should be no race
-	 * conditions, if the mapper has done its job */
-
-	if(doCommit) {
-		s_current[postsynaptic] += weight;
-		//! \todo add partition numbers here as well. This is not only for L1 any more
-		DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
-				s_cycle, presynaptic, postsynaptic, weight);
-	}
-}
-
-
-
 /* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
  * out or use a code generator to avoid repetition */
 __device__
@@ -298,6 +261,13 @@ l1scatter(
 }
 
 
+#ifdef __DEVICE_EMULATION__
+//! \todo remove debugging code
+__shared__ uint s_valid[8];
+__shared__ uint s_invalid[8];
+#endif
+
+
 
 __device__
 void
@@ -370,15 +340,67 @@ l1gather(
 
 			for(uint chunk = 0; chunk < sf_pitch[groupOffset].y; ++chunk) {
 
+#ifdef __DEVICE_EMULATION__
+				if(threadIdx.x == 0) {
+					DEBUG_MSG("c%u group %u chunk %u %u (warp-aligned) synapses (out of 256). %u synapses vs %u pitch\n",
+							cycle, groupOffset, chunk, s_synapseCount[groupOffset],
+							s_synapseCount[groupOffset], sf_pitch[groupOffset].x);
+
+				}
+#endif
 				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+				bool doCommit = false;
+#ifdef __DEVICE_EMULATION__
+				uint presynaptic = s_sourceNeuron[groupOffset];
+#endif
+				uint postsynaptic;
+				float weight;
 
 				if(synapseIdx < s_warpCount[groupOffset] * WARP_SIZE) {
-					deliverSpike(
-							f_synapseOffset(s_sourceNeuron[groupOffset], sf_pitch[groupOffset].x, synapseIdx),
-							s_sourceNeuron[groupOffset],
-							f_address(sf_cm[groupOffset], sf_pitch[groupOffset].x),
-							f_weights(sf_cm[groupOffset], sf_pitch[groupOffset].x),
-							s_current);
+
+					size_t synapseAddress = f_synapseOffset(s_sourceNeuron[groupOffset], sf_pitch[groupOffset].x, synapseIdx);
+					uint* gf0_address = f_address(sf_cm[groupOffset], sf_pitch[groupOffset].x);
+
+					float* gf0_weight = f_weights(sf_cm[groupOffset], sf_pitch[groupOffset].x);
+					weight = gf0_weight[synapseAddress];
+					doCommit = weight != 0.0f;
+
+					/*! \todo only load address if it will actually be used.  For benchmarks
+					 * this made little difference, presumably because all neurons have same
+					 * number of synapses.  Experiment! */
+					uint sdata = gf0_address[synapseAddress];
+					postsynaptic = targetNeuron(sdata);
+				}
+
+				/* Since multiple spikes may terminate at the same postsynaptic
+				 * neuron, some care must be taken to avoid a race condition in
+				 * the current update.
+				 *
+				 * Since we only deal with a single delay at a time, there
+				 * should be no race conditions resulting from multiple
+				 * synapses terminating at the same postsynaptic neuron.
+				 * Within a single delay, there should be no race conditions,
+				 * if the mapper has done its job */
+
+				uint warp = threadIdx.x / 32;
+
+				for(uint commit=0; commit < 8; ++commit) {
+
+					if(doCommit && warp == commit) {
+						s_current[postsynaptic] += weight;
+						//! \todo add partition numbers here as well. This is not only for L1 any more
+						DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
+								s_cycle, presynaptic, postsynaptic, weight);
+					}
+
+#ifdef __DEVICE_EMULATION__
+					if(doCommit) {
+						atomicAdd(&s_valid[warp], 1);
+					} else {
+						atomicAdd(&s_invalid[warp], 1);
+					}
+#endif
+					__syncthreads();
 				}
 			}
 			__syncthreads();
