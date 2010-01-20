@@ -1,11 +1,14 @@
 #include "Incoming.hpp"
 
+#include <stdexcept>
+#include <sstream>
+
 #include "util.h"
 #include "kernel.cu_h"
 
 
 void
-Incoming::allocate(size_t partitionCount)
+Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps)
 {
 	// allocate space for the incoming count
 	uint* d_count;
@@ -23,11 +26,20 @@ Incoming::allocate(size_t partitionCount)
 	 * the buffer is large enough that every neuron can fire every cycle */
 	/*! \todo relax this constraint. We'll end up using a very large amount of
 	 * space when using a large number of partitions */
-	size_t width = partitionCount * MAX_PARTITION_SIZE * sizeof(incoming_t);
+	size_t width = maxIncomingWarps * sizeof(incoming_t);
 
 	incoming_t* d_buffer;
 	size_t bpitch;
-	CUDA_SAFE_CALL(cudaMallocPitch((void**)&d_buffer, &bpitch, width, height));
+
+	cudaError err = cudaMallocPitch((void**)&d_buffer, &bpitch, width, height);
+	if(cudaSuccess != err) {
+		std::ostringstream msg;
+		msg << "Failed to allocate " << width * height
+			<< " bytes for incoming spike queue\n"
+			<< cudaGetErrorString(err);
+		throw std::runtime_error(msg.str());
+	}
+
 	m_buffer = boost::shared_ptr<incoming_t>(d_buffer);
 
 	/* We don't need to clear the queue. It will generally be full of garbage

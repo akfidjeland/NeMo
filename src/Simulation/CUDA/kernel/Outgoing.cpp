@@ -46,7 +46,17 @@ Outgoing::maxPitch() const
 
 
 
-void
+bool
+compare_warp_counts(
+		const std::pair<pidx_t, size_t>& lhs,
+		const std::pair<pidx_t, size_t>& rhs)
+{
+	return lhs.second < rhs.second;
+}
+
+
+
+size_t
 Outgoing::moveToDevice(size_t partitionCount)
 {
 	using namespace boost::tuples;
@@ -65,6 +75,9 @@ Outgoing::moveToDevice(size_t partitionCount)
 
 	// allocate temporary host memory for row lengths
 	std::vector<uint> h_rowLength(height, 0);
+
+	// accumulate the number of incoming warps for each partition.
+	std::map<pidx_t, size_t> incoming;
 
 	// fill host memory
 	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
@@ -86,6 +99,9 @@ Outgoing::moveToDevice(size_t partitionCount)
 			delay_t delay = get<1>(tkey);
 			//! \todo add run-time test that warp-size is as expected
 			uint warps = DIV_CEIL(r->second, WARP_SIZE);
+
+			incoming[targetPartition] += warps;
+
 			//! \todo check for overflow here
 			for(uint warp = 0; warp < warps; ++warp) {
 				h_arr[t_addr + j + warp] = make_outgoing(targetPartition, delay, warp);
@@ -114,5 +130,8 @@ Outgoing::moveToDevice(size_t partitionCount)
 	// copy row lengths from host to device
 	CUDA_SAFE_CALL(cudaMemcpy(d_rowLength, &h_rowLength[0], h_rowLength.size() * sizeof(uint),
 				cudaMemcpyHostToDevice));
+
+	// return maximum number of incoming groups for any one partition
+	return std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second;
 }
 

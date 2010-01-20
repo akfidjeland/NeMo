@@ -11,7 +11,14 @@ class Incoming
 
 		// default ctor is fine here
 
-		void allocate(size_t partitionCount);
+		/*! Allocate space on device to hold the per neuron/delay incoming
+		 * spike groups
+		 *
+		 * \param maxIncomingWarps
+		 * 		Maximum number of incoming warps (regardless of delay) for any
+		 * 		partition,
+		 */
+		void allocate(size_t partitionCount, size_t maxIncomingWarps);
 
 		incoming_t* buffer() const { return m_buffer.get(); }
 

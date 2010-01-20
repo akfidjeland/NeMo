@@ -135,8 +135,8 @@ ConnectivityMatrixImpl::moveToDevice()
 
 	f_setDispatchTable();
 
-	m_outgoing.moveToDevice(m_partitionCount);
-	m_incoming.allocate(m_partitionCount);
+	size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount);
+	m_incoming.allocate(m_partitionCount, maxWarps);
 }
 
 

@@ -221,7 +221,7 @@ step(RTDATA rtdata,
 	cudaError_t status = cudaGetLastError();
 
 	if(status != cudaSuccess) {
-		WARNING("%s", cudaGetErrorString(status));
+		WARNING("c%u %s", rtdata->cycle(), cudaGetErrorString(status));
 		LOG("", "Kernel parameters: <<<%d, %d>>>\n",
 			dimGrid.x, dimBlock.x);
 		return KERNEL_INVOCATION_ERROR;

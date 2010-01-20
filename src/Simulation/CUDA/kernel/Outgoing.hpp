@@ -20,7 +20,14 @@ class Outgoing
 				delay_t delay,
 				pidx_t targetPartition);
 
-		void moveToDevice(size_t partitionCount);
+		/*! Set the device data containing the outgoing spike groups.
+		 *
+		 * \return
+		 * 		the maximum number of incoming warps for any one partition.
+		 * 		This is a worst-case value, which assumes that every source
+		 * 		neuron fires every cycle for some time.
+		 */
+		size_t moveToDevice(size_t partitionCount);
 
 		outgoing_t* data() const { return md_arr.get(); }
 
