@@ -241,6 +241,9 @@ l1scatter(
 
 					uint targetPartition = outgoingTargetPartition(sout);
 					size_t headsAddr = incomingCountAddr(targetPartition, cycle, delay);
+					//! \todo we might be able to reduce the number of atomic
+					//operations here, by writing warps going to the same
+					//target in the same go.
 					uint offset = atomicAdd(g_incomingHeads + headsAddr, 1);
 
 					ASSERT(offset < c_incomingPitch);
@@ -249,10 +252,11 @@ l1scatter(
 					g_incoming[base + offset] =
 						make_incoming(CURRENT_PARTITION, presynaptic,
 								delay,
-								outgoingWarps(sout));
+								outgoingWarp(sout));
 
-					DEBUG_MSG("c%u spike group p%un%u -> p%u (delay %u) (buffer entry %u/%u)\n",
-							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay, offset, c_incomingPitch);
+					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u, warp %u) (buffer entry %u/%u)\n",
+							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
+							outgoingWarp(sout), offset, c_incomingPitch);
 				}
 			}
 			__syncthreads(); // so s_blocks is not updated
@@ -260,12 +264,6 @@ l1scatter(
 	}
 }
 
-
-#ifdef __DEVICE_EMULATION__
-//! \todo remove debugging code
-__shared__ uint s_valid[8];
-__shared__ uint s_invalid[8];
-#endif
 
 
 
@@ -293,11 +291,11 @@ l1gather(
 #define GROUP_SIZE (2*MAX_DELAY)
 
 	//! \todo could this smem be re-used?
-	//__shared__ uint s_synapseCount[GROUP_SIZE]; // for each incoming group
 	__shared__ uint s_warpCount[GROUP_SIZE]; // for each incoming group
 	__shared__ uint32_t* sf_cm[GROUP_SIZE];
-	__shared__ ushort2 sf_pitch[GROUP_SIZE];
+	__shared__ uint sf_pitch[GROUP_SIZE];
 
+	//! \todo rename variables here
 	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
 
 		__shared__ size_t s_groupSize;
@@ -319,89 +317,65 @@ l1gather(
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
 			uint delay = incomingDelay(sgin);
 			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
-			//s_synapseCount[threadIdx.x] = incomingWarps(sgin) * WARP_SIZE;
 			s_warpCount[threadIdx.x] = incomingWarps(sgin);
 			uint sourcePartition = incomingPartition(sgin);
 			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
 			sf_cm[threadIdx.x] = f_base(fcm);
 			ASSERT(sf_cm[threadIdx.x] != 0x0);
-			sf_pitch[threadIdx.x].x = f_pitch(fcm);
-			//! \todo perhaps this is not needed at all?
-			sf_pitch[threadIdx.x].y = DIV_CEIL(s_warpCount[threadIdx.x] * WARP_SIZE, THREADS_PER_BLOCK);
-			DEBUG_MSG("c%u incoming spike group p%u -> p%u (delay %u) (%u synapses, %u chunks)\n",
-					cycle, sourcePartition, CURRENT_PARTITION, delay,
-					sf_pitch[threadIdx.x].x,
-					sf_pitch[threadIdx.x].y);
+			sf_pitch[threadIdx.x] = f_pitch(fcm);
+			DEBUG_MSG("c%u incoming spike group p%un%u -> p%u (delay %u, warp %u) (%u synapses)\n",
+					cycle, sourcePartition, incomingNeuron(sgin),
+					CURRENT_PARTITION, delay, incomingWarps(sgin),
+					sf_pitch[threadIdx.x]);
 		}
 
 		__syncthreads();
 
-		for(uint groupOffset = 0; groupOffset < s_groupSize; ++groupOffset) {
+		for(uint gwarp_base = 0; gwarp_base < s_groupSize; gwarp_base += WARPS_PER_BLOCK) {
 
-			for(uint chunk = 0; chunk < sf_pitch[groupOffset].y; ++chunk) {
+			uint bwarp = threadIdx.x / WARP_SIZE; // warp index within a block
+			uint gwarp = gwarp_base + bwarp;      // warp index within the global schedule
+			uint lwarp = s_warpCount[gwarp];      // warp index within local group, i.e. for a single source neuron
 
+			uint synapseIdx = lwarp * WARP_SIZE + threadIdx.x % WARP_SIZE;
+			bool doCommit = false;
 #ifdef __DEVICE_EMULATION__
-				if(threadIdx.x == 0) {
-					DEBUG_MSG("c%u group %u chunk %u %u (warp-aligned) synapses (out of 256). %u synapses vs %u pitch\n",
-							cycle, groupOffset, chunk, s_synapseCount[groupOffset],
-							s_synapseCount[groupOffset], sf_pitch[groupOffset].x);
-
-				}
+			uint presynaptic = s_sourceNeuron[gwarp];
 #endif
-				uint synapseIdx = chunk * THREADS_PER_BLOCK + threadIdx.x;
-				bool doCommit = false;
-#ifdef __DEVICE_EMULATION__
-				uint presynaptic = s_sourceNeuron[groupOffset];
-#endif
-				uint postsynaptic;
-				float weight;
+			uint postsynaptic;
+			float weight;
 
-				if(synapseIdx < s_warpCount[groupOffset] * WARP_SIZE) {
+			// only warps at the very end of the group are invalid here
+			if(gwarp < s_groupSize) {
 
-					size_t synapseAddress = f_synapseOffset(s_sourceNeuron[groupOffset], sf_pitch[groupOffset].x, synapseIdx);
-					uint* gf0_address = f_address(sf_cm[groupOffset], sf_pitch[groupOffset].x);
+				size_t synapseAddress = f_synapseOffset(s_sourceNeuron[gwarp], sf_pitch[gwarp], synapseIdx);
 
-					float* gf0_weight = f_weights(sf_cm[groupOffset], sf_pitch[groupOffset].x);
-					weight = gf0_weight[synapseAddress];
-					doCommit = weight != 0.0f;
+				/* We can save a very small amount of time by precomputing
+				 * addresses when loading FCMs earlier. In benchmarks the
+				 * effect was less than 1%, and comes at the cost of additional
+				 * smem usage */
+				float* gf_weight = f_weights(sf_cm[gwarp], sf_pitch[gwarp]);
+				weight = gf_weight[synapseAddress];
+				doCommit = weight != 0.0f;
 
-					/*! \todo only load address if it will actually be used.  For benchmarks
-					 * this made little difference, presumably because all neurons have same
-					 * number of synapses.  Experiment! */
-					uint sdata = gf0_address[synapseAddress];
-					postsynaptic = targetNeuron(sdata);
+				/*! \todo only load address if it will actually be used.  For benchmarks
+				 * this made little difference, presumably because all neurons have same
+				 * number of synapses.  Experiment! */
+				uint* gf_address = f_address(sf_cm[gwarp], sf_pitch[gwarp]);
+				uint sdata = gf_address[synapseAddress];
+				postsynaptic = targetNeuron(sdata);
+			}
+
+			for(uint commit=0; commit < WARPS_PER_BLOCK; ++commit) {
+
+				if(doCommit && bwarp == commit) {
+					s_current[postsynaptic] += weight;
+					//! \todo add partition numbers here as well. This is not only for L1 any more
+					DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
+							s_cycle, presynaptic, postsynaptic, weight);
 				}
 
-				/* Since multiple spikes may terminate at the same postsynaptic
-				 * neuron, some care must be taken to avoid a race condition in
-				 * the current update.
-				 *
-				 * Since we only deal with a single delay at a time, there
-				 * should be no race conditions resulting from multiple
-				 * synapses terminating at the same postsynaptic neuron.
-				 * Within a single delay, there should be no race conditions,
-				 * if the mapper has done its job */
-
-				uint warp = threadIdx.x / 32;
-
-				for(uint commit=0; commit < 8; ++commit) {
-
-					if(doCommit && warp == commit) {
-						s_current[postsynaptic] += weight;
-						//! \todo add partition numbers here as well. This is not only for L1 any more
-						DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
-								s_cycle, presynaptic, postsynaptic, weight);
-					}
-
-#ifdef __DEVICE_EMULATION__
-					if(doCommit) {
-						atomicAdd(&s_valid[warp], 1);
-					} else {
-						atomicAdd(&s_invalid[warp], 1);
-					}
-#endif
-					__syncthreads();
-				}
+				__syncthreads();
 			}
 			__syncthreads();
 		}

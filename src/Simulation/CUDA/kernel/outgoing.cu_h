@@ -15,11 +15,11 @@
  *
  * 1. target partition (up to 256)
  * 2. delay (up to 256)
- * 3. warps/neuron (up to 256 warps -> 8k synapses)
+ * 3. warps index (up to 256 warps -> 8k synapses)
  */
 typedef uchar4 outgoing_t;
 
-__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, uint warps);
+__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, uint warp);
 
 const outgoing_t INVALID_OUTGOING = { 0, 0, 0, 0 };
 

@@ -25,6 +25,7 @@
 // Note that this warp count may not be correct, although it matches the warp
 // count for current high-end devices
 #define WARP_SIZE 32
+#define WARPS_PER_BLOCK (THREADS_PER_BLOCK / WARP_SIZE)
 
 #define PARTITION_COUNT gridDim.x
 #define CURRENT_PARTITION blockIdx.x

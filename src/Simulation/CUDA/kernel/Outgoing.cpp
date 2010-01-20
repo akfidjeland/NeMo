@@ -23,11 +23,23 @@ Outgoing::addSynapse(
 
 
 size_t
+Outgoing::warpCount(const targets_t& targets) const
+{
+	size_t warps = 0;
+	for(targets_t::const_iterator i = targets.begin(); i != targets.end(); ++i) {
+		warps += DIV_CEIL(i->second, WARP_SIZE);
+	}
+	return warps;
+}
+
+
+
+size_t
 Outgoing::maxPitch() const
 {
 	size_t pitch = 0;
 	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
-		pitch = std::max(pitch, i->second.size());
+		pitch = std::max(pitch, warpCount(i->second));
 	}
 	return pitch;
 }
@@ -68,18 +80,23 @@ Outgoing::moveToDevice(size_t partitionCount)
 		size_t t_addr = outgoingRow(partition, neuron, wpitch);
 
 		size_t j = 0;
-		for(targets_t::const_iterator r = targets.begin(); r != targets.end(); ++r, ++j) {
+		for(targets_t::const_iterator r = targets.begin(); r != targets.end(); ++r) {
 			tkey_t tkey = r->first;
 			pidx_t targetPartition = get<0>(tkey);
 			delay_t delay = get<1>(tkey);
 			//! \todo add run-time test that warp-size is as expected
 			uint warps = DIV_CEIL(r->second, WARP_SIZE);
-			h_arr[t_addr + j] = make_outgoing(targetPartition, delay, warps);
+			//! \todo check for overflow here
+			for(uint warp = 0; warp < warps; ++warp) {
+				h_arr[t_addr + j + warp] = make_outgoing(targetPartition, delay, warp);
+			}
+			j += warps;
+			assert(j <= wpitch);
 		}
 
 		//! \todo move this into shared __device__/__host__ function
 		size_t r_addr = partition * MAX_PARTITION_SIZE + neuron;
-		h_rowLength.at(r_addr) = targets.size();
+		h_rowLength.at(r_addr) = warpCount(targets);
 	}
 
 	// delete accumulator memory which is no longer needed

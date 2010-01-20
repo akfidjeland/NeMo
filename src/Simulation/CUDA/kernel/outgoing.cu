@@ -8,15 +8,15 @@ __constant__ size_t c_outgoingPitch; // word pitch
 
 __host__
 outgoing_t
-make_outgoing(pidx_t partition, delay_t delay, uint warps)
+make_outgoing(pidx_t partition, delay_t delay, uint warp)
 {
 	assert(partition < MAX_PARTITION_COUNT);
 	assert(delay < MAX_DELAY);
-	assert(warps < MAX_SYNAPSE_WARPS);
+	assert(warp < MAX_SYNAPSE_WARPS);
 	assert(MAX_PARTITION_COUNT < 256);
 	assert(MAX_DELAY < 256);
 	assert(MAX_SYNAPSE_WARPS <= 256);
-	return make_uchar4((uchar) partition, (uchar) delay, (uchar) warps, 0);
+	return make_uchar4((uchar) partition, (uchar) delay, (uchar) warp, 0);
 }
 
 
@@ -70,7 +70,7 @@ outgoingDelay(outgoing_t out)
 
 __device__
 uint
-outgoingWarps(outgoing_t out)
+outgoingWarp(outgoing_t out)
 {
 	return (uint) out.z;
 }
