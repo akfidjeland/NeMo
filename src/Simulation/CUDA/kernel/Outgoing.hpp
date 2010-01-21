@@ -20,14 +20,6 @@ class Outgoing
 				delay_t delay,
 				pidx_t targetPartition);
 
-		/*! Set the device data containing the outgoing spike groups.
-		 *
-		 * \return
-		 * 		the maximum number of incoming warps for any one partition.
-		 * 		This is a worst-case value, which assumes that every source
-		 * 		neuron fires every cycle for some time.
-		 */
-		size_t moveToDevice(size_t partitionCount);
 
 		outgoing_t* data() const { return md_arr.get(); }
 
@@ -35,6 +27,22 @@ class Outgoing
 
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
+
+	private :
+
+		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
+
+	public :
+
+		/*! Set the device data containing the outgoing spike groups.
+		 *
+		 * \return
+		 * 		the maximum number of incoming warps for any one partition.
+		 * 		This is a worst-case value, which assumes that every source
+		 * 		neuron fires every cycle for some time.
+		 */
+		size_t moveToDevice(size_t partitionCount,
+				const std::map<fcm_key_t, class SynapseGroup>& fcm);
 
 	private :
 

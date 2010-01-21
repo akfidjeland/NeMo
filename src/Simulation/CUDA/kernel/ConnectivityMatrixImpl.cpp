@@ -137,7 +137,7 @@ ConnectivityMatrixImpl::moveToDevice()
 
 		f_setDispatchTable();
 
-		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount);
+		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
 		m_incoming.allocate(m_partitionCount, maxWarps);
 
 		configureReverseAddressing(

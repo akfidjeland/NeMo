@@ -71,7 +71,7 @@ class SynapseGroup
 		/*! \return number of bytes allocated on device */
 		size_t d_allocated() const { return m_allocated; }
 
-		/*! Set weights for a particular neuron in the form of 3 vectors
+		/*! Get weights for a particular neuron in the form of 3 vectors
 		 * (partition, neuron, weight).
 		 * \return
 		 * 		length of vectors

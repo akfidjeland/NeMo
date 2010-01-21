@@ -17,9 +17,14 @@
  * 2. delay
  * 3. warp index
  */
+//! \todo could simplify this, by only storing an offset, which should always fit into 32b
+#ifdef __DEVICE_EMULATION__
+typedef uint4 outgoing_t; // so we can store 64-bit addresses
+#else
 typedef uint2 outgoing_t;
+#endif
 
-__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, uint warp);
+__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, uint warp, void* d_ptr);
 
 #ifdef __DEVICE_EMULATION__
 const outgoing_t INVALID_OUTGOING = make_uint4(0, 0, 0, 0);

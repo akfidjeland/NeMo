@@ -6,18 +6,34 @@
 __constant__ size_t c_outgoingPitch; // word pitch
 
 
+
 __host__
 outgoing_t
-make_outgoing(pidx_t partition, delay_t delay, uint warp)
+make_outgoing(pidx_t partition, delay_t delay, uint warp, void* address)
 {
+	//! \todo could share pointer packing with dispatchTable code
 	assert(partition < MAX_PARTITION_COUNT);
 	assert(delay < MAX_DELAY);
 	assert(warp < MAX_SYNAPSE_WARPS);
-	return make_uint2(
-	     ( ((uint(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS + SYNAPSE_WARP_BITS))
+
+	uint targetData =
+	       ((uint(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS + SYNAPSE_WARP_BITS))
 	     | ((uint(delay)     & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
-	     |  (uint(warp)      & MASK(SYNAPSE_WARP_BITS))),
-		 0);
+	     |  (uint(warp)      & MASK(SYNAPSE_WARP_BITS));
+
+	assert(sizeof(address) <= sizeof(uint64_t));
+
+	uint64_t ptr64 = (uint64_t) address;
+
+#ifdef __DEVICE_EMULATION__
+	uint32_t low = (uint32_t) (ptr64 & 0xffffffff);
+	uint32_t high = (uint32_t) ((ptr64 >> 32) & 0xffffffff);
+	return make_uint4(targetData, (uint) low, (uint) high, 0);
+#else
+	const uint64_t MAX_ADDRESS = 4294967296LL; // on device
+	assert(ptr64 < MAX_ADDRESS);
+	return make_uint2(targetData, (uint) ptr64);
+#endif
 }
 
 
