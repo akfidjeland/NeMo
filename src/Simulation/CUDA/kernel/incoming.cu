@@ -52,20 +52,30 @@ getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
 /*! \return incoming spike group from a particular source */
 __device__
 incoming_t
-make_incoming(uint sourcePartition, uint sourceNeuron, uint delay, uint warps)
+make_incoming(uint sourcePartition, uint sourceNeuron, uint delay, uint warps, void* address)
 {
 	ASSERT(sourcePartition < (1<<PARTITION_BITS));
 	ASSERT(sourceNeuron < (1<<NEURON_BITS));
 	ASSERT(delay < (1<<DELAY_BITS));
 	ASSERT(warps < (1<<SYNAPSE_WARP_BITS));
 
-	uint targetData =
+	uint sourceData =
 	       ((uint(sourcePartition) & MASK(PARTITION_BITS)) << (SYNAPSE_WARP_BITS + DELAY_BITS + NEURON_BITS))
 	     | ((uint(sourceNeuron)    & MASK(NEURON_BITS))    << (SYNAPSE_WARP_BITS + DELAY_BITS))
 	     | ((uint(delay)           & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
 	     | ((uint(warps)           & MASK(SYNAPSE_WARP_BITS )));
 
-	return targetData;
+	uint64_t ptr64 = (uint64_t) address;
+
+#ifdef __DEVICE_EMULATION__
+	uint32_t low = (uint32_t) (ptr64 & 0xffffffff);
+	uint32_t high = (uint32_t) ((ptr64 >> 32) & 0xffffffff);
+	return make_uint4(sourceData, (uint) low, (uint) high, 0);
+#else
+	const uint64_t MAX_ADDRESS = 4294967296LL; // on device
+	ASSERT(ptr64 < MAX_ADDRESS);
+	return make_uint2(sourceData, (uint) ptr64);
+#endif
 }
 
 
@@ -73,7 +83,7 @@ __device__
 uint
 incomingDelay(incoming_t in)
 {
-	return (in >> SYNAPSE_WARP_BITS) & MASK(DELAY_BITS);
+	return (in.x >> SYNAPSE_WARP_BITS) & MASK(DELAY_BITS);
 }
 
 
@@ -81,7 +91,7 @@ __device__
 uint
 incomingPartition(incoming_t in)
 {
-	return (in >> (SYNAPSE_WARP_BITS + DELAY_BITS + NEURON_BITS)) & MASK(PARTITION_BITS);
+	return (in.x >> (SYNAPSE_WARP_BITS + DELAY_BITS + NEURON_BITS)) & MASK(PARTITION_BITS);
 }
 
 
@@ -90,7 +100,7 @@ __device__
 uint
 incomingNeuron(incoming_t in)
 {
-	return (in >> (SYNAPSE_WARP_BITS + DELAY_BITS)) & MASK(NEURON_BITS);
+	return (in.x >> (SYNAPSE_WARP_BITS + DELAY_BITS)) & MASK(NEURON_BITS);
 }
 
 
@@ -99,7 +109,7 @@ __device__
 uint
 incomingWarps(incoming_t in)
 {
-	return in & MASK(SYNAPSE_WARP_BITS);
+	return in.x & MASK(SYNAPSE_WARP_BITS);
 }
 
 

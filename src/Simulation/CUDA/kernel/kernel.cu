@@ -252,7 +252,7 @@ l1scatter(
 					g_incoming[base + offset] =
 						make_incoming(CURRENT_PARTITION, presynaptic,
 								delay,
-								outgoingWarp(sout));
+								outgoingWarp(sout), 0);
 
 					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u, warp %u) (buffer entry %u/%u)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
