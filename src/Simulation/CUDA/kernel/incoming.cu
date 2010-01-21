@@ -59,7 +59,13 @@ make_incoming(uint sourcePartition, uint sourceNeuron, uint delay, uint warps)
 	ASSERT(delay < (1<<DELAY_BITS));
 	ASSERT(warps < (1<<SYNAPSE_WARP_BITS));
 
-	return (incoming_t) { sourcePartition, sourceNeuron, delay, warps };
+	uint targetData =
+	       ((uint(sourcePartition) & MASK(PARTITION_BITS)) << (SYNAPSE_WARP_BITS + DELAY_BITS + NEURON_BITS))
+	     | ((uint(sourceNeuron)    & MASK(NEURON_BITS))    << (SYNAPSE_WARP_BITS + DELAY_BITS))
+	     | ((uint(delay)           & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
+	     | ((uint(warps)           & MASK(SYNAPSE_WARP_BITS )));
+
+	return targetData;
 }
 
 
@@ -67,7 +73,7 @@ __device__
 uint
 incomingDelay(incoming_t in)
 {
-	return in.delay;
+	return (in >> SYNAPSE_WARP_BITS) & MASK(DELAY_BITS);
 }
 
 
@@ -75,7 +81,7 @@ __device__
 uint
 incomingPartition(incoming_t in)
 {
-	return in.source_partition;
+	return (in >> (SYNAPSE_WARP_BITS + DELAY_BITS + NEURON_BITS)) & MASK(PARTITION_BITS);
 }
 
 
@@ -84,7 +90,7 @@ __device__
 uint
 incomingNeuron(incoming_t in)
 {
-	return in.source_neuron;
+	return (in >> (SYNAPSE_WARP_BITS + DELAY_BITS)) & MASK(NEURON_BITS);
 }
 
 
@@ -93,7 +99,7 @@ __device__
 uint
 incomingWarps(incoming_t in)
 {
-	return in.warps;
+	return in & MASK(SYNAPSE_WARP_BITS);
 }
 
 
