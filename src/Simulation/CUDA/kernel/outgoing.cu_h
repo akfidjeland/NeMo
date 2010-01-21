@@ -13,17 +13,16 @@
 
 /* Each outgoing spike group specifies
  *
- * 1. target partition (up to 256)
- * 2. delay (up to 256)
- * 3. warps index (up to 256 warps -> 8k synapses)
+ * 1. target partition
+ * 2. delay
+ * 3. warp index
  */
-typedef uchar4 outgoing_t;
+typedef uint32_t outgoing_t;
 
 __host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, uint warp);
 
-const outgoing_t INVALID_OUTGOING = { 0, 0, 0, 0 };
+const outgoing_t INVALID_OUTGOING = 0;
 
-__host__ bool operator<(const outgoing_t& a, const outgoing_t& b);
 
 __host__ void setOutgoingPitch(size_t targetPitch);
 
@@ -31,10 +30,7 @@ __host__ void setOutgoingPitch(size_t targetPitch);
 /* Return address at beginning of given row */
 __host__ __device__ 
 size_t
-outgoingRow(
-		pidx_t partition,
-		nidx_t neuron,
-		size_t pitch);
+outgoingRow(pidx_t partition, nidx_t neuron, size_t pitch);
 
 
 #endif

@@ -13,20 +13,11 @@ make_outgoing(pidx_t partition, delay_t delay, uint warp)
 	assert(partition < MAX_PARTITION_COUNT);
 	assert(delay < MAX_DELAY);
 	assert(warp < MAX_SYNAPSE_WARPS);
-	assert(MAX_PARTITION_COUNT < 256);
-	assert(MAX_DELAY < 256);
-	assert(MAX_SYNAPSE_WARPS <= 256);
-	return make_uchar4((uchar) partition, (uchar) delay, (uchar) warp, 0);
+	return ((outgoing_t(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS + SYNAPSE_WARP_BITS))
+	     | ((outgoing_t(delay)     & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
+	     |  (outgoing_t(warp)      & MASK(SYNAPSE_WARP_BITS));
 }
 
-
-
-__host__
-bool
-operator<(const outgoing_t& a, const outgoing_t& b)
-{
-	return a.x < b.x || (a.x == b.x && a.y < b.y);
-}
 
 
 
@@ -54,7 +45,7 @@ __device__
 uint
 outgoingTargetPartition(outgoing_t out)
 {
-	return (uint) out.x;
+	return uint((out >> (DELAY_BITS + SYNAPSE_WARP_BITS)) & MASK(PARTITION_BITS));
 }
 
 
@@ -63,7 +54,7 @@ __device__
 uint
 outgoingDelay(outgoing_t out)
 {
-	return (uint) out.y;
+	return uint((out >> SYNAPSE_WARP_BITS) & MASK(SYNAPSE_WARP_BITS));
 }
 
 
@@ -72,7 +63,7 @@ __device__
 uint
 outgoingWarp(outgoing_t out)
 {
-	return (uint) out.z;
+	return uint(out & MASK(SYNAPSE_WARP_BITS));
 }
 
 

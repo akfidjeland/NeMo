@@ -21,6 +21,8 @@
         exit(EXIT_FAILURE);                                                \
     } }
 
+#define MASK(bits) (~(~0 << (bits)))
+
 
 /* compute the next highest power of 2 of 32-bit v. From "bit-twiddling hacks".  */
 inline

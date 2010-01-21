@@ -5,12 +5,12 @@
 
 #include "kernel.cu_h"
 #include "connectivityMatrix.cu_h"
+#include "util.h"
 
-//! \todo factor out MASK logic
-#define NEURON_MASK (~(~0 << NEURON_BITS))
-#define PARTITION_MASK (~(~0 << PARTITION_BITS))
-#define FSYNAPSE_MASK (~(~0 << SYNAPSE_BITS))
-#define DELAY_MASK (~(~0 << DELAY_BITS))
+#define NEURON_MASK MASK(NEURON_BITS)
+#define PARTITION_MASK MASK(PARTITION_BITS)
+#define FSYNAPSE_MASK MASK(SYNAPSE_BITS)
+#define DELAY_MASK MASK(DELAY_BITS)
 
 #define PARTITION_SHIFT NEURON_BITS
 
