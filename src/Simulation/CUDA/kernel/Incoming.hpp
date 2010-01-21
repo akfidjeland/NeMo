@@ -9,7 +9,7 @@ class Incoming
 {
 	public :
 
-		// default ctor is fine here
+		Incoming();
 
 		/*! Allocate space on device to hold the per neuron/delay incoming
 		 * spike groups
@@ -24,6 +24,9 @@ class Incoming
 
 		uint* heads() const { return m_count.get(); }
 
+		/*! \return bytes of allocated memory */
+		size_t allocated() const { return m_allocated; }
+
 	private :
 
 		/* On the device there a buffer for incoming spike group for each
@@ -33,6 +36,8 @@ class Incoming
 		/* At run-time, we keep track of how many incoming spike groups are
 		 * queued for each target partition */
 		boost::shared_ptr<uint> m_count;
+
+		size_t m_allocated;
 };
 
 #endif

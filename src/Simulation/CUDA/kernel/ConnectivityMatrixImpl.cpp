@@ -7,6 +7,7 @@
 #include "util.h"
 #include "log.hpp"
 #include "RSMatrix.hpp"
+#include "except.hpp"
 #include "SynapseGroup.hpp"
 #include "connectivityMatrix.cu_h"
 #include "dispatchTable.cu_h"
@@ -123,20 +124,46 @@ ConnectivityMatrixImpl::setRow(
 void
 ConnectivityMatrixImpl::moveToDevice()
 {
-	for(uint p=0; p < m_partitionCount; ++p){
-		m0_rsynapses[p]->moveToDevice();
-		m1_rsynapses[p]->moveToDevice();
+	try {
+		for(uint p=0; p < m_partitionCount; ++p){
+			m0_rsynapses[p]->moveToDevice();
+			m1_rsynapses[p]->moveToDevice();
+		}
+
+		for(fcm_t::iterator i = m_fsynapses.begin();
+				i != m_fsynapses.end(); ++i) {
+			i->second.moveToDevice();
+		}
+
+		f_setDispatchTable();
+
+		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount);
+		m_incoming.allocate(m_partitionCount, maxWarps);
+
+	} catch (DeviceAllocationException& e) {
+		FILE* out = stderr;
+		fprintf(out, e.what());
+		printMemoryUsage(out);
+		throw;
 	}
+}
 
-	for(fcm_t::iterator i = m_fsynapses.begin();
-			i != m_fsynapses.end(); ++i) {
-		i->second.moveToDevice();
-	}
 
-	f_setDispatchTable();
 
-	size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount);
-	m_incoming.allocate(m_partitionCount, maxWarps);
+void
+ConnectivityMatrixImpl::printMemoryUsage(FILE* out)
+{
+	const size_t MEGA = 1<<20;
+	fprintf(out, "forward matrix:     %6luMB (%lu groups out of max %lu)\n",
+			d_allocatedFCM() / MEGA, m_fsynapses.size(),
+			m_partitionCount*m_partitionCount*MAX_DELAY);
+	fprintf(out, "reverse matrix (0): %6luMB (%lu groups)\n",
+			d_allocatedRCM0() / MEGA, m0_rsynapses.size());
+	fprintf(out, "reverse matrix (1): %6luMB (%lu groups)\n",
+			d_allocatedRCM1() / MEGA, m1_rsynapses.size());
+	//! \todo dispatch table
+	fprintf(out, "incoming:           %6luMB\n", m_incoming.allocated() / MEGA);
+	fprintf(out, "outgoing:           %6luMB\n", m_outgoing.allocated() / MEGA);
 }
 
 
@@ -202,27 +229,53 @@ ConnectivityMatrixImpl::clearStdpAccumulator()
 
 
 size_t
-ConnectivityMatrixImpl::d_allocated() const
+ConnectivityMatrixImpl::d_allocatedFCM() const
 {
-	size_t rcm0 = 0;
+	size_t bytes = 0;
+	for(fcm_t::const_iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
+		bytes += i->second.d_allocated();
+	}
+	return bytes;
+}
+
+
+
+size_t
+ConnectivityMatrixImpl::d_allocatedRCM0() const
+{
+	size_t bytes = 0;
 	for(std::vector<RSMatrix*>::const_iterator i = m0_rsynapses.begin();
 			i != m0_rsynapses.end(); ++i) {
-		rcm0 += (*i)->d_allocated();
+		bytes += (*i)->d_allocated();
 	}
+	return bytes;
+}
 
-	size_t rcm1 = 0;
-	for(std::vector<RSMatrix*>::const_iterator i = m0_rsynapses.begin();
+
+
+size_t
+ConnectivityMatrixImpl::d_allocatedRCM1() const
+{
+	size_t bytes = 0;
+	for(std::vector<RSMatrix*>::const_iterator i = m1_rsynapses.begin();
 			i != m1_rsynapses.end(); ++i) {
-		rcm1 += (*i)->d_allocated();
+		bytes += (*i)->d_allocated();
 	}
+	return bytes;
+}
 
-	size_t fcm = 0;
-	for(fcm_t::const_iterator i = m_fsynapses.begin();
-			i != m_fsynapses.end(); ++i) {
-		fcm += i->second.d_allocated();
-	}
 
-	return fcm + rcm0 + rcm1;
+
+size_t
+ConnectivityMatrixImpl::d_allocated() const
+{
+
+	return d_allocatedFCM()
+		+ d_allocatedRCM0()
+		+ d_allocatedRCM1()
+		+ m_incoming.allocated()
+		+ m_outgoing.allocated();
+	//! \todo + dispatch table
 }
 
 

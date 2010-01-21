@@ -1,10 +1,11 @@
 #include "Incoming.hpp"
 
-#include <stdexcept>
-#include <sstream>
-
 #include "util.h"
 #include "kernel.cu_h"
+#include "except.hpp"
+
+
+Incoming::Incoming() : m_allocated(0) {}
 
 
 void
@@ -16,6 +17,8 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps)
 	CUDA_SAFE_CALL(cudaMalloc((void**)&d_count, len));
 	CUDA_SAFE_CALL(cudaMemset(d_count, 0, len));
 	m_count = boost::shared_ptr<uint>(d_count, cudaFree);
+
+	m_allocated = len;
 
 	/* The queue has one entry for incoming spikes for each partition */
 	assert(partitionCount < MAX_PARTITION_COUNT);
@@ -33,12 +36,9 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps)
 
 	cudaError err = cudaMallocPitch((void**)&d_buffer, &bpitch, width, height);
 	if(cudaSuccess != err) {
-		std::ostringstream msg;
-		msg << "Failed to allocate " << width * height
-			<< " bytes for incoming spike queue\n"
-			<< cudaGetErrorString(err);
-		throw std::runtime_error(msg.str());
+		throw DeviceAllocationException("incoming spike queue", width * height, err);
 	}
+	m_allocated += bpitch * height;
 
 	m_buffer = boost::shared_ptr<incoming_t>(d_buffer);
 

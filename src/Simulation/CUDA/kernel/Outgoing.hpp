@@ -12,7 +12,7 @@ class Outgoing
 {
 	public :
 
-		// default ctor is fine here
+		Outgoing();
 
 		void addSynapse(
 				pidx_t sourcePartition,
@@ -33,6 +33,9 @@ class Outgoing
 
 		uint* count() const { return md_rowLength.get(); }
 
+		/*! \return bytes of allocated memory */
+		size_t allocated() const { return m_allocated; }
+
 	private :
 
 		boost::shared_ptr<outgoing_t> md_arr;  // device data
@@ -50,6 +53,8 @@ class Outgoing
 
 		size_t maxPitch() const;
 		size_t warpCount(const targets_t& targets) const;
+
+		size_t m_allocated;
 };
 
 #endif

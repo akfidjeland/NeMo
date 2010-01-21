@@ -1,6 +1,8 @@
 //! \file SynapseGroup.cpp
 
 #include "SynapseGroup.hpp"
+
+#include "except.hpp"
 #include "connectivityMatrix.cu_h"
 #include "util.h"
 #include "kernel.cu_h"
@@ -92,11 +94,14 @@ SynapseGroup::moveToDevice()
 
 	synapse_t* d_data = NULL;
 
-	CUDA_SAFE_CALL(
-			cudaMallocPitch((void**) &d_data,
+	cudaError err = cudaMallocPitch((void**) &d_data,
 				&md_bpitch,
 				desiredBytePitch,
-				height));
+				height);
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException("fcm synapse group",
+				height * desiredBytePitch, err);
+	}
 	m_allocated = md_bpitch * height;
 
 	/* There's no need to clear to allocated memory, as we completely fill it

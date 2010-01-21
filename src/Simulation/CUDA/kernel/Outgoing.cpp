@@ -6,6 +6,11 @@
 
 #include "kernel.cu_h"
 #include "util.h"
+#include "except.hpp"
+
+
+Outgoing::Outgoing() : m_allocated(0) {}
+
 
 
 void 
@@ -66,8 +71,13 @@ Outgoing::moveToDevice(size_t partitionCount)
 
 	// allocate device memory for table
 	outgoing_t* d_arr;
-	CUDA_SAFE_CALL(cudaMallocPitch((void**)&d_arr, &m_pitch, width, height));
+	cudaError err = cudaMallocPitch((void**)&d_arr, &m_pitch, width, height);
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException("outgoing spikes", width * height, err);
+	}
 	md_arr = boost::shared_ptr<outgoing_t>(d_arr, cudaFree);
+
+	m_allocated = m_pitch * height;
 
 	// allocate temporary host memory for table
 	size_t wpitch = m_pitch / sizeof(outgoing_t);
@@ -124,8 +134,13 @@ Outgoing::moveToDevice(size_t partitionCount)
 
 	// allocate device memory for row lengths
 	uint* d_rowLength;
-	CUDA_SAFE_CALL(cudaMalloc((void**)&d_rowLength, height * sizeof(uint)));
+	err = cudaMalloc((void**)&d_rowLength, height * sizeof(uint));
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException("outgoing spikes (row lengths)",
+				height * sizeof(uint), err);
+	}
 	md_rowLength = boost::shared_ptr<uint>(d_rowLength, cudaFree);
+	m_allocated += height * sizeof(uint);
 
 	// copy row lengths from host to device
 	CUDA_SAFE_CALL(cudaMemcpy(d_rowLength, &h_rowLength[0], h_rowLength.size() * sizeof(uint),

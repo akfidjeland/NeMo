@@ -1,6 +1,7 @@
 #include "RSMatrix.hpp"
 #include "connectivityMatrix.cu_h"
 #include "util.h"
+#include "except.hpp"
 
 #include <cuda_runtime.h>
 #include <stdexcept>
@@ -24,11 +25,14 @@ RSMatrix::allocateDeviceMemory()
 	size_t bytePitch = 0;
 
 	uint32_t* deviceData = NULL;
-	CUDA_SAFE_CALL(
-			cudaMallocPitch((void**) &deviceData,
+	cudaError err = cudaMallocPitch((void**) &deviceData,
 				&bytePitch,
 				desiredPitch,
-				height));
+				height);
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException("rcm synapse group",
+				height * desiredPitch, err);
+	}
 	m_pitch = bytePitch / sizeof(uint32_t);
 	m_allocated = bytePitch * height;
 
