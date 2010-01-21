@@ -13,9 +13,11 @@ make_outgoing(pidx_t partition, delay_t delay, uint warp)
 	assert(partition < MAX_PARTITION_COUNT);
 	assert(delay < MAX_DELAY);
 	assert(warp < MAX_SYNAPSE_WARPS);
-	return ((outgoing_t(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS + SYNAPSE_WARP_BITS))
-	     | ((outgoing_t(delay)     & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
-	     |  (outgoing_t(warp)      & MASK(SYNAPSE_WARP_BITS));
+	return make_uint2(
+	     ( ((uint(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS + SYNAPSE_WARP_BITS))
+	     | ((uint(delay)     & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
+	     |  (uint(warp)      & MASK(SYNAPSE_WARP_BITS))),
+		 0);
 }
 
 
@@ -45,7 +47,7 @@ __device__
 uint
 outgoingTargetPartition(outgoing_t out)
 {
-	return uint((out >> (DELAY_BITS + SYNAPSE_WARP_BITS)) & MASK(PARTITION_BITS));
+	return uint((out.x >> (DELAY_BITS + SYNAPSE_WARP_BITS)) & MASK(PARTITION_BITS));
 }
 
 
@@ -54,7 +56,7 @@ __device__
 uint
 outgoingDelay(outgoing_t out)
 {
-	return uint((out >> SYNAPSE_WARP_BITS) & MASK(SYNAPSE_WARP_BITS));
+	return uint((out.x >> SYNAPSE_WARP_BITS) & MASK(DELAY_BITS));
 }
 
 
@@ -63,7 +65,7 @@ __device__
 uint
 outgoingWarp(outgoing_t out)
 {
-	return uint(out & MASK(SYNAPSE_WARP_BITS));
+	return uint(out.x & MASK(SYNAPSE_WARP_BITS));
 }
 
 

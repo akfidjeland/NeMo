@@ -17,11 +17,15 @@
  * 2. delay
  * 3. warp index
  */
-typedef uint32_t outgoing_t;
+typedef uint2 outgoing_t;
 
 __host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, uint warp);
 
-const outgoing_t INVALID_OUTGOING = 0;
+#ifdef __DEVICE_EMULATION__
+const outgoing_t INVALID_OUTGOING = make_uint4(0, 0, 0, 0);
+#else
+const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
+#endif
 
 
 __host__ void setOutgoingPitch(size_t targetPitch);
