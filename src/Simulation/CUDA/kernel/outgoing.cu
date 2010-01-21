@@ -87,6 +87,22 @@ outgoingWarp(outgoing_t out)
 
 
 __device__
+uint32_t*
+outgoingWarpPointer(outgoing_t out)
+{
+#ifdef __DEVICE_EMULATION__
+	uint64_t ptr = out.z;
+	ptr <<= 32;
+	ptr |= out.y;
+	return (uint32_t*) ptr;
+#else
+	return (uint32_t*) out.y;
+#endif
+}
+
+
+
+__device__
 outgoing_t
 outgoing(uint presynaptic,
 		uint jobIdx,
