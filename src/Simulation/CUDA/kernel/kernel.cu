@@ -292,8 +292,7 @@ l1gather(
 #define GROUP_SIZE (2*MAX_DELAY)
 
 	//! \todo could this smem be re-used?
-	__shared__ uint s_warpCount[GROUP_SIZE]; // for each incoming group
-	__shared__ uint32_t* sf_cm[GROUP_SIZE];
+	__shared__ uint32_t* s_warpAddress[GROUP_SIZE];
 	__shared__ uint sf_pitch[GROUP_SIZE];
 
 	//! \todo rename variables here
@@ -317,12 +316,13 @@ l1gather(
 		if(threadIdx.x < s_groupSize) {
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
 			uint delay = incomingDelay(sgin);
+#ifdef __DEVICE_EMULATION__
 			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
-			s_warpCount[threadIdx.x] = incomingWarps(sgin);
+#endif
 			uint sourcePartition = incomingPartition(sgin);
 			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
-			sf_cm[threadIdx.x] = f_base(fcm);
-			ASSERT(sf_cm[threadIdx.x] != 0x0);
+			s_warpAddress[threadIdx.x] = incomingWarpAddress(sgin);
+			ASSERT(s_warpAddress[threadIdx.x] != 0x0);
 			sf_pitch[threadIdx.x] = f_pitch(fcm);
 			DEBUG_MSG("c%u incoming spike group p%un%u -> p%u (delay %u, warp %u) (%u synapses)\n",
 					cycle, sourcePartition, incomingNeuron(sgin),
@@ -336,36 +336,26 @@ l1gather(
 
 			uint bwarp = threadIdx.x / WARP_SIZE; // warp index within a block
 			uint gwarp = gwarp_base + bwarp;      // warp index within the global schedule
-			uint lwarp = s_warpCount[gwarp];      // warp index within local group, i.e. for a single source neuron
 
-			uint synapseIdx = lwarp * WARP_SIZE + threadIdx.x % WARP_SIZE;
-			bool doCommit = false;
+			bool doCommit;
 #ifdef __DEVICE_EMULATION__
 			uint presynaptic = s_sourceNeuron[gwarp];
 #endif
 			uint postsynaptic;
-			float weight;
+			float weight = 0.0f;
+
+			uint32_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
+			size_t planeSize = sf_pitch[gwarp] * MAX_PARTITION_SIZE;
 
 			// only warps at the very end of the group are invalid here
+			//! \todo could get of this conditional altogether if we set some
+			//fixed (invalid) address previously.
 			if(gwarp < s_groupSize) {
-
-				size_t synapseAddress = f_synapseOffset(s_sourceNeuron[gwarp], sf_pitch[gwarp], synapseIdx);
-
-				/* We can save a very small amount of time by precomputing
-				 * addresses when loading FCMs earlier. In benchmarks the
-				 * effect was less than 1%, and comes at the cost of additional
-				 * smem usage */
-				float* gf_weight = f_weights(sf_cm[gwarp], sf_pitch[gwarp]);
-				weight = gf_weight[synapseAddress];
-				doCommit = weight != 0.0f;
-
-				/*! \todo only load address if it will actually be used.  For benchmarks
-				 * this made little difference, presumably because all neurons have same
-				 * number of synapses.  Experiment! */
-				uint* gf_address = f_address(sf_cm[gwarp], sf_pitch[gwarp]);
-				uint sdata = gf_address[synapseAddress];
-				postsynaptic = targetNeuron(sdata);
+				postsynaptic = targetNeuron(*base);
+				weight = *((float*)base + planeSize);
 			}
+
+			doCommit = weight != 0.0f;
 
 			for(uint commit=0; commit < WARPS_PER_BLOCK; ++commit) {
 

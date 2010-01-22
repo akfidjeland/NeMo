@@ -114,6 +114,22 @@ incomingWarps(incoming_t in)
 
 
 
+__device__
+uint32_t*
+incomingWarpAddress(incoming_t in)
+{
+#ifdef __DEVICE_EMULATION__
+	uint64_t ptr = in.z;
+	ptr <<= 32;
+	ptr |= in.y;
+	return (uint32_t*) ptr;
+#else
+	return (uint32_t*) in.y;
+#endif
+}
+
+
+
 /*! \return address into matrix with number of incoming synapse groups */
 __device__
 size_t
