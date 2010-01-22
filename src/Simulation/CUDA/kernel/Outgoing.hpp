@@ -28,6 +28,8 @@ class Outgoing
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
 
+		size_t totalWarpCount() const;
+
 	private :
 
 		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay

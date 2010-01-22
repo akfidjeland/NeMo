@@ -144,6 +144,9 @@ class ConnectivityMatrixImpl
 		typedef std::map<fcm_key_t, SynapseGroup> fcm_t;
 		fcm_t m_fsynapses;
 
+		/* Compact fcm on device */
+		boost::shared_ptr<SynapseGroup::synapse_t> md_fcm;
+
 		void f_setDispatchTable();
 
 		boost::shared_ptr<cudaArray> mf_dispatch;
@@ -167,6 +170,8 @@ class ConnectivityMatrixImpl
 		size_t d_allocatedRCM0() const;
 		size_t d_allocatedRCM1() const;
 		void printMemoryUsage(FILE* out);
+
+		void moveFcmToDevice();
 };
 
 #endif

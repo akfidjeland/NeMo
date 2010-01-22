@@ -2,7 +2,8 @@
 
 #include <algorithm>
 #include <stdexcept>
-#include "boost/tuple/tuple_comparison.hpp"
+#include <iostream>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include "util.h"
 #include "log.hpp"
@@ -121,6 +122,56 @@ ConnectivityMatrixImpl::setRow(
 
 
 
+
+void
+ConnectivityMatrixImpl::moveFcmToDevice()
+{
+	typedef SynapseGroup::synapse_t synapse_t;
+
+	size_t totalWarpCount = m_outgoing.totalWarpCount();
+
+	size_t height = totalWarpCount * 2; // *2 as we keep address and weights separately
+	size_t desiredBytePitch = WARP_SIZE * sizeof(synapse_t);
+
+	size_t bpitch;
+	synapse_t* d_data;
+
+	// allocate device memory
+	cudaError err = cudaMallocPitch((void**) &d_data,
+				&bpitch,
+				desiredBytePitch,
+				height);
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException("forward connectivity matrix",
+				height * desiredBytePitch, err);
+	}
+	md_fcm = boost::shared_ptr<SynapseGroup::synapse_t>(d_data, cudaFree);
+
+	if(bpitch != desiredBytePitch) {
+		std::cerr << "Returned byte pitch (" << desiredBytePitch
+			<< ") did  not match requested byte pitch (" << bpitch
+			<< ") when allocating forward connectivity matrix" << std::endl;
+		/* This only matters, as we'll waste memory otherwise, and we'd expect the
+		 * desired pitch to always match the returned pitch, since pitch is defined
+		 * in terms of warp size */
+	}
+
+
+	// allocate and intialise host memory
+	size_t wpitch = bpitch / sizeof(synapse_t);
+	std::vector<synapse_t> h_data(height * wpitch, 0);
+
+	size_t woffset = 0;
+	for(fcm_t::iterator i = m_fsynapses.begin();
+			i != m_fsynapses.end(); ++i) {
+		woffset += i->second.fillFcm(woffset, totalWarpCount, h_data);
+	}
+
+	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], height * bpitch, cudaMemcpyHostToDevice));
+}
+
+
+
 void
 ConnectivityMatrixImpl::moveToDevice()
 {
@@ -129,6 +180,8 @@ ConnectivityMatrixImpl::moveToDevice()
 			m0_rsynapses[p]->moveToDevice();
 			m1_rsynapses[p]->moveToDevice();
 		}
+
+		moveFcmToDevice();
 
 		for(fcm_t::iterator i = m_fsynapses.begin();
 				i != m_fsynapses.end(); ++i) {

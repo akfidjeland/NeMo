@@ -83,6 +83,22 @@ class SynapseGroup
 				weight_t* weight[],
 				uchar* plastic[]);
 
+		/*! fill host buffer with synapse data.
+		 *
+		 * \param start
+		 * 		word offset withing host data, for the first unused warp
+		 * \param planeSize
+		 * 		size of a plane (in words) of the FCM, i.e. the size of all the
+		 * 		address /or/ weight data. This is the distance between a synapse's
+		 * 		address data and its weight data.
+		 *
+		 * \return
+		 * 		number of consecutive words written (starting at \a start)
+		 */
+		size_t fillFcm(size_t start,
+				size_t planeSize,
+				std::vector<synapse_t>& h_data);
+
 	private:
 
 		struct Row {
@@ -114,6 +130,8 @@ class SynapseGroup
 
 		/* We make sure to only copy each datum at most once per cycle */
 		uint m_lastSync;
+
+		std::map<nidx_t, size_t> m_warpOffset;  // within FCM of the /first/ warp for any neuron
 };
 
 #endif

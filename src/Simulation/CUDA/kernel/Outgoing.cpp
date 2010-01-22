@@ -41,6 +41,18 @@ Outgoing::warpCount(const targets_t& targets) const
 
 
 size_t
+Outgoing::totalWarpCount() const
+{
+	size_t count = 0;
+	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
+		count += warpCount(i->second);
+	}
+	return count;
+}
+
+
+
+size_t
 Outgoing::maxPitch() const
 {
 	size_t pitch = 0;

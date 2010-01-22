@@ -76,6 +76,37 @@ SynapseGroup::maxSynapsesPerNeuron() const
 
 
 
+/*! fill host buffer with synapse data */
+size_t
+SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t>& h_data)
+{
+	size_t writtenWarps = 0; // warps
+
+	for(std::map<nidx_t, Row>::const_iterator r = mh_synapses.begin();
+			r != mh_synapses.end(); ++r) {
+
+		nidx_t sourceNeuron = r->first;
+		const Row row = r->second;
+
+		m_warpOffset[sourceNeuron] = startWarp + writtenWarps;
+
+		synapse_t* aptr = &h_data.at((startWarp + writtenWarps) * WARP_SIZE);
+		synapse_t* wptr = &h_data.at((totalWarps + startWarp + writtenWarps) * WARP_SIZE);
+
+		/*! note that std::copy won't work as it will silently cast floats to integers */
+		memcpy(aptr, &row.addresses[0], row.addresses.size() * sizeof(synapse_t));
+		memcpy(wptr, &row.weights[0], row.weights.size() * sizeof(synapse_t));
+
+		assert(row.addresses.size() == row.weights.size());
+
+		writtenWarps += DIV_CEIL(row.addresses.size(), WARP_SIZE);
+	}
+
+	return writtenWarps;
+}
+
+
+
 boost::shared_ptr<SynapseGroup::synapse_t>
 SynapseGroup::moveToDevice()
 {
