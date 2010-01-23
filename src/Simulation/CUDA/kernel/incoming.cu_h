@@ -4,11 +4,8 @@
 #include <cuda_runtime.h>
 #include "kernel.cu_h"
 
-#ifdef __DEVICE_EMULATION__
-typedef uint4 incoming_t; // so we can store 64-bit addresses
-#else
 typedef uint2 incoming_t;
-#endif
+
 
 #if PARTITION_BITS + NEURON_BITS + DELAY_BITS + SYNAPSE_WARP_BITS > 32
 #	error "bitpacking overflow of incoming_t data type"

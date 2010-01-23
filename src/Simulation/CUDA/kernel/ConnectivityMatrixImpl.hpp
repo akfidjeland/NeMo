@@ -91,6 +91,8 @@ class ConnectivityMatrixImpl
 
 	public:
 
+		synapse_t* d_fcm() const { return md_fcm.get(); }
+
 		/*! \return pointer to device data containing outgoing spike data for
 		 * each neuron */
 		outgoing_t* outgoing() const { return m_outgoing.data(); }
@@ -170,7 +172,7 @@ class ConnectivityMatrixImpl
 		size_t d_allocatedRCM1() const;
 		void printMemoryUsage(FILE* out);
 
-		synapse_t* moveFcmToDevice();
+		void moveFcmToDevice();
 
 		size_t md_allocatedFCM;
 };

@@ -253,7 +253,7 @@ l1scatter(
 						make_incoming(CURRENT_PARTITION, presynaptic,
 								delay,
 								outgoingWarp(sout),
-								outgoingWarpPointer(sout));
+								outgoingWarpOffset(sout));
 
 					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u, warp %u) (buffer entry %u/%u)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
@@ -272,6 +272,7 @@ __device__
 void
 l1gather(
 		uint cycle,
+		synapse_t* g_fcm,
 		uint* g_incomingCount,
 		incoming_t* g_incoming,
 		uint16_t s_sourceNeuron[],
@@ -313,13 +314,12 @@ l1gather(
 		//! \todo factor this out
 		if(threadIdx.x < s_groupSize) {
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
-			uint delay = incomingDelay(sgin);
 #ifdef __DEVICE_EMULATION__
+			uint delay = incomingDelay(sgin);
 			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
 			uint sourcePartition = incomingPartition(sgin);
 #endif
-			s_warpAddress[threadIdx.x] = incomingWarpAddress(sgin);
-			ASSERT(s_warpAddress[threadIdx.x] != 0x0);
+			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
 			DEBUG_MSG("c%u incoming spike group p??n%u -> p%u (delay %u, warp %u)\n",
 					cycle, sourcePartition, incomingNeuron(sgin),
 					CURRENT_PARTITION, delay, incomingWarps(sgin));

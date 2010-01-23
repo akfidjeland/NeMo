@@ -76,7 +76,6 @@ compare_warp_counts(
 
 size_t
 Outgoing::moveToDevice(size_t partitionCount,
-				synapse_t* fcm_base,
 				const std::map<fcm_key_t, SynapseGroup>& fcm)
 {
 	using namespace boost::tuples;
@@ -134,10 +133,9 @@ Outgoing::moveToDevice(size_t partitionCount,
 
 			//! \todo check for overflow here
 			for(uint warp = 0; warp < warps; ++warp) {
-				synapse_t* ptr =
-					fcm_base + groupref->second.warpOffset(neuron, warp);
+				uint32_t offset = groupref->second.warpOffset(neuron, warp);
 				h_arr[t_addr + j + warp] =
-					make_outgoing(targetPartition, delay, warp, ptr);
+					make_outgoing(targetPartition, delay, warp, offset);
 			}
 			j += warps;
 			assert(j <= wpitch);

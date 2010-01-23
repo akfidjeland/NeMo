@@ -100,7 +100,7 @@ class SynapseGroup
 		 * 		offset (in terms of number of words) of the specified warp for
 		 * 		the given neuron within this group, from the beginning of the
 		 * 		FCM */
-		size_t warpOffset(nidx_t neuron, size_t warp) const;
+		uint32_t warpOffset(nidx_t neuron, size_t warp) const;
 
 	private:
 

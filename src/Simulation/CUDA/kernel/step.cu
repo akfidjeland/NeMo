@@ -32,7 +32,8 @@ STDP_FN(step) (
 		//! \todo combine with g_neuronParameters
 		float* g_sigma,
 		size_t neuronParametersSize,
-		// L1 delivery
+		// spike delivery
+		synapse_t* g_fcm,
 		uint* g_outgoingCount,
 		outgoing_t* g_outgoing,
 		uint* g_incomingHeads,
@@ -107,7 +108,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 3);
 
-	l1gather(cycle, g_incomingHeads, g_incoming, s_T16, s_current);
+	l1gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_T16, s_current);
 
 	SET_COUNTER(s_ccMain, 4);
 

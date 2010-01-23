@@ -44,7 +44,6 @@ class Outgoing
 		 * 		neuron fires every cycle for some time.
 		 */
 		size_t moveToDevice(size_t partitionCount,
-				synapse_t* fcm_base,
 				const std::map<fcm_key_t, class SynapseGroup>& fcm);
 
 	private :

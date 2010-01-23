@@ -163,7 +163,8 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceRngState(),
 				rtdata->thalamicInput->deviceSigma(),
 				rtdata->neuronParameters->size(),
-				// L1 spike queue
+				// spike delivery
+				rtdata->cm()->d_fcm(),
 				rtdata->cm()->outgoingCount(),
 				rtdata->cm()->outgoing(),
 				rtdata->cm()->incomingHeads(),
@@ -187,7 +188,8 @@ step(RTDATA rtdata,
 				rtdata->thalamicInput->deviceSigma(),
                 //! \todo get size directly from rtdata
 				rtdata->neuronParameters->size(),
-				// L1 spike queue
+				// spike delivery
+				rtdata->cm()->d_fcm(),
 				rtdata->cm()->outgoingCount(),
 				rtdata->cm()->outgoing(),
 				rtdata->cm()->incomingHeads(),

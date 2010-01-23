@@ -77,6 +77,7 @@ struct ConnectivityMatrix
 
 		delay_t maxDelay() const;
 
+		synapse_t* d_fcm() const;
 		outgoing_t* outgoing() const;
 		uint* outgoingCount() const;
 		incoming_t* incoming() const;

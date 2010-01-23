@@ -9,7 +9,7 @@ __constant__ size_t c_outgoingPitch; // word pitch
 
 __host__
 outgoing_t
-make_outgoing(pidx_t partition, delay_t delay, uint warp, void* address)
+make_outgoing(pidx_t partition, delay_t delay, uint warp, uint warpOffset)
 {
 	//! \todo could share pointer packing with dispatchTable code
 	assert(partition < MAX_PARTITION_COUNT);
@@ -21,19 +21,7 @@ make_outgoing(pidx_t partition, delay_t delay, uint warp, void* address)
 	     | ((uint(delay)     & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
 	     |  (uint(warp)      & MASK(SYNAPSE_WARP_BITS));
 
-	assert(sizeof(address) <= sizeof(uint64_t));
-
-	uint64_t ptr64 = (uint64_t) address;
-
-#ifdef __DEVICE_EMULATION__
-	uint32_t low = (uint32_t) (ptr64 & 0xffffffff);
-	uint32_t high = (uint32_t) ((ptr64 >> 32) & 0xffffffff);
-	return make_uint4(targetData, (uint) low, (uint) high, 0);
-#else
-	const uint64_t MAX_ADDRESS = 4294967296LL; // on device
-	assert(ptr64 < MAX_ADDRESS);
-	return make_uint2(targetData, (uint) ptr64);
-#endif
+	return make_uint2(targetData, (uint) warpOffset);
 }
 
 
@@ -87,17 +75,10 @@ outgoingWarp(outgoing_t out)
 
 
 __device__
-uint32_t*
-outgoingWarpPointer(outgoing_t out)
+uint
+outgoingWarpOffset(outgoing_t out)
 {
-#ifdef __DEVICE_EMULATION__
-	uint64_t ptr = out.z;
-	ptr <<= 32;
-	ptr |= out.y;
-	return (uint32_t*) ptr;
-#else
-	return (uint32_t*) out.y;
-#endif
+	return out.y;
 }
 
 

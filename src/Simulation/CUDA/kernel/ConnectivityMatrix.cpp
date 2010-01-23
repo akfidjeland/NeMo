@@ -82,6 +82,13 @@ ConnectivityMatrix::maxDelay() const
 }
 
 
+synapse_t*
+ConnectivityMatrix::d_fcm() const
+{
+	return m_impl->d_fcm();
+}
+
+
 
 outgoing_t*
 ConnectivityMatrix::outgoing() const

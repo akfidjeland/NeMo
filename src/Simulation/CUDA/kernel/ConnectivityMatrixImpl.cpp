@@ -124,7 +124,7 @@ ConnectivityMatrixImpl::setRow(
 
 
 
-synapse_t*
+void
 ConnectivityMatrixImpl::moveFcmToDevice()
 {
 	size_t totalWarpCount = m_outgoing.totalWarpCount();
@@ -168,8 +168,6 @@ ConnectivityMatrixImpl::moveFcmToDevice()
 	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], md_allocatedFCM, cudaMemcpyHostToDevice));
 
 	setFcmPlaneSize(totalWarpCount * wpitch);
-
-	return d_data;
 }
 
 
@@ -183,7 +181,7 @@ ConnectivityMatrixImpl::moveToDevice()
 			m1_rsynapses[p]->moveToDevice();
 		}
 
-		synapse_t* d_fcm = moveFcmToDevice();
+		moveFcmToDevice();
 
 		for(fcm_t::iterator i = m_fsynapses.begin();
 				i != m_fsynapses.end(); ++i) {
@@ -193,7 +191,7 @@ ConnectivityMatrixImpl::moveToDevice()
 		f_setDispatchTable();
 
 		size_t maxWarps =
-			m_outgoing.moveToDevice(m_partitionCount, d_fcm, m_fsynapses);
+			m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
 		m_incoming.allocate(m_partitionCount, maxWarps);
 
 		configureReverseAddressing(
