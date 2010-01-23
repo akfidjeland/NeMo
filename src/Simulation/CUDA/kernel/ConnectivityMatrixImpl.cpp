@@ -124,11 +124,9 @@ ConnectivityMatrixImpl::setRow(
 
 
 
-SynapseGroup::synapse_t*
+synapse_t*
 ConnectivityMatrixImpl::moveFcmToDevice()
 {
-	typedef SynapseGroup::synapse_t synapse_t;
-
 	size_t totalWarpCount = m_outgoing.totalWarpCount();
 
 	size_t height = totalWarpCount * 2; // *2 as we keep address and weights separately
@@ -146,7 +144,7 @@ ConnectivityMatrixImpl::moveFcmToDevice()
 		throw DeviceAllocationException("forward connectivity matrix",
 				height * desiredBytePitch, err);
 	}
-	md_fcm = boost::shared_ptr<SynapseGroup::synapse_t>(d_data, cudaFree);
+	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
 
 	if(bpitch != desiredBytePitch) {
 		std::cerr << "Returned byte pitch (" << desiredBytePitch
@@ -185,7 +183,7 @@ ConnectivityMatrixImpl::moveToDevice()
 			m1_rsynapses[p]->moveToDevice();
 		}
 
-		SynapseGroup::synapse_t* d_fcm = moveFcmToDevice();
+		synapse_t* d_fcm = moveFcmToDevice();
 
 		for(fcm_t::iterator i = m_fsynapses.begin();
 				i != m_fsynapses.end(); ++i) {

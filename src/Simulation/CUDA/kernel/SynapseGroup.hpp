@@ -62,9 +62,6 @@ class SynapseGroup
 		/*! \return row pitch on the device (in bytes) */
 		size_t bpitch() const;
 
-		/* On the device both address and weight data is squeezed into 32b */
-		typedef uint32_t synapse_t;
-
 		/*! \return address of synapse group on device */
 		synapse_t* d_address() const { return md_synapses.get(); }
 

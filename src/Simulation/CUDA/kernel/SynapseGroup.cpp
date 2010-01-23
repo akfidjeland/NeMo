@@ -107,11 +107,11 @@ SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t
 
 
 
-boost::shared_ptr<SynapseGroup::synapse_t>
+boost::shared_ptr<synapse_t>
 SynapseGroup::moveToDevice()
 {
 	if(mh_synapses.empty()) {
-		return boost::shared_ptr<SynapseGroup::synapse_t>();
+		return boost::shared_ptr<synapse_t>();
 	}
 
 	/* Aligning pitch to warp size should have no negative impact on memory

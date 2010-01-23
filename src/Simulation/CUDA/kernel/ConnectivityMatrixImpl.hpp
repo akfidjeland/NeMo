@@ -12,7 +12,6 @@
 #include <nemo_types.hpp>
 #include "nemo_cuda_types.h"
 #include "kernel.h" // for synapse type used in interface
-#include "SynapseGroup.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
 #include "Outgoing.hpp"
@@ -141,11 +140,11 @@ class ConnectivityMatrixImpl
 		/* The connectivity matrix is stored in small blocks specific to a
 		 * combination of source partiton, target partition and delay */
 		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
-		typedef std::map<fcm_key_t, SynapseGroup> fcm_t;
+		typedef std::map<fcm_key_t, class SynapseGroup> fcm_t;
 		fcm_t m_fsynapses;
 
 		/* Compact fcm on device */
-		boost::shared_ptr<SynapseGroup::synapse_t> md_fcm;
+		boost::shared_ptr<synapse_t> md_fcm;
 
 		void f_setDispatchTable();
 
@@ -171,7 +170,7 @@ class ConnectivityMatrixImpl
 		size_t d_allocatedRCM1() const;
 		void printMemoryUsage(FILE* out);
 
-		SynapseGroup::synapse_t* moveFcmToDevice();
+		synapse_t* moveFcmToDevice();
 
 		size_t md_allocatedFCM;
 };
