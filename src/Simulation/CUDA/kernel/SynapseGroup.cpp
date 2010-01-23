@@ -240,3 +240,16 @@ SynapseGroup::wpitch() const
 {
 	return md_bpitch / sizeof(synapse_t);
 }
+
+
+
+size_t
+SynapseGroup::warpOffset(nidx_t neuron, size_t warp) const
+{
+	std::map<nidx_t, size_t>::const_iterator entry = m_warpOffset.find(neuron);
+	if(m_warpOffset.end() == entry) {
+		throw std::runtime_error("neuron not found");
+	}
+	return (entry->second + warp) * WARP_SIZE;
+}
+

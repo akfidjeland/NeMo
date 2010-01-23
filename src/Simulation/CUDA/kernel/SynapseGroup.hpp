@@ -99,6 +99,12 @@ class SynapseGroup
 				size_t planeSize,
 				std::vector<synapse_t>& h_data);
 
+		/*! \return
+		 * 		offset (in terms of number of words) of the specified warp for
+		 * 		the given neuron within this group, from the beginning of the
+		 * 		FCM */
+		size_t warpOffset(nidx_t neuron, size_t warp) const;
+
 	private:
 
 		struct Row {

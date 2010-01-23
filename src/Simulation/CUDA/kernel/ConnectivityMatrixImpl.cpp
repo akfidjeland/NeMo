@@ -21,7 +21,8 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
     m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(0),
-	m_setReverse(setReverse)
+	m_setReverse(setReverse),
+	md_allocatedFCM(0)
 {
 	for(uint p = 0; p < partitionCount; ++p) {
 		m0_rsynapses.push_back(new RSMatrix(maxPartitionSize));
@@ -123,7 +124,7 @@ ConnectivityMatrixImpl::setRow(
 
 
 
-void
+SynapseGroup::synapse_t*
 ConnectivityMatrixImpl::moveFcmToDevice()
 {
 	typedef SynapseGroup::synapse_t synapse_t;
@@ -156,18 +157,21 @@ ConnectivityMatrixImpl::moveFcmToDevice()
 		 * in terms of warp size */
 	}
 
-
 	// allocate and intialise host memory
 	size_t wpitch = bpitch / sizeof(synapse_t);
 	std::vector<synapse_t> h_data(height * wpitch, 0);
 
 	size_t woffset = 0;
-	for(fcm_t::iterator i = m_fsynapses.begin();
-			i != m_fsynapses.end(); ++i) {
+	for(fcm_t::iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
 		woffset += i->second.fillFcm(woffset, totalWarpCount, h_data);
 	}
 
-	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], height * bpitch, cudaMemcpyHostToDevice));
+	md_allocatedFCM = height * bpitch;
+	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], md_allocatedFCM, cudaMemcpyHostToDevice));
+
+	setFcmPlaneSize(totalWarpCount * wpitch);
+
+	return d_data;
 }
 
 
@@ -181,7 +185,7 @@ ConnectivityMatrixImpl::moveToDevice()
 			m1_rsynapses[p]->moveToDevice();
 		}
 
-		moveFcmToDevice();
+		SynapseGroup::synapse_t* d_fcm = moveFcmToDevice();
 
 		for(fcm_t::iterator i = m_fsynapses.begin();
 				i != m_fsynapses.end(); ++i) {
@@ -190,7 +194,8 @@ ConnectivityMatrixImpl::moveToDevice()
 
 		f_setDispatchTable();
 
-		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
+		size_t maxWarps =
+			m_outgoing.moveToDevice(m_partitionCount, d_fcm, m_fsynapses);
 		m_incoming.allocate(m_partitionCount, maxWarps);
 
 		configureReverseAddressing(
@@ -218,6 +223,8 @@ ConnectivityMatrixImpl::printMemoryUsage(FILE* out)
 	fprintf(out, "forward matrix:     %6luMB (%lu groups out of max %lu)\n",
 			d_allocatedFCM() / MEGA, m_fsynapses.size(),
 			m_partitionCount*m_partitionCount*MAX_DELAY);
+	fprintf(out, "forward matrix (2): %6luMB\n",
+			md_allocatedFCM / MEGA);
 	fprintf(out, "reverse matrix (0): %6luMB (%lu groups)\n",
 			d_allocatedRCM0() / MEGA, m0_rsynapses.size());
 	fprintf(out, "reverse matrix (1): %6luMB (%lu groups)\n",

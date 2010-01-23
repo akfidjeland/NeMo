@@ -171,7 +171,9 @@ class ConnectivityMatrixImpl
 		size_t d_allocatedRCM1() const;
 		void printMemoryUsage(FILE* out);
 
-		void moveFcmToDevice();
+		SynapseGroup::synapse_t* moveFcmToDevice();
+
+		size_t md_allocatedFCM;
 };
 
 #endif

@@ -19,6 +19,8 @@
 #define FCM_WEIGHT 1         // float packed as int
 #define FCM_SUBMATRICES 2
 
+__host__ void setFcmPlaneSize(size_t sz);
+
 __host__ uint f_packSynapse(uint partition, uint neuron);
 
 __device__ uint targetNeuron(uint synapse);

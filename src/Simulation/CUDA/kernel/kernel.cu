@@ -287,13 +287,11 @@ l1gather(
 	__syncthreads();
 
 	/*! \note Could use THREADS_PER_BLOCK here, but we're bit low on shared
-	 * memory. Doubling the group size (to 2*MAX_DELAY) did not have any
-	 * measurable effect on performance, however. */
-#define GROUP_SIZE (2*MAX_DELAY)
+	 * memory. */
+#define GROUP_SIZE 128
 
 	//! \todo could this smem be re-used?
 	__shared__ uint32_t* s_warpAddress[GROUP_SIZE];
-	__shared__ uint sf_pitch[GROUP_SIZE];
 
 	//! \todo rename variables here
 	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
@@ -318,16 +316,13 @@ l1gather(
 			uint delay = incomingDelay(sgin);
 #ifdef __DEVICE_EMULATION__
 			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
-#endif
 			uint sourcePartition = incomingPartition(sgin);
-			fcm_ref_t fcm = getFCM(sourcePartition, CURRENT_PARTITION, delay-1);
+#endif
 			s_warpAddress[threadIdx.x] = incomingWarpAddress(sgin);
 			ASSERT(s_warpAddress[threadIdx.x] != 0x0);
-			sf_pitch[threadIdx.x] = f_pitch(fcm);
-			DEBUG_MSG("c%u incoming spike group p%un%u -> p%u (delay %u, warp %u) (%u synapses)\n",
+			DEBUG_MSG("c%u incoming spike group p??n%u -> p%u (delay %u, warp %u)\n",
 					cycle, sourcePartition, incomingNeuron(sgin),
-					CURRENT_PARTITION, delay, incomingWarps(sgin),
-					sf_pitch[threadIdx.x]);
+					CURRENT_PARTITION, delay, incomingWarps(sgin));
 		}
 
 		__syncthreads();
@@ -345,14 +340,13 @@ l1gather(
 			float weight = 0.0f;
 
 			uint32_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
-			size_t planeSize = sf_pitch[gwarp] * MAX_PARTITION_SIZE;
 
 			// only warps at the very end of the group are invalid here
 			//! \todo could get of this conditional altogether if we set some
 			//fixed (invalid) address previously.
 			if(gwarp < s_groupSize) {
 				postsynaptic = targetNeuron(*base);
-				weight = *((float*)base + planeSize);
+				weight = *((float*)base + c_fcmPlaneSize);
 			}
 
 			doCommit = weight != 0.0f;
@@ -362,7 +356,7 @@ l1gather(
 				if(doCommit && bwarp == commit) {
 					s_current[postsynaptic] += weight;
 					//! \todo add partition numbers here as well. This is not only for L1 any more
-					DEBUG_MSG("c%u L0 n%u -> n%u %+f\n",
+					DEBUG_MSG("c%u n%u -> n%u %+f\n",
 							s_cycle, presynaptic, postsynaptic, weight);
 				}
 

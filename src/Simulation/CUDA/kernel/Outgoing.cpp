@@ -74,19 +74,9 @@ compare_warp_counts(
 
 
 
-SynapseGroup::synapse_t*
-warpPointer(nidx_t sourceNeuron, uint warp, const SynapseGroup& group)
-{
-	/*! \todo could add a method to SynapseGroup here, but we'll change the
-	 * interface here in any event once FCM has been merged again. */
-	return group.d_address() + sourceNeuron * group.wpitch() + warp * WARP_SIZE;
-}
-
-
-
-
 size_t
 Outgoing::moveToDevice(size_t partitionCount,
+				SynapseGroup::synapse_t* fcm_base,
 				const std::map<fcm_key_t, SynapseGroup>& fcm)
 {
 	using namespace boost::tuples;
@@ -144,8 +134,10 @@ Outgoing::moveToDevice(size_t partitionCount,
 
 			//! \todo check for overflow here
 			for(uint warp = 0; warp < warps; ++warp) {
+				SynapseGroup::synapse_t* ptr =
+					fcm_base + groupref->second.warpOffset(neuron, warp);
 				h_arr[t_addr + j + warp] =
-					make_outgoing(targetPartition, delay, warp, warpPointer(neuron, warp, groupref->second));
+					make_outgoing(targetPartition, delay, warp, ptr);
 			}
 			j += warps;
 			assert(j <= wpitch);

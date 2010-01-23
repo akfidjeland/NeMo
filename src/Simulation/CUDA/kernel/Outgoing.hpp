@@ -7,6 +7,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "outgoing.cu_h"
+#include "SynapseGroup.hpp"
 
 class Outgoing
 {
@@ -43,7 +44,9 @@ class Outgoing
 		 * 		This is a worst-case value, which assumes that every source
 		 * 		neuron fires every cycle for some time.
 		 */
+		//! \todo remove SynapseGroup include when we move def of synapse_t
 		size_t moveToDevice(size_t partitionCount,
+				SynapseGroup::synapse_t* fcm_base,
 				const std::map<fcm_key_t, class SynapseGroup>& fcm);
 
 	private :

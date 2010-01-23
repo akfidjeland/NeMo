@@ -21,6 +21,19 @@
 
 
 
+/* distance (in words) between a synapses's address data and its weight data. */
+__constant__ size_t c_fcmPlaneSize;
+
+
+__host__
+void
+setFcmPlaneSize(size_t sz)
+{
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_fcmPlaneSize,
+				&sz, sizeof(size_t), 0, cudaMemcpyHostToDevice));
+}
+
+
 __host__
 uint
 f_packSynapse(uint partition, uint neuron)
