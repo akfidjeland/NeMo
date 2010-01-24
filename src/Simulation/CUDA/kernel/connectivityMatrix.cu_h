@@ -34,10 +34,10 @@ __host__ uint r_packSynapse(
 
 #define INVALID_REVERSE_SYNAPSE ((uint) ~0)
 
-__device__ uint sourceNeuron(uint rsynapse);
-__device__ uint sourcePartition(uint rsynapse);
-__device__ uint forwardIdx(uint rsynapse);
-__device__ uint r_delay(uint rsynapse);
+__device__ __host__ uint sourceNeuron(uint rsynapse);
+__device__ __host__ uint sourcePartition(uint rsynapse);
+__device__ __host__ uint forwardIdx(uint rsynapse);
+__device__ __host__ uint r_delay1(uint rsynapse);
 
 __host__
 void
@@ -45,8 +45,10 @@ configureReverseAddressing(
         const std::vector<DEVICE_UINT_PTR_T>& r0_pitch,
         const std::vector<DEVICE_UINT_PTR_T>& r0_address,
         const std::vector<DEVICE_UINT_PTR_T>& r0_stdp,
+        const std::vector<DEVICE_UINT_PTR_T>& r0_faddress,
         const std::vector<DEVICE_UINT_PTR_T>& r1_pitch,
         const std::vector<DEVICE_UINT_PTR_T>& r1_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_stdp);
+        const std::vector<DEVICE_UINT_PTR_T>& r1_stdp,
+        const std::vector<DEVICE_UINT_PTR_T>& r1_faddress);
 
 #endif

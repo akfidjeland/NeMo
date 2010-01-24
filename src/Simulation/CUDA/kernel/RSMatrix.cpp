@@ -2,9 +2,11 @@
 #include "connectivityMatrix.cu_h"
 #include "util.h"
 #include "except.hpp"
+#include "SynapseGroup.hpp"
 
 #include <cuda_runtime.h>
 #include <stdexcept>
+#include <boost/tuple/tuple_comparison.hpp>
 
 
 RSMatrix::RSMatrix(size_t partitionSize) :
@@ -76,7 +78,11 @@ RSMatrix::maxSynapsesPerNeuron() const
 
 //! \todo pass in parameters here
 void
-RSMatrix::copyToDevice(host_sparse_t h_mem, uint32_t* d_mem)
+RSMatrix::copyToDevice(
+		const std::map<fcm_key_t, SynapseGroup>& fcm,
+		pidx_t targetPartition,
+		host_sparse_t h_mem,
+		uint32_t* d_mem)
 {
 	/* We only need to store the addresses on the host side */
 	std::vector<uint32_t> buf(planeSize(), INVALID_REVERSE_SYNAPSE);
@@ -92,14 +98,44 @@ RSMatrix::copyToDevice(host_sparse_t h_mem, uint32_t* d_mem)
 				planeSize() * sizeof(uint32_t),
 				cudaMemcpyHostToDevice));
 
+	/* Now fill in forward addresses for the STDP application step */
+	std::fill(buf.begin(), buf.end(), 0); // points to the null FCM warp
+	for(host_sparse_t::const_iterator n = h_mem.begin(); n != h_mem.end(); ++n) {
+
+		size_t offset = (n - h_mem.begin()) * m_pitch; // to beginning of current row
+
+		for(std::vector<uint32_t>::const_iterator rs = n->begin();
+				rs != n->end(); ++rs) {
+			std::map<fcm_key_t, SynapseGroup>::const_iterator groupref =
+					fcm.find(fcm_key_t(sourcePartition(*rs),
+								targetPartition,
+								r_delay1(*rs)));
+			assert(groupref != fcm.end());
+			uint32_t warpOffset = groupref->second.warpOffset(sourceNeuron(*rs), 0);
+			size_t faddress = (warpOffset * WARP_SIZE) + forwardIdx(*rs);
+			assert(faddress < (size_t(1)<<32));
+			buf.at(offset) = uint32_t(faddress);
+			++offset;
+		}
+	}
+
+	CUDA_SAFE_CALL(
+			cudaMemcpy(
+				d_mem + RCM_FADDRESS * planeSize(),
+				&buf[0],
+				planeSize() * sizeof(uint32_t),
+				cudaMemcpyHostToDevice));
+
 }
 
 
 void
-RSMatrix::moveToDevice()
+RSMatrix::moveToDevice(
+		const std::map<fcm_key_t, SynapseGroup>& fcm,
+		pidx_t targetPartition)
 {
 	boost::shared_ptr<uint32_t> d_mem = allocateDeviceMemory();
-	copyToDevice(m_hostData, d_mem.get());
+	copyToDevice(fcm, targetPartition, m_hostData, d_mem.get());
 	m_hostData.clear();
 }
 
@@ -149,6 +185,13 @@ RSMatrix::d_address() const
 	return m_deviceData.get() + RCM_ADDRESS * planeSize();
 }
 
+
+
+uint32_t*
+RSMatrix::d_faddress() const
+{
+	return m_deviceData.get() + RCM_FADDRESS * planeSize();
+}
 
 
 float*

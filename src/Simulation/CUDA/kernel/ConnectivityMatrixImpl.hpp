@@ -88,6 +88,7 @@ class ConnectivityMatrixImpl
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch(size_t lvl) const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t lvl) const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t lvl) const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress(size_t lvl) const;
 
 	public:
 

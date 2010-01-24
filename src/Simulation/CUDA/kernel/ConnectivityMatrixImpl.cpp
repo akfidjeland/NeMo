@@ -12,6 +12,7 @@
 #include "SynapseGroup.hpp"
 #include "connectivityMatrix.cu_h"
 #include "dispatchTable.cu_h"
+#include "connectivityMatrix.cu_h"
 
 
 ConnectivityMatrixImpl::ConnectivityMatrixImpl(
@@ -127,7 +128,8 @@ ConnectivityMatrixImpl::setRow(
 void
 ConnectivityMatrixImpl::moveFcmToDevice()
 {
-	size_t totalWarpCount = m_outgoing.totalWarpCount();
+	/* We add 1 extra warp here, so we can leave a null warp at the beginning */
+	size_t totalWarpCount = 1 + m_outgoing.totalWarpCount();
 
 	size_t height = totalWarpCount * 2; // *2 as we keep address and weights separately
 	size_t desiredBytePitch = WARP_SIZE * sizeof(synapse_t);
@@ -159,7 +161,7 @@ ConnectivityMatrixImpl::moveFcmToDevice()
 	size_t wpitch = bpitch / sizeof(synapse_t);
 	std::vector<synapse_t> h_data(height * wpitch, 0);
 
-	size_t woffset = 0;
+	size_t woffset = 1; // leave space for the null warp
 	for(fcm_t::iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
 		woffset += i->second.fillFcm(woffset, totalWarpCount, h_data);
 	}
@@ -176,13 +178,14 @@ void
 ConnectivityMatrixImpl::moveToDevice()
 {
 	try {
-		for(uint p=0; p < m_partitionCount; ++p){
-			m0_rsynapses[p]->moveToDevice();
-			m1_rsynapses[p]->moveToDevice();
-		}
-
 		moveFcmToDevice();
 
+		for(uint p=0; p < m_partitionCount; ++p){
+			m0_rsynapses[p]->moveToDevice(m_fsynapses, p);
+			m1_rsynapses[p]->moveToDevice(m_fsynapses, p);
+		}
+
+		//! \todo remove this copy. It's no longer needed.
 		for(fcm_t::iterator i = m_fsynapses.begin();
 				i != m_fsynapses.end(); ++i) {
 			i->second.moveToDevice();
@@ -190,17 +193,18 @@ ConnectivityMatrixImpl::moveToDevice()
 
 		f_setDispatchTable();
 
-		size_t maxWarps =
-			m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
+		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
 		m_incoming.allocate(m_partitionCount, maxWarps);
 
 		configureReverseAddressing(
 				r_partitionPitch(0),
 				r_partitionAddress(0),
 				r_partitionStdp(0),
+				r_partitionFAddress(0),
 				r_partitionPitch(1),
 				r_partitionAddress(1),
-				r_partitionStdp(1));
+				r_partitionStdp(1),
+				r_partitionFAddress(1));
 
 	} catch (DeviceAllocationException& e) {
 		FILE* out = stderr;
@@ -400,6 +404,14 @@ const std::vector<DEVICE_UINT_PTR_T>
 ConnectivityMatrixImpl::r_partitionStdp(size_t lvl) const
 {
 	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::d_stdp));
+}
+
+
+
+const std::vector<DEVICE_UINT_PTR_T>
+ConnectivityMatrixImpl::r_partitionFAddress(size_t lvl) const
+{
+	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::d_faddress));
 }
 
 

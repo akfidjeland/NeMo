@@ -1,13 +1,12 @@
 #include "Outgoing.hpp"
 
 #include <vector>
-#include "boost/tuple/tuple_comparison.hpp"
 #include <cuda_runtime.h>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include "kernel.cu_h"
 #include "util.h"
 #include "except.hpp"
-#include "SynapseGroup.hpp"
 
 
 Outgoing::Outgoing() : m_allocated(0) {}

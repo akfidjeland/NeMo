@@ -2,11 +2,11 @@
 #define OUTGOING_HPP
 
 #include <map>
-#include <set> 
-#include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "outgoing.cu_h"
+#include "SynapseGroup.hpp"
 
 class Outgoing
 {

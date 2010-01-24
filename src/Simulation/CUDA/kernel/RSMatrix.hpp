@@ -6,9 +6,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <vector>
+#include <map>
+#include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "kernel.cu_h"
+#include "nemo_cuda_types.h"
 
 /*! \brief Sparse synapse matrix in reverse format for a single partition
  *
@@ -34,7 +37,15 @@ struct RSMatrix
 				unsigned int targetNeuron,
 				unsigned int delay);
 
-		void moveToDevice();
+	private :
+
+		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
+
+	public :
+
+		void moveToDevice(
+				const std::map<fcm_key_t, class SynapseGroup>& fcm,
+				pidx_t targetPartition);
 
 		void clearStdpAccumulator();
 
@@ -49,6 +60,8 @@ struct RSMatrix
 
 		/*! \return device address of STDP accumulator matrix */
 		float* d_stdp() const;
+
+		uint32_t* d_faddress() const;
 
 	private:
 
@@ -66,8 +79,9 @@ struct RSMatrix
 
 		/* Indices of the two planes of the matrix */
 		enum {
-			RCM_ADDRESS = 0,
+			RCM_ADDRESS = 0, // source information
 			RCM_STDP,
+			RCM_FADDRESS,    // actual word address of synapse
 			RCM_SUBMATRICES
 		};
 
@@ -80,7 +94,11 @@ struct RSMatrix
 
 		boost::shared_ptr<uint32_t>& allocateDeviceMemory();
 
-		void copyToDevice(host_sparse_t h_mem, uint32_t* d_mem);
+		void copyToDevice(
+				const std::map<fcm_key_t, class SynapseGroup>& fcm,
+				pidx_t targetPartition,
+				host_sparse_t h_mem,
+				uint32_t* d_mem);
 };
 
 #endif

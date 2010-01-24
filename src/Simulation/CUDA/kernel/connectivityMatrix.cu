@@ -79,7 +79,7 @@ r_packSynapse(
 
 
 
-__device__
+__device__ __host__
 uint
 sourceNeuron(uint rsynapse)
 {
@@ -87,7 +87,7 @@ sourceNeuron(uint rsynapse)
 }
 
 
-__device__
+__device__ __host__
 uint
 sourcePartition(uint rsynapse)
 {
@@ -95,7 +95,7 @@ sourcePartition(uint rsynapse)
 }
 
 
-__device__
+__device__ __host__
 uint
 forwardIdx(uint rsynapse)
 {
@@ -112,7 +112,7 @@ f_synapseOffset(uint presynaptic, uint f0_pitch, uint synapseIdx)
 }
 
 
-__device__
+__device__ __host__
 uint
 r_delay1(uint rsynapse)
 {
@@ -144,6 +144,11 @@ __constant__ DEVICE_UINT_PTR_T cr1_address[MAX_THREAD_BLOCKS];
 __constant__ DEVICE_UINT_PTR_T cr0_stdp[MAX_THREAD_BLOCKS];
 __constant__ DEVICE_UINT_PTR_T cr1_stdp[MAX_THREAD_BLOCKS];
 
+/* Ditto for the forward synapse offset */
+__constant__ DEVICE_UINT_PTR_T cr0_faddress[MAX_THREAD_BLOCKS];
+__constant__ DEVICE_UINT_PTR_T cr1_faddress[MAX_THREAD_BLOCKS];
+
+
 #define SET_CR_ADDRESS_VECTOR(symbol, vec) CUDA_SAFE_CALL(\
 		cudaMemcpyToSymbol(symbol, &vec[0], vec.size() * sizeof(DEVICE_UINT_PTR_T), 0, cudaMemcpyHostToDevice)\
 	)
@@ -157,17 +162,21 @@ configureReverseAddressing(
         const std::vector<DEVICE_UINT_PTR_T>& r0_pitch,
         const std::vector<DEVICE_UINT_PTR_T>& r0_address,
         const std::vector<DEVICE_UINT_PTR_T>& r0_stdp,
+        const std::vector<DEVICE_UINT_PTR_T>& r0_faddress,
         const std::vector<DEVICE_UINT_PTR_T>& r1_pitch,
         const std::vector<DEVICE_UINT_PTR_T>& r1_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_stdp)
+        const std::vector<DEVICE_UINT_PTR_T>& r1_stdp,
+        const std::vector<DEVICE_UINT_PTR_T>& r1_faddress)
 {
 	//! \todo extend vectors and fill with NULLs
 	SET_CR_ADDRESS_VECTOR(cr0_pitch, r0_pitch);
 	SET_CR_ADDRESS_VECTOR(cr0_address, r0_address);
 	SET_CR_ADDRESS_VECTOR(cr0_stdp, r0_stdp);
+	SET_CR_ADDRESS_VECTOR(cr0_faddress, r0_faddress);
 	SET_CR_ADDRESS_VECTOR(cr1_pitch, r1_pitch);
 	SET_CR_ADDRESS_VECTOR(cr1_address, r1_address);
 	SET_CR_ADDRESS_VECTOR(cr1_stdp, r1_stdp);
+	SET_CR_ADDRESS_VECTOR(cr1_faddress, r1_faddress);
 }
 
 #endif

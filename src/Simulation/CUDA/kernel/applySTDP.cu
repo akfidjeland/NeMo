@@ -27,6 +27,7 @@ applySTDP_(
 	unsigned long long* g_cc,
 	size_t ccPitch,
 #endif
+	synapse_t* g_fcm,
 	float reward,
 	uint cmIdx,      // L0 or L1
 	float maxWeight, // for excitatory synapses
@@ -47,9 +48,15 @@ applySTDP_(
 		? cr0_pitch[CURRENT_PARTITION]
 		: cr1_pitch[CURRENT_PARTITION];
 
+#if __DEVICE_EMULATION__
 	uint32_t* gr_address = cmIdx == 0
 		? (uint32_t*) cr0_address[CURRENT_PARTITION]
 		: (uint32_t*) cr1_address[CURRENT_PARTITION];
+#endif
+
+	uint32_t* gr_faddress = cmIdx == 0
+		? (uint32_t*) cr0_faddress[CURRENT_PARTITION]
+		: (uint32_t*) cr1_faddress[CURRENT_PARTITION];
 
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
@@ -65,9 +72,13 @@ applySTDP_(
 			if(r_sidx < r_pitch) {
 
 				size_t gr_offset = target * r_pitch + r_sidx;
+				size_t gf_offset = gr_faddress[gr_offset];
+#if __DEVICE_EMULATION__
+				//! \todo remove loading of rsynapse
 				uint rsynapse = gr_address[gr_offset];
+#endif
 
-				if(rsynapse != INVALID_REVERSE_SYNAPSE) {
+				if(gf_offset != 0) {
 
 					/*! \todo try using atomicExch here instead. For m=20
 					 * atomicExch is slightly faster, but this will probably
@@ -79,15 +90,7 @@ applySTDP_(
 
 						gr_stdp[gr_offset] = 0.0f;
 
-						//! \todo load this into smem exactly once
-						fcm_ref_t fcm = getFCM(sourcePartition(rsynapse), CURRENT_PARTITION, r_delay0(rsynapse));
-
-						ASSERT(f_base(fcm) != 0x0);
-						ASSERT(forwardIdx(rsynapse) < f_pitch(fcm));
-						//! \todo share method with kernel.cu:synapesAddress2
-						size_t gf_offset = f_synapseOffset(sourceNeuron(rsynapse), f_pitch(fcm), forwardIdx(rsynapse));
-						ASSERT(gf_offset < f_size(fcm));
-						float* gf_weight = f_weights(fcm);
+						float* gf_weight = (float*) g_fcm + c_fcmPlaneSize * FCM_WEIGHT;
 
 						float w_old = gf_weight[gf_offset];
 						float w_new = 0.0f;

@@ -85,6 +85,7 @@ applyStdp_(
 			rtdata->cycleCounters->dataApplySTDP(),
 			rtdata->cycleCounters->pitchApplySTDP(),
 #endif
+			rtdata->cm()->d_fcm(),
 			reward,
 			cmIdx,
 			rtdata->stdpFn.maxWeight(),
