@@ -5,6 +5,8 @@
 
 #include <cuda_runtime.h>
 
+#include "kernel.cu_h"
+
 /* \brief Synapse encoding/decoding
  *
  * Forward synapse: target partition / target neuron
@@ -34,5 +36,15 @@ __device__ uint sourceNeuron(uint rsynapse);
 __device__ uint sourcePartition(uint rsynapse);
 __device__ uint forwardIdx(uint rsynapse);
 __device__ uint r_delay(uint rsynapse);
+
+__host__
+void
+configureReverseAddressing(
+        const std::vector<DEVICE_UINT_PTR_T>& r0_pitch,
+        const std::vector<DEVICE_UINT_PTR_T>& r0_address,
+        const std::vector<DEVICE_UINT_PTR_T>& r0_stdp,
+        const std::vector<DEVICE_UINT_PTR_T>& r1_pitch,
+        const std::vector<DEVICE_UINT_PTR_T>& r1_address,
+        const std::vector<DEVICE_UINT_PTR_T>& r1_stdp);
 
 #endif

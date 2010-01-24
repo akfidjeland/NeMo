@@ -75,11 +75,6 @@ struct ConnectivityMatrix
 
 		size_t d_allocated() const;
 
-		/* Per-partition addressing */
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch(size_t level) const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t level) const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t level) const;
-
 		delay_t maxDelay() const;
 
 		outgoing_t* outgoing() const;

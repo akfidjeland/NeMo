@@ -63,14 +63,6 @@ copyToDevice(RTDATA rtdata)
 		clearAssertions();
 		rtdata->moveToDevice();
 		configureKernel(rtdata);
-		//! \todo move to RSMatrix.cpp, considering that we need to call it twice (L0 and L1)
-        configureReverseAddressing(
-                rtdata->cm()->r_partitionPitch(0),
-                rtdata->cm()->r_partitionAddress(0),
-                rtdata->cm()->r_partitionStdp(0),
-                rtdata->cm()->r_partitionPitch(1),
-                rtdata->cm()->r_partitionAddress(1),
-                rtdata->cm()->r_partitionStdp(1));
 		rtdata->setStart();
 	}
 }

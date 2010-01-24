@@ -74,26 +74,6 @@ ConnectivityMatrix::d_allocated() const
 }
 
 
-const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrix::r_partitionPitch(size_t level) const
-{
-	return m_impl->r_partitionPitch(level);
-}
-
-
-const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrix::r_partitionAddress(size_t level) const
-{
-	return m_impl->r_partitionAddress(level);
-}
-
-
-const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrix::r_partitionStdp(size_t level) const
-{
-	return m_impl->r_partitionStdp(level);
-}
-
 
 delay_t
 ConnectivityMatrix::maxDelay() const

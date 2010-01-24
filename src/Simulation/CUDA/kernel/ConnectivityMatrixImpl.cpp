@@ -140,6 +140,14 @@ ConnectivityMatrixImpl::moveToDevice()
 		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount);
 		m_incoming.allocate(m_partitionCount, maxWarps);
 
+		configureReverseAddressing(
+				r_partitionPitch(0),
+				r_partitionAddress(0),
+				r_partitionStdp(0),
+				r_partitionPitch(1),
+				r_partitionAddress(1),
+				r_partitionStdp(1));
+
 	} catch (DeviceAllocationException& e) {
 		FILE* out = stderr;
 		fprintf(out, e.what());

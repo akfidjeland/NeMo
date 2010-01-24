@@ -83,11 +83,14 @@ class ConnectivityMatrixImpl
 
 		size_t d_allocated() const;
 
+	private:
+
 		/* Per-partition addressing */
-		//! \todo no need to return this, set directly, as done in f0_setDispatchTable
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch(size_t lvl) const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t lvl) const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t lvl) const;
+
+	public:
 
 		/*! \return pointer to device data containing outgoing spike data for
 		 * each neuron */
