@@ -40,7 +40,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps)
 	}
 	m_allocated += bpitch * height;
 
-	m_buffer = boost::shared_ptr<incoming_t>(d_buffer);
+	m_buffer = boost::shared_ptr<incoming_t>(d_buffer, cudaFree);
 
 	/* We don't need to clear the queue. It will generally be full of garbage
 	 * anyway. The queue heads must be used to determine what's valid data */

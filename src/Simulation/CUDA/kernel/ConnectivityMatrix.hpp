@@ -43,6 +43,8 @@ struct ConnectivityMatrix
 				size_t maxPartitionSize,
 				bool setReverse);
 
+		~ConnectivityMatrix();
+
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(

@@ -10,6 +10,13 @@ ConnectivityMatrix::ConnectivityMatrix(
 		maxPartitionSize, setReverse)) {}
 
 
+
+ConnectivityMatrix::~ConnectivityMatrix()
+{
+	delete m_impl;
+}
+
+
 void
 ConnectivityMatrix::setRow(
 		size_t level,
