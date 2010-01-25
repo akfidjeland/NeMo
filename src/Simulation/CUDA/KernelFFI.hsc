@@ -15,11 +15,10 @@ module Simulation.CUDA.KernelFFI (
     printCycleCounters,
     freeRT,
     CuRT,
-    CMatrixIndex,
-    cmatrixL0,
-    cmatrixL1,
+    -- CMatrixIndex,
+    -- cmatrixL0,
+    -- cmatrixL1,
     -- TODO: hide details of this, instead move c ffi code into this module
-    unCMatrixIndex,
     loadA, loadB, loadC, loadD,
     loadU, loadV,
     loadThalamicInputSigma,
@@ -54,7 +53,7 @@ import Types (Time, Delay, Weight)
 
 {- In the interface we manipulate/construct different connectivity matrices
  - using a numeric index -}
-newtype CMatrixIndex = CMatrixIndex { unCMatrixIndex :: CSize }
+newtype CMatrixIndex = CMatrixIndex CSize
 
 cmatrixL0 :: CMatrixIndex
 cmatrixL0 = CMatrixIndex #const CM_L0
@@ -132,11 +131,8 @@ deviceDiagnostics rt = do
 
 foreign import ccall unsafe "setCMDRow"
     c_setCMDRow :: Ptr CuRT
-                -> CSize        -- ^ matrix level: 0 or 1
-                -> CUInt        -- ^ source partition index
                 -> CUInt        -- ^ source neuron index
                 -> CUInt        -- ^ synapse delay
-                -> Ptr CUInt    -- ^ target partition indices
                 -> Ptr CUInt    -- ^ target neuron indices
                 -> Ptr CFloat   -- ^ synapse weights
                 -> Ptr CUChar   -- ^ per-synapse plasticity
@@ -144,14 +140,12 @@ foreign import ccall unsafe "setCMDRow"
                 -> IO ()
 
 
-setCMDRow rt wbuf pbuf nbuf spbuf level pre delay len =
+setCMDRow rt wbuf nbuf spbuf pre delay len =
     when (len > 0) $
     c_setCMDRow rt
-        (unCMatrixIndex level)
-        0
         (fromIntegral pre)
         (fromIntegral delay)
-        pbuf nbuf wbuf spbuf
+        nbuf wbuf spbuf
         (fromIntegral $! len)
 
 

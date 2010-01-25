@@ -82,6 +82,7 @@ loadThalamicInputSigma(RTDATA rt,
 //-----------------------------------------------------------------------------
 
 
+//! \todo remove this!
 #define CM_L0 0
 #define CM_L1 1
 #define CM_COUNT 2
@@ -90,11 +91,8 @@ loadThalamicInputSigma(RTDATA rt,
  * */
 void
 setCMDRow(RTDATA rtdata,
-		size_t cmIdx,
-		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
-		unsigned int* targetPartition,
 		unsigned int* targetNeuron,
 		float* weights,
 		unsigned char* isPlastic,

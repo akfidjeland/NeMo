@@ -48,11 +48,8 @@ struct ConnectivityMatrix
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(
-				size_t level,
-				uint sourcePartition,
 				uint sourceNeuron,
 				uint delay,
-				const uint* f_targetPartition,
 				const uint* f_targetNeuron,
 				const float* f_weights,
 				const uchar* f_isPlastic,

@@ -90,15 +90,8 @@ ConnectivityMatrixImpl::addSynapse(size_t lvl, pidx_t sp, nidx_t sn, delay_t del
 
 void
 ConnectivityMatrixImpl::setRow(
-		size_t level, // 0 or 1
-		//uint sourcePartition,
-		uint,
-		//uint sourceNeuron,
 		uint src,
 		uint delay,
-		//const uint* targetPartition,
-		const uint*,
-		//const uint* targetNeuron,
 		const uint* tgt,
 		const float* weights,
 		const uchar* isPlastic,
@@ -123,11 +116,10 @@ ConnectivityMatrixImpl::setRow(
 	for(size_t i=0; i<f_length; ++i) {
 		pidx_t targetPartition = partitionIdx(tgt[i]);
 		nidx_t targetNeuron = neuronIdx(tgt[i]);
+		size_t level = targetPartition == sourcePartition ? 0 : 1;
 		addSynapse(level, sourcePartition, sourceNeuron, delay,
 				targetPartition, targetNeuron, weights[i], isPlastic[i]);
-				//targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
 		m_outgoing.addSynapse(sourcePartition, sourceNeuron, delay, targetPartition);
-		//m_outgoing.addSynapse(sourcePartition, sourceNeuron, delay, targetPartition[i]);
 	}
 }
 

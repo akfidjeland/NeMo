@@ -52,12 +52,9 @@ class ConnectivityMatrixImpl
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
 		void setRow(
-				size_t level,
-				uint sourcePartition,
-				uint sourceNeuron,
+				uint sourceNeuron, // global neuron indices
 				uint delay,
-				const uint* targetPartition,
-				const uint* targetNeuron,
+				const uint* targetNeuron, // global neuron indices
 				const float* weights,
 				const uchar* plastic,
 				size_t length);

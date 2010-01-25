@@ -100,7 +100,6 @@ allJust d xs
  - row. -}
 data Outbuf = Outbuf {
         weights :: Ptr CFloat,
-        pidx    :: Ptr CUInt,
         nidx    :: Ptr CUInt,
         plasticity :: Ptr CUChar
     }
@@ -108,55 +107,41 @@ data Outbuf = Outbuf {
 
 allocOutbuf len = do
     wbuf <- mallocArray len
-    pbuf <- mallocArray len
     nbuf <- mallocArray len
     spbuf <- mallocArray len
-    return $! Outbuf wbuf pbuf nbuf spbuf
+    return $! Outbuf wbuf nbuf spbuf
 
 
 {- | Write all connectivity data to device -}
 loadCMatrix rt att net = do
     bufL0 <- allocOutbuf $ maxL0Pitch net
-    bufL1 <- allocOutbuf $ maxL1Pitch net
     forM_ (partitionAssocs net) $ \(pidx, p) -> do
         forM_ (neuronAssocs p) $ \(nidx, n) -> do
             forM_ (terminalsByDelay n) $ \(delay, ss) -> do
-                let -- isL0 :: (Idx, s) -> Bool
-                    -- TODO: force evaluation?
-                    -- TODO: return a proper data type from terminalsByDelay
-                    isL0 _ = True
-                (len0, len1) <- pokeSynapses bufL0 0 bufL1 0 att isL0 ss
+                len0 <- pokeSynapses bufL0 0 ss
                 -- TODO: don't convert to L0 or L1 here
                 -- TODO: remove redundant translation back and forth
-                setRow rt bufL0 cmatrixL0 (globalIdx att (pidx, nidx)) delay len0
+                setRow rt bufL0 (globalIdx att (pidx, nidx)) delay len0
     where
         -- TODO: just send global neuron indices here
-        setRow rt buf = setCMDRow rt (weights buf) (pidx buf) (nidx buf) (plasticity buf)
+        -- TODO: remove pidx from data type
+        setRow rt buf = setCMDRow rt (weights buf) (nidx buf) (plasticity buf)
 
 
 
 
 {- | Write a row of synapses (i.e for a single presynaptic/delay) to output
  - buffer -}
-pokeSynapses _ len0 _ len1 _ _ [] = return (len0, len1)
-pokeSynapses buf0 i0 buf1 i1  att isL0 (s:ss) = do
-    if isL0 s
-        then do
-            pokeSynapse buf0 i0 att s
-            pokeSynapses buf0 (i0+1) buf1 i1 att isL0 ss
-        else do
-            pokeSynapse buf1 i1 att s
-            pokeSynapses buf0 i0 buf1 (i1+1) att isL0 ss
+pokeSynapses _ len0 [] = return len0
+pokeSynapses buf0 i0 (s:ss) = do
+    pokeSynapse buf0 i0 s
+    pokeSynapses buf0 (i0+1) ss
 
 
 {- | Write a single synapse to output buffer -}
-pokeSynapse :: Outbuf -> Int -> ATT -> (Idx, Current, Bool, Static) -> IO ()
--- TODO: make use of plasticity here
-pokeSynapse buf i att (target, weight, plastic, _) = do
+pokeSynapse :: Outbuf -> Int ->  (Idx, Current, Bool, Static) -> IO ()
+pokeSynapse buf i (target, weight, plastic, _) = do
     pokeElemOff (weights buf) i $! realToFrac $! weight
-    let didx = deviceIdx att target
-    -- TODO: can remove setting of partition idx
-    pokeElemOff (pidx buf) i $! fromIntegral $! partitionIdx didx
     pokeElemOff (nidx buf) i $! fromIntegral $! target
     pokeElemOff (plasticity buf) i $! fromBool plastic
 

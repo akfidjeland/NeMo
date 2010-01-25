@@ -348,22 +348,16 @@ loadThalamicInputSigma(RTDATA rt,
 
 void
 setCMDRow(RTDATA rtdata,
-		size_t cmIdx,
-		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
-		unsigned int* targetPartition,
 		unsigned int* targetNeuron,
 		float* weights,
 		unsigned char* isPlastic,
 		size_t length)
 {
 	rtdata->cm()->setRow(
-		cmIdx,
-		sourcePartition,
 		sourceNeuron,
 		delay,
-		targetPartition,
 		targetNeuron,
 		weights,
 		isPlastic,

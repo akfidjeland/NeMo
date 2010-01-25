@@ -19,21 +19,16 @@ ConnectivityMatrix::~ConnectivityMatrix()
 
 void
 ConnectivityMatrix::setRow(
-		size_t level,
-		uint sourcePartition,
 		uint sourceNeuron,
 		uint delay,
-		const uint* f_targetPartition,
 		const uint* f_targetNeuron,
 		const float* f_weights,
 		const uchar* f_isPlastic,
 		size_t length)
 {
-	m_impl->setRow(level,
-		sourcePartition,
+	m_impl->setRow(
 		sourceNeuron,
 		delay,
-		f_targetPartition,
 		f_targetNeuron,
 		f_weights,
 		f_isPlastic,
