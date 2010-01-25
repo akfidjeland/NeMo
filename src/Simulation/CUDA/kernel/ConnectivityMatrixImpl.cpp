@@ -183,12 +183,6 @@ ConnectivityMatrixImpl::moveToDevice()
 			m1_rsynapses[p]->moveToDevice(m_fsynapses, p);
 		}
 
-		//! \todo remove this copy. It's no longer needed.
-		for(fcm_t::iterator i = m_fsynapses.begin();
-				i != m_fsynapses.end(); ++i) {
-			i->second.moveToDevice();
-		}
-
 		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
 		m_incoming.allocate(m_partitionCount, maxWarps);
 
@@ -216,10 +210,7 @@ void
 ConnectivityMatrixImpl::printMemoryUsage(FILE* out)
 {
 	const size_t MEGA = 1<<20;
-	fprintf(out, "forward matrix:     %6luMB (%lu groups out of max %lu)\n",
-			d_allocatedFCM() / MEGA, m_fsynapses.size(),
-			m_partitionCount*m_partitionCount*MAX_DELAY);
-	fprintf(out, "forward matrix (2): %6luMB\n",
+	fprintf(out, "forward matrix:     %6luMB\n",
 			md_allocatedFCM / MEGA);
 	fprintf(out, "reverse matrix (0): %6luMB (%lu groups)\n",
 			d_allocatedRCM0() / MEGA, m0_rsynapses.size());
@@ -293,18 +284,6 @@ ConnectivityMatrixImpl::clearStdpAccumulator()
 
 
 size_t
-ConnectivityMatrixImpl::d_allocatedFCM() const
-{
-	size_t bytes = 0;
-	for(fcm_t::const_iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
-		bytes += i->second.d_allocated();
-	}
-	return bytes;
-}
-
-
-
-size_t
 ConnectivityMatrixImpl::d_allocatedRCM0() const
 {
 	size_t bytes = 0;
@@ -334,12 +313,11 @@ size_t
 ConnectivityMatrixImpl::d_allocated() const
 {
 
-	return d_allocatedFCM()
+	return md_allocatedFCM
 		+ d_allocatedRCM0()
 		+ d_allocatedRCM1()
 		+ m_incoming.allocated()
 		+ m_outgoing.allocated();
-	//! \todo + dispatch table
 }
 
 

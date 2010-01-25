@@ -9,8 +9,6 @@
 
 
 SynapseGroup::SynapseGroup() :
-	md_bpitch(0),
-	m_allocated(0),
 	m_lastSync(-1)
 { }
 
@@ -63,18 +61,6 @@ SynapseGroup::addSynapses(
 
 
 
-size_t
-SynapseGroup::maxSynapsesPerNeuron() const
-{
-	size_t n = 0;
-	for(std::map<nidx_t, Row>::const_iterator i = mh_synapses.begin();
-			i != mh_synapses.end(); ++i) {
-		n = std::max(n, i->second.addresses.size());
-	}
-	return n;
-}
-
-
 
 /*! fill host buffer with synapse data */
 size_t
@@ -107,67 +93,6 @@ SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t
 
 
 
-boost::shared_ptr<synapse_t>
-SynapseGroup::moveToDevice()
-{
-	if(mh_synapses.empty()) {
-		return boost::shared_ptr<synapse_t>();
-	}
-
-	/* Aligning pitch to warp size should have no negative impact on memory
-	 * bandwidth, but can reduce thread divergence. On a network with 2k
-	 * neurons with 2M synapses (1.8M L0, 0.2M L1) we find a small throughput
-	 * improvement (from 61M spike deliveries per second to 63M). */
-	size_t minWordPitch = maxSynapsesPerNeuron();
-	size_t alignedWordPitch = ALIGN(minWordPitch, WARP_SIZE);
-	size_t desiredBytePitch = alignedWordPitch * sizeof(synapse_t);
-	size_t height = FCM_SUBMATRICES * MAX_PARTITION_SIZE;
-
-	synapse_t* d_data = NULL;
-
-	cudaError err = cudaMallocPitch((void**) &d_data,
-				&md_bpitch,
-				desiredBytePitch,
-				height);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("fcm synapse group",
-				height * desiredBytePitch, err);
-	}
-	m_allocated = md_bpitch * height;
-
-	/* There's no need to clear to allocated memory, as we completely fill it
-	 * below */
-
-	size_t wordPitch = md_bpitch / sizeof(synapse_t);
-	std::vector<synapse_t> h_data(wordPitch * height, 0); 
-
-	synapse_t* astart = &h_data[0] + FCM_ADDRESS * MAX_PARTITION_SIZE * wordPitch;
-	synapse_t* wstart = &h_data[0] + FCM_WEIGHT  * MAX_PARTITION_SIZE * wordPitch;
-
-	for(std::map<nidx_t, Row>::const_iterator r = mh_synapses.begin();
-			r != mh_synapses.end(); ++r) {
-
-		nidx_t sourceNeuron = r->first;
-		const Row row = r->second;
-		size_t row_idx = sourceNeuron * wordPitch;
-
-		assert(row.addresses.size() == row.weights.size());
-		assert(row.addresses.size() * sizeof(synapse_t) <= md_bpitch);
-
-		/*! note that std::copy won't work as it will silently cast floats to integers */
-		memcpy(astart + row_idx, &row.addresses[0], row.addresses.size() * sizeof(synapse_t));
-		memcpy(wstart + row_idx, &row.weights[0], row.weights.size() * sizeof(synapse_t));
-	}
-
-	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], m_allocated, cudaMemcpyHostToDevice));
-
-	mh_synapses.clear();
-	md_synapses = boost::shared_ptr<synapse_t>(d_data, cudaFree);	
-	return md_synapses;
-}
-
-
-
 size_t
 SynapseGroup::getWeights(
 		nidx_t sourceNeuron,
@@ -177,6 +102,8 @@ SynapseGroup::getWeights(
 		weight_t* weight[],
 		uchar* plastic[])
 {
+	//! \todo need to add this back, using the new FCM format
+#if 0
 	if(mf_targetPartition.find(sourceNeuron) == mf_targetPartition.end()) {
 		partition = NULL;
 		neuron = NULL;
@@ -207,38 +134,8 @@ SynapseGroup::getWeights(
 	assert(mf_targetPartition[sourceNeuron].size() <= wpitch());
 
 	return mf_targetPartition[sourceNeuron].size();
-}
-
-
-
-size_t
-SynapseGroup::planeSize() const
-{
-	return MAX_PARTITION_SIZE * md_bpitch;
-}
-
-
-
-size_t
-SynapseGroup::dataSize() const
-{
-	return FCM_SUBMATRICES * planeSize();
-}
-
-
-
-size_t
-SynapseGroup::bpitch() const
-{
-	return md_bpitch;
-}
-
-
-
-size_t
-SynapseGroup::wpitch() const
-{
-	return md_bpitch / sizeof(synapse_t);
+#endif
+	return 0;
 }
 
 

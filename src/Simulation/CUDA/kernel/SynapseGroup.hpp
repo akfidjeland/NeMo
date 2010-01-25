@@ -45,29 +45,6 @@ class SynapseGroup
 				const float weight[],
 				const uchar plastic[]);
 
-		/*! Move to device and free host data. Return pointer to device data.*/
-		boost::shared_ptr<uint32_t> moveToDevice();
-
-		/* There are two planes (one for addresses and one for weights, the
-		 * size of which can be determined based on the (fixed) partition size
-		 * and the pitch */
-		size_t planeSize() const;
-
-		/*! \return total size of data (in bytes) on the device */
-		size_t dataSize() const;
-
-		/*! \return row pitch on the device (in words) */
-		size_t wpitch() const;
-
-		/*! \return row pitch on the device (in bytes) */
-		size_t bpitch() const;
-
-		/*! \return address of synapse group on device */
-		synapse_t* d_address() const { return md_synapses.get(); }
-
-		/*! \return number of bytes allocated on device */
-		size_t d_allocated() const { return m_allocated; }
-
 		/*! Get weights for a particular neuron in the form of 3 vectors
 		 * (partition, neuron, weight).
 		 * \return
@@ -112,16 +89,6 @@ class SynapseGroup
 		/* For each presynaptic neuron we store a row containing all its
 		 * outgoing synapses */
 		std::map<nidx_t, Row> mh_synapses;
-
-		/*! On the device, the synapses are stored one row per presynaptic
-		 * neurons, with a fixed row pitch.  Any padding is at the end of the
-		 * row */
-		boost::shared_ptr<synapse_t> md_synapses;
-		size_t md_bpitch;
-
-		size_t m_allocated; // bytes on device
-
-		size_t maxSynapsesPerNeuron() const;
 
 		/* The user may want to read back the modified weight matrix. We then
 		 * need the corresponding non-compressed addresses as well. The shape

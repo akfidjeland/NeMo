@@ -164,7 +164,6 @@ class ConnectivityMatrixImpl
 		std::vector<weight_t> mf_weights;
 
 		/* Memory usage. All values in bytes */
-		size_t d_allocatedFCM() const;
 		size_t d_allocatedRCM0() const;
 		size_t d_allocatedRCM1() const;
 		void printMemoryUsage(FILE* out);
