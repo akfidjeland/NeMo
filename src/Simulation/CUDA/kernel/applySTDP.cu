@@ -5,7 +5,6 @@
 #include "cycleCounting.cu"
 #include "connectivityMatrix.cu"
 #include "util.h"
-#include "dispatchTable.cu"
 
 
 /*! Apply STDP 

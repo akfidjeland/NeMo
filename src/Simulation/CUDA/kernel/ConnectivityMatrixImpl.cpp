@@ -11,8 +11,6 @@
 #include "except.hpp"
 #include "SynapseGroup.hpp"
 #include "connectivityMatrix.cu_h"
-#include "dispatchTable.cu_h"
-#include "connectivityMatrix.cu_h"
 
 
 ConnectivityMatrixImpl::ConnectivityMatrixImpl(
@@ -190,8 +188,6 @@ ConnectivityMatrixImpl::moveToDevice()
 				i != m_fsynapses.end(); ++i) {
 			i->second.moveToDevice();
 		}
-
-		f_setDispatchTable();
 
 		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
 		m_incoming.allocate(m_partitionCount, maxWarps);
@@ -412,39 +408,4 @@ const std::vector<DEVICE_UINT_PTR_T>
 ConnectivityMatrixImpl::r_partitionFAddress(size_t lvl) const
 {
 	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::d_faddress));
-}
-
-
-
-void
-ConnectivityMatrixImpl::f_setDispatchTable()
-{
-	size_t delayCount = MAX_DELAY;
-
-	size_t xdim = m_partitionCount;
-	size_t ydim = m_partitionCount;
-	size_t zdim = delayCount;
-	size_t size = xdim * ydim * zdim;
-
-	fcm_ref_t null = fcm_packReference(0, 0);
-	std::vector<fcm_ref_t> table(size, null);
-
-	for(fcm_t::const_iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
-
-		fcm_key_t fidx = i->first;
-		const SynapseGroup& sg = i->second;
-
-		// x: delay, y : target partition, z : source partition
-		pidx_t source = boost::tuples::get<0>(fidx);
-		pidx_t target = boost::tuples::get<1>(fidx);
-		delay_t delay = boost::tuples::get<2>(fidx);
-		size_t addr = (source * m_partitionCount + target) * delayCount + (delay-1);
-
-		void* fcm_addr = sg.d_address();
-		size_t fcm_pitch = sg.wpitch();
-		table.at(addr) = fcm_packReference(fcm_addr, fcm_pitch);
-	}
-
-	cudaArray* f_dispatch = ::f_setDispatchTable(m_partitionCount, delayCount, table);
-	mf_dispatch = boost::shared_ptr<cudaArray>(f_dispatch, cudaFreeArray);
 }

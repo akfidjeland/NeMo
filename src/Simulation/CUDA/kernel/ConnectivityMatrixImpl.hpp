@@ -149,10 +149,6 @@ class ConnectivityMatrixImpl
 		/* Compact fcm on device */
 		boost::shared_ptr<synapse_t> md_fcm;
 
-		void f_setDispatchTable();
-
-		boost::shared_ptr<cudaArray> mf_dispatch;
-
 		/* For L1 delivery we need to keep track of all target partitions for
 		 * each neuron */
 		Outgoing m_outgoing;
