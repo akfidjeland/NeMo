@@ -148,8 +148,8 @@ setCMDRow rt wbuf pbuf nbuf spbuf level pre delay len =
     when (len > 0) $
     c_setCMDRow rt
         (unCMatrixIndex level)
-        (fromIntegral $! partitionIdx pre)
-        (fromIntegral $! neuronIdx pre)
+        0
+        (fromIntegral pre)
         (fromIntegral delay)
         pbuf nbuf wbuf spbuf
         (fromIntegral $! len)

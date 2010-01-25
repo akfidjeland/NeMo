@@ -91,11 +91,15 @@ ConnectivityMatrixImpl::addSynapse(size_t lvl, pidx_t sp, nidx_t sn, delay_t del
 void
 ConnectivityMatrixImpl::setRow(
 		size_t level, // 0 or 1
-		uint sourcePartition,
-		uint sourceNeuron,
+		//uint sourcePartition,
+		uint,
+		//uint sourceNeuron,
+		uint src,
 		uint delay,
-		const uint* targetPartition,
-		const uint* targetNeuron,
+		//const uint* targetPartition,
+		const uint*,
+		//const uint* targetNeuron,
+		const uint* tgt,
 		const float* weights,
 		const uchar* isPlastic,
 		size_t f_length)
@@ -105,18 +109,25 @@ ConnectivityMatrixImpl::setRow(
     if(f_length == 0)
         return;
 
+	pidx_t sourcePartition = partitionIdx(src);
 	if(sourcePartition >= m_partitionCount) {
 		ERROR("source partition index out of range");
 	}
 
+	nidx_t sourceNeuron = neuronIdx(src);
 	if(sourceNeuron >= m_maxPartitionSize) {
 		ERROR("source neuron index out of range");
 	}
 
+
 	for(size_t i=0; i<f_length; ++i) {
+		pidx_t targetPartition = partitionIdx(tgt[i]);
+		nidx_t targetNeuron = neuronIdx(tgt[i]);
 		addSynapse(level, sourcePartition, sourceNeuron, delay,
-				targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
-		m_outgoing.addSynapse(sourcePartition, sourceNeuron, delay, targetPartition[i]);
+				targetPartition, targetNeuron, weights[i], isPlastic[i]);
+				//targetPartition[i], targetNeuron[i], weights[i], isPlastic[i]);
+		m_outgoing.addSynapse(sourcePartition, sourceNeuron, delay, targetPartition);
+		//m_outgoing.addSynapse(sourcePartition, sourceNeuron, delay, targetPartition[i]);
 	}
 }
 
@@ -386,4 +397,20 @@ const std::vector<DEVICE_UINT_PTR_T>
 ConnectivityMatrixImpl::r_partitionFAddress(size_t lvl) const
 {
 	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::d_faddress));
+}
+
+
+
+nidx_t
+ConnectivityMatrixImpl::neuronIdx(nidx_t nidx)
+{
+	return nidx % m_maxPartitionSize;	
+}
+
+
+
+pidx_t
+ConnectivityMatrixImpl::partitionIdx(pidx_t pidx)
+{
+	return pidx / m_maxPartitionSize;	
 }

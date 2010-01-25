@@ -171,6 +171,12 @@ class ConnectivityMatrixImpl
 		void moveFcmToDevice();
 
 		size_t md_allocatedFCM;
+
+		/* Convert global neuron index to local neuron index */
+		nidx_t neuronIdx(nidx_t);
+
+		/* Convert global neuron index to partition index */
+		pidx_t partitionIdx(nidx_t);
 };
 
 #endif

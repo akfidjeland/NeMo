@@ -124,12 +124,13 @@ loadCMatrix rt att net = do
                 let -- isL0 :: (Idx, s) -> Bool
                     -- TODO: force evaluation?
                     -- TODO: return a proper data type from terminalsByDelay
-                    idx (i, _, _, _) = i
-                    isL0 = ((==) pidx) . partitionIdx . deviceIdx att . idx
+                    isL0 _ = True
                 (len0, len1) <- pokeSynapses bufL0 0 bufL1 0 att isL0 ss
-                setRow rt bufL0 cmatrixL0 (pidx, nidx) delay len0
-                setRow rt bufL1 cmatrixL1 (pidx, nidx) delay len1
+                -- TODO: don't convert to L0 or L1 here
+                -- TODO: remove redundant translation back and forth
+                setRow rt bufL0 cmatrixL0 (globalIdx att (pidx, nidx)) delay len0
     where
+        -- TODO: just send global neuron indices here
         setRow rt buf = setCMDRow rt (weights buf) (pidx buf) (nidx buf) (plasticity buf)
 
 
@@ -154,8 +155,9 @@ pokeSynapse :: Outbuf -> Int -> ATT -> (Idx, Current, Bool, Static) -> IO ()
 pokeSynapse buf i att (target, weight, plastic, _) = do
     pokeElemOff (weights buf) i $! realToFrac $! weight
     let didx = deviceIdx att target
+    -- TODO: can remove setting of partition idx
     pokeElemOff (pidx buf) i $! fromIntegral $! partitionIdx didx
-    pokeElemOff (nidx buf) i $! fromIntegral $! neuronIdx didx
+    pokeElemOff (nidx buf) i $! fromIntegral $! target
     pokeElemOff (plasticity buf) i $! fromBool plastic
 
 
