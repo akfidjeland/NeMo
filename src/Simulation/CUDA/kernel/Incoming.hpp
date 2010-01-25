@@ -17,8 +17,17 @@ class Incoming
 		 * \param maxIncomingWarps
 		 * 		Maximum number of incoming warps (regardless of delay) for any
 		 * 		partition,
+		 * \param sizeMultiplier
+		 * 		To be completely safe against buffer overflow, base incoming
+		 * 		buffer sizing on the assumption that all neurons may fire
+		 * 		continously for some time. This is unlikely to happen in
+		 * 		practice, however, so we can relax this. The size multiplier
+		 * 		specifies how large the buffer should be wrt the most
+		 * 		conservative case.
 		 */
-		void allocate(size_t partitionCount, size_t maxIncomingWarps);
+		void allocate(size_t partitionCount,
+				size_t maxIncomingWarps,
+				double sizeMultiplier = 1.0);
 
 		incoming_t* buffer() const { return m_buffer.get(); }
 

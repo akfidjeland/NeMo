@@ -104,14 +104,6 @@ forwardIdx(uint rsynapse)
 
 
 
-__device__
-size_t
-f_synapseOffset(uint presynaptic, uint f0_pitch, uint synapseIdx)
-{
-	return presynaptic * f0_pitch + synapseIdx;
-}
-
-
 __device__ __host__
 uint
 r_delay1(uint rsynapse)

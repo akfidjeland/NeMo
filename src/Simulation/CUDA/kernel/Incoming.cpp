@@ -9,7 +9,7 @@ Incoming::Incoming() : m_allocated(0) {}
 
 
 void
-Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps)
+Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMultiplier)
 {
 	// allocate space for the incoming count
 	uint* d_count;
@@ -29,7 +29,9 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps)
 	 * the buffer is large enough that every neuron can fire every cycle */
 	/*! \todo relax this constraint. We'll end up using a very large amount of
 	 * space when using a large number of partitions */
-	size_t width = maxIncomingWarps * sizeof(incoming_t);
+	assert(sizeMultiplier > 0.0);
+	double mult = std::min(1.0, sizeMultiplier);
+	size_t width = mult * maxIncomingWarps * sizeof(incoming_t);
 
 	incoming_t* d_buffer;
 	size_t bpitch;
