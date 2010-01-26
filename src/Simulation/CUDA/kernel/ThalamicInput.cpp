@@ -24,9 +24,19 @@ ThalamicInput::ThalamicInput(
 void
 ThalamicInput::setSigma(size_t partition, const float* arr, size_t length)
 {
-    m_inUse = true;
-    m_sigma.setPartition(partition, arr, length);
+	m_inUse = true;
+	for(size_t n = 0; n < length; ++n) {
+		setNeuronSigma(partition, n, arr[n]);
+	}
 }
+
+
+void
+ThalamicInput::setNeuronSigma(size_t partition, size_t neuron, float val)
+{
+	m_sigma.setNeuron(partition, neuron, val);
+}
+
 
 
 size_t

@@ -25,6 +25,9 @@ class ThalamicInput
 		/*! Set values of sigma for a single partition */
 		void setSigma(size_t partition, const float* arr, size_t length);
 
+		/*! Set values of sigma for a single neuron */
+		void setNeuronSigma(size_t partition, size_t neuron, float val);
+
 		/*! Move data to device and clear host-side data */
 		void moveToDevice();
 
