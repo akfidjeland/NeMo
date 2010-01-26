@@ -5,6 +5,21 @@
 
 namespace nemo {
 
+
+template<typename FP>
+struct Neuron {
+
+	Neuron(): a(0), b(0), c(0), d(0), u(0), v(0), sigma(0) {}
+
+	Neuron(FP a, FP b, FP c, FP d, FP u, FP v, FP sigma) :
+		a(a), b(b), c(c), d(d), u(u), v(v), sigma(sigma) {}
+
+	FP a, b, c, d, u, v, sigma;
+};
+
+
+
+//! \todo can probably get rid of this. Use boost::tuple instead
 struct ForwardIdx
 {
 	ForwardIdx(nidx_t source, delay_t delay) :

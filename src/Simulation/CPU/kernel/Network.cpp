@@ -112,7 +112,7 @@ Network::addNeuron(nidx_t neuronIndex,
 		//! \todo construct a sensible error message here using sstream
 		throw std::runtime_error("duplicate neuron index");
 	}
-	m_acc[neuronIndex] = Neuron(a, b, c, d, u, v, sigma);
+	m_acc[neuronIndex] = Neuron<fp_t>(a, b, c, d, u, v, sigma);
 }
 
 
@@ -138,10 +138,10 @@ Network::finalize()
 
 		allocateNeuronData(m_neuronCount);
 
-		for(std::map<nidx_t, Neuron>::const_iterator i = m_acc.begin();
+		for(std::map<nidx_t, Neuron<fp_t> >::const_iterator i = m_acc.begin();
 				i != m_acc.end(); ++i) {
 			nidx_t idx = i->first;
-			const Neuron& n = i->second;
+			const Neuron<fp_t>& n = i->second;
 			m_a.at(idx) = n.a;
 			m_b.at(idx) = n.b;
 			m_c.at(idx) = n.c;

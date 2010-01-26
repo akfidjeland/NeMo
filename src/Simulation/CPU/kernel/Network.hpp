@@ -44,17 +44,6 @@ struct Job {
 #endif
 
 
-struct Neuron {
-
-	Neuron(): a(0), b(0), c(0), d(0), u(0), v(0), sigma(0) {}
-
-	Neuron(fp_t a, fp_t b, fp_t c, fp_t d, fp_t u, fp_t v, fp_t sigma) :
-		a(a), b(b), c(c), d(d), u(u), v(v), sigma(sigma) {}
-
-	fp_t a, b, c, d, u, v, sigma;
-};
-
-
 struct Network {
 
 	public:
@@ -113,7 +102,7 @@ struct Network {
 	private:
 
 		/* The network is constructed incrementally. */
-		std::map<nidx_t, Neuron> m_acc;
+		std::map<nidx_t, Neuron<fp_t> > m_acc;
 		bool m_constructing;
 
 		/* When all neurons are added, calling finalize will move data into
