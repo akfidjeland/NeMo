@@ -3,10 +3,13 @@ dist
 cabal.mk
 
 # autotools
-./Makefile
+Makefile
 configure
 autom4te.cache
 nemo.buildinfo
 cuda.mk
 config.status
 config.log
+
+# cuda profiling
+cuda_profile.log
