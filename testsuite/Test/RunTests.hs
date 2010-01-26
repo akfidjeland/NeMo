@@ -26,7 +26,8 @@ import Test.Simulation.CUDA.Memory as Memory (tests)
 
 runQCTests = runQC
 
-regressionTests = [Smallworld.tests, Random1k.tests, Dense.tests]
+-- regressionTests = [Smallworld.tests, Random1k.tests, Dense.tests]
+regressionTests = [Smallworld.tests, Random1k.tests]
 
 -- | Run all HUnit tests
 runHUnitTests dir = runTestTT $ TestList $ [
@@ -35,7 +36,7 @@ runHUnitTests dir = runTestTT $ TestList $ [
         rtests,
 #if defined(CUDA_ENABLED)
         Mapping.tests,
-        Memory.tests,
+        -- Memory.tests,
 #endif
 #if defined(MATLAB_ENABLED)
         Matlab.tests,
