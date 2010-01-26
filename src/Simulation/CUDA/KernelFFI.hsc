@@ -17,6 +17,7 @@ module Simulation.CUDA.KernelFFI (
     freeRT,
     CuRT,
     addNeuron,
+    addSynapses,
     configureStdp,
     maxPartitionSize,
     elapsedMs,
@@ -111,6 +112,33 @@ deviceDiagnostics :: Ptr CuRT -> IO String
 deviceDiagnostics rt = do
     dmem <- c_allocatedDeviceMemory rt
     return $ "Allocated device memory: " ++ show dmem ++ "B"
+
+
+foreign import ccall unsafe "addSynapses"
+    c_addSynapses :: Ptr CuRT
+                -> CUInt        -- ^ source neuron index
+                -> Ptr CUInt    -- ^ target neuron indices
+                -> Ptr CUInt    -- ^ synapse delays
+                -> Ptr CFloat   -- ^ synapse weights
+                -> Ptr CUChar   -- ^ per-synapse plasticity
+                -> CSize        -- ^ synapses count for this neuron/delay pair
+                -> IO ()
+
+
+addSynapses :: Ptr CuRT
+        -> Int
+        -> Ptr CUInt    -- ^ target neuron indices
+        -> Ptr CUInt    -- ^ synapse delays
+        -> Ptr CFloat   -- ^ synapse weights
+        -> Ptr CUChar   -- ^ per-synapse plasticity
+        -> Int          -- ^ synapses count for this neuron/delay pair
+        -> IO ()
+addSynapses rt pre nbuf dbuf wbuf spbuf len =
+    when (len > 0) $
+    c_addSynapses rt
+        (fromIntegral pre)
+        nbuf dbuf wbuf spbuf
+        (fromIntegral $! len)
 
 
 foreign import ccall unsafe "setCMDRow"

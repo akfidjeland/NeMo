@@ -30,7 +30,6 @@ import qualified Construction.Network as Net
 import qualified Construction.Neurons as Neurons (Neurons, empty, toList)
 import qualified Construction.Neuron as N
 import Construction.Synapse
-import Simulation.STDP (plastic)
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI as Kernel (maxPartitionSize)
 import Types (Idx, Delay)

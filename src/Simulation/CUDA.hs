@@ -66,7 +66,7 @@ initSim partitionSize net dt stdpConf = do
     -- TODO: should we free this memory?
     configureKernel cuNet
     let maxProbePeriod = 1000
-    initMemory cuNet net att partitionSize maxProbePeriod dt stdpConf
+    initMemory net att partitionSize maxProbePeriod dt stdpConf
 
 
 -------------------------------------------------------------------------------

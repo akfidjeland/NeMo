@@ -17,10 +17,12 @@ import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
 import Foreign.Storable (pokeElemOff)
 
+import Construction.Axon (terminalsUnordered)
 import Construction.Neuron (terminalsByDelay, Neuron(..))
 import Construction.Network (Network, toList)
 import Construction.Izhikevich (IzhNeuron(..), stateSigma)
-import Construction.Synapse (AxonTerminal(AxonTerminal), Static(..), target)
+import Construction.Synapse (AxonTerminal(AxonTerminal), Static(..),
+    plastic, target, weight, delay)
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI
 import Simulation.CUDA.State (State(..))
@@ -34,33 +36,55 @@ import Util.List (maximumM)
 
 {- Initialise memory on a single device -}
 initMemory
-    :: CuNet IzhNeuron Static
-    -> Network IzhNeuron Static
+    :: Network IzhNeuron Static
     -> ATT
     -> Maybe Int -- ^ requested partition size
     -> Int
     -> Int
     -> StdpConf
     -> IO State
-initMemory net fullnet att reqPsize maxProbePeriod dt stdp = do
+initMemory fullnet att reqPsize maxProbePeriod dt stdp = do
     rt <- allocRT stdp reqPsize maxProbePeriod
     configureStdp rt stdp
     setNeurons rt $ toList fullnet
-    loadCMatrix rt att net
     copyToDevice rt
     return $ State (fromIntegral dt) att rt
 
 
 
 setNeurons :: Ptr CuRT -> [(Idx, Neuron IzhNeuron Static)] -> IO ()
-setNeurons rt ns = mapM_ (setOne rt) ns
+setNeurons rt ns = do
+    buf <- allocOutbuf $ 2^16
+    mapM_ (setOne rt buf) ns
     where
-        setOne rt (idx, neuron) = do
+        setOne rt buf (idx, neuron) = do
             let n = ndata neuron
                 sigma = maybe 0 id $ stateSigma n
             addNeuron rt idx
                 (paramA n) (paramB n) (paramC n) (paramD n)
                 (initU n) (initV n) sigma
+            let ss = terminalsUnordered $ axon neuron
+            len <- pokeSynapses0 buf 0 ss
+            addSynapses rt idx
+                (nidx buf) (delays buf) (weights buf) (plasticity buf) len
+
+
+{- | Write a row of synapses (i.e for a single presynaptic/delay) to output
+ - buffer -}
+pokeSynapses0 :: Outbuf -> Int -> [AxonTerminal Static] -> IO Int
+pokeSynapses0 _ len0 [] = return len0
+pokeSynapses0 buf0 i0 (s:ss) = do
+    pokeSynapse0 buf0 i0 s
+    pokeSynapses0 buf0 (i0+1) ss
+
+
+{- | Write a single synapse to output buffer -}
+pokeSynapse0 :: Outbuf -> Int -> AxonTerminal Static -> IO ()
+pokeSynapse0 buf i s = do
+    pokeElemOff (weights buf) i $! realToFrac $! weight s
+    pokeElemOff (nidx buf) i $! fromIntegral $! target s
+    pokeElemOff (plasticity buf) i $! fromBool $! plastic s
+    pokeElemOff (delays buf) i $! fromIntegral $! delay s
 
 
 
@@ -77,7 +101,8 @@ setNeurons rt ns = mapM_ (setOne rt) ns
 data Outbuf = Outbuf {
         weights :: Ptr CFloat,
         nidx    :: Ptr CUInt,
-        plasticity :: Ptr CUChar
+        plasticity :: Ptr CUChar,
+        delays :: Ptr CUInt
     }
 
 
@@ -85,7 +110,8 @@ allocOutbuf len = do
     wbuf <- mallocArray len
     nbuf <- mallocArray len
     spbuf <- mallocArray len
-    return $! Outbuf wbuf nbuf spbuf
+    dbuf <- mallocArray len
+    return $! Outbuf wbuf nbuf spbuf dbuf
 
 
 {- | Write all connectivity data to device -}

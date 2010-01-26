@@ -7,8 +7,6 @@ import Foreign.C.Types (CInt)
 import Foreign.Ptr (Ptr)
 import Simulation.CUDA.Address (ATT)
 
-import Types (Delay)
-
 
 {- Runtime data is managed on the CUDA-side in a single structure -}
 data CuRT = CuRT

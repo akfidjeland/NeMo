@@ -355,11 +355,25 @@ allocatedDeviceMemory(RTDATA rt)
 //-----------------------------------------------------------------------------
 
 
-/*! \todo If care is not taken in writing the dense matrix, the kernel might
- * end up with shared memory bank conflicts. The reason is that, unlike in
- * dense mode, thread indices can point to arbitrary postsynaptic neurons. It
- * is thus possible to have several threads within a warp accessing a
- * postsynaptic neuron in the same bank. */
+void
+addSynapses(RTDATA rtdata,
+		unsigned int source,
+		unsigned int targets[],
+		unsigned int delays[],
+		float weights[],
+		unsigned char is_plastic[],
+		size_t length)
+{
+	rtdata->cm()->setRow(
+		source,
+		targets,
+		delays,
+		weights,
+		is_plastic,
+		length);
+}
+
+
 
 void
 setCMDRow(RTDATA rtdata,
@@ -370,10 +384,11 @@ setCMDRow(RTDATA rtdata,
 		unsigned char* isPlastic,
 		size_t length)
 {
+	std::vector<unsigned int> delays(length, delay);
 	rtdata->cm()->setRow(
 		sourceNeuron,
-		delay,
 		targetNeuron,
+		&delays[0],
 		weights,
 		isPlastic,
 		length);

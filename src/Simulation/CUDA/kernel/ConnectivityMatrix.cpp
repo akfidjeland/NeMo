@@ -18,16 +18,16 @@ ConnectivityMatrix::~ConnectivityMatrix()
 void
 ConnectivityMatrix::setRow(
 		uint sourceNeuron,
-		uint delay,
 		const uint* f_targetNeuron,
+		const uint* f_delays,
 		const float* f_weights,
 		const uchar* f_isPlastic,
 		size_t length)
 {
 	m_impl->setRow(
 		sourceNeuron,
-		delay,
 		f_targetNeuron,
+		f_delays,
 		f_weights,
 		f_isPlastic,
 		length);

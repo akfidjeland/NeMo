@@ -50,8 +50,8 @@ class ConnectivityMatrixImpl
 		 * provided in forward order */
 		void setRow(
 				uint sourceNeuron, // global neuron indices
-				uint delay,
 				const uint* targetNeuron, // global neuron indices
+				const uint* delay,
 				const float* weights,
 				const uchar* plastic,
 				size_t length);

@@ -74,6 +74,17 @@ addNeuron(RTDATA,
 //-----------------------------------------------------------------------------
 
 
+//! \todo should return error status here
+void
+addSynapses(RTDATA,
+		unsigned int source,
+		unsigned int targets[],
+		unsigned int delays[],
+		float weights[],
+		unsigned char is_plastic[],
+		size_t length);
+
+
 /*! Copy connectivity data for a specific delay for a single presynaptic neuron
  * */
 void

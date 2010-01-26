@@ -48,8 +48,8 @@ struct ConnectivityMatrix
 		 * provided in forward order */
 		void setRow(
 				uint sourceNeuron,
-				uint delay,
 				const uint* f_targetNeuron,
+				const uint* f_delays,
 				const float* f_weights,
 				const uchar* f_isPlastic,
 				size_t length);

@@ -8,6 +8,7 @@ module Construction.Neuron (
     neuron,
     -- * Query
     ndata,
+    axon,
     terminals,
     terminalsUnordered,
     terminalsByDelay,
