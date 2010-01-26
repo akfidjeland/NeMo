@@ -37,17 +37,18 @@ initMemory
     :: CuNet IzhNeuron Static
     -> Network IzhNeuron Static
     -> ATT
+    -> Maybe Int -- ^ requested partition size
     -> Int
     -> Int
     -> StdpConf
     -> IO State
-initMemory net fullnet att maxProbePeriod dt stdp = do
-    (pcount, psizes, maxDelay, rt) <- allocRT net maxProbePeriod
+initMemory net fullnet att reqPsize maxProbePeriod dt stdp = do
+    rt <- allocRT stdp reqPsize maxProbePeriod
     configureStdp rt stdp
     setNeurons rt $ toList fullnet
     loadCMatrix rt att net
     copyToDevice rt
-    return $ State pcount psizes maxDelay (fromIntegral dt) att rt
+    return $ State (fromIntegral dt) att rt
 
 
 
@@ -137,9 +138,11 @@ getWeights sim = (return . Map.fromList) =<< mapM (getNWeights sim) (deviceIndic
 -- return data for a single neuron (all delays)
 getNWeights :: State -> DeviceIdx -> IO (Idx, [AxonTerminal Static])
 getNWeights sim sdidx = do
-    sgidx <- globalIdxM (att sim) sdidx
-    ss <- (return . concat) =<< mapM (getNDWeights sim sdidx) [1..maxDelay sim]
-    return $! (sgidx, ss)
+    -- TODO: fix this, without relying on knowing delays on this side of API
+    error "need to implement getNWeights"
+    -- sgidx <- globalIdxM (att sim) sdidx
+    -- ss <- (return . concat) =<< mapM (getNDWeights sim sdidx) [1..maxDelay sim]
+    -- return $! (sgidx, ss)
 
 
 -- return data for a single neuron (single delay)
@@ -159,24 +162,31 @@ getNDWeights sim source d = do
 -- Runtime data
 -------------------------------------------------------------------------------
 
-foreign import ccall unsafe "allocRuntimeData"
-    c_allocRT
-        :: CSize  -- ^ max partition size
-        -> CUInt  -- ^ set reverse matrix (bool)
-        -> CUInt  -- ^ max read period
-        -> IO (Ptr CuRT)
 
-
--- TODO: no need for pcount return
-allocRT :: CuNet n s -> Int -> IO (Int, [Int], Delay, Ptr CuRT)
-allocRT net maxProbePeriod = do
-    let pcount = partitionCount net
-        psizes = partitionSizes net
-        -- TODO: get rid of this
-        dmax   = maxNetworkDelay net
+allocRT :: StdpConf -> Maybe Int -> Int -> IO (Ptr CuRT)
+allocRT stdp reqPsize maxProbePeriod = do
+    psize <- targetPartitionSize reqPsize
     rt <- allocateRuntime
-        -- TODO: just use user-specified partition size here
-        (either error id $ maximumM psizes)
-        (usingStdp net)
+        psize
+        (stdpEnabled stdp)
         maxProbePeriod
-    return $! (pcount, psizes, dmax, rt)
+    return rt
+
+
+
+{- | The partition size the mapper should use depends on both the maximum
+ - supported by the kernel (given some configuration) and the request of the
+ - user. partitionSize determines this size and logs a message if the user
+ - request is over-ridden.  -}
+targetPartitionSize :: Maybe Int -> IO Int
+targetPartitionSize userSz = do
+    let maxSz = maxPartitionSize
+    maybe (return maxSz) (validateUserSz maxSz) userSz
+    where
+        validateUserSz maxSz userSz =
+            if userSz <= maxSz
+                then return userSz
+                else do
+                    putStrLn $ "Invalid partition size (" ++ show userSz
+                        ++ ") requested" ++ ", defaulting to " ++ show maxSz
+                    return maxSz

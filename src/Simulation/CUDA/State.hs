@@ -15,9 +15,6 @@ data CuRT = CuRT
 
 
 data State = State {
-        pcount   :: Int,
-        psize    :: [Int],          -- ^ size of each partition,
-        maxDelay :: Delay,
         dt       :: CInt,           -- ^ number of steps in neuron update
         att      :: ATT,
         rt       :: Ptr CuRT -- ^ kernel runtime data
