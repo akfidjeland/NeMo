@@ -15,10 +15,6 @@ module Simulation.CUDA.KernelFFI (
     printCycleCounters,
     freeRT,
     CuRT,
-    -- CMatrixIndex,
-    -- cmatrixL0,
-    -- cmatrixL1,
-    -- TODO: hide details of this, instead move c ffi code into this module
     loadA, loadB, loadC, loadD,
     loadU, loadV,
     loadThalamicInputSigma,
@@ -48,18 +44,6 @@ import Simulation.CUDA.State (State(..), CuRT)
 import Types (Time, Delay, Weight)
 
 #include <kernel.h>
-
-
-
-{- In the interface we manipulate/construct different connectivity matrices
- - using a numeric index -}
-newtype CMatrixIndex = CMatrixIndex CSize
-
-cmatrixL0 :: CMatrixIndex
-cmatrixL0 = CMatrixIndex #const CM_L0
-
-cmatrixL1 :: CMatrixIndex
-cmatrixL1 = CMatrixIndex #const CM_L1
 
 
 foreign import ccall unsafe "loadParam" c_loadParam

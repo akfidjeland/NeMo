@@ -114,8 +114,8 @@ applyStdp(RTDATA rtdata, float stdpReward)
 		if(stdpReward == 0.0f) {
 			rtdata->cm()->clearStdpAccumulator();
 		} else  {
-			applyStdp_(dimGrid, dimBlock, rtdata, CM_L0, stdpReward, false);
-			applyStdp_(dimGrid, dimBlock, rtdata, CM_L1, stdpReward, false);
+			applyStdp_(dimGrid, dimBlock, rtdata, 0, stdpReward, false);
+			applyStdp_(dimGrid, dimBlock, rtdata, 1, stdpReward, false);
 		}
 	}
 

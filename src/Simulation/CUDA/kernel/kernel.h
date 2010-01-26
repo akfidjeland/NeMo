@@ -82,11 +82,6 @@ loadThalamicInputSigma(RTDATA rt,
 //-----------------------------------------------------------------------------
 
 
-//! \todo remove this!
-#define CM_L0 0
-#define CM_L1 1
-#define CM_COUNT 2
-
 /*! Copy connectivity data for a specific delay for a single presynaptic neuron
  * */
 void
