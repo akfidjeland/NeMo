@@ -39,7 +39,6 @@ struct ConnectivityMatrix
 	public :
 
 		ConnectivityMatrix(
-				size_t partitionCount,
 				size_t maxPartitionSize,
 				bool setReverse);
 

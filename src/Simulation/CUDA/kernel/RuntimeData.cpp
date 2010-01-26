@@ -44,7 +44,7 @@ RuntimeData::RuntimeData(
 	//! \todo seed properly from outside function
 	thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
 
-	m_cm = new ConnectivityMatrix(partitionCount, maxPartitionSize, setReverse);
+	m_cm = new ConnectivityMatrix(maxPartitionSize, setReverse);
 
 	setPitch();
 

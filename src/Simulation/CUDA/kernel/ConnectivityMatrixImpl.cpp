@@ -14,10 +14,8 @@
 
 
 ConnectivityMatrixImpl::ConnectivityMatrixImpl(
-        size_t partitionCount,
         size_t maxPartitionSize,
 		bool setReverse) :
-    m_partitionCount(partitionCount),
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(0),
 	m_setReverse(setReverse),
@@ -103,9 +101,6 @@ ConnectivityMatrixImpl::setRow(
         return;
 
 	pidx_t sourcePartition = partitionIdx(src);
-	if(sourcePartition >= m_partitionCount) {
-		ERROR("source partition index out of range");
-	}
 
 	nidx_t sourceNeuron = neuronIdx(src);
 	if(sourceNeuron >= m_maxPartitionSize) {
@@ -175,6 +170,19 @@ ConnectivityMatrixImpl::moveFcmToDevice()
 
 
 
+pidx_t
+ConnectivityMatrixImpl::maxPartitionIdx() const
+{
+	pidx_t maxIdx = 0;
+	for(fcm_t::const_iterator i = m_fsynapses.begin();
+			i != m_fsynapses.end(); ++i) {
+		maxIdx = std::max(maxIdx, boost::get<0>(i->first));
+		maxIdx = std::max(maxIdx, boost::get<1>(i->first));
+	}
+	return maxIdx;
+}
+
+
 void
 ConnectivityMatrixImpl::moveToDevice()
 {
@@ -189,8 +197,9 @@ ConnectivityMatrixImpl::moveToDevice()
 			i->second->moveToDevice(m_fsynapses, i->first);
 		}
 
-		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
-		m_incoming.allocate(m_partitionCount, maxWarps, 0.5);
+		size_t partitionCount = maxPartitionIdx() + 1;
+		size_t maxWarps = m_outgoing.moveToDevice(partitionCount, m_fsynapses);
+		m_incoming.allocate(partitionCount, maxWarps, 0.5);
 
 		configureReverseAddressing(
 				r_partitionPitch(0),
@@ -240,6 +249,8 @@ ConnectivityMatrixImpl::getRow(
 		weight_t* weight[],
 		uchar* plastic[])
 {
+	//! \todo need to add this back!
+#if 0
 	mf_targetPartition.clear();
 	mf_targetNeuron.clear();
 	mf_weights.clear();
@@ -273,6 +284,8 @@ ConnectivityMatrixImpl::getRow(
 	*weight = &mf_weights[0];
 	*plastic = &mf_plastic[0];
 	return rowLength;
+#endif
+	return 0;
 }
 
 

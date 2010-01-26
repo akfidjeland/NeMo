@@ -3,11 +3,9 @@
 
 
 ConnectivityMatrix::ConnectivityMatrix(
-        size_t partitionCount,
         size_t maxPartitionSize,
 		bool setReverse) :
-	m_impl(new ConnectivityMatrixImpl(partitionCount,
-		maxPartitionSize, setReverse)) {}
+	m_impl(new ConnectivityMatrixImpl(maxPartitionSize, setReverse)) {}
 
 
 

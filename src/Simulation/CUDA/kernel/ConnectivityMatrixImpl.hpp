@@ -44,10 +44,7 @@ class ConnectivityMatrixImpl
 {
 	public:
 
-		ConnectivityMatrixImpl(
-				size_t partitionCount,
-				size_t maxPartitionSize,
-				bool setReverse);
+		ConnectivityMatrixImpl(size_t maxPartitionSize, bool setReverse);
 
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
@@ -120,7 +117,6 @@ class ConnectivityMatrixImpl
 				weight_t weight,
 				uchar isPlastic);
 
-		size_t m_partitionCount;
 		size_t m_maxPartitionSize;
 
 		delay_t m_maxDelay;
@@ -174,6 +170,8 @@ class ConnectivityMatrixImpl
 
 		/* Convert global neuron index to partition index */
 		pidx_t partitionIdx(nidx_t);
+
+		pidx_t maxPartitionIdx() const;
 };
 
 #endif
