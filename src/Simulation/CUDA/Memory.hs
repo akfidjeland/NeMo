@@ -9,7 +9,6 @@ module Simulation.CUDA.Memory (
 
 
 import Control.Monad (zipWithM_, forM_)
-import Data.Array.MArray (newListArray)
 import Data.Maybe (Maybe, isNothing)
 import qualified Data.Map as Map (Map, fromList, empty)
 import Foreign.C.Types
@@ -45,37 +44,11 @@ initMemory
 initMemory net fullnet att maxProbePeriod dt stdp = do
     (pcount, psizes, maxDelay, rt) <- allocRT net maxProbePeriod
     configureStdp rt stdp
-    loadAllNeurons rt net
     setNeurons rt $ toList fullnet
     loadCMatrix rt att net
     copyToDevice rt
     return $ State pcount psizes maxDelay (fromIntegral dt) att rt
 
-
-loadPartitionNeurons
-    :: Ptr CuRT
-    -> CSize
-    -> CuPartition IzhNeuron Static
-    -> IO ()
-loadPartitionNeurons rt pidx partition = do
-    forPartition loadA $ listOf paramA
-    forPartition loadB $ listOf paramB
-    forPartition loadC $ listOf paramC
-    forPartition loadD $ listOf paramD
-    forPartition loadU $ listOf initU
-    forPartition loadV $ listOf initV
-    where
-        listOf f = map f ns
-        forPartition load xs = do
-            arr <- newListArray (0, len-1) $ map realToFrac xs
-            load rt pidx len arr
-        ns = neurons partition
-        -- TODO: just read the partition size
-        len = length ns
-
-
-loadAllNeurons :: Ptr CuRT -> CuNet IzhNeuron Static -> IO ()
-loadAllNeurons rt net = zipWithM_ (loadPartitionNeurons rt) [0..] $ partitions net
 
 
 setNeurons :: Ptr CuRT -> [(Idx, Neuron IzhNeuron Static)] -> IO ()
@@ -88,17 +61,6 @@ setNeurons rt ns = mapM_ (setOne rt) ns
                 (paramA n) (paramB n) (paramC n) (paramD n)
                 (initU n) (initV n) sigma
 
-
-
-{- | Return just a list with Nothing replaced by default value. If all are
- - nothing, return Nothing -}
-allJust :: a -> [Maybe a] -> Maybe [a]
-allJust d xs
-    | all isNothing xs = Nothing
-    | otherwise = Just $ map toDefault xs
-    where
-        toDefault Nothing = d
-        toDefault (Just x) = x
 
 
 -------------------------------------------------------------------------------

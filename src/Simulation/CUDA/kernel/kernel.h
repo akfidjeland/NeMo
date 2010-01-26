@@ -60,13 +60,6 @@ void freeRuntimeData(RTDATA);
 // LOADING NEURON DATA
 //-----------------------------------------------------------------------------
 
-void 
-loadParam(RTDATA rt,
-		size_t paramIdx,
-		size_t partitionIdx,
-		size_t partitionSize,
-		float* arr);
-
 
 //! \todo should return error status here
 void

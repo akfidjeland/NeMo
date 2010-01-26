@@ -16,8 +16,6 @@ module Simulation.CUDA.KernelFFI (
     freeRT,
     CuRT,
     addNeuron,
-    loadA, loadB, loadC, loadD,
-    loadU, loadV,
     configureStdp,
     maxPartitionSize,
     elapsedMs,
@@ -44,29 +42,6 @@ import Simulation.CUDA.State (State(..), CuRT)
 import Types (Time, Delay, Weight)
 
 #include <kernel.h>
-
-
-foreign import ccall unsafe "loadParam" c_loadParam
-    :: Ptr CuRT
-    -> CSize      -- ^ parameter vector index
-    -> CSize      -- ^ partition index
-    -> CSize      -- ^ partition size
-    -> Ptr CFloat -- ^ data vector
-    -> IO ()
-
-
-loadParam :: CSize -> Ptr CuRT -> CSize -> Int -> StorableArray i CFloat -> IO ()
-loadParam nvecIdx rt pidx len arr = do
-    withStorableArray arr $ \ptr -> do
-    c_loadParam rt nvecIdx pidx (fromIntegral len) ptr
-
-
-loadA = loadParam #const PARAM_A
-loadB = loadParam #const PARAM_B
-loadC = loadParam #const PARAM_C
-loadD = loadParam #const PARAM_D
-loadU = loadParam #const STATE_U
-loadV = loadParam #const STATE_V
 
 
 foreign import ccall unsafe "addNeuron" c_addNeuron

@@ -320,17 +320,6 @@ freeRuntimeData(RTDATA mem)
 }
 
 
-void
-loadParam(RTDATA rt,
-        size_t paramIdx,
-        size_t partitionIdx,
-        size_t partitionSize,
-        float* arr)
-{
-	//! \todo remove the whole method
-	return;
-}
-
 
 void
 RuntimeData::addNeuron(
