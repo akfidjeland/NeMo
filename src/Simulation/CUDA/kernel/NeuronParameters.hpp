@@ -24,6 +24,14 @@ class NeuronParameters
 
 		float* deviceData() { return md_arr.get(); }
 
+		/*! \return number of bytes allocated on the device */
+		size_t d_allocated() const { return m_allocated; }
+
+		/*! \return number of /words/ in each plane, i.e. for parameter vector */
+		size_t d_vectorLength() const { return m_veclen; }
+
+		size_t wordPitch() const { return m_wpitch; }
+
 	private:
 
 		size_t m_partitionSize;
@@ -36,6 +44,11 @@ class NeuronParameters
 
 		nidx_t maxNeuronIdx() const;
 		size_t partitionCount() const;
+
+		size_t m_allocated;
+
+		size_t m_wpitch;
+		size_t m_veclen;
 };
 
 #endif

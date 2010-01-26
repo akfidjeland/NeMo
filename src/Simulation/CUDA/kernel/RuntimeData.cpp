@@ -39,8 +39,6 @@ RuntimeData::RuntimeData(
 	int device;
 	cudaGetDevice(&device);
 	cudaGetDeviceProperties(&m_deviceProperties, device);
-
-	neuronParameters = new NVector<float>(partitionCount, maxPartitionSize, true, NVEC_COUNT);
 }
 
 
@@ -49,7 +47,6 @@ RuntimeData::~RuntimeData()
 {
 	if(firingOutput) delete firingOutput;
 	if(recentFiring) delete recentFiring;
-	delete neuronParameters;
 	if(firingStimulus) delete firingStimulus;
 	if(thalamicInput) delete thalamicInput;
 	if(cycleCounters) delete cycleCounters;
@@ -80,10 +77,8 @@ void
 RuntimeData::moveToDevice()
 {
 	if(m_deviceDirty) {
-		neuronParameters->moveToDevice();
 		m_cm->moveToDevice();
 		m_neurons->moveToDevice();
-		//! \todo set thalamic based on this
 		if(stdpFn.enabled()) {
 			configureStdp(stdpFn.preFireWindow(),
 					stdpFn.postFireWindow(),
@@ -113,6 +108,15 @@ float*
 RuntimeData::d_neurons() const
 {
 	return m_neurons->deviceData();
+}
+
+
+
+size_t
+RuntimeData::neuronVectorLength() const
+{
+	assert(m_neurons);
+	return m_neurons->d_vectorLength();
 }
 
 
@@ -215,7 +219,7 @@ RuntimeData::d_allocated() const
 	size_t total = 0;
 	total += firingStimulus   ? firingStimulus->d_allocated()   : 0;
 	total += recentFiring     ? recentFiring->d_allocated()     : 0;
-	total += neuronParameters ? neuronParameters->d_allocated() : 0;
+	total += m_neurons        ? m_neurons->d_allocated() : 0;
 	total += firingOutput     ? firingOutput->d_allocated()     : 0;
 	total += thalamicInput    ? thalamicInput->d_allocated()    : 0;
 	total += m_cm             ? m_cm->d_allocated()             : 0;
@@ -229,7 +233,7 @@ void
 RuntimeData::setPitch()
 {
 	m_pitch1 = firingStimulus->wordPitch();
-	m_pitch32 = neuronParameters->wordPitch();
+	m_pitch32 = m_neurons->wordPitch();
 	m_pitch64 = recentFiring->wordPitch();
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, thalamicInput->wordPitch());
@@ -323,7 +327,8 @@ loadParam(RTDATA rt,
         size_t partitionSize,
         float* arr)
 {
-	rt->neuronParameters->setPartition(partitionIdx, arr, partitionSize, paramIdx);
+	//! \todo remove the whole method
+	return;
 }
 
 

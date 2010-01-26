@@ -37,11 +37,11 @@ struct RuntimeData
 
 	float* d_neurons() const;
 
+	size_t neuronVectorLength() const;
+
 	void addNeuron(unsigned int idx,
 			float a, float b, float c, float d,
 			float u, float v, float sigma);
-
-	NVector<float>* neuronParameters;
 
 	/* Densely packed, one bit per neuron */
 	NVector<uint32_t>* firingStimulus;
@@ -93,7 +93,6 @@ struct RuntimeData
 
 		class nemo::STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
-
 	private :
 
 		class NeuronParameters* m_neurons;

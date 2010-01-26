@@ -10,7 +10,10 @@
 
 
 NeuronParameters::NeuronParameters(size_t partitionSize) :
-	m_partitionSize(partitionSize)
+	m_partitionSize(partitionSize),
+	m_allocated(0),
+	m_wpitch(0),
+	m_veclen(0)
 { }
 
 
@@ -78,34 +81,35 @@ NeuronParameters::moveToDevice()
 	if(cudaSuccess != err) {
 		throw DeviceAllocationException("neuron parameters", width * height, err);
 	}
-	size_t wpitch = bpitch / sizeof(float);
+	m_wpitch = bpitch / sizeof(float);
+	m_veclen = pcount * m_wpitch;
 	md_arr = boost::shared_ptr<float>(d_arr, cudaFree);
+	m_allocated = height * bpitch;
 
 	/* Set all space including padding to fixed value. This is important as
 	 * some warps may read beyond the end of these arrays. */
 	CUDA_SAFE_CALL(cudaMemset2D(d_arr, bpitch, 0x0, bpitch, height));
 
 	// create host buffer
-	std::vector<float> h_arr(height * wpitch, 0);
+	std::vector<float> h_arr(height * m_wpitch, 0);
 
 	// copy data from m_acc to buffer
-	size_t planeSize = pcount * wpitch;
 	for(acc_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
 		/*! \todo need to make sure that we use the same mapping here and in
 		 * FCM construction. Perhaps wrap this whole thing in a (very simple)
 		 * mapper class */
 		nidx_t n_idx = i->first % m_partitionSize;
 		pidx_t p_idx = i->first / m_partitionSize;
-		size_t addr = p_idx * wpitch + n_idx; // address within a plane
+		size_t addr = p_idx * m_wpitch + n_idx; // address within a plane
 
 		const neuron_t& n = i->second;
 
-		h_arr[PARAM_A * planeSize + addr] = n.a;
-		h_arr[PARAM_B * planeSize + addr] = n.b;
-		h_arr[PARAM_C * planeSize + addr] = n.c;
-		h_arr[PARAM_D * planeSize + addr] = n.d;
-		h_arr[STATE_U * planeSize + addr] = n.u;
-		h_arr[STATE_V * planeSize + addr] = n.v;
+		h_arr[PARAM_A * m_veclen + addr] = n.a;
+		h_arr[PARAM_B * m_veclen + addr] = n.b;
+		h_arr[PARAM_C * m_veclen + addr] = n.c;
+		h_arr[PARAM_D * m_veclen + addr] = n.d;
+		h_arr[STATE_U * m_veclen + addr] = n.u;
+		h_arr[STATE_V * m_veclen + addr] = n.v;
 	}
 
 	// copy data across

@@ -43,7 +43,6 @@ void
 ThalamicInput::moveToDevice()
 {
     if(m_inUse) {
-        fprintf(stderr, "Copying thalamic input to device\n");
         initRngState();
         m_rngState.moveToDevice();
         m_sigma.moveToDevice();
