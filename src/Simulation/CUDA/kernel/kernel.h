@@ -76,14 +76,6 @@ addNeuron(RTDATA,
 		float u, float v, float sigma);
 
 
-//! \todo could merge this with loadParam
-void
-loadThalamicInputSigma(RTDATA rt,
-		size_t partitionIdx,
-		size_t partitionSize,
-		float* arr);
-
-
 
 //-----------------------------------------------------------------------------
 // LOADING SYNAPSE DATA

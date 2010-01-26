@@ -95,7 +95,7 @@ RuntimeData::moveToDevice()
 		recentFiring = new NVector<uint64_t>(partitionCount, maxPartitionSize, false, 2);
 		//! \todo seed properly from outside function
 		thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
-		//! \todo combine these two
+		m_neurons->setSigma(*thalamicInput);
 		thalamicInput->moveToDevice();
 		cycleCounters = new CycleCounters(partitionCount, m_deviceProperties.clockRate);
 		firingStimulus = new NVector<uint32_t>(
@@ -353,20 +353,6 @@ allocatedDeviceMemory(RTDATA rt)
 	return rt->d_allocated();
 }
 
-
-//-----------------------------------------------------------------------------
-// Thalamic input
-//-----------------------------------------------------------------------------
-
-
-void
-loadThalamicInputSigma(RTDATA rt,
-		size_t partitionIdx,
-		size_t partitionSize,
-		float* arr)
-{
-	rt->thalamicInput->setSigma(partitionIdx, arr, partitionSize);
-}
 
 
 //-----------------------------------------------------------------------------

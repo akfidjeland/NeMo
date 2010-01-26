@@ -18,7 +18,6 @@ module Simulation.CUDA.KernelFFI (
     addNeuron,
     loadA, loadB, loadC, loadD,
     loadU, loadV,
-    loadThalamicInputSigma,
     configureStdp,
     maxPartitionSize,
     elapsedMs,
@@ -90,21 +89,6 @@ addNeuron rt nidx a b c d u v sigma =
     c_addNeuron rt (fromIntegral nidx) (f a) (f b) (f c) (f d) (f u) (f v) (f sigma)
     where
         f = realToFrac
-
-
--- TODO: remove this: it's no longer needed
-foreign import ccall unsafe "loadThalamicInputSigma" c_loadThalamicInputSigma
-    :: Ptr CuRT
-    -> CSize      -- ^ partition index
-    -> CSize      -- ^ partition size
-    -> Ptr CFloat -- ^ data vector
-    -> IO ()
-
-
-loadThalamicInputSigma :: Ptr CuRT -> CSize -> Int -> StorableArray i CFloat -> IO ()
-loadThalamicInputSigma rt pidx len arr = do
-    withStorableArray arr $ \ptr -> do
-    c_loadThalamicInputSigma rt pidx (fromIntegral len) ptr
 
 
 -- free the device, clear all memory in Sim

@@ -64,8 +64,6 @@ loadPartitionNeurons rt pidx partition = do
     forPartition loadD $ listOf paramD
     forPartition loadU $ listOf initU
     forPartition loadV $ listOf initV
-    let sigma = allJust 0 $ listOf stateSigma
-    maybe (return ()) (forPartition loadThalamicInputSigma) sigma
     where
         listOf f = map f ns
         forPartition load xs = do
