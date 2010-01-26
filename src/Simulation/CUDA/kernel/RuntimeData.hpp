@@ -108,6 +108,8 @@ struct RuntimeData
 
 		nemo::Timer m_timer;
 
+		unsigned int m_maxReadPeriod;
+
 		// no need for getters for a single use
 		friend void configureDevice(RuntimeData*);
 };

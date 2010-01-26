@@ -20,47 +20,37 @@ RuntimeData::RuntimeData(
 		size_t maxPartitionSize,
 		bool setReverse,
 		unsigned int maxReadPeriod) :
+	firingOutput(NULL),
+	recentFiring(NULL),
+	firingStimulus(NULL),
+	thalamicInput(NULL),
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
-	m_cm(NULL),
+	cycleCounters(NULL),
+	m_cm(new ConnectivityMatrix(maxPartitionSize, setReverse)),
 	m_pitch32(0),
 	m_pitch64(0),
-	m_deviceDirty(true)
+	m_deviceDirty(true),
+	m_maxReadPeriod(maxReadPeriod)
 {
+
 	int device;
 	cudaGetDevice(&device);
 	cudaGetDeviceProperties(&m_deviceProperties, device);
 
-	firingOutput = new FiringOutput(partitionCount, maxPartitionSize, maxReadPeriod);
-
-	recentFiring = new NVector<uint64_t>(partitionCount, maxPartitionSize, false, 2);
 	neuronParameters = new NVector<float>(partitionCount, maxPartitionSize, true, NVEC_COUNT);
-
-	firingStimulus = new NVector<uint32_t>(
-			partitionCount,
-			DIV_CEIL(maxPartitionSize, 32),
-			false);
-
-	//! \todo seed properly from outside function
-	thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
-
-	m_cm = new ConnectivityMatrix(maxPartitionSize, setReverse);
-
-	setPitch();
-
-	cycleCounters = new CycleCounters(partitionCount, m_deviceProperties.clockRate);
 }
 
 
 
 RuntimeData::~RuntimeData()
 {
-	delete firingOutput;
-	delete recentFiring;
+	if(firingOutput) delete firingOutput;
+	if(recentFiring) delete recentFiring;
 	delete neuronParameters;
-	delete firingStimulus;
-	delete thalamicInput;
-	delete cycleCounters;
+	if(firingStimulus) delete firingStimulus;
+	if(thalamicInput) delete thalamicInput;
+	if(cycleCounters) delete cycleCounters;
 	delete m_cm;
 }
 
@@ -89,7 +79,6 @@ RuntimeData::moveToDevice()
 	if(m_deviceDirty) {
 		neuronParameters->moveToDevice();
 		m_cm->moveToDevice();
-		thalamicInput->moveToDevice();
 		if(stdpFn.enabled()) {
 			configureStdp(stdpFn.preFireWindow(),
 					stdpFn.postFireWindow(),
@@ -97,6 +86,19 @@ RuntimeData::moveToDevice()
 					stdpFn.depressionBits(),
 					const_cast<float*>(&stdpFn.function()[0]));
 		}
+		firingOutput = new FiringOutput(partitionCount, maxPartitionSize, m_maxReadPeriod);
+		recentFiring = new NVector<uint64_t>(partitionCount, maxPartitionSize, false, 2);
+		//! \todo seed properly from outside function
+		thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
+		//! \todo combine these two
+		thalamicInput->moveToDevice();
+		cycleCounters = new CycleCounters(partitionCount, m_deviceProperties.clockRate);
+		firingStimulus = new NVector<uint32_t>(
+				partitionCount,
+				DIV_CEIL(maxPartitionSize, 32),
+				false);
+
+		setPitch();
 	    m_deviceDirty = false;
 	}
 }
