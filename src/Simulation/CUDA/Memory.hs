@@ -114,7 +114,9 @@ allocOutbuf len = do
 
 {- | Write all connectivity data to device -}
 loadCMatrix rt att net = do
-    bufL0 <- allocOutbuf $ maxL0Pitch net
+    -- TODO: what we really want here is a dynamically resized bit of memory
+    -- which we allocate only once.
+    bufL0 <- allocOutbuf $ 2^16
     forM_ (partitionAssocs net) $ \(pidx, p) -> do
         forM_ (neuronAssocs p) $ \(nidx, n) -> do
             forM_ (terminalsByDelay n) $ \(delay, ss) -> do
