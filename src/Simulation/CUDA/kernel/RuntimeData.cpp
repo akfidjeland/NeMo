@@ -144,21 +144,14 @@ RuntimeData::cm() const
  * 
  * \param count
  *		Number of neurons whose firing should be forced
- * \param cidx
- * 		Cluster indices of neurons whose firing should be forced
  * \param nidx
- * 		Neuron indices (within cluster) of neurons whose firing should be forced
- * \param mem
- *		Data structure containing device and host buffers
+ * 		Neuron indices of neurons whose firing should be forced
  *
  * \return 
  *		Pointer to pass to kernel (which is NULL if there's no firing data).
  */
 uint32_t*
-RuntimeData::setFiringStimulus(
-		size_t count,
-		const int* pidx,
-		const int* nidx)
+RuntimeData::setFiringStimulus(size_t count, const int* nidx)
 {
 	if(count == 0) 
 		return NULL;
@@ -168,8 +161,9 @@ RuntimeData::setFiringStimulus(
 	std::vector<uint32_t> hostArray(firingStimulus->size(), 0);
 
 	for(size_t i=0; i < count; ++i){
-		size_t nn = nidx[i];
-		size_t pn = pidx[i];
+		//! \todo share this translation with NeuronParameters and CMImpl
+		size_t nn = nidx[i] % maxPartitionSize;
+		size_t pn = nidx[i] / maxPartitionSize;
 		//! \todo should check the size of this particular partition
 		assert(nn < maxPartitionSize );
 		assert(pn < m_partitionCount);

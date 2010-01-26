@@ -207,7 +207,6 @@ step(RTDATA rtdata,
 		int substeps,               // number of substeps per normal 1ms step
 		// External firing (sparse)
 		size_t extFiringCount,
-		const int* extFiringCIdx,   // cluster indices
 		const int* extFiringNIdx);  // neuron indices
 
 

@@ -62,11 +62,7 @@ struct RuntimeData
 			const int* nidx,
 			const float* current);
 
-	uint32_t*
-		setFiringStimulus(
-				size_t count,
-				const int* pidx,
-				const int* nidx);
+	uint32_t* setFiringStimulus(size_t count, const int* nidx);
 
 	struct CycleCounters* cycleCounters;
 

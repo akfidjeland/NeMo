@@ -134,7 +134,6 @@ step(RTDATA rtdata,
 		int substeps,
 		// External firing (sparse)
 		size_t extFiringCount,
-		const int* extFiringCIdx, 
 		const int* extFiringNIdx)
 {
 	rtdata->step();
@@ -149,7 +148,7 @@ step(RTDATA rtdata,
 	scycle += 1;
 
 	uint32_t* d_extFiring = 
-		rtdata->setFiringStimulus(extFiringCount, extFiringCIdx, extFiringNIdx);
+		rtdata->setFiringStimulus(extFiringCount, extFiringNIdx);
 
 	uint32_t* d_fout = rtdata->firingOutput->step();
 

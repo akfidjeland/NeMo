@@ -225,7 +225,6 @@ foreign import ccall safe "step"
            -> CInt      -- ^ Sub-ms update steps
            -- External firing stimulus
            -> CSize     -- ^ Number of neurons whose firing is forced this step
-           -> Ptr CInt  -- ^ Partition indices of neurons with forced firing
            -> Ptr CInt  -- ^ Neuron indices of neurons with forced firing
            -> IO CInt   -- ^ Kernel status
 
@@ -238,12 +237,9 @@ foreign import ccall unsafe "flushFiringBuffer"
 stepBuffering sim fstim = do
     let flen = length fstim
         fbounds = (0, flen-1)
-    fstim <- forM fstim $ rethrow "firing stimulus" $ deviceIdxM (att sim)
-    fsPIdxArr <- newListArray fbounds (map (fromIntegral . partitionIdx) fstim)
-    fsNIdxArr <- newListArray fbounds (map (fromIntegral . neuronIdx) fstim)
-    withStorableArray fsPIdxArr  $ \fsPIdxPtr -> do
+    fsNIdxArr <- newListArray fbounds $ map fromIntegral fstim
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
-    kernelStatus <- c_step (rt sim) (dt sim) (fromIntegral flen) fsPIdxPtr fsNIdxPtr
+    kernelStatus <- c_step (rt sim) (dt sim) (fromIntegral flen) fsNIdxPtr
     when (kernelStatus /= 0) $ fail "Backend error"
     where
         {- Run possibly failing computation, and propagate any errors with
