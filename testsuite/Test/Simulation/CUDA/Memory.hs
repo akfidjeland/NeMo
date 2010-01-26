@@ -36,7 +36,7 @@ testWeightQuery = TestCase $ do
         ns = weightMatrix $ withWeights viaCFloat $ networkNeurons net
         ((cuNet, att), _) = runWriter $ mapNetwork net stdp psize
         nsteps = 1000 -- irrelevant for this test
-    sim  <- initMemory cuNet att nsteps 4 (defaults stdpOptions)
+    sim  <- initMemory cuNet net att nsteps 4 (defaults stdpOptions)
     {- When initialising memory, the device may not be involved yet -}
     copyToDevice (rt sim)
     ns' <- getWeights sim

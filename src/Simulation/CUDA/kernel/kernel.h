@@ -68,6 +68,14 @@ loadParam(RTDATA rt,
 		float* arr);
 
 
+//! \todo should return error status here
+void
+addNeuron(RTDATA,
+		unsigned int idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma);
+
+
 //! \todo could merge this with loadParam
 void
 loadThalamicInputSigma(RTDATA rt,

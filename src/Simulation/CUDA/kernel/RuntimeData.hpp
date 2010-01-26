@@ -35,6 +35,12 @@ struct RuntimeData
 
 	NVector<uint64_t>* recentFiring;
 
+	float* d_neurons() const;
+
+	void addNeuron(unsigned int idx,
+			float a, float b, float c, float d,
+			float u, float v, float sigma);
+
 	NVector<float>* neuronParameters;
 
 	/* Densely packed, one bit per neuron */
@@ -90,6 +96,7 @@ struct RuntimeData
 
 	private :
 
+		class NeuronParameters* m_neurons;
 
 		uint32_t m_cycle;
 

@@ -18,7 +18,8 @@ import Foreign.Marshal.Utils (fromBool)
 import Foreign.Ptr
 import Foreign.Storable (pokeElemOff)
 
-import Construction.Neuron (terminalsByDelay)
+import Construction.Neuron (terminalsByDelay, Neuron(..))
+import Construction.Network (Network, toList)
 import Construction.Izhikevich (IzhNeuron(..), stateSigma)
 import Construction.Synapse (AxonTerminal(AxonTerminal), Static(..), target)
 import Simulation.CUDA.Address
@@ -35,15 +36,17 @@ import Util.List (maximumM)
 {- Initialise memory on a single device -}
 initMemory
     :: CuNet IzhNeuron Static
+    -> Network IzhNeuron Static
     -> ATT
     -> Int
     -> Int
     -> StdpConf
     -> IO State
-initMemory net att maxProbePeriod dt stdp = do
+initMemory net fullnet att maxProbePeriod dt stdp = do
     (pcount, psizes, maxDelay, rt) <- allocRT net maxProbePeriod
     configureStdp rt stdp
     loadAllNeurons rt net
+    setNeurons rt $ toList fullnet
     loadCMatrix rt att net
     copyToDevice rt
     return $ State pcount psizes maxDelay (fromIntegral dt) att rt
@@ -75,6 +78,18 @@ loadPartitionNeurons rt pidx partition = do
 
 loadAllNeurons :: Ptr CuRT -> CuNet IzhNeuron Static -> IO ()
 loadAllNeurons rt net = zipWithM_ (loadPartitionNeurons rt) [0..] $ partitions net
+
+
+setNeurons :: Ptr CuRT -> [(Idx, Neuron IzhNeuron Static)] -> IO ()
+setNeurons rt ns = mapM_ (setOne rt) ns
+    where
+        setOne rt (idx, neuron) = do
+            let n = ndata neuron
+                sigma = maybe 0 id $ stateSigma n
+            addNeuron rt idx
+                (paramA n) (paramB n) (paramC n) (paramD n)
+                (initU n) (initV n) sigma
+
 
 
 {- | Return just a list with Nothing replaced by default value. If all are

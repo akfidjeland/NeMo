@@ -24,6 +24,7 @@ CC_SRC = FiringOutput.cpp \
 		 time.cpp \
 		 CycleCounters.cpp \
 		 ThalamicInput.cpp \
+		 NeuronParameters.cpp \
 		 RSMatrix.cpp \
 		 SynapseGroup.cpp \
 		 Outgoing.cpp \

@@ -6,6 +6,7 @@ extern "C" {
 #include "FiringOutput.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
+#include "NeuronParameters.hpp"
 #include "ThalamicInput.hpp"
 #include "util.h"
 #include "log.hpp"
@@ -27,6 +28,7 @@ RuntimeData::RuntimeData(
 	maxPartitionSize(maxPartitionSize),
 	partitionCount(partitionCount),
 	cycleCounters(NULL),
+	m_neurons(new NeuronParameters(maxPartitionSize)),
 	m_cm(new ConnectivityMatrix(maxPartitionSize, setReverse)),
 	m_pitch32(0),
 	m_pitch64(0),
@@ -52,6 +54,7 @@ RuntimeData::~RuntimeData()
 	if(thalamicInput) delete thalamicInput;
 	if(cycleCounters) delete cycleCounters;
 	delete m_cm;
+	delete m_neurons;
 }
 
 
@@ -79,6 +82,8 @@ RuntimeData::moveToDevice()
 	if(m_deviceDirty) {
 		neuronParameters->moveToDevice();
 		m_cm->moveToDevice();
+		m_neurons->moveToDevice();
+		//! \todo set thalamic based on this
 		if(stdpFn.enabled()) {
 			configureStdp(stdpFn.preFireWindow(),
 					stdpFn.postFireWindow(),
@@ -101,6 +106,13 @@ RuntimeData::moveToDevice()
 		setPitch();
 	    m_deviceDirty = false;
 	}
+}
+
+
+float*
+RuntimeData::d_neurons() const
+{
+	return m_neurons->deviceData();
 }
 
 
@@ -312,6 +324,26 @@ loadParam(RTDATA rt,
         float* arr)
 {
 	rt->neuronParameters->setPartition(partitionIdx, arr, partitionSize, paramIdx);
+}
+
+
+void
+RuntimeData::addNeuron(
+		unsigned int idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	m_neurons->addNeuron(idx, a, b, c, d, u, v, sigma);
+}
+
+
+void
+addNeuron(RTDATA rt,
+		unsigned int idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	rt->addNeuron(idx, a, b, c, d, u, v, sigma);
 }
 
 

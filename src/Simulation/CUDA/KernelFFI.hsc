@@ -15,6 +15,7 @@ module Simulation.CUDA.KernelFFI (
     printCycleCounters,
     freeRT,
     CuRT,
+    addNeuron,
     loadA, loadB, loadC, loadD,
     loadU, loadV,
     loadThalamicInputSigma,
@@ -69,6 +70,29 @@ loadU = loadParam #const STATE_U
 loadV = loadParam #const STATE_V
 
 
+foreign import ccall unsafe "addNeuron" c_addNeuron
+    :: Ptr CuRT
+    -> CUInt   -- ^ global neuron index
+    -> CFloat  -- ^ a
+    -> CFloat  -- ^ b
+    -> CFloat  -- ^ c
+    -> CFloat  -- ^ d
+    -> CFloat  -- ^ u
+    -> CFloat  -- ^ v
+    -> CFloat  -- ^ sigma
+    -> IO ()
+
+
+addNeuron :: Ptr CuRT -> Int
+    -> Double -> Double -> Double -> Double
+    -> Double -> Double -> Double -> IO ()
+addNeuron rt nidx a b c d u v sigma =
+    c_addNeuron rt (fromIntegral nidx) (f a) (f b) (f c) (f d) (f u) (f v) (f sigma)
+    where
+        f = realToFrac
+
+
+-- TODO: remove this: it's no longer needed
 foreign import ccall unsafe "loadThalamicInputSigma" c_loadThalamicInputSigma
     :: Ptr CuRT
     -> CSize      -- ^ partition index
