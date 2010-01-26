@@ -48,7 +48,6 @@ typedef struct RuntimeData* RTDATA;
  */
 RTDATA
 allocRuntimeData(
-		size_t partitionCount,
 		size_t maxPartitionSize,
 		unsigned int setReverse,
 		unsigned int maxReadPeriod);

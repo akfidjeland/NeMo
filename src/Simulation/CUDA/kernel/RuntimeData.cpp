@@ -17,7 +17,6 @@ extern "C" {
 
 
 RuntimeData::RuntimeData(
-		size_t partitionCount,
 		size_t maxPartitionSize,
 		bool setReverse,
 		unsigned int maxReadPeriod) :
@@ -26,12 +25,12 @@ RuntimeData::RuntimeData(
 	firingStimulus(NULL),
 	thalamicInput(NULL),
 	maxPartitionSize(maxPartitionSize),
-	partitionCount(partitionCount),
 	cycleCounters(NULL),
 	m_neurons(new NeuronParameters(maxPartitionSize)),
 	m_cm(new ConnectivityMatrix(maxPartitionSize, setReverse)),
 	m_pitch32(0),
 	m_pitch64(0),
+	m_partitionCount(0),
 	m_deviceDirty(true),
 	m_maxReadPeriod(maxReadPeriod)
 {
@@ -86,15 +85,18 @@ RuntimeData::moveToDevice()
 					stdpFn.depressionBits(),
 					const_cast<float*>(&stdpFn.function()[0]));
 		}
-		firingOutput = new FiringOutput(partitionCount, maxPartitionSize, m_maxReadPeriod);
-		recentFiring = new NVector<uint64_t>(partitionCount, maxPartitionSize, false, 2);
+
+		m_partitionCount = m_neurons->partitionCount();
+
+		firingOutput = new FiringOutput(m_partitionCount, maxPartitionSize, m_maxReadPeriod);
+		recentFiring = new NVector<uint64_t>(m_partitionCount, maxPartitionSize, false, 2);
 		//! \todo seed properly from outside function
-		thalamicInput = new ThalamicInput(partitionCount, maxPartitionSize, 0);
+		thalamicInput = new ThalamicInput(m_partitionCount, maxPartitionSize, 0);
 		m_neurons->setSigma(*thalamicInput);
 		thalamicInput->moveToDevice();
-		cycleCounters = new CycleCounters(partitionCount, m_deviceProperties.clockRate);
+		cycleCounters = new CycleCounters(m_partitionCount, m_deviceProperties.clockRate);
 		firingStimulus = new NVector<uint32_t>(
-				partitionCount,
+				m_partitionCount,
 				DIV_CEIL(maxPartitionSize, 32),
 				false);
 
@@ -170,7 +172,7 @@ RuntimeData::setFiringStimulus(
 		size_t pn = pidx[i];
 		//! \todo should check the size of this particular partition
 		assert(nn < maxPartitionSize );
-		assert(pn < partitionCount);
+		assert(pn < m_partitionCount);
 		size_t word = pn * pitch + nn / 32;
 		size_t bit = nn % 32;
 		hostArray[word] |= 1 << bit;
@@ -179,7 +181,7 @@ RuntimeData::setFiringStimulus(
 	CUDA_SAFE_CALL(cudaMemcpy(
 				firingStimulus->deviceData(),
 				&hostArray[0],
-				partitionCount * firingStimulus->bytePitch(),
+				m_partitionCount * firingStimulus->bytePitch(),
 				cudaMemcpyHostToDevice));
 
 	return firingStimulus->deviceData();
@@ -304,12 +306,11 @@ RuntimeData::usingStdp() const
 
 RTDATA
 allocRuntimeData(
-		size_t partitionCount,
 		size_t maxPartitionSize,
 		uint setReverse,
 		uint maxReadPeriod)
 {
-	return new RuntimeData(partitionCount, maxPartitionSize, (bool) setReverse, maxReadPeriod);
+	return new RuntimeData(maxPartitionSize, (bool) setReverse, maxReadPeriod);
 }
 
 

@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Simulation.CUDA.KernelFFI (
+    allocateRuntime,
     stepBuffering,
     stepNonBuffering,
     readFiring,
@@ -42,6 +43,22 @@ import Simulation.CUDA.State (State(..), CuRT)
 import Types (Time, Delay, Weight)
 
 #include <kernel.h>
+
+
+foreign import ccall unsafe "allocRuntimeData"
+    c_allocRT
+        :: CSize  -- ^ max partition size
+        -> CUInt  -- ^ set reverse matrix (bool)
+        -> CUInt  -- ^ max read period
+        -> IO (Ptr CuRT)
+
+
+allocateRuntime :: Int -> Bool -> Int -> IO (Ptr CuRT)
+allocateRuntime psize usingStdp maxProbePeriod =
+    c_allocRT
+        (fromIntegral psize)
+        (fromBool usingStdp)
+        (fromIntegral maxProbePeriod)
 
 
 foreign import ccall unsafe "addNeuron" c_addNeuron

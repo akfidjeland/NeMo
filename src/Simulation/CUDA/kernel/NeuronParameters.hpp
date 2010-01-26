@@ -32,6 +32,8 @@ class NeuronParameters
 
 		size_t wordPitch() const { return m_wpitch; }
 
+		size_t partitionCount() const;
+
 	private:
 
 		size_t m_partitionSize;
@@ -43,7 +45,6 @@ class NeuronParameters
 		boost::shared_ptr<float> md_arr;  // device data
 
 		nidx_t maxNeuronIdx() const;
-		size_t partitionCount() const;
 
 		size_t m_allocated;
 

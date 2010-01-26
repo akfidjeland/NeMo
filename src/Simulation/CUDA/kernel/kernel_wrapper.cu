@@ -104,7 +104,7 @@ void
 applyStdp(RTDATA rtdata, float stdpReward)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
-	dim3 dimGrid(rtdata->partitionCount);
+	dim3 dimGrid(rtdata->partitionCount());
 
 	if(rtdata->deviceDirty()) {
 		return; // we haven't even started simulating yet
@@ -119,7 +119,7 @@ applyStdp(RTDATA rtdata, float stdpReward)
 		}
 	}
 
-	if(assertionsFailed(rtdata->partitionCount, -1)) {
+	if(assertionsFailed(rtdata->partitionCount(), -1)) {
 		fprintf(stderr, "checking assertions\n");
 		clearAssertions();
 	}
@@ -142,7 +142,7 @@ step(RTDATA rtdata,
 	copyToDevice(rtdata); // only has effect on first invocation
 
 	dim3 dimBlock(THREADS_PER_BLOCK);
-	dim3 dimGrid(rtdata->partitionCount);
+	dim3 dimGrid(rtdata->partitionCount());
 
 	static uint scycle = 0;
 	DEBUG_MSG("cycle %u\n", scycle);
@@ -206,7 +206,7 @@ step(RTDATA rtdata,
 				d_fout);
 	}
 
-    if(assertionsFailed(rtdata->partitionCount, scycle)) {
+    if(assertionsFailed(rtdata->partitionCount(), scycle)) {
         fprintf(stderr, "checking assertions\n");
         clearAssertions();
         return KERNEL_ASSERTION_FAILURE;

@@ -14,7 +14,6 @@
 struct RuntimeData
 {
 	RuntimeData(
-			size_t partitionCount,
 			size_t maxPartitionSize,
 			bool setReverse,
 			unsigned int maxReadPeriod);
@@ -50,8 +49,9 @@ struct RuntimeData
 
 	struct ConnectivityMatrix* cm() const;
 
+	size_t partitionCount() const { return m_partitionCount; }
+
 	size_t maxPartitionSize;
-	size_t partitionCount;
 
 	/*! \return word pitch for 32-bit neuron arrays */
 	size_t pitch32() const;
@@ -108,6 +108,8 @@ struct RuntimeData
 		size_t m_pitch1;
 		size_t m_pitch32;
 		size_t m_pitch64;
+
+		size_t m_partitionCount;
 
 		/* True if host buffers have not been copied to device */
 		bool m_deviceDirty;

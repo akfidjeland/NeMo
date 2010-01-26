@@ -159,24 +159,24 @@ getNDWeights sim source d = do
 -- Runtime data
 -------------------------------------------------------------------------------
 
--- TODO: move to KernelFFI
 foreign import ccall unsafe "allocRuntimeData"
     c_allocRT
-        :: CSize  -- ^ partition count
-        -> CSize  -- ^ max partition size
+        :: CSize  -- ^ max partition size
         -> CUInt  -- ^ set reverse matrix (bool)
         -> CUInt  -- ^ max read period
         -> IO (Ptr CuRT)
 
 
+-- TODO: no need for pcount return
 allocRT :: CuNet n s -> Int -> IO (Int, [Int], Delay, Ptr CuRT)
 allocRT net maxProbePeriod = do
     let pcount = partitionCount net
         psizes = partitionSizes net
+        -- TODO: get rid of this
         dmax   = maxNetworkDelay net
-    rt <- c_allocRT
-        (fromIntegral pcount)
-        (fromIntegral $! either error id $ maximumM psizes)
-        (fromBool $ usingStdp net)
-        (fromIntegral maxProbePeriod)
+    rt <- allocateRuntime
+        -- TODO: just use user-specified partition size here
+        (either error id $ maximumM psizes)
+        (usingStdp net)
+        maxProbePeriod
     return $! (pcount, psizes, dmax, rt)
