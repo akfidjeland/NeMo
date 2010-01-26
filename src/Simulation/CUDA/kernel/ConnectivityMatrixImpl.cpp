@@ -22,16 +22,11 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
     m_maxDelay(0),
 	m_setReverse(setReverse),
 	md_allocatedFCM(0)
-{
-	for(uint p = 0; p < partitionCount; ++p) {
-		m0_rsynapses.push_back(new RSMatrix(maxPartitionSize));
-		m1_rsynapses.push_back(new RSMatrix(maxPartitionSize));
-	}
-}
+{ }
 
 
 
-std::vector<class RSMatrix*>&
+std::map<pidx_t, class RSMatrix*>&
 ConnectivityMatrixImpl::rsynapses(size_t lvl)
 {
 	switch(lvl) {
@@ -43,7 +38,7 @@ ConnectivityMatrixImpl::rsynapses(size_t lvl)
 
 
 
-const std::vector<class RSMatrix*>&
+const std::map<pidx_t, class RSMatrix*>&
 ConnectivityMatrixImpl::const_rsynapses(size_t lvl) const
 {
 	switch(lvl) {
@@ -79,8 +74,13 @@ ConnectivityMatrixImpl::addSynapse(size_t lvl, pidx_t sp, nidx_t sn, delay_t del
 	sidx_t sidx = fgroup.addSynapse(sn, tp, tn, w, plastic);
 
 	if(m_setReverse && plastic) {
-		RSMatrix* rgroup = rsynapses(lvl)[tp];
-		rgroup->addSynapse(sp, sn, sidx, tn, delay);
+		/*! \todo should modify RSMatrix so that we don't need the partition
+		 * size until we move to device */
+		rcm_t& rcm = rsynapses(lvl);
+		if(rcm.find(tp) == rcm.end()) {
+			rcm[tp] = new RSMatrix(m_maxPartitionSize);
+		}
+		rcm[tp]->addSynapse(sp, sn, sidx, tn, delay);
 	}
 
 	m_maxDelay = std::max(m_maxDelay, delay);
@@ -181,9 +181,12 @@ ConnectivityMatrixImpl::moveToDevice()
 	try {
 		moveFcmToDevice();
 
-		for(uint p=0; p < m_partitionCount; ++p){
-			m0_rsynapses[p]->moveToDevice(m_fsynapses, p);
-			m1_rsynapses[p]->moveToDevice(m_fsynapses, p);
+		for(rcm_t::const_iterator i = m0_rsynapses.begin(); i != m0_rsynapses.end(); ++i) {
+			i->second->moveToDevice(m_fsynapses, i->first);
+		}
+
+		for(rcm_t::const_iterator i = m1_rsynapses.begin(); i != m1_rsynapses.end(); ++i) {
+			i->second->moveToDevice(m_fsynapses, i->first);
 		}
 
 		size_t maxWarps = m_outgoing.moveToDevice(m_partitionCount, m_fsynapses);
@@ -277,10 +280,11 @@ ConnectivityMatrixImpl::getRow(
 void
 ConnectivityMatrixImpl::clearStdpAccumulator()
 {
-	//! \todo this might be done better in a single kernel, to reduce bus traffic
-	for(uint p=0; p < m_partitionCount; ++p){
-		m0_rsynapses[p]->clearStdpAccumulator();
-		m1_rsynapses[p]->clearStdpAccumulator();
+	for(rcm_t::const_iterator i = m0_rsynapses.begin(); i != m0_rsynapses.end(); ++i) {
+		i->second->clearStdpAccumulator();
+	}
+	for(rcm_t::const_iterator i = m1_rsynapses.begin(); i != m1_rsynapses.end(); ++i) {
+		i->second->clearStdpAccumulator();
 	}
 }
 
@@ -290,9 +294,9 @@ size_t
 ConnectivityMatrixImpl::d_allocatedRCM0() const
 {
 	size_t bytes = 0;
-	for(std::vector<RSMatrix*>::const_iterator i = m0_rsynapses.begin();
+	for(std::map<pidx_t, RSMatrix*>::const_iterator i = m0_rsynapses.begin();
 			i != m0_rsynapses.end(); ++i) {
-		bytes += (*i)->d_allocated();
+		bytes += i->second->d_allocated();
 	}
 	return bytes;
 }
@@ -303,9 +307,9 @@ size_t
 ConnectivityMatrixImpl::d_allocatedRCM1() const
 {
 	size_t bytes = 0;
-	for(std::vector<RSMatrix*>::const_iterator i = m1_rsynapses.begin();
+	for(std::map<pidx_t, RSMatrix*>::const_iterator i = m1_rsynapses.begin();
 			i != m1_rsynapses.end(); ++i) {
-		bytes += (*i)->d_allocated();
+		bytes += i->second->d_allocated();
 	}
 	return bytes;
 }
@@ -349,12 +353,13 @@ devicePointer(T ptr)
 /* Map function over vector of reverse synapse matrix */
 template<typename T, class S>
 const std::vector<DEVICE_UINT_PTR_T>
-mapDevicePointer(const std::vector<S*>& vec, std::const_mem_fun_t<T, S> fun)
+mapDevicePointer(const std::map<pidx_t, S*>& vec, std::const_mem_fun_t<T, S> fun)
 {
 	std::vector<DEVICE_UINT_PTR_T> ret(vec.size(), 0);
-	for(uint p=0; p < vec.size(); ++p){
-		T ptr = fun(vec[p]);
-		ret[p] = devicePointer(ptr);
+	for(typename std::map<pidx_t, S*>::const_iterator i = vec.begin();
+			i != vec.end(); ++i) {
+		T ptr = fun(i->second);
+		ret.at(i->first) = devicePointer(ptr);
 	}
 	return ret;
 }

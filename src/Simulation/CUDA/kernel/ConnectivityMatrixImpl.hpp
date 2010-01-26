@@ -128,7 +128,7 @@ class ConnectivityMatrixImpl
 		/* For STDP we need a reverse matrix storing source neuron, source
 		 * partition, and delay. The reverse connectivity is stored sepearately
 		 * for each partition */
-		typedef std::vector<class RSMatrix*> rcm_t;
+		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
 		rcm_t m0_rsynapses;
 		rcm_t m1_rsynapses;
 
