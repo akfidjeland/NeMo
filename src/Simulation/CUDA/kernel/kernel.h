@@ -125,7 +125,6 @@ getCMDRow(RTDATA rtdata,
 void
 readFiring(RTDATA rtdata,
 		unsigned int** cycles,
-		unsigned int** partitionIdx,
 		unsigned int** neuronIdx,
 		unsigned int* nfired,
 		unsigned int* ncycles);

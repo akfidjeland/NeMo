@@ -41,7 +41,7 @@ import Simulation.CommonFFI
 import Simulation.CUDA.Address
 import Simulation.CUDA.State (State(..), CuRT)
 
-import Types (Time, Delay, Weight)
+import Types (Time, Delay, Weight, Idx)
 
 #include <kernel.h>
 
@@ -259,7 +259,6 @@ stepNonBuffering sim fstim = do
 foreign import ccall unsafe "readFiring"
     c_readFiring :: Ptr CuRT
         -> Ptr (Ptr CUInt) -- cycles
-        -> Ptr (Ptr CUInt) -- partition idx
         -> Ptr (Ptr CUInt) -- neuron idx
         -> Ptr CUInt       -- number of fired neurons
         -> Ptr CUInt       -- number of cycles
@@ -268,33 +267,30 @@ foreign import ccall unsafe "readFiring"
 
 {- Return both the length of firing as well as a compact list of firings in
  - device indices -}
-readFiring :: Ptr CuRT -> IO (Int, [(Time, DeviceIdx)])
+readFiring :: Ptr CuRT -> IO (Int, [(Time, Idx)])
 readFiring rt = do
     alloca $ \cyclesPtr -> do
-    alloca $ \pidxPtr   -> do
     alloca $ \nidxPtr   -> do
     alloca $ \nfiredPtr -> do
     alloca $ \ncyclesPtr -> do
-    c_readFiring rt cyclesPtr pidxPtr nidxPtr nfiredPtr ncyclesPtr
+    c_readFiring rt cyclesPtr nidxPtr nfiredPtr ncyclesPtr
     nfired <- return . fromIntegral =<< peek nfiredPtr
     cycles <- peekArray nfired =<< peek cyclesPtr
-    pidx <- peekArray nfired =<< peek pidxPtr
     nidx <- peekArray nfired =<< peek nidxPtr
     ncycles <- peek ncyclesPtr
-    return $! (fromIntegral ncycles, zipWith3 fired cycles pidx nidx)
+    return $! (fromIntegral ncycles, zipWith fired cycles nidx)
     where
-        fired c p n = (fromIntegral c, (fromIntegral p, fromIntegral n))
+        fired c n = (fromIntegral c, fromIntegral n)
 
 
 {- | Only return the firing count. This should be much faster -}
 readFiringCount :: Ptr CuRT -> IO Int
 readFiringCount rt = do
     alloca $ \cyclesPtr  -> do
-    alloca $ \pidxPtr    -> do
     alloca $ \nidxPtr    -> do
     alloca $ \nfiredPtr  -> do
     alloca $ \ncyclesPtr -> do
-    c_readFiring rt cyclesPtr pidxPtr nidxPtr nfiredPtr ncyclesPtr
+    c_readFiring rt cyclesPtr nidxPtr nfiredPtr ncyclesPtr
     nfired <- peek nfiredPtr
     return $! fromIntegral nfired
 

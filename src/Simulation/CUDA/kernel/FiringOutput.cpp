@@ -15,7 +15,8 @@ FiringOutput::FiringOutput(
 	m_partitionCount(partitionCount),
 	m_bufferedCycles(0),
     m_maxReadPeriod(maxReadPeriod),
-	md_allocated(0)
+	md_allocated(0),
+	m_partitionSize(partitionSize)
 {
 	const size_t NEURONS_PER_BYTE = 8;
 	size_t width = ALIGN(partitionSize, 32) / NEURONS_PER_BYTE;
@@ -59,13 +60,11 @@ FiringOutput::step()
 void 
 FiringOutput::readFiring(
 		uint** cycles,
-		uint** partitionIdx,
 		uint** neuronIdx,
 		uint* len,
 		uint* totalCycles)
 {
 	m_cycles.clear();
-	m_partitionIdx.clear();
 	m_neuronIdx.clear();
 
 	CUDA_SAFE_CALL(cudaMemcpy(mh_buffer,
@@ -73,11 +72,10 @@ FiringOutput::readFiring(
 				m_bufferedCycles * m_partitionCount * m_pitch * sizeof(uint32_t),
 				cudaMemcpyDeviceToHost));
 	populateSparse(m_bufferedCycles, mh_buffer,
-			m_cycles, m_partitionIdx, m_neuronIdx);
+			m_cycles, m_neuronIdx);
 
 	*len = m_cycles.size();
 	*cycles = &m_cycles[0];
-	*partitionIdx = &m_partitionIdx[0];
 	*neuronIdx = &m_neuronIdx[0];
 	*totalCycles = m_bufferedCycles;
 	m_bufferedCycles = 0;
@@ -90,7 +88,6 @@ FiringOutput::populateSparse(
 		uint bufferedCycles,
 		const uint32_t* hostBuffer,
 		std::vector<uint>& firingCycle,
-		std::vector<uint>& partitionIdx,
 		std::vector<uint>& neuronIdx)
 {
 	for(uint cycle=0; cycle < bufferedCycles; ++cycle) {
@@ -112,8 +109,7 @@ FiringOutput::populateSparse(
 					bool fired = word & (1 << nbit);
 					if(fired) {
 						firingCycle.push_back(cycle);	
-						partitionIdx.push_back(partition);
-						neuronIdx.push_back(nword*32 + nbit);
+						neuronIdx.push_back(partition * m_partitionSize + nword*32 + nbit);
 					}
 				}
 			}

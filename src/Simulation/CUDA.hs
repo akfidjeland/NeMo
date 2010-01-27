@@ -99,23 +99,15 @@ readFiring :: State -> Time -> IO [FiringOutput]
 readFiring sim ncycles = do
     (ncycles', fired) <- Kernel.readFiring $ rt sim
     assert (ncycles == ncycles') $ do
-    return $! densifyDeviceFiring (att sim) ncycles' fired
+    return $! densifyDeviceFiring ncycles' fired
 
 
 -- TODO: error handling: propagate errors to caller
-densifyDeviceFiring :: ATT -> Int -> [(Time, DeviceIdx)] -> [FiringOutput]
-densifyDeviceFiring att len fired = map FiringOutput dense
+densifyDeviceFiring :: Int -> [(Time, Idx)] -> [FiringOutput]
+densifyDeviceFiring len fired = map FiringOutput dense
     where
-        gidx :: [(Time, Idx)]
-        gidx = A.mapElems toGlobal fired
-
-        toGlobal :: DeviceIdx -> Idx
-        toGlobal didx = fromMaybe
-                (error $ "densifyDeviceFiring: neuron not found: " ++ (show didx))
-                (globalIdxM att didx)
-
         grouped :: [(Time, [(Time, Idx)])]
-        grouped = A.groupBy fst gidx
+        grouped = A.groupBy fst fired
 
         grouped' :: [(Time, [Idx])]
         grouped' = A.mapElems (map snd) grouped

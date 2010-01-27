@@ -158,7 +158,8 @@ pitch (_, _, _, p) = p
 
 {- | Get (possibly modified) connectivity matrix back from device -}
 getWeights :: State -> IO (Map.Map Idx [AxonTerminal Static])
-getWeights sim = (return . Map.fromList) =<< mapM (getNWeights sim) (deviceIndices (att sim))
+getWeights sim = error "need to implement getWeights"
+    --(return . Map.fromList) =<< mapM (getNWeights sim) (deviceIndices (att sim))
 
 
 -- return data for a single neuron (all delays)
@@ -172,6 +173,7 @@ getNWeights sim sdidx = do
 
 
 -- return data for a single neuron (single delay)
+{-
 getNDWeights :: State -> DeviceIdx -> Delay -> IO [AxonTerminal Static]
 getNDWeights sim source d = do
     let sp = partitionIdx source
@@ -182,7 +184,7 @@ getNDWeights sim source d = do
         pack :: (DeviceIdx, Weight, Bool) -> AxonTerminal Static
         pack (didx, w, plastic) =
             AxonTerminal (globalIdx (att sim) didx) d w plastic ()
-
+-}
 
 -------------------------------------------------------------------------------
 -- Runtime data

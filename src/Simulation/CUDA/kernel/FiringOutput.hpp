@@ -36,7 +36,6 @@ class FiringOutput {
 		//! \todo require min and max expected cycle number to detect possible overflow
 		void readFiring(
 				uint** cycles,
-				uint** partitionIdx,
 				uint** neuronIdx,
 				uint* len,
 				uint* totalCycles);
@@ -83,7 +82,6 @@ class FiringOutput {
 		 * external interface uses sparse firing. Pointers into the sparse
 		 * storage is valid from one call to \a readFiring to the next */
 		std::vector<uint> m_cycles;
-		std::vector<uint> m_partitionIdx;
 		std::vector<uint> m_neuronIdx;
 
 		/*! \see step() */
@@ -96,8 +94,9 @@ class FiringOutput {
 				uint cycles,
 				const uint32_t* hostBuffer,
 				std::vector<uint>& cycles,
-				std::vector<uint>& partitionIdx,
 				std::vector<uint>& neuronIdx);
+
+		size_t m_partitionSize;
 };
 
 #endif

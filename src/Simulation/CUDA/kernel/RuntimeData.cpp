@@ -443,13 +443,11 @@ resetTimer(RTDATA rtdata)
 void
 readFiring(RTDATA rtdata,
 		uint** cycles,
-		uint** partitionIdx,
 		uint** neuronIdx,
 		uint* nfired,
 		uint* ncycles)
 {
-	rtdata->firingOutput->readFiring(cycles, partitionIdx,
-			neuronIdx, nfired, ncycles);
+	rtdata->firingOutput->readFiring(cycles, neuronIdx, nfired, ncycles);
 }
 
 
