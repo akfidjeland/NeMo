@@ -1,0 +1,7 @@
+#ifndef PARTITION_CONFIGURATION_CU_H
+#define PARTITION_CONFIGURATION_CU_H
+
+//__host__ void configurePartitionSize(size_t n, const uint* d_partitionSize);
+__host__ void configurePartitionSize(const std::vector<uint>& d_partitionSize);
+
+#endif

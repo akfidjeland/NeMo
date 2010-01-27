@@ -7,6 +7,7 @@
 #include "except.hpp"
 #include "ThalamicInput.hpp"
 #include "nemo_cuda_types.h"
+#include "partitionConfiguration.cu_h"
 
 
 NeuronParameters::NeuronParameters(size_t partitionSize) :
@@ -28,6 +29,12 @@ NeuronParameters::addNeuron(
 		throw std::runtime_error("duplicate neuron index");
 	}
 	m_acc[neuronIndex] = nemo::Neuron<float>(a, b, c, d, u, v, sigma);
+
+	//! \todo share mapper code with moveToDevice and ConnectivityMatrixImpl
+	nidx_t n = neuronIndex % m_partitionSize;
+	pidx_t p = neuronIndex / m_partitionSize;
+
+	m_maxPartitionNeuron[p] = std::max(m_maxPartitionNeuron[p], n);
 }
 
 
@@ -114,4 +121,26 @@ NeuronParameters::moveToDevice()
 
 	// copy data across
 	CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * bpitch, cudaMemcpyHostToDevice));
+
+	configurePartitionSizes();
+}
+
+
+
+void
+NeuronParameters::configurePartitionSizes()
+{
+	if(m_maxPartitionNeuron.size() == 0) {
+		return;
+	}
+
+	size_t maxPidx = m_maxPartitionNeuron.rbegin()->first;
+	std::vector<uint> partitionSizes(maxPidx, 0);
+
+	for(std::map<pidx_t, nidx_t>::const_iterator i = m_maxPartitionNeuron.begin();
+			i != m_maxPartitionNeuron.end(); ++i) {
+		partitionSizes[i->first] = i->second + 1;
+	}
+
+	configurePartitionSize(partitionSizes);
 }

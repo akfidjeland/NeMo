@@ -20,7 +20,6 @@ import Types
 import qualified Util.Assocs as A (elems, keys, mapAssocs, mapElems, groupBy, densify)
 
 import Simulation.CUDA.Address
-import Simulation.CUDA.Configuration (configureKernel)
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
@@ -63,8 +62,6 @@ initSim partitionSize net dt stdpConf = do
         ((cuNet, att), mapLog) = runWriter $ mapNetwork net usingStdp partitionSize
     -- TODO: send this upstream, so we can e.g. print to server log
     when (not $ null mapLog) $ writeFile "map.log" mapLog
-    -- TODO: should we free this memory?
-    configureKernel cuNet
     let maxProbePeriod = 1000
     initMemory net att partitionSize maxProbePeriod dt stdpConf
 

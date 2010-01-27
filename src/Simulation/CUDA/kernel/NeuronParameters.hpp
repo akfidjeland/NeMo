@@ -7,6 +7,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <nemo_types.hpp>
+#include "nemo_cuda_types.h"
 
 class NeuronParameters
 {
@@ -36,7 +37,7 @@ class NeuronParameters
 
 	private:
 
-		size_t m_partitionSize;
+		size_t m_partitionSize; // max partition size
 
 		typedef nemo::Neuron<float> neuron_t;
 		typedef std::map<nidx_t, neuron_t> acc_t;
@@ -50,6 +51,11 @@ class NeuronParameters
 
 		size_t m_wpitch;
 		size_t m_veclen;
+
+		// max index in each partition
+		std::map<pidx_t, nidx_t> m_maxPartitionNeuron;
+
+		void configurePartitionSizes();
 };
 
 #endif

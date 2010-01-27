@@ -15,6 +15,7 @@
 //-----------------------------------------------------------------------------
 
 
+#include "partitionConfiguration.cu_h"
 #include "util.h"
 #include "kernel.cu_h"
 #include "kernel.h"
@@ -78,11 +79,13 @@ __constant__ uint c_partitionSize[MAX_THREAD_BLOCKS];
 
 __host__
 void
-configurePartitionSize(size_t n, const uint* d_partitionSize)
+configurePartitionSize(const std::vector<uint>& d_partitionSize)
 {
+	assert(d_partitionSize.size() <= MAX_THREAD_BLOCKS);
 	CUDA_SAFE_CALL(
 		cudaMemcpyToSymbol(
-			c_partitionSize, d_partitionSize,
+			c_partitionSize,
+			&d_partitionSize[0],
 			MAX_THREAD_BLOCKS*sizeof(uint), 
 			0, cudaMemcpyHostToDevice));
 }
