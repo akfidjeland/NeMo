@@ -5,7 +5,6 @@ module Simulation.CUDA.State (State(..), CuRT) where
 
 import Foreign.C.Types (CInt)
 import Foreign.Ptr (Ptr)
-import Simulation.CUDA.Address (ATT)
 
 
 {- Runtime data is managed on the CUDA-side in a single structure -}
@@ -14,6 +13,5 @@ data CuRT = CuRT
 
 data State = State {
         dt       :: CInt,           -- ^ number of steps in neuron update
-        att      :: ATT,
         rt       :: Ptr CuRT -- ^ kernel runtime data
     }

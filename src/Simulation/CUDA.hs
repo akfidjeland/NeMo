@@ -7,10 +7,7 @@
 module Simulation.CUDA (initSim, deviceCount) where
 
 
-import Control.Monad (when)
-import Control.Monad.Writer (runWriter)
 import Control.Exception (assert)
-import Data.Maybe (fromMaybe)
 
 import Construction.Network (Network)
 import Construction.Izhikevich (IzhNeuron)
@@ -25,9 +22,8 @@ import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
      printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics, freeRT)
 import Simulation.CUDA.Memory as Memory
-import Simulation.CUDA.Mapping (mapNetwork)
 import Simulation.CUDA.State (State(..))
-import Simulation.STDP (StdpConf(stdpEnabled))
+import Simulation.STDP (StdpConf)
 
 
 
@@ -57,13 +53,8 @@ initSim
     -> StdpConf
     -> IO State
 initSim partitionSize net dt stdpConf = do
-    -- TODO: select device?
-    let usingStdp = stdpEnabled stdpConf
-        ((cuNet, att), mapLog) = runWriter $ mapNetwork net usingStdp partitionSize
-    -- TODO: send this upstream, so we can e.g. print to server log
-    when (not $ null mapLog) $ writeFile "map.log" mapLog
     let maxProbePeriod = 1000
-    initMemory net att partitionSize maxProbePeriod dt stdpConf
+    initMemory net partitionSize maxProbePeriod dt stdpConf
 
 
 -------------------------------------------------------------------------------

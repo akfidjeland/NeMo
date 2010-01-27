@@ -37,18 +37,17 @@ import Util.List (maximumM)
 {- Initialise memory on a single device -}
 initMemory
     :: Network IzhNeuron Static
-    -> ATT
     -> Maybe Int -- ^ requested partition size
     -> Int
     -> Int
     -> StdpConf
     -> IO State
-initMemory fullnet att reqPsize maxProbePeriod dt stdp = do
+initMemory net reqPsize maxProbePeriod dt stdp = do
     rt <- allocRT stdp reqPsize maxProbePeriod
     configureStdp rt stdp
-    setNeurons rt $ toList fullnet
+    setNeurons rt $ toList net
     copyToDevice rt
-    return $ State (fromIntegral dt) att rt
+    return $ State (fromIntegral dt) rt
 
 
 

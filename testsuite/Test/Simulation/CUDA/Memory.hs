@@ -15,7 +15,6 @@ import Construction.Synapse (Static(..))
 import Examples.Smallworld (smallworld, smallworldOrig)
 import Examples.Ring (ring)
 import Options (defaults)
-import Simulation.CUDA.Mapping (mapNetwork)
 import Simulation.CUDA.Memory (initMemory, getWeights)
 import Simulation.CUDA.State (State(..))
 import Simulation.CUDA.KernelFFI (copyToDevice)
@@ -34,9 +33,8 @@ testWeightQuery = TestCase $ do
         psize = Just 128   -- to ensure different partitions are used
         net = build 123456 $ smallworldOrig :: Network IzhNeuron Static
         ns = weightMatrix $ withWeights viaCFloat $ networkNeurons net
-        ((cuNet, att), _) = runWriter $ mapNetwork net stdp psize
         nsteps = 1000 -- irrelevant for this test
-    sim  <- initMemory net att psize nsteps 4 (defaults stdpOptions)
+    sim  <- initMemory net psize nsteps 4 (defaults stdpOptions)
     {- When initialising memory, the device may not be involved yet -}
     copyToDevice (rt sim)
     ns' <- getWeights sim
