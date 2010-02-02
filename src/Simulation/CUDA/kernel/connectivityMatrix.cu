@@ -45,9 +45,13 @@ __host__
 uint
 f_packSynapse(uint partition, uint neuron)
 {
+#ifdef __DEVICE_EMULATION__
     assert(!(partition & ~PARTITION_MASK));
     assert(!(neuron & ~NEURON_MASK));
     return (partition << PARTITION_SHIFT) | neuron;
+#else
+	return neuron;
+#endif
 }
 
 
@@ -55,16 +59,22 @@ __host__ __device__
 uint
 targetNeuron(uint synapse)
 {
+#ifdef __DEVICE_EMULATION__
     return synapse & NEURON_MASK;
+#else
+	return synapse;
+#endif
 }
 
 
+#ifdef __DEVICE_EMULATION__
 __host__ __device__
 uint
 targetPartition(uint synapse)
 {
     return (synapse >> PARTITION_SHIFT) & PARTITION_MASK;
 }
+#endif
 
 
 __host__

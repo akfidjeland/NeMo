@@ -354,9 +354,8 @@ l1gather(
 
 				if(doCommit && bwarp == commit) {
 					s_current[postsynaptic] += weight;
-					//! \todo add partition numbers here as well. This is not only for L1 any more
-					DEBUG_MSG("c%u n%u -> n%u %+f\n",
-							s_cycle, presynaptic, postsynaptic, weight);
+					DEBUG_MSG("c%u p?n%u -> p%un%u %+f\n",
+							s_cycle, presynaptic, CURRENT_PARTITION, postsynaptic, weight);
 				}
 
 				__syncthreads();
