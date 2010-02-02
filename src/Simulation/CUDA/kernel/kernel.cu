@@ -291,7 +291,7 @@ l1gather(
 #define GROUP_SIZE 128
 
 	//! \todo could this smem be re-used?
-	__shared__ uint32_t* s_warpAddress[GROUP_SIZE];
+	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
 
 	//! \todo rename variables here
 	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
@@ -338,7 +338,7 @@ l1gather(
 			uint postsynaptic;
 			float weight = 0.0f;
 
-			uint32_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
+			synapse_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
 
 			// only warps at the very end of the group are invalid here
 			//! \todo could get of this conditional altogether if we set some

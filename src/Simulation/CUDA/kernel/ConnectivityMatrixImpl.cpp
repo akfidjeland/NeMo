@@ -155,7 +155,7 @@ ConnectivityMatrixImpl::moveFcmToDevice()
 
 	// allocate and intialise host memory
 	size_t wpitch = bpitch / sizeof(synapse_t);
-	std::vector<synapse_t> h_data(height * wpitch, 0);
+	std::vector<synapse_t> h_data(height * wpitch, f_nullSynapse());
 
 	size_t woffset = 1; // leave space for the null warp
 	for(fcm_t::iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {

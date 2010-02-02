@@ -24,6 +24,13 @@
 /* distance (in words) between a synapses's address data and its weight data. */
 __constant__ size_t c_fcmPlaneSize;
 
+__host__
+synapse_t
+f_nullSynapse()
+{
+	return 0;
+}
+
 
 __host__
 void

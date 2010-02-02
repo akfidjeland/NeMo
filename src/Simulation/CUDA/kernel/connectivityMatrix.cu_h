@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 
 #include "kernel.cu_h"
+#include "nemo_cuda_types.h"
 
 /* \brief Synapse encoding/decoding
  *
@@ -23,8 +24,7 @@ __host__ void setFcmPlaneSize(size_t sz);
 
 __host__ uint f_packSynapse(uint partition, uint neuron);
 
-__device__ uint targetNeuron(uint synapse);
-__device__ uint targetPartition(uint synapse);
+__host__ synapse_t f_nullSynapse();
 
 __host__ uint r_packSynapse(
 		uint sourcePartition,
