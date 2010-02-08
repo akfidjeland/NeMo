@@ -108,7 +108,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 3);
 
-	l1gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_T16, s_current);
+	l1gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current);
 
 	SET_COUNTER(s_ccMain, 4);
 

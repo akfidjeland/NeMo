@@ -52,56 +52,14 @@ getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
 /*! \return incoming spike group from a particular source */
 __device__
 incoming_t
-make_incoming(uint  sourcePartition, uint sourceNeuron, uint delay, uint warps,
-		uint warpOffset,
-		uint32_t targetBits)
+make_incoming(uint warpOffset, uint32_t targetBits)
 {
 	return make_uint2(targetBits, warpOffset);
 }
 
 
-__device__
-uint
-incomingDelay(incoming_t in)
-{
-	return (in.x >> SYNAPSE_WARP_BITS) & MASK(DELAY_BITS);
-}
-
-
-__device__
-uint
-incomingPartition(incoming_t in)
-{
-	return (in.x >> (SYNAPSE_WARP_BITS + DELAY_BITS + NEURON_BITS)) & MASK(PARTITION_BITS);
-}
-
-
-
-__device__
-uint
-incomingNeuron(incoming_t in)
-{
-	return (in.x >> (SYNAPSE_WARP_BITS + DELAY_BITS)) & MASK(NEURON_BITS);
-}
-
-
-
-__device__
-uint
-incomingWarps(incoming_t in)
-{
-	return in.x & MASK(SYNAPSE_WARP_BITS);
-}
-
-
-
-__device__
-uint
-incomingWarpOffset(incoming_t in)
-{
-	return in.y;
-}
-
+__device__ uint incomingWarpOffset(incoming_t in) { return in.y; }
+__device__ uint incomingTargetWarps(incoming_t in) { return in.x; }
 
 
 /*! \return address into matrix with number of incoming synapse groups */

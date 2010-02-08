@@ -9,19 +9,16 @@ __constant__ size_t c_outgoingPitch; // word pitch
 
 __host__
 outgoing_t
-make_outgoing(pidx_t partition, delay_t delay, uint warp,
-		uint warpOffset,
+make_outgoing(pidx_t partition, delay_t delay, uint warpOffset,
 		uint32_t warpTargetBits)
 {
 	//! \todo could share pointer packing with dispatchTable code
 	assert(partition < MAX_PARTITION_COUNT);
 	assert(delay < MAX_DELAY);
-	assert(warp < MAX_SYNAPSE_WARPS);
 
 	uint targetData =
-	       ((uint(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS + SYNAPSE_WARP_BITS))
-	     | ((uint(delay)     & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
-	     |  (uint(warp)      & MASK(SYNAPSE_WARP_BITS));
+	       ((uint(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS))
+	     |  (uint(delay)     & MASK(DELAY_BITS));
 
 	return make_uint4(targetData, (uint) warpOffset, warpTargetBits, 0);
 }
@@ -53,7 +50,7 @@ __device__
 uint
 outgoingTargetPartition(outgoing_t out)
 {
-	return uint((out.x >> (DELAY_BITS + SYNAPSE_WARP_BITS)) & MASK(PARTITION_BITS));
+	return uint((out.x >> (DELAY_BITS)) & MASK(PARTITION_BITS));
 }
 
 
@@ -62,35 +59,13 @@ __device__
 uint
 outgoingDelay(outgoing_t out)
 {
-	return uint((out.x >> SYNAPSE_WARP_BITS) & MASK(DELAY_BITS));
+	return uint(out.x & MASK(DELAY_BITS));
 }
 
 
 
-__device__
-uint
-outgoingWarp(outgoing_t out)
-{
-	return uint(out.x & MASK(SYNAPSE_WARP_BITS));
-}
-
-
-
-__device__
-uint
-outgoingWarpOffset(outgoing_t out)
-{
-	return out.y;
-}
-
-
-
-__device__
-uint
-outgoingTargetBits(outgoing_t out)
-{
-	return out.z;
-}
+__device__ uint outgoingWarpOffset(outgoing_t out) { return out.y; }
+__device__ uint outgoingTargetBits(outgoing_t out) { return out.z; }
 
 
 

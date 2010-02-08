@@ -249,15 +249,13 @@ l1scatter(
 
 					size_t base = incomingBufferStart(targetPartition, cycle, delay);
 					g_incoming[base + offset] =
-						make_incoming(CURRENT_PARTITION, presynaptic,
-								delay,
-								outgoingWarp(sout),
+						make_incoming(
 								outgoingWarpOffset(sout),
 								outgoingTargetBits(sout));
 
-					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u, warp %u) (buffer entry %u/%u)\n",
+					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%u)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
-							outgoingWarp(sout), offset, c_incomingPitch);
+							offset, c_incomingPitch);
 				}
 			}
 			__syncthreads(); // so s_blocks is not updated
@@ -275,7 +273,6 @@ l1gather(
 		synapse_t* g_fcm,
 		uint* g_incomingCount,
 		incoming_t* g_incoming,
-		uint16_t s_sourceNeuron[],
 		float* s_current)
 {
 	__shared__ uint s_incomingCount;
@@ -318,20 +315,11 @@ l1gather(
 		}
 		__syncthreads();
 
-		//! \todo factor this out
 		if(threadIdx.x < s_groupSize) {
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
-#ifdef __DEVICE_EMULATION__
-			uint delay = incomingDelay(sgin);
-			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
-			uint sourcePartition = incomingPartition(sgin);
-#endif
-			s_targetBits[threadIdx.x] = sgin.x;
+			s_targetBits[threadIdx.x] = incomingTargetWarps(sgin);
 			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
-			//! \todo remove this group info, since we no longer encode the target info
-			DEBUG_MSG("c%u incoming spike group p??n%u -> p%u (delay %u, warp %u)\n",
-					cycle, sourcePartition, incomingNeuron(sgin),
-					CURRENT_PARTITION, delay, incomingWarps(sgin));
+			DEBUG_MSG("c%u w%u -> p%u\n", incomingWarpOffset(sgin), CURRENT_PARTITION);
 		}
 
 		__syncthreads();
@@ -368,9 +356,6 @@ l1gather(
 			uint gwarp = gwarp_base + bwarp;      // warp index within the global schedule
 
 			bool doCommit;
-#ifdef __DEVICE_EMULATION__
-			uint presynaptic = s_sourceNeuron[gwarp];
-#endif
 			uint postsynaptic;
 			float weight = 0.0f;
 
@@ -390,8 +375,8 @@ l1gather(
 
 				if(doCommit && s_warpCommit[gwarp] == commit) {
 					s_current[postsynaptic] += weight;
-					DEBUG_MSG("c%u p?n%u -> p%un%u %+f\n",
-							s_cycle, presynaptic, CURRENT_PARTITION, postsynaptic, weight);
+					DEBUG_MSG("c%u p?n? -> p%un%u %+f\n",
+							s_cycle, CURRENT_PARTITION, postsynaptic, weight);
 				}
 
 				__syncthreads();

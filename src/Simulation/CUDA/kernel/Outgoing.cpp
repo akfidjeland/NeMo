@@ -135,7 +135,7 @@ Outgoing::moveToDevice(size_t partitionCount,
 				uint32_t offset = groupref->second.warpOffset(neuron, warp);
 				uint32_t targetBits = groupref->second.warpTargetBits(neuron, warp);
 				h_arr[t_addr + j + warp] =
-					make_outgoing(targetPartition, delay, warp, offset, targetBits);
+					make_outgoing(targetPartition, delay, offset, targetBits);
 			}
 			j += warps;
 			assert(j <= wpitch);

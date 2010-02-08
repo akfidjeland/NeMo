@@ -15,9 +15,10 @@
  *
  * 1. target partition
  * 2. delay
- * 3. warp index
+ * 3. address of the full synapse group
+ * 4. bit-vector for target warps within target partitions
  *
- * We keep a 32-bit warp offset. This is enough for 4B warps. With a warp-size
+ * We keep a 32-bit group address. This is enough for 4B warps. With a group-size
  * of 32, this is 32x as much memory as current devices can address.
  */
 typedef uint4 outgoing_t;
@@ -29,7 +30,6 @@ typedef uint4 outgoing_t;
  */
 __host__ outgoing_t make_outgoing(pidx_t partition,
 		delay_t delay,
-		uint warp,
 		uint warpOffset,
 		uint32_t warpTargetBits);
 
