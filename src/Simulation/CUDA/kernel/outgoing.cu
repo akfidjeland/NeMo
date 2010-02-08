@@ -9,7 +9,9 @@ __constant__ size_t c_outgoingPitch; // word pitch
 
 __host__
 outgoing_t
-make_outgoing(pidx_t partition, delay_t delay, uint warp, uint warpOffset)
+make_outgoing(pidx_t partition, delay_t delay, uint warp,
+		uint warpOffset,
+		uint32_t warpTargetBits)
 {
 	//! \todo could share pointer packing with dispatchTable code
 	assert(partition < MAX_PARTITION_COUNT);
@@ -21,7 +23,7 @@ make_outgoing(pidx_t partition, delay_t delay, uint warp, uint warpOffset)
 	     | ((uint(delay)     & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
 	     |  (uint(warp)      & MASK(SYNAPSE_WARP_BITS));
 
-	return make_uint2(targetData, (uint) warpOffset);
+	return make_uint4(targetData, (uint) warpOffset, warpTargetBits, 0);
 }
 
 
@@ -79,6 +81,15 @@ uint
 outgoingWarpOffset(outgoing_t out)
 {
 	return out.y;
+}
+
+
+
+__device__
+uint
+outgoingTargetBits(outgoing_t out)
+{
+	return out.z;
 }
 
 

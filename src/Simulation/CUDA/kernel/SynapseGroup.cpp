@@ -85,7 +85,21 @@ SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t
 
 		assert(row.addresses.size() == row.weights.size());
 
+		std::vector<synapse_t> targets = row.addresses;
+		for(uint i = 0; i < targets.size(); ++i ) {
+			//! \todo make sure we get target neurons properly
+			nidx_t neuron = targets.at(i);
+			uint twarp = neuron / WARP_SIZE;
+			uint gwarp = startWarp + writtenWarps + i / WARP_SIZE;
+			//! \todo add assertions here
+			//! \todo do a double loop here to save map lookups
+			uint32_t warpBit = 0x1 << twarp;
+			m_warpTargets[gwarp] |= warpBit;
+		}
+
 		writtenWarps += DIV_CEIL(row.addresses.size(), WARP_SIZE);
+
+		//! \todo need to iterate over all neurons within each warp here
 	}
 
 	return writtenWarps;
@@ -148,5 +162,19 @@ SynapseGroup::warpOffset(nidx_t neuron, size_t warp) const
 		throw std::runtime_error("neuron not found");
 	}
 	return entry->second + warp;
+}
+
+
+
+//! \todo merge with warpOffset. Just return a pair here
+uint32_t
+SynapseGroup::warpTargetBits(nidx_t neuron, size_t warp) const
+{
+	uint32_t gwarp = warpOffset(neuron, warp);
+	std::map<uint, uint32_t>::const_iterator entry = m_warpTargets.find(gwarp);
+	if(m_warpTargets.end() == entry) {
+		throw std::runtime_error("warp not found");
+	}
+	return entry->second;
 }
 

@@ -252,7 +252,8 @@ l1scatter(
 						make_incoming(CURRENT_PARTITION, presynaptic,
 								delay,
 								outgoingWarp(sout),
-								outgoingWarpOffset(sout));
+								outgoingWarpOffset(sout),
+								outgoingTargetBits(sout));
 
 					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u, warp %u) (buffer entry %u/%u)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
@@ -293,6 +294,13 @@ l1gather(
 	//! \todo could this smem be re-used?
 	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
 
+	// could use 3b of warpAddress
+	__shared__ uchar s_warpCommit[GROUP_SIZE]; // in range 0-8
+	__shared__ uint32_t s_targetBits[GROUP_SIZE];
+
+#define SCHEDULING_THREADS (GROUP_SIZE / WARPS_PER_BLOCK)
+	__shared__ uchar s_warpCommitCount[SCHEDULING_THREADS];
+
 	//! \todo rename variables here
 	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
 
@@ -318,12 +326,40 @@ l1gather(
 			s_sourceNeuron[threadIdx.x] = incomingNeuron(sgin);
 			uint sourcePartition = incomingPartition(sgin);
 #endif
+			s_targetBits[threadIdx.x] = sgin.x;
 			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
+			//! \todo remove this group info, since we no longer encode the target info
 			DEBUG_MSG("c%u incoming spike group p??n%u -> p%u (delay %u, warp %u)\n",
 					cycle, sourcePartition, incomingNeuron(sgin),
 					CURRENT_PARTITION, delay, incomingWarps(sgin));
 		}
 
+		__syncthreads();
+
+		if(threadIdx.x < SCHEDULING_THREADS){
+
+			uint group = threadIdx.x;
+
+			/* Bit field indicating which local warps are targeted */
+			uint32_t commitTargets = 0;
+
+			/* More complex scheduling can be achieved, but this simple scheme
+			 * is fast to implement */
+			uint commit = 0;
+			for(uint warp = 0; warp < 8; ++warp) {
+				uint32_t warpTargets = s_targetBits[group * 8 + warp];
+				if(warpTargets & commitTargets) {
+					// conflict
+					commit++;
+					commitTargets = warpTargets;
+				} else {
+					// no conflict
+					commitTargets = commitTargets | warpTargets;
+				}
+				s_warpCommit[group * 8 + warp] = commit;
+			}
+			s_warpCommitCount[group] = commit + 1;
+		}
 		__syncthreads();
 
 		for(uint gwarp_base = 0; gwarp_base < s_groupSize; gwarp_base += WARPS_PER_BLOCK) {
@@ -350,9 +386,9 @@ l1gather(
 
 			doCommit = weight != 0.0f;
 
-			for(uint commit=0; commit < WARPS_PER_BLOCK; ++commit) {
+			for(uint commit=0; commit < s_warpCommitCount[gwarp_base/WARPS_PER_BLOCK]; ++commit) {
 
-				if(doCommit && bwarp == commit) {
+				if(doCommit && s_warpCommit[gwarp] == commit) {
 					s_current[postsynaptic] += weight;
 					DEBUG_MSG("c%u p?n%u -> p%un%u %+f\n",
 							s_cycle, presynaptic, CURRENT_PARTITION, postsynaptic, weight);

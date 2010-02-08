@@ -79,6 +79,9 @@ class SynapseGroup
 		 * 		FCM */
 		uint32_t warpOffset(nidx_t neuron, size_t warp) const;
 
+		//! \todo add docstring
+		uint32_t warpTargetBits(nidx_t neuron, size_t warp) const;
+
 	private:
 
 		struct Row {
@@ -102,6 +105,10 @@ class SynapseGroup
 		uint m_lastSync;
 
 		std::map<nidx_t, size_t> m_warpOffset;  // within FCM of the /first/ warp for any neuron
+
+		// warp targets
+		//typedef uint warp_idx_t;
+		std::map<uint, uint32_t> m_warpTargets; // bitset of warp target neurons
 };
 
 #endif

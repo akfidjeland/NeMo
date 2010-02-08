@@ -52,20 +52,11 @@ getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
 /*! \return incoming spike group from a particular source */
 __device__
 incoming_t
-make_incoming(uint sourcePartition, uint sourceNeuron, uint delay, uint warps, uint warpOffset)
+make_incoming(uint  sourcePartition, uint sourceNeuron, uint delay, uint warps,
+		uint warpOffset,
+		uint32_t targetBits)
 {
-	ASSERT(sourcePartition < (1<<PARTITION_BITS));
-	ASSERT(sourceNeuron < (1<<NEURON_BITS));
-	ASSERT(delay < (1<<DELAY_BITS));
-	ASSERT(warps < (1<<SYNAPSE_WARP_BITS));
-
-	uint sourceData =
-	       ((uint(sourcePartition) & MASK(PARTITION_BITS)) << (SYNAPSE_WARP_BITS + DELAY_BITS + NEURON_BITS))
-	     | ((uint(sourceNeuron)    & MASK(NEURON_BITS))    << (SYNAPSE_WARP_BITS + DELAY_BITS))
-	     | ((uint(delay)           & MASK(DELAY_BITS))     << (SYNAPSE_WARP_BITS))
-	     | ((uint(warps)           & MASK(SYNAPSE_WARP_BITS )));
-
-	return make_uint2(sourceData, warpOffset);
+	return make_uint2(targetBits, warpOffset);
 }
 
 

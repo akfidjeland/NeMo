@@ -20,7 +20,7 @@
  * We keep a 32-bit warp offset. This is enough for 4B warps. With a warp-size
  * of 32, this is 32x as much memory as current devices can address.
  */
-typedef uint2 outgoing_t;
+typedef uint4 outgoing_t;
 
 
 /*!
@@ -30,9 +30,10 @@ typedef uint2 outgoing_t;
 __host__ outgoing_t make_outgoing(pidx_t partition,
 		delay_t delay,
 		uint warp,
-		uint warpOffset);
+		uint warpOffset,
+		uint32_t warpTargetBits);
 
-const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
+const outgoing_t INVALID_OUTGOING = make_uint4(0, 0, 0, 0);
 
 
 __host__ void setOutgoingPitch(size_t targetPitch);
