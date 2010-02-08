@@ -28,7 +28,7 @@ cpu_set_network(fp_t a[],
 		size_t ncount);
 
 
-status_t
+cpu_status_t
 cpu_enable_stdp(NETWORK,
 		size_t pre_len,
 		size_t post_len,
@@ -38,18 +38,18 @@ cpu_enable_stdp(NETWORK,
 		double minWeight);
 
 
-status_t
+cpu_status_t
 cpu_start_simulation(NETWORK);
 
 
-status_t
+cpu_status_t
 cpu_add_neuron(NETWORK,
 		nidx_t idx,
 		fp_t a, fp_t b, fp_t c, fp_t d,
 		fp_t u, fp_t v, fp_t sigma);
 
 
-status_t
+cpu_status_t
 cpu_add_synapses(NETWORK,
 		nidx_t source,
 		delay_t delay,
@@ -68,7 +68,7 @@ cpu_add_synapses(NETWORK,
  * 		Per-neuron vector indiciating which ones should be stimulated (forced
  * 		to fire) this cycle.
  */
-status_t cpu_step(NETWORK network, unsigned int fstim[]);
+cpu_status_t cpu_step(NETWORK network, unsigned int fstim[]);
 
 
 
@@ -77,8 +77,8 @@ status_t cpu_step(NETWORK network, unsigned int fstim[]);
  * it can sometimes be desirable to call these individually, e.g. if profiling.
  * If so, call 'deliver_spikes', then 'update'.
  */
-status_t cpu_deliver_spikes(NETWORK network);
-status_t cpu_update(NETWORK network, unsigned int fstim[]);
+cpu_status_t cpu_deliver_spikes(NETWORK network);
+cpu_status_t cpu_update(NETWORK network, unsigned int fstim[]);
 
 
 
@@ -91,14 +91,14 @@ status_t cpu_update(NETWORK network, unsigned int fstim[]);
  * \param nfired
  * 		number of neurons which fired
  */
-status_t
+cpu_status_t
 cpu_read_firing(NETWORK network,
 		unsigned int** fired,
 		unsigned int* nfired);
 
 
 
-status_t
+cpu_status_t
 cpu_apply_stdp(NETWORK network, double reward);
 
 
@@ -107,12 +107,12 @@ cpu_apply_stdp(NETWORK network, double reward);
 long int cpu_elapsed_ms(NETWORK);
 
 
-status_t cpu_reset_timer(NETWORK);
+cpu_status_t cpu_reset_timer(NETWORK);
 
 void cpu_delete_network(NETWORK);
 
 
-/* If a runtime error occurred (indicated via status_t return of some other
+/* If a runtime error occurred (indicated via cpu_status_t return of some other
  * function), this function returns a description of the last error */
 const char* cpu_last_error(NETWORK);
 

@@ -360,6 +360,7 @@ Network::deliverSpikesOne(nidx_t source, delay_t delay)
 	 * it gives no advantage */
 	for(int i=0; i < row.len; ++i) {
 		const Synapse& s = ss[i];
+		assert(s.target < m_current.size());
 		m_current[s.target] += s.weight;
 #ifdef DEBUG_TRACE
 		fprintf(stderr, "c%u: n%u -> n%u: %+f (delay %u)\n",

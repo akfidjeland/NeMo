@@ -41,7 +41,7 @@ struct network_t {
 		}
 
 		std::string error_msg;
-		status_t status;
+		cpu_status_t status;
 
 	private:
 
@@ -91,7 +91,7 @@ cpu_set_network(fp_t a[],
 
 
 
-status_t
+cpu_status_t
 cpu_add_neuron(NETWORK net,
 		nidx_t idx,
 		fp_t a, fp_t b, fp_t c, fp_t d,
@@ -102,7 +102,7 @@ cpu_add_neuron(NETWORK net,
 
 
 
-status_t
+cpu_status_t
 cpu_add_synapses(NETWORK net,
 		nidx_t source,
 		delay_t delay,
@@ -115,7 +115,7 @@ cpu_add_synapses(NETWORK net,
 }
 
 
-status_t
+cpu_status_t
 cpu_enable_stdp(NETWORK network,
 		size_t pre_len,
 		size_t post_len,
@@ -130,7 +130,7 @@ cpu_enable_stdp(NETWORK network,
 }
 
 
-status_t
+cpu_status_t
 cpu_start_simulation(NETWORK network)
 {
 	SAFE_CALL(network, startSimulation());
@@ -138,7 +138,7 @@ cpu_start_simulation(NETWORK network)
 
 
 
-status_t
+cpu_status_t
 cpu_step(NETWORK network, unsigned int fstim[])
 {
 	SAFE_CALL(network, step(fstim));
@@ -146,7 +146,7 @@ cpu_step(NETWORK network, unsigned int fstim[])
 
 
 
-status_t
+cpu_status_t
 cpu_deliver_spikes(NETWORK network)
 {
 	SAFE_CALL(network, deliverSpikes());
@@ -154,7 +154,7 @@ cpu_deliver_spikes(NETWORK network)
 
 
 
-status_t
+cpu_status_t
 cpu_update(NETWORK network, unsigned int fstim[])
 {
 	SAFE_CALL(network, update(fstim));
@@ -162,7 +162,7 @@ cpu_update(NETWORK network, unsigned int fstim[])
 
 
 
-status_t
+cpu_status_t
 cpu_read_firing(NETWORK network,
 		unsigned int** neuronIdx,
 		unsigned int* nfired)
@@ -183,7 +183,7 @@ cpu_read_firing(NETWORK network,
 
 
 
-status_t
+cpu_status_t
 cpu_apply_stdp(NETWORK network, double reward)
 {
 	SAFE_CALL(network, applyStdp(reward));
@@ -199,7 +199,7 @@ cpu_elapsed_ms(NETWORK network)
 
 
 
-status_t
+cpu_status_t
 cpu_reset_timer(NETWORK network)
 {
 	SAFE_CALL(network, resetTimer());

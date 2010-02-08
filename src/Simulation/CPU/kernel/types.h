@@ -6,7 +6,7 @@
 typedef enum {
 	STATUS_OK,
 	STATUS_ERROR
-} status_t;
+} cpu_status_t;
 
 #ifdef CPU_SINGLE_PRECISION
 typedef float fp_t;
