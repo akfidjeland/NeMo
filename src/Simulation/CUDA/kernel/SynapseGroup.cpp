@@ -22,17 +22,15 @@ SynapseGroup::addSynapse(
 		float weight,
 		uchar plastic)
 {
-	Row& row = mh_synapses[sourceNeuron];
-	row.addresses.push_back(neuron);
-	row.weights.push_back(weight);
+	row_t& row = mh_synapses[sourceNeuron];
+	row.push_back(boost::tuple<nidx_t, weight_t>(neuron, weight));
 
-	assert(row.addresses.size() == row.weights.size());
-
+	//! \todo only construct this once we have reordered data
 	mf_targetPartition[sourceNeuron].push_back(partition);
 	mf_targetNeuron[sourceNeuron].push_back(neuron);
 	mf_plastic[sourceNeuron].push_back(plastic);
 
-	return row.addresses.size() - 1;
+	return row.size() - 1;
 }
 
 
@@ -47,16 +45,14 @@ SynapseGroup::addSynapses(
 		const float weight[],
 		const uchar plastic[])
 {
-	Row& row = mh_synapses[sourceNeuron];
+	row_t& row = mh_synapses[sourceNeuron];
 	for(size_t n = 0; n < ncount; ++n) {
-		row.addresses.push_back(neuron[n]);
-		row.weights.push_back(weight[n]);
+		row.push_back(boost::tuple<nidx_t, weight_t>(neuron[n], weight[n]));
 	}
 
 	std::copy(partition, partition+ncount, back_inserter(mf_targetPartition[sourceNeuron]));
 	std::copy(neuron, neuron+ncount, back_inserter(mf_targetNeuron[sourceNeuron]));
 	std::copy(plastic, plastic+ncount, back_inserter(mf_plastic[sourceNeuron]));
-	assert(row.addresses.size() == row.weights.size());
 }
 
 
@@ -68,41 +64,45 @@ SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t
 {
 	size_t writtenWarps = 0; // warps
 
-	for(std::map<nidx_t, Row>::const_iterator r = mh_synapses.begin();
+	std::vector<synapse_t> addresses;
+	std::vector<weight_t> weights;
+
+	for(std::map<nidx_t, row_t>::const_iterator r = mh_synapses.begin();
 			r != mh_synapses.end(); ++r) {
 
 		nidx_t sourceNeuron = r->first;
-		const Row row = r->second;
+		const row_t& row = r->second;
 
 		m_warpOffset[sourceNeuron] = startWarp + writtenWarps;
 
-		synapse_t* aptr = &h_data.at((startWarp + writtenWarps) * WARP_SIZE);
-		synapse_t* wptr = &h_data.at((totalWarps + startWarp + writtenWarps) * WARP_SIZE);
+		addresses.resize(row.size());
+		weights.resize(row.size());
+		for(size_t sidx = 0; sidx < row.size(); ++sidx) {
 
-		/*! note that std::copy won't work as it will silently cast floats to integers */
-		assert(sizeof(nidx_t) == sizeof(synapse_t));
-		assert(sizeof(weight_t) == sizeof(synapse_t));
+			const h_synapse_t& s = row.at(sidx);
+			nidx_t neuron = boost::tuples::get<0>(s);
+			addresses.at(sidx) = f_packSynapse(boost::tuples::get<0>(s));
+			weights.at(sidx) = boost::tuples::get<1>(s);
 
-		memcpy(aptr, &row.addresses[0], row.addresses.size() * sizeof(synapse_t));
-		memcpy(wptr, &row.weights[0], row.weights.size() * sizeof(synapse_t));
-
-		assert(row.addresses.size() == row.weights.size());
-
-		std::vector<synapse_t> targets = row.addresses;
-		for(uint i = 0; i < targets.size(); ++i ) {
-			//! \todo make sure we get target neurons properly
-			nidx_t neuron = targets.at(i);
 			uint twarp = neuron / WARP_SIZE;
-			uint gwarp = startWarp + writtenWarps + i / WARP_SIZE;
+			uint gwarp = startWarp + writtenWarps + sidx / WARP_SIZE;
 			//! \todo add assertions here
 			//! \todo do a double loop here to save map lookups
 			uint32_t warpBit = 0x1 << twarp;
 			m_warpTargets[gwarp] |= warpBit;
 		}
 
-		writtenWarps += DIV_CEIL(row.addresses.size(), WARP_SIZE);
+		assert(sizeof(nidx_t) == sizeof(synapse_t));
+		assert(sizeof(weight_t) == sizeof(synapse_t));
 
-		//! \todo need to iterate over all neurons within each warp here
+		synapse_t* aptr = &h_data.at((startWarp + writtenWarps) * WARP_SIZE);
+		synapse_t* wptr = &h_data.at((totalWarps + startWarp + writtenWarps) * WARP_SIZE);
+
+		/*! note that std::copy won't work as it will silently cast floats to integers */
+		memcpy(aptr, &addresses[0], addresses.size() * sizeof(synapse_t));
+		memcpy(wptr, &weights[0], weights.size() * sizeof(synapse_t));
+
+		writtenWarps += DIV_CEIL(row.size(), WARP_SIZE);
 	}
 
 	return writtenWarps;

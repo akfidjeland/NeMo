@@ -6,10 +6,12 @@
 #include <stdint.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <vector>
 #include <map>
 
 #include "nemo_cuda_types.h"
+
 
 
 /*! \brief A somewhat arbitrary collection of synapses 
@@ -84,14 +86,12 @@ class SynapseGroup
 
 	private:
 
-		struct Row {
-			std::vector<nidx_t> addresses;
-			std::vector<weight_t> weights;
-		};
+		typedef boost::tuple<nidx_t, weight_t> h_synapse_t;
+		typedef std::vector<h_synapse_t> row_t;
 
 		/* For each presynaptic neuron we store a row containing all its
 		 * outgoing synapses */
-		std::map<nidx_t, Row> mh_synapses;
+		std::map<nidx_t, row_t> mh_synapses;
 
 		/* The user may want to read back the modified weight matrix. We then
 		 * need the corresponding non-compressed addresses as well. The shape
