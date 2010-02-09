@@ -23,7 +23,7 @@ SynapseGroup::addSynapse(
 		uchar plastic)
 {
 	Row& row = mh_synapses[sourceNeuron];
-	row.addresses.push_back(f_packSynapse(partition, neuron));
+	row.addresses.push_back(neuron);
 	row.weights.push_back(weight);
 
 	assert(row.addresses.size() == row.weights.size());
@@ -49,7 +49,7 @@ SynapseGroup::addSynapses(
 {
 	Row& row = mh_synapses[sourceNeuron];
 	for(size_t n = 0; n < ncount; ++n) {
-		row.addresses.push_back(f_packSynapse(partition[n], neuron[n]));
+		row.addresses.push_back(neuron[n]);
 		row.weights.push_back(weight[n]);
 	}
 
@@ -80,6 +80,9 @@ SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t
 		synapse_t* wptr = &h_data.at((totalWarps + startWarp + writtenWarps) * WARP_SIZE);
 
 		/*! note that std::copy won't work as it will silently cast floats to integers */
+		assert(sizeof(nidx_t) == sizeof(synapse_t));
+		assert(sizeof(weight_t) == sizeof(synapse_t));
+
 		memcpy(aptr, &row.addresses[0], row.addresses.size() * sizeof(synapse_t));
 		memcpy(wptr, &row.weights[0], row.weights.size() * sizeof(synapse_t));
 

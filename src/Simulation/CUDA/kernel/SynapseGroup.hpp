@@ -85,7 +85,7 @@ class SynapseGroup
 	private:
 
 		struct Row {
-			std::vector<synapse_t> addresses; 
+			std::vector<nidx_t> addresses;
 			std::vector<weight_t> weights;
 		};
 
