@@ -271,11 +271,11 @@ gather(
 	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
 
 	// could use 3b of warpAddress
-	__shared__ uchar s_warpCommit[GROUP_SIZE]; // in range 0-8
+	__shared__ uint s_warpCommit[GROUP_SIZE]; // in range 0-8
 	__shared__ uint32_t s_targetBits[GROUP_SIZE];
 
 #define SCHEDULING_THREADS (GROUP_SIZE / WARPS_PER_BLOCK)
-	__shared__ uchar s_warpCommitCount[SCHEDULING_THREADS];
+	__shared__ uint s_warpCommitCount[SCHEDULING_THREADS];
 
 	//! \todo rename variables here
 	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
