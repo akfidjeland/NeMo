@@ -181,30 +181,33 @@ scatter(uint cycle,
 		uint* g_incomingHeads,
 		incoming_t* g_incoming)
 {
-	{
-		//! \todo pre-load the outgoing count for each firing neuron (s_len and s_blocks)
+	for(uint fidxBase = 0; fidxBase < s_firingCount;
+			fidxBase += THREADS_PER_BLOCK) {
 
-		/* We now have the indices of the firing of THREADS_PER_BLOCK
-		 * presynaptic neurons */
-		for(uint i=0; i<s_firingCount; ++i) {
+		// load row lengths in parallel
+		//! \note could probably use ushort here
+		__shared__ uint s_len[THREADS_PER_BLOCK]; // 1KB
+		uint fidx = fidxBase + threadIdx.x;
+		uint presynaptic = s_fired[fidx];
+		if(fidx < s_firingCount) {
+			s_len[threadIdx.x] = outgoingCount(presynaptic, g_outgoingCount);
+		}
+		__syncthreads();
 
-			uint presynaptic = s_fired[i];
+		uint fidxMax = min(fidxBase + THREADS_PER_BLOCK, s_firingCount);
+
+		for(uint fidx = fidxBase; fidx < fidxMax; ++fidx) {
+
+			uint presynaptic = s_fired[fidx];
 			ASSERT(presynaptic < MAX_PARTITION_SIZE);
 
-			//! \todo load this in parallel
-			__shared__ uint s_len;
-			__shared__ uint s_blocks;
-			if(threadIdx.x == 0) {
-				s_len = outgoingCount(presynaptic, g_outgoingCount);
-				s_blocks = DIV_CEIL(s_len, THREADS_PER_BLOCK);
-			}
-			__syncthreads();
+			uint len = s_len[fidx % THREADS_PER_BLOCK];
 
-			for(uint block = 0; block < s_blocks; ++block) {
+			for(uint jobBase = 0; jobBase < len; jobBase += THREADS_PER_BLOCK) {
 
-				uint jobIdx = block * THREADS_PER_BLOCK + threadIdx.x;
+				uint jobIdx = jobBase + threadIdx.x;
 
-				if(jobIdx < s_len) {
+				if(jobIdx < len) {
 
 					outgoing_t sout = outgoing(presynaptic, jobIdx, g_outgoing);
 
@@ -214,9 +217,11 @@ scatter(uint cycle,
 
 					uint targetPartition = outgoingTargetPartition(sout);
 					size_t headsAddr = incomingCountAddr(targetPartition, cycle, delay);
-					//! \todo we might be able to reduce the number of atomic
-					//operations here, by writing warps going to the same
-					//target in the same go.
+					/*! \todo we might be able to reduce the number of atomic
+					 * operations here, by writing warps going to the same
+					 * target in the same go. This would be easire if we did
+					 * just-in-time delivery, in which case we could do
+					 * multiple smem atomics, and just a single gmem atomic */
 					uint offset = atomicAdd(g_incomingHeads + headsAddr, 1);
 
 					ASSERT(offset < c_incomingPitch);
@@ -232,8 +237,8 @@ scatter(uint cycle,
 							offset, c_incomingPitch);
 				}
 			}
-			__syncthreads(); // so s_blocks is not updated
 		}
+		__syncthreads(); // so s_len is not updated
 	}
 }
 
