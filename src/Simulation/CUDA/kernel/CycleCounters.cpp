@@ -23,10 +23,10 @@ const char* durationNames[] = {
 	"load firing",
 	"spike gather",
 	"fire",
+	"spike scatter",
 	"L0 LTP",
 	"L1 LTP",
-	"update history",
-	"spike scatter"
+	"update history"
 };
 
 

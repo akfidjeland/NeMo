@@ -118,7 +118,9 @@ fire(
 	// input
 	float* s_current,    // input current
 	// buffers
-	uint32_t* s_fstim)   // s_T16, so larger than needed
+	uint32_t* s_fstim,   // s_T16, so larger than needed
+	uint* s_firingCount,
+	uint32_t* s_fired)   // s_T32: cannot handle 100% firing
 {
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
@@ -168,6 +170,14 @@ fire(
 						s_cycle, CURRENT_PARTITION, neuron,
 						forceFiring, threadIdx.x);
 				setFiringOutput(neuron);
+
+				//! \todo consider *only* updating this here, and setting u and v separately
+				/*! \note we're using s_T32 for the firing indices. For very
+				 * high firing rates this can overflow. To avoid corrupting
+				 * memory, wrap around. */
+				uint i = atomicInc(s_firingCount, THREADS_PER_BLOCK);
+				s_fired[i] = neuron;
+				ASSERT(i != THREADS_PER_BLOCK); // one firing away from overflow ...
 			}
 
 			g_v[neuron] = v;
@@ -184,31 +194,14 @@ __device__
 void
 l1scatter(
 		uint cycle,
-		uint partitionSize,
-		uint64_t* s_recentFiring,
-		uint16_t* s_firingIdx,
+		uint s_firingCount,
+		uint32_t* s_fired,
 		uint* g_outgoingCount,
 		outgoing_t* g_outgoing,
 		uint* g_incomingHeads,
 		incoming_t* g_incoming)
 {
-	for(int preOffset=0; preOffset < partitionSize; preOffset += THREADS_PER_BLOCK) {
-
-		__shared__ uint s_firingCount;
-
-		if(threadIdx.x == 0) {
-			s_firingCount = 0;
-		}
-		__syncthreads();
-
-		/*! \todo merge this step with the dumping to firing output. We can
-		 * then get rid of the whole outer loop here */
-		int candidate = preOffset + threadIdx.x;
-		if(s_recentFiring[candidate] & 0x1) {
-			int nextFree = atomicAdd(&s_firingCount, 1);
-			s_firingIdx[nextFree] = candidate;
-		}
-		__syncthreads();
+	{
 
 		//! \todo pre-load the outgoing count for each firing neuron (s_len and s_blocks)
 
@@ -216,8 +209,10 @@ l1scatter(
 		 * presynaptic neurons */
 		for(uint i=0; i<s_firingCount; ++i) {
 
-			int presynaptic = s_firingIdx[i];
+			uint presynaptic = s_fired[i];
+			ASSERT(presynaptic < MAX_PARTITION_SIZE);
 
+			//! \todo load this in parallel
 			__shared__ uint s_len;
 			__shared__ uint s_blocks;
 			if(threadIdx.x == 0) {

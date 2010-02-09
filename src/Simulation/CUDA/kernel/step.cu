@@ -60,20 +60,20 @@ STDP_FN(step) (
 
 	/* Per-thread buffers */
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
-#ifdef STDP
 	__shared__ uint32_t s_T32[THREADS_PER_BLOCK];
-#endif
 
 	uint64_t* s_recentFiring = s_M1KB;
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
 	__shared__ float s_substepMult;
+	__shared__ uint s_firingCount;
 
 	if(threadIdx.x == 0) {
 #ifdef __DEVICE_EMULATION__
 		s_cycle = cycle;
 #endif
+		s_firingCount = 0;
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
@@ -124,21 +124,33 @@ STDP_FN(step) (
 	ASSERT(THREADS_PER_BLOCK/2 >= DIV_CEIL(MAX_PARTITION_SIZE, 32));
 	loadExternalFiring(hasExternalInput, s_partitionSize, pitch1, g_fstim, s_fstim);
 
-	fire(
-			s_partitionSize,
+	fire( s_partitionSize,
 			substeps, s_substepMult,
 			pitch1,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
 			neuronParametersSize,
 			s_current, 
-			s_fstim);
+			s_fstim,
+			&s_firingCount,
+			s_T32);
 
 	__syncthreads();
 
+	//! \todo merge with scatter. Only need to do a single loop here
 	writeFiringOutput(firingOutput + CURRENT_PARTITION * pitch1, pitch1);
 
 	SET_COUNTER(s_ccMain, 5);
 
+	l1scatter(
+			cycle,
+			s_firingCount,
+			s_T32,
+			g_outgoingCount,
+			g_outgoing,
+			g_incomingHeads,
+			g_incoming);
+
+	SET_COUNTER(s_ccMain, 6);
 #ifdef STDP
 	/*! \todo since we use the same FCM for both L0 and L1, we could
 	 * potentially use a single RCM and do all STDP in one go */
@@ -151,7 +163,7 @@ STDP_FN(step) (
 			cr0_address, cr0_stdp, cr0_pitch,
 			s_T32);
 #endif
-	SET_COUNTER(s_ccMain, 6);
+	SET_COUNTER(s_ccMain, 7);
 #ifdef STDP
 	updateSTDP_(
 			true,
@@ -162,7 +174,7 @@ STDP_FN(step) (
 			cr1_address, cr1_stdp, cr1_pitch,
 			s_T32);
 #endif
-	SET_COUNTER(s_ccMain, 7);
+	SET_COUNTER(s_ccMain, 8);
 
 	/* We need the (updated) recent firing history for L1 spike
 	 * delivery later, but won't update this further, so we can write
@@ -172,17 +184,6 @@ STDP_FN(step) (
 				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
 				+ CURRENT_PARTITION * s_pitch64);
 
-	SET_COUNTER(s_ccMain, 8);
-
-	l1scatter(
-			cycle,
-			s_partitionSize,
-			s_recentFiring,
-			s_T16,
-			g_outgoingCount,
-			g_outgoing,
-			g_incomingHeads,
-			g_incoming);
 	SET_COUNTER(s_ccMain, 9);
 
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);

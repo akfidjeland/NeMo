@@ -2,6 +2,7 @@
 
 #define OUTPUT_BUFFER_SZ (1<<(NEURON_BITS-5))
 
+//! \todo share this code with s_T16 used for firing output
 __shared__ uint32_t s_firingOutput[OUTPUT_BUFFER_SZ];
 
 
