@@ -81,10 +81,8 @@ updateHistory(uint s_partitionSize, uint64_t* s_recentFiring, uint64_t* g_recent
 	for(uint nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
 		uint neuron = nbase + threadIdx.x;
 		if(neuron < s_partitionSize) {
-			/* Need to update firing history here as we need it in L1 delivery,
-			 * so we can handle 1-cycle delay */
-			s_recentFiring[neuron] = (s_recentFiring[neuron] << 1) | (didFire(neuron) ? 0x1 : 0x0);
-			g_recentFiring[neuron] = s_recentFiring[neuron];
+			g_recentFiring[neuron] =
+				(s_recentFiring[neuron] << 1) | (didFire(neuron) ? 0x1 : 0x0);
 		}
 	}
 	__syncthreads();

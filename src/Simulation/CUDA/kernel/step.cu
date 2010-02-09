@@ -139,6 +139,7 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 5);
 
+#ifdef STDP
 	uint64_t* s_recentFiring = s_N64;
 	loadSharedArray(s_partitionSize,
 			s_pitch64,
@@ -148,7 +149,6 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 6);
 
-#ifdef STDP
 	/*! \todo since we use the same FCM for both L0 and L1, we could
 	 * potentially use a single RCM and do all STDP in one go */
 	updateSTDP_(
@@ -159,9 +159,9 @@ STDP_FN(step) (
 			s_partitionSize,
 			cr0_address, cr0_stdp, cr0_pitch,
 			s_T32);
-#endif
+
 	SET_COUNTER(s_ccMain, 7);
-#ifdef STDP
+
 	updateSTDP_(
 			true,
 			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
@@ -170,16 +170,18 @@ STDP_FN(step) (
 			s_partitionSize,
 			cr1_address, cr1_stdp, cr1_pitch,
 			s_T32);
-#endif
+
 	SET_COUNTER(s_ccMain, 8);
 
-	/* We need the (updated) recent firing history for L1 spike
-	 * delivery later, but won't update this further, so we can write
-	 * back to global memory now. */
 	updateHistory(s_partitionSize, s_recentFiring,
 			g_recentFiring
 				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
 				+ CURRENT_PARTITION * s_pitch64);
+#else
+	SET_COUNTER(s_ccMain, 6);
+	SET_COUNTER(s_ccMain, 7);
+	SET_COUNTER(s_ccMain, 8);
+#endif
 
 	SET_COUNTER(s_ccMain, 9);
 
