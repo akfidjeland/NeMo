@@ -266,7 +266,7 @@ updateSTDP_(
 	DEVICE_UINT_PTR_T* cr_address,
 	DEVICE_UINT_PTR_T* cr_stdp,
 	DEVICE_UINT_PTR_T* cr_pitch,
-	uint32_t* s_firingIdx) // thread buffer
+	dnidx_t* s_firingIdx) // s_NIdx, so can handle /all/ neurons firing
 {
 	__shared__ uint s_schunkCount; // number of chunks for synapse-parallel execution
 	__shared__ uint s_nchunkCount; // number of chunks for neuron-parallel execution

@@ -1,6 +1,8 @@
 #ifndef KERNEL_CU_H
 #define KERNEL_CU_H
 
+#include <stdint.h>
+
 #define MAX_THREAD_BLOCKS 128
 #define THREADS_PER_BLOCK 256
 
@@ -53,5 +55,10 @@
 //! \todo should probably make this uint32_t explicitly
 #define DEVICE_UINT_PTR_T uint
 #endif
+
+/* Type for storing (within-partition) neuron indices on the device. We could
+ * use uint16_t here to save some shared memory, in exchange for slightly
+ * poorer shared memory access patterns */
+typedef uint32_t dnidx_t;
 
 #endif

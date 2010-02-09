@@ -105,7 +105,7 @@ fire(
 	// buffers
 	uint32_t* s_fstim,   // s_T16, so larger than needed
 	uint* s_firingCount,
-	uint32_t* s_fired)   // s_T32: cannot handle 100% firing
+	dnidx_t* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
@@ -157,12 +157,8 @@ fire(
 				setFiringOutput(neuron);
 
 				//! \todo consider *only* updating this here, and setting u and v separately
-				/*! \note we're using s_T32 for the firing indices. For very
-				 * high firing rates this can overflow. To avoid corrupting
-				 * memory, wrap around. */
-				uint i = atomicInc(s_firingCount, THREADS_PER_BLOCK);
+				uint i = atomicAdd(s_firingCount, 1);
 				s_fired[i] = neuron;
-				ASSERT(i != THREADS_PER_BLOCK); // one firing away from overflow ...
 			}
 
 			g_v[neuron] = v;
@@ -173,14 +169,11 @@ fire(
 
 
 
-/* TODO: the loop structure here is nearly the same as deliverL0Spikes. Factor
- * out or use a code generator to avoid repetition */
 __device__
 void
-l1scatter(
-		uint cycle,
+scatter(uint cycle,
 		uint s_firingCount,
-		uint32_t* s_fired,
+		dnidx_t* s_fired,
 		uint* g_outgoingCount,
 		outgoing_t* g_outgoing,
 		uint* g_incomingHeads,

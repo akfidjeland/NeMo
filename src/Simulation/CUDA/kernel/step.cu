@@ -56,10 +56,10 @@ STDP_FN(step) (
 
 	/* Per-neuron buffers */
 	__shared__ uint64_t s_N64[MAX_PARTITION_SIZE];
+	__shared__ dnidx_t s_NIdx[MAX_PARTITION_SIZE];
 
 	/* Per-thread buffers */
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
-	__shared__ uint32_t s_T32[THREADS_PER_BLOCK];
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -120,7 +120,7 @@ STDP_FN(step) (
 			s_current, 
 			s_fstim,
 			&s_firingCount,
-			s_T32);
+			s_NIdx);
 
 	__syncthreads();
 	SET_COUNTER(s_ccMain, 4);
@@ -128,10 +128,10 @@ STDP_FN(step) (
 	//! \todo merge with scatter. Only need to do a single loop here
 	writeFiringOutput(firingOutput + CURRENT_PARTITION * pitch1, pitch1);
 
-	l1scatter(
+	scatter(
 			cycle,
 			s_firingCount,
-			s_T32,
+			s_NIdx,
 			g_outgoingCount,
 			g_outgoing,
 			g_incomingHeads,
@@ -158,7 +158,7 @@ STDP_FN(step) (
 			s_pitch32,
 			s_partitionSize,
 			cr0_address, cr0_stdp, cr0_pitch,
-			s_T32);
+			s_NIdx);
 
 	SET_COUNTER(s_ccMain, 7);
 
@@ -169,7 +169,7 @@ STDP_FN(step) (
 			s_pitch64,
 			s_partitionSize,
 			cr1_address, cr1_stdp, cr1_pitch,
-			s_T32);
+			s_NIdx);
 
 	SET_COUNTER(s_ccMain, 8);
 
