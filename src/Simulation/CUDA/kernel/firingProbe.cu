@@ -1,22 +1,5 @@
 #include "kernel.cu_h"
 
-#define OUTPUT_BUFFER_SZ (1<<(NEURON_BITS-5))
-
-//! \todo share this code with s_T16 used for firing output
-__shared__ uint32_t s_firingOutput[OUTPUT_BUFFER_SZ];
-
-
-__device__
-void
-clearFiringOutput()
-{
-	if(threadIdx.x < OUTPUT_BUFFER_SZ) {
-		s_firingOutput[threadIdx.x] = 0;
-	}
-	__syncthreads();
-}
-
-
 
 //! \todo could use OUTPUT_BUFFER_SZ instead of pitch here
 /* \param g_firingOutput
@@ -27,38 +10,47 @@ clearFiringOutput()
  */
 __device__
 void
-writeFiringOutput(uint32_t* g_firingOutput, size_t pitch)
+writeFiringOutput(uint nfired,
+		dnidx_t* s_fired,
+		uint32_t* s_dfired, // dense firing
+		size_t pitch, uint32_t* g_firingOutput)
 {
+	// clear
+	if(threadIdx.x < (MAX_PARTITION_SIZE/32)) {
+		s_dfired[threadIdx.x] = 0;
+	}
+	__syncthreads();
+
+	// fill
+	for(uint nbase=0; nbase < nfired; nbase += THREADS_PER_BLOCK) {
+		uint i = nbase + threadIdx.x;
+		uint neuron = s_fired[i];
+		ASSERT(neuron / 32 < OUTPUT_BUFFER_SZ);
+		uint32_t word = neuron / 32;
+		uint32_t mask = 0x1 << (neuron % 32);
+		if(i < nfired) {
+			atomicOr(s_dfired + word, mask);
+		}
+	}
+	__syncthreads();
+
+	// write to global memory
 	if(threadIdx.x < pitch) {
-		g_firingOutput[threadIdx.x] =  s_firingOutput[threadIdx.x];
+		g_firingOutput[threadIdx.x] =  s_dfired[threadIdx.x];
 	}
 }
 
-
-
-__device__
-void
-setFiringOutput(uint neuron)
-{
-	ASSERT(neuron / 32 < OUTPUT_BUFFER_SZ);
-	uint32_t word = neuron / 32;
-	uint32_t mask = 0x1 << (neuron % 32);
-	atomicOr(s_firingOutput + word, mask);
-}
 
 
 
 /*! \return Did the given neuron fire this cycle? */
 __device__
 uint32_t
-didFire(uint neuron)
+didFire(uint neuron, uint32_t* s_dfired)
 {
 	//! \todo check that we're in bounds
 	uint32_t word = neuron / 32;
 	uint32_t mask = 0x1 << (neuron % 32);
-	return s_firingOutput[word] & mask;
+	return s_dfired[word] & mask;
 }
 
-
-
-#undef OUTPUT_BUFFER_SZ

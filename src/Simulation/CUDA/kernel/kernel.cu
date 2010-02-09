@@ -76,13 +76,16 @@ loadSharedArray(int partitionSize, size_t pitch, T* g_arr, T* s_arr)
 
 __device__
 void
-updateHistory(uint s_partitionSize, uint64_t* s_recentFiring, uint64_t* g_recentFiring)
+updateHistory(uint s_partitionSize,
+		uint32_t* s_dfired,
+		uint64_t* s_recentFiring,
+		uint64_t* g_recentFiring)
 {
 	for(uint nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
 		uint neuron = nbase + threadIdx.x;
 		if(neuron < s_partitionSize) {
 			g_recentFiring[neuron] =
-				(s_recentFiring[neuron] << 1) | (didFire(neuron) ? 0x1 : 0x0);
+				(s_recentFiring[neuron] << 1) | (didFire(neuron, s_dfired) ? 0x1 : 0x0);
 		}
 	}
 	__syncthreads();
@@ -154,7 +157,6 @@ fire(
 				DEBUG_MSG("c%u %u-%u fired (forced: %u) (thread %u)\n",
 						s_cycle, CURRENT_PARTITION, neuron,
 						forceFiring, threadIdx.x);
-				setFiringOutput(neuron);
 
 				//! \todo consider *only* updating this here, and setting u and v separately
 				uint i = atomicAdd(s_firingCount, 1);
@@ -180,7 +182,6 @@ scatter(uint cycle,
 		incoming_t* g_incoming)
 {
 	{
-
 		//! \todo pre-load the outgoing count for each firing neuron (s_len and s_blocks)
 
 		/* We now have the indices of the firing of THREADS_PER_BLOCK
@@ -241,7 +242,7 @@ scatter(uint cycle,
 
 __device__
 void
-l1gather(
+gather(
 		uint cycle,
 		synapse_t* g_fcm,
 		uint* g_incomingCount,

@@ -56,10 +56,8 @@ STDP_FN(step) (
 
 	/* Per-neuron buffers */
 	__shared__ uint64_t s_N64[MAX_PARTITION_SIZE];
-	__shared__ dnidx_t s_NIdx[MAX_PARTITION_SIZE];
-
-	/* Per-thread buffers */
-	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
+	__shared__ dnidx_t s_fired[MAX_PARTITION_SIZE];
+	__shared__ uint32_t s_N1[MAX_PARTITION_SIZE/32];
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -96,18 +94,11 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 2);
 
-	l1gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current);
+	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current);
 
 	SET_COUNTER(s_ccMain, 3);
 
-	/* The dense firing output is staged in shared memory before being written
-	 * to global memory */
-	clearFiringOutput();
-
-	//__shared__ uint32_t s_fstim[DIV_CEIL(STDP_FN(MAX_PARTITION_SIZE), 32)];
-	//! \todo use the same buffer for both input and output
-	/* Make sure s_T16 is large enough */
-	uint32_t* s_fstim = (uint32_t*) s_T16;
+	uint32_t* s_fstim = s_N1;
 	bool hasExternalInput = g_fstim != 0;
 	ASSERT(THREADS_PER_BLOCK/2 >= DIV_CEIL(MAX_PARTITION_SIZE, 32));
 	loadExternalFiring(hasExternalInput, s_partitionSize, pitch1, g_fstim, s_fstim);
@@ -117,21 +108,27 @@ STDP_FN(step) (
 			pitch1,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
 			neuronParametersSize,
-			s_current, 
+			s_current,
 			s_fstim,
 			&s_firingCount,
-			s_NIdx);
+			s_fired);
 
 	__syncthreads();
-	SET_COUNTER(s_ccMain, 4);
 
-	//! \todo merge with scatter. Only need to do a single loop here
-	writeFiringOutput(firingOutput + CURRENT_PARTITION * pitch1, pitch1);
+	uint32_t* s_dfired = s_N1;
+	writeFiringOutput(
+			s_firingCount,
+			s_fired,
+			s_dfired,
+			pitch1,
+			firingOutput + CURRENT_PARTITION * pitch1);
+
+	SET_COUNTER(s_ccMain, 4);
 
 	scatter(
 			cycle,
 			s_firingCount,
-			s_NIdx,
+			s_fired,
 			g_outgoingCount,
 			g_outgoing,
 			g_incomingHeads,
@@ -158,7 +155,7 @@ STDP_FN(step) (
 			s_pitch32,
 			s_partitionSize,
 			cr0_address, cr0_stdp, cr0_pitch,
-			s_NIdx);
+			s_fired);
 
 	SET_COUNTER(s_ccMain, 7);
 
@@ -169,11 +166,13 @@ STDP_FN(step) (
 			s_pitch64,
 			s_partitionSize,
 			cr1_address, cr1_stdp, cr1_pitch,
-			s_NIdx);
+			s_fired);
 
 	SET_COUNTER(s_ccMain, 8);
 
-	updateHistory(s_partitionSize, s_recentFiring,
+	updateHistory(s_partitionSize,
+			s_dfired,
+			s_recentFiring,
 			g_recentFiring
 				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
 				+ CURRENT_PARTITION * s_pitch64);
