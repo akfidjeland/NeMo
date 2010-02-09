@@ -74,19 +74,6 @@ loadSharedArray(int partitionSize, size_t pitch, T* g_arr, T* s_arr)
 
 
 
-/* Set shared memory array to fixed value */
-__device__
-void
-setSharedArray(uint32_t* s_mem, uint32_t val)
-{
-	// the compiler should unroll this
-	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
-		s_mem[i*THREADS_PER_BLOCK + threadIdx.x] = val;
-	}
-}
-
-
-
 __device__
 void
 updateHistory(uint s_partitionSize, uint64_t* s_recentFiring, uint64_t* g_recentFiring)

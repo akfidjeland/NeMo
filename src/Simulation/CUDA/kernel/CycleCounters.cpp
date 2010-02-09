@@ -20,10 +20,10 @@ CycleCounters::CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpE
 const char* durationNames[] = {
 	"init",
 	"random input",
-	"load firing",
 	"spike gather",
 	"fire",
 	"spike scatter",
+	"load firing",
 	"L0 LTP",
 	"L1 LTP",
 	"update history"

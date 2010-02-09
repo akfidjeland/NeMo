@@ -55,14 +55,11 @@ STDP_FN(step) (
 	 * purposes. */
 
 	/* Per-neuron buffers */
-	__shared__ uint32_t s_M1KA[MAX_PARTITION_SIZE];
-	__shared__ uint64_t s_M1KB[MAX_PARTITION_SIZE];
+	__shared__ uint64_t s_N64[MAX_PARTITION_SIZE];
 
 	/* Per-thread buffers */
 	__shared__ uint16_t s_T16[THREADS_PER_BLOCK];
 	__shared__ uint32_t s_T32[THREADS_PER_BLOCK];
-
-	uint64_t* s_recentFiring = s_M1KB;
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -75,6 +72,7 @@ STDP_FN(step) (
 #endif
 		s_firingCount = 0;
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		//! \todo no need to compute this on device.
 		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
 	__syncthreads();
@@ -86,31 +84,21 @@ STDP_FN(step) (
 #endif
 	SET_COUNTER(s_ccMain, 1);
 
-    //! \todo no need to clear array here, if loading thalamic input
-	setSharedArray(s_M1KA, 0);
-	float* s_current = (float*) s_M1KA;
-    if(g_rngState != NULL && g_sigma != NULL) {
-        thalamicInput(s_partitionSize,
-                neuronParametersSize,
-                s_pitch32,
-                g_rngState,
-                g_sigma,
-                s_current);
-    }
+	float* s_current = (float*) s_N64;
+	if(g_rngState != NULL && g_sigma != NULL) {
+		thalamicInput(s_partitionSize, neuronParametersSize,
+				s_pitch32, g_rngState, g_sigma, s_current);
+	} else {
+		for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
+			s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
+		}
+	}
 
 	SET_COUNTER(s_ccMain, 2);
 
-	loadSharedArray(s_partitionSize,
-			s_pitch64,
-			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
-			s_recentFiring);
-	__syncthreads();
-
-	SET_COUNTER(s_ccMain, 3);
-
 	l1gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current);
 
-	SET_COUNTER(s_ccMain, 4);
+	SET_COUNTER(s_ccMain, 3);
 
 	/* The dense firing output is staged in shared memory before being written
 	 * to global memory */
@@ -135,11 +123,10 @@ STDP_FN(step) (
 			s_T32);
 
 	__syncthreads();
+	SET_COUNTER(s_ccMain, 4);
 
 	//! \todo merge with scatter. Only need to do a single loop here
 	writeFiringOutput(firingOutput + CURRENT_PARTITION * pitch1, pitch1);
-
-	SET_COUNTER(s_ccMain, 5);
 
 	l1scatter(
 			cycle,
@@ -150,7 +137,17 @@ STDP_FN(step) (
 			g_incomingHeads,
 			g_incoming);
 
+	SET_COUNTER(s_ccMain, 5);
+
+	uint64_t* s_recentFiring = s_N64;
+	loadSharedArray(s_partitionSize,
+			s_pitch64,
+			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
+			s_recentFiring);
+	__syncthreads();
+
 	SET_COUNTER(s_ccMain, 6);
+
 #ifdef STDP
 	/*! \todo since we use the same FCM for both L0 and L1, we could
 	 * potentially use a single RCM and do all STDP in one go */
