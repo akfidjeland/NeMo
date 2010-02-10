@@ -91,7 +91,7 @@ thalamicInput(
             //! \todo make use of  both randoms
             float2 r = rng_genGaussian(rngState);
             float sigma = g_sigma[partitionOffset + neuron];
-            s_current[neuron] = r.x * sigma;
+            s_current[neuron] += r.x * sigma;
         }
     }
 	

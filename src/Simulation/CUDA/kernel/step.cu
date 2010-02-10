@@ -80,21 +80,22 @@ STDP_FN(step) (
 #ifdef STDP
 	loadStdpParameters();
 #endif
-	SET_COUNTER(s_ccMain, 1);
 
 	float* s_current = (float*) s_N64;
-	if(g_rngState != NULL && g_sigma != NULL) {
-		thalamicInput(s_partitionSize, neuronParametersSize,
-				s_pitch32, g_rngState, g_sigma, s_current);
-	} else {
-		for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
-			s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
-		}
+	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
+		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
+
 	}
+	SET_COUNTER(s_ccMain, 1);
+
+	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current);
 
 	SET_COUNTER(s_ccMain, 2);
 
-	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current);
+	if(g_rngState != NULL && g_sigma != NULL) {
+		thalamicInput(s_partitionSize, neuronParametersSize,
+				s_pitch32, g_rngState, g_sigma, s_current);
+	}
 
 	SET_COUNTER(s_ccMain, 3);
 
