@@ -10,6 +10,7 @@ extern "C" {
 #include "ThalamicInput.hpp"
 #include "util.h"
 #include "log.hpp"
+#include "fixedpoint.hpp"
 
 #include <vector>
 #include <assert.h>
@@ -69,7 +70,30 @@ configureStdp(
 		uint postFireWindow,
 		uint64_t potentiationBits,
 		uint64_t depressionBits,
-		float* stdpFn);
+		weight_dt* stdpFn);
+
+
+
+void
+RuntimeData::configureStdp()
+{
+	if(!stdpFn.enabled()) {
+		return;
+	}
+
+	const std::vector<float>& flfn = stdpFn.function();
+	std::vector<fix_t> fxfn(flfn.size());
+	uint fb = m_cm->fractionalBits();
+	for(uint i=0; i < fxfn.size(); ++i) {
+		fxfn.at(i) = fixedPoint(flfn[i], fb);
+	}
+	::configureStdp(stdpFn.preFireWindow(),
+			stdpFn.postFireWindow(),
+			stdpFn.potentiationBits(),
+			stdpFn.depressionBits(),
+			const_cast<fix_t*>(&fxfn[0]));
+}
+
 
 
 void
@@ -78,16 +102,8 @@ RuntimeData::moveToDevice()
 	if(m_deviceDirty) {
 		m_cm->moveToDevice();
 		m_neurons->moveToDevice();
-		if(stdpFn.enabled()) {
-			configureStdp(stdpFn.preFireWindow(),
-					stdpFn.postFireWindow(),
-					stdpFn.potentiationBits(),
-					stdpFn.depressionBits(),
-					const_cast<float*>(&stdpFn.function()[0]));
-		}
-
+		configureStdp();
 		m_partitionCount = m_neurons->partitionCount();
-
 		firingOutput = new FiringOutput(m_partitionCount, maxPartitionSize, m_maxReadPeriod);
 		recentFiring = new NVector<uint64_t>(m_partitionCount, maxPartitionSize, false, 2);
 		//! \todo seed properly from outside function

@@ -28,7 +28,8 @@ CC_SRC = FiringOutput.cpp \
 		 RSMatrix.cpp \
 		 SynapseGroup.cpp \
 		 Outgoing.cpp \
-		 Incoming.cpp
+		 Incoming.cpp \
+		 fixedpoint.cpp
 
 
 # CUDA source files (compiled with cudacc)

@@ -1,15 +1,20 @@
 //! \file SynapseGroup.cpp
 
+#include <cmath>
+#include <sstream>
+
 #include "SynapseGroup.hpp"
 
 #include "except.hpp"
 #include "connectivityMatrix.cu_h"
 #include "util.h"
 #include "kernel.cu_h"
+#include "fixedpoint.hpp"
 
 
 SynapseGroup::SynapseGroup() :
-	m_lastSync(-1)
+	m_lastSync(-1),
+	m_maxAbsWeight(0.0f)
 { }
 
 
@@ -30,6 +35,8 @@ SynapseGroup::addSynapse(
 	mf_targetNeuron[sourceNeuron].push_back(neuron);
 	mf_plastic[sourceNeuron].push_back(plastic);
 
+	m_maxAbsWeight = std::max(fabsf(weight), m_maxAbsWeight);
+
 	return row.size() - 1;
 }
 
@@ -48,6 +55,7 @@ SynapseGroup::addSynapses(
 	row_t& row = mh_synapses[sourceNeuron];
 	for(size_t n = 0; n < ncount; ++n) {
 		row.push_back(boost::tuple<nidx_t, weight_t>(neuron[n], weight[n]));
+		m_maxAbsWeight = std::max(fabsf(weight[n]), m_maxAbsWeight);
 	}
 
 	std::copy(partition, partition+ncount, back_inserter(mf_targetPartition[sourceNeuron]));
@@ -60,12 +68,16 @@ SynapseGroup::addSynapses(
 
 /*! fill host buffer with synapse data */
 size_t
-SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t>& h_data)
+SynapseGroup::fillFcm(
+		uint fractionalBits,
+		size_t startWarp,
+		size_t totalWarps,
+		std::vector<synapse_t>& h_data)
 {
 	size_t writtenWarps = 0; // warps
 
 	std::vector<synapse_t> addresses;
-	std::vector<weight_t> weights;
+	std::vector<weight_dt> weights;
 
 	for(std::map<nidx_t, row_t>::const_iterator r = mh_synapses.begin();
 			r != mh_synapses.end(); ++r) {
@@ -82,7 +94,7 @@ SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t
 			const h_synapse_t& s = row.at(sidx);
 			nidx_t neuron = boost::tuples::get<0>(s);
 			addresses.at(sidx) = f_packSynapse(boost::tuples::get<0>(s));
-			weights.at(sidx) = boost::tuples::get<1>(s);
+			weights.at(sidx) = fixedPoint(boost::tuples::get<1>(s), fractionalBits);
 
 			uint twarp = neuron / WARP_SIZE;
 			uint gwarp = startWarp + writtenWarps + sidx / WARP_SIZE;
@@ -93,7 +105,7 @@ SynapseGroup::fillFcm(size_t startWarp, size_t totalWarps, std::vector<synapse_t
 		}
 
 		assert(sizeof(nidx_t) == sizeof(synapse_t));
-		assert(sizeof(weight_t) == sizeof(synapse_t));
+		assert(sizeof(weight_dt) == sizeof(synapse_t));
 
 		synapse_t* aptr = &h_data.at((startWarp + writtenWarps) * WARP_SIZE);
 		synapse_t* wptr = &h_data.at((totalWarps + startWarp + writtenWarps) * WARP_SIZE);

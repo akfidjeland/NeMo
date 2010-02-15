@@ -5,6 +5,7 @@
 #include "cycleCounting.cu"
 #include "connectivityMatrix.cu"
 #include "util.h"
+#include "fixedpoint.cu"
 
 
 /*! Apply STDP 
@@ -27,10 +28,10 @@ applySTDP_(
 	size_t ccPitch,
 #endif
 	synapse_t* g_fcm,
-	float reward,
+	weight_dt reward,
 	uint cmIdx,      // L0 or L1
-	float maxWeight, // for excitatory synapses
-	float minWeight) // for inhibitory synapses
+	weight_dt maxWeight, // for excitatory synapses
+	weight_dt minWeight) // for inhibitory synapses
 	/*! \note reverse connectivity addresses are found in constant memory,
 	 * while forward connectivity addresses are found in texture memory */
 {
@@ -39,9 +40,9 @@ applySTDP_(
 	__shared__ uint s_chunkCount;
 	__shared__ uint s_partitionSize;
 
-	float* gr_stdp = cmIdx == 0
-		? (float*) cr0_stdp[CURRENT_PARTITION]
-		: (float*) cr1_stdp[CURRENT_PARTITION];
+	weight_dt* gr_stdp = cmIdx == 0
+		? (weight_dt*) cr0_stdp[CURRENT_PARTITION]
+		: (weight_dt*) cr1_stdp[CURRENT_PARTITION];
 
 	uint r_pitch = cmIdx == 0
 		? cr0_pitch[CURRENT_PARTITION]
@@ -82,21 +83,22 @@ applySTDP_(
 					/*! \todo try using atomicExch here instead. For m=20
 					 * atomicExch is slightly faster, but this will probably
 					 * work less well for e.g. m=1000 */
-					float w_diff = gr_stdp[gr_offset] * reward;
+					//weight_dt w_diff = gr_stdp[gr_offset] * reward;
 					//float w_diff = reward * __int_as_float(atomicExch(gr_stdp + gr_offset, __float_as_int(0.0f)));
+					weight_dt w_diff = fx_mul(gr_stdp[gr_offset], reward);
 
-					if(w_diff != 0.0f) {
+					if(w_diff != 0) {
 
-						gr_stdp[gr_offset] = 0.0f;
+						gr_stdp[gr_offset] = 0;
 
-						float* gf_weight = (float*) g_fcm + c_fcmPlaneSize * FCM_WEIGHT;
+						weight_dt* gf_weight = (weight_dt*) g_fcm + c_fcmPlaneSize * FCM_WEIGHT;
 
-						float w_old = gf_weight[gf_offset];
-						float w_new = 0.0f;
-						if(w_old > 0.0f) {
-							w_new = fmin(maxWeight, fmax(w_old + w_diff, 0.0f));
-						} else if(w_old < 0.0f) {
-							w_new = fmin(0.0f, fmax(w_old + w_diff, minWeight));
+						weight_dt w_old = gf_weight[gf_offset];
+						weight_dt w_new = 0;
+						if(w_old > 0) {
+							w_new = min(maxWeight, max(w_old + w_diff, 0));
+						} else if(w_old < 0) {
+							w_new = min(0, max(w_old + w_diff, minWeight));
 						}
 
 						if(w_old != w_new) {
@@ -104,7 +106,7 @@ applySTDP_(
 							DEBUG_MSG("stdp (%u-%u -> %u-%u) %f %+f = %f\n",
 									sourcePartition(rsynapse), sourceNeuron(rsynapse),
 									CURRENT_PARTITION, target,
-									w_old, w_diff, w_new);
+									fx_tofloat(w_old), fx_tofloat(w_diff), fx_tofloat(w_new));
 						}
 					}
 				}

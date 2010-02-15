@@ -25,6 +25,7 @@
 
 
 /* compute the next highest power of 2 of 32-bit v. From "bit-twiddling hacks".  */
+//! \todo merge with code in bitops.h
 inline
 uint32_t
 ceilPowerOfTwo(uint32_t v)

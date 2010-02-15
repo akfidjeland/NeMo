@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
+#include <cmath>
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include "util.h"
@@ -11,6 +12,7 @@
 #include "except.hpp"
 #include "SynapseGroup.hpp"
 #include "connectivityMatrix.cu_h"
+#include "fixedpoint.hpp"
 
 
 ConnectivityMatrixImpl::ConnectivityMatrixImpl(
@@ -19,7 +21,8 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(0),
 	m_setReverse(setReverse),
-	md_allocatedFCM(0)
+	md_allocatedFCM(0),
+	m_fractionalBits(~0)
 { }
 
 
@@ -120,6 +123,49 @@ ConnectivityMatrixImpl::setRow(
 
 
 
+/* Determine the number of fractional bits to use when storing weights in
+ * fixed-point format on the device. */
+uint
+ConnectivityMatrixImpl::setFractionalBits()
+{
+	weight_t maxAbsWeight = 0.0f;
+	for(fcm_t::const_iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
+		maxAbsWeight = std::max(maxAbsWeight, i->second.maxAbsWeight());
+	}
+
+	/* In the worst case we may have all presynaptic neurons for some neuron
+	 * firing, and having all the relevant synapses have the maximum weight we
+	 * just computed. Based on this, it's possible to set the radix point such
+	 * that we are guaranteed never to overflow. However, if we optimise for
+	 * this pathological case we'll end up throwing away precision for no
+	 * appreciable gain. Instead we rely on overflow detection on the device
+	 * (which will lead to saturation of the input current).
+	 *
+	 * We can make some reasonable assumptions regarding the number of neurons
+	 * expected to fire at any time as well as the distribution of weights.
+	 *
+	 * For now just assume that at most a fixed number of neurons will fire at
+	 * max weight. */
+	//! \todo do this based on both max weight and max number of incoming synapses
+	uint log2Ceil = ceilf(log2(maxAbsWeight));
+	uint fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
+	//! \todo log this to file
+	//fprintf(stderr, "Using fixed point format %u.%u\n", 31-fbits, fbits);
+	m_fractionalBits = fbits;
+	return fbits;
+}
+
+
+
+uint
+ConnectivityMatrixImpl::fractionalBits() const
+{
+	if(m_fractionalBits == ~0U) {
+		throw std::runtime_error("Fractional bits requested before it was set");
+	}
+	return m_fractionalBits;
+}
+
 
 void
 ConnectivityMatrixImpl::moveFcmToDevice()
@@ -157,15 +203,18 @@ ConnectivityMatrixImpl::moveFcmToDevice()
 	size_t wpitch = bpitch / sizeof(synapse_t);
 	std::vector<synapse_t> h_data(height * wpitch, f_nullSynapse());
 
+	uint fbits = setFractionalBits();
+
 	size_t woffset = 1; // leave space for the null warp
 	for(fcm_t::iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
-		woffset += i->second.fillFcm(woffset, totalWarpCount, h_data);
+		woffset += i->second.fillFcm(fbits, woffset, totalWarpCount, h_data);
 	}
 
 	md_allocatedFCM = height * bpitch;
 	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], md_allocatedFCM, cudaMemcpyHostToDevice));
 
 	setFcmPlaneSize(totalWarpCount * wpitch);
+	setFixedPointFormat(fbits);
 }
 
 

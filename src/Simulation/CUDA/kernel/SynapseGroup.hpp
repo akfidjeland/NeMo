@@ -61,6 +61,9 @@ class SynapseGroup
 
 		/*! fill host buffer with synapse data.
 		 *
+		 * \param fractionalBits
+		 * 		is the number of fractional bits to use in the fixed-point
+		 * 		representation of the weights.
 		 * \param start
 		 * 		word offset withing host data, for the first unused warp
 		 * \param planeSize
@@ -71,7 +74,9 @@ class SynapseGroup
 		 * \return
 		 * 		number of consecutive words written (starting at \a start)
 		 */
-		size_t fillFcm(size_t start,
+		size_t fillFcm(
+				uint fractionalBits,
+				size_t start,
 				size_t planeSize,
 				std::vector<synapse_t>& h_data);
 
@@ -83,6 +88,8 @@ class SynapseGroup
 
 		//! \todo add docstring
 		uint32_t warpTargetBits(nidx_t neuron, size_t warp) const;
+
+		weight_t maxAbsWeight() const { return m_maxAbsWeight; }
 
 	private:
 
@@ -109,6 +116,10 @@ class SynapseGroup
 		// warp targets
 		//typedef uint warp_idx_t;
 		std::map<uint, uint32_t> m_warpTargets; // bitset of warp target neurons
+
+		/* In order to determine the fixed point, we need to keep track of the
+		 * range of synapse weights. */
+		weight_t m_maxAbsWeight;
 };
 
 #endif

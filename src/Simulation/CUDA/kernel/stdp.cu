@@ -2,6 +2,7 @@
 #include "error.cu"
 #include "cycle.cu"
 #include "util.h"
+#include "fixedpoint.hpp"
 
 
 /* STDP parameters
@@ -30,7 +31,7 @@ __constant__ uint64_t c_stdpPotentiation;
 __constant__ uint64_t c_stdpDepression;
 
 /* The STDP function sampled at integer cycle points within the STDP window */
-__constant__ float c_stdpFn[STDP_WINDOW_SIZE];
+__constant__ weight_dt c_stdpFn[STDP_WINDOW_SIZE];
 
 /* Length of the window (in cycles) which is post firing */
 __constant__ uint c_stdpPostFireWindow;
@@ -43,7 +44,7 @@ __constant__ uint c_stdpWindow;
 
 __shared__ uint64_t s_stdpPotentiation;
 __shared__ uint64_t s_stdpDepression;
-__shared__ float s_stdpFn[STDP_WINDOW_SIZE];
+__shared__ weight_dt s_stdpFn[STDP_WINDOW_SIZE];
 __shared__ uint s_stdpPostFireWindow;
 __shared__ uint s_stdpPreFireWindow;
 
@@ -60,7 +61,8 @@ configureStdp(
 		uint postFireWindow,
 		uint64_t potentiationBits, // remainder are depression
 		uint64_t depressionBits, // remainder are depression
-		float* stdpFn)
+		weight_dt* stdpFn
+		)
 {
 	SET_STDP_PARAMETER(c_stdpPreFireWindow, preFireWindow);
 	SET_STDP_PARAMETER(c_stdpPostFireWindow, postFireWindow);
@@ -69,9 +71,7 @@ configureStdp(
 	SET_STDP_PARAMETER(c_stdpDepression, depressionBits);
 	uint window = preFireWindow + postFireWindow;
 	assert(window <= STDP_WINDOW_SIZE);
-	cudaMemcpyToSymbol(c_stdpFn, stdpFn,
-			sizeof(float)*window,
-			0, cudaMemcpyHostToDevice);
+	cudaMemcpyToSymbol(c_stdpFn, stdpFn, sizeof(weight_dt)*window, 0, cudaMemcpyHostToDevice);
 }
 
 
@@ -188,7 +188,7 @@ logStdp(int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
 
 
 __device__
-float
+weight_dt
 updateRegion(
 		uint64_t spikes,
 		uint targetNeuron,
@@ -205,7 +205,7 @@ updateRegion(
 	int dt_log;
 #endif
 
-	float w_diff = 0.0f;
+	weight_dt w_diff = 0;
 	if(spikes) {
 		if(dt_pre < dt_post) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow - 1 - dt_pre];
@@ -234,7 +234,7 @@ updateRegion(
  * \return weight modifcation (additive term)
  */
 __device__
-float
+weight_dt
 updateSynapse(
 		uint32_t r_synapse,
 		uint targetNeuron,
@@ -326,15 +326,17 @@ updateSTDP_(
 						 * double buffer. Accesses are both expensive and
 						 * non-coalesced. */
 						//! \todo consider using a cache for L1 firing history
-						float w_diff = updateSynapse(
+						weight_dt w_diff =
+							updateSynapse(
 								r_sdata,
 								target,
 								isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch64
 								     : sourceRecentFiring);
 
 						//! \todo perhaps stage diff in output buffers
-						if(w_diff != 0.0f) {
-							((float*) cr_stdp[CURRENT_PARTITION])[r_offset] += w_diff;
+						//! \todo add saturating arithmetic here
+						if(w_diff != 0) {
+							((weight_dt*) cr_stdp[CURRENT_PARTITION])[r_offset] += w_diff;
 						}
 					}
 				}

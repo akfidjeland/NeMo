@@ -84,11 +84,14 @@ STDP_FN(step) (
 	float* s_current = (float*) s_N64;
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
 		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
-
 	}
 	SET_COUNTER(s_ccMain, 1);
 
-	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current);
+	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current
+#ifdef FIXPOINT_OVERFLOW_DETECTION
+			, s_N1
+#endif
+			);
 
 	SET_COUNTER(s_ccMain, 2);
 

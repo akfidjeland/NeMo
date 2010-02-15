@@ -1,4 +1,5 @@
 #include "cycle.cu"
+#include "fixedpoint.cu"
 
 //=============================================================================
 // Double buffering
@@ -106,7 +107,7 @@ fire(
 	// input
 	float* s_current,    // input current
 	// buffers
-	uint32_t* s_fstim,   // s_T16, so larger than needed
+	uint32_t* s_fstim,
 	uint* s_firingCount,
 	dnidx_t* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
@@ -232,9 +233,10 @@ scatter(uint cycle,
 								outgoingWarpOffset(sout),
 								outgoingTargetBits(sout));
 
-					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%u)\n",
+					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%u) tbits=%08x tcount=%u\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
-							offset, c_incomingPitch);
+							offset, c_incomingPitch,
+							outgoingTargetBits(sout), __popc(outgoingTargetBits(sout)));
 				}
 			}
 		}
@@ -252,8 +254,15 @@ gather(
 		synapse_t* g_fcm,
 		uint* g_incomingCount,
 		incoming_t* g_incoming,
-		float* s_current)
+		float* s_current
+#ifdef FIXPOINT_OVERFLOW_DETECTION
+		, uint32_t* s_overflow // 1b per neuron overflow detection
+#endif
+		)
 {
+	//! \todo move init of current to here, so that we can ensure that it's zero
+	/* Update incoming current in-place in fixed-point format */
+	fix_t* s_fx_current = (fix_t*) s_current;
 	__shared__ uint s_incomingCount;
 
 	if(threadIdx.x == 0) {
@@ -270,19 +279,11 @@ gather(
 	//! \todo could this smem be re-used?
 	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
 
-	// could use 3b of warpAddress
-	__shared__ uint s_warpCommit[GROUP_SIZE]; // in range 0-8
-	__shared__ uint32_t s_targetBits[GROUP_SIZE];
-
-#define SCHEDULING_THREADS (GROUP_SIZE / WARPS_PER_BLOCK)
-	__shared__ uint s_warpCommitCount[SCHEDULING_THREADS];
-
 	//! \todo rename variables here
 	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
 
-		__shared__ size_t s_groupSize;
+		__shared__ uint s_groupSize;
 
-		//! \todo perhaps do the unpacking inside the loop?
 		uint group = groupBase + threadIdx.x;
 
 		if(threadIdx.x == 0) {
@@ -296,37 +297,10 @@ gather(
 
 		if(threadIdx.x < s_groupSize) {
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
-			s_targetBits[threadIdx.x] = incomingTargetWarps(sgin);
 			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
 			DEBUG_MSG("c%u w%u -> p%u\n", incomingWarpOffset(sgin), CURRENT_PARTITION);
 		}
 
-		__syncthreads();
-
-		if(threadIdx.x < SCHEDULING_THREADS){
-
-			uint group = threadIdx.x;
-
-			/* Bit field indicating which local warps are targeted */
-			uint32_t commitTargets = 0;
-
-			/* More complex scheduling can be achieved, but this simple scheme
-			 * is fast to implement */
-			uint commit = 0;
-			for(uint warp = 0; warp < 8; ++warp) {
-				uint32_t warpTargets = s_targetBits[group * 8 + warp];
-				if(warpTargets & commitTargets) {
-					// conflict
-					commit++;
-					commitTargets = warpTargets;
-				} else {
-					// no conflict
-					commitTargets = commitTargets | warpTargets;
-				}
-				s_warpCommit[group * 8 + warp] = commit;
-			}
-			s_warpCommitCount[group] = commit + 1;
-		}
 		__syncthreads();
 
 		for(uint gwarp_base = 0; gwarp_base < s_groupSize; gwarp_base += WARPS_PER_BLOCK) {
@@ -334,9 +308,8 @@ gather(
 			uint bwarp = threadIdx.x / WARP_SIZE; // warp index within a block
 			uint gwarp = gwarp_base + bwarp;      // warp index within the global schedule
 
-			bool doCommit;
 			uint postsynaptic;
-			float weight = 0.0f;
+			fix_t weight = 0;
 
 			synapse_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
 
@@ -345,23 +318,49 @@ gather(
 			//fixed (invalid) address previously.
 			if(gwarp < s_groupSize) {
 				postsynaptic = targetNeuron(*base);
-				weight = *((float*)base + c_fcmPlaneSize);
+				weight = *((uint*)base + c_fcmPlaneSize);
 			}
 
-			doCommit = weight != 0.0f;
-
-			for(uint commit=0; commit < s_warpCommitCount[gwarp_base/WARPS_PER_BLOCK]; ++commit) {
-
-				if(doCommit && s_warpCommit[gwarp] == commit) {
-					s_current[postsynaptic] += weight;
-					DEBUG_MSG("c%u p?n? -> p%un%u %+f\n",
-							s_cycle, CURRENT_PARTITION, postsynaptic, weight);
-				}
-
-				__syncthreads();
+			if(weight != 0) {
+				DEBUG_MSG("c%u p?n? -> p%un%u +%u (=%+f)\n",
+						s_cycle, CURRENT_PARTITION, postsynaptic, weight,
+						float(weight) / c_fixedPointScale);
+				uint32_t r0 = atomicAdd(s_fx_current + postsynaptic, weight);
+#if defined(FIXPOINT_OVERFLOW_DETECTION) || defined(DEVICE_ASSERTIONS)
+				uint32_t inputSign = 0x80000000 & r0;
+				bool sameInputSign = (inputSign == (0x80000000 & weight));
+				uint32_t outputSign = s_fx_current[postsynaptic] & 0x80000000;
+				bool overflow = sameInputSign && inputSign != outputSign;
+				//! \todo need to set s_overflow and s_negative here
+				//! no need for atomics here
+				// do we know if this is under or overflow?
+				ASSERT(!overflow);
+#endif
 			}
 			__syncthreads();
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
 	}
+
+	/* If any accumulators overflow, clamp to max positive or minimum value */
+#ifdef FIXPOINT_OVERFLOW_CLAMPING
+	for(uint nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
+		uint nidx = nbase + threadIdx.x;
+		//! \todo reorder operations
+		//! \todo factor out bit-vector lookup?
+		bool overflow = s_overflow[nidx/32] >> (nidx % 32) & 0x1; // get individual bit
+		if(overflow) {
+			//! \todo move max/min to fixedpoint.cu
+			uint32_t sign = s_negative[nidx/32] >> (nidx % 32);
+			s_fx_current[nidx] = uint32_t(~0) & (sign << 31);
+		}
+	}
+#endif
+
+	/* Convert all fixed-point currents back to floating point */
+	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
+		size_t idx = i*THREADS_PER_BLOCK + threadIdx.x;
+		s_current[idx] = fx_tofloat(s_fx_current[idx]);
+	}
+	__syncthreads();
 }

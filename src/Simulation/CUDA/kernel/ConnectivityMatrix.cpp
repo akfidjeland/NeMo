@@ -119,3 +119,10 @@ ConnectivityMatrix::incomingHeads() const
 {
 	return m_impl->incomingHeads();
 }
+
+
+uint
+ConnectivityMatrix::fractionalBits() const
+{
+	return m_impl->fractionalBits();
+}

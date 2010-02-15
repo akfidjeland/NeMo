@@ -114,6 +114,8 @@ struct RuntimeData
 
 		unsigned int m_maxReadPeriod;
 
+		void configureStdp();
+
 		// no need for getters for a single use
 		friend void configureDevice(RuntimeData*);
 };

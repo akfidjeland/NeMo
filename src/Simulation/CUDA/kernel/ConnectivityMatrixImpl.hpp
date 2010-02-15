@@ -104,6 +104,11 @@ class ConnectivityMatrixImpl
 		 * the fill) for the incoming spike buffer */
 		uint* incomingHeads() const { return m_incoming.heads(); }
 
+		/*! \return number of fractional bits used for weights. This is only
+		 * known once the FCM is finalised, i.e. once moveToDevice has been
+		 * called */
+		uint fractionalBits() const;
+
 	private:
 
 		/* Add a single synapse to both forward and reverse matrix */
@@ -172,6 +177,10 @@ class ConnectivityMatrixImpl
 		pidx_t partitionIdx(nidx_t);
 
 		pidx_t maxPartitionIdx() const;
+
+		uint m_fractionalBits;
+		uint setFractionalBits();
+
 };
 
 #endif

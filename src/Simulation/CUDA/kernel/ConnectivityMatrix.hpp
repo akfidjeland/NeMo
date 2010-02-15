@@ -81,6 +81,8 @@ struct ConnectivityMatrix
 		incoming_t* incoming() const;
 		uint* incomingHeads() const;
 
+		uint fractionalBits() const;
+
 	private :
 
 		/* We use PIMPL here, so that we can include this header in regular

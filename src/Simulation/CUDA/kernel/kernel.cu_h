@@ -3,6 +3,12 @@
 
 #include <stdint.h>
 
+//#define FIXPOINT_OVERFLOW_CLAMPING
+#define FIXPOINT_OVERFLOW_DETECTION
+#if !defined(FIXPOINT_OVERFLOW_DETECTION) && (defined(FIXPOINT_OVERFLOW_CLAMPING) || defined(DEVICE_ASSERTIONS))
+#define FIXPOINT_OVERFLOW_DETECTION
+#endif
+
 #define MAX_THREAD_BLOCKS 128
 #define THREADS_PER_BLOCK 256
 
@@ -45,6 +51,7 @@
 #define NVEC_COUNT 6
 
 
+//! \todo move to nemo_cuda_types
 /* Sometimes we put a pointer in a (small) integer. The device has a 32b
  * address space, so uint32_t is suitable. However, when running in emulation
  * mode the /emulated/ device pointers will be whatever is used by the host

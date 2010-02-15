@@ -3,7 +3,9 @@
 
 #include <nemo_types.h>
 
-typedef float weight_t;
+typedef int32_t fix_t;
+typedef float weight_t;  // on the host
+typedef fix_t weight_dt; // on the device
 typedef unsigned int pidx_t; // partition index 
 
 /* On the device both address and weight data rae squeezed into 32b */

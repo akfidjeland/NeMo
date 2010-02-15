@@ -80,16 +80,17 @@ applyStdp_(
 		float reward,
 		bool trace)
 {
+	uint fb = rtdata->cm()->fractionalBits();
 	applySTDP_<<<dimGrid, dimBlock>>>(
 #ifdef KERNEL_TIMING
 			rtdata->cycleCounters->dataApplySTDP(),
 			rtdata->cycleCounters->pitchApplySTDP(),
 #endif
 			rtdata->cm()->d_fcm(),
-			reward,
+			fixedPoint(reward, fb),
 			cmIdx,
-			rtdata->stdpFn.maxWeight(),
-			rtdata->stdpFn.minWeight());
+			fixedPoint(rtdata->stdpFn.maxWeight(), fb),
+			fixedPoint(rtdata->stdpFn.minWeight(), fb));
 
 	if(trace) {
 		//! \todo implement his method in the new format
