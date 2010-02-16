@@ -285,10 +285,8 @@ gather(
 	fix_t* s_fx_current = (fix_t*) s_current;
 	__shared__ uint s_incomingCount;
 
-#if defined(FIXPOINT_OVERFLOW_DETECTION) || defined(DEVICE_ASSERTIONS)
 	bv_clear(s_overflow);
 	bv_clear(s_negative);
-#endif
 
 	if(threadIdx.x == 0) {
 		size_t addr = incomingCountAddr(CURRENT_PARTITION, cycle, 0);
@@ -338,44 +336,41 @@ gather(
 
 			synapse_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
 
-			// only warps at the very end of the group are invalid here
-			/*! \todo could get rid of this conditional altogether if we set
-			 * some fixed (invalid) address previously. */
+			/* only warps at the very end of the group are invalid here */
 			if(gwarp < s_groupSize) {
 				postsynaptic = targetNeuron(*base);
 				weight = *((uint*)base + c_fcmPlaneSize);
 			}
 
 			if(weight != 0) {
-				DEBUG_MSG("c%u p?n? -> p%un%u +%+f (%08x)\n",
-						s_cycle, CURRENT_PARTITION, postsynaptic,
-						fx_tofloat(weight), weight);
-				uint32_t r0 = atomicAdd(s_fx_current + postsynaptic, weight);
-#if defined(FIXPOINT_OVERFLOW_DETECTION) || defined(DEVICE_ASSERTIONS)
-				uint32_t inputSign = 0x80000000 & r0;
-				bool sameInputSign = (inputSign == (0x80000000 & weight));
-				uint32_t outputSign = s_fx_current[postsynaptic] & 0x80000000;
-				bool overflow = sameInputSign && inputSign != outputSign;
-
-				bv_atomicSet(postsynaptic, s_overflow);
-				bv_atomicSetPredicated(inputSign, postsynaptic, s_negative);
+				bool overflow = fx_atomicAdd(s_fx_current + postsynaptic, weight);
+				bv_atomicSetPredicated(overflow, postsynaptic, s_overflow);
+				bv_atomicSetPredicated(overflow && fx_isNegative(weight),
+						postsynaptic, s_negative);
+#ifndef FIXPOINT_SATURATION
 				ASSERT(!overflow);
 #endif
+				DEBUG_MSG("c%u p?n? -> p%un%u %+f (%08x)\n",
+						s_cycle, CURRENT_PARTITION, postsynaptic,
+						fx_tofloat(weight), weight);
 			}
+			//! \todo is this needed?
 			__syncthreads();
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
 	}
 
 	/* If any accumulators overflow, clamp to max positive or minimum value */
-#ifdef FIXPOINT_OVERFLOW_CLAMPING
+#ifdef FIXPOINT_SATURATION
 	for(uint nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
 		uint nidx = nbase + threadIdx.x;
 		bool overflow = bv_isSet(nidx, s_overflow);
 		if(overflow) {
-			//! \todo move max/min to fixedpoint.cu
-			uint32_t negative = bv_isSet(nidx, s_negative);
-			s_fx_current[nidx] = uint32_t(~0) & (sign << 31);
+			bool negative = bv_isSet(nidx, s_negative);
+			s_fx_current[nidx] = fx_saturate(negative);
+			DEBUG_MSG("c%u p%un%u input current overflow. Saturated to %+f (%08x)\n",
+					s_cycle, CURRENT_PARTITION, nidx,
+					fx_tofloat(s_fx_current[nidx]), s_fx_current[nidx]);
 		}
 	}
 #endif

@@ -3,11 +3,7 @@
 
 #include <stdint.h>
 
-//#define FIXPOINT_OVERFLOW_CLAMPING
-#define FIXPOINT_OVERFLOW_DETECTION
-#if !defined(FIXPOINT_OVERFLOW_DETECTION) && (defined(FIXPOINT_OVERFLOW_CLAMPING) || defined(DEVICE_ASSERTIONS))
-#define FIXPOINT_OVERFLOW_DETECTION
-#endif
+#define FIXPOINT_SATURATION
 
 #define MAX_THREAD_BLOCKS 128
 #define THREADS_PER_BLOCK 256
@@ -37,9 +33,6 @@
 
 #define PARTITION_COUNT gridDim.x
 #define CURRENT_PARTITION blockIdx.x
-
-#define TRUE 1
-#define FALSE 0
 
 // neuron parameter arrays
 #define PARAM_A 0
