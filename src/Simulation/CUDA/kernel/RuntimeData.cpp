@@ -489,3 +489,24 @@ enableStdp(RTDATA rtdata,
 {
 	nemo::configure_stdp(rtdata->stdpFn, pre_len, post_len, pre_fn, post_fn, w_max, w_min);
 }
+
+
+int
+deviceCount()
+{
+	int count;
+	//! \todo error handling
+	cudaGetDeviceCount(&count);
+
+	/* Even if there are no actual devices, this function will return 1, which
+	 * means that device emulation can be used. We therefore need to check the
+	 * major and minor device numbers as well */
+	if(count == 1) {
+		struct cudaDeviceProp prop;
+		cudaGetDeviceProperties(&prop, 0);
+		if(prop.major == 9999 && prop.minor == 9999) {
+			count = 0;
+		}
+	}
+	return count;
+}
