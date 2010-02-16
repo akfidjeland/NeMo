@@ -11,6 +11,7 @@ extern "C" {
 #include "util.h"
 #include "log.hpp"
 #include "fixedpoint.hpp"
+#include "bitvector.hpp"
 
 #include <vector>
 #include <assert.h>
@@ -111,10 +112,7 @@ RuntimeData::moveToDevice()
 		m_neurons->setSigma(*thalamicInput);
 		thalamicInput->moveToDevice();
 		cycleCounters = new CycleCounters(m_partitionCount, m_deviceProperties.clockRate);
-		firingStimulus = new NVector<uint32_t>(
-				m_partitionCount,
-				DIV_CEIL(maxPartitionSize, 32),
-				false);
+		firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
 
 		setPitch();
 	    m_deviceDirty = false;
@@ -244,12 +242,13 @@ RuntimeData::d_allocated() const
 void
 RuntimeData::setPitch()
 {
-	m_pitch1 = firingStimulus->wordPitch();
+	size_t pitch1 = firingStimulus->wordPitch();
 	m_pitch32 = m_neurons->wordPitch();
 	m_pitch64 = recentFiring->wordPitch();
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, thalamicInput->wordPitch());
-	checkPitch(m_pitch1, firingOutput->wordPitch());
+	checkPitch(pitch1, firingOutput->wordPitch());
+	bv_setPitch(pitch1);
 }
 
 

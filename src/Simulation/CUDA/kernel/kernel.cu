@@ -1,5 +1,6 @@
 #include "cycle.cu"
 #include "fixedpoint.cu"
+#include "bitvector.cu"
 
 //=============================================================================
 // Double buffering
@@ -29,25 +30,47 @@ writeBuffer(uint cycle)
 //=============================================================================
 
 
-/*! The external firing stimulus is densely packed with one bit per neuron.
- * Thus only the low-order threads need to read this data, and we need to
- * sync.  */
+
+/*! Set per-neuron bit-vector for fired neurons in both shared and global memory
+ *
+ * \param nfired
+ *		Number of neurons in current partition which fired this cycle.
+ * \param s_fired
+ *		Vector of indices of the fired neuron. The first \a nfired entries
+ *		should be set.
+ * \param s_dfired
+ *		Per-neuron bit-vector in shared memory for fired neurons.
+ * \param g_dfired
+ *		Per-neuron bit-vector in global memory for fired neurons.
+ */
 __device__
 void
-loadExternalFiring(
-        bool hasExternalInput,
-		int s_partitionSize,
-		size_t pitch,
-		uint32_t* g_firing,
-		uint32_t* s_firing)
+storeFiringOutput(uint nfired, dnidx_t* s_fired,
+		uint32_t* s_dfired, uint32_t* g_dfired)
 {
-	if(threadIdx.x < DIV_CEIL(s_partitionSize, 32)) {
-		if(hasExternalInput) {
-			s_firing[threadIdx.x] =
-                g_firing[blockIdx.x * pitch + threadIdx.x];
-		} else {
-			s_firing[threadIdx.x] = 0;
-		}
+	bv_clear_(s_dfired);
+
+	for(uint nbase=0; nbase < nfired; nbase += THREADS_PER_BLOCK) {
+		uint i = nbase + threadIdx.x;
+		uint neuron = s_fired[i];
+		bv_atomicSetPredicated(i < nfired, neuron, s_dfired);
+	}
+	__syncthreads();
+
+	bv_copy(s_dfired, g_dfired + CURRENT_PARTITION * c_bv_pitch);
+}
+
+
+
+/*! The external firing stimulus is provided in a per-neuron bit-vector */
+__device__
+void
+loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
+{
+	if(g_firing != NULL) {
+		bv_copy(g_firing + CURRENT_PARTITION * c_bv_pitch, s_firing);
+	} else {
+		bv_clear(s_firing);
 	}
 	__syncthreads();
 }
@@ -86,7 +109,7 @@ updateHistory(uint s_partitionSize,
 		uint neuron = nbase + threadIdx.x;
 		if(neuron < s_partitionSize) {
 			g_recentFiring[neuron] =
-				(s_recentFiring[neuron] << 1) | (didFire(neuron, s_dfired) ? 0x1 : 0x0);
+				(s_recentFiring[neuron] << 1) | (bv_isSet(neuron, s_dfired) ? 0x1 : 0x0);
 		}
 	}
 	__syncthreads();
@@ -101,7 +124,6 @@ fire(
 	uint s_partitionSize,
 	uint substeps,
 	float substepMult, // substepMul * substeps = 1
-	size_t pitch1, //! \todo move into shared memory along with other pitches
 	float* g_neuronParameters,
 	size_t neuronParametersSize,
 	// input
@@ -142,7 +164,7 @@ fire(
 			}
 
 			/* s_fstim accessed using broadcast */
-			bool forceFiring = (s_fstim[neuron/32] >> (neuron % 32)) & 0x1;
+			bool forceFiring = bv_isSet(neuron, s_fstim);
 
 			if(fired || forceFiring) {
 
@@ -254,16 +276,19 @@ gather(
 		synapse_t* g_fcm,
 		uint* g_incomingCount,
 		incoming_t* g_incoming,
-		float* s_current
-#ifdef FIXPOINT_OVERFLOW_DETECTION
-		, uint32_t* s_overflow // 1b per neuron overflow detection
-#endif
-		)
+		float* s_current,
+		uint32_t* s_overflow, // 1b per neuron overflow detection
+		uint32_t* s_negative) // ditto
 {
 	//! \todo move init of current to here, so that we can ensure that it's zero
 	/* Update incoming current in-place in fixed-point format */
 	fix_t* s_fx_current = (fix_t*) s_current;
 	__shared__ uint s_incomingCount;
+
+#if defined(FIXPOINT_OVERFLOW_DETECTION) || defined(DEVICE_ASSERTIONS)
+	bv_clear(s_overflow);
+	bv_clear(s_negative);
+#endif
 
 	if(threadIdx.x == 0) {
 		size_t addr = incomingCountAddr(CURRENT_PARTITION, cycle, 0);
@@ -314,26 +339,26 @@ gather(
 			synapse_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
 
 			// only warps at the very end of the group are invalid here
-			//! \todo could get of this conditional altogether if we set some
-			//fixed (invalid) address previously.
+			/*! \todo could get rid of this conditional altogether if we set
+			 * some fixed (invalid) address previously. */
 			if(gwarp < s_groupSize) {
 				postsynaptic = targetNeuron(*base);
 				weight = *((uint*)base + c_fcmPlaneSize);
 			}
 
 			if(weight != 0) {
-				DEBUG_MSG("c%u p?n? -> p%un%u +%u (=%+f)\n",
-						s_cycle, CURRENT_PARTITION, postsynaptic, weight,
-						float(weight) / c_fixedPointScale);
+				DEBUG_MSG("c%u p?n? -> p%un%u +%+f (%08x)\n",
+						s_cycle, CURRENT_PARTITION, postsynaptic,
+						fx_tofloat(weight), weight);
 				uint32_t r0 = atomicAdd(s_fx_current + postsynaptic, weight);
 #if defined(FIXPOINT_OVERFLOW_DETECTION) || defined(DEVICE_ASSERTIONS)
 				uint32_t inputSign = 0x80000000 & r0;
 				bool sameInputSign = (inputSign == (0x80000000 & weight));
 				uint32_t outputSign = s_fx_current[postsynaptic] & 0x80000000;
 				bool overflow = sameInputSign && inputSign != outputSign;
-				//! \todo need to set s_overflow and s_negative here
-				//! no need for atomics here
-				// do we know if this is under or overflow?
+
+				bv_atomicSet(postsynaptic, s_overflow);
+				bv_atomicSetPredicated(inputSign, postsynaptic, s_negative);
 				ASSERT(!overflow);
 #endif
 			}
@@ -346,12 +371,10 @@ gather(
 #ifdef FIXPOINT_OVERFLOW_CLAMPING
 	for(uint nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
 		uint nidx = nbase + threadIdx.x;
-		//! \todo reorder operations
-		//! \todo factor out bit-vector lookup?
-		bool overflow = s_overflow[nidx/32] >> (nidx % 32) & 0x1; // get individual bit
+		bool overflow = bv_isSet(nidx, s_overflow);
 		if(overflow) {
 			//! \todo move max/min to fixedpoint.cu
-			uint32_t sign = s_negative[nidx/32] >> (nidx % 32);
+			uint32_t negative = bv_isSet(nidx, s_negative);
 			s_fx_current[nidx] = uint32_t(~0) & (sign << 31);
 		}
 	}

@@ -1,8 +1,10 @@
-#include <cuda_runtime.h>
 #include <string.h>
+#include <assert.h>
+#include <cuda_runtime.h>
 
 #include "FiringOutput.hpp"
 #include "util.h"
+#include "bitvector.cu_h"
 
 
 FiringOutput::FiringOutput(
@@ -18,8 +20,7 @@ FiringOutput::FiringOutput(
 	md_allocated(0),
 	m_partitionSize(partitionSize)
 {
-	const size_t NEURONS_PER_BYTE = 8;
-	size_t width = ALIGN(partitionSize, 32) / NEURONS_PER_BYTE;
+	size_t width = BV_BYTE_PITCH;
 	size_t height = partitionCount * maxReadPeriod;
 
 	size_t bytePitch;

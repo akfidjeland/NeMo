@@ -40,7 +40,6 @@ STDP_FN(step) (
 		incoming_t* g_incoming,
 		// firing stimulus
 		uint32_t* g_fstim,
-		size_t pitch1,
 #ifdef KERNEL_TIMING
 		// cycle counting
 		unsigned long long* g_cycleCounters,
@@ -56,8 +55,12 @@ STDP_FN(step) (
 
 	/* Per-neuron buffers */
 	__shared__ uint64_t s_N64[MAX_PARTITION_SIZE];
+	//! \todo rename to nidx_dt for consistency
 	__shared__ dnidx_t s_fired[MAX_PARTITION_SIZE];
-	__shared__ uint32_t s_N1[MAX_PARTITION_SIZE/32];
+
+	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
+	__shared__ uint32_t s_N1A[MAX_PARTITION_SIZE/32];
+	__shared__ uint32_t s_N1B[MAX_PARTITION_SIZE/32];
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
@@ -87,11 +90,7 @@ STDP_FN(step) (
 	}
 	SET_COUNTER(s_ccMain, 1);
 
-	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current
-#ifdef FIXPOINT_OVERFLOW_DETECTION
-			, s_N1
-#endif
-			);
+	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current, s_N1A, s_N1B);
 
 	SET_COUNTER(s_ccMain, 2);
 
@@ -102,14 +101,11 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 3);
 
-	uint32_t* s_fstim = s_N1;
-	bool hasExternalInput = g_fstim != 0;
-	ASSERT(THREADS_PER_BLOCK/2 >= DIV_CEIL(MAX_PARTITION_SIZE, 32));
-	loadExternalFiring(hasExternalInput, s_partitionSize, pitch1, g_fstim, s_fstim);
+	uint32_t* s_fstim = s_N1A;
+	loadFiringInput(g_fstim, s_fstim);
 
 	fire( s_partitionSize,
 			substeps, s_substepMult,
-			pitch1,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
 			neuronParametersSize,
 			s_current,
@@ -119,13 +115,8 @@ STDP_FN(step) (
 
 	__syncthreads();
 
-	uint32_t* s_dfired = s_N1;
-	writeFiringOutput(
-			s_firingCount,
-			s_fired,
-			s_dfired,
-			pitch1,
-			firingOutput + CURRENT_PARTITION * pitch1);
+	uint32_t* s_dfired = s_N1A;
+	storeFiringOutput(s_firingCount, s_fired, s_dfired, firingOutput);
 
 	SET_COUNTER(s_ccMain, 4);
 

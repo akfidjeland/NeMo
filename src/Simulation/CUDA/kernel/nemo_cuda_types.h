@@ -2,6 +2,7 @@
 #define NEMO_CUDA_TYPES
 
 #include <nemo_types.h>
+#include <stdint.h>
 
 typedef int32_t fix_t;
 typedef float weight_t;  // on the host

@@ -22,7 +22,6 @@ extern "C" {
 #include "log.hpp"
 #include "connectivityMatrix.cu"
 #include "FiringOutput.hpp"
-#include "firingProbe.cu"
 #include "RuntimeData.hpp"
 #include "CycleCounters.hpp"
 #include "partitionConfiguration.cu"
@@ -172,7 +171,6 @@ step(RTDATA rtdata,
 				rtdata->cm()->incoming(),
 				// firing stimulus
 				d_extFiring,
-				rtdata->firingStimulus->wordPitch(),
 				// cycle counting
 #ifdef KERNEL_TIMING
 				rtdata->cycleCounters->data(),
@@ -196,7 +194,6 @@ step(RTDATA rtdata,
 				rtdata->cm()->incoming(),
 				// firing stimulus
 				d_extFiring,
-				rtdata->firingStimulus->wordPitch(),
 				// cycle counting
 #ifdef KERNEL_TIMING
 				rtdata->cycleCounters->data(),

@@ -5,7 +5,6 @@ CU_MAIN = kernel_wrapper.cu
 
 # CUDA source files which are #included in main kernel source file
 CU_INC = kernel.cu \
-		 firingProbe.cu \
 		 partitionConfiguration.cu \
 		 cycleCounting.cu \
 		 error.cu \
@@ -15,7 +14,9 @@ CU_INC = kernel.cu \
 		 applySTDP.cu \
 		 thalamicInput.cu \
 		 outgoing.cu \
-		 incoming.cu
+		 incoming.cu \
+		 fixedpoint.cu \
+		 bitvector.cu
 
 CC_SRC = FiringOutput.cpp \
 		 RuntimeData.cpp \
@@ -30,6 +31,7 @@ CC_SRC = FiringOutput.cpp \
 		 Outgoing.cpp \
 		 Incoming.cpp \
 		 fixedpoint.cpp
+
 
 
 # CUDA source files (compiled with cudacc)
