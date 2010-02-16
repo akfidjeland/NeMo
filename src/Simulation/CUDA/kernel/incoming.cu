@@ -48,18 +48,10 @@ getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
 
 
 
-
 /*! \return incoming spike group from a particular source */
-__device__
-incoming_t
-make_incoming(uint warpOffset, uint32_t targetBits)
-{
-	return make_uint2(targetBits, warpOffset);
-}
+__device__ incoming_t make_incoming(uint warpOffset) { return warpOffset; }
 
-
-__device__ uint incomingWarpOffset(incoming_t in) { return in.y; }
-__device__ uint incomingTargetWarps(incoming_t in) { return in.x; }
+__device__ uint incomingWarpOffset(incoming_t in) { return in; }
 
 
 /*! \return address into matrix with number of incoming synapse groups */

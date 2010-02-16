@@ -250,15 +250,11 @@ scatter(uint cycle,
 					ASSERT(offset < c_incomingPitch);
 
 					size_t base = incomingBufferStart(targetPartition, cycle, delay);
-					g_incoming[base + offset] =
-						make_incoming(
-								outgoingWarpOffset(sout),
-								outgoingTargetBits(sout));
+					g_incoming[base + offset] = make_incoming(outgoingWarpOffset(sout));
 
-					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%u) tbits=%08x tcount=%u\n",
+					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%u)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
-							offset, c_incomingPitch,
-							outgoingTargetBits(sout), __popc(outgoingTargetBits(sout)));
+							offset, c_incomingPitch);
 				}
 			}
 		}

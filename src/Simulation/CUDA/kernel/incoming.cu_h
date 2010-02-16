@@ -1,16 +1,9 @@
-#ifndef L1_SPIKE_BUFFER_CU_H
-#define L1_SPIKE_BUFFER_CU_H
+#ifndef INCOMING_CU_H
+#define INCOMING_CU_H
 
 #include <cuda_runtime.h>
-#include "kernel.cu_h"
 
-typedef uint2 incoming_t;
-
-
-#if PARTITION_BITS + NEURON_BITS + DELAY_BITS + SYNAPSE_WARP_BITS > 32
-#	error "bitpacking overflow of incoming_t data type"
-#endif
-
+typedef uint incoming_t;
 
 __host__ void setIncomingPitch(size_t wordPitch);
 
