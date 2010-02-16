@@ -133,9 +133,10 @@ Outgoing::moveToDevice(size_t partitionCount,
 			//! \todo check for overflow here
 			for(uint warp = 0; warp < warps; ++warp) {
 				uint32_t offset = groupref->second.warpOffset(neuron, warp);
-				uint32_t targetBits = groupref->second.warpTargetBits(neuron, warp);
+				//! \todo remove this!
+				//uint32_t targetBits = groupref->second.warpTargetBits(neuron, warp);
 				h_arr[t_addr + j + warp] =
-					make_outgoing(targetPartition, delay, offset, targetBits);
+					make_outgoing(targetPartition, delay, offset);
 			}
 			j += warps;
 			assert(j <= wpitch);
