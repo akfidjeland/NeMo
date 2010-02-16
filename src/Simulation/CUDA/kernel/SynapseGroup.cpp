@@ -98,10 +98,6 @@ SynapseGroup::fillFcm(
 
 			uint twarp = neuron / WARP_SIZE;
 			uint gwarp = startWarp + writtenWarps + sidx / WARP_SIZE;
-			//! \todo add assertions here
-			//! \todo do a double loop here to save map lookups
-			uint32_t warpBit = 0x1 << twarp;
-			m_warpTargets[gwarp] |= warpBit;
 		}
 
 		assert(sizeof(nidx_t) == sizeof(synapse_t));
@@ -178,18 +174,3 @@ SynapseGroup::warpOffset(nidx_t neuron, size_t warp) const
 	}
 	return entry->second + warp;
 }
-
-
-
-//! \todo merge with warpOffset. Just return a pair here
-uint32_t
-SynapseGroup::warpTargetBits(nidx_t neuron, size_t warp) const
-{
-	uint32_t gwarp = warpOffset(neuron, warp);
-	std::map<uint, uint32_t>::const_iterator entry = m_warpTargets.find(gwarp);
-	if(m_warpTargets.end() == entry) {
-		throw std::runtime_error("warp not found");
-	}
-	return entry->second;
-}
-
