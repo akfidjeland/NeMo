@@ -238,13 +238,13 @@ weight_dt
 updateSynapse(
 		uint32_t r_synapse,
 		uint targetNeuron,
-		uint64_t* x_sourceFiring) // L0: shared memory; L1: global memory
+		uint64_t* g_sourceFiring)
 {
 	int inFlight = r_delay0(r_synapse);
 	/* -1 since we do spike arrival before neuron-update and STDP in a single
 	 * simulation cycle */
 
-	uint64_t sourceFiring = x_sourceFiring[sourceNeuron(r_synapse)] >> inFlight;
+	uint64_t sourceFiring = g_sourceFiring[sourceNeuron(r_synapse)] >> inFlight;
 	uint64_t p_spikes = sourceFiring & s_stdpPotentiation;
 	uint64_t d_spikes = sourceFiring & s_stdpDepression;
 
@@ -258,8 +258,7 @@ updateSynapse(
 __device__
 void
 updateSTDP_(
-	bool isL1, // hack to work out how to address recent firing bits
-	uint64_t* sourceRecentFiring,
+	uint64_t* g_sourceRecentFiring,
 	uint64_t* s_targetRecentFiring,
 	size_t pitch64,
 	uint partitionSize,
@@ -330,8 +329,7 @@ updateSTDP_(
 							updateSynapse(
 								r_sdata,
 								target,
-								isL1 ? sourceRecentFiring + sourcePartition(r_sdata) * pitch64
-								     : sourceRecentFiring);
+								g_sourceRecentFiring + sourcePartition(r_sdata) * pitch64);
 
 						//! \todo perhaps stage diff in output buffers
 						//! \todo add saturating arithmetic here

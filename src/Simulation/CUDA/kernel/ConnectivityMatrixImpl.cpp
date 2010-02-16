@@ -27,31 +27,6 @@ ConnectivityMatrixImpl::ConnectivityMatrixImpl(
 
 
 
-std::map<pidx_t, class RSMatrix*>&
-ConnectivityMatrixImpl::rsynapses(size_t lvl)
-{
-	switch(lvl) {
-		case 0: return m0_rsynapses;
-		case 1: return m1_rsynapses;
-		default : ERROR("invalid connectivity matrix index");
-	}
-}
-
-
-
-const std::map<pidx_t, class RSMatrix*>&
-ConnectivityMatrixImpl::const_rsynapses(size_t lvl) const
-{
-	switch(lvl) {
-		case 0: return m0_rsynapses;
-		case 1: return m1_rsynapses;
-		default : ERROR("invalid connectivity matrix index");
-	}
-}
-
-
-
-
 boost::tuple<pidx_t, pidx_t, delay_t>
 make_fcm_key(pidx_t source, pidx_t target, delay_t delay)
 {
@@ -60,7 +35,7 @@ make_fcm_key(pidx_t source, pidx_t target, delay_t delay)
 
 
 void
-ConnectivityMatrixImpl::addSynapse(size_t lvl, pidx_t sp, nidx_t sn, delay_t delay,
+ConnectivityMatrixImpl::addSynapse(pidx_t sp, nidx_t sn, delay_t delay,
 		pidx_t tp, nidx_t tn, weight_t w, uchar plastic)
 {
 	//! \todo make sure caller checks validity of sourcePartition
@@ -77,7 +52,8 @@ ConnectivityMatrixImpl::addSynapse(size_t lvl, pidx_t sp, nidx_t sn, delay_t del
 	if(m_setReverse && plastic) {
 		/*! \todo should modify RSMatrix so that we don't need the partition
 		 * size until we move to device */
-		rcm_t& rcm = rsynapses(lvl);
+		//! \todo simplify
+		rcm_t& rcm = m_rsynapses;
 		if(rcm.find(tp) == rcm.end()) {
 			rcm[tp] = new RSMatrix(m_maxPartitionSize);
 		}
@@ -114,8 +90,7 @@ ConnectivityMatrixImpl::setRow(
 	for(size_t i=0; i<f_length; ++i) {
 		pidx_t targetPartition = partitionIdx(tgt[i]);
 		nidx_t targetNeuron = neuronIdx(tgt[i]);
-		size_t level = targetPartition == sourcePartition ? 0 : 1;
-		addSynapse(level, sourcePartition, sourceNeuron, delay[i],
+		addSynapse(sourcePartition, sourceNeuron, delay[i],
 				targetPartition, targetNeuron, weights[i], isPlastic[i]);
 		m_outgoing.addSynapse(sourcePartition, sourceNeuron, delay[i], targetPartition);
 	}
@@ -238,11 +213,7 @@ ConnectivityMatrixImpl::moveToDevice()
 	try {
 		moveFcmToDevice();
 
-		for(rcm_t::const_iterator i = m0_rsynapses.begin(); i != m0_rsynapses.end(); ++i) {
-			i->second->moveToDevice(m_fsynapses, i->first);
-		}
-
-		for(rcm_t::const_iterator i = m1_rsynapses.begin(); i != m1_rsynapses.end(); ++i) {
+		for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
 			i->second->moveToDevice(m_fsynapses, i->first);
 		}
 
@@ -251,14 +222,10 @@ ConnectivityMatrixImpl::moveToDevice()
 		m_incoming.allocate(partitionCount, maxWarps, 0.5);
 
 		configureReverseAddressing(
-				r_partitionPitch(0),
-				r_partitionAddress(0),
-				r_partitionStdp(0),
-				r_partitionFAddress(0),
-				r_partitionPitch(1),
-				r_partitionAddress(1),
-				r_partitionStdp(1),
-				r_partitionFAddress(1));
+				r_partitionPitch(),
+				r_partitionAddress(),
+				r_partitionStdp(),
+				r_partitionFAddress());
 
 	} catch (DeviceAllocationException& e) {
 		FILE* out = stderr;
@@ -276,11 +243,8 @@ ConnectivityMatrixImpl::printMemoryUsage(FILE* out)
 	const size_t MEGA = 1<<20;
 	fprintf(out, "forward matrix:     %6luMB\n",
 			md_allocatedFCM / MEGA);
-	fprintf(out, "reverse matrix (0): %6luMB (%lu groups)\n",
-			d_allocatedRCM0() / MEGA, m0_rsynapses.size());
-	fprintf(out, "reverse matrix (1): %6luMB (%lu groups)\n",
-			d_allocatedRCM1() / MEGA, m1_rsynapses.size());
-	//! \todo dispatch table
+	fprintf(out, "reverse matrix:     %6luMB (%lu groups)\n",
+			d_allocatedRCM() / MEGA, m_rsynapses.size());
 	fprintf(out, "incoming:           %6luMB\n", m_incoming.allocated() / MEGA);
 	fprintf(out, "outgoing:           %6luMB\n", m_outgoing.allocated() / MEGA);
 }
@@ -342,35 +306,26 @@ ConnectivityMatrixImpl::getRow(
 void
 ConnectivityMatrixImpl::clearStdpAccumulator()
 {
+	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
+		i->second->clearStdpAccumulator();
+	}
+#if 0
 	for(rcm_t::const_iterator i = m0_rsynapses.begin(); i != m0_rsynapses.end(); ++i) {
 		i->second->clearStdpAccumulator();
 	}
 	for(rcm_t::const_iterator i = m1_rsynapses.begin(); i != m1_rsynapses.end(); ++i) {
 		i->second->clearStdpAccumulator();
 	}
+#endif
 }
 
 
-
 size_t
-ConnectivityMatrixImpl::d_allocatedRCM0() const
+ConnectivityMatrixImpl::d_allocatedRCM() const
 {
 	size_t bytes = 0;
-	for(std::map<pidx_t, RSMatrix*>::const_iterator i = m0_rsynapses.begin();
-			i != m0_rsynapses.end(); ++i) {
-		bytes += i->second->d_allocated();
-	}
-	return bytes;
-}
-
-
-
-size_t
-ConnectivityMatrixImpl::d_allocatedRCM1() const
-{
-	size_t bytes = 0;
-	for(std::map<pidx_t, RSMatrix*>::const_iterator i = m1_rsynapses.begin();
-			i != m1_rsynapses.end(); ++i) {
+	for(std::map<pidx_t, RSMatrix*>::const_iterator i = m_rsynapses.begin();
+			i != m_rsynapses.end(); ++i) {
 		bytes += i->second->d_allocated();
 	}
 	return bytes;
@@ -383,8 +338,7 @@ ConnectivityMatrixImpl::d_allocated() const
 {
 
 	return md_allocatedFCM
-		+ d_allocatedRCM0()
-		+ d_allocatedRCM1()
+		+ d_allocatedRCM()
 		+ m_incoming.allocated()
 		+ m_outgoing.allocated();
 }
@@ -429,33 +383,33 @@ mapDevicePointer(const std::map<pidx_t, S*>& vec, std::const_mem_fun_t<T, S> fun
 
 
 const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrixImpl::r_partitionPitch(size_t lvl) const
+ConnectivityMatrixImpl::r_partitionPitch() const
 {
-	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::pitch));
+	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::pitch));
 }
 
 
 
 const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrixImpl::r_partitionAddress(size_t lvl) const
+ConnectivityMatrixImpl::r_partitionAddress() const
 {
-	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::d_address));
+	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_address));
 }
 
 
 
 const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrixImpl::r_partitionStdp(size_t lvl) const
+ConnectivityMatrixImpl::r_partitionStdp() const
 {
-	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::d_stdp));
+	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_stdp));
 }
 
 
 
 const std::vector<DEVICE_UINT_PTR_T>
-ConnectivityMatrixImpl::r_partitionFAddress(size_t lvl) const
+ConnectivityMatrixImpl::r_partitionFAddress() const
 {
-	return mapDevicePointer(const_rsynapses(lvl), std::mem_fun(&RSMatrix::d_faddress));
+	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));
 }
 
 

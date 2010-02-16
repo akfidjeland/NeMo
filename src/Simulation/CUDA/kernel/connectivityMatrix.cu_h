@@ -42,13 +42,9 @@ __device__ __host__ uint r_delay1(uint rsynapse);
 __host__
 void
 configureReverseAddressing(
-        const std::vector<DEVICE_UINT_PTR_T>& r0_pitch,
-        const std::vector<DEVICE_UINT_PTR_T>& r0_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r0_stdp,
-        const std::vector<DEVICE_UINT_PTR_T>& r0_faddress,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_pitch,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_stdp,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_faddress);
+        const std::vector<DEVICE_UINT_PTR_T>& r_pitch,
+        const std::vector<DEVICE_UINT_PTR_T>& r_address,
+        const std::vector<DEVICE_UINT_PTR_T>& r_stdp,
+        const std::vector<DEVICE_UINT_PTR_T>& r_faddress);
 
 #endif

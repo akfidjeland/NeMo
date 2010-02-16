@@ -75,7 +75,6 @@ applyStdp_(
 		dim3 dimGrid,
 		dim3 dimBlock,
 		RTDATA rtdata,
-		uint cmIdx,
 		float reward,
 		bool trace)
 {
@@ -87,7 +86,6 @@ applyStdp_(
 #endif
 			rtdata->cm()->d_fcm(),
 			fixedPoint(reward, fb),
-			cmIdx,
 			fixedPoint(rtdata->stdpFn.maxWeight(), fb),
 			fixedPoint(rtdata->stdpFn.minWeight(), fb));
 
@@ -114,8 +112,7 @@ applyStdp(RTDATA rtdata, float stdpReward)
 		if(stdpReward == 0.0f) {
 			rtdata->cm()->clearStdpAccumulator();
 		} else  {
-			applyStdp_(dimGrid, dimBlock, rtdata, 0, stdpReward, false);
-			applyStdp_(dimGrid, dimBlock, rtdata, 1, stdpReward, false);
+			applyStdp_(dimGrid, dimBlock, rtdata, stdpReward, false);
 		}
 	}
 

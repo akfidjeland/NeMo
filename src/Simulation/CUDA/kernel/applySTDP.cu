@@ -29,7 +29,6 @@ applySTDP_(
 #endif
 	synapse_t* g_fcm,
 	weight_dt reward,
-	uint cmIdx,      // L0 or L1
 	weight_dt maxWeight, // for excitatory synapses
 	weight_dt minWeight) // for inhibitory synapses
 	/*! \note reverse connectivity addresses are found in constant memory,
@@ -40,23 +39,14 @@ applySTDP_(
 	__shared__ uint s_chunkCount;
 	__shared__ uint s_partitionSize;
 
-	weight_dt* gr_stdp = cmIdx == 0
-		? (weight_dt*) cr0_stdp[CURRENT_PARTITION]
-		: (weight_dt*) cr1_stdp[CURRENT_PARTITION];
-
-	uint r_pitch = cmIdx == 0
-		? cr0_pitch[CURRENT_PARTITION]
-		: cr1_pitch[CURRENT_PARTITION];
+	weight_dt* gr_stdp = (weight_dt*) cr_stdp[CURRENT_PARTITION];
+	uint r_pitch = cr_pitch[CURRENT_PARTITION];
 
 #if __DEVICE_EMULATION__
-	uint32_t* gr_address = cmIdx == 0
-		? (uint32_t*) cr0_address[CURRENT_PARTITION]
-		: (uint32_t*) cr1_address[CURRENT_PARTITION];
+	uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
 #endif
 
-	uint32_t* gr_faddress = cmIdx == 0
-		? (uint32_t*) cr0_faddress[CURRENT_PARTITION]
-		: (uint32_t*) cr1_faddress[CURRENT_PARTITION];
+	uint32_t* gr_faddress = (uint32_t*) cr_faddress[CURRENT_PARTITION];
 
 	if(threadIdx.x == 0) {
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];

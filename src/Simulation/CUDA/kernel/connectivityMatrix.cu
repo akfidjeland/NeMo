@@ -124,22 +124,19 @@ r_delay0(uint rsynapse)
 
 /* To improve packing of data in the connectivity matrix, we use different
  * pitches for each partition */
-__constant__ DEVICE_UINT_PTR_T cr0_pitch[MAX_THREAD_BLOCKS];
-__constant__ DEVICE_UINT_PTR_T cr1_pitch[MAX_THREAD_BLOCKS];
+//! \todo store offset instead of pointers
+__constant__ DEVICE_UINT_PTR_T cr_pitch[MAX_THREAD_BLOCKS];
 
 /* We also need to store the start of each partitions reverse connectivity
  * data, to support fast lookup. This data should nearly always be in the
  * constant cache */
-__constant__ DEVICE_UINT_PTR_T cr0_address[MAX_THREAD_BLOCKS];
-__constant__ DEVICE_UINT_PTR_T cr1_address[MAX_THREAD_BLOCKS];
+__constant__ DEVICE_UINT_PTR_T cr_address[MAX_THREAD_BLOCKS];
 
 /* Ditto for the STDP accumulators */
-__constant__ DEVICE_UINT_PTR_T cr0_stdp[MAX_THREAD_BLOCKS];
-__constant__ DEVICE_UINT_PTR_T cr1_stdp[MAX_THREAD_BLOCKS];
+__constant__ DEVICE_UINT_PTR_T cr_stdp[MAX_THREAD_BLOCKS];
 
 /* Ditto for the forward synapse offset */
-__constant__ DEVICE_UINT_PTR_T cr0_faddress[MAX_THREAD_BLOCKS];
-__constant__ DEVICE_UINT_PTR_T cr1_faddress[MAX_THREAD_BLOCKS];
+__constant__ DEVICE_UINT_PTR_T cr_faddress[MAX_THREAD_BLOCKS];
 
 
 #define SET_CR_ADDRESS_VECTOR(symbol, vec) CUDA_SAFE_CALL(\
@@ -152,24 +149,16 @@ __constant__ DEVICE_UINT_PTR_T cr1_faddress[MAX_THREAD_BLOCKS];
 __host__
 void
 configureReverseAddressing(
-        const std::vector<DEVICE_UINT_PTR_T>& r0_pitch,
-        const std::vector<DEVICE_UINT_PTR_T>& r0_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r0_stdp,
-        const std::vector<DEVICE_UINT_PTR_T>& r0_faddress,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_pitch,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_stdp,
-        const std::vector<DEVICE_UINT_PTR_T>& r1_faddress)
+        const std::vector<DEVICE_UINT_PTR_T>& r_pitch,
+        const std::vector<DEVICE_UINT_PTR_T>& r_address,
+        const std::vector<DEVICE_UINT_PTR_T>& r_stdp,
+        const std::vector<DEVICE_UINT_PTR_T>& r_faddress)
 {
 	//! \todo extend vectors and fill with NULLs
-	SET_CR_ADDRESS_VECTOR(cr0_pitch, r0_pitch);
-	SET_CR_ADDRESS_VECTOR(cr0_address, r0_address);
-	SET_CR_ADDRESS_VECTOR(cr0_stdp, r0_stdp);
-	SET_CR_ADDRESS_VECTOR(cr0_faddress, r0_faddress);
-	SET_CR_ADDRESS_VECTOR(cr1_pitch, r1_pitch);
-	SET_CR_ADDRESS_VECTOR(cr1_address, r1_address);
-	SET_CR_ADDRESS_VECTOR(cr1_stdp, r1_stdp);
-	SET_CR_ADDRESS_VECTOR(cr1_faddress, r1_faddress);
+	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch);
+	SET_CR_ADDRESS_VECTOR(cr_address, r_address);
+	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp);
+	SET_CR_ADDRESS_VECTOR(cr_faddress, r_faddress);
 }
 
 #endif

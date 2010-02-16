@@ -76,14 +76,6 @@ class ConnectivityMatrixImpl
 
 		size_t d_allocated() const;
 
-	private:
-
-		/* Per-partition addressing */
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch(size_t lvl) const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress(size_t lvl) const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp(size_t lvl) const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress(size_t lvl) const;
-
 	public:
 
 		synapse_t* d_fcm() const { return md_fcm.get(); }
@@ -113,7 +105,6 @@ class ConnectivityMatrixImpl
 
 		/* Add a single synapse to both forward and reverse matrix */
 		void addSynapse(
-				size_t lvl,
 				pidx_t sourcePartition,
 				nidx_t sourceNeuron,
 				delay_t delay,
@@ -130,11 +121,7 @@ class ConnectivityMatrixImpl
 		 * partition, and delay. The reverse connectivity is stored sepearately
 		 * for each partition */
 		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
-		rcm_t m0_rsynapses;
-		rcm_t m1_rsynapses;
-
-		rcm_t& rsynapses(size_t lvl);
-		const rcm_t& const_rsynapses(size_t lvl) const;
+		rcm_t m_rsynapses;
 
 		bool m_setReverse;
 
@@ -162,8 +149,7 @@ class ConnectivityMatrixImpl
 		std::vector<weight_t> mf_weights;
 
 		/* Memory usage. All values in bytes */
-		size_t d_allocatedRCM0() const;
-		size_t d_allocatedRCM1() const;
+		size_t d_allocatedRCM() const;
 		void printMemoryUsage(FILE* out);
 
 		void moveFcmToDevice();
@@ -180,6 +166,13 @@ class ConnectivityMatrixImpl
 
 		uint m_fractionalBits;
 		uint setFractionalBits();
+
+		/* Per-partition addressing of RCM */
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
+		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress() const;
+
 
 };
 

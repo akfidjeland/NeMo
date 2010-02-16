@@ -141,29 +141,15 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 6);
 
-	/*! \todo since we use the same FCM for both L0 and L1, we could
-	 * potentially use a single RCM and do all STDP in one go */
 	updateSTDP_(
-			false,
-			s_recentFiring,
-			s_recentFiring,
-			s_pitch32,
-			s_partitionSize,
-			cr0_address, cr0_stdp, cr0_pitch,
-			s_fired);
-
-	SET_COUNTER(s_ccMain, 7);
-
-	updateSTDP_(
-			true,
 			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
 			s_recentFiring,
 			s_pitch64,
 			s_partitionSize,
-			cr1_address, cr1_stdp, cr1_pitch,
+			cr_address, cr_stdp, cr_pitch,
 			s_fired);
 
-	SET_COUNTER(s_ccMain, 8);
+	SET_COUNTER(s_ccMain, 7);
 
 	updateHistory(s_partitionSize,
 			s_dfired,
@@ -174,10 +160,9 @@ STDP_FN(step) (
 #else
 	SET_COUNTER(s_ccMain, 6);
 	SET_COUNTER(s_ccMain, 7);
-	SET_COUNTER(s_ccMain, 8);
 #endif
 
-	SET_COUNTER(s_ccMain, 9);
+	SET_COUNTER(s_ccMain, 8);
 
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }
