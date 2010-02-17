@@ -123,8 +123,7 @@ fire(
 				} 
 			}
 
-			/* s_fstim accessed using broadcast */
-			bool forceFiring = bv_isSet(neuron, s_fstim);
+			bool forceFiring = bv_isSet(neuron, s_fstim); // (smem broadcast)
 
 			if(fired || forceFiring) {
 
@@ -316,8 +315,6 @@ gather(
 						s_cycle, CURRENT_PARTITION, postsynaptic,
 						fx_tofloat(weight), weight);
 			}
-			//! \todo is this needed?
-			__syncthreads();
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
 	}
