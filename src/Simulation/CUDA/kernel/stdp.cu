@@ -258,8 +258,9 @@ updateSynapse(
 __device__
 void
 updateSTDP_(
-	uint64_t* g_sourceRecentFiring,
-	uint64_t* s_targetRecentFiring,
+	uint32_t cycle,
+	uint32_t* s_dfired,
+	uint64_t* g_recentFiring,
 	size_t pitch64,
 	uint partitionSize,
 	DEVICE_UINT_PTR_T* cr_address,
@@ -272,10 +273,10 @@ updateSTDP_(
 
 	uint r_maxSynapses = cr_pitch[CURRENT_PARTITION];
 
-	//! \todo factor this out and share with integrate step
 	if(threadIdx.x == 0) {
-	// deal with at most one postsynaptic neuron in one chunk
+		// deal with at most one postsynaptic neuron in one chunk
 		s_schunkCount = DIV_CEIL(r_maxSynapses, THREADS_PER_BLOCK); // per-partition size
+		//! \todo simplify logic here. No need for division
 		s_nchunkCount = DIV_CEIL(partitionSize, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
@@ -284,9 +285,17 @@ updateSTDP_(
 	for(uint nchunk=0; nchunk < s_nchunkCount; ++nchunk) {
 
 		uint target = nchunk * THREADS_PER_BLOCK + threadIdx.x;
+
+		uint64_t targetRecentFiring =
+			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target];
+
 		const int processingDelay = s_stdpPostFireWindow - 1;
 
-		bool fired = s_targetRecentFiring[target] & (0x1 << processingDelay);
+		bool fired = targetRecentFiring & (0x1 << processingDelay);
+
+		/* Write updated history to double buffer */
+		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target] =
+				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
 		__shared__ uint s_firingCount;
 		if(threadIdx.x == 0) {
@@ -329,7 +338,7 @@ updateSTDP_(
 							updateSynapse(
 								r_sdata,
 								target,
-								g_sourceRecentFiring + sourcePartition(r_sdata) * pitch64);
+								g_recentFiring + (readBuffer(cycle) * PARTITION_COUNT + sourcePartition(r_sdata)) * pitch64);
 
 						//! \todo perhaps stage diff in output buffers
 						//! \todo add saturating arithmetic here

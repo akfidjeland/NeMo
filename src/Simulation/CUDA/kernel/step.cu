@@ -23,7 +23,9 @@
 __global__
 void
 STDP_FN(step) (
+		//! \todo hard-code this
 		int substeps,
+		// change to uint
 		uint32_t cycle,
 		uint64_t* g_recentFiring,
 		// neuron state
@@ -42,7 +44,9 @@ STDP_FN(step) (
 		uint32_t* g_fstim,
 #ifdef KERNEL_TIMING
 		// cycle counting
+		//! \todo change to uint64_t
 		unsigned long long* g_cycleCounters,
+		//! \todo move to cmem
 		size_t ccPitch,
 #endif
 		uint32_t* firingOutput) // already offset to current cycle
@@ -54,7 +58,7 @@ STDP_FN(step) (
 	 * purposes. */
 
 	/* Per-neuron buffers */
-	__shared__ uint64_t s_N64[MAX_PARTITION_SIZE];
+	__shared__ float s_current[MAX_PARTITION_SIZE];
 	//! \todo rename to nidx_dt for consistency
 	__shared__ dnidx_t s_fired[MAX_PARTITION_SIZE];
 
@@ -84,7 +88,6 @@ STDP_FN(step) (
 	loadStdpParameters();
 #endif
 
-	float* s_current = (float*) s_N64;
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
 		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
 	}
@@ -132,37 +135,17 @@ STDP_FN(step) (
 	SET_COUNTER(s_ccMain, 5);
 
 #ifdef STDP
-	uint64_t* s_recentFiring = s_N64;
-	loadSharedArray(s_partitionSize,
-			s_pitch64,
-			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
-			s_recentFiring);
-	__syncthreads();
-
-	SET_COUNTER(s_ccMain, 6);
-
 	updateSTDP_(
-			g_recentFiring + readBuffer(cycle) * PARTITION_COUNT * s_pitch64,
-			s_recentFiring,
+			cycle,
+			s_dfired,
+			g_recentFiring,
 			s_pitch64,
 			s_partitionSize,
 			cr_address, cr_stdp, cr_pitch,
 			s_fired);
-
-	SET_COUNTER(s_ccMain, 7);
-
-	updateHistory(s_partitionSize,
-			s_dfired,
-			s_recentFiring,
-			g_recentFiring
-				+ writeBuffer(cycle) * PARTITION_COUNT * s_pitch64
-				+ CURRENT_PARTITION * s_pitch64);
-#else
-	SET_COUNTER(s_ccMain, 6);
-	SET_COUNTER(s_ccMain, 7);
 #endif
 
-	SET_COUNTER(s_ccMain, 8);
+	SET_COUNTER(s_ccMain, 6);
 
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

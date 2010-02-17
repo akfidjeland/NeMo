@@ -62,7 +62,8 @@ storeFiringOutput(uint nfired, dnidx_t* s_fired,
 
 
 
-/*! The external firing stimulus is provided in a per-neuron bit-vector */
+/*! The external firing stimulus is (possibly) provided in a per-neuron
+ * bit-vector */
 __device__
 void
 loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
@@ -74,47 +75,6 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
 	}
 	__syncthreads();
 }
-
-
-
-template<typename T>
-__device__
-void
-loadSharedArray(int partitionSize, size_t pitch, T* g_arr, T* s_arr)
-{
-	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
-		uint neuron = nbase + threadIdx.x;
-		if(neuron < partitionSize) {
-			s_arr[neuron] = g_arr[(blockIdx.x * pitch) + neuron];
-		}
-	}
-}
-
-
-
-//=============================================================================
-// Shared memory buffers
-//=============================================================================
-
-
-
-__device__
-void
-updateHistory(uint s_partitionSize,
-		uint32_t* s_dfired,
-		uint64_t* s_recentFiring,
-		uint64_t* g_recentFiring)
-{
-	for(uint nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
-		uint neuron = nbase + threadIdx.x;
-		if(neuron < s_partitionSize) {
-			g_recentFiring[neuron] =
-				(s_recentFiring[neuron] << 1) | (bv_isSet(neuron, s_dfired) ? 0x1 : 0x0);
-		}
-	}
-	__syncthreads();
-}
-
 
 
 
@@ -192,6 +152,12 @@ fire(
 	}
 }
 
+
+
+
+//=============================================================================
+// Spike delivery
+//=============================================================================
 
 
 __device__
