@@ -1,4 +1,4 @@
-SRCDIR := src/Simulation/CUDA/kernel/
+SRCDIR := libnemo/src/
 ROOTDIR := dist/build/cuda
 
 CU_MAIN = kernel_wrapper.cu

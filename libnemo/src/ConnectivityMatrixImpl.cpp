@@ -219,7 +219,7 @@ ConnectivityMatrixImpl::moveToDevice()
 
 		size_t partitionCount = maxPartitionIdx() + 1;
 		size_t maxWarps = m_outgoing.moveToDevice(partitionCount, m_fsynapses);
-		m_incoming.allocate(partitionCount, maxWarps, 0.5);
+		m_incoming.allocate(partitionCount, maxWarps, 0.1);
 
 		configureReverseAddressing(
 				r_partitionPitch(),
@@ -233,6 +233,8 @@ ConnectivityMatrixImpl::moveToDevice()
 		printMemoryUsage(out);
 		throw;
 	}
+	//! \todo remove debugging code
+	//printMemoryUsage(stderr);
 }
 
 
