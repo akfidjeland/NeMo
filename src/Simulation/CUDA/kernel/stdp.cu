@@ -268,23 +268,9 @@ updateSTDP_(
 	DEVICE_UINT_PTR_T* cr_pitch,
 	dnidx_t* s_firingIdx) // s_NIdx, so can handle /all/ neurons firing
 {
-	__shared__ uint s_schunkCount; // number of chunks for synapse-parallel execution
-	__shared__ uint s_nchunkCount; // number of chunks for neuron-parallel execution
-
-	uint r_maxSynapses = cr_pitch[CURRENT_PARTITION];
-
-	if(threadIdx.x == 0) {
-		// deal with at most one postsynaptic neuron in one chunk
-		s_schunkCount = DIV_CEIL(r_maxSynapses, THREADS_PER_BLOCK); // per-partition size
-		//! \todo simplify logic here. No need for division
-		s_nchunkCount = DIV_CEIL(partitionSize, THREADS_PER_BLOCK);
-	}
-	__syncthreads();
-
 	/* Determine what postsynaptic neurons needs processing in small batches */
-	for(uint nchunk=0; nchunk < s_nchunkCount; ++nchunk) {
-
-		uint target = nchunk * THREADS_PER_BLOCK + threadIdx.x;
+	for(uint nbase = 0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
+		uint target = nbase + threadIdx.x;
 
 		uint64_t targetRecentFiring =
 			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target];
@@ -312,12 +298,12 @@ updateSTDP_(
 		for(uint i=0; i<s_firingCount; ++i) {
 
 			uint target = s_firingIdx[i];
+			uint r_maxSynapses = cr_pitch[CURRENT_PARTITION];
 
 			//! \todo consider using per-neuron maximum here instead
-			for(uint schunk=0; schunk < s_schunkCount; ++schunk) {
+			for(uint sbase = 0; sbase < r_maxSynapses; sbase += THREADS_PER_BLOCK) {
 
-				uint r_sidx = schunk * THREADS_PER_BLOCK + threadIdx.x;
-
+				uint r_sidx = sbase + threadIdx.x;
 				if(r_sidx < r_maxSynapses) {
 
 					size_t r_offset = target * r_maxSynapses + r_sidx;
@@ -329,11 +315,6 @@ updateSTDP_(
 
 					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
-						/* For L0 LTP, recentFiring is in shared memory so access
-						 * is cheap. For L1, recentFiring is in a global memory
-						 * double buffer. Accesses are both expensive and
-						 * non-coalesced. */
-						//! \todo consider using a cache for L1 firing history
 						weight_dt w_diff =
 							updateSynapse(
 								r_sdata,
