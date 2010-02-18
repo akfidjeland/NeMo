@@ -1,6 +1,10 @@
 #ifndef FIXED_POINT_CU
 #define FIXED_POINT_CU
 
+#include "error.cu"
+#include "util.h"
+#include "nemo_cuda_types.h"
+
 #define FX_SIGN_BIT 0x80000000
 
 /* Scaling factor used for fixed-points (used for weight storage) */

@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdio.h>
 #include <stdint.h>
 
 #define IS_POWER_OF_TWO(v) (!((v) & ((v) - 1)) && (v))
