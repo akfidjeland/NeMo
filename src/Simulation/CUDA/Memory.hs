@@ -7,10 +7,8 @@ module Simulation.CUDA.Memory (
 ) where
 
 
-
-import Control.Monad (zipWithM_, forM_)
-import Data.Maybe (Maybe, isNothing)
-import qualified Data.Map as Map (Map, fromList, empty)
+import Data.Maybe (Maybe)
+import qualified Data.Map as Map (Map, fromList)
 import Foreign.C.Types
 import Foreign.Marshal.Array (mallocArray)
 import Foreign.Marshal.Utils (fromBool)
@@ -18,7 +16,7 @@ import Foreign.Ptr
 import Foreign.Storable (pokeElemOff)
 
 import Construction.Axon (terminalsUnordered)
-import Construction.Neuron (terminalsByDelay, Neuron(..))
+import Construction.Neuron (Neuron(..))
 import Construction.Network (Network, toList)
 import Construction.Izhikevich (IzhNeuron(..), stateSigma)
 import Construction.Synapse (AxonTerminal(AxonTerminal), Static(..),
@@ -26,10 +24,8 @@ import Construction.Synapse (AxonTerminal(AxonTerminal), Static(..),
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI
 import Simulation.CUDA.State (State(..))
-import Simulation.CUDA.Mapping
 import Simulation.STDP
 import Types
-import Util.List (maximumM)
 
 
 
@@ -63,23 +59,23 @@ setNeurons rt ns = do
                 (paramA n) (paramB n) (paramC n) (paramD n)
                 (initU n) (initV n) sigma
             let ss = terminalsUnordered $ axon neuron
-            len <- pokeSynapses0 buf 0 ss
+            len <- pokeSynapses buf 0 ss
             addSynapses rt idx
                 (nidx buf) (delays buf) (weights buf) (plasticity buf) len
 
 
 {- | Write a row of synapses (i.e for a single presynaptic/delay) to output
  - buffer -}
-pokeSynapses0 :: Outbuf -> Int -> [AxonTerminal Static] -> IO Int
-pokeSynapses0 _ len0 [] = return len0
-pokeSynapses0 buf0 i0 (s:ss) = do
-    pokeSynapse0 buf0 i0 s
-    pokeSynapses0 buf0 (i0+1) ss
+pokeSynapses :: Outbuf -> Int -> [AxonTerminal Static] -> IO Int
+pokeSynapses _ len0 [] = return len0
+pokeSynapses buf0 i0 (s:ss) = do
+    pokeSynapse buf0 i0 s
+    pokeSynapses buf0 (i0+1) ss
 
 
 {- | Write a single synapse to output buffer -}
-pokeSynapse0 :: Outbuf -> Int -> AxonTerminal Static -> IO ()
-pokeSynapse0 buf i s = do
+pokeSynapse :: Outbuf -> Int -> AxonTerminal Static -> IO ()
+pokeSynapse buf i s = do
     pokeElemOff (weights buf) i $! realToFrac $! weight s
     pokeElemOff (nidx buf) i $! fromIntegral $! target s
     pokeElemOff (plasticity buf) i $! fromBool $! plastic s
@@ -95,8 +91,7 @@ pokeSynapse0 buf i s = do
 {- | By the time we write data to the device, we have already established the
  - maximum pitch for the connectivity matrices. The data is written on a
  - per-row basis. To avoid excessive memory allocation we allocate a single
- - buffer (for each CM) with the know maximum pitch, and re-use it for each
- - row. -}
+ - buffer with the know maximum pitch, and re-use it for each row. -}
 data Outbuf = Outbuf {
         weights :: Ptr CFloat,
         nidx    :: Ptr CUInt,
@@ -112,47 +107,6 @@ allocOutbuf len = do
     dbuf <- mallocArray len
     return $! Outbuf wbuf nbuf spbuf dbuf
 
-
-{- | Write all connectivity data to device -}
-loadCMatrix rt att net = do
-    -- TODO: what we really want here is a dynamically resized bit of memory
-    -- which we allocate only once.
-    bufL0 <- allocOutbuf $ 2^16
-    forM_ (partitionAssocs net) $ \(pidx, p) -> do
-        forM_ (neuronAssocs p) $ \(nidx, n) -> do
-            forM_ (terminalsByDelay n) $ \(delay, ss) -> do
-                len0 <- pokeSynapses bufL0 0 ss
-                -- TODO: don't convert to L0 or L1 here
-                -- TODO: remove redundant translation back and forth
-                setRow rt bufL0 (globalIdx att (pidx, nidx)) delay len0
-    where
-        -- TODO: just send global neuron indices here
-        -- TODO: remove pidx from data type
-        setRow rt buf = setCMDRow rt (weights buf) (nidx buf) (plasticity buf)
-
-
-
-
-{- | Write a row of synapses (i.e for a single presynaptic/delay) to output
- - buffer -}
-pokeSynapses _ len0 [] = return len0
-pokeSynapses buf0 i0 (s:ss) = do
-    pokeSynapse buf0 i0 s
-    pokeSynapses buf0 (i0+1) ss
-
-
-{- | Write a single synapse to output buffer -}
-pokeSynapse :: Outbuf -> Int ->  (Idx, Current, Bool, Static) -> IO ()
-pokeSynapse buf i (target, weight, plastic, _) = do
-    pokeElemOff (weights buf) i $! realToFrac $! weight
-    pokeElemOff (nidx buf) i $! fromIntegral $! target
-    pokeElemOff (plasticity buf) i $! fromBool plastic
-
-
-type DArr = (Ptr CInt, Ptr CInt, Ptr CFloat, Int)
-
-pitch :: DArr -> Int
-pitch (_, _, _, p) = p
 
 
 {- | Get (possibly modified) connectivity matrix back from device -}
