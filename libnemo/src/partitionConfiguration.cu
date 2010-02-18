@@ -18,7 +18,6 @@
 #include "partitionConfiguration.cu_h"
 #include "util.h"
 #include "kernel.cu_h"
-#include "kernel.h"
 #include "RuntimeData.hpp"
 #include "ConnectivityMatrix.hpp"
 

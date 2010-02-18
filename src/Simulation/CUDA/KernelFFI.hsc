@@ -43,7 +43,7 @@ import Simulation.CUDA.State (State(..), CuRT)
 
 import Types (Time, Delay, Weight, Idx)
 
-#include <kernel.h>
+#include <libnemo.h>
 
 
 foreign import ccall unsafe "allocRuntimeData"

@@ -11,7 +11,6 @@
 
 #include <nemo_types.hpp>
 #include "nemo_cuda_types.h"
-#include "kernel.h" // for synapse type used in interface
 #include "NVector.hpp"
 #include "kernel.cu_h"
 #include "Outgoing.hpp"

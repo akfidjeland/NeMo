@@ -1,7 +1,7 @@
 #include "RuntimeData.hpp"
 
 extern "C" {
-#include "kernel.h"
+#include "libnemo.h"
 }
 #include "FiringOutput.hpp"
 #include "ConnectivityMatrix.hpp"

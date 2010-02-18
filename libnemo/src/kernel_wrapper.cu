@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <assert.h>
 extern "C" {
-#include "kernel.h"
+#include "libnemo.h"
 }
 
 #include <STDP.hpp>
