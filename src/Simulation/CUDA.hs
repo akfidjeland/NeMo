@@ -4,7 +4,7 @@
  - neuron partitions (ideally strongly interconnected, weakly connected
  - externally). -}
 
-module Simulation.CUDA (initSim, deviceCount) where
+module Simulation.CUDA (initSim, Kernel.deviceCount) where
 
 
 import Control.Exception (assert)
@@ -17,10 +17,9 @@ import Types
 import qualified Util.Assocs as A (elems, keys, mapAssocs, mapElems, groupBy, densify)
 
 import Simulation.CUDA.Address
-import Simulation.CUDA.DeviceProperties (deviceCount)
 import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
-     printCycleCounters, elapsedMs, resetTimer, freeRT)
+     printCycleCounters, elapsedMs, resetTimer, freeRT, deviceCount)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.State (State(..))
 import Simulation.STDP (StdpConf)

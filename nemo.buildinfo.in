@@ -1,6 +1,6 @@
 executable: nemo
 cpp-options: -DNEMO_VERSION="@PACKAGE_VERSION@"
-@CUDA_ENABLED_HS@other-modules: Simulation.CUDA, Simulation.CUDA.Address, Simulation.CUDA.DeviceProperties, Simulation.CUDA.KernelFFI, Simulation.CUDA.Memory, Simulation.CUDA.Options, Simulation.CUDA.State
+@CUDA_ENABLED_HS@other-modules: Simulation.CUDA, Simulation.CUDA.Address, Simulation.CUDA.KernelFFI, Simulation.CUDA.Memory, Simulation.CUDA.Options, Simulation.CUDA.State
 @CUDA_ENABLED_HS@cpp-options: -DCUDA_ENABLED
 @CUDA_ENABLED_HS@extra-libraries: cuIzhikevich cudart
 @CUDA_ENABLED_HS@extra-lib-dirs: @CUDA_PATH@/lib dist/build/cuda/lib

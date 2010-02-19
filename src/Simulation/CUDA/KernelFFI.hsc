@@ -20,7 +20,8 @@ module Simulation.CUDA.KernelFFI (
     configureStdp,
     maxPartitionSize,
     elapsedMs,
-    resetTimer
+    resetTimer,
+    deviceCount
 ) where
 
 import Control.Monad (when, forM)
@@ -302,3 +303,7 @@ foreign import ccall unsafe "nemo_elapsed_ms" c_elapsedMs :: Ptr CuRT -> IO CLon
 elapsedMs rt = return . fromIntegral =<< c_elapsedMs rt
 
 foreign import ccall unsafe "nemo_reset_timer" resetTimer :: Ptr CuRT -> IO ()
+
+
+-- | Return number of unique devices
+foreign import ccall unsafe "nemo_device_count" deviceCount :: CInt
