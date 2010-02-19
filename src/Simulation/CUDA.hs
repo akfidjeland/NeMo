@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+
 {- This backend uses a CUDA kernel, which is accessed through a C API. CUDA
  - requires that the computation be split up into *thread blocks*. The logical
  - network is mapped onto this computational topology by defining a number of
@@ -21,7 +23,6 @@ import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
      printCycleCounters, elapsedMs, resetTimer, freeRT, deviceCount)
 import Simulation.CUDA.Memory as Memory
-import Simulation.CUDA.State (State(..))
 import Simulation.STDP (StdpConf)
 
 
@@ -35,12 +36,12 @@ instance Simulation_Iface State where
     run_ = runCuda_
     step = stepCuda
     step_ = Kernel.stepNonBuffering
-    applyStdp sim reward = Kernel.applyStdp (rt sim) reward
-    elapsed = Kernel.elapsedMs . rt
-    resetTimer = Kernel.resetTimer . rt
+    applyStdp sim reward = Kernel.applyStdp sim reward
+    elapsed = Kernel.elapsedMs
+    resetTimer = Kernel.resetTimer
     getWeights sim = Memory.getWeights sim
     start sim = return () -- copy to device forced during initSim
-    stop = Kernel.freeRT . rt
+    stop = Kernel.freeRT
 
 
 {- | Initialise simulation and return a function to step through the rest of it -}
@@ -63,14 +64,14 @@ initSim partitionSize net stdpConf = do
 runCuda :: State -> [[Idx]] -> IO [FiringOutput]
 runCuda sim fstim = do
     mapM_ (Kernel.stepBuffering sim) fstim
+    Kernel.printCycleCounters sim
     readFiring sim $! length fstim
-    -- printCycleCounters $ rt sim
 
 
 runCuda_ :: State -> [[Idx]] -> IO ()
 runCuda_ sim fstim = do
     mapM_ (Kernel.stepNonBuffering sim) fstim
-    -- printCycleCounters $ rt sim
+    Kernel.printCycleCounters sim
 
 
 stepCuda :: State -> [Idx] -> IO FiringOutput
@@ -82,7 +83,7 @@ stepCuda sim fstim = do
 
 readFiring :: State -> Time -> IO [FiringOutput]
 readFiring sim ncycles = do
-    (ncycles', fired) <- Kernel.readFiring $ rt sim
+    (ncycles', fired) <- Kernel.readFiring sim
     assert (ncycles == ncycles') $ do
     return $! densifyDeviceFiring ncycles' fired
 

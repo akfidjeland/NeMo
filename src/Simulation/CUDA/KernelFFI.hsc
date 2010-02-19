@@ -39,11 +39,14 @@ import Foreign.Storable (peek)
 
 import Simulation.CommonFFI
 import Simulation.CUDA.Address
-import Simulation.CUDA.State (State(..), CuRT)
 
 import Types (Time, Delay, Weight, Idx)
 
 #include <libnemo.h>
+
+
+{- Runtime data is managed on the CUDA-side in a single structure -}
+data CuRT = CuRT
 
 
 foreign import ccall unsafe "nemo_new_network"
@@ -207,7 +210,7 @@ stepBuffering sim fstim = do
         fbounds = (0, flen-1)
     fsNIdxArr <- newListArray fbounds $ map fromIntegral fstim
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
-    kernelStatus <- c_step (rt sim) (fromIntegral flen) fsNIdxPtr
+    kernelStatus <- c_step sim (fromIntegral flen) fsNIdxPtr
     when (kernelStatus /= 0) $ fail "Backend error"
     where
         {- Run possibly failing computation, and propagate any errors with
@@ -220,7 +223,7 @@ stepNonBuffering sim fstim = do
     stepBuffering sim fstim
     -- the simulation always records firing, so we just flush the buffer after
     -- the fact to avoid overflow.
-    c_flushFiringBuffer (rt sim)
+    c_flushFiringBuffer sim
 
 
 

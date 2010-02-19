@@ -3,7 +3,8 @@
 
 module Simulation.CUDA.Memory (
     initMemory,
-    getWeights
+    getWeights,
+    State
 ) where
 
 
@@ -23,11 +24,11 @@ import Construction.Synapse (AxonTerminal(AxonTerminal), Static(..),
     plastic, target, weight, delay)
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI
-import Simulation.CUDA.State (State(..))
 import Simulation.STDP
 import Types
 
 
+type State = Ptr CuRT -- ^ kernel runtime data
 
 
 {- Initialise memory on a single device -}
@@ -42,7 +43,7 @@ initMemory net reqPsize maxProbePeriod stdp = do
     configureStdp rt stdp
     setNeurons rt $ toList net
     startSimulation rt
-    return $ State rt
+    return $ rt
 
 
 
