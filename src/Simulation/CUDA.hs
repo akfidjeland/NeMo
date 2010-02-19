@@ -20,7 +20,7 @@ import Simulation.CUDA.Address
 import Simulation.CUDA.DeviceProperties (deviceCount)
 import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
-     printCycleCounters, elapsedMs, resetTimer, deviceDiagnostics, freeRT)
+     printCycleCounters, elapsedMs, resetTimer, freeRT)
 import Simulation.CUDA.Memory as Memory
 import Simulation.CUDA.State (State(..))
 import Simulation.STDP (StdpConf)
@@ -40,7 +40,6 @@ instance Simulation_Iface State where
     elapsed = Kernel.elapsedMs . rt
     resetTimer = Kernel.resetTimer . rt
     getWeights sim = Memory.getWeights sim
-    diagnostics = Kernel.deviceDiagnostics . rt
     start sim = return () -- copy to device forced during initSim
     stop = Kernel.freeRT . rt
 

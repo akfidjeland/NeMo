@@ -8,9 +8,9 @@ module Simulation.CUDA.KernelFFI (
     stepNonBuffering,
     readFiring,
     applyStdp,
+    -- TODO: rename
     getCMDRow,
     copyToDevice,
-    deviceDiagnostics,
     syncSimulation,
     printCycleCounters,
     freeRT,
@@ -103,14 +103,6 @@ maxPartitionSize = #const MAX_PARTITION_SIZE
 {- | Force copy of data to device -}
 foreign import ccall unsafe "copyToDevice" copyToDevice :: Ptr CuRT -> IO ()
 
-
-foreign import ccall unsafe "allocatedDeviceMemory"
-    c_allocatedDeviceMemory :: Ptr CuRT -> IO CSize
-
-deviceDiagnostics :: Ptr CuRT -> IO String
-deviceDiagnostics rt = do
-    dmem <- c_allocatedDeviceMemory rt
-    return $ "Allocated device memory: " ++ show dmem ++ "B"
 
 
 foreign import ccall unsafe "addSynapses"
