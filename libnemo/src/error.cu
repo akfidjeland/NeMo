@@ -72,6 +72,7 @@ assertionsFailed(size_t blocks, int cycle)
         for(int thread=0; thread<THREADS_PER_BLOCK; ++thread) {
             int line = h_assertions[assertion_offset(block, thread)];
             if(line != 0) {
+				//! \todo throw exception here
                 fprintf(stderr, 
                     "Device assertion failure in block=%d, thread=%d, line=%d, cycle=%d\n",
                     block, thread, line, cycle);

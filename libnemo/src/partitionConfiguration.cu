@@ -44,14 +44,15 @@ __shared__ uint s_networkParameters[NPARAM_COUNT];
 
 #define SET_CONSTANT(symbol, val) param[NPARAM_ ## symbol] = val
 
+//! \todo split this up
 __host__
 void
-configureKernel(RTDATA rtdata)
+configureKernel(uint maxDelay, uint pitch32, uint pitch64)
 {
 	std::vector<uint> param(NPARAM_COUNT);
-	SET_CONSTANT(maxDelay,  rtdata->maxDelay());
-	SET_CONSTANT(pitch32,   rtdata->pitch32());
-	SET_CONSTANT(pitch64,   rtdata->pitch64());
+	SET_CONSTANT(maxDelay,  maxDelay);
+	SET_CONSTANT(pitch32,   pitch32);
+	SET_CONSTANT(pitch64,   pitch64);
 	CUDA_SAFE_CALL(
 			cudaMemcpyToSymbol(c_networkParameters,
 				&param[0], 

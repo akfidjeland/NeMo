@@ -42,32 +42,16 @@ extern "C" {
 
 
 
-/* Copy network data and configuration to device, if this has not already been
- * done */
-//! \todo move this into RuntimeData
-void
-nemo_start_simulation(RuntimeData* rtdata)
-{
-	/* This would have been tidier if we did all the handling inside rtdata.
-	 * However, problems with copying to constant memory in non-cuda code
-	 * prevents this. */
-	if(rtdata->deviceDirty()) {
-		clearAssertions();
-		rtdata->moveToDevice();
-		configureKernel(rtdata);
-		rtdata->setStart();
-	}
-}
 
 
-
+//! \todo merge this with other apply function
 /* Apply STDP to a single connectivity matrix */
 __host__
 void
 applyStdp_(
 		dim3 dimGrid,
 		dim3 dimBlock,
-		RTDATA rtdata,
+		RuntimeData* rtdata,
 		float reward,
 		bool trace)
 {
@@ -93,25 +77,15 @@ applyStdp_(
 //1 \todo move this into RuntimeData
 __host__
 void
-nemo_apply_stdp(RuntimeData* rtdata, float stdpReward)
+applyStdp(RuntimeData* rtdata, float reward)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
+	//! \todo just pass in the relevant information directly
 	dim3 dimGrid(rtdata->partitionCount());
 
-	if(rtdata->deviceDirty()) {
-		return; // we haven't even started simulating yet
-	}
-
-	if(rtdata->usingStdp()) {
-		if(stdpReward == 0.0f) {
-			rtdata->cm()->clearStdpAccumulator();
-		} else  {
-			applyStdp_(dimGrid, dimBlock, rtdata, stdpReward, false);
-		}
-	}
+	applyStdp_(dimGrid, dimBlock, rtdata, reward, false);
 
 	if(assertionsFailed(rtdata->partitionCount(), -1)) {
-		fprintf(stderr, "checking assertions\n");
 		clearAssertions();
 	}
 }
@@ -119,16 +93,15 @@ nemo_apply_stdp(RuntimeData* rtdata, float stdpReward)
 
 
 /*! Wrapper for the __global__ call that performs a single simulation step */
+//! \todo don't return status_t here. Only deal with this in API layer
 __host__
 status_t
-nemo_step(RTDATA rtdata,
+stepSimulation(RuntimeData* rtdata,
 		int substeps,
 		// External firing (sparse)
 		size_t extFiringCount,
 		const int* extFiringNIdx)
 {
-	rtdata->step();
-
 	nemo_start_simulation(rtdata); // only has effect on first invocation
 
 	dim3 dimBlock(THREADS_PER_BLOCK);

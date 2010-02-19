@@ -64,7 +64,6 @@ nemo_add_synapses(RTDATA rtdata,
 
 
 
-
 size_t
 nemo_get_synapses(RTDATA rtdata,
 		unsigned int sourcePartition,
@@ -80,9 +79,34 @@ nemo_get_synapses(RTDATA rtdata,
 }
 
 
-//-----------------------------------------------------------------------------
-// Generated firing
-//-----------------------------------------------------------------------------
+
+void
+nemo_start_simulation(RTDATA rtdata)
+{
+	UNSAFE_CALL(rtdata, startSimulation());
+}
+
+
+
+status_t
+nemo_step(RTDATA rtdata,
+		int substeps,
+		// External firing (sparse)
+		size_t extFiringCount,
+		const int* extFiringNIdx)
+{
+	return UNSAFE_CALL(rtdata, stepSimulation(substeps, extFiringCount, extFiringNIdx));
+}
+
+
+void
+nemo_apply_stdp(RTDATA rtdata, float reward)
+{
+	UNSAFE_CALL(rtdata, applyStdp(reward));
+}
+
+
+
 
 void
 nemo_read_firing(RTDATA rtdata,

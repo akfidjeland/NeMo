@@ -10,6 +10,9 @@
 #include "fixedpoint.hpp"
 #include "bitvector.hpp"
 
+#include "partitionConfiguration.cu_h"
+#include "error.cu_h"
+
 #include <vector>
 #include <assert.h>
 
@@ -50,14 +53,6 @@ RuntimeData::~RuntimeData()
 	if(cycleCounters) delete cycleCounters;
 	delete m_cm;
 	delete m_neurons;
-}
-
-
-
-uint
-RuntimeData::maxDelay() const
-{
-	return m_cm->maxDelay();
 }
 
 
@@ -250,14 +245,6 @@ RuntimeData::setPitch()
 
 
 
-void
-RuntimeData::step()
-{
-    m_cycle += 1;
-}
-
-
-
 uint32_t
 RuntimeData::cycle() const
 {
@@ -316,4 +303,59 @@ void
 RuntimeData::syncSimulation()
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
+}
+
+
+
+void
+RuntimeData::startSimulation()
+{
+	if(deviceDirty()) {
+		::clearAssertions();
+		moveToDevice();
+		//! \todo do this configuration as part of CM setup
+		::configureKernel(m_cm->maxDelay(), pitch32(), pitch64());
+		setStart();
+	}
+}
+
+
+
+//! \todo put this into separate header
+status_t stepSimulation(RuntimeData* rtdata, int, size_t, const int*);
+
+status_t
+RuntimeData::stepSimulation(
+		int substeps,
+		size_t extFiringCount,
+		const int* extFiringNIdx)
+{
+	//! \todo perhaps pass in explicit argument instead?
+    m_cycle += 1;
+	return ::stepSimulation(this, substeps, extFiringCount, extFiringNIdx);
+}
+
+
+//! \todo put this in proper header
+void applyStdp(RuntimeData* rtdata, float reward);
+
+void
+RuntimeData::applyStdp(float reward)
+{
+	if(deviceDirty()) {
+		//! \todo issue a warning here?
+		return; // we haven't even started simulating yet
+	}
+
+	if(!usingStdp()) {
+		//! \todo issue a warning here?
+		return;
+	}
+
+	if(reward == 0.0f) {
+		m_cm->clearStdpAccumulator();
+	} else  {
+		//! \todo pass in parameters instead
+		::applyStdp(this, reward);
+	}
 }

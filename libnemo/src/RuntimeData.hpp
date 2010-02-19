@@ -7,6 +7,11 @@
 #include "NVector.hpp"
 #include "kernel.cu_h"
 
+//! \todo only needed for status_t. Remove the need for this
+extern "C" {
+#include "libnemo.h"
+}
+
 #include <Timer.hpp>
 #include <STDP.hpp>
 
@@ -15,14 +20,21 @@ class RuntimeData
 {
 	public :
 
-	RuntimeData(
-			size_t maxPartitionSize,
-			bool setReverse,
-			unsigned int maxReadPeriod);
+		RuntimeData(
+				size_t maxPartitionSize,
+				bool setReverse,
+				unsigned int maxReadPeriod);
 
-	~RuntimeData();
+		~RuntimeData();
 
-	uint maxDelay() const;
+		void startSimulation();
+
+		status_t stepSimulation(
+				int substeps,
+				size_t extFiringCount,
+				const int* extFiringNIdx);
+
+		void applyStdp(float reward);
 
 	/* Copy data to device if this has not already been done, and clear the
 	 * host buffers */
@@ -67,10 +79,6 @@ class RuntimeData
 	uint32_t* setFiringStimulus(size_t count, const int* nidx);
 
 	struct CycleCounters* cycleCounters;
-
-	/*! Update internal cycle counters. This should be called every simulation
-	 * cycle */
-	void step();
 
 	uint32_t cycle() const;
 

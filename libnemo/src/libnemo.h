@@ -178,6 +178,8 @@ nemo_enable_stdp(RTDATA,
 // SIMULATION STEPPING
 //-----------------------------------------------------------------------------
 
+
+//! \todo remove the substeps argument
 status_t
 nemo_step(RTDATA rtdata,
 		int substeps,               // number of substeps per normal 1ms step
