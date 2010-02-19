@@ -9,6 +9,9 @@ extern "C" {
 #include "CycleCounters.hpp"
 
 
+// call function without handling exceptions
+#define UNSAFE_CALL(ptr, call) static_cast<RuntimeData*>(ptr)->call
+
 
 RTDATA
 nemo_new_network(
@@ -20,12 +23,12 @@ nemo_new_network(
 }
 
 
+
 void
 nemo_delete_network(RTDATA mem)
 {
-	delete mem;
+	delete static_cast<RuntimeData*>(mem);
 }
-
 
 
 
@@ -35,7 +38,7 @@ nemo_add_neuron(RTDATA rt,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	rt->addNeuron(idx, a, b, c, d, u, v, sigma);
+	UNSAFE_CALL(rt, addNeuron(idx, a, b, c, d, u, v, sigma));
 }
 
 
@@ -49,13 +52,14 @@ nemo_add_synapses(RTDATA rtdata,
 		unsigned char is_plastic[],
 		size_t length)
 {
-	rtdata->cm()->setRow(
+	//! \todo expose this functionality throught RTdata interface
+	UNSAFE_CALL(rtdata, cm()->setRow(
 		source,
 		targets,
 		delays,
 		weights,
 		is_plastic,
-		length);
+		length));
 }
 
 
@@ -71,8 +75,8 @@ nemo_get_synapses(RTDATA rtdata,
 		float* weights[],
 		unsigned char* plastic[])
 {
-	return rtdata->cm()->getRow(sourcePartition, sourceNeuron, delay,
-			rtdata->cycle(), targetPartition, targetNeuron, weights, plastic);
+	return (static_cast<RuntimeData*>(rtdata))->cm()->getRow(sourcePartition, sourceNeuron, delay,
+			static_cast<RuntimeData*>(rtdata)->cycle(), targetPartition, targetNeuron, weights, plastic);
 }
 
 
@@ -87,14 +91,16 @@ nemo_read_firing(RTDATA rtdata,
 		uint* nfired,
 		uint* ncycles)
 {
-	rtdata->firingOutput->readFiring(cycles, neuronIdx, nfired, ncycles);
+	//! \todo expose this through RTdata
+	UNSAFE_CALL(rtdata, firingOutput->readFiring(cycles, neuronIdx, nfired, ncycles));
 }
 
 
 void
 nemo_flush_firing_buffer(RTDATA rtdata)
 {
-	rtdata->firingOutput->flushBuffer();
+	//! \todo expose this through RTdata
+	UNSAFE_CALL(rtdata, firingOutput->flushBuffer());
 }
 
 
@@ -108,7 +114,8 @@ nemo_flush_firing_buffer(RTDATA rtdata)
 void
 nemo_print_cycle_counters(RTDATA rtdata)
 {
-	rtdata->cycleCounters->printCounters();
+	//! \todo expose this through RTdata
+	UNSAFE_CALL(rtdata, cycleCounters->printCounters());
 }
 
 
@@ -116,7 +123,7 @@ nemo_print_cycle_counters(RTDATA rtdata)
 long int
 nemo_elapsed_ms(RTDATA rtdata)
 {
-	return rtdata->elapsed();
+	return UNSAFE_CALL(rtdata, elapsed());
 }
 
 
@@ -124,8 +131,8 @@ void
 nemo_reset_timer(RTDATA rtdata)
 {
 	// force all execution to complete first
-	rtdata->syncSimulation();
-	rtdata->setStart();
+	UNSAFE_CALL(rtdata, syncSimulation());
+	UNSAFE_CALL(rtdata, setStart());
 }
 
 
@@ -145,7 +152,7 @@ nemo_enable_stdp(RTDATA rtdata,
 		float w_max,
 		float w_min)
 {
-	nemo::configure_stdp(rtdata->stdpFn, pre_len, post_len, pre_fn, post_fn, w_max, w_min);
+	nemo::configure_stdp(static_cast<RuntimeData*>(rtdata)->stdpFn, pre_len, post_len, pre_fn, post_fn, w_max, w_min);
 }
 
 
@@ -175,7 +182,7 @@ nemo_device_count()
 void
 nemo_sync_simulation(RTDATA rtdata)
 {
-	rtdata->syncSimulation();
+	UNSAFE_CALL(rtdata, syncSimulation());
 }
 
 

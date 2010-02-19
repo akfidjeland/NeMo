@@ -11,8 +11,10 @@
 #include <STDP.hpp>
 
 
-struct RuntimeData
+class RuntimeData
 {
+	public :
+
 	RuntimeData(
 			size_t maxPartitionSize,
 			bool setReverse,

@@ -21,8 +21,8 @@ typedef int status_t;
 //-----------------------------------------------------------------------------
 
 
-//! \todo make this void* and make RuntimeData a class instead of a struct
-typedef struct RuntimeData* RTDATA;
+/* Opaque pointer to network object */
+typedef void* RTDATA;
 
 
 //! \todo get rid of max partition size argument. This is only really useful for debugging.
