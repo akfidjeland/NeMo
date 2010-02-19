@@ -42,20 +42,14 @@ extern "C" {
 
 
 
-
-
-//! \todo merge this with other apply function
-/* Apply STDP to a single connectivity matrix */
 __host__
 void
-applyStdp_(
-		dim3 dimGrid,
-		dim3 dimBlock,
-		RuntimeData* rtdata,
-		float reward,
-		bool trace)
+applyStdp(RuntimeData* rtdata, float reward)
 {
 	uint fb = rtdata->cm()->fractionalBits();
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(rtdata->partitionCount());
+
 	applySTDP_<<<dimGrid, dimBlock>>>(
 #ifdef KERNEL_TIMING
 			rtdata->cycleCounters->dataApplySTDP(),
@@ -65,25 +59,6 @@ applyStdp_(
 			fixedPoint(reward, fb),
 			fixedPoint(rtdata->stdpFn.maxWeight(), fb),
 			fixedPoint(rtdata->stdpFn.minWeight(), fb));
-
-	if(trace) {
-		//! \todo implement his method in the new format
-		assert(false);
-	}
-}
-
-
-
-//1 \todo move this into RuntimeData
-__host__
-void
-applyStdp(RuntimeData* rtdata, float reward)
-{
-	dim3 dimBlock(THREADS_PER_BLOCK);
-	//! \todo just pass in the relevant information directly
-	dim3 dimGrid(rtdata->partitionCount());
-
-	applyStdp_(dimGrid, dimBlock, rtdata, reward, false);
 
 	if(assertionsFailed(rtdata->partitionCount(), -1)) {
 		clearAssertions();
