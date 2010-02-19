@@ -35,15 +35,14 @@ initMemory
     :: Network IzhNeuron Static
     -> Maybe Int -- ^ requested partition size
     -> Int
-    -> Int
     -> StdpConf
     -> IO State
-initMemory net reqPsize maxProbePeriod dt stdp = do
+initMemory net reqPsize maxProbePeriod stdp = do
     rt <- allocRT stdp reqPsize maxProbePeriod
     configureStdp rt stdp
     setNeurons rt $ toList net
     startSimulation rt
-    return $ State (fromIntegral dt) rt
+    return $ State rt
 
 
 

@@ -23,8 +23,6 @@
 __global__
 void
 STDP_FN(step) (
-		//! \todo hard-code this
-		int substeps,
 		// change to uint
 		uint32_t cycle,
 		uint64_t* g_recentFiring,
@@ -68,7 +66,6 @@ STDP_FN(step) (
 
 	/* Per-partition parameters */
 	__shared__ uint s_partitionSize;
-	__shared__ float s_substepMult;
 	__shared__ uint s_firingCount;
 
 	if(threadIdx.x == 0) {
@@ -77,8 +74,6 @@ STDP_FN(step) (
 #endif
 		s_firingCount = 0;
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-		//! \todo no need to compute this on device.
-		s_substepMult = 1.0f / __int2float_rn(substeps);
     }
 	__syncthreads();
 
@@ -108,7 +103,6 @@ STDP_FN(step) (
 	loadFiringInput(g_fstim, s_fstim);
 
 	fire( s_partitionSize,
-			substeps, s_substepMult,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
 			neuronParametersSize,
 			s_current,

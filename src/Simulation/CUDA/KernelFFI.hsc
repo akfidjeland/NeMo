@@ -192,8 +192,6 @@ foreign import ccall unsafe "nemo_sync_simulation"
  - running); hence 'safe'. -}
 foreign import ccall safe "nemo_step"
     c_step :: Ptr CuRT  -- ^ kernel runtime data
-           -> CInt      -- ^ Sub-ms update steps
-           -- External firing stimulus
            -> CSize     -- ^ Number of neurons whose firing is forced this step
            -> Ptr CInt  -- ^ Neuron indices of neurons with forced firing
            -> IO CInt   -- ^ Kernel status
@@ -209,7 +207,7 @@ stepBuffering sim fstim = do
         fbounds = (0, flen-1)
     fsNIdxArr <- newListArray fbounds $ map fromIntegral fstim
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
-    kernelStatus <- c_step (rt sim) (dt sim) (fromIntegral flen) fsNIdxPtr
+    kernelStatus <- c_step (rt sim) (fromIntegral flen) fsNIdxPtr
     when (kernelStatus /= 0) $ fail "Backend error"
     where
         {- Run possibly failing computation, and propagate any errors with

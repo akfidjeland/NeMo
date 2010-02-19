@@ -179,13 +179,17 @@ nemo_enable_stdp(RTDATA,
 //-----------------------------------------------------------------------------
 
 
-//! \todo remove the substeps argument
+/*! Run simulation for an additional single cycle (1ms)
+ *
+ * Neurons can be optionally be forced to fire using the two arguments
+ *
+ * \param fstimCount
+ * 		Length of fstimIdx
+ * \param fstimIdx
+ * 		Indices of the neurons which should be forced to fire this cycle.
+ */
 status_t
-nemo_step(RTDATA rtdata,
-		int substeps,               // number of substeps per normal 1ms step
-		// External firing (sparse)
-		size_t extFiringCount,
-		const int* extFiringNIdx);  // neuron indices
+nemo_step(RTDATA rtdata, size_t fstimCount, unsigned int fstimIdx[]);
 
 
 void nemo_apply_stdp(RTDATA rtdata, float stdpReward);

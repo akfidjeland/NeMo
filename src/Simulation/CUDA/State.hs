@@ -11,7 +11,7 @@ import Foreign.Ptr (Ptr)
 data CuRT = CuRT
 
 
+-- TODO: delete this whole file
 data State = State {
-        dt       :: CInt,           -- ^ number of steps in neuron update
         rt       :: Ptr CuRT -- ^ kernel runtime data
     }

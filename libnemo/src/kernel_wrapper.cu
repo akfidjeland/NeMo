@@ -71,12 +71,9 @@ applyStdp(RuntimeData* rtdata, float reward)
 //! \todo don't return status_t here. Only deal with this in API layer
 __host__
 status_t
-stepSimulation(RuntimeData* rtdata,
-		int substeps,
-		// External firing (sparse)
-		size_t extFiringCount,
-		const int* extFiringNIdx)
+stepSimulation(RuntimeData* rtdata, size_t fstimCount, const uint* fstimIdx)
 {
+	//! \todo move this to RuntimeData
 	nemo_start_simulation(rtdata); // only has effect on first invocation
 
 	dim3 dimBlock(THREADS_PER_BLOCK);
@@ -86,15 +83,15 @@ stepSimulation(RuntimeData* rtdata,
 	DEBUG_MSG("cycle %u\n", scycle);
 	scycle += 1;
 
+	//! \todo move this to RuntimeData
 	uint32_t* d_extFiring = 
-		rtdata->setFiringStimulus(extFiringCount, extFiringNIdx);
+		rtdata->setFiringStimulus(fstimCount, fstimIdx);
 
 	uint32_t* d_fout = rtdata->firingOutput->step();
 
 	if(rtdata->usingStdp()) {
 		//! \todo use a function pointer here. The inputs are the same
 		step_STDP<<<dimGrid, dimBlock>>>(
-				substeps, 
 				rtdata->cycle(),
 				rtdata->recentFiring->deviceData(),
 				// neuron parameters
@@ -118,7 +115,6 @@ stepSimulation(RuntimeData* rtdata,
 				d_fout);
 	} else {
 		step_static<<<dimGrid, dimBlock>>>(
-				substeps, 
 				rtdata->cycle(),
 				rtdata->recentFiring->deviceData(),
 				rtdata->d_neurons(),

@@ -47,12 +47,11 @@ instance Simulation_Iface State where
 initSim
     :: Maybe Int            -- ^ cluster size which mapper should be forced to use
     -> Network IzhNeuron Static
-    -> TemporalResolution
     -> StdpConf
     -> IO State
-initSim partitionSize net dt stdpConf = do
+initSim partitionSize net stdpConf = do
     let maxProbePeriod = 1000
-    initMemory net partitionSize maxProbePeriod dt stdpConf
+    initMemory net partitionSize maxProbePeriod stdpConf
 
 
 -------------------------------------------------------------------------------

@@ -29,10 +29,7 @@ class RuntimeData
 
 		void startSimulation();
 
-		status_t stepSimulation(
-				int substeps,
-				size_t extFiringCount,
-				const int* extFiringNIdx);
+		status_t stepSimulation(size_t fstimCount, const uint* fstimIdx);
 
 		void applyStdp(float reward);
 
@@ -76,7 +73,7 @@ class RuntimeData
 			const int* nidx,
 			const float* current);
 
-	uint32_t* setFiringStimulus(size_t count, const int* nidx);
+	uint32_t* setFiringStimulus(size_t count, const uint* nidx);
 
 	struct CycleCounters* cycleCounters;
 

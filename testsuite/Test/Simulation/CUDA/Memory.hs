@@ -34,7 +34,7 @@ testWeightQuery = TestCase $ do
         net = build 123456 $ smallworldOrig :: Network IzhNeuron Static
         ns = weightMatrix $ withWeights viaCFloat $ networkNeurons net
         nsteps = 1000 -- irrelevant for this test
-    sim  <- initMemory net psize nsteps 4 (defaults stdpOptions)
+    sim  <- initMemory net psize nsteps (defaults stdpOptions)
     {- When initialising memory, the device may not be involved yet -}
     startSimulation (rt sim)
     ns' <- getWeights sim

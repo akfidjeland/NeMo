@@ -82,8 +82,6 @@ __device__
 void
 fire(
 	uint s_partitionSize,
-	uint substeps,
-	float substepMult, // substepMul * substeps = 1
 	float* g_neuronParameters,
 	size_t neuronParametersSize,
 	// input
@@ -114,11 +112,11 @@ fire(
 
 			/* n sub-steps for numerical stability, with u held */
 			bool fired = false;
-			for(int j=0; j<substeps; ++j) {
+			for(int j=0; j < 4; ++j) {
 				if(!fired) { 
-					v += substepMult * ((0.04f*v + 5.0f) * v + 140.0f - u + I);
+					v += 0.25f * ((0.04f*v + 5.0f) * v + 140.0f - u + I);
 					/*! \todo: could pre-multiply this with a, when initialising memory */
-					u += substepMult * (a * ( b*v - u ));
+					u += 0.25f * (a * ( b*v - u ));
 					fired = v >= 30.0f;
 				} 
 			}

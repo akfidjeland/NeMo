@@ -157,7 +157,7 @@ RuntimeData::cm() const
  *		Pointer to pass to kernel (which is NULL if there's no firing data).
  */
 uint32_t*
-RuntimeData::setFiringStimulus(size_t count, const int* nidx)
+RuntimeData::setFiringStimulus(size_t count, const uint* nidx)
 {
 	if(count == 0) 
 		return NULL;
@@ -322,17 +322,14 @@ RuntimeData::startSimulation()
 
 
 //! \todo put this into separate header
-status_t stepSimulation(RuntimeData* rtdata, int, size_t, const int*);
+status_t stepSimulation(RuntimeData* rtdata, size_t, const uint*);
 
 status_t
-RuntimeData::stepSimulation(
-		int substeps,
-		size_t extFiringCount,
-		const int* extFiringNIdx)
+RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
 {
 	//! \todo perhaps pass in explicit argument instead?
     m_cycle += 1;
-	return ::stepSimulation(this, substeps, extFiringCount, extFiringNIdx);
+	return ::stepSimulation(this, fstimCount, fstimIdx);
 }
 
 

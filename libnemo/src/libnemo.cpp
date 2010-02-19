@@ -89,13 +89,9 @@ nemo_start_simulation(RTDATA rtdata)
 
 
 status_t
-nemo_step(RTDATA rtdata,
-		int substeps,
-		// External firing (sparse)
-		size_t extFiringCount,
-		const int* extFiringNIdx)
+nemo_step(RTDATA rtdata, size_t fstimCount, unsigned int fstimIdx[])
 {
-	return UNSAFE_CALL(rtdata, stepSimulation(substeps, extFiringCount, extFiringNIdx));
+	return UNSAFE_CALL(rtdata, stepSimulation(fstimCount, fstimIdx));
 }
 
 
