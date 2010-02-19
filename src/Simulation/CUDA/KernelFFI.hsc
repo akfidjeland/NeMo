@@ -8,7 +8,6 @@ module Simulation.CUDA.KernelFFI (
     stepNonBuffering,
     readFiring,
     applyStdp,
-    setCMDRow,
     getCMDRow,
     copyToDevice,
     deviceDiagnostics,
@@ -141,27 +140,6 @@ addSynapses rt pre nbuf dbuf wbuf spbuf len =
         (fromIntegral $! len)
 
 
-foreign import ccall unsafe "setCMDRow"
-    c_setCMDRow :: Ptr CuRT
-                -> CUInt        -- ^ source neuron index
-                -> CUInt        -- ^ synapse delay
-                -> Ptr CUInt    -- ^ target neuron indices
-                -> Ptr CFloat   -- ^ synapse weights
-                -> Ptr CUChar   -- ^ per-synapse plasticity
-                -> CSize        -- ^ synapses count for this neuron/delay pair
-                -> IO ()
-
-
-setCMDRow rt wbuf nbuf spbuf pre delay len =
-    when (len > 0) $
-    c_setCMDRow rt
-        (fromIntegral pre)
-        (fromIntegral delay)
-        nbuf wbuf spbuf
-        (fromIntegral $! len)
-
-
-
 foreign import ccall unsafe "getCMDRow" c_getCMDRow
         :: Ptr CuRT
         -> CUInt            -- ^ source partition
@@ -201,7 +179,6 @@ getCMDRow rt sp sn d = do
     return $! zip3 didx w_list s_list
     where
         peekWith f len ptr = (return . map f) =<< peekArray len =<< peek ptr
-
 
 
 -------------------------------------------------------------------------------
