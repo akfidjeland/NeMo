@@ -42,7 +42,7 @@ initMemory net reqPsize maxProbePeriod dt stdp = do
     rt <- allocRT stdp reqPsize maxProbePeriod
     configureStdp rt stdp
     setNeurons rt $ toList net
-    copyToDevice rt
+    startSimulation rt
     return $ State (fromIntegral dt) rt
 
 

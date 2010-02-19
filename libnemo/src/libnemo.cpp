@@ -11,7 +11,7 @@ extern "C" {
 
 
 RTDATA
-allocRuntimeData(
+nemo_new_network(
 		size_t maxPartitionSize,
 		uint setReverse,
 		uint maxReadPeriod)
@@ -21,7 +21,7 @@ allocRuntimeData(
 
 
 void
-freeRuntimeData(RTDATA mem)
+nemo_delete_network(RTDATA mem)
 {
 	delete mem;
 }
@@ -30,7 +30,7 @@ freeRuntimeData(RTDATA mem)
 
 
 void
-addNeuron(RTDATA rt,
+nemo_add_neuron(RTDATA rt,
 		unsigned int idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
@@ -41,7 +41,7 @@ addNeuron(RTDATA rt,
 
 
 void
-addSynapses(RTDATA rtdata,
+nemo_add_synapses(RTDATA rtdata,
 		unsigned int source,
 		unsigned int targets[],
 		unsigned int delays[],
@@ -60,29 +60,9 @@ addSynapses(RTDATA rtdata,
 
 
 
-void
-setCMDRow(RTDATA rtdata,
-		unsigned int sourceNeuron,
-		unsigned int delay,
-		unsigned int* targetNeuron,
-		float* weights,
-		unsigned char* isPlastic,
-		size_t length)
-{
-	std::vector<unsigned int> delays(length, delay);
-	rtdata->cm()->setRow(
-		sourceNeuron,
-		targetNeuron,
-		&delays[0],
-		weights,
-		isPlastic,
-		length);
-}
-
-
 
 size_t
-getCMDRow(RTDATA rtdata,
+nemo_get_synapses(RTDATA rtdata,
 		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
@@ -101,7 +81,7 @@ getCMDRow(RTDATA rtdata,
 //-----------------------------------------------------------------------------
 
 void
-readFiring(RTDATA rtdata,
+nemo_read_firing(RTDATA rtdata,
 		uint** cycles,
 		uint** neuronIdx,
 		uint* nfired,
@@ -112,19 +92,10 @@ readFiring(RTDATA rtdata,
 
 
 void
-flushFiringBuffer(RTDATA rtdata)
+nemo_flush_firing_buffer(RTDATA rtdata)
 {
 	rtdata->firingOutput->flushBuffer();
 }
-
-
-size_t
-allocatedDeviceMemory(RTDATA rt)
-{
-	return rt->d_allocated();
-}
-
-
 
 
 
@@ -133,8 +104,9 @@ allocatedDeviceMemory(RTDATA rt)
 //-----------------------------------------------------------------------------
 
 
+//! \todo no need to expose this in API
 void
-printCycleCounters(RTDATA rtdata)
+nemo_print_cycle_counters(RTDATA rtdata)
 {
 	rtdata->cycleCounters->printCounters();
 }
@@ -142,14 +114,14 @@ printCycleCounters(RTDATA rtdata)
 
 
 long int
-elapsedMs(RTDATA rtdata)
+nemo_elapsed_ms(RTDATA rtdata)
 {
 	return rtdata->elapsed();
 }
 
 
 void
-resetTimer(RTDATA rtdata)
+nemo_reset_timer(RTDATA rtdata)
 {
 	// force all execution to complete first
 	rtdata->syncSimulation();
@@ -165,7 +137,7 @@ resetTimer(RTDATA rtdata)
 
 
 void
-enableStdp(RTDATA rtdata,
+nemo_enable_stdp(RTDATA rtdata,
 		unsigned int pre_len,
 		unsigned int post_len,
 		float* pre_fn,
@@ -177,8 +149,9 @@ enableStdp(RTDATA rtdata,
 }
 
 
+//! \todo no need to expose this in API
 int
-deviceCount()
+nemo_device_count()
 {
 	int count;
 	//! \todo error handling
@@ -200,13 +173,13 @@ deviceCount()
 
 
 void
-syncSimulation(RTDATA rtdata)
+nemo_sync_simulation(RTDATA rtdata)
 {
 	rtdata->syncSimulation();
 }
 
 
-//! \todo move the following methods into this file
+//! \todo move the following methods into RTData, and then this file
 // applyStdp
 // copyToDevice
 // step

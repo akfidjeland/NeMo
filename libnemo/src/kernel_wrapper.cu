@@ -44,8 +44,9 @@ extern "C" {
 
 /* Copy network data and configuration to device, if this has not already been
  * done */
+//! \todo move this into RuntimeData
 void
-copyToDevice(RTDATA rtdata)
+nemo_start_simulation(RuntimeData* rtdata)
 {
 	/* This would have been tidier if we did all the handling inside rtdata.
 	 * However, problems with copying to constant memory in non-cuda code
@@ -89,9 +90,10 @@ applyStdp_(
 
 
 
+//1 \todo move this into RuntimeData
 __host__
 void
-applyStdp(RTDATA rtdata, float stdpReward)
+nemo_apply_stdp(RuntimeData* rtdata, float stdpReward)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(rtdata->partitionCount());
@@ -119,7 +121,7 @@ applyStdp(RTDATA rtdata, float stdpReward)
 /*! Wrapper for the __global__ call that performs a single simulation step */
 __host__
 status_t
-step(RTDATA rtdata,
+nemo_step(RTDATA rtdata,
 		int substeps,
 		// External firing (sparse)
 		size_t extFiringCount,
@@ -127,7 +129,7 @@ step(RTDATA rtdata,
 {
 	rtdata->step();
 
-	copyToDevice(rtdata); // only has effect on first invocation
+	nemo_start_simulation(rtdata); // only has effect on first invocation
 
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(rtdata->partitionCount());

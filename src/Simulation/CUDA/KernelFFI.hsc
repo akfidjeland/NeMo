@@ -10,7 +10,7 @@ module Simulation.CUDA.KernelFFI (
     applyStdp,
     -- TODO: rename
     getCMDRow,
-    copyToDevice,
+    startSimulation,
     syncSimulation,
     printCycleCounters,
     freeRT,
@@ -45,7 +45,7 @@ import Types (Time, Delay, Weight, Idx)
 #include <libnemo.h>
 
 
-foreign import ccall unsafe "allocRuntimeData"
+foreign import ccall unsafe "nemo_new_network"
     c_allocRT
         :: CSize  -- ^ max partition size
         -> CUInt  -- ^ set reverse matrix (bool)
@@ -61,7 +61,7 @@ allocateRuntime psize usingStdp maxProbePeriod =
         (fromIntegral maxProbePeriod)
 
 
-foreign import ccall unsafe "addNeuron" c_addNeuron
+foreign import ccall unsafe "nemo_add_neuron" c_addNeuron
     :: Ptr CuRT
     -> CUInt   -- ^ global neuron index
     -> CFloat  -- ^ a
@@ -84,7 +84,7 @@ addNeuron rt nidx a b c d u v sigma =
 
 
 -- free the device, clear all memory in Sim
-foreign import ccall unsafe "freeRuntimeData" freeRT :: Ptr CuRT -> IO ()
+foreign import ccall unsafe "nemo_delete_network" freeRT :: Ptr CuRT -> IO ()
 
 
 -------------------------------------------------------------------------------
@@ -101,11 +101,11 @@ maxPartitionSize = #const MAX_PARTITION_SIZE
 
 
 {- | Force copy of data to device -}
-foreign import ccall unsafe "copyToDevice" copyToDevice :: Ptr CuRT -> IO ()
+foreign import ccall unsafe "nemo_start_simulation" startSimulation :: Ptr CuRT -> IO ()
 
 
 
-foreign import ccall unsafe "addSynapses"
+foreign import ccall unsafe "nemo_add_synapses"
     c_addSynapses :: Ptr CuRT
                 -> CUInt        -- ^ source neuron index
                 -> Ptr CUInt    -- ^ target neuron indices
@@ -132,7 +132,7 @@ addSynapses rt pre nbuf dbuf wbuf spbuf len =
         (fromIntegral $! len)
 
 
-foreign import ccall unsafe "getCMDRow" c_getCMDRow
+foreign import ccall unsafe "nemo_get_synapses" c_getCMDRow
         :: Ptr CuRT
         -> CUInt            -- ^ source partition
         -> CUInt            -- ^ source neuron
@@ -177,7 +177,7 @@ getCMDRow rt sp sn d = do
 -- Kernel execution
 -------------------------------------------------------------------------------
 
-foreign import ccall unsafe "syncSimulation"
+foreign import ccall unsafe "nemo_sync_simulation"
     syncSimulation :: Ptr CuRT -> IO ()
 
 
@@ -189,7 +189,7 @@ foreign import ccall unsafe "syncSimulation"
  - likely crash. We do, however, require concurrency for performance reason (in
  - particular performing network communication while the simulation is
  - running); hence 'safe'. -}
-foreign import ccall safe "step"
+foreign import ccall safe "nemo_step"
     c_step :: Ptr CuRT  -- ^ kernel runtime data
            -> CInt      -- ^ Sub-ms update steps
            -- External firing stimulus
@@ -197,7 +197,7 @@ foreign import ccall safe "step"
            -> Ptr CInt  -- ^ Neuron indices of neurons with forced firing
            -> IO CInt   -- ^ Kernel status
 
-foreign import ccall unsafe "flushFiringBuffer"
+foreign import ccall unsafe "nemo_flush_firing_buffer"
     c_flushFiringBuffer :: Ptr CuRT -> IO ()
 
 
@@ -225,7 +225,7 @@ stepNonBuffering sim fstim = do
 
 
 
-foreign import ccall unsafe "readFiring"
+foreign import ccall unsafe "nemo_read_firing"
     c_readFiring :: Ptr CuRT
         -> Ptr (Ptr CUInt) -- cycles
         -> Ptr (Ptr CUInt) -- neuron idx
@@ -269,12 +269,12 @@ readFiringCount rt = do
 -- STDP
 -------------------------------------------------------------------------------
 
-foreign import ccall unsafe "enableStdp"
+foreign import ccall unsafe "nemo_enable_stdp"
     c_enableStdp :: Ptr rt -> CUInt -> CUInt
         -> Ptr CFloat -> Ptr CFloat -> CFloat -> CFloat -> IO ()
 
 
-foreign import ccall unsafe "applyStdp"
+foreign import ccall unsafe "nemo_apply_stdp"
     c_applyStdp :: Ptr CuRT -> CFloat -> IO ()
 
 
@@ -288,7 +288,7 @@ instance ForeignKernel CuRT CFloat where
 -------------------------------------------------------------------------------
 
 
-foreign import ccall unsafe "printCycleCounters" printCycleCounters
+foreign import ccall unsafe "nemo_print_cycle_counters" printCycleCounters
     :: Ptr CuRT -> IO ()
 
 
@@ -297,8 +297,8 @@ foreign import ccall unsafe "printCycleCounters" printCycleCounters
 -------------------------------------------------------------------------------
 
 
-foreign import ccall unsafe "elapsedMs" c_elapsedMs :: Ptr CuRT -> IO CLong
+foreign import ccall unsafe "nemo_elapsed_ms" c_elapsedMs :: Ptr CuRT -> IO CLong
 
 elapsedMs rt = return . fromIntegral =<< c_elapsedMs rt
 
-foreign import ccall unsafe "resetTimer" resetTimer :: Ptr CuRT -> IO ()
+foreign import ccall unsafe "nemo_reset_timer" resetTimer :: Ptr CuRT -> IO ()

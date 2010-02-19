@@ -21,6 +21,7 @@ typedef int status_t;
 //-----------------------------------------------------------------------------
 
 
+//! \todo make this void* and make RuntimeData a class instead of a struct
 typedef struct RuntimeData* RTDATA;
 
 
@@ -35,12 +36,12 @@ typedef struct RuntimeData* RTDATA;
  * 		maximum period (in cycles) between reads to the device firing buffer
  */
 RTDATA
-allocRuntimeData(
+nemo_new_network(
 		size_t maxPartitionSize,
 		unsigned int setReverse,
 		unsigned int maxReadPeriod);
 
-void freeRuntimeData(RTDATA);
+void nemo_delete_network(RTDATA);
 
 
 //-----------------------------------------------------------------------------
@@ -50,7 +51,7 @@ void freeRuntimeData(RTDATA);
 
 //! \todo should return error status here
 void
-addNeuron(RTDATA,
+nemo_add_neuron(RTDATA,
 		unsigned int idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
@@ -64,7 +65,7 @@ addNeuron(RTDATA,
 
 //! \todo should return error status here
 void
-addSynapses(RTDATA,
+nemo_add_synapses(RTDATA,
 		unsigned int source,
 		unsigned int targets[],
 		unsigned int delays[],
@@ -73,21 +74,10 @@ addSynapses(RTDATA,
 		size_t length);
 
 
-/*! Copy connectivity data for a specific delay for a single presynaptic neuron
- * */
-void
-setCMDRow(RTDATA rtdata,
-		unsigned int sourceNeuron,
-		unsigned int delay,
-		unsigned int* targetNeuron,
-		float* weights,
-		unsigned char* isPlastic,
-		size_t length);
-
 
 /*! Read connectivity matrix back from device for a single neuron and delay. */
 size_t
-getCMDRow(RTDATA rtdata,
+nemo_get_synapses(RTDATA rtdata,
 		unsigned int sourcePartition,
 		unsigned int sourceNeuron,
 		unsigned int delay,
@@ -95,7 +85,6 @@ getCMDRow(RTDATA rtdata,
 		unsigned int* targetNeuron[],
 		float* weights[],
 		unsigned char* plastic[]);
-
 
 //-----------------------------------------------------------------------------
 // FIRING PROBE
@@ -111,7 +100,7 @@ getCMDRow(RTDATA rtdata,
  * cycles for which we have firing.
  */
 void
-readFiring(RTDATA rtdata,
+nemo_read_firing(RTDATA rtdata,
 		unsigned int** cycles,
 		unsigned int** neuronIdx,
 		unsigned int* nfired,
@@ -119,30 +108,30 @@ readFiring(RTDATA rtdata,
 
 
 /* Step can be asynchronous. sync forces completion of all steps */
-void syncSimulation(RTDATA rtdata);
+void nemo_sync_simulation(RTDATA rtdata);
 
 
 /* If the user is not reading back firing, the firing output buffers should be
  * flushed to avoid buffer overflow. The overflow is not harmful in that no
  * memory accesses take place outside the buffer, but an overflow may result in
  * later calls to readFiring returning non-sensical results. */
-void flushFiringBuffer(RTDATA rtdata);
+void nemo_flush_firing_buffer(RTDATA rtdata);
 
 
 //-----------------------------------------------------------------------------
 // TIMING
 //-----------------------------------------------------------------------------
 
-void printCycleCounters(RTDATA rtdata);
+void nemo_print_cycle_counters(RTDATA rtdata);
 
 
 /*! \return number of milliseconds elapsed between beginning of first kernel
  * invocation and the end of the last */
-long int elapsedMs(RTDATA rtdata);
+long int nemo_elapsed_ms(RTDATA rtdata);
 
 
 void
-resetTimer(RTDATA rtdata);
+nemo_reset_timer(RTDATA rtdata);
 
 
 //-----------------------------------------------------------------------------
@@ -176,7 +165,7 @@ resetTimer(RTDATA rtdata);
  * 		Weight beyond which excitatory synapses are not allowed to move
  */
 void
-enableStdp(RTDATA,
+nemo_enable_stdp(RTDATA,
 		unsigned int preFireLen,
 		unsigned int postFireLen,
 		float* preFireFn,
@@ -190,26 +179,21 @@ enableStdp(RTDATA,
 //-----------------------------------------------------------------------------
 
 status_t
-step(RTDATA rtdata,
+nemo_step(RTDATA rtdata,
 		int substeps,               // number of substeps per normal 1ms step
 		// External firing (sparse)
 		size_t extFiringCount,
 		const int* extFiringNIdx);  // neuron indices
 
 
-void applyStdp(RTDATA rtdata, float stdpReward);
+void nemo_apply_stdp(RTDATA rtdata, float stdpReward);
 
 
 /* Force all allocated memory onto the device. Calling this is not required
  * during normal operation, as step invokes it on first call, but can be used
  * for testing */
 void
-copyToDevice(RTDATA);
-
-
-/* Return the number of bytes allocated on the device so far */
-size_t
-allocatedDeviceMemory(RTDATA);
+nemo_start_simulation(RTDATA);
 
 
 //-----------------------------------------------------------------------------
@@ -217,34 +201,7 @@ allocatedDeviceMemory(RTDATA);
 //-----------------------------------------------------------------------------
 
 //! \return number of cuda-enabled devices of compute capability 1.0 or greater
-int deviceCount(void);
+int nemo_device_count(void);
 
-//! \return pointer to data structure containing device properties
-struct cudaDeviceProp* deviceProperties(int device);
 
-// ... in bytes
-size_t totalGlobalMem(struct cudaDeviceProp* prop);
-
-// ... in bytes
-size_t sharedMemPerBlock(struct cudaDeviceProp* prop);
-
-int regsPerBlock(struct cudaDeviceProp* prop);
-
-//! \return maximum pitch allowed by the memory copy functions
-size_t memPitch(struct cudaDeviceProp* prop);
-
-int maxThreadsPerBlock(struct cudaDeviceProp* prop);
-
-//! \return total amount of constant memory available on the device (in bytes)
-size_t totalConstMem(struct cudaDeviceProp* prop);
-
-//! \return major revision of device's compute capability
-//int major(struct cudaDeviceProp* prop);
-
-//! \return minor revision of device's compute capability
-//int minor(struct cudaDeviceProp* prop);
-
-//! \return clock rate in kilohertz
-int clockRate(struct cudaDeviceProp* prop);
-
-#endif //CU_IZHIKEVICH_H
+#endif
