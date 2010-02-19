@@ -41,14 +41,6 @@ extern "C" {
 #include "step.cu"
 
 
-/* Force all asynchronously launced kernels to complete before returning */
-__host__
-void
-syncSimulation(RTDATA rtdata)
-{
-	CUDA_SAFE_CALL(cudaThreadSynchronize());
-}
-
 
 /* Copy network data and configuration to device, if this has not already been
  * done */

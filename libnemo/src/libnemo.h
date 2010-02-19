@@ -1,33 +1,19 @@
-#ifndef KERNEL_H
-#define KERNEL_H
+#ifndef LIBNEMO_H
+#define LIBNEMO_H
 
+/* ! \todo move partition sizing from haskell code to c code. Then we'll no
+ * longer need this include. */
 #include "kernel.cu_h"
 
+#include <string.h> // for size_t
 
-#include <cuda_runtime.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-
-//-----------------------------------------------------------------------------
-// DEBUGGING
-//-----------------------------------------------------------------------------
 
 typedef int status_t;
 
 #define KERNEL_OK 0
 #define KERNEL_INVOCATION_ERROR 1
 #define KERNEL_ASSERTION_FAILURE 2
-
-
-//-----------------------------------------------------------------------------
-// KERNEL CONFIGURATION
-//-----------------------------------------------------------------------------
-
-
-/*! Set per-partition configuration parameter specifying the number of neurons
- * in that partition. */
-void configurePartitionSize(size_t clusters, const unsigned int* maxIdx);
+//! \todo add additional errors for memory allocation etc.
 
 
 //-----------------------------------------------------------------------------
@@ -38,9 +24,11 @@ void configurePartitionSize(size_t clusters, const unsigned int* maxIdx);
 typedef struct RuntimeData* RTDATA;
 
 
+//! \todo get rid of max partition size argument. This is only really useful for debugging.
+//! \todo get rid of setReverse. Just deal with this in the host code
+//! \todo dynamically resize the firing buffer?
 /*!
- * \param maxDelay
- * 		maximum synaptic delay (in cycles) for any synapse
+ * \param maxPartitionSize
  * \param setReverse
  * 		set reverse connectivity matrix, required e.g. for STDP
  * \param maxReadPeriod

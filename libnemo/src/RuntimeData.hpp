@@ -89,6 +89,10 @@ struct RuntimeData
 
 		class nemo::STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
+
+		/* Force all asynchronously launced kernels to complete before returning */
+		void syncSimulation();
+
 	private :
 
 		class NeuronParameters* m_neurons;
