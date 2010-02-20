@@ -33,14 +33,6 @@ class RuntimeData
 
 		void applyStdp(float reward);
 
-	/* Copy data to device if this has not already been done, and clear the
-	 * host buffers */
-	void moveToDevice();
-
-	/*! \return true if network data/configuration has *not* been copied to the
-	 * device */
-	bool deviceDirty() const;
-
 	struct FiringOutput* firingOutput;
 
 	NVector<uint64_t>* recentFiring;
@@ -85,12 +77,7 @@ class RuntimeData
 
 	void setStart();
 
-	/*! \return
-	 * 		number of bytes allocated on the device
-	 *
-	 * It seems that cudaMalloc*** does not fail properly when running out of
-	 * memory, so this value could be useful for diagnostic purposes */
-	size_t d_allocated() const;
+	public :
 
 		class nemo::STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
@@ -102,6 +89,20 @@ class RuntimeData
 
 		uint32_t* setFiringStimulus(size_t count, const uint* nidx);
 
+		/*! \return
+		 * 		number of bytes allocated on the device
+		 *
+		 * It seems that cudaMalloc*** does not fail properly when running out of
+		 * memory, so this value could be useful for diagnostic purposes */
+		size_t d_allocated() const;
+
+		/*! \return true if network data/configuration has *not* been copied to the
+		 * device */
+		bool deviceDirty() const;
+
+		/* Copy data to device if this has not already been done, and clear the
+		 * host buffers */
+		void moveToDevice();
 
 		class NeuronParameters* m_neurons;
 

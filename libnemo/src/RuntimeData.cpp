@@ -221,7 +221,7 @@ RuntimeData::d_allocated() const
 	size_t total = 0;
 	total += firingStimulus   ? firingStimulus->d_allocated()   : 0;
 	total += recentFiring     ? recentFiring->d_allocated()     : 0;
-	total += m_neurons        ? m_neurons->d_allocated() : 0;
+	total += m_neurons        ? m_neurons->d_allocated()        : 0;
 	total += firingOutput     ? firingOutput->d_allocated()     : 0;
 	total += thalamicInput    ? thalamicInput->d_allocated()    : 0;
 	total += m_cm             ? m_cm->d_allocated()             : 0;
@@ -337,7 +337,15 @@ RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
 
 
 //! \todo put this in proper header
-void applyStdp(RuntimeData* rtdata, float reward);
+void
+applyStdp(
+		unsigned long long* d_cc,
+		size_t ccPitch,
+		uint partitionCount,
+		uint fractionalBits,
+		synapse_t* d_fcm,
+		const nemo::STDP<float>& stdpFn,
+		float reward);
 
 void
 RuntimeData::applyStdp(float reward)
@@ -355,7 +363,13 @@ RuntimeData::applyStdp(float reward)
 	if(reward == 0.0f) {
 		m_cm->clearStdpAccumulator();
 	} else  {
-		//! \todo pass in parameters instead
-		::applyStdp(this, reward);
+		::applyStdp(
+				cycleCounters->dataApplySTDP(),
+				cycleCounters->pitchApplySTDP(),
+				partitionCount(),
+				m_cm->fractionalBits(),
+				m_cm->d_fcm(),
+				stdpFn,
+				reward);
 	}
 }

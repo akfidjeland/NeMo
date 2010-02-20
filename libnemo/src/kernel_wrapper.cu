@@ -10,9 +10,6 @@
 #include <device_functions.h>
 #include <stdio.h>
 #include <assert.h>
-extern "C" {
-#include "libnemo.h"
-}
 
 #include <STDP.hpp>
 
@@ -44,23 +41,28 @@ extern "C" {
 
 __host__
 void
-applyStdp(RuntimeData* rtdata, float reward)
+applyStdp(
+		unsigned long long* d_cc,
+		size_t ccPitch,
+		uint partitionCount,
+		uint fractionalBits,
+		synapse_t* d_fcm,
+		const nemo::STDP<float>& stdpFn,
+		float reward)
 {
-	uint fb = rtdata->cm()->fractionalBits();
 	dim3 dimBlock(THREADS_PER_BLOCK);
-	dim3 dimGrid(rtdata->partitionCount());
+	dim3 dimGrid(partitionCount);
 
 	applySTDP_<<<dimGrid, dimBlock>>>(
 #ifdef KERNEL_TIMING
-			rtdata->cycleCounters->dataApplySTDP(),
-			rtdata->cycleCounters->pitchApplySTDP(),
+			d_cc, ccPitch,
 #endif
-			rtdata->cm()->d_fcm(),
-			fixedPoint(reward, fb),
-			fixedPoint(rtdata->stdpFn.maxWeight(), fb),
-			fixedPoint(rtdata->stdpFn.minWeight(), fb));
+			d_fcm,
+			fixedPoint(reward, fractionalBits),
+			fixedPoint(stdpFn.maxWeight(), fractionalBits),
+			fixedPoint(stdpFn.minWeight(), fractionalBits));
 
-	if(assertionsFailed(rtdata->partitionCount(), -1)) {
+	if(assertionsFailed(partitionCount, -1)) {
 		clearAssertions();
 	}
 }
