@@ -86,7 +86,7 @@ configureStdp(
 
 __device__
 void
-loadStdpParameters()
+loadStdpParameters_()
 {
     if(threadIdx.x == 0) {
         LOAD_STDP_PARAMETER(stdpPotentiation);

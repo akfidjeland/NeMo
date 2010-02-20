@@ -31,10 +31,6 @@
 #include "thalamicInput.cu"
 #include "kernel.cu"
 #include "stdp.cu" // only used if STDP enabled
-
-#define STDP
-#include "step.cu"
-#undef STDP
 #include "step.cu"
 
 
@@ -83,54 +79,29 @@ stepSimulation(RuntimeData* rtdata, uint32_t* d_fstim, uint32_t* d_fout)
 	DEBUG_MSG("cycle %u\n", scycle);
 	scycle += 1;
 
-	if(rtdata->usingStdp()) {
-		//! \todo use a function pointer here. The inputs are the same
-		step_STDP<<<dimGrid, dimBlock>>>(
-				rtdata->cycle(),
-				rtdata->recentFiring->deviceData(),
-				// neuron parameters
-				rtdata->d_neurons(),
-				rtdata->thalamicInput->deviceRngState(),
-				rtdata->thalamicInput->deviceSigma(),
-				rtdata->neuronVectorLength(),
-				// spike delivery
-				rtdata->cm()->d_fcm(),
-				rtdata->cm()->outgoingCount(),
-				rtdata->cm()->outgoing(),
-				rtdata->cm()->incomingHeads(),
-				rtdata->cm()->incoming(),
-				// firing stimulus
-				d_fstim,
-				// cycle counting
+	step<<<dimGrid, dimBlock>>>(
+			rtdata->usingStdp(),
+			rtdata->cycle(),
+			rtdata->recentFiring->deviceData(),
+			// neuron parameters
+			rtdata->d_neurons(),
+			rtdata->thalamicInput->deviceRngState(),
+			rtdata->thalamicInput->deviceSigma(),
+			rtdata->neuronVectorLength(),
+			// spike delivery
+			rtdata->cm()->d_fcm(),
+			rtdata->cm()->outgoingCount(),
+			rtdata->cm()->outgoing(),
+			rtdata->cm()->incomingHeads(),
+			rtdata->cm()->incoming(),
+			// firing stimulus
+			d_fstim,
+			// cycle counting
 #ifdef KERNEL_TIMING
-				rtdata->cycleCounters->data(),
-				rtdata->cycleCounters->pitch(),
+			rtdata->cycleCounters->data(),
+			rtdata->cycleCounters->pitch(),
 #endif
-				d_fout);
-	} else {
-		step_static<<<dimGrid, dimBlock>>>(
-				rtdata->cycle(),
-				rtdata->recentFiring->deviceData(),
-				rtdata->d_neurons(),
-				rtdata->thalamicInput->deviceRngState(),
-				rtdata->thalamicInput->deviceSigma(),
-				rtdata->neuronVectorLength(),
-				// spike delivery
-				rtdata->cm()->d_fcm(),
-				rtdata->cm()->outgoingCount(),
-				rtdata->cm()->outgoing(),
-				rtdata->cm()->incomingHeads(),
-				rtdata->cm()->incoming(),
-				// firing stimulus
-				d_fstim,
-				// cycle counting
-#ifdef KERNEL_TIMING
-				rtdata->cycleCounters->data(),
-				rtdata->cycleCounters->pitch(),
-#endif
-				// Firing output
-				d_fout);
-	}
+			d_fout);
 
     if(assertionsFailed(rtdata->partitionCount(), scycle)) {
         fprintf(stderr, "checking assertions\n");

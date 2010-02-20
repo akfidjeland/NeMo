@@ -1,13 +1,5 @@
 #include "cycle.cu"
 
-#undef STDP_FN
-#ifdef STDP
-#define STDP_FN(f) f ## _STDP
-#else
-#define STDP_FN(f) f ## _static
-#endif
-
-
 /*! Combined integrate and fire using sparse connectivity matrix, a single step
 * updates the state (u and v) of each neuron and produces spikes to be used in
 * the next simulation cycle. 
@@ -22,7 +14,8 @@
  */
 __global__
 void
-STDP_FN(step) (
+step (
+		bool stdpEnabled,
 		// change to uint
 		uint32_t cycle,
 		uint64_t* g_recentFiring,
@@ -79,10 +72,6 @@ STDP_FN(step) (
 
 	loadNetworkParameters();
 
-#ifdef STDP
-	loadStdpParameters();
-#endif
-
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
 		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
 	}
@@ -128,16 +117,17 @@ STDP_FN(step) (
 
 	SET_COUNTER(s_ccMain, 5);
 
-#ifdef STDP
-	updateSTDP_(
-			cycle,
-			s_dfired,
-			g_recentFiring,
-			s_pitch64,
-			s_partitionSize,
-			cr_address, cr_stdp, cr_pitch,
-			s_fired);
-#endif
+	if(stdpEnabled) {
+		loadStdpParameters_();
+		updateSTDP_(
+				cycle,
+				s_dfired,
+				g_recentFiring,
+				s_pitch64,
+				s_partitionSize,
+				cr_address, cr_stdp, cr_pitch,
+				s_fired);
+	}
 
 	SET_COUNTER(s_ccMain, 6);
 
