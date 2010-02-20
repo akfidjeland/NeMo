@@ -73,8 +73,6 @@ class RuntimeData
 			const int* nidx,
 			const float* current);
 
-	uint32_t* setFiringStimulus(size_t count, const uint* nidx);
-
 	struct CycleCounters* cycleCounters;
 
 	uint32_t cycle() const;
@@ -101,6 +99,9 @@ class RuntimeData
 		void syncSimulation();
 
 	private :
+
+		uint32_t* setFiringStimulus(size_t count, const uint* nidx);
+
 
 		class NeuronParameters* m_neurons;
 

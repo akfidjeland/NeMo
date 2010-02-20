@@ -71,23 +71,15 @@ applyStdp(RuntimeData* rtdata, float reward)
 //! \todo don't return status_t here. Only deal with this in API layer
 __host__
 status_t
-stepSimulation(RuntimeData* rtdata, size_t fstimCount, const uint* fstimIdx)
+stepSimulation(RuntimeData* rtdata, uint32_t* d_fstim, uint32_t* d_fout)
 {
-	//! \todo move this to RuntimeData
-	nemo_start_simulation(rtdata); // only has effect on first invocation
-
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(rtdata->partitionCount());
 
+	//! \todo use cycle number from rtdata insteda
 	static uint scycle = 0;
 	DEBUG_MSG("cycle %u\n", scycle);
 	scycle += 1;
-
-	//! \todo move this to RuntimeData
-	uint32_t* d_extFiring = 
-		rtdata->setFiringStimulus(fstimCount, fstimIdx);
-
-	uint32_t* d_fout = rtdata->firingOutput->step();
 
 	if(rtdata->usingStdp()) {
 		//! \todo use a function pointer here. The inputs are the same
@@ -106,7 +98,7 @@ stepSimulation(RuntimeData* rtdata, size_t fstimCount, const uint* fstimIdx)
 				rtdata->cm()->incomingHeads(),
 				rtdata->cm()->incoming(),
 				// firing stimulus
-				d_extFiring,
+				d_fstim,
 				// cycle counting
 #ifdef KERNEL_TIMING
 				rtdata->cycleCounters->data(),
@@ -128,7 +120,7 @@ stepSimulation(RuntimeData* rtdata, size_t fstimCount, const uint* fstimIdx)
 				rtdata->cm()->incomingHeads(),
 				rtdata->cm()->incoming(),
 				// firing stimulus
-				d_extFiring,
+				d_fstim,
 				// cycle counting
 #ifdef KERNEL_TIMING
 				rtdata->cycleCounters->data(),

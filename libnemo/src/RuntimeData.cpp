@@ -322,14 +322,17 @@ RuntimeData::startSimulation()
 
 
 //! \todo put this into separate header
-status_t stepSimulation(RuntimeData* rtdata, size_t, const uint*);
+status_t stepSimulation(RuntimeData* rtdata, uint32_t*, uint32_t*);
 
 status_t
 RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
 {
 	//! \todo perhaps pass in explicit argument instead?
-    m_cycle += 1;
-	return ::stepSimulation(this, fstimCount, fstimIdx);
+	startSimulation(); // only has effect on first cycle
+	m_cycle += 1;
+	uint32_t* d_fstim = setFiringStimulus(fstimCount, fstimIdx);
+	uint32_t* d_fout = firingOutput->step();
+	return ::stepSimulation(this, d_fstim, d_fout);
 }
 
 
