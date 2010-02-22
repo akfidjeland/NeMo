@@ -21,7 +21,6 @@ CU_INC = kernel.cu \
 CC_SRC = FiringOutput.cpp \
 		 RuntimeData.cpp \
 		 ConnectivityMatrix.cpp \
-		 ConnectivityMatrixImpl.cpp \
 		 time.cpp \
 		 CycleCounters.cpp \
 		 ThalamicInput.cpp \

@@ -3,10 +3,6 @@ extern "C" {
 }
 
 #include "RuntimeData.hpp"
-//! \todo use RuntimeData accessors only, and get rid of these headers:
-#include "ConnectivityMatrix.hpp"
-#include "FiringOutput.hpp"
-#include "CycleCounters.hpp"
 
 
 // call function without handling exceptions
