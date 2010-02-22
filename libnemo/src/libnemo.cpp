@@ -106,16 +106,14 @@ nemo_read_firing(RTDATA rtdata,
 		uint* nfired,
 		uint* ncycles)
 {
-	//! \todo expose this through RTdata
-	UNSAFE_CALL(rtdata, firingOutput->readFiring(cycles, neuronIdx, nfired, ncycles));
+	UNSAFE_CALL(rtdata, readFiring(cycles, neuronIdx, nfired, ncycles));
 }
 
 
 void
 nemo_flush_firing_buffer(RTDATA rtdata)
 {
-	//! \todo expose this through RTdata
-	UNSAFE_CALL(rtdata, firingOutput->flushBuffer());
+	UNSAFE_CALL(rtdata, flushFiringBuffer());
 }
 
 

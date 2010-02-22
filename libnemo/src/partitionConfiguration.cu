@@ -18,8 +18,6 @@
 #include "partitionConfiguration.cu_h"
 #include "util.h"
 #include "kernel.cu_h"
-#include "RuntimeData.hpp"
-#include "ConnectivityMatrix.hpp"
 
 
 /* Network-wide configuration */

@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "NVector.hpp"
-#include "kernel.cu_h"
 
 //! \todo only needed for status_t. Remove the need for this
 extern "C" {
@@ -56,30 +55,22 @@ class RuntimeData
 		void applyStdp(float reward);
 
 	//! \todo fix accesses in libnemo.cpp and make this private
-	struct FiringOutput* firingOutput;
+		//! \todo expose this using std::vector. Deal with raw pointers in the c layer
+		void readFiring(uint** cycles, uint** neuronIdx, uint* nfired, uint* ncycles);
 
-	size_t partitionCount() const { return m_partitionCount; }
+		void flushFiringBuffer();
 
-	size_t maxPartitionSize;
+		/*
+		 * TIMING
+		 */
 
-	/*! \return word pitch for 32-bit neuron arrays */
-	size_t pitch32() const;
-	size_t pitch64() const;
+		/*! \return number of milliseconds of wall-clock time elapsed since first
+		 * simulation step */
+		long int elapsed();
 
-	float* setCurrentStimulus(size_t n,
-			const int* cidx,
-			const int* nidx,
-			const float* current);
-
-	/*! \return number of milliseconds of wall-clock time elapsed since first
-	 * simulation step */
-	long int elapsed();
-
-	void setStart();
+		void setStart();
 
 		void printCycleCounters();
-
-	public :
 
 		class nemo::STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
@@ -106,6 +97,9 @@ class RuntimeData
 		 * host buffers */
 		void moveToDevice();
 
+		size_t m_partitionCount;
+		size_t m_maxPartitionSize;
+
 		class NeuronParameters* m_neurons;
 
 		uint32_t m_cycle;
@@ -119,6 +113,8 @@ class RuntimeData
 		/* Densely packed, one bit per neuron */
 		NVector<uint32_t>* m_firingStimulus;
 
+		struct FiringOutput* m_firingOutput;
+
 		struct CycleCounters* m_cycleCounters;
 
 		cudaDeviceProp m_deviceProperties;
@@ -127,8 +123,6 @@ class RuntimeData
 
 		size_t m_pitch32;
 		size_t m_pitch64;
-
-		size_t m_partitionCount;
 
 		/* True if host buffers have not been copied to device */
 		bool m_deviceDirty;

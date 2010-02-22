@@ -73,7 +73,7 @@ class STDP
 
 		bool enabled() const { return m_function.size() > 0; }
 
-		static const uint STDP_NO_APPLICATION = uint(~0);
+		static const unsigned STDP_NO_APPLICATION = unsigned(~0);
 
 	private:
 

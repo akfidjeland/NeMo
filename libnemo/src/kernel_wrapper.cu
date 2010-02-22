@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <STDP.hpp>
+
 #include "util.h"
 #include "time.hpp"
 #include "error.cu"
