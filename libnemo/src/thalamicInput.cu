@@ -3,10 +3,9 @@
 
 __device__ 
 unsigned 
-threadLocalStateIndex(unsigned plane, size_t planeSize, size_t pitch)
+threadLocalStateIndex(unsigned plane, size_t pitch)
 {
-	//return blockDim.x*gridDim.x*offset + blockIdx.x*blockDim.x+threadIdx.x;
-    return plane * planeSize + CURRENT_PARTITION * pitch + threadIdx.x;
+    return (plane * PARTITION_COUNT + CURRENT_PARTITION) * pitch + threadIdx.x;
 }
 
 
@@ -14,26 +13,20 @@ threadLocalStateIndex(unsigned plane, size_t planeSize, size_t pitch)
 //! \todo use unsigned4 instead?
 __device__ 
 void 
-rng_loadState(unsigned *rngState,
-        const unsigned* g_rngState,
-        size_t planeSize,
-        size_t pitch)
+rng_loadState(unsigned *rngState, const unsigned* g_rngState, size_t pitch)
 {
-	for(unsigned i=0;i<4;i++){
-		rngState[i] = g_rngState[threadLocalStateIndex(i, planeSize, pitch)];
+	for(unsigned i=0; i<4; i++){
+		rngState[i] = g_rngState[threadLocalStateIndex(i, pitch)];
 	}
 }
 
 
 __device__ 
 void 
-rng_saveState(const unsigned *rngState,
-        unsigned *g_rngState,
-        size_t planeSize,
-        size_t pitch)
+rng_saveState(const unsigned *rngState, unsigned *g_rngState, size_t pitch)
 {
-	for(unsigned i=0;i<4;i++){
-		g_rngState[threadLocalStateIndex(i, planeSize, pitch)] = rngState[i];
+	for(unsigned i=0; i<4; i++){
+		g_rngState[threadLocalStateIndex(i, pitch)] = rngState[i];
 	}
 }
 
@@ -70,7 +63,6 @@ __device__
 void
 thalamicInput(
         size_t partitionSize,
-        size_t planeSize,
         size_t pitch,
         unsigned* g_rngState,
         float* g_sigma,
@@ -79,7 +71,7 @@ thalamicInput(
 	unsigned rngState[4];
 
 	/* Copy the input state from memory into our local state */
-	rng_loadState(rngState, g_rngState, planeSize, pitch);
+	rng_loadState(rngState, g_rngState, pitch);
 	
 	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 
@@ -97,5 +89,5 @@ thalamicInput(
 	
     /* Copy the current RNG state back to memory (not strictly necessary, you
      * can just generate a new random state every time if you want). */
-	rng_saveState(rngState, g_rngState, planeSize, pitch);
+	rng_saveState(rngState, g_rngState, pitch);
 }

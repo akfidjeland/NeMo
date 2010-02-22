@@ -16,15 +16,12 @@ __global__
 void
 step (
 		bool stdpEnabled,
-		// change to uint
 		uint32_t cycle,
 		uint64_t* g_recentFiring,
 		// neuron state
 		float* g_neuronParameters,
 		unsigned* g_rngState,
-		//! \todo combine with g_neuronParameters
-		float* g_sigma,
-		size_t neuronParametersSize,
+		float* g_rngSigma,			//! \todo combine with g_neuronParameters
 		// spike delivery
 		synapse_t* g_fcm,
 		uint* g_outgoingCount,
@@ -81,9 +78,8 @@ step (
 
 	SET_COUNTER(s_ccMain, 2);
 
-	if(g_rngState != NULL && g_sigma != NULL) {
-		thalamicInput(s_partitionSize, neuronParametersSize,
-				s_pitch32, g_rngState, g_sigma, s_current);
+	if(g_rngState != NULL && g_rngSigma != NULL) {
+		thalamicInput(s_partitionSize, s_pitch32, g_rngState, g_rngSigma, s_current);
 	}
 
 	SET_COUNTER(s_ccMain, 3);
@@ -93,7 +89,6 @@ step (
 
 	fire( s_partitionSize,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
-			neuronParametersSize,
 			s_current,
 			s_fstim,
 			&s_firingCount,

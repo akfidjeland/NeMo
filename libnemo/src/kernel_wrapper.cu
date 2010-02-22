@@ -11,26 +11,20 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <STDP.hpp>
-
 #include "util.h"
 #include "time.hpp"
 #include "error.cu"
 #include "log.hpp"
 #include "connectivityMatrix.cu"
-#include "FiringOutput.hpp"
-#include "RuntimeData.hpp"
-#include "CycleCounters.hpp"
 #include "partitionConfiguration.cu"
 #include "cycleCounting.cu"
-#include "ThalamicInput.hpp"
 #include "applySTDP.cu"
 #include "outgoing.cu"
 #include "incoming.cu"
 
 #include "thalamicInput.cu"
 #include "kernel.cu"
-#include "stdp.cu" // only used if STDP enabled
+#include "stdp.cu"
 #include "step.cu"
 
 
@@ -58,7 +52,7 @@ applyStdp(
 			fixedPoint(stdpFn.maxWeight(), fractionalBits),
 			fixedPoint(stdpFn.minWeight(), fractionalBits));
 
-	if(assertionsFailed(partitionCount, -1)) {
+	if(assertionsFailed(partitionCount, 0)) {
 		clearAssertions();
 	}
 }
@@ -66,57 +60,46 @@ applyStdp(
 
 
 /*! Wrapper for the __global__ call that performs a single simulation step */
-//! \todo don't return status_t here. Only deal with this in API layer
+//! \todo use consitent argument ordering
 __host__
-status_t
-stepSimulation(RuntimeData* rtdata, uint32_t* d_fstim, uint32_t* d_fout)
+void
+stepSimulation(
+		uint partitionCount,
+		bool usingStdp,
+		uint cycle,
+		uint64_t* d_recentFiring,
+		float* d_neuronState,
+		unsigned* d_rngState,
+		float* d_rngSigma,
+		uint32_t* d_fstim,
+		uint32_t* d_fout,
+		synapse_t* d_fcm,
+		uint* d_outgoingCount,
+		outgoing_t* d_outgoing,
+		uint* d_incomingHeads,
+		incoming_t* d_incoming,
+		unsigned long long* d_cc,
+		size_t ccPitch)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
-	dim3 dimGrid(rtdata->partitionCount());
-
-	//! \todo use cycle number from rtdata insteda
-	static uint scycle = 0;
-	DEBUG_MSG("cycle %u\n", scycle);
-	scycle += 1;
+	dim3 dimGrid(partitionCount);
 
 	step<<<dimGrid, dimBlock>>>(
-			rtdata->usingStdp(),
-			rtdata->cycle(),
-			rtdata->recentFiring->deviceData(),
+			usingStdp,
+			cycle,
+			d_recentFiring,
 			// neuron parameters
-			rtdata->d_neurons(),
-			rtdata->thalamicInput->deviceRngState(),
-			rtdata->thalamicInput->deviceSigma(),
-			rtdata->neuronVectorLength(),
+			d_neuronState,
+			d_rngState, d_rngSigma,
 			// spike delivery
-			rtdata->cm()->d_fcm(),
-			rtdata->cm()->outgoingCount(),
-			rtdata->cm()->outgoing(),
-			rtdata->cm()->incomingHeads(),
-			rtdata->cm()->incoming(),
+			d_fcm,
+			d_outgoingCount, d_outgoing,
+			d_incomingHeads, d_incoming,
 			// firing stimulus
 			d_fstim,
 			// cycle counting
 #ifdef KERNEL_TIMING
-			rtdata->cycleCounters->data(),
-			rtdata->cycleCounters->pitch(),
+			d_cc, ccPitch,
 #endif
 			d_fout);
-
-    if(assertionsFailed(rtdata->partitionCount(), scycle)) {
-        fprintf(stderr, "checking assertions\n");
-        clearAssertions();
-        return KERNEL_ASSERTION_FAILURE;
-    }
-
-	cudaError_t status = cudaGetLastError();
-
-	if(status != cudaSuccess) {
-		WARNING("c%u %s", rtdata->cycle(), cudaGetErrorString(status));
-		LOG("", "Kernel parameters: <<<%d, %d>>>\n",
-			dimGrid.x, dimBlock.x);
-		return KERNEL_INVOCATION_ERROR;
-	}
-
-	return KERNEL_OK;
 }

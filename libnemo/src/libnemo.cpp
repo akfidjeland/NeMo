@@ -52,30 +52,25 @@ nemo_add_synapses(RTDATA rtdata,
 		unsigned char is_plastic[],
 		size_t length)
 {
-	//! \todo expose this functionality throught RTdata interface
-	UNSAFE_CALL(rtdata, cm()->setRow(
-		source,
-		targets,
-		delays,
-		weights,
-		is_plastic,
-		length));
+	UNSAFE_CALL(rtdata, addSynapses(source, targets, delays, weights, is_plastic, length));
 }
 
 
 
 size_t
-nemo_get_synapses(RTDATA rtdata,
-		unsigned int sourcePartition,
-		unsigned int sourceNeuron,
-		unsigned int delay,
-		unsigned int* targetPartition[],
-		unsigned int* targetNeuron[],
-		float* weights[],
-		unsigned char* plastic[])
+nemo_get_synapses(RTDATA /*rtdata*/,
+		unsigned int /*sourcePartition*/,
+		unsigned int /*sourceNeuron*/,
+		unsigned int /*delay*/,
+		unsigned int** /*targetPartition[]*/,
+		unsigned int** /*targetNeuron[]*/,
+		float** /*weights[]*/,
+		unsigned char** /*plastic[]*/)
 {
-	return (static_cast<RuntimeData*>(rtdata))->cm()->getRow(sourcePartition, sourceNeuron, delay,
-			static_cast<RuntimeData*>(rtdata)->cycle(), targetPartition, targetNeuron, weights, plastic);
+	//! \todo implement this again
+	return 0;
+	//return (static_cast<RuntimeData*>(rtdata))->cm()->getRow(sourcePartition, sourceNeuron, delay,
+	//		static_cast<RuntimeData*>(rtdata)->cycle(), targetPartition, targetNeuron, weights, plastic);
 }
 
 
@@ -134,8 +129,7 @@ nemo_flush_firing_buffer(RTDATA rtdata)
 void
 nemo_print_cycle_counters(RTDATA rtdata)
 {
-	//! \todo expose this through RTdata
-	UNSAFE_CALL(rtdata, cycleCounters->printCounters());
+	UNSAFE_CALL(rtdata, printCycleCounters());
 }
 
 

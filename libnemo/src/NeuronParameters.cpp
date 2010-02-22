@@ -13,8 +13,7 @@
 NeuronParameters::NeuronParameters(size_t partitionSize) :
 	m_partitionSize(partitionSize),
 	m_allocated(0),
-	m_wpitch(0),
-	m_veclen(0)
+	m_wpitch(0)
 { }
 
 
@@ -89,7 +88,7 @@ NeuronParameters::moveToDevice()
 		throw DeviceAllocationException("neuron parameters", width * height, err);
 	}
 	m_wpitch = bpitch / sizeof(float);
-	m_veclen = pcount * m_wpitch;
+	size_t veclen = pcount * m_wpitch;
 	md_arr = boost::shared_ptr<float>(d_arr, cudaFree);
 	m_allocated = height * bpitch;
 
@@ -111,12 +110,12 @@ NeuronParameters::moveToDevice()
 
 		const neuron_t& n = i->second;
 
-		h_arr[PARAM_A * m_veclen + addr] = n.a;
-		h_arr[PARAM_B * m_veclen + addr] = n.b;
-		h_arr[PARAM_C * m_veclen + addr] = n.c;
-		h_arr[PARAM_D * m_veclen + addr] = n.d;
-		h_arr[STATE_U * m_veclen + addr] = n.u;
-		h_arr[STATE_V * m_veclen + addr] = n.v;
+		h_arr[PARAM_A * veclen + addr] = n.a;
+		h_arr[PARAM_B * veclen + addr] = n.b;
+		h_arr[PARAM_C * veclen + addr] = n.c;
+		h_arr[PARAM_D * veclen + addr] = n.d;
+		h_arr[STATE_U * veclen + addr] = n.u;
+		h_arr[STATE_V * veclen + addr] = n.v;
 	}
 
 	// copy data across

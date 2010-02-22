@@ -27,30 +27,36 @@ class RuntimeData
 
 		~RuntimeData();
 
+		/*
+		 * NETWORK CONSTRUCTION
+		 */
+
+		void addNeuron(unsigned int idx,
+				float a, float b, float c, float d,
+				float u, float v, float sigma);
+
+		void addSynapses(
+				//! \todo use std::vector here?
+				uint source,
+				uint targets[],
+				uint delays[],
+				float weights[],
+				//! \todo use bool here. Transform input in the C layer
+				unsigned char is_plastic[],
+				size_t length);
+
+		/*
+		 * NETWORK SIMULATION
+		 */
+
 		void startSimulation();
 
 		status_t stepSimulation(size_t fstimCount, const uint* fstimIdx);
 
 		void applyStdp(float reward);
 
+	//! \todo fix accesses in libnemo.cpp and make this private
 	struct FiringOutput* firingOutput;
-
-	NVector<uint64_t>* recentFiring;
-
-	float* d_neurons() const;
-
-	size_t neuronVectorLength() const;
-
-	void addNeuron(unsigned int idx,
-			float a, float b, float c, float d,
-			float u, float v, float sigma);
-
-	/* Densely packed, one bit per neuron */
-	NVector<uint32_t>* firingStimulus;
-
-	class ThalamicInput* thalamicInput;
-
-	struct ConnectivityMatrix* cm() const;
 
 	size_t partitionCount() const { return m_partitionCount; }
 
@@ -65,17 +71,13 @@ class RuntimeData
 			const int* nidx,
 			const float* current);
 
-	struct CycleCounters* cycleCounters;
-
-	uint32_t cycle() const;
-
-	bool usingStdp() const;
-
 	/*! \return number of milliseconds of wall-clock time elapsed since first
 	 * simulation step */
 	long int elapsed();
 
 	void setStart();
+
+		void printCycleCounters();
 
 	public :
 
@@ -110,6 +112,15 @@ class RuntimeData
 
 		struct ConnectivityMatrix* m_cm;
 
+		NVector<uint64_t>* m_recentFiring;
+
+		class ThalamicInput* m_thalamicInput;
+
+		/* Densely packed, one bit per neuron */
+		NVector<uint32_t>* m_firingStimulus;
+
+		struct CycleCounters* m_cycleCounters;
+
 		cudaDeviceProp m_deviceProperties;
 
 		void setPitch();
@@ -127,6 +138,7 @@ class RuntimeData
 		unsigned int m_maxReadPeriod;
 
 		void configureStdp();
+		bool usingStdp() const;
 
 		// no need for getters for a single use
 		friend void configureDevice(RuntimeData*);

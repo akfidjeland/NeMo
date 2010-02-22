@@ -57,7 +57,7 @@ assertion_offset(size_t block, size_t thread)
  * \return failure */
 __host__
 bool
-assertionsFailed(size_t blocks, int cycle)
+assertionsFailed(size_t blocks, uint cycle)
 {
 #ifdef DEVICE_ASSERTION_MEMSZ
 	std::vector<int> h_assertions(DEVICE_ASSERTION_MEMSZ);

@@ -28,9 +28,6 @@ class NeuronParameters
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const { return m_allocated; }
 
-		/*! \return number of /words/ in each plane, i.e. for parameter vector */
-		size_t d_vectorLength() const { return m_veclen; }
-
 		size_t wordPitch() const { return m_wpitch; }
 
 		size_t partitionCount() const;
@@ -50,7 +47,6 @@ class NeuronParameters
 		size_t m_allocated;
 
 		size_t m_wpitch;
-		size_t m_veclen;
 
 		// max index in each partition
 		std::map<pidx_t, nidx_t> m_maxPartitionNeuron;

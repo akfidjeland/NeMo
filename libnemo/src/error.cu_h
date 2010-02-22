@@ -1,6 +1,7 @@
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef ERROR_CU_H
+#define ERROR_CU_H
 
+bool assertionsFailed(size_t partitions, uint cycle);
 void clearAssertions();
 
 #endif

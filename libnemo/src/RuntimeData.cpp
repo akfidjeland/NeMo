@@ -23,13 +23,13 @@ RuntimeData::RuntimeData(
 		bool setReverse,
 		unsigned int maxReadPeriod) :
 	firingOutput(NULL),
-	recentFiring(NULL),
-	firingStimulus(NULL),
-	thalamicInput(NULL),
 	maxPartitionSize(maxPartitionSize),
-	cycleCounters(NULL),
 	m_neurons(new NeuronParameters(maxPartitionSize)),
 	m_cm(new ConnectivityMatrix(maxPartitionSize, setReverse)),
+	m_recentFiring(NULL),
+	m_thalamicInput(NULL),
+	m_firingStimulus(NULL),
+	m_cycleCounters(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
 	m_partitionCount(0),
@@ -46,11 +46,12 @@ RuntimeData::RuntimeData(
 
 RuntimeData::~RuntimeData()
 {
+	//! \todo used shared_ptr instead to deal with this
 	if(firingOutput) delete firingOutput;
-	if(recentFiring) delete recentFiring;
-	if(firingStimulus) delete firingStimulus;
-	if(thalamicInput) delete thalamicInput;
-	if(cycleCounters) delete cycleCounters;
+	if(m_recentFiring) delete m_recentFiring;
+	if(m_firingStimulus) delete m_firingStimulus;
+	if(m_thalamicInput) delete m_thalamicInput;
+	if(m_cycleCounters) delete m_cycleCounters;
 	delete m_cm;
 	delete m_neurons;
 }
@@ -98,33 +99,17 @@ RuntimeData::moveToDevice()
 		configureStdp();
 		m_partitionCount = m_neurons->partitionCount();
 		firingOutput = new FiringOutput(m_partitionCount, maxPartitionSize, m_maxReadPeriod);
-		recentFiring = new NVector<uint64_t>(m_partitionCount, maxPartitionSize, false, 2);
+		m_recentFiring = new NVector<uint64_t>(m_partitionCount, maxPartitionSize, false, 2);
 		//! \todo seed properly from outside function
-		thalamicInput = new ThalamicInput(m_partitionCount, maxPartitionSize, 0);
-		m_neurons->setSigma(*thalamicInput);
-		thalamicInput->moveToDevice();
-		cycleCounters = new CycleCounters(m_partitionCount, m_deviceProperties.clockRate);
-		firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
+		m_thalamicInput = new ThalamicInput(m_partitionCount, maxPartitionSize, 0);
+		m_neurons->setSigma(*m_thalamicInput);
+		m_thalamicInput->moveToDevice();
+		m_cycleCounters = new CycleCounters(m_partitionCount, m_deviceProperties.clockRate);
+		m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
 
 		setPitch();
 	    m_deviceDirty = false;
 	}
-}
-
-
-float*
-RuntimeData::d_neurons() const
-{
-	return m_neurons->deviceData();
-}
-
-
-
-size_t
-RuntimeData::neuronVectorLength() const
-{
-	assert(m_neurons);
-	return m_neurons->d_vectorLength();
 }
 
 
@@ -133,14 +118,6 @@ bool
 RuntimeData::deviceDirty() const
 {
 	return m_deviceDirty;
-}
-
-
-
-struct ConnectivityMatrix*
-RuntimeData::cm() const
-{
-	return m_cm;
 }
 
 
@@ -163,8 +140,8 @@ RuntimeData::setFiringStimulus(size_t count, const uint* nidx)
 		return NULL;
 
 	//! \todo use internal host buffer with pinned memory instead
-	size_t pitch = firingStimulus->wordPitch();
-	std::vector<uint32_t> hostArray(firingStimulus->size(), 0);
+	size_t pitch = m_firingStimulus->wordPitch();
+	std::vector<uint32_t> hostArray(m_firingStimulus->size(), 0);
 
 	for(size_t i=0; i < count; ++i){
 		//! \todo share this translation with NeuronParameters and CMImpl
@@ -179,12 +156,12 @@ RuntimeData::setFiringStimulus(size_t count, const uint* nidx)
 	}
 
 	CUDA_SAFE_CALL(cudaMemcpy(
-				firingStimulus->deviceData(),
+				m_firingStimulus->deviceData(),
 				&hostArray[0],
-				m_partitionCount * firingStimulus->bytePitch(),
+				m_partitionCount * m_firingStimulus->bytePitch(),
 				cudaMemcpyHostToDevice));
 
-	return firingStimulus->deviceData();
+	return m_firingStimulus->deviceData();
 }
 
 
@@ -219,11 +196,11 @@ size_t
 RuntimeData::d_allocated() const
 {
 	size_t total = 0;
-	total += firingStimulus   ? firingStimulus->d_allocated()   : 0;
-	total += recentFiring     ? recentFiring->d_allocated()     : 0;
+	total += m_firingStimulus   ? m_firingStimulus->d_allocated()   : 0;
+	total += m_recentFiring   ? m_recentFiring->d_allocated()     : 0;
 	total += m_neurons        ? m_neurons->d_allocated()        : 0;
 	total += firingOutput     ? firingOutput->d_allocated()     : 0;
-	total += thalamicInput    ? thalamicInput->d_allocated()    : 0;
+	total += m_thalamicInput  ? m_thalamicInput->d_allocated()    : 0;
 	total += m_cm             ? m_cm->d_allocated()             : 0;
 	return total;
 }
@@ -234,22 +211,15 @@ RuntimeData::d_allocated() const
 void
 RuntimeData::setPitch()
 {
-	size_t pitch1 = firingStimulus->wordPitch();
+	size_t pitch1 = m_firingStimulus->wordPitch();
 	m_pitch32 = m_neurons->wordPitch();
-	m_pitch64 = recentFiring->wordPitch();
+	m_pitch64 = m_recentFiring->wordPitch();
 	//! \todo fold thalamic input into neuron parameters
-	checkPitch(m_pitch32, thalamicInput->wordPitch());
+	checkPitch(m_pitch32, m_thalamicInput->wordPitch());
 	checkPitch(pitch1, firingOutput->wordPitch());
 	bv_setPitch(pitch1);
 }
 
-
-
-uint32_t
-RuntimeData::cycle() const
-{
-    return m_cycle;
-}
 
 
 //-----------------------------------------------------------------------------
@@ -300,6 +270,20 @@ RuntimeData::addNeuron(
 
 
 void
+RuntimeData::addSynapses(
+		uint source,
+		uint targets[],
+		uint delays[],
+		float weights[],
+		uchar is_plastic[],
+		size_t length)
+{
+	m_cm->setRow(source, targets, delays, weights, is_plastic, length);
+}
+
+
+
+void
 RuntimeData::syncSimulation()
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
@@ -322,17 +306,69 @@ RuntimeData::startSimulation()
 
 
 //! \todo put this into separate header
-status_t stepSimulation(RuntimeData* rtdata, uint32_t*, uint32_t*);
+void
+stepSimulation(
+		uint partitionCount,
+		bool usingStdp,
+		uint cycle,
+		uint64_t* d_recentFiring,
+		float* d_neuronState,
+		unsigned* d_rngState,
+		float* d_rngSigma,
+		uint32_t* d_fstim,
+		uint32_t* d_fout,
+		synapse_t* d_fcm,
+		uint* d_outgoingCount,
+		outgoing_t* d_outgoing,
+		uint* d_incomingHeads,
+		incoming_t* d_incoming,
+		unsigned long long* d_cc,
+		size_t ccPitch);
+
 
 status_t
 RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
 {
 	//! \todo perhaps pass in explicit argument instead?
 	startSimulation(); // only has effect on first cycle
+	//! \todo detect overflow here
 	m_cycle += 1;
 	uint32_t* d_fstim = setFiringStimulus(fstimCount, fstimIdx);
 	uint32_t* d_fout = firingOutput->step();
-	return ::stepSimulation(this, d_fstim, d_fout);
+	::stepSimulation(
+			partitionCount(),
+			usingStdp(),
+			m_cycle,
+			m_recentFiring->deviceData(),
+			m_neurons->deviceData(),
+			m_thalamicInput->deviceRngState(),
+			m_thalamicInput->deviceSigma(),
+			d_fstim, 
+			d_fout,
+			m_cm->d_fcm(),
+			m_cm->outgoingCount(),
+			m_cm->outgoing(),
+			m_cm->incomingHeads(),
+			m_cm->incoming(),
+			m_cycleCounters->data(),
+			m_cycleCounters->pitch());
+
+    if(assertionsFailed(partitionCount(), m_cycle)) {
+        clearAssertions();
+		//! \todo move these errors to libnemo.cpp as they are
+		//only part of the C layer. 
+        return KERNEL_ASSERTION_FAILURE;
+    }
+
+	cudaError_t status = cudaGetLastError();
+
+	if(status != cudaSuccess) {
+		//! \todo throw exception here instead
+		WARNING("c%u %s", m_cycle, cudaGetErrorString(status));
+		return KERNEL_INVOCATION_ERROR;
+	}
+
+	return KERNEL_OK;
 }
 
 
@@ -364,12 +400,19 @@ RuntimeData::applyStdp(float reward)
 		m_cm->clearStdpAccumulator();
 	} else  {
 		::applyStdp(
-				cycleCounters->dataApplySTDP(),
-				cycleCounters->pitchApplySTDP(),
+				m_cycleCounters->dataApplySTDP(),
+				m_cycleCounters->pitchApplySTDP(),
 				partitionCount(),
 				m_cm->fractionalBits(),
 				m_cm->d_fcm(),
 				stdpFn,
 				reward);
 	}
+}
+
+
+void
+RuntimeData::printCycleCounters()
+{
+	m_cycleCounters->printCounters();
 }

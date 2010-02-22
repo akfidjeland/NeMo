@@ -83,14 +83,16 @@ void
 fire(
 	uint s_partitionSize,
 	float* g_neuronParameters,
-	size_t neuronParametersSize,
 	// input
 	float* s_current,    // input current
 	// buffers
 	uint32_t* s_fstim,
+	// output
 	uint* s_firingCount,
 	dnidx_t* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
+	//! \todo put s_pitch32 in cmem
+	size_t neuronParametersSize = PARTITION_COUNT * s_pitch32;
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
 	float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
