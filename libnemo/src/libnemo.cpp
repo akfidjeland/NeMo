@@ -3,10 +3,52 @@ extern "C" {
 }
 
 #include "RuntimeData.hpp"
+#include "except.hpp"
 
 
 // call function without handling exceptions
-#define UNSAFE_CALL(ptr, call) static_cast<RuntimeData*>(ptr)->call
+#define NOCATCH(ptr, call) static_cast<Network*>(ptr)->call
+
+//! \todo deal with assertion failure as well
+#define CATCH(ptr, call) {                                                    \
+		Network* net = static_cast<Network*>(ptr);                            \
+        try {                                                                 \
+			net->call;                                                        \
+        } catch (DeviceAllocationException& e) {                              \
+			net->setErrorMsg(e.what());                                       \
+			return KERNEL_MEMORY_ERROR;                                       \
+		} catch (std::exception& e) {                                         \
+			net->setErrorMsg(e.what());                                       \
+			return KERNEL_INVOCATION_ERROR;                                   \
+        }                                                                     \
+		return KERNEL_OK;                                                     \
+    }
+
+
+
+//! \todo set error locally
+//! \convert error to status code
+class Network : public RuntimeData {
+
+	public :
+
+		Network(size_t maxPartitionSize,
+				bool setReverse,
+				unsigned int maxReadPeriod) :
+			RuntimeData(maxPartitionSize, setReverse, maxReadPeriod),
+			m_errorMsg("No error") {} ;
+
+		const char* lastErrorMsg() { return m_errorMsg.c_str(); }
+
+		void setErrorMsg(const std::string& msg) { m_errorMsg = msg; }
+
+	private :
+
+		/* In addition to the runtime data, we need to keep track of the latest
+		 * error and associated error message */
+		std::string m_errorMsg;
+};
+
 
 
 RTDATA
@@ -15,7 +57,7 @@ nemo_new_network(
 		uint setReverse,
 		uint maxReadPeriod)
 {
-	return new RuntimeData(maxPartitionSize, (bool) setReverse, maxReadPeriod);
+	return new Network(maxPartitionSize, (bool) setReverse, maxReadPeriod);
 }
 
 
@@ -23,23 +65,23 @@ nemo_new_network(
 void
 nemo_delete_network(RTDATA mem)
 {
-	delete static_cast<RuntimeData*>(mem);
+	delete static_cast<Network*>(mem);
 }
 
 
 
-void
+status_t
 nemo_add_neuron(RTDATA rt,
 		unsigned int idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	UNSAFE_CALL(rt, addNeuron(idx, a, b, c, d, u, v, sigma));
+	CATCH(rt, addNeuron(idx, a, b, c, d, u, v, sigma));
 }
 
 
 
-void
+status_t
 nemo_add_synapses(RTDATA rtdata,
 		unsigned int source,
 		unsigned int targets[],
@@ -48,7 +90,7 @@ nemo_add_synapses(RTDATA rtdata,
 		unsigned char is_plastic[],
 		size_t length)
 {
-	UNSAFE_CALL(rtdata, addSynapses(source, targets, delays, weights, is_plastic, length));
+	CATCH(rtdata, addSynapses(source, targets, delays, weights, is_plastic, length));
 }
 
 
@@ -63,18 +105,18 @@ nemo_get_synapses(RTDATA /*rtdata*/,
 		float** /*weights[]*/,
 		unsigned char** /*plastic[]*/)
 {
-	//! \todo implement this again
+	//! \todo implement this again.
 	return 0;
-	//return (static_cast<RuntimeData*>(rtdata))->cm()->getRow(sourcePartition, sourceNeuron, delay,
-	//		static_cast<RuntimeData*>(rtdata)->cycle(), targetPartition, targetNeuron, weights, plastic);
+	//return (static_cast<Network*>(rtdata))->cm()->getRow(sourcePartition, sourceNeuron, delay,
+	//		static_cast<Network*>(rtdata)->cycle(), targetPartition, targetNeuron, weights, plastic);
 }
 
 
 
-void
+status_t
 nemo_start_simulation(RTDATA rtdata)
 {
-	UNSAFE_CALL(rtdata, startSimulation());
+	CATCH(rtdata, startSimulation());
 }
 
 
@@ -82,34 +124,34 @@ nemo_start_simulation(RTDATA rtdata)
 status_t
 nemo_step(RTDATA rtdata, size_t fstimCount, unsigned int fstimIdx[])
 {
-	return UNSAFE_CALL(rtdata, stepSimulation(fstimCount, fstimIdx));
+	CATCH(rtdata, stepSimulation(fstimCount, fstimIdx));
 }
 
 
-void
+status_t
 nemo_apply_stdp(RTDATA rtdata, float reward)
 {
-	UNSAFE_CALL(rtdata, applyStdp(reward));
+	CATCH(rtdata, applyStdp(reward));
 }
 
 
 
 
-void
+status_t
 nemo_read_firing(RTDATA rtdata,
 		uint** cycles,
 		uint** neuronIdx,
 		uint* nfired,
 		uint* ncycles)
 {
-	UNSAFE_CALL(rtdata, readFiring(cycles, neuronIdx, nfired, ncycles));
+	CATCH(rtdata, readFiring(cycles, neuronIdx, nfired, ncycles));
 }
 
 
 void
 nemo_flush_firing_buffer(RTDATA rtdata)
 {
-	UNSAFE_CALL(rtdata, flushFiringBuffer());
+	NOCATCH(rtdata, flushFiringBuffer());
 }
 
 
@@ -123,7 +165,7 @@ nemo_flush_firing_buffer(RTDATA rtdata)
 void
 nemo_print_cycle_counters(RTDATA rtdata)
 {
-	UNSAFE_CALL(rtdata, printCycleCounters());
+	NOCATCH(rtdata, printCycleCounters());
 }
 
 
@@ -131,7 +173,7 @@ nemo_print_cycle_counters(RTDATA rtdata)
 long int
 nemo_elapsed_ms(RTDATA rtdata)
 {
-	return UNSAFE_CALL(rtdata, elapsed());
+	return NOCATCH(rtdata, elapsed());
 }
 
 
@@ -139,8 +181,8 @@ void
 nemo_reset_timer(RTDATA rtdata)
 {
 	// force all execution to complete first
-	UNSAFE_CALL(rtdata, syncSimulation());
-	UNSAFE_CALL(rtdata, setStart());
+	NOCATCH(rtdata, syncSimulation());
+	NOCATCH(rtdata, setStart());
 }
 
 
@@ -160,7 +202,8 @@ nemo_enable_stdp(RTDATA rtdata,
 		float w_max,
 		float w_min)
 {
-	nemo::configure_stdp(static_cast<RuntimeData*>(rtdata)->stdpFn, pre_len, post_len, pre_fn, post_fn, w_max, w_min);
+	nemo::configure_stdp(static_cast<Network*>(rtdata)->stdpFn,
+			pre_len, post_len, pre_fn, post_fn, w_max, w_min);
 }
 
 
@@ -190,7 +233,7 @@ nemo_device_count()
 void
 nemo_sync_simulation(RTDATA rtdata)
 {
-	UNSAFE_CALL(rtdata, syncSimulation());
+	NOCATCH(rtdata, syncSimulation());
 }
 
 

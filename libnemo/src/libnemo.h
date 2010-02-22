@@ -10,10 +10,12 @@
 
 typedef int status_t;
 
+//! \todo give these NEMO-prefix
 #define KERNEL_OK 0
 #define KERNEL_INVOCATION_ERROR 1
 #define KERNEL_ASSERTION_FAILURE 2
-//! \todo add additional errors for memory allocation etc.
+#define KERNEL_MEMORY_ERROR 3
+#define KERNEL_UNKNOWN_ERROR 4
 
 
 //-----------------------------------------------------------------------------
@@ -45,12 +47,11 @@ void nemo_delete_network(RTDATA);
 
 
 //-----------------------------------------------------------------------------
-// LOADING NEURON DATA
+// NETWORK CONSTRUCTION
 //-----------------------------------------------------------------------------
 
 
-//! \todo should return error status here
-void
+status_t
 nemo_add_neuron(RTDATA,
 		unsigned int idx,
 		float a, float b, float c, float d,
@@ -58,13 +59,7 @@ nemo_add_neuron(RTDATA,
 
 
 
-//-----------------------------------------------------------------------------
-// LOADING SYNAPSE DATA
-//-----------------------------------------------------------------------------
-
-
-//! \todo should return error status here
-void
+status_t
 nemo_add_synapses(RTDATA,
 		unsigned int source,
 		unsigned int targets[],
@@ -99,7 +94,7 @@ nemo_get_synapses(RTDATA rtdata,
  * The last two output variables contain the number of neurons and the number of
  * cycles for which we have firing.
  */
-void
+status_t
 nemo_read_firing(RTDATA rtdata,
 		unsigned int** cycles,
 		unsigned int** neuronIdx,
@@ -192,13 +187,14 @@ status_t
 nemo_step(RTDATA rtdata, size_t fstimCount, unsigned int fstimIdx[]);
 
 
-void nemo_apply_stdp(RTDATA rtdata, float stdpReward);
+status_t
+nemo_apply_stdp(RTDATA rtdata, float stdpReward);
 
 
 /* Force all allocated memory onto the device. Calling this is not required
  * during normal operation, as step invokes it on first call, but can be used
  * for testing */
-void
+status_t
 nemo_start_simulation(RTDATA);
 
 
