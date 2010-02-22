@@ -17,9 +17,12 @@ extern "C" {
         } catch (DeviceAllocationException& e) {                              \
 			net->setErrorMsg(e.what());                                       \
 			return KERNEL_MEMORY_ERROR;                                       \
-		} catch (std::exception& e) {                                         \
+		} catch (KernelInvocationError& e) {                                  \
 			net->setErrorMsg(e.what());                                       \
 			return KERNEL_INVOCATION_ERROR;                                   \
+		} catch (std::exception& e) {                                         \
+			net->setErrorMsg(e.what());                                       \
+			return KERNEL_UNKNOWN_ERROR;                                      \
         }                                                                     \
 		return KERNEL_OK;                                                     \
     }

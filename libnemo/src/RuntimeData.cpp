@@ -1,5 +1,8 @@
 #include "RuntimeData.hpp"
 
+#include <vector>
+#include <assert.h>
+
 #include "FiringOutput.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
@@ -9,13 +12,12 @@
 #include "log.hpp"
 #include "fixedpoint.hpp"
 #include "bitvector.hpp"
+#include "except.hpp"
 
 #include "partitionConfiguration.cu_h"
 #include "kernel.cu_h"
 #include "error.cu_h"
 
-#include <vector>
-#include <assert.h>
 
 
 
@@ -314,10 +316,16 @@ stepSimulation(
 status_t
 RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
 {
-	//! \todo perhaps pass in explicit argument instead?
 	startSimulation(); // only has effect on first cycle
-	//! \todo detect overflow here
+
+	/* A 32-bit counter can count up to around 4M seconds which is around 1200
+	 * hours or 50 days */
+	//! \todo use a 64-bit counter instead
+	if(m_cycle == ~0) {
+		throw std::overflow_error("Cycle counter overflow");
+	}
 	m_cycle += 1;
+
 	uint32_t* d_fstim = setFiringStimulus(fstimCount, fstimIdx);
 	uint32_t* d_fout = m_firingOutput->step();
 	::stepSimulation(
@@ -346,11 +354,9 @@ RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
     }
 
 	cudaError_t status = cudaGetLastError();
-
 	if(status != cudaSuccess) {
-		//! \todo throw exception here instead
-		WARNING("c%u %s", m_cycle, cudaGetErrorString(status));
-		return KERNEL_INVOCATION_ERROR;
+		//! \todo add cycle number?
+		throw KernelInvocationError(status);
 	}
 
 	return KERNEL_OK;

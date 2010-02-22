@@ -28,8 +28,17 @@ class DeviceAllocationException : public std::exception
 	private :
 
 		std::string m_msg;
-
-
 };
+
+
+class KernelInvocationError : public std::runtime_error
+{
+	public :
+
+		KernelInvocationError(cudaError_t status) :
+			std::runtime_error(cudaGetErrorString(status)) {}
+};
+
+
 
 #endif
