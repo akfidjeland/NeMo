@@ -1,5 +1,5 @@
 #include "log.hpp"
-#include "error.cu"
+#include "device_assert.cu"
 #include "cycle.cu"
 #include "util.h"
 #include "fixedpoint.hpp"

@@ -1,7 +1,7 @@
 #ifndef FIXED_POINT_CU
 #define FIXED_POINT_CU
 
-#include "error.cu"
+#include "device_assert.cu"
 #include "util.h"
 #include "nemo_cuda_types.h"
 

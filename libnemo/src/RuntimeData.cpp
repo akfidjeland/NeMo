@@ -16,7 +16,7 @@
 
 #include "partitionConfiguration.cu_h"
 #include "kernel.cu_h"
-#include "error.cu_h"
+#include "device_assert.cu_h"
 
 
 

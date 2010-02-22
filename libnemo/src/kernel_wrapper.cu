@@ -15,7 +15,7 @@
 
 #include "util.h"
 #include "time.hpp"
-#include "error.cu"
+#include "device_assert.cu"
 #include "log.hpp"
 #include "connectivityMatrix.cu"
 #include "partitionConfiguration.cu"

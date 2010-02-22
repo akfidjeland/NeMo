@@ -7,7 +7,7 @@ CU_MAIN = kernel_wrapper.cu
 CU_INC = kernel.cu \
 		 partitionConfiguration.cu \
 		 cycleCounting.cu \
-		 error.cu \
+		 device_assert.cu \
 		 connectivityMatrix.cu \
 		 step.cu \
 		 stdp.cu \
