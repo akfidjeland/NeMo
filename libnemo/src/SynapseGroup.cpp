@@ -90,14 +90,9 @@ SynapseGroup::fillFcm(
 		addresses.resize(row.size());
 		weights.resize(row.size());
 		for(size_t sidx = 0; sidx < row.size(); ++sidx) {
-
 			const h_synapse_t& s = row.at(sidx);
-			nidx_t neuron = boost::tuples::get<0>(s);
 			addresses.at(sidx) = f_packSynapse(boost::tuples::get<0>(s));
 			weights.at(sidx) = fixedPoint(boost::tuples::get<1>(s), fractionalBits);
-
-			uint twarp = neuron / WARP_SIZE;
-			uint gwarp = startWarp + writtenWarps + sidx / WARP_SIZE;
 		}
 
 		assert(sizeof(nidx_t) == sizeof(synapse_t));

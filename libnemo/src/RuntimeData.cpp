@@ -3,6 +3,7 @@
 #include <vector>
 #include <assert.h>
 
+#include "DeviceAssertions.hpp"
 #include "FiringOutput.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
@@ -16,6 +17,7 @@
 
 #include "partitionConfiguration.cu_h"
 #include "kernel.cu_h"
+//! \todo remove this
 #include "device_assert.cu_h"
 
 
@@ -34,6 +36,7 @@ RuntimeData::RuntimeData(
 	m_firingStimulus(NULL),
 	m_firingOutput(NULL),
 	m_cycleCounters(NULL),
+	m_deviceAssertions(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
 	m_deviceDirty(true),
@@ -50,6 +53,7 @@ RuntimeData::RuntimeData(
 RuntimeData::~RuntimeData()
 {
 	//! \todo used shared_ptr instead to deal with this
+	if(m_deviceAssertions) delete m_deviceAssertions;
 	if(m_firingOutput) delete m_firingOutput;
 	if(m_recentFiring) delete m_recentFiring;
 	if(m_firingStimulus) delete m_firingStimulus;
@@ -101,6 +105,7 @@ RuntimeData::moveToDevice()
 		m_neurons->moveToDevice();
 		configureStdp();
 		m_partitionCount = m_neurons->partitionCount();
+		m_deviceAssertions = new DeviceAssertions(m_partitionCount);
 		m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, m_maxReadPeriod);
 		m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
 		//! \todo seed properly from outside function
@@ -281,8 +286,8 @@ RuntimeData::syncSimulation()
 void
 RuntimeData::startSimulation()
 {
+	//! \todo merge this function with moveToDevice
 	if(deviceDirty()) {
-		::clearAssertions();
 		moveToDevice();
 		//! \todo do this configuration as part of CM setup
 		::configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
@@ -313,15 +318,16 @@ stepSimulation(
 		size_t ccPitch);
 
 
-status_t
+void
 RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
+		throw(DeviceAssertionFailure, std::logic_error)
 {
 	startSimulation(); // only has effect on first cycle
 
 	/* A 32-bit counter can count up to around 4M seconds which is around 1200
 	 * hours or 50 days */
 	//! \todo use a 64-bit counter instead
-	if(m_cycle == ~0) {
+	if(m_cycle == ~0U) {
 		throw std::overflow_error("Cycle counter overflow");
 	}
 	m_cycle += 1;
@@ -346,20 +352,13 @@ RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
 			m_cycleCounters->data(),
 			m_cycleCounters->pitch());
 
-    if(assertionsFailed(m_partitionCount, m_cycle)) {
-        clearAssertions();
-		//! \todo move these errors to libnemo.cpp as they are
-		//only part of the C layer. 
-        return KERNEL_ASSERTION_FAILURE;
-    }
-
 	cudaError_t status = cudaGetLastError();
 	if(status != cudaSuccess) {
 		//! \todo add cycle number?
 		throw KernelInvocationError(status);
 	}
 
-	return KERNEL_OK;
+	m_deviceAssertions->check(m_cycle);
 }
 
 
@@ -399,6 +398,8 @@ RuntimeData::applyStdp(float reward)
 				stdpFn,
 				reward);
 	}
+
+	m_deviceAssertions->check(m_cycle);
 }
 
 

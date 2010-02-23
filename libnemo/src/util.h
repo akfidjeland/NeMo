@@ -14,6 +14,7 @@
 #define SWAP(a, b) (((a) ^= (b)), ((b) ^= (a)), ((a) ^= (b)))
 
 //! \todo report errors back to user of library
+//! \move this to cpp code and make use of exceptions
 #define CUDA_SAFE_CALL(call) {                                             \
     cudaError err = call;                                                  \
     if( cudaSuccess != err) {                                              \

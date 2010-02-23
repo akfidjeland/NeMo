@@ -23,6 +23,7 @@ CC_SRC = FiringOutput.cpp \
 		 ConnectivityMatrix.cpp \
 		 time.cpp \
 		 CycleCounters.cpp \
+		 DeviceAssertions.cpp \
 		 ThalamicInput.cpp \
 		 NeuronParameters.cpp \
 		 RSMatrix.cpp \

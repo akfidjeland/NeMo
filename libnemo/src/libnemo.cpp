@@ -3,29 +3,39 @@ extern "C" {
 }
 
 #include "RuntimeData.hpp"
+#include "DeviceAssertions.hpp"
 #include "except.hpp"
 
 
-// call function without handling exceptions
+
+//! \todo hard-code spaces
+/* We cannot propagate exceptions via the C API, so convert to an error code
+ * instead */
+#define CATCH(ptr, call) {                                                    \
+        Network* net = static_cast<Network*>(ptr);                            \
+        try {                                                                 \
+            net->call;                                                        \
+        } catch (DeviceAllocationException& e) {                              \
+            net->setErrorMsg(e.what());                                       \
+            return KERNEL_MEMORY_ERROR;                                       \
+        } catch (KernelInvocationError& e) {                                  \
+            net->setErrorMsg(e.what());                                       \
+            return KERNEL_INVOCATION_ERROR;                                   \
+        } catch (DeviceAssertionFailure& e) {                                 \
+            net->setErrorMsg(e.what());                                       \
+            return KERNEL_ASSERTION_FAILURE;                                  \
+        } catch (std::exception& e) {                                         \
+            net->setErrorMsg(e.what());                                       \
+            return KERNEL_UNKNOWN_ERROR;                                      \
+        }                                                                     \
+        return KERNEL_OK;                                                     \
+    }
+
+
+//! \todo enforce no throw in the class interface
+/* Call function without handling exceptions */
 #define NOCATCH(ptr, call) static_cast<Network*>(ptr)->call
 
-//! \todo deal with assertion failure as well
-#define CATCH(ptr, call) {                                                    \
-		Network* net = static_cast<Network*>(ptr);                            \
-        try {                                                                 \
-			net->call;                                                        \
-        } catch (DeviceAllocationException& e) {                              \
-			net->setErrorMsg(e.what());                                       \
-			return KERNEL_MEMORY_ERROR;                                       \
-		} catch (KernelInvocationError& e) {                                  \
-			net->setErrorMsg(e.what());                                       \
-			return KERNEL_INVOCATION_ERROR;                                   \
-		} catch (std::exception& e) {                                         \
-			net->setErrorMsg(e.what());                                       \
-			return KERNEL_UNKNOWN_ERROR;                                      \
-        }                                                                     \
-		return KERNEL_OK;                                                     \
-    }
 
 
 

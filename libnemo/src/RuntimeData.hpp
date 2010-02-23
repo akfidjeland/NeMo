@@ -5,11 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "NVector.hpp"
-
-//! \todo only needed for status_t. Remove the need for this
-extern "C" {
-#include "libnemo.h"
-}
+#include "DeviceAssertions.hpp"
 
 #include <Timer.hpp>
 #include <STDP.hpp>
@@ -50,7 +46,8 @@ class RuntimeData
 
 		void startSimulation();
 
-		status_t stepSimulation(size_t fstimCount, const uint* fstimIdx);
+		void stepSimulation(size_t fstimCount, const uint* fstimIdx)
+			throw(DeviceAssertionFailure, std::logic_error);
 
 		void applyStdp(float reward);
 
@@ -117,6 +114,8 @@ class RuntimeData
 
 		struct CycleCounters* m_cycleCounters;
 
+		class DeviceAssertions* m_deviceAssertions;
+
 		cudaDeviceProp m_deviceProperties;
 
 		void setPitch();
@@ -133,9 +132,6 @@ class RuntimeData
 
 		void configureStdp();
 		bool usingStdp() const;
-
-		// no need for getters for a single use
-		friend void configureDevice(RuntimeData*);
 };
 
 #endif

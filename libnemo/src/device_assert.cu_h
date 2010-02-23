@@ -1,7 +1,8 @@
-#ifndef ERROR_CU_H
-#define ERROR_CU_H
+#ifndef DEVICE_ASSERT_CU_H
+#define DEVICE_ASSERT_CU_H
 
-bool assertionsFailed(size_t partitions, uint cycle);
-void clearAssertions();
+size_t assertion_offset(size_t partition, size_t thread);
+void getDeviceAssertions(uint partitions, int* h_assertions);
+void clearDeviceAssertions();
 
 #endif

@@ -14,7 +14,6 @@
 #include <STDP.hpp>
 
 #include "util.h"
-#include "time.hpp"
 #include "device_assert.cu"
 #include "log.hpp"
 #include "connectivityMatrix.cu"
@@ -53,10 +52,6 @@ applyStdp(
 			fixedPoint(reward, fractionalBits),
 			fixedPoint(stdpFn.maxWeight(), fractionalBits),
 			fixedPoint(stdpFn.minWeight(), fractionalBits));
-
-	if(assertionsFailed(partitionCount, 0)) {
-		clearAssertions();
-	}
 }
 
 
