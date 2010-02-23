@@ -17,20 +17,16 @@
 
 #include "partitionConfiguration.cu_h"
 #include "kernel.cu_h"
-//! \todo remove this
 #include "device_assert.cu_h"
 
 
 
 
-RuntimeData::RuntimeData(
-		size_t maxPartitionSize,
-		bool setReverse,
-		unsigned int maxReadPeriod) :
+RuntimeData::RuntimeData(bool setReverse, unsigned int maxReadPeriod) :
 	m_partitionCount(0),
-	m_maxPartitionSize(maxPartitionSize),
-	m_neurons(new NeuronParameters(maxPartitionSize)),
-	m_cm(new ConnectivityMatrix(maxPartitionSize, setReverse)),
+	m_maxPartitionSize(MAX_PARTITION_SIZE),
+	m_neurons(new NeuronParameters(m_maxPartitionSize)),
+	m_cm(new ConnectivityMatrix(m_maxPartitionSize, setReverse)),
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),
@@ -42,12 +38,37 @@ RuntimeData::RuntimeData(
 	m_deviceDirty(true),
 	m_maxReadPeriod(maxReadPeriod)
 {
-
+	//! \todo use this in move to device
 	int device;
 	cudaGetDevice(&device);
 	cudaGetDeviceProperties(&m_deviceProperties, device);
 }
 
+
+
+RuntimeData::RuntimeData(bool setReverse,
+		unsigned maxReadPeriod,
+		unsigned maxPartitionSize) :
+	m_partitionCount(0),
+	m_maxPartitionSize(maxPartitionSize),
+	m_neurons(new NeuronParameters(m_maxPartitionSize)),
+	m_cm(new ConnectivityMatrix(m_maxPartitionSize, setReverse)),
+	m_recentFiring(NULL),
+	m_thalamicInput(NULL),
+	m_firingStimulus(NULL),
+	m_firingOutput(NULL),
+	m_cycleCounters(NULL),
+	m_deviceAssertions(NULL),
+	m_pitch32(0),
+	m_pitch64(0),
+	m_deviceDirty(true),
+	m_maxReadPeriod(maxReadPeriod)
+{
+	//! \todo use this in move to device
+	int device;
+	cudaGetDevice(&device);
+	cudaGetDeviceProperties(&m_deviceProperties, device);
+}
 
 
 RuntimeData::~RuntimeData()
@@ -425,3 +446,4 @@ RuntimeData::flushFiringBuffer()
 {
 	m_firingOutput->flushBuffer();
 }
+

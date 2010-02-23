@@ -145,29 +145,9 @@ getNDWeights sim source d = do
 
 
 allocRT :: StdpConf -> Maybe Int -> Int -> IO (Ptr CuRT)
-allocRT stdp reqPsize maxProbePeriod = do
-    psize <- targetPartitionSize reqPsize
+allocRT stdp psize maxProbePeriod = do
     rt <- allocateRuntime
         psize
         (stdpEnabled stdp)
         maxProbePeriod
     return rt
-
-
-
-{- | The partition size the mapper should use depends on both the maximum
- - supported by the kernel (given some configuration) and the request of the
- - user. partitionSize determines this size and logs a message if the user
- - request is over-ridden.  -}
-targetPartitionSize :: Maybe Int -> IO Int
-targetPartitionSize userSz = do
-    let maxSz = maxPartitionSize
-    maybe (return maxSz) (validateUserSz maxSz) userSz
-    where
-        validateUserSz maxSz userSz =
-            if userSz <= maxSz
-                then return userSz
-                else do
-                    putStrLn $ "Invalid partition size (" ++ show userSz
-                        ++ ") requested" ++ ", defaulting to " ++ show maxSz
-                    return maxSz

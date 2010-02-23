@@ -15,10 +15,10 @@ class RuntimeData
 {
 	public :
 
-		RuntimeData(
-				size_t maxPartitionSize,
-				bool setReverse,
-				unsigned int maxReadPeriod);
+		RuntimeData(bool setReverse, unsigned maxReadPeriod);
+
+		// for debugging purposes, fix the partition size used
+		RuntimeData(bool setReverse, unsigned maxReadPeriod, unsigned maxPartitionSize);
 
 		~RuntimeData();
 

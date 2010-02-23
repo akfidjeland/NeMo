@@ -18,7 +18,6 @@ module Simulation.CUDA.KernelFFI (
     addNeuron,
     addSynapses,
     configureStdp,
-    maxPartitionSize,
     elapsedMs,
     resetTimer,
     deviceCount
@@ -50,19 +49,26 @@ data CuRT = CuRT
 
 
 foreign import ccall unsafe "nemo_new_network"
-    c_allocRT
-        :: CSize  -- ^ max partition size
-        -> CUInt  -- ^ set reverse matrix (bool)
+    c_newNetwork
+        :: CUInt  -- ^ set reverse matrix (bool)
         -> CUInt  -- ^ max read period
         -> IO (Ptr CuRT)
 
+-- for debugging, specify partition size
+foreign import ccall unsafe "nemo_new_network_"
+    c_newNetwork_
+        :: CUInt  -- ^ set reverse matrix (bool)
+        -> CUInt  -- ^ max read period
+        -> CUInt  -- ^ max partition size
+        -> IO (Ptr CuRT)
 
-allocateRuntime :: Int -> Bool -> Int -> IO (Ptr CuRT)
+
+allocateRuntime :: Maybe Int -> Bool -> Int -> IO (Ptr CuRT)
 allocateRuntime psize usingStdp maxProbePeriod =
-    c_allocRT
-        (fromIntegral psize)
-        (fromBool usingStdp)
-        (fromIntegral maxProbePeriod)
+    maybe (c_newNetwork us pp) (c_newNetwork_ us pp . fromIntegral) psize
+    where
+        us = fromBool usingStdp
+        pp = fromIntegral maxProbePeriod
 
 
 foreign import ccall unsafe "nemo_add_neuron" c_addNeuron
@@ -89,14 +95,6 @@ addNeuron rt nidx a b c d u v sigma =
 
 -- free the device, clear all memory in Sim
 foreign import ccall unsafe "nemo_delete_network" freeRT :: Ptr CuRT -> IO ()
-
-
--------------------------------------------------------------------------------
--- Kernel configuration
--------------------------------------------------------------------------------
-
-maxPartitionSize :: Int
-maxPartitionSize = #const MAX_PARTITION_SIZE
 
 
 -------------------------------------------------------------------------------
@@ -212,11 +210,6 @@ stepBuffering sim fstim = do
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
     kernelStatus <- c_step sim (fromIntegral flen) fsNIdxPtr
     when (kernelStatus /= 0) $ fail "Backend error"
-    where
-        {- Run possibly failing computation, and propagate any errors with
-         - additional prefix -}
-        rethrow :: (Monad m) => String -> (a -> Either String b) -> a -> m b
-        rethrow prefix f x = either (fail . (++) (prefix ++ ": ")) return (f x)
 
 
 stepNonBuffering sim fstim = do

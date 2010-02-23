@@ -38,18 +38,19 @@ extern "C" {
 
 
 
-
-//! \todo set error locally
-//! \convert error to status code
 class Network : public RuntimeData {
 
 	public :
 
-		Network(size_t maxPartitionSize,
-				bool setReverse,
-				unsigned int maxReadPeriod) :
-			RuntimeData(maxPartitionSize, setReverse, maxReadPeriod),
-			m_errorMsg("No error") {} ;
+		Network(bool setReverse, unsigned maxReadPeriod) :
+			RuntimeData(setReverse, maxReadPeriod),
+			m_errorMsg("No error") { } ;
+
+		Network(bool setReverse,
+				unsigned maxReadPeriod,
+				unsigned maxPartitionSize) :
+			RuntimeData(setReverse, maxReadPeriod, maxPartitionSize),
+			m_errorMsg("No error") { } ;
 
 		const char* lastErrorMsg() { return m_errorMsg.c_str(); }
 
@@ -63,14 +64,21 @@ class Network : public RuntimeData {
 };
 
 
+RTDATA
+nemo_new_network(unsigned setReverse, unsigned maxReadPeriod)
+{
+	return new Network((bool) setReverse, maxReadPeriod);
+}
+
+
 
 RTDATA
-nemo_new_network(
-		size_t maxPartitionSize,
-		uint setReverse,
-		uint maxReadPeriod)
+nemo_new_network_(
+		unsigned setReverse,
+		unsigned maxReadPeriod,
+		unsigned maxPartitionSize)
 {
-	return new Network(maxPartitionSize, (bool) setReverse, maxReadPeriod);
+	return new Network((bool) setReverse, maxReadPeriod, maxPartitionSize);
 }
 
 
@@ -85,7 +93,7 @@ nemo_delete_network(RTDATA mem)
 
 status_t
 nemo_add_neuron(RTDATA rt,
-		unsigned int idx,
+		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
@@ -96,9 +104,9 @@ nemo_add_neuron(RTDATA rt,
 
 status_t
 nemo_add_synapses(RTDATA rtdata,
-		unsigned int source,
-		unsigned int targets[],
-		unsigned int delays[],
+		unsigned source,
+		unsigned targets[],
+		unsigned delays[],
 		float weights[],
 		unsigned char is_plastic[],
 		size_t length)
@@ -110,11 +118,11 @@ nemo_add_synapses(RTDATA rtdata,
 
 size_t
 nemo_get_synapses(RTDATA /*rtdata*/,
-		unsigned int /*sourcePartition*/,
-		unsigned int /*sourceNeuron*/,
-		unsigned int /*delay*/,
-		unsigned int** /*targetPartition[]*/,
-		unsigned int** /*targetNeuron[]*/,
+		unsigned /*sourcePartition*/,
+		unsigned /*sourceNeuron*/,
+		unsigned /*delay*/,
+		unsigned** /*targetPartition[]*/,
+		unsigned** /*targetNeuron[]*/,
 		float** /*weights[]*/,
 		unsigned char** /*plastic[]*/)
 {
@@ -135,7 +143,7 @@ nemo_start_simulation(RTDATA rtdata)
 
 
 status_t
-nemo_step(RTDATA rtdata, size_t fstimCount, unsigned int fstimIdx[])
+nemo_step(RTDATA rtdata, size_t fstimCount, unsigned fstimIdx[])
 {
 	CATCH(rtdata, stepSimulation(fstimCount, fstimIdx));
 }
@@ -208,8 +216,8 @@ nemo_reset_timer(RTDATA rtdata)
 
 void
 nemo_enable_stdp(RTDATA rtdata,
-		unsigned int pre_len,
-		unsigned int post_len,
+		unsigned pre_len,
+		unsigned post_len,
 		float* pre_fn,
 		float* post_fn,
 		float w_max,
@@ -248,10 +256,3 @@ nemo_sync_simulation(RTDATA rtdata)
 {
 	NOCATCH(rtdata, syncSimulation());
 }
-
-
-//! \todo move the following methods into RTData, and then this file
-// applyStdp
-// copyToDevice
-// step
-

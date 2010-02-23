@@ -86,7 +86,6 @@ ConnectivityMatrix::setRow(
 		ERROR("source neuron index out of range");
 	}
 
-
 	for(size_t i=0; i<f_length; ++i) {
 		pidx_t targetPartition = partitionIdx(tgt[i]);
 		nidx_t targetNeuron = neuronIdx(tgt[i]);

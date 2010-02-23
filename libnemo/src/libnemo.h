@@ -1,13 +1,10 @@
 #ifndef LIBNEMO_H
 #define LIBNEMO_H
 
-/* ! \todo move partition sizing from haskell code to c code. Then we'll no
- * longer need this include. */
-#include "kernel.cu_h"
-
 #include <string.h> // for size_t
 
 
+//! \todo give nemo_prefix
 typedef int status_t;
 
 //! \todo give these NEMO-prefix
@@ -27,21 +24,24 @@ typedef int status_t;
 typedef void* RTDATA;
 
 
-//! \todo get rid of max partition size argument. This is only really useful for debugging.
 //! \todo get rid of setReverse. Just deal with this in the host code
 //! \todo dynamically resize the firing buffer?
 /*!
- * \param maxPartitionSize
  * \param setReverse
  * 		set reverse connectivity matrix, required e.g. for STDP
  * \param maxReadPeriod
  * 		maximum period (in cycles) between reads to the device firing buffer
  */
 RTDATA
-nemo_new_network(
-		size_t maxPartitionSize,
-		unsigned int setReverse,
-		unsigned int maxReadPeriod);
+nemo_new_network(unsigned setReverse, unsigned maxReadPeriod);
+
+
+// for debugging purposes it might be useful to fix the partition size
+RTDATA
+nemo_new_network_(
+		unsigned setReverse,
+		unsigned maxReadPeriod,
+		unsigned maxPartitionSize);
 
 void nemo_delete_network(RTDATA);
 
@@ -53,7 +53,7 @@ void nemo_delete_network(RTDATA);
 
 status_t
 nemo_add_neuron(RTDATA,
-		unsigned int idx,
+		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
 
@@ -61,9 +61,9 @@ nemo_add_neuron(RTDATA,
 
 status_t
 nemo_add_synapses(RTDATA,
-		unsigned int source,
-		unsigned int targets[],
-		unsigned int delays[],
+		unsigned source,
+		unsigned targets[],
+		unsigned delays[],
 		float weights[],
 		unsigned char is_plastic[],
 		size_t length);
@@ -73,11 +73,11 @@ nemo_add_synapses(RTDATA,
 /*! Read connectivity matrix back from device for a single neuron and delay. */
 size_t
 nemo_get_synapses(RTDATA rtdata,
-		unsigned int sourcePartition,
-		unsigned int sourceNeuron,
-		unsigned int delay,
-		unsigned int* targetPartition[],
-		unsigned int* targetNeuron[],
+		unsigned sourcePartition,
+		unsigned sourceNeuron,
+		unsigned delay,
+		unsigned* targetPartition[],
+		unsigned* targetNeuron[],
 		float* weights[],
 		unsigned char* plastic[]);
 
@@ -96,10 +96,10 @@ nemo_get_synapses(RTDATA rtdata,
  */
 status_t
 nemo_read_firing(RTDATA rtdata,
-		unsigned int** cycles,
-		unsigned int** neuronIdx,
-		unsigned int* nfired,
-		unsigned int* ncycles);
+		unsigned** cycles,
+		unsigned** neuronIdx,
+		unsigned* nfired,
+		unsigned* ncycles);
 
 
 /* Step can be asynchronous. sync forces completion of all steps */
@@ -161,8 +161,8 @@ nemo_reset_timer(RTDATA rtdata);
  */
 void
 nemo_enable_stdp(RTDATA,
-		unsigned int preFireLen,
-		unsigned int postFireLen,
+		unsigned preFireLen,
+		unsigned postFireLen,
 		float* preFireFn,
 		float* postFireFn,
 		float maxWeight,
@@ -184,7 +184,7 @@ nemo_enable_stdp(RTDATA,
  * 		Indices of the neurons which should be forced to fire this cycle.
  */
 status_t
-nemo_step(RTDATA rtdata, size_t fstimCount, unsigned int fstimIdx[]);
+nemo_step(RTDATA rtdata, size_t fstimCount, unsigned fstimIdx[]);
 
 
 status_t
