@@ -13,8 +13,9 @@
  * \author Andreas Fidjeland
  */
 
-#include <stdexcept>
 #include <vector>
+#include <stdexcept>
+#include <string>
 
 
 class DeviceAssertionFailure : public std::exception
@@ -23,14 +24,13 @@ class DeviceAssertionFailure : public std::exception
 
 		DeviceAssertionFailure(uint partition, uint thread, uint line, uint cycle);
 
-		const char* what() const throw();
+		~DeviceAssertionFailure() throw () {}
+
+		const char* what() const throw() { return m_what.c_str(); }
 
 	private :
 
-		uint m_partition;
-		uint m_thread;
-		uint m_line;
-		uint m_cycle;
+		std::string m_what;
 };
 
 
@@ -46,7 +46,7 @@ class DeviceAssertions
 		 * assertion failure for each thread will be reported. Checking device
 		 * assertions require reading device memory and can therefore be
 		 * costly. */
-		void check(uint cycle) throw(DeviceAssertionFailure, std::logic_error);
+		void check(uint cycle) throw(DeviceAssertionFailure);
 
 	private :
 

@@ -22,14 +22,10 @@ DeviceAssertions::DeviceAssertions(uint partitionCount) :
 
 
 void
-DeviceAssertions::check(uint cycle) throw (DeviceAssertionFailure, std::logic_error)
+DeviceAssertions::check(uint cycle) throw (DeviceAssertionFailure)
 {
 #ifdef DEVICE_ASSERTIONS
 	int* h_mem = &mh_mem[0];
-	if(h_mem == NULL) {
-		throw std::logic_error("Device assertions checked without having been allocated");
-	}
-
 	::getDeviceAssertions(m_partitionCount, h_mem);
 
 	for(uint partition=0; partition < m_partitionCount; ++partition) {
@@ -47,22 +43,13 @@ DeviceAssertions::check(uint cycle) throw (DeviceAssertionFailure, std::logic_er
 
 
 DeviceAssertionFailure::DeviceAssertionFailure(uint partition,
-		uint thread, uint line, uint cycle) :
-	m_partition(partition),
-	m_thread(thread),
-	m_line(line),
-	m_cycle(cycle)
-{ }
-
-
-
-const char*
-DeviceAssertionFailure::what() const throw()
+		uint thread, uint line, uint cycle)
 {
 	std::ostringstream msg;
 	msg << "Device assertion failure for partition "
-		<< m_partition << " thread " << m_thread << " in line "
-		<< m_line << " during cycle " << m_cycle
-		<< ". Only the first assertion failure is reported and the exact file is not  known"; 
-	return msg.str().c_str();	
+		<< partition << " thread " << thread << " in line "
+		<< line << " during cycle " << cycle
+		<< ". Only the first assertion failure is reported and the exact file is not  known" << std::endl;
+	m_what = msg.str();
+
 }
