@@ -8,7 +8,6 @@ extern "C" {
 
 
 
-//! \todo hard-code spaces
 /* We cannot propagate exceptions via the C API, so convert to an error code
  * instead */
 #define CATCH(ptr, call) {                                                    \
@@ -17,18 +16,18 @@ extern "C" {
             net->call;                                                        \
         } catch (DeviceAllocationException& e) {                              \
             net->setErrorMsg(e.what());                                       \
-            return KERNEL_MEMORY_ERROR;                                       \
+            return NEMO_CUDA_MEMORY_ERROR;                                    \
         } catch (KernelInvocationError& e) {                                  \
             net->setErrorMsg(e.what());                                       \
-            return KERNEL_INVOCATION_ERROR;                                   \
+            return NEMO_CUDA_INVOCATION_ERROR;                                \
         } catch (DeviceAssertionFailure& e) {                                 \
             net->setErrorMsg(e.what());                                       \
-            return KERNEL_ASSERTION_FAILURE;                                  \
+            return NEMO_CUDA_ASSERTION_FAILURE;                               \
         } catch (std::exception& e) {                                         \
             net->setErrorMsg(e.what());                                       \
-            return KERNEL_UNKNOWN_ERROR;                                      \
+            return NEMO_UNKNOWN_ERROR;                                        \
         }                                                                     \
-        return KERNEL_OK;                                                     \
+        return NEMO_OK;                                                       \
     }
 
 
@@ -91,7 +90,7 @@ nemo_delete_network(RTDATA mem)
 
 
 
-status_t
+nemo_status_t
 nemo_add_neuron(RTDATA rt,
 		unsigned idx,
 		float a, float b, float c, float d,
@@ -102,7 +101,7 @@ nemo_add_neuron(RTDATA rt,
 
 
 
-status_t
+nemo_status_t
 nemo_add_synapses(RTDATA rtdata,
 		unsigned source,
 		unsigned targets[],
@@ -134,7 +133,7 @@ nemo_get_synapses(RTDATA /*rtdata*/,
 
 
 
-status_t
+nemo_status_t
 nemo_start_simulation(RTDATA rtdata)
 {
 	CATCH(rtdata, startSimulation());
@@ -142,14 +141,14 @@ nemo_start_simulation(RTDATA rtdata)
 
 
 
-status_t
+nemo_status_t
 nemo_step(RTDATA rtdata, size_t fstimCount, unsigned fstimIdx[])
 {
 	CATCH(rtdata, stepSimulation(fstimCount, fstimIdx));
 }
 
 
-status_t
+nemo_status_t
 nemo_apply_stdp(RTDATA rtdata, float reward)
 {
 	CATCH(rtdata, applyStdp(reward));
@@ -158,7 +157,7 @@ nemo_apply_stdp(RTDATA rtdata, float reward)
 
 
 
-status_t
+nemo_status_t
 nemo_read_firing(RTDATA rtdata,
 		uint** cycles,
 		uint** neuronIdx,

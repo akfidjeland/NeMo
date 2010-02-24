@@ -1,18 +1,17 @@
 #ifndef LIBNEMO_H
 #define LIBNEMO_H
 
+//! \todo remove need for size_t
 #include <string.h> // for size_t
 
 
-//! \todo give nemo_prefix
-typedef int status_t;
+typedef int nemo_status_t;
 
-//! \todo give these NEMO-prefix
-#define KERNEL_OK 0
-#define KERNEL_INVOCATION_ERROR 1
-#define KERNEL_ASSERTION_FAILURE 2
-#define KERNEL_MEMORY_ERROR 3
-#define KERNEL_UNKNOWN_ERROR 4
+#define NEMO_OK 0
+#define NEMO_CUDA_INVOCATION_ERROR 1
+#define NEMO_CUDA_ASSERTION_FAILURE 2
+#define NEMO_CUDA_MEMORY_ERROR 3
+#define NEMO_UNKNOWN_ERROR 4
 
 
 //-----------------------------------------------------------------------------
@@ -51,7 +50,7 @@ void nemo_delete_network(RTDATA);
 //-----------------------------------------------------------------------------
 
 
-status_t
+nemo_status_t
 nemo_add_neuron(RTDATA,
 		unsigned idx,
 		float a, float b, float c, float d,
@@ -59,7 +58,7 @@ nemo_add_neuron(RTDATA,
 
 
 
-status_t
+nemo_status_t
 nemo_add_synapses(RTDATA,
 		unsigned source,
 		unsigned targets[],
@@ -94,7 +93,7 @@ nemo_get_synapses(RTDATA rtdata,
  * The last two output variables contain the number of neurons and the number of
  * cycles for which we have firing.
  */
-status_t
+nemo_status_t
 nemo_read_firing(RTDATA rtdata,
 		unsigned** cycles,
 		unsigned** neuronIdx,
@@ -183,18 +182,18 @@ nemo_enable_stdp(RTDATA,
  * \param fstimIdx
  * 		Indices of the neurons which should be forced to fire this cycle.
  */
-status_t
+nemo_status_t
 nemo_step(RTDATA rtdata, size_t fstimCount, unsigned fstimIdx[]);
 
 
-status_t
+nemo_status_t
 nemo_apply_stdp(RTDATA rtdata, float stdpReward);
 
 
 /* Force all allocated memory onto the device. Calling this is not required
  * during normal operation, as step invokes it on first call, but can be used
  * for testing */
-status_t
+nemo_status_t
 nemo_start_simulation(RTDATA);
 
 
@@ -214,6 +213,8 @@ nemo_strerror(RTDATA);
 // DEVICE PROPERTIES
 //-----------------------------------------------------------------------------
 
+//! \todo may not need to expose this in API
+//! \todo we need capability 1.2
 //! \return number of cuda-enabled devices of compute capability 1.0 or greater
 int
 nemo_device_count(void);
