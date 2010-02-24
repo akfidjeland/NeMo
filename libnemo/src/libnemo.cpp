@@ -54,7 +54,7 @@ class Network : public RuntimeData {
 
 		const char* lastErrorMsg() { return m_errorMsg.c_str(); }
 
-		void setErrorMsg(const std::string& msg) { m_errorMsg = msg; }
+		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
 
 	private :
 
@@ -255,4 +255,12 @@ void
 nemo_sync_simulation(RTDATA rtdata)
 {
 	NOCATCH(rtdata, syncSimulation());
+}
+
+
+
+const char*
+nemo_strerror(RTDATA rtdata)
+{
+	return const_cast<char*>(static_cast<Network*>(rtdata)->lastErrorMsg());
 }

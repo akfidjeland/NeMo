@@ -30,6 +30,7 @@ import Data.Bits (setBit)
 import Data.List (foldl')
 import Data.Word (Word64)
 import Foreign.C.Types
+import Foreign.C.String (peekCString)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Array (peekArray)
 import Foreign.Marshal.Utils (fromBool, toBool)
@@ -208,8 +209,7 @@ stepBuffering sim fstim = do
         fbounds = (0, flen-1)
     fsNIdxArr <- newListArray fbounds $ map fromIntegral fstim
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
-    kernelStatus <- c_step sim (fromIntegral flen) fsNIdxPtr
-    when (kernelStatus /= 0) $ fail "Backend error"
+    checkStatus sim =<< c_step sim (fromIntegral flen) fsNIdxPtr
 
 
 stepNonBuffering sim fstim = do
@@ -285,6 +285,19 @@ instance ForeignKernel CuRT CFloat where
 
 foreign import ccall unsafe "nemo_print_cycle_counters" printCycleCounters
     :: Ptr CuRT -> IO ()
+
+
+foreign import ccall unsafe "nemo_strerror" c_errorString
+    :: Ptr CuRT -> IO (Ptr CChar)
+
+errorString :: Ptr CuRT -> IO String
+errorString rt = peekCString =<< c_errorString rt
+
+
+{- | Check libnemo return status and fail with an error message if appropriate -}
+checkStatus :: Ptr CuRT -> CInt -> IO ()
+checkStatus rt status = when (status /= 0) $ fail =<< errorString rt
+
 
 
 -------------------------------------------------------------------------------

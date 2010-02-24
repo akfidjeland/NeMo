@@ -199,11 +199,24 @@ nemo_start_simulation(RTDATA);
 
 
 //-----------------------------------------------------------------------------
+// ERROR HANDLING
+//-----------------------------------------------------------------------------
+
+/*! \return
+ * 		string describing the most recent error (if any)
+ */
+const char*
+nemo_strerror(RTDATA);
+
+
+
+//-----------------------------------------------------------------------------
 // DEVICE PROPERTIES
 //-----------------------------------------------------------------------------
 
 //! \return number of cuda-enabled devices of compute capability 1.0 or greater
-int nemo_device_count(void);
+int
+nemo_device_count(void);
 
 
 #endif

@@ -49,7 +49,8 @@ DeviceAssertionFailure::DeviceAssertionFailure(uint partition,
 	msg << "Device assertion failure for partition "
 		<< partition << " thread " << thread << " in line "
 		<< line << " during cycle " << cycle
-		<< ". Only the first assertion failure is reported and the exact file is not  known" << std::endl;
+		<< ". Only the first assertion failure is reported and the exact file is not known"
+		<< std::endl;
 	m_what = msg.str();
 
 }
