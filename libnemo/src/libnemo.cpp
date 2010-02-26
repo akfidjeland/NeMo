@@ -63,7 +63,7 @@ class Network : public RuntimeData {
 };
 
 
-RTDATA
+NETWORK
 nemo_new_network(unsigned setReverse, unsigned maxReadPeriod)
 {
 	return new Network((bool) setReverse, maxReadPeriod);
@@ -71,7 +71,7 @@ nemo_new_network(unsigned setReverse, unsigned maxReadPeriod)
 
 
 
-RTDATA
+NETWORK
 nemo_new_network_(
 		unsigned setReverse,
 		unsigned maxReadPeriod,
@@ -83,7 +83,7 @@ nemo_new_network_(
 
 
 void
-nemo_delete_network(RTDATA mem)
+nemo_delete_network(NETWORK mem)
 {
 	delete static_cast<Network*>(mem);
 }
@@ -91,7 +91,7 @@ nemo_delete_network(RTDATA mem)
 
 
 nemo_status_t
-nemo_add_neuron(RTDATA rt,
+nemo_add_neuron(NETWORK rt,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
@@ -102,7 +102,7 @@ nemo_add_neuron(RTDATA rt,
 
 
 nemo_status_t
-nemo_add_synapses(RTDATA rtdata,
+nemo_add_synapses(NETWORK network,
 		unsigned source,
 		unsigned targets[],
 		unsigned delays[],
@@ -110,13 +110,13 @@ nemo_add_synapses(RTDATA rtdata,
 		unsigned char is_plastic[],
 		size_t length)
 {
-	CATCH(rtdata, addSynapses(source, targets, delays, weights, is_plastic, length));
+	CATCH(network, addSynapses(source, targets, delays, weights, is_plastic, length));
 }
 
 
 
 size_t
-nemo_get_synapses(RTDATA /*rtdata*/,
+nemo_get_synapses(NETWORK /*network*/,
 		unsigned /*sourcePartition*/,
 		unsigned /*sourceNeuron*/,
 		unsigned /*delay*/,
@@ -127,51 +127,52 @@ nemo_get_synapses(RTDATA /*rtdata*/,
 {
 	//! \todo implement this again.
 	return 0;
-	//return (static_cast<Network*>(rtdata))->cm()->getRow(sourcePartition, sourceNeuron, delay,
-	//		static_cast<Network*>(rtdata)->cycle(), targetPartition, targetNeuron, weights, plastic);
+	//return (static_cast<Network*>(network))->cm()->getRow(sourcePartition, sourceNeuron, delay,
+	//		static_cast<Network*>(network)->cycle(), targetPartition, targetNeuron, weights, plastic);
 }
 
 
 
 nemo_status_t
-nemo_start_simulation(RTDATA rtdata)
+nemo_start_simulation(NETWORK network)
 {
-	CATCH(rtdata, startSimulation());
+	CATCH(network, startSimulation());
 }
 
 
 
 nemo_status_t
-nemo_step(RTDATA rtdata, size_t fstimCount, unsigned fstimIdx[])
+nemo_step(NETWORK network, size_t fstimCount, unsigned fstimIdx[])
 {
-	CATCH(rtdata, stepSimulation(fstimCount, fstimIdx));
+	CATCH(network, stepSimulation(fstimCount, fstimIdx));
 }
 
 
 nemo_status_t
-nemo_apply_stdp(RTDATA rtdata, float reward)
+nemo_apply_stdp(NETWORK network, float reward)
 {
-	CATCH(rtdata, applyStdp(reward));
+	CATCH(network, applyStdp(reward));
 }
 
 
 
 
 nemo_status_t
-nemo_read_firing(RTDATA rtdata,
+nemo_read_firing(NETWORK network,
 		uint** cycles,
 		uint** neuronIdx,
 		uint* nfired,
 		uint* ncycles)
 {
-	CATCH(rtdata, readFiring(cycles, neuronIdx, nfired, ncycles));
+	CATCH(network, readFiring(cycles, neuronIdx, nfired, ncycles));
 }
 
 
-void
-nemo_flush_firing_buffer(RTDATA rtdata)
+nemo_status_t
+nemo_flush_firing_buffer(NETWORK network)
 {
-	NOCATCH(rtdata, flushFiringBuffer());
+	NOCATCH(network, flushFiringBuffer());
+	return NEMO_OK;
 }
 
 
@@ -183,26 +184,26 @@ nemo_flush_firing_buffer(RTDATA rtdata)
 
 //! \todo no need to expose this in API
 void
-nemo_print_cycle_counters(RTDATA rtdata)
+nemo_print_cycle_counters(NETWORK network)
 {
-	NOCATCH(rtdata, printCycleCounters());
+	NOCATCH(network, printCycleCounters());
 }
 
 
 
 long int
-nemo_elapsed_ms(RTDATA rtdata)
+nemo_elapsed_ms(NETWORK network)
 {
-	return NOCATCH(rtdata, elapsed());
+	return NOCATCH(network, elapsed());
 }
 
 
 void
-nemo_reset_timer(RTDATA rtdata)
+nemo_reset_timer(NETWORK network)
 {
 	// force all execution to complete first
-	NOCATCH(rtdata, syncSimulation());
-	NOCATCH(rtdata, setStart());
+	NOCATCH(network, syncSimulation());
+	NOCATCH(network, setStart());
 }
 
 
@@ -214,7 +215,7 @@ nemo_reset_timer(RTDATA rtdata)
 
 
 void
-nemo_enable_stdp(RTDATA rtdata,
+nemo_enable_stdp(NETWORK network,
 		unsigned pre_len,
 		unsigned post_len,
 		float* pre_fn,
@@ -222,7 +223,7 @@ nemo_enable_stdp(RTDATA rtdata,
 		float w_max,
 		float w_min)
 {
-	nemo::configure_stdp(static_cast<Network*>(rtdata)->stdpFn,
+	nemo::configure_stdp(static_cast<Network*>(network)->stdpFn,
 			pre_len, post_len, pre_fn, post_fn, w_max, w_min);
 }
 
@@ -251,15 +252,15 @@ nemo_device_count()
 
 
 void
-nemo_sync_simulation(RTDATA rtdata)
+nemo_sync_simulation(NETWORK network)
 {
-	NOCATCH(rtdata, syncSimulation());
+	NOCATCH(network, syncSimulation());
 }
 
 
 
 const char*
-nemo_strerror(RTDATA rtdata)
+nemo_strerror(NETWORK network)
 {
-	return const_cast<char*>(static_cast<Network*>(rtdata)->lastErrorMsg());
+	return const_cast<char*>(static_cast<Network*>(network)->lastErrorMsg());
 }
