@@ -265,7 +265,7 @@ updateSTDP_(
 	DEVICE_UINT_PTR_T* cr_address,
 	DEVICE_UINT_PTR_T* cr_stdp,
 	DEVICE_UINT_PTR_T* cr_pitch,
-	dnidx_t* s_firingIdx) // s_NIdx, so can handle /all/ neurons firing
+	nidx_dt* s_firingIdx) // s_NIdx, so can handle /all/ neurons firing
 {
 	/* Determine what postsynaptic neurons needs processing in small batches */
 	for(uint nbase = 0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {

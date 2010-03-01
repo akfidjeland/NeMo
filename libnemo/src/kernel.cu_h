@@ -56,11 +56,4 @@
 #define DEVICE_UINT_PTR_T uint
 #endif
 
-//! \todo rename to nidx_dt
-/* Type for storing (within-partition) neuron indices on the device. We could
- * use uint16_t here to save some shared memory, in exchange for slightly
- * poorer shared memory access patterns */
-typedef uint32_t dnidx_t;
-
-
 #endif

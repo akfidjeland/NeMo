@@ -23,7 +23,7 @@
  */
 __device__
 void
-storeFiringOutput(uint nfired, dnidx_t* s_fired,
+storeFiringOutput(uint nfired, nidx_dt* s_fired,
 		uint32_t* s_dfired, uint32_t* g_dfired)
 {
 	bv_clear_(s_dfired);
@@ -67,7 +67,7 @@ fire(
 	uint32_t* s_fstim,
 	// output
 	uint* s_firingCount,
-	dnidx_t* s_fired)    // s_NIdx, so can handle /all/ neurons firing
+	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
 	//! \todo put s_pitch32 in cmem
 	size_t neuronParametersSize = PARTITION_COUNT * s_pitch32;
@@ -141,7 +141,7 @@ __device__
 void
 scatter(uint cycle,
 		uint s_firingCount,
-		dnidx_t* s_fired,
+		nidx_dt* s_fired,
 		uint* g_outgoingCount,
 		outgoing_t* g_outgoing,
 		uint* g_incomingHeads,
@@ -374,8 +374,7 @@ step (
 
 	/* Per-neuron buffers */
 	__shared__ float s_current[MAX_PARTITION_SIZE];
-	//! \todo rename to nidx_dt for consistency
-	__shared__ dnidx_t s_fired[MAX_PARTITION_SIZE];
+	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
 	__shared__ uint32_t s_N1A[MAX_PARTITION_SIZE/32];
