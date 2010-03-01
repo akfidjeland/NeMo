@@ -10,21 +10,19 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "STDP.hpp"
-#include "nemo_types.hpp"
-
+#include "kernel.hpp"
+#include "log.hpp"
 #include "util.h"
+
 #include "device_assert.cu"
 #include "bitvector.cu"
 #include "double_buffer.cu"
-#include "log.hpp"
 #include "connectivityMatrix.cu"
 #include "partitionConfiguration.cu"
 #include "cycleCounting.cu"
 #include "applySTDP.cu"
 #include "outgoing.cu"
 #include "incoming.cu"
-
 #include "thalamicInput.cu"
 #include "stdp.cu"
 #include "step.cu"
