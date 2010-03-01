@@ -4,11 +4,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include "NVector.hpp"
 #include "DeviceAssertions.hpp"
-
-#include <Timer.hpp>
-#include <STDP.hpp>
+#include "Timer.hpp"
+#include "STDP.hpp"
 
 namespace nemo {
 
@@ -70,7 +70,7 @@ class RuntimeData
 
 		void printCycleCounters();
 
-		class nemo::STDP<float> stdpFn;
+		STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
 
 		/* Force all asynchronously launced kernels to complete before returning */

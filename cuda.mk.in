@@ -1,11 +1,10 @@
 SRCDIR := libnemo/src/
 ROOTDIR := dist/build/cuda
 
-CU_MAIN = kernel_wrapper.cu
+CU_MAIN = kernel.cu
 
 # CUDA source files which are #included in main kernel source file
-CU_INC = kernel.cu \
-		 partitionConfiguration.cu \
+CU_INC = partitionConfiguration.cu \
 		 cycleCounting.cu \
 		 device_assert.cu \
 		 connectivityMatrix.cu \
