@@ -49,26 +49,25 @@ FiringOutput::step()
 {
 	uint32_t* ret = md_buffer + m_bufferedCycles * m_partitionCount * m_pitch;
 	m_bufferedCycles += 1;
-    if(m_bufferedCycles > m_maxReadPeriod) {
-        fprintf(stderr, "WARNING: firing buffer overflow. Firing buffer flushed\n");
-        m_bufferedCycles = 0;
-        ret = md_buffer;
-    }
+	if(m_bufferedCycles > m_maxReadPeriod) {
+		fprintf(stderr, "WARNING: firing buffer overflow. Firing buffer flushed\n");
+		m_bufferedCycles = 0;
+		ret = md_buffer;
+	}
 	return ret;
 }
 
 
 
-void 
+uint
 FiringOutput::readFiring(
-		uint** cycles,
-		uint** neuronIdx,
-		uint* len,
-		uint* totalCycles)
+		const std::vector<uint>** cycles,
+		const std::vector<uint>** neuronIdx)
 {
 	m_cycles.clear();
 	m_neuronIdx.clear();
 
+	//! \todo error handling
 	CUDA_SAFE_CALL(cudaMemcpy(mh_buffer,
 				md_buffer,
 				m_bufferedCycles * m_partitionCount * m_pitch * sizeof(uint32_t),
@@ -76,11 +75,11 @@ FiringOutput::readFiring(
 	populateSparse(m_bufferedCycles, mh_buffer,
 			m_cycles, m_neuronIdx);
 
-	*len = m_cycles.size();
-	*cycles = &m_cycles[0];
-	*neuronIdx = &m_neuronIdx[0];
-	*totalCycles = m_bufferedCycles;
+	*cycles = &m_cycles;
+	*neuronIdx = &m_neuronIdx;
+	uint readCycles = m_bufferedCycles;
 	m_bufferedCycles = 0;
+	return readCycles;
 }
 
 

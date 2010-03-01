@@ -31,16 +31,20 @@ class FiringOutput {
 
 		~FiringOutput();
 
-		/*! Read all firing data buffered on the device since the previous call
-		 * to this function (or the start of simulation if this is the first
-		 * call). The return vectors are valid until the next call to this
-		 * function. */
+		/*!  Read all firing data buffered on the device since the previous
+		 * call to this function (or the start of simulation if this is the
+		 * first call). The return vectors are valid until the next call to
+		 * this function.
+		 *
+		 * \return
+		 * 		Total number of cycles for which we return firing. The caller
+		 * 		would most likely already know what this should be, so can use
+		 * 		this for sanity checking.
+		 */
 		//! \todo require min and max expected cycle number to detect possible overflow
-		void readFiring(
-				uint** cycles,
-				uint** neuronIdx,
-				uint* len,
-				uint* totalCycles);
+		uint readFiring(
+				const std::vector<uint>** cycles,
+				const std::vector<uint>** neuronIdx);
 
 		/*! Flush the buffer. Any data on the device is left there as garbage,
 		 * so there's no significant cost to doing this. */

@@ -6,28 +6,36 @@ extern "C" {
 #include "DeviceAssertions.hpp"
 #include "except.hpp"
 
-
 /* We cannot propagate exceptions via the C API, so convert to an error code
  * instead */
-#define CATCH(ptr, call) {                                                    \
-        Network* net = static_cast<Network*>(ptr);                            \
+
+
+/* Call method on network object, and /set/ status and error */
+#define CATCH_(net, call) {                                                   \
         try {                                                                 \
-            net->call;                                                        \
+            call;                                                             \
         } catch (DeviceAllocationException& e) {                              \
             net->setErrorMsg(e.what());                                       \
-            return NEMO_CUDA_MEMORY_ERROR;                                    \
+            net->setStatus(NEMO_CUDA_MEMORY_ERROR);                           \
         } catch (KernelInvocationError& e) {                                  \
             net->setErrorMsg(e.what());                                       \
-            return NEMO_CUDA_INVOCATION_ERROR;                                \
+            net->setStatus(NEMO_CUDA_INVOCATION_ERROR);                       \
         } catch (DeviceAssertionFailure& e) {                                 \
             net->setErrorMsg(e.what());                                       \
-            return NEMO_CUDA_ASSERTION_FAILURE;                               \
+            net->setStatus(NEMO_CUDA_ASSERTION_FAILURE);                      \
         } catch (std::exception& e) {                                         \
             net->setErrorMsg(e.what());                                       \
-            return NEMO_UNKNOWN_ERROR;                                        \
+            net->setStatus(NEMO_UNKNOWN_ERROR);                               \
         }                                                                     \
-        return NEMO_OK;                                                       \
+        net->setStatus(NEMO_OK);                                              \
     }
+
+/* Call method on network object, and /return/ status and error */
+#define CATCH(ptr, call) {                                                    \
+        Network* net = static_cast<Network*>(ptr);                            \
+        CATCH_(net, net->call)                                                \
+        return net->status();                                                 \
+	}
 
 
 //! \todo enforce no throw in the class interface
@@ -49,15 +57,22 @@ class Network : public nemo::RuntimeData {
 			RuntimeData(setReverse, maxReadPeriod, maxPartitionSize),
 			m_errorMsg("No error") { } ;
 
+		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
+
 		const char* lastErrorMsg() { return m_errorMsg.c_str(); }
 
-		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
+		void setStatus(nemo_status_t s) { m_status = s; }
+
+		nemo_status_t status() const { return m_status; }
 
 	private :
 
 		/* In addition to the runtime data, we need to keep track of the latest
 		 * error and associated error message */
 		std::string m_errorMsg;
+
+		/* Status after last call */
+		nemo_status_t m_status;
 };
 
 
@@ -156,13 +171,21 @@ nemo_apply_stdp(NETWORK network, float reward)
 
 
 nemo_status_t
-nemo_read_firing(NETWORK network,
-		uint** cycles,
-		uint** neuronIdx,
-		uint* nfired,
-		uint* ncycles)
+nemo_read_firing(NETWORK ptr,
+		unsigned** cycles_,
+		unsigned** nidx_,
+		unsigned* nfired,
+		unsigned* ncycles)
 {
-	CATCH(network, readFiring(cycles, neuronIdx, nfired, ncycles));
+	const std::vector<unsigned>* cycles;
+	const std::vector<unsigned>* nidx;
+	Network* net = static_cast<Network*>(ptr);
+	CATCH_(net, *ncycles = net->readFiring(&cycles, &nidx));
+	*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
+	*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);
+	*nfired = cycles->size();
+	assert(cycles->size() == nidx->size());
+	return net->status();
 }
 
 

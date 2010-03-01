@@ -47,14 +47,23 @@ class RuntimeData
 
 		void startSimulation();
 
+		//! \todo expose this using std::vector. Deal with raw pointers in the C layer
 		void stepSimulation(size_t fstimCount, const uint* fstimIdx)
 			throw(DeviceAssertionFailure, std::logic_error);
 
 		void applyStdp(float reward);
 
-	//! \todo fix accesses in libnemo.cpp and make this private
-		//! \todo expose this using std::vector. Deal with raw pointers in the c layer
-		void readFiring(uint** cycles, uint** neuronIdx, uint* nfired, uint* ncycles);
+		/*! Read all firing data buffered on the device since the previous
+		 * call to this function (or the start of simulation if this is the
+		 * first call). The return vectors are valid until the next call to
+		 * this function.
+		 *
+		 * \return
+		 * 		Total number of cycles for which we return firing. The caller
+		 * 		would most likely already know what this should be, so can use
+		 * 		this for sanity checking.
+		 */
+		uint readFiring(const std::vector<uint>** cycles, const std::vector<uint>** nidx);
 
 		void flushFiringBuffer();
 

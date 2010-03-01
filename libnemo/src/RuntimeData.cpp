@@ -392,13 +392,12 @@ RuntimeData::printCycleCounters()
 }
 
 
-void
-RuntimeData::readFiring(uint** cycles,
-		uint** neuronIdx,
-		uint* nfired,
-		uint* ncycles)
+uint
+RuntimeData::readFiring(
+		const std::vector<uint>** cycles,
+		const std::vector<uint>** nidx)
 {
-	m_firingOutput->readFiring(cycles, neuronIdx, nfired, ncycles);
+	return m_firingOutput->readFiring(cycles, nidx);
 }
 
 
