@@ -7,7 +7,6 @@
  * \author Andreas Fidjeland
  */
 
-#include <device_functions.h>
 #include <stdio.h>
 #include <assert.h>
 
