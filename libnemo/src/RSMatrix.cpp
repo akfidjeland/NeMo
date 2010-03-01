@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <boost/tuple/tuple_comparison.hpp>
 
+namespace nemo {
+
 
 RSMatrix::RSMatrix(size_t partitionSize) :
 	m_hostData(partitionSize),
@@ -199,3 +201,5 @@ RSMatrix::d_stdp() const
 {
 	return (float*) m_deviceData.get() + RCM_STDP * planeSize();
 }
+
+} // end namespace nemo

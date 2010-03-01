@@ -3,6 +3,8 @@
 
 #include "NVector.hpp"
 
+namespace nemo {
+
 struct CycleCounters
 {
 	public:
@@ -39,5 +41,7 @@ struct CycleCounters
 				const char* names[], // for intermediate counters
 				std::ofstream& outfile);
 };
+
+} // end namespace nemo
 
 #endif

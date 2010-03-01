@@ -16,6 +16,7 @@
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
 
+namespace nemo {
 
 /*! \brief Connectivity matrix
  *
@@ -174,5 +175,7 @@ class ConnectivityMatrix
 
 
 };
+
+} // end namespace nemo
 
 #endif

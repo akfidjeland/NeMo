@@ -13,12 +13,12 @@
 #include "nemo_cuda_types.h"
 
 
+namespace nemo {
 
 /*! \brief A somewhat arbitrary collection of synapses 
  *
  * On the device synapses are grouped in 2D blocks of memory for all synapses
  * belonging to a particular partition with a particular delay.
- *
  */
 
 class SynapseGroup 
@@ -114,5 +114,7 @@ class SynapseGroup
 		 * range of synapse weights. */
 		weight_t m_maxAbsWeight;
 };
+
+} // end namespace nemo
 
 #endif

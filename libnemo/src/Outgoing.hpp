@@ -8,6 +8,8 @@
 #include "outgoing.cu_h"
 #include "SynapseGroup.hpp"
 
+namespace nemo {
+
 class Outgoing
 {
 	public :
@@ -66,5 +68,7 @@ class Outgoing
 
 		size_t m_allocated;
 };
+
+} // end namespace nemo
 
 #endif

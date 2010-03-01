@@ -11,6 +11,8 @@
 #include "kernel.cu_h"
 #include "fixedpoint.hpp"
 
+namespace nemo {
+
 
 SynapseGroup::SynapseGroup() :
 	m_lastSync(-1),
@@ -169,3 +171,5 @@ SynapseGroup::warpOffset(nidx_t neuron, size_t warp) const
 	}
 	return entry->second + warp;
 }
+
+} // end namespace nemo

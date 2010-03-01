@@ -10,6 +10,8 @@
  * \author Andreas Fidjeland
  */
 
+namespace nemo {
+
 class FiringOutput {
 
 	public:
@@ -98,5 +100,7 @@ class FiringOutput {
 
 		size_t m_partitionSize;
 };
+
+} // end namespace nemo
 
 #endif

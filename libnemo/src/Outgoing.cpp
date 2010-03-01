@@ -8,6 +8,7 @@
 #include "util.h"
 #include "except.hpp"
 
+namespace nemo {
 
 Outgoing::Outgoing() : m_allocated(0) {}
 
@@ -170,3 +171,4 @@ Outgoing::moveToDevice(size_t partitionCount,
 	return std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second;
 }
 
+} // end namespace nemo

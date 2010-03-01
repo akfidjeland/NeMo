@@ -60,9 +60,8 @@ configureStdp(
 		uint preFireWindow,
 		uint postFireWindow,
 		uint64_t potentiationBits, // remainder are depression
-		uint64_t depressionBits, // remainder are depression
-		weight_dt* stdpFn
-		)
+		uint64_t depressionBits,   // remainder are depression
+		weight_dt* stdpFn)
 {
 	SET_STDP_PARAMETER(c_stdpPreFireWindow, preFireWindow);
 	SET_STDP_PARAMETER(c_stdpPostFireWindow, postFireWindow);

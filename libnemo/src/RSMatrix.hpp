@@ -13,6 +13,8 @@
 #include "kernel.cu_h"
 #include "nemo_cuda_types.h"
 
+namespace nemo {
+
 /*! \brief Sparse synapse matrix in reverse format for a single partition
  *
  * Synapses in this matrix are stored on a per-target basis.
@@ -24,6 +26,7 @@
  *
  * \author Andreas Fidjeland
  */
+
 struct RSMatrix
 {
 	public:
@@ -100,5 +103,7 @@ struct RSMatrix
 				host_sparse_t h_mem,
 				uint32_t* d_mem);
 };
+
+} // end namespace nemo
 
 #endif

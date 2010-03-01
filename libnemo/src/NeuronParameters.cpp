@@ -9,6 +9,7 @@
 #include "nemo_cuda_types.h"
 #include "partitionConfiguration.cu_h"
 
+namespace nemo {
 
 NeuronParameters::NeuronParameters(size_t partitionSize) :
 	m_partitionSize(partitionSize),
@@ -27,7 +28,7 @@ NeuronParameters::addNeuron(
 		//! \todo construct a sensible error message here using sstream
 		throw std::runtime_error("duplicate neuron index");
 	}
-	m_acc[neuronIndex] = nemo::Neuron<float>(a, b, c, d, u, v, sigma);
+	m_acc[neuronIndex] = Neuron<float>(a, b, c, d, u, v, sigma);
 
 	//! \todo share mapper code with moveToDevice and ConnectivityMatrixImpl
 	nidx_t n = neuronIndex % m_partitionSize;
@@ -143,3 +144,5 @@ NeuronParameters::configurePartitionSizes()
 
 	configurePartitionSize(partitionSizes);
 }
+
+} // end namespace nemo

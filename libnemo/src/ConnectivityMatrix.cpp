@@ -14,6 +14,7 @@
 #include "connectivityMatrix.cu_h"
 #include "fixedpoint.hpp"
 
+namespace nemo {
 
 ConnectivityMatrix::ConnectivityMatrix(
         size_t maxPartitionSize,
@@ -428,3 +429,5 @@ ConnectivityMatrix::partitionIdx(pidx_t pidx)
 {
 	return pidx / m_maxPartitionSize;	
 }
+
+} // end namespace nemo

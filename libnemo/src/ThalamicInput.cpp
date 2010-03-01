@@ -4,6 +4,8 @@
 #include "thalamicInput.cu_h"
 
 
+namespace nemo {
+
 ThalamicInput::ThalamicInput(
         size_t partitionCount,
         size_t partitionSize,
@@ -99,3 +101,5 @@ ThalamicInput::wordPitch() const
     assert(p1 == p2);
     return p1 == p2 ? p1 : 0;
 }
+
+} // end namespace nemo

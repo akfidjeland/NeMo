@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <fstream>
 
+namespace nemo {
 
 CycleCounters::CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpEnabled) :
 	m_ccMain(partitionCount, CC_MAIN_COUNT-1, true),
@@ -103,3 +104,5 @@ CycleCounters::pitch() const
 	//! \todo return data for different sets
 	return m_ccMain.wordPitch();
 }
+
+} // end namespace nemo

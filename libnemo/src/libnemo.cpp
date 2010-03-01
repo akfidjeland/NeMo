@@ -7,7 +7,6 @@ extern "C" {
 #include "except.hpp"
 
 
-
 /* We cannot propagate exceptions via the C API, so convert to an error code
  * instead */
 #define CATCH(ptr, call) {                                                    \
@@ -36,8 +35,7 @@ extern "C" {
 #define NOCATCH(ptr, call) static_cast<Network*>(ptr)->call
 
 
-
-class Network : public RuntimeData {
+class Network : public nemo::RuntimeData {
 
 	public :
 
@@ -264,3 +262,4 @@ nemo_strerror(NETWORK network)
 {
 	return const_cast<char*>(static_cast<Network*>(network)->lastErrorMsg());
 }
+

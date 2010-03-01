@@ -10,6 +10,7 @@
 #include <Timer.hpp>
 #include <STDP.hpp>
 
+namespace nemo {
 
 class RuntimeData
 {
@@ -133,5 +134,7 @@ class RuntimeData
 		void configureStdp();
 		bool usingStdp() const;
 };
+
+} // end namespace nemo
 
 #endif

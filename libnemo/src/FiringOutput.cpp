@@ -6,6 +6,7 @@
 #include "util.h"
 #include "bitvector.cu_h"
 
+namespace nemo {
 
 FiringOutput::FiringOutput(
 		size_t partitionCount,
@@ -125,3 +126,5 @@ FiringOutput::flushBuffer()
 {
 	m_bufferedCycles = 0;
 }
+
+} // end namespace nemo

@@ -16,6 +16,8 @@
  * \author Andreas Fidjeland
  */
 
+namespace nemo {
+
 class ThalamicInput 
 {
 	public :
@@ -60,5 +62,7 @@ class ThalamicInput
 
 		void initRngState();
 };
+
+} // end namespace nemo
 
 #endif
