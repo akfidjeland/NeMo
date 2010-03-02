@@ -48,7 +48,7 @@ class RuntimeData
 		void startSimulation();
 
 		//! \todo expose this using std::vector. Deal with raw pointers in the C layer
-		void stepSimulation(size_t fstimCount, const uint* fstimIdx)
+		void stepSimulation(const uint* fstimIdx, size_t fstimCount)
 			throw(DeviceAssertionFailure, std::logic_error);
 
 		void applyStdp(float reward);

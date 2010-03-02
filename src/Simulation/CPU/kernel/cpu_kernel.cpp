@@ -83,7 +83,7 @@ cpu_set_network(fp_t a[],
 		fp_t d[],
 		fp_t u[],
 		fp_t v[],
-		fp_t sigma[], //set to 0 if not thalamic input required
+		fp_t sigma[], //set to 0 if no thalamic input required
 		size_t ncount)
 {
 	return new network_t(new nemo::cpu::Network(a, b, c, d, u, v, sigma, ncount));
@@ -117,10 +117,10 @@ cpu_add_synapses(NETWORK net,
 
 cpu_status_t
 cpu_enable_stdp(NETWORK network,
-		size_t pre_len,
-		size_t post_len,
 		double* pre_fn,
+		size_t pre_len,
 		double* post_fn,
+		size_t post_len,
 		double w_max,
 		double w_min)
 {

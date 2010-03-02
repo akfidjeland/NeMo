@@ -11,7 +11,7 @@ module Simulation.CommonFFI (
 where
 
 import Control.Monad (when)
-import Foreign.C.Types (CUInt)
+import Foreign.C.Types (CSize)
 import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr (Ptr)
 import Foreign.Storable (Storable)
@@ -23,10 +23,10 @@ class (Fractional f, Storable f) => ForeignKernel rt f | rt -> f where
 
     ffi_enable_stdp
         :: Ptr rt -- ^ pointer to foreign data structure containing simulation runtime
-        -> CUInt  -- ^ length of pre-fire part of STDP window
-        -> CUInt  -- ^ length of post-fire part of STDP window
         -> Ptr f  -- ^ lookup-table values (dt -> float) for STDP function prefire,
+        -> CSize  -- ^ length of pre-fire part of STDP window
         -> Ptr f  -- ^ lookup-table values (dt -> float) for STDP function postfire,
+        -> CSize  -- ^ length of post-fire part of STDP window
         -> f      -- ^ max weight: limit for excitatory synapses
         -> f      -- ^ min weight: limit for inhibitory synapses
         -> IO ()
@@ -44,10 +44,10 @@ configureStdp rt conf =
     withArray (map realToFrac $ prefire conf) $ \prefire_ptr -> do
     withArray (map realToFrac $ postfire conf) $ \postfire_ptr -> do
     ffi_enable_stdp rt
-        (fromIntegral $ prefireWindow conf)
-        (fromIntegral $ postfireWindow conf)
         prefire_ptr
+        (fromIntegral $ prefireWindow conf)
         postfire_ptr
+        (fromIntegral $ postfireWindow conf)
         (realToFrac $ stdpMaxWeight conf)
         (realToFrac $ stdpMinWeight conf)
 

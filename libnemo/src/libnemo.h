@@ -17,8 +17,6 @@
 //! \todo mention millisecond accuracy
 //! \todo document STDP
 
-
-//! \todo be consistent in use of size_t
 #include <stddef.h> // for size_t
 
 /*! Opaque pointer to network object. */
@@ -74,37 +72,31 @@ nemo_new_network(unsigned setReverse, unsigned maxReadPeriod);
 
 /*! Enable spike-timing dependent plasticity in the simulation.
  *
- * \param preFireLen
- * 		Length, in cycles, of the part of the STDP window that precedes the
- * 		postsynaptic firing.
- * \param postFireLen
- * 		Length, in cycles, of the part of the STDP window that comes after the
- * 		postsynaptic firing.
- * \param potentiationMask
- * 		Bit mask indicating what cycles during the STDP for which potentiation
- * 		takes place. Bit 0 is the end of the STDP window.
- * \param depressionMask
- * 		Bit mask indicating what cycles during the STDP for which depression
- * 		takes place. Bit 0 is the end of the STDP window.
- * \param preFireFn
+ * \param prefire_fn
  * 		STDP function sampled at integer cycle intervals in the prefire part of
  * 		the STDP window
- * \param preFireFn
+ * \param prefire_len
+ * 		Length, in cycles, of the part of the STDP window that precedes the
+ * 		postsynaptic firing.
+ * \param postfire_fn
  * 		STDP function sampled at integer cycle intervals in the postfire part of
  * 		the STDP window
- * \param maxWeight
+ * \param postfire_len
+ * 		Length, in cycles, of the part of the STDP window that comes after the
+ * 		postsynaptic firing.
+ * \param max_weight
  * 		Weight beyond which excitatory synapses are not allowed to move
- * \param minWeight
+ * \param min_weight
  * 		Weight beyond which excitatory synapses are not allowed to move
  */
 void
 nemo_enable_stdp(NETWORK,
-		unsigned preFireLen,
-		unsigned postFireLen,
-		float* preFireFn,
-		float* postFireFn,
-		float maxWeight,
-		float minWeight);
+		float prefire_fn[],
+		size_t prefire_len,
+		float postFireFn[],
+		size_t postfire_len,
+		float max_weight,
+		float min_weight);
 
 /* \} */ // end configuration
 
@@ -209,8 +201,6 @@ nemo_add_synapses(NETWORK,
  * network is large. Calling \a nemo_start_simulation causes all this setup to
  * be done. Calling this function is not strictly required as the setup will be
  * done the first time any simulation function is called.
- *
- * \exception NEMO_CUDA_MEMORY_ERROR
  */
 //! \todo rename to finalise network
 nemo_status_t
@@ -220,13 +210,13 @@ nemo_start_simulation(NETWORK);
  *
  * Neurons can be optionally be forced to fire using the two arguments
  *
- * \param fstimCount
- * 		Length of fstimIdx
  * \param fstimIdx
  * 		Indices of the neurons which should be forced to fire this cycle.
+ * \param fstimCount
+ * 		Length of fstimIdx
  */
 nemo_status_t
-nemo_step(NETWORK network, size_t fstimCount, unsigned fstimIdx[]);
+nemo_step(NETWORK network, unsigned fstimIdx[], size_t fstimCount);
 
 
 /*! Update synapse weights using the accumulated STDP statistics
@@ -255,8 +245,8 @@ nemo_apply_stdp(NETWORK network, float reward);
  */
 nemo_status_t
 nemo_read_firing(NETWORK network,
-		unsigned** cycles,
-		unsigned** neuronIdx,
+		unsigned* cycles[],
+		unsigned* neuronIdx[],
 		unsigned* nfired,
 		unsigned* ncycles);
 

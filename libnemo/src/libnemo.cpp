@@ -26,6 +26,9 @@ extern "C" {
         } catch (std::exception& e) {                                         \
             net->setErrorMsg(e.what());                                       \
             net->setStatus(NEMO_UNKNOWN_ERROR);                               \
+        } catch (...) {                                                       \
+            net->setErrorMsg("unknown exception");                            \
+            net->setStatus(NEMO_UNKNOWN_ERROR);                               \
         }                                                                     \
         net->setStatus(NEMO_OK);                                              \
     }
@@ -155,9 +158,9 @@ nemo_start_simulation(NETWORK network)
 
 
 nemo_status_t
-nemo_step(NETWORK network, size_t fstimCount, unsigned fstimIdx[])
+nemo_step(NETWORK network, unsigned fstimIdx[], size_t fstimCount)
 {
-	CATCH(network, stepSimulation(fstimCount, fstimIdx));
+	CATCH(network, stepSimulation(fstimIdx, fstimCount));
 }
 
 
@@ -172,8 +175,8 @@ nemo_apply_stdp(NETWORK network, float reward)
 
 nemo_status_t
 nemo_read_firing(NETWORK ptr,
-		unsigned** cycles_,
-		unsigned** nidx_,
+		unsigned* cycles_[],
+		unsigned* nidx_[],
 		unsigned* nfired,
 		unsigned* ncycles)
 {
@@ -234,13 +237,12 @@ nemo_reset_timer(NETWORK network)
 //-----------------------------------------------------------------------------
 
 
-
 void
 nemo_enable_stdp(NETWORK network,
-		unsigned pre_len,
-		unsigned post_len,
 		float* pre_fn,
+		size_t pre_len,
 		float* post_fn,
+		size_t post_len,
 		float w_max,
 		float w_min)
 {

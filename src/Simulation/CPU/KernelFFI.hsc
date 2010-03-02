@@ -166,8 +166,10 @@ foreign import ccall unsafe "cpu_add_synapses" c_add_synapses
 -- TODO: use same name: either configure or enable
 -- see CommonFFI
 foreign import ccall unsafe "cpu_enable_stdp"
-    c_enable_stdp :: Ptr ForeignData -> CUInt -> CUInt
-        -> Ptr CFt -> Ptr CFt -> CFt -> CFt -> IO ()
+    c_enable_stdp :: Ptr ForeignData
+        -> Ptr CFt -> CSize
+        -> Ptr CFt -> CSize
+        -> CFt -> CFt -> IO ()
 
 foreign import ccall unsafe "cpu_apply_stdp"
     c_apply_stdp :: Ptr ForeignData -> CFt -> IO ()

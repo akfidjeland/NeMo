@@ -30,10 +30,10 @@ cpu_set_network(fp_t a[],
 
 cpu_status_t
 cpu_enable_stdp(NETWORK,
-		size_t pre_len,
-		size_t post_len,
 		double* pre_fn,
+		size_t pre_len,
 		double* post_fn,
+		size_t post_len,
 		double maxWeight,
 		double minWeight);
 

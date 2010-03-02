@@ -311,7 +311,7 @@ RuntimeData::startSimulation()
 
 
 void
-RuntimeData::stepSimulation(size_t fstimCount, const uint* fstimIdx)
+RuntimeData::stepSimulation(const uint* fstimIdx, size_t fstimCount)
 		throw(DeviceAssertionFailure, std::logic_error)
 {
 	startSimulation(); // only has effect on first cycle

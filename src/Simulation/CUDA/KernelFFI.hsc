@@ -194,8 +194,8 @@ foreign import ccall unsafe "nemo_sync_simulation"
  - running); hence 'safe'. -}
 foreign import ccall safe "nemo_step"
     c_step :: Ptr CuRT  -- ^ kernel runtime data
-           -> CSize     -- ^ Number of neurons whose firing is forced this step
            -> Ptr CInt  -- ^ Neuron indices of neurons with forced firing
+           -> CSize     -- ^ Number of neurons whose firing is forced this step
            -> IO CInt   -- ^ Kernel status
 
 foreign import ccall unsafe "nemo_flush_firing_buffer"
@@ -209,7 +209,7 @@ stepBuffering sim fstim = do
         fbounds = (0, flen-1)
     fsNIdxArr <- newListArray fbounds $ map fromIntegral fstim
     withStorableArray fsNIdxArr  $ \fsNIdxPtr -> do
-    checkStatus sim =<< c_step sim (fromIntegral flen) fsNIdxPtr
+    checkStatus sim =<< c_step sim fsNIdxPtr (fromIntegral flen)
 
 
 stepNonBuffering sim fstim = do
@@ -264,9 +264,12 @@ readFiringCount rt = do
 -- STDP
 -------------------------------------------------------------------------------
 
-foreign import ccall unsafe "nemo_enable_stdp"
-    c_enableStdp :: Ptr rt -> CUInt -> CUInt
-        -> Ptr CFloat -> Ptr CFloat -> CFloat -> CFloat -> IO ()
+foreign import ccall unsafe "nemo_enable_stdp" c_enableStdp
+    :: Ptr rt
+    -> Ptr CFloat -> CSize
+    -> Ptr CFloat -> CSize
+    -> CFloat -> CFloat
+    -> IO ()
 
 
 foreign import ccall unsafe "nemo_apply_stdp"

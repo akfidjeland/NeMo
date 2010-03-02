@@ -4,8 +4,8 @@
 #include "nemo_cuda_types.h"
 
 /* Convert floating point to fixed-point */
-fix_t fixedPoint(float f, uint fractionalBits);
+fix_t fixedPoint(float f, unsigned fractionalBits);
 
-void setFixedPointFormat(uint fractionalBits);
+void setFixedPointFormat(unsigned fractionalBits);
 
 #endif
