@@ -1,0 +1,33 @@
+# Note set CUDA_BUILD_EMULATION to OFF to enable Device mode compilation.
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
+PROJECT(nemo)
+
+SET(CPACK_PACKAGE_NAME nemo)
+SET(CPACK_PACKAGE_VERSION_MAJOR 0)
+SET(CPACK_PACKAGE_VERSION_MINOR 5)
+SET(CPACK_PACKAGE_VERSION_PATCH 0)
+#SET(CPACK_PACKAGE_VERSION 0.5)
+SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
+
+SET(CMAKE_MODULE_PATH
+	"${CMAKE_SOURCE_DIR}/CMake/cuda" 
+	${CMAKE_MODULE_PATH})
+
+FIND_PACKAGE(CUDA)
+FIND_PACKAGE(Doxygen)
+
+SUBDIRS(src)
+
+SET(CPACK_SOURCE_GENERATOR "TGZ")
+SET(CPACK_SOURCE_IGNORE_FILES "build;tmp;${CPACK_SOURCE_IGNORE_FILES}")
+# TODO: set package source name?
+# TODO: add ignore files
+
+SET(CPACK_GENERATOR "DEB")
+# Debian packaging
+# TODO: add dependencies (on other debian packages)
+SET(CPACK_DEBIAN_PACKAGE_SECTION Science)
+
+INCLUDE(CPack)

@@ -1,10 +1,5 @@
 executable: nemo
 cpp-options: -DNEMO_VERSION="@PACKAGE_VERSION@"
-@CUDA_ENABLED_HS@other-modules: Simulation.CUDA, Simulation.CUDA.Address, Simulation.CUDA.KernelFFI, Simulation.CUDA.Memory, Simulation.CUDA.Options
-@CUDA_ENABLED_HS@cpp-options: -DCUDA_ENABLED
-@CUDA_ENABLED_HS@extra-libraries: cuIzhikevich cudart
-@CUDA_ENABLED_HS@extra-lib-dirs: @CUDA_PATH@/lib dist/build/cuda/lib
-@CUDA_ENABLED_HS@include-dirs: libnemo/src @CUDA_PATH@/include
 
 @PTHREADS_ENABLED_HS@cc-options: -DPTHREADS_ENABLED @PTHREAD_CFLAGS@
 -- TODO: deal with multiple options here!

@@ -9,34 +9,23 @@ thrift_inc =/usr/local/include/thrift
 
 thrift_build = src/thrift
 
+libnemo_build_dir := dist/build/libnemo
+libnemo_src_dir := $(CURDIR)/libnemo
+libnemo := $(libnemo_build_dir)/libnemo.a
 
-ifeq (@CUDA_ENABLED@, true)
-
-# Build haskell via 'make' to allow parallel build using the -j flag. This is
-# passed on to the recursive make call. Cabal doesn't support building specific
-# flags. Selecting targets is done via ./Setup.lhs configure.
-cabal: src/Simulation/CUDA/KernelFFI.hsc $(thrift_build)/gen-hs
-	@echo "Using configuration from previous run of ./Setup.lhs configure"
-	@./Setup.lhs build
-
-
-CUDA_INSTALL_PATH = @CUDA_PATH@
-include cuda.mk
-
-# TODO: use better names in cuda.mk, or hide them
-CUDA_LIB := $(TARGET)
+# Build libnemo using cmake
+$(libnemo): $(libnemo_src_dir)
+	mkdir -p $(libnemo_build_dir)
+	(cd $(libnemo_build_dir); cmake $(libnemo_src_dir); make)
 
 # Force cabal/ghc to relink if the kernel library changes
-src/Simulation/CUDA/KernelFFI.hsc: $(CUDA_LIB)
+src/Simulation/CUDA/KernelFFI.hsc: $(libnemo)
 	@touch $@
 
-else
-
-cabal: $(thrift_build)/gen-hs
+cabal: $(thrift_build)/gen-hs $(libnemo_build_dir)/libnemo.a src/Simulation/CUDA/KernelFFI.hsc
 	@echo "Using configuration from previous run of ./Setup.lhs configure"
 	@./Setup.lhs build
 
-endif
 
 client: matlab
 

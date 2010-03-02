@@ -40,6 +40,11 @@ flag ProfileCPU
     description:            Profile the c-based CPU backend
     default:                False
 
+-- Remove this once the CPU kernel is folded into libnemo
+flag CUDA
+    description:            Link against CUDA-enabled libnemo
+    default:                True
+
 
 executable nemo
     main-is:                Nemo.hs
@@ -82,7 +87,7 @@ executable nemo
 
     -- CPU simulation kernel written in C
     include-dirs:           src/Simulation/CPU/kernel
-                            src/Simulation/common
+                            libnemo/src
     c-sources:              src/Simulation/CPU/kernel/cpu_kernel.cpp
                             src/Simulation/CPU/kernel/Network.cpp
                             src/Simulation/CPU/kernel/ConnectivityMatrix.cpp
@@ -133,6 +138,19 @@ executable nemo
 
     if flag(Matlab)
         cpp-options:        -DMATLAB_ENABLED
+
+    if flag(CUDA)
+        cpp-options:        -DCUDA_ENABLED
+        other-modules:      Simulation.CUDA,
+                            Simulation.CUDA.Address,
+                            Simulation.CUDA.KernelFFI,
+                            Simulation.CUDA.Memory,
+                            Simulation.CUDA.Options
+        extra-libraries:    nemo
+        extra-lib-dirs:     dist/build/libnemo/src
+        include-dirs:       libnemo/src
+
+
 
     -- We have several example scripts. These should really be replaced by scripts
     -- which are loaded dynamically by the main nemo binary.
