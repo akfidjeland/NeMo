@@ -39,6 +39,4 @@ class KernelInvocationError : public std::runtime_error
 			std::runtime_error(cudaGetErrorString(status)) {}
 };
 
-
-
 #endif

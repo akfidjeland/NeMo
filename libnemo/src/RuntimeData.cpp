@@ -155,19 +155,20 @@ RuntimeData::deviceDirty() const
  *		Pointer to pass to kernel (which is NULL if there's no firing data).
  */
 uint32_t*
-RuntimeData::setFiringStimulus(size_t count, const uint* nidx)
+RuntimeData::setFiringStimulus(const std::vector<uint>& nidx)
 {
-	if(count == 0) 
+	if(nidx.empty())
 		return NULL;
 
 	//! \todo use internal host buffer with pinned memory instead
 	size_t pitch = m_firingStimulus->wordPitch();
 	std::vector<uint32_t> hostArray(m_firingStimulus->size(), 0);
 
-	for(size_t i=0; i < count; ++i){
+	for(std::vector<uint>::const_iterator i = nidx.begin();
+			i != nidx.end(); ++i) {
 		//! \todo share this translation with NeuronParameters and CMImpl
-		size_t nn = nidx[i] % m_maxPartitionSize;
-		size_t pn = nidx[i] / m_maxPartitionSize;
+		size_t nn = *i % m_maxPartitionSize;
+		size_t pn = *i / m_maxPartitionSize;
 		//! \todo should check the size of this particular partition
 		assert(nn < m_maxPartitionSize );
 		assert(pn < m_partitionCount);
@@ -311,7 +312,7 @@ RuntimeData::startSimulation()
 
 
 void
-RuntimeData::stepSimulation(const uint* fstimIdx, size_t fstimCount)
+RuntimeData::stepSimulation(const std::vector<uint>& fstim)
 		throw(DeviceAssertionFailure, std::logic_error)
 {
 	startSimulation(); // only has effect on first cycle
@@ -324,7 +325,7 @@ RuntimeData::stepSimulation(const uint* fstimIdx, size_t fstimCount)
 	}
 	m_cycle += 1;
 
-	uint32_t* d_fstim = setFiringStimulus(fstimCount, fstimIdx);
+	uint32_t* d_fstim = setFiringStimulus(fstim);
 	uint32_t* d_fout = m_firingOutput->step();
 	::stepSimulation(
 			m_partitionCount,

@@ -160,7 +160,7 @@ nemo_start_simulation(NETWORK network)
 nemo_status_t
 nemo_step(NETWORK network, unsigned fstimIdx[], size_t fstimCount)
 {
-	CATCH(network, stepSimulation(fstimIdx, fstimCount));
+	CATCH(network, stepSimulation(std::vector<unsigned>(fstimIdx, fstimIdx + fstimCount)));
 }
 
 

@@ -47,8 +47,7 @@ class RuntimeData
 
 		void startSimulation();
 
-		//! \todo expose this using std::vector. Deal with raw pointers in the C layer
-		void stepSimulation(const uint* fstimIdx, size_t fstimCount)
+		void stepSimulation(const std::vector<uint>& fstim)
 			throw(DeviceAssertionFailure, std::logic_error);
 
 		void applyStdp(float reward);
@@ -87,7 +86,7 @@ class RuntimeData
 
 	private :
 
-		uint32_t* setFiringStimulus(size_t count, const uint* nidx);
+		uint32_t* setFiringStimulus(const std::vector<uint>& nidx);
 
 		/*! \return
 		 * 		number of bytes allocated on the device
