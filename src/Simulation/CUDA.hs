@@ -21,7 +21,7 @@ import qualified Util.Assocs as A (elems, keys, mapAssocs, mapElems, groupBy, de
 import Simulation.CUDA.Address
 import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
-     printCycleCounters, elapsedMs, resetTimer, freeRT, deviceCount)
+     elapsedMs, resetTimer, freeRT, deviceCount)
 import Simulation.CUDA.Memory as Memory
 import Simulation.STDP (StdpConf)
 
@@ -64,14 +64,12 @@ initSim partitionSize net stdpConf = do
 runCuda :: State -> [[Idx]] -> IO [FiringOutput]
 runCuda sim fstim = do
     mapM_ (Kernel.stepBuffering sim) fstim
-    Kernel.printCycleCounters sim
     readFiring sim $! length fstim
 
 
 runCuda_ :: State -> [[Idx]] -> IO ()
 runCuda_ sim fstim = do
     mapM_ (Kernel.stepNonBuffering sim) fstim
-    Kernel.printCycleCounters sim
 
 
 stepCuda :: State -> [Idx] -> IO FiringOutput

@@ -26,6 +26,13 @@ class RuntimeData
 		~RuntimeData();
 
 		/*
+		 * CONFIGURATION
+		 */
+
+		/*! Switch on logging and send output to stdout */
+		void logToStdout();
+
+		/*
 		 * NETWORK CONSTRUCTION
 		 */
 
@@ -66,6 +73,8 @@ class RuntimeData
 
 		void flushFiringBuffer();
 
+		void finishSimulation();
+
 		/*
 		 * TIMING
 		 */
@@ -75,8 +84,6 @@ class RuntimeData
 		long int elapsed();
 
 		void setStart();
-
-		void printCycleCounters();
 
 		STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
@@ -141,6 +148,8 @@ class RuntimeData
 
 		void configureStdp();
 		bool usingStdp() const;
+
+		bool m_logging;
 };
 
 } // end namespace nemo

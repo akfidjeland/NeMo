@@ -39,8 +39,8 @@ RuntimeData::RuntimeData(bool setReverse, unsigned int maxReadPeriod) :
 	m_deviceAssertions(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
-	m_deviceDirty(true),
-	m_maxReadPeriod(maxReadPeriod)
+	m_maxReadPeriod(maxReadPeriod),
+	m_logging(false)
 {
 	//! \todo use this in move to device
 	int device;
@@ -65,8 +65,8 @@ RuntimeData::RuntimeData(bool setReverse,
 	m_deviceAssertions(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
-	m_deviceDirty(true),
-	m_maxReadPeriod(maxReadPeriod)
+	m_maxReadPeriod(maxReadPeriod),
+	m_logging(false)
 {
 	//! \todo use this in move to device
 	int device;
@@ -77,6 +77,7 @@ RuntimeData::RuntimeData(bool setReverse,
 
 RuntimeData::~RuntimeData()
 {
+	finishSimulation();
 	//! \todo used shared_ptr instead to deal with this
 	if(m_deviceAssertions) delete m_deviceAssertions;
 	if(m_firingOutput) delete m_firingOutput;
@@ -312,6 +313,9 @@ RuntimeData::startSimulation()
 
 
 
+
+
+
 void
 RuntimeData::stepSimulation(const std::vector<uint>& fstim)
 		throw(DeviceAssertionFailure, std::logic_error)
@@ -387,15 +391,6 @@ RuntimeData::applyStdp(float reward)
 }
 
 
-void
-RuntimeData::printCycleCounters()
-{
-	std::ofstream outfile;
-	outfile.open("cc.dat");
-	m_cycleCounters->printCounters(outfile);
-	outfile.close();
-}
-
 
 uint
 RuntimeData::readFiring(
@@ -410,6 +405,24 @@ void
 RuntimeData::flushFiringBuffer()
 {
 	m_firingOutput->flushBuffer();
+}
+
+
+void
+RuntimeData::finishSimulation()
+{
+	//! \todo perhaps clear device data here instead of in dtor
+	if(m_logging) {
+		m_cycleCounters->printCounters(std::cout);
+		//! \todo add time summary
+	}
+}
+
+
+void
+RuntimeData::logToStdout()
+{
+	m_logging = true;
 }
 
 }

@@ -325,8 +325,8 @@ nemo_new_network_(
 		unsigned maxReadPeriod,
 		unsigned maxPartitionSize);
 
-// \todo add better logging facilities
-void nemo_print_cycle_counters(NETWORK network);
+nemo_status_t nemo_log_stdout(NETWORK network);
+
 
 /* Steps can be asynchronous. sync forces completion of all steps */
 void nemo_sync_simulation(NETWORK network);
@@ -341,7 +341,6 @@ int nemo_device_count(void);
  * invocation and the end of the last */
 long int nemo_elapsed_ms(NETWORK network);
 void nemo_reset_timer(NETWORK network);
-
 
 
 

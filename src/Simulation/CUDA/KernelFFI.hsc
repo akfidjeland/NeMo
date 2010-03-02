@@ -12,7 +12,6 @@ module Simulation.CUDA.KernelFFI (
     getCMDRow,
     startSimulation,
     syncSimulation,
-    printCycleCounters,
     freeRT,
     CuRT,
     addNeuron,
@@ -285,8 +284,7 @@ instance ForeignKernel CuRT CFloat where
 -- Reporting
 -------------------------------------------------------------------------------
 
-
-foreign import ccall unsafe "nemo_print_cycle_counters" printCycleCounters
+foreign import ccall unsafe "nemo_log_stdout" enableLogStdout
     :: Ptr CuRT -> IO ()
 
 

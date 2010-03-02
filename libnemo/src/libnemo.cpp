@@ -210,11 +210,10 @@ nemo_flush_firing_buffer(NETWORK network)
 //-----------------------------------------------------------------------------
 
 
-//! \todo no need to expose this in API
-void
-nemo_print_cycle_counters(NETWORK network)
+nemo_status_t
+nemo_log_stdout(NETWORK network)
 {
-	NOCATCH(network, printCycleCounters());
+	CATCH(network, logToStdout())
 }
 
 
