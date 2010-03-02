@@ -67,17 +67,19 @@ ConnectivityMatrix::addSynapse(pidx_t sp, nidx_t sn, delay_t delay,
 
 
 void
-ConnectivityMatrix::setRow(
+ConnectivityMatrix::addSynapses(
 		uint src,
-		const uint* tgt,
-		const uint* delay,
-		const float* weights,
-		const uchar* isPlastic,
-		size_t f_length)
+		const std::vector<uint>& targets,
+		const std::vector<uint>& delays,
+		const std::vector<float>& weights,
+		const std::vector<unsigned char> isPlastic)
 {
-	//! \todo do the mapping into l0 and l1 here directly
+	size_t length = targets.size();
+	assert(length == delays.size());
+	assert(length == weights.size());
+	assert(length == isPlastic.size());
 
-    if(f_length == 0)
+    if(length == 0)
         return;
 
 	pidx_t sourcePartition = partitionIdx(src);
@@ -87,12 +89,12 @@ ConnectivityMatrix::setRow(
 		ERROR("source neuron index out of range");
 	}
 
-	for(size_t i=0; i<f_length; ++i) {
-		pidx_t targetPartition = partitionIdx(tgt[i]);
-		nidx_t targetNeuron = neuronIdx(tgt[i]);
-		addSynapse(sourcePartition, sourceNeuron, delay[i],
+	for(size_t i=0; i < length; ++i) {
+		pidx_t targetPartition = partitionIdx(targets[i]);
+		nidx_t targetNeuron = neuronIdx(targets[i]);
+		addSynapse(sourcePartition, sourceNeuron, delays[i],
 				targetPartition, targetNeuron, weights[i], isPlastic[i]);
-		m_outgoing.addSynapse(sourcePartition, sourceNeuron, delay[i], targetPartition);
+		m_outgoing.addSynapse(sourcePartition, sourceNeuron, delays[i], targetPartition);
 	}
 }
 

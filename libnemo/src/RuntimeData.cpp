@@ -278,13 +278,12 @@ RuntimeData::addNeuron(
 void
 RuntimeData::addSynapses(
 		uint source,
-		uint targets[],
-		uint delays[],
-		float weights[],
-		uchar is_plastic[],
-		size_t length)
+		const std::vector<uint>& targets,
+		const std::vector<uint>& delays,
+		const std::vector<float>& weights,
+		const std::vector<unsigned char> is_plastic)
 {
-	m_cm->setRow(source, targets, delays, weights, is_plastic, length);
+	m_cm->addSynapses(source, targets, delays, weights, is_plastic);
 }
 
 

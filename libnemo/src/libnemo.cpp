@@ -126,7 +126,11 @@ nemo_add_synapses(NETWORK network,
 		unsigned char is_plastic[],
 		size_t length)
 {
-	CATCH(network, addSynapses(source, targets, delays, weights, is_plastic, length));
+	CATCH(network, addSynapses(source,
+				std::vector<unsigned>(targets, targets+length),
+				std::vector<unsigned>(delays, delays+length),
+				std::vector<float>(weights, weights+length),
+				std::vector<unsigned char>(is_plastic, is_plastic+length)));
 }
 
 

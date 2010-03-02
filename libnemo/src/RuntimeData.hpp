@@ -19,7 +19,9 @@ class RuntimeData
 		RuntimeData(bool setReverse, unsigned maxReadPeriod);
 
 		// for debugging purposes, fix the partition size used
-		RuntimeData(bool setReverse, unsigned maxReadPeriod, unsigned maxPartitionSize);
+		RuntimeData(bool setReverse,
+				unsigned maxReadPeriod,
+				unsigned maxPartitionSize);
 
 		~RuntimeData();
 
@@ -32,14 +34,12 @@ class RuntimeData
 				float u, float v, float sigma);
 
 		void addSynapses(
-				//! \todo use std::vector here?
 				uint source,
-				uint targets[],
-				uint delays[],
-				float weights[],
-				//! \todo use bool here. Transform input in the C layer
-				unsigned char is_plastic[],
-				size_t length);
+				const std::vector<uint>& targets,
+				const std::vector<uint>& delays,
+				const std::vector<float>& weights,
+				//! \todo change to bool
+				const std::vector<unsigned char> isPlastic);
 
 		/*
 		 * NETWORK SIMULATION

@@ -48,13 +48,12 @@ class ConnectivityMatrix
 
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */
-		void setRow(
+		void addSynapses(
 				uint sourceNeuron, // global neuron indices
-				const uint* targetNeuron, // global neuron indices
-				const uint* delay,
-				const float* weights,
-				const uchar* plastic,
-				size_t length);
+				const std::vector<uint>& targets,
+				const std::vector<uint>& delays,
+				const std::vector<float>& weights,
+				const std::vector<unsigned char> is_plastic);
 
 		delay_t maxDelay() const { return m_maxDelay; }
 
