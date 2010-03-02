@@ -5,6 +5,8 @@
 
 #include "incoming.cu_h"
 
+namespace nemo {
+
 class Incoming
 {
 	public :
@@ -48,5 +50,7 @@ class Incoming
 
 		size_t m_allocated;
 };
+
+} // end namespace nemo
 
 #endif

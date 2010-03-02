@@ -4,6 +4,7 @@
 #include "kernel.cu_h"
 #include "except.hpp"
 
+namespace nemo {
 
 Incoming::Incoming() : m_allocated(0) {}
 
@@ -50,3 +51,5 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	size_t wpitch = bpitch / sizeof(incoming_t);
 	setIncomingPitch(wpitch);
 }
+
+} // end namespace nemo
