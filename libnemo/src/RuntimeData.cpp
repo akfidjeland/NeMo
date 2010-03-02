@@ -1,6 +1,8 @@
 #include "RuntimeData.hpp"
 
 #include <vector>
+#include <iostream>
+#include <fstream>
 #include <assert.h>
 
 #include "DeviceAssertions.hpp"
@@ -388,7 +390,10 @@ RuntimeData::applyStdp(float reward)
 void
 RuntimeData::printCycleCounters()
 {
-	m_cycleCounters->printCounters();
+	std::ofstream outfile;
+	outfile.open("cc.dat");
+	m_cycleCounters->printCounters(outfile);
+	outfile.close();
 }
 
 

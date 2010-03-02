@@ -5,7 +5,6 @@
 #include <iterator>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 
 namespace nemo {
 
@@ -35,7 +34,7 @@ printLine(
 		unsigned long long cycles,
 		unsigned long long total,
 		unsigned long long clockRateKHz,
-		std::ofstream& outfile)
+		std::ostream& outfile)
 {
 	unsigned long long timeMs = cycles / clockRateKHz;
 	outfile << std::setw(15) << label << ":" 
@@ -53,7 +52,7 @@ CycleCounters::printCounterSet(
 		size_t counters,
 		const char* setName,
 		const char* names[], // for intermediate counters
-		std::ofstream& outfile)
+		std::ostream& outfile)
 {
 	const std::vector<unsigned long long>& cc = cc_in.copyFromDevice();
 	//! \todo average over all partitions
@@ -77,15 +76,12 @@ CycleCounters::printCounterSet(
 
 
 void
-CycleCounters::printCounters(const char* filename)
+CycleCounters::printCounters(std::ostream& outfile)
 {
-	std::ofstream outfile;
-	outfile.open(filename);
 	printCounterSet(m_ccMain, CC_MAIN_COUNT-1, "Main", durationNames, outfile);
 	if(m_stdpEnabled) {
 		printCounterSet(m_ccApplySTDP, 1, "STDP (apply)", NULL, outfile);
 	}
-	outfile.close();
 }
 
 

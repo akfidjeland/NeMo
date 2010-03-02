@@ -12,7 +12,7 @@ struct CycleCounters
 		//! \todo pass in the STDP option
 		CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpEnabled=true);
 
-		void printCounters(const char* outfile="cc.dat");
+		void printCounters(std::ostream& out);
 
 		unsigned long long* data() const;
 
@@ -39,7 +39,7 @@ struct CycleCounters
 				size_t counters,
 				const char* setName,
 				const char* names[], // for intermediate counters
-				std::ofstream& outfile);
+				std::ostream& outfile);
 };
 
 } // end namespace nemo
