@@ -219,10 +219,18 @@ nemo_log_stdout(NETWORK network)
 
 
 
-long int
-nemo_elapsed_ms(NETWORK network)
+unsigned long
+nemo_elapsed_wallclock(NETWORK network)
 {
 	return NOCATCH(network, elapsedWallclock());
+}
+
+
+
+unsigned long
+nemo_elapsed_simulation(NETWORK network)
+{
+	return NOCATCH(network, elapsedSimulation());
 }
 
 

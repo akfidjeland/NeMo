@@ -206,11 +206,19 @@ RuntimeData::setPitch()
 
 
 
-long
-RuntimeData::elapsedWallclock()
+unsigned long
+RuntimeData::elapsedWallclock() const
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
-	return m_timer.elapsed();
+	return m_timer.elapsedWallclock();
+}
+
+
+
+unsigned long
+RuntimeData::elapsedSimulation() const
+{
+	return m_timer.elapsedSimulation();
 }
 
 
@@ -305,6 +313,7 @@ RuntimeData::stepSimulation(const std::vector<uint>& fstim)
 		throw std::overflow_error("Cycle counter overflow");
 	}
 	m_cycle += 1;
+	m_timer.step();
 
 	uint32_t* d_fstim = setFiringStimulus(fstim);
 	uint32_t* d_fout = m_firingOutput->step();

@@ -313,6 +313,27 @@ void nemo_delete_network(NETWORK);
 
 
 
+//-----------------------------------------------------------------------------
+// TIMERS
+//-----------------------------------------------------------------------------
+
+/*! \name Timing */
+/* \{ */ // begin timing section
+
+//! \todo share docstrings with c++ header
+/*! \return number of milliseconds of wall-clock time elapsed since first
+ * simulation step (or last timer reset) */
+unsigned long nemo_elapsed_wallclock(NETWORK network);
+
+/*! \return number of milliseconds of simulated time elapsed since first
+ * simulation step (or last timer reset) */
+unsigned long nemo_elapsed_simulation(NETWORK network);
+
+/*! Reset both wall-clock and simulation timer */
+void nemo_reset_timer(NETWORK network);
+
+/* \} */ // end timing section
+
 
 //-----------------------------------------------------------------------------
 // DEBUGGING/INTERNALS
@@ -332,14 +353,6 @@ nemo_status_t nemo_log_stdout(NETWORK network);
 int nemo_device_count(void);
 // \todo may not need to expose this in API
 // \todo we need capability 1.2
-
-
-/* return number of milliseconds elapsed between beginning of first kernel
- * invocation and the end of the last */
-long int nemo_elapsed_ms(NETWORK network);
-void nemo_reset_timer(NETWORK network);
-
-
 
 
 

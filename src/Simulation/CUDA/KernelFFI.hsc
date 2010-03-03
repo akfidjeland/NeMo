@@ -302,7 +302,7 @@ checkStatus rt status = when (status /= 0) $ fail =<< errorString rt
 -------------------------------------------------------------------------------
 
 
-foreign import ccall unsafe "nemo_elapsed_ms" c_elapsedMs :: Ptr CuRT -> IO CLong
+foreign import ccall unsafe "nemo_elapsed_wallclock" c_elapsedMs :: Ptr CuRT -> IO CULong
 
 elapsedMs rt = return . fromIntegral =<< c_elapsedMs rt
 

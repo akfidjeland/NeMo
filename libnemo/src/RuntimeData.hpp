@@ -80,9 +80,14 @@ class RuntimeData
 		 */
 
 		/*! \return number of milliseconds of wall-clock time elapsed since first
-		 * simulation step */
-		long int elapsedWallclock();
+		 * simulation step (or last timer reset) */
+		unsigned long elapsedWallclock() const;
 
+		/*! \return number of milliseconds of simulated time elapsed since first
+		 * simulation step (or last timer reset) */
+		unsigned long elapsedSimulation() const;
+
+		/*! Reset both wall-clock and simulation timer */
 		void resetTimer();
 
 		STDP<float> stdpFn;

@@ -455,7 +455,7 @@ Network::configureStdp(const STDP<double>& conf)
 long
 Network::elapsed()
 {
-	return m_timer.elapsed();
+	return m_timer.elapsedWallclock();
 }
 
 
