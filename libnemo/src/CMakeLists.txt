@@ -39,6 +39,7 @@ CUDA_ADD_LIBRARY(nemo
 	fixedpoint.cpp
 	Incoming.cpp
 	NeuronParameters.cpp
+	Network.cpp
 	Outgoing.cpp
 	RSMatrix.cpp
 	RuntimeData.cpp

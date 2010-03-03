@@ -3,6 +3,8 @@ extern "C" {
 }
 
 #include "RuntimeData.hpp"
+#include "Network.hpp"
+//! \todo combine these into a single header file
 #include "DeviceAssertions.hpp"
 #include "except.hpp"
 
@@ -52,7 +54,7 @@ class Network
 	public :
 
 		Network(bool setReverse, unsigned maxReadPeriod) :
-			m_impl(new nemo::RuntimeData(setReverse, maxReadPeriod)),
+			m_impl(nemo::Network::create(setReverse, maxReadPeriod)),
 			m_errorMsg("No error") { }
 
 		//! \todo set partition size through a separate configuration function
@@ -70,7 +72,7 @@ class Network
 
 		nemo_status_t status() const { return m_status; }
 
-		nemo::RuntimeData* m_impl;
+		nemo::Network* m_impl;
 
 	private :
 
