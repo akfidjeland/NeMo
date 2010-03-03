@@ -36,29 +36,31 @@ extern "C" {
 /* Call method on network object, and /return/ status and error */
 #define CATCH(ptr, call) {                                                    \
         Network* net = static_cast<Network*>(ptr);                            \
-        CATCH_(net, net->call)                                                \
+        CATCH_(net, net->m_impl->call)                                        \
         return net->status();                                                 \
 	}
 
 
 //! \todo enforce no throw in the class interface
 /* Call function without handling exceptions */
-#define NOCATCH(ptr, call) static_cast<Network*>(ptr)->call
+#define NOCATCH(ptr, call) static_cast<Network*>(ptr)->m_impl->call
 
 
-class Network : public nemo::RuntimeData {
 
+class Network
+{
 	public :
 
 		Network(bool setReverse, unsigned maxReadPeriod) :
-			RuntimeData(setReverse, maxReadPeriod),
-			m_errorMsg("No error") { } ;
+			m_impl(new nemo::RuntimeData(setReverse, maxReadPeriod)),
+			m_errorMsg("No error") { }
 
+		//! \todo set partition size through a separate configuration function
 		Network(bool setReverse,
 				unsigned maxReadPeriod,
 				unsigned maxPartitionSize) :
-			RuntimeData(setReverse, maxReadPeriod, maxPartitionSize),
-			m_errorMsg("No error") { } ;
+			m_impl(new nemo::RuntimeData(setReverse, maxReadPeriod, maxPartitionSize)),
+			m_errorMsg("No error") { }
 
 		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
 
@@ -68,6 +70,8 @@ class Network : public nemo::RuntimeData {
 
 		nemo_status_t status() const { return m_status; }
 
+		nemo::RuntimeData* m_impl;
+
 	private :
 
 		/* In addition to the runtime data, we need to keep track of the latest
@@ -76,6 +80,7 @@ class Network : public nemo::RuntimeData {
 
 		/* Status after last call */
 		nemo_status_t m_status;
+
 };
 
 
@@ -187,7 +192,7 @@ nemo_read_firing(NETWORK ptr,
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* nidx;
 	Network* net = static_cast<Network*>(ptr);
-	CATCH_(net, *ncycles = net->readFiring(&cycles, &nidx));
+	CATCH_(net, *ncycles = net->m_impl->readFiring(&cycles, &nidx));
 	*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
 	*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);
 	*nfired = cycles->size();
@@ -256,12 +261,13 @@ nemo_enable_stdp(NETWORK network,
 		float w_max,
 		float w_min)
 {
-	nemo::configure_stdp(static_cast<Network*>(network)->stdpFn,
+	nemo::configure_stdp(static_cast<Network*>(network)->m_impl->stdpFn,
 			pre_len, post_len, pre_fn, post_fn, w_max, w_min);
 }
 
 
 //! \todo no need to expose this in API
+//! \todo move this into nemo::Network::create
 int
 nemo_device_count()
 {
