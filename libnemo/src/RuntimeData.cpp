@@ -42,12 +42,7 @@ RuntimeData::RuntimeData(bool setReverse, unsigned int maxReadPeriod) :
 	m_pitch64(0),
 	m_maxReadPeriod(maxReadPeriod),
 	m_logging(false)
-{
-	//! \todo use this in move to device
-	int device;
-	cudaGetDevice(&device);
-	cudaGetDeviceProperties(&m_deviceProperties, device);
-}
+{ }
 
 
 
@@ -69,12 +64,7 @@ RuntimeData::RuntimeData(bool setReverse,
 	m_pitch64(0),
 	m_maxReadPeriod(maxReadPeriod),
 	m_logging(false)
-{
-	//! \todo use this in move to device
-	int device;
-	cudaGetDevice(&device);
-	cudaGetDeviceProperties(&m_deviceProperties, device);
-}
+{ }
 
 
 RuntimeData::~RuntimeData()
@@ -299,7 +289,7 @@ RuntimeData::startSimulation()
 		m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
 		m_neurons->setSigma(*m_thalamicInput);
 		m_thalamicInput->moveToDevice();
-		m_cycleCounters = new CycleCounters(m_partitionCount, m_deviceProperties.clockRate);
+		m_cycleCounters = new CycleCounters(m_partitionCount, usingStdp());
 		m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
 
 		setPitch();

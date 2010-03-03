@@ -9,8 +9,7 @@ struct CycleCounters
 {
 	public:
 
-		//! \todo pass in the STDP option
-		CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpEnabled=true);
+		CycleCounters(size_t partitionCount, bool stdpEnabled);
 
 		void printCounters(std::ostream& out);
 

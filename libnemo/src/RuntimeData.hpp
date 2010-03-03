@@ -139,9 +139,6 @@ class RuntimeData : public Network
 
 		class DeviceAssertions* m_deviceAssertions;
 
-		//! \todo no need to keep this around
-		cudaDeviceProp m_deviceProperties;
-
 		void setPitch();
 
 		size_t m_pitch32;

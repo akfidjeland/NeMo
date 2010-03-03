@@ -8,11 +8,10 @@
 
 namespace nemo {
 
-CycleCounters::CycleCounters(size_t partitionCount, int clockRateKHz, bool stdpEnabled) :
+CycleCounters::CycleCounters(size_t partitionCount, bool stdpEnabled) :
 	m_ccMain(partitionCount, CC_MAIN_COUNT-1, true),
 	m_ccApplySTDP(partitionCount, 1, stdpEnabled),
 	m_partitionCount(partitionCount),
-	m_clockRateKHz(clockRateKHz),
 	m_stdpEnabled(stdpEnabled)
 { }
 
@@ -46,6 +45,18 @@ printLine(
 }
 
 
+static
+int
+clockRate()
+{
+	int device;
+	cudaGetDevice(&device);
+	cudaDeviceProp prop;
+	cudaGetDeviceProperties(&prop, device);
+	return prop.clockRate;
+}
+
+
 void
 CycleCounters::printCounterSet(
 		NVector<unsigned long long>& cc_in,
@@ -61,13 +72,14 @@ CycleCounters::printCounterSet(
 	std::vector<unsigned long long>::const_iterator end = cc.begin() + counters;
 	unsigned long long totalCycles = std::accumulate(cc.begin(), end, 0l);
 
-	printLine(setName, totalCycles, totalCycles, m_clockRateKHz, outfile);
+	int clockRateKHz = clockRate();
+	printLine(setName, totalCycles, totalCycles, clockRateKHz, outfile);
 	outfile << std::endl;
 
 	if(names != NULL) {
 		for(std::vector<unsigned long long>::const_iterator i=cc.begin(); i != end; ++i) {
 			unsigned long long cycles = *i;
-			printLine(names[i-cc.begin()], cycles, totalCycles, m_clockRateKHz, outfile);
+			printLine(names[i-cc.begin()], cycles, totalCycles, clockRateKHz, outfile);
 		}
 		outfile << std::endl;
 	}
