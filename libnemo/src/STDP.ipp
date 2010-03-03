@@ -119,26 +119,4 @@ STDP<T>::configure(
 }
 
 
-
-/* Helper function for c interfaces */
-template<typename T>
-void
-configure_stdp(
-		STDP<T>& stdp,
-		size_t pre_len,
-		size_t post_len,
-		T* pre_fn,
-		T* post_fn,
-		T maxWeight,
-		T minWeight)
-{
-	std::vector<T> prefire;
-	std::copy(pre_fn, pre_fn + pre_len, std::back_inserter(prefire));
-
-	std::vector<T> postfire;
-	std::copy(post_fn, post_fn + post_len, std::back_inserter(postfire));
-
-	stdp.configure(prefire, postfire, minWeight, maxWeight);
-}
-
 } // end namespace nemo

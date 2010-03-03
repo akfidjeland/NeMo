@@ -258,11 +258,13 @@ nemo_enable_stdp(NETWORK network,
 		size_t pre_len,
 		float* post_fn,
 		size_t post_len,
-		float w_max,
-		float w_min)
+		float w_min,
+		float w_max)
 {
-	nemo::configure_stdp(static_cast<Network*>(network)->m_impl->stdpFn,
-			pre_len, post_len, pre_fn, post_fn, w_max, w_min);
+	NOCATCH(network, enableStdp(
+				std::vector<float>(pre_fn, pre_fn+pre_len),
+				std::vector<float>(post_fn, post_fn+post_len),
+				w_min, w_max));
 }
 
 

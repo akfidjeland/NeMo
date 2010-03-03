@@ -441,10 +441,13 @@ Network::accumulateStdp()
 
 
 void
-Network::configureStdp(const STDP<double>& conf)
+Network::enableStdp(
+		std::vector<double> prefire,
+		std::vector<double> postfire,
+		double minWeight, double maxWeight)
 {
 	if(m_constructing) {
-		m_stdp = conf;
+		m_stdp = STDP<double>(prefire, postfire, minWeight, maxWeight);
 	} else {
 		throw std::runtime_error("configuring STDP during simulation is not supported");
 	}

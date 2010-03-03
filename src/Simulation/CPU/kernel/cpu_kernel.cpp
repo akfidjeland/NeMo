@@ -121,12 +121,13 @@ cpu_enable_stdp(NETWORK network,
 		size_t pre_len,
 		double* post_fn,
 		size_t post_len,
-		double w_max,
-		double w_min)
+		double w_min,
+		double w_max)
 {
-	nemo::STDP<double> conf;
-	nemo::configure_stdp<double>(conf, pre_len, post_len, pre_fn, post_fn, w_max, w_min);
-	SAFE_CALL(network, configureStdp(conf));
+	SAFE_CALL(network, enableStdp(
+				std::vector<double>(pre_fn, pre_fn+pre_len),
+				std::vector<double>(post_fn, post_fn+post_len),
+				w_min, w_max));
 }
 
 

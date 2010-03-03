@@ -97,7 +97,11 @@ struct Network {
 
 		size_t neuronCount() const { return m_neuronCount; }
 
-		void configureStdp(const STDP<double>& conf);
+		void enableStdp(
+				std::vector<double> prefire,
+				std::vector<double> postfire,
+				double minWeight,
+				double maxWeight);
 
 	private:
 

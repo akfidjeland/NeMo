@@ -95,8 +95,8 @@ nemo_enable_stdp(NETWORK,
 		size_t prefire_len,
 		float postFireFn[],
 		size_t postfire_len,
-		float max_weight,
-		float min_weight);
+		float min_weight,
+		float max_weight);
 
 /* \} */ // end configuration
 

@@ -34,8 +34,8 @@ cpu_enable_stdp(NETWORK,
 		size_t pre_len,
 		double* post_fn,
 		size_t post_len,
-		double maxWeight,
-		double minWeight);
+		double minWeight,
+		double maxWeight);
 
 
 cpu_status_t

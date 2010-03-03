@@ -93,23 +93,35 @@ RuntimeData::~RuntimeData()
 
 
 
+/*! Enabled STDP */
+void
+RuntimeData::enableStdp(
+		std::vector<float> prefire,
+		std::vector<float> postfire,
+		float minWeight, float maxWeight)
+{
+	ensureState(CONFIGURING);
+	m_stdpFn = STDP<float>(prefire, postfire, minWeight, maxWeight);
+}
+
+
 void
 RuntimeData::configureStdp()
 {
-	if(!stdpFn.enabled()) {
+	if(!usingStdp()) {
 		return;
 	}
 
-	const std::vector<float>& flfn = stdpFn.function();
+	const std::vector<float>& flfn = m_stdpFn.function();
 	std::vector<fix_t> fxfn(flfn.size());
 	uint fb = m_cm->fractionalBits();
 	for(uint i=0; i < fxfn.size(); ++i) {
 		fxfn.at(i) = fixedPoint(flfn[i], fb);
 	}
-	::configureStdp(stdpFn.preFireWindow(),
-			stdpFn.postFireWindow(),
-			stdpFn.potentiationBits(),
-			stdpFn.depressionBits(),
+	::configureStdp(m_stdpFn.preFireWindow(),
+			m_stdpFn.postFireWindow(),
+			m_stdpFn.potentiationBits(),
+			m_stdpFn.depressionBits(),
 			const_cast<fix_t*>(&fxfn[0]));
 }
 
@@ -241,7 +253,7 @@ RuntimeData::resetTimer()
 bool
 RuntimeData::usingStdp() const
 {
-	return stdpFn.enabled();
+	return m_stdpFn.enabled();
 }
 
 
@@ -364,7 +376,7 @@ RuntimeData::applyStdp(float reward)
 				m_partitionCount,
 				m_cm->fractionalBits(),
 				m_cm->d_fcm(),
-				stdpFn,
+				m_stdpFn,
 				reward);
 	}
 

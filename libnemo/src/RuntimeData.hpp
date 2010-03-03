@@ -32,6 +32,12 @@ class RuntimeData
 		/*! Switch on logging and send output to stdout */
 		void logToStdout();
 
+		void enableStdp(
+				std::vector<float> prefire,
+				std::vector<float> postfire,
+				float minWeight,
+				float maxWeight);
+
 		/*
 		 * NETWORK CONSTRUCTION
 		 */
@@ -90,9 +96,6 @@ class RuntimeData
 		/*! Reset both wall-clock and simulation timer */
 		void resetTimer();
 
-		STDP<float> stdpFn;
-		// should be private, but have problems with friend with C linkage
-
 	private :
 
 		/* At any time the network is in one of three states. Some methods can
@@ -147,6 +150,7 @@ class RuntimeData
 
 		unsigned int m_maxReadPeriod;
 
+		STDP<float> m_stdpFn;
 		void configureStdp();
 		bool usingStdp() const;
 

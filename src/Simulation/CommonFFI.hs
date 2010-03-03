@@ -27,8 +27,8 @@ class (Fractional f, Storable f) => ForeignKernel rt f | rt -> f where
         -> CSize  -- ^ length of pre-fire part of STDP window
         -> Ptr f  -- ^ lookup-table values (dt -> float) for STDP function postfire,
         -> CSize  -- ^ length of post-fire part of STDP window
-        -> f      -- ^ max weight: limit for excitatory synapses
         -> f      -- ^ min weight: limit for inhibitory synapses
+        -> f      -- ^ max weight: limit for excitatory synapses
         -> IO ()
 
     ffi_apply_stdp
@@ -48,8 +48,8 @@ configureStdp rt conf =
         (fromIntegral $ prefireWindow conf)
         postfire_ptr
         (fromIntegral $ postfireWindow conf)
-        (realToFrac $ stdpMaxWeight conf)
         (realToFrac $ stdpMinWeight conf)
+        (realToFrac $ stdpMaxWeight conf)
 
 
 applyStdp :: (ForeignKernel rt f, Fractional f) => Ptr rt -> Double -> IO ()
