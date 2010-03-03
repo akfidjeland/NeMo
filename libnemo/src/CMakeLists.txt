@@ -23,7 +23,16 @@ INCLUDE_DIRECTORIES(
 
 
 # We need shared memory atomics
-SET(CUDA_NVCC_FLAGS "-arch=sm_13")
+SET(CUDA_NVCC_FLAGS "-arch=sm_12")
+
+# We rely on 32-bit floats
+INCLUDE(CheckTypeSize)
+CHECK_TYPE_SIZE(float FLOAT_SIZE)
+
+IF(NOT ${FLOAT_SIZE} EQUAL 4)
+	MESSAGE(SEND_ERROR "float does not have expected size (4B)")
+ENDIF(NOT ${FLOAT_SIZE} EQUAL 4)
+
 
 
 ##############################################################################
