@@ -81,15 +81,12 @@ class RuntimeData
 
 		/*! \return number of milliseconds of wall-clock time elapsed since first
 		 * simulation step */
-		long int elapsed();
+		long int elapsedWallclock();
 
-		void setStart();
+		void resetTimer();
 
 		STDP<float> stdpFn;
 		// should be private, but have problems with friend with C linkage
-
-		/* Force all asynchronously launced kernels to complete before returning */
-		void syncSimulation();
 
 	private :
 

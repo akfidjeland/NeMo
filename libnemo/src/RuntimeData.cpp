@@ -205,18 +205,20 @@ RuntimeData::setPitch()
 //-----------------------------------------------------------------------------
 
 
+
 long
-RuntimeData::elapsed()
+RuntimeData::elapsedWallclock()
 {
-    syncSimulation();
+	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	return m_timer.elapsed();
 }
 
 
 
 void
-RuntimeData::setStart()
+RuntimeData::resetTimer()
 {
+	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	m_timer.reset();
 }
 
@@ -263,14 +265,6 @@ RuntimeData::addSynapses(
 
 
 void
-RuntimeData::syncSimulation()
-{
-	CUDA_SAFE_CALL(cudaThreadSynchronize());
-}
-
-
-
-void
 RuntimeData::startSimulation()
 {
 	if(m_state != SIMULATING) {
@@ -291,7 +285,7 @@ RuntimeData::startSimulation()
 		setPitch();
 		//! \todo do this configuration as part of CM setup
 		::configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
-		setStart();
+		resetTimer();
 		m_state = SIMULATING;
 	}
 }

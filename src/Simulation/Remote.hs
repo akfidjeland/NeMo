@@ -65,7 +65,6 @@ instance Simulation_Iface Remote where
     pipelineLength = remotePipelineLength
     applyStdp = remoteApplyStdp
     elapsed = error "timing is not supported on remote backend"
-    resetTimer = error "timing is not supported on remote backend"
     getWeights = remoteGetWeights
     start r = Wire.startSimulation (ps r)
     stop r = Wire.stopSimulation (ps r)

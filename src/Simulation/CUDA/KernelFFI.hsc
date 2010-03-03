@@ -11,7 +11,6 @@ module Simulation.CUDA.KernelFFI (
     -- TODO: rename
     getCMDRow,
     startSimulation,
-    syncSimulation,
     freeRT,
     CuRT,
     addNeuron,
@@ -178,9 +177,6 @@ getCMDRow rt sp sn d = do
 -------------------------------------------------------------------------------
 -- Kernel execution
 -------------------------------------------------------------------------------
-
-foreign import ccall unsafe "nemo_sync_simulation"
-    syncSimulation :: Ptr CuRT -> IO ()
 
 
 {- The 'c_step' function is marked as safe, even though nothing could be

@@ -196,6 +196,7 @@ nemo_read_firing(NETWORK ptr,
 }
 
 
+
 nemo_status_t
 nemo_flush_firing_buffer(NETWORK network)
 {
@@ -221,16 +222,14 @@ nemo_log_stdout(NETWORK network)
 long int
 nemo_elapsed_ms(NETWORK network)
 {
-	return NOCATCH(network, elapsed());
+	return NOCATCH(network, elapsedWallclock());
 }
 
 
 void
 nemo_reset_timer(NETWORK network)
 {
-	// force all execution to complete first
-	NOCATCH(network, syncSimulation());
-	NOCATCH(network, setStart());
+	NOCATCH(network, resetTimer());
 }
 
 
@@ -273,14 +272,6 @@ nemo_device_count()
 		}
 	}
 	return count;
-}
-
-
-
-void
-nemo_sync_simulation(NETWORK network)
-{
-	NOCATCH(network, syncSimulation());
 }
 
 
