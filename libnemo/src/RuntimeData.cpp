@@ -27,6 +27,7 @@
 namespace nemo {
 
 RuntimeData::RuntimeData(bool setReverse, unsigned int maxReadPeriod) :
+	m_state(CONFIGURING),
 	m_partitionCount(0),
 	m_maxPartitionSize(MAX_PARTITION_SIZE),
 	m_neurons(new NeuronParameters(m_maxPartitionSize)),
@@ -53,6 +54,7 @@ RuntimeData::RuntimeData(bool setReverse, unsigned int maxReadPeriod) :
 RuntimeData::RuntimeData(bool setReverse,
 		unsigned maxReadPeriod,
 		unsigned maxPartitionSize) :
+	m_state(CONFIGURING),
 	m_partitionCount(0),
 	m_maxPartitionSize(maxPartitionSize),
 	m_neurons(new NeuronParameters(m_maxPartitionSize)),
@@ -109,39 +111,6 @@ RuntimeData::configureStdp()
 			stdpFn.potentiationBits(),
 			stdpFn.depressionBits(),
 			const_cast<fix_t*>(&fxfn[0]));
-}
-
-
-
-void
-RuntimeData::moveToDevice()
-{
-	if(m_deviceDirty) {
-		m_cm->moveToDevice();
-		m_neurons->moveToDevice();
-		configureStdp();
-		m_partitionCount = m_neurons->partitionCount();
-		m_deviceAssertions = new DeviceAssertions(m_partitionCount);
-		m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, m_maxReadPeriod);
-		m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
-		//! \todo seed properly from outside function
-		m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
-		m_neurons->setSigma(*m_thalamicInput);
-		m_thalamicInput->moveToDevice();
-		m_cycleCounters = new CycleCounters(m_partitionCount, m_deviceProperties.clockRate);
-		m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
-
-		setPitch();
-	    m_deviceDirty = false;
-	}
-}
-
-
-
-bool
-RuntimeData::deviceDirty() const
-{
-	return m_deviceDirty;
 }
 
 
@@ -273,6 +242,7 @@ RuntimeData::addNeuron(
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
+	ensureState(CONSTRUCTING);
 	m_neurons->addNeuron(idx, a, b, c, d, u, v, sigma);
 }
 
@@ -286,6 +256,7 @@ RuntimeData::addSynapses(
 		const std::vector<float>& weights,
 		const std::vector<unsigned char> is_plastic)
 {
+	ensureState(CONSTRUCTING);
 	m_cm->addSynapses(source, targets, delays, weights, is_plastic);
 }
 
@@ -302,17 +273,28 @@ RuntimeData::syncSimulation()
 void
 RuntimeData::startSimulation()
 {
-	//! \todo merge this function with moveToDevice
-	if(deviceDirty()) {
-		moveToDevice();
+	if(m_state != SIMULATING) {
+		m_cm->moveToDevice();
+		m_neurons->moveToDevice();
+		configureStdp();
+		m_partitionCount = m_neurons->partitionCount();
+		m_deviceAssertions = new DeviceAssertions(m_partitionCount);
+		m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, m_maxReadPeriod);
+		m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
+		//! \todo seed properly from outside function
+		m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
+		m_neurons->setSigma(*m_thalamicInput);
+		m_thalamicInput->moveToDevice();
+		m_cycleCounters = new CycleCounters(m_partitionCount, m_deviceProperties.clockRate);
+		m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
+
+		setPitch();
 		//! \todo do this configuration as part of CM setup
 		::configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
 		setStart();
+		m_state = SIMULATING;
 	}
 }
-
-
-
 
 
 
@@ -360,14 +342,10 @@ RuntimeData::stepSimulation(const std::vector<uint>& fstim)
 }
 
 
-
 void
 RuntimeData::applyStdp(float reward)
 {
-	if(deviceDirty()) {
-		//! \todo issue a warning here?
-		return; // we haven't even started simulating yet
-	}
+	ensureState(SIMULATING);
 
 	if(!usingStdp()) {
 		//! \todo issue a warning here?
@@ -411,6 +389,7 @@ RuntimeData::flushFiringBuffer()
 void
 RuntimeData::finishSimulation()
 {
+	m_state = ZOMBIE;
 	//! \todo perhaps clear device data here instead of in dtor
 	if(m_logging) {
 		m_cycleCounters->printCounters(std::cout);
@@ -423,6 +402,22 @@ void
 RuntimeData::logToStdout()
 {
 	m_logging = true;
+}
+
+
+void
+RuntimeData::ensureState(State s)
+{
+	if(m_state == s) {
+		return;
+	} else if(s == CONSTRUCTING && m_state == CONFIGURING) {
+		m_state = s;
+	} else {
+		std::ostringstream msg;
+		msg << "Expected to be in state " << s <<
+			" but found state " << m_state << std::endl;
+		throw std::runtime_error(msg.str());
+	}
 }
 
 }

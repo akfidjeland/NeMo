@@ -93,22 +93,23 @@ class RuntimeData
 
 	private :
 
+		/* At any time the network is in one of three states. Some methods can
+		 * only be called in a specific state. */
+		//! \todo only set reverse matrix at the end, and merge config and construction
+		enum State { CONFIGURING, CONSTRUCTING, SIMULATING, ZOMBIE };
+		State m_state;
+
+		void ensureState(State);
+
 		uint32_t* setFiringStimulus(const std::vector<uint>& nidx);
 
+		//! \todo add this to logging output
 		/*! \return
 		 * 		number of bytes allocated on the device
 		 *
 		 * It seems that cudaMalloc*** does not fail properly when running out of
 		 * memory, so this value could be useful for diagnostic purposes */
 		size_t d_allocated() const;
-
-		/*! \return true if network data/configuration has *not* been copied to the
-		 * device */
-		bool deviceDirty() const;
-
-		/* Copy data to device if this has not already been done, and clear the
-		 * host buffers */
-		void moveToDevice();
 
 		size_t m_partitionCount;
 		size_t m_maxPartitionSize;
@@ -132,15 +133,13 @@ class RuntimeData
 
 		class DeviceAssertions* m_deviceAssertions;
 
+		//! \todo no need to keep this around
 		cudaDeviceProp m_deviceProperties;
 
 		void setPitch();
 
 		size_t m_pitch32;
 		size_t m_pitch64;
-
-		/* True if host buffers have not been copied to device */
-		bool m_deviceDirty;
 
 		nemo::Timer m_timer;
 
