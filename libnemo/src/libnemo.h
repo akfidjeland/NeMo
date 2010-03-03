@@ -70,6 +70,8 @@ nemo_new_network(unsigned setReverse, unsigned maxReadPeriod);
 /*! \name Configuration */
 /* \{ */ // begin configuration
 
+nemo_status_t nemo_log_stdout(NETWORK network);
+
 /*! Enable spike-timing dependent plasticity in the simulation.
  *
  * \param prefire_fn
@@ -106,42 +108,19 @@ nemo_enable_stdp(NETWORK,
 // NETWORK CONSTRUCTION
 //-----------------------------------------------------------------------------
 
-/*! \name Network construction
+/*! \name Construction
  *
  * Networks are constructed by adding individual neurons, and single or groups
  * of synapses to the network. Neurons are given indices (from 0) which should
  * be unique for each neuron. When adding synapses the source or target neurons
  * need not necessarily exist yet, but should be defined before the network is
  * finalised.
- */
+ *
+ * \{ */
+
 //! \todo make sure we handle the issue of non-unique indices
 //! \todo add description of neuron indices
-/* \{ */ // begin construction group
-
-
-/*! Add a single neuron to the network
- *
- * The neuron uses the Izhikevich neuron model. See E. M. Izhikevich "Simple
- * model of spiking neurons", \e IEEE \e Trans. \e Neural \e Networks, vol 14,
- * pp 1569-1572, 2003 for a full description of the model and the parameters.
- *
- * \param a
- * 		Time scale of the recovery variable \a u
- * \param b
- * 		Sensitivity to sub-threshold fluctutations in the membrane potential \a v
- * \param c
- * 		After-spike reset value of the membrane potential \a v
- * \param d
- * 		After-spike reset of the recovery variable \a u
- * \param u
- * 		Initial value for the membrane recovery variable
- * \param v
- * 		Initial value for the membrane potential
- * \param sigma
- * 		Parameter for a random gaussian per-neuron process which generates
- * 		random input current drawn from an N(0,\a sigma) distribution. If set
- * 		to zero no random input current will be generated.
- */
+/*! \copydoc nemo::Network::addNeuron */
 nemo_status_t
 nemo_add_neuron(NETWORK,
 		unsigned idx,
@@ -189,20 +168,10 @@ nemo_add_synapses(NETWORK,
 // SIMULATION STEPPING
 //-----------------------------------------------------------------------------
 
-/*! \name Simulation
- *
- */
-/* \{ */ // begin simulation group
+/*! \name Simulation \{ */
 
-/*! Finalise network construction to prepare it for simulation
- *
- * After specifying the network in the construction stage, it may need to be
- * set up on the backend, and optimised etc. This can be time-consuming if the
- * network is large. Calling \a nemo_start_simulation causes all this setup to
- * be done. Calling this function is not strictly required as the setup will be
- * done the first time any simulation function is called.
- */
 //! \todo rename to finalise network
+/*! \copydoc nemo::Network::startSimulation */
 nemo_status_t
 nemo_start_simulation(NETWORK);
 
@@ -219,13 +188,7 @@ nemo_status_t
 nemo_step(NETWORK network, unsigned fstimIdx[], size_t fstimCount);
 
 
-/*! Update synapse weights using the accumulated STDP statistics
- *
- * \param reward
- * 		Multiplier for the accumulated weight change
- *
- * \see STDP
- */
+/*! \copydoc nemo::Network::applyStdp */
 nemo_status_t
 nemo_apply_stdp(NETWORK network, float reward);
 
@@ -234,6 +197,7 @@ nemo_apply_stdp(NETWORK network, float reward);
 // FIRING PROBE
 //-----------------------------------------------------------------------------
 
+/*! \name Simulation (firing) \{ */
 
 /*! Return all buffered firing data and empty buffers.
  *
@@ -251,12 +215,11 @@ nemo_read_firing(NETWORK network,
 		unsigned* ncycles);
 
 
-/* If the user is not reading back firing, the firing output buffers should be
- * flushed to avoid buffer overflow. The overflow is not harmful in that no
- * memory accesses take place outside the buffer, but an overflow may result in
- * later calls to readFiring returning non-sensical results. */
+/*! \copydoc nemo::Network::flushFiringBuffer */
 nemo_status_t
 nemo_flush_firing_buffer(NETWORK network);
+
+/* \} */ // end firing group
 
 
 //-----------------------------------------------------------------------------
@@ -317,19 +280,15 @@ void nemo_delete_network(NETWORK);
 // TIMERS
 //-----------------------------------------------------------------------------
 
-/*! \name Timing */
-/* \{ */ // begin timing section
+/*! \name Simulation (timing) \{ */
 
-//! \todo share docstrings with c++ header
-/*! \return number of milliseconds of wall-clock time elapsed since first
- * simulation step (or last timer reset) */
+/*! \copydoc nemo::Network::elapsedWallclock */
 unsigned long nemo_elapsed_wallclock(NETWORK network);
 
-/*! \return number of milliseconds of simulated time elapsed since first
- * simulation step (or last timer reset) */
+/*! \copydoc nemo::Network::elapsedSimulation */
 unsigned long nemo_elapsed_simulation(NETWORK network);
 
-/*! Reset both wall-clock and simulation timer */
+/*! \copydoc nemo::Network::resetTimer */
 void nemo_reset_timer(NETWORK network);
 
 /* \} */ // end timing section
@@ -345,8 +304,6 @@ nemo_new_network_(
 		unsigned setReverse,
 		unsigned maxReadPeriod,
 		unsigned maxPartitionSize);
-
-nemo_status_t nemo_log_stdout(NETWORK network);
 
 
 
