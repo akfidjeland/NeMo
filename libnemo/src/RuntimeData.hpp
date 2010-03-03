@@ -26,6 +26,12 @@ class RuntimeData : public Network
 
 		~RuntimeData();
 
+		/*! Select device (for this thread) if a device with the minimum
+		 * required characteristics is present on the host system.
+		 *
+		 * \return device number or -1 if no suitable device found */
+		static int selectDevice();
+
 		/*
 		 * CONFIGURATION
 		 */
@@ -153,6 +159,8 @@ class RuntimeData : public Network
 		bool usingStdp() const;
 
 		bool m_logging;
+
+		static int s_device;
 };
 
 } // end namespace nemo

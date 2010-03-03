@@ -6,7 +6,8 @@ namespace nemo {
 Network*
 Network::create(bool setReverse, unsigned maxReadPeriod)
 {
-	return new RuntimeData(setReverse, maxReadPeriod);
+	int dev = RuntimeData::selectDevice();
+	return dev == -1 ? NULL : new RuntimeData(setReverse, maxReadPeriod);
 }
 
 } // end namespace nemo

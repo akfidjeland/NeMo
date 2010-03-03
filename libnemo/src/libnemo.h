@@ -349,11 +349,5 @@ nemo_new_network_(
 nemo_status_t nemo_log_stdout(NETWORK network);
 
 
-// return number of cuda-enabled devices of compute capability 1.0 or greater
-int nemo_device_count(void);
-// \todo may not need to expose this in API
-// \todo we need capability 1.2
-
-
 
 #endif

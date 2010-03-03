@@ -17,8 +17,7 @@ module Simulation.CUDA.KernelFFI (
     addSynapses,
     configureStdp,
     elapsedMs,
-    resetTimer,
-    deviceCount
+    resetTimer
 ) where
 
 import Control.Monad (when, forM)
@@ -307,7 +306,3 @@ foreign import ccall unsafe "nemo_elapsed_wallclock" c_elapsedMs :: Ptr CuRT -> 
 elapsedMs rt = return . fromIntegral =<< c_elapsedMs rt
 
 foreign import ccall unsafe "nemo_reset_timer" resetTimer :: Ptr CuRT -> IO ()
-
-
--- | Return number of unique devices
-foreign import ccall unsafe "nemo_device_count" deviceCount :: CInt

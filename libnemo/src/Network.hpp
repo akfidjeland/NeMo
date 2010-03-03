@@ -11,6 +11,9 @@ class Network
 {
 	public :
 
+		/*! \return
+		 * 		new Network object, or NULL if no suitable CUDA device was
+		 * 		found. For CUDA device 0 will be used.  */
 		static Network* create(bool setReverse, unsigned maxReadPeriod);
 
 		virtual ~Network() {};

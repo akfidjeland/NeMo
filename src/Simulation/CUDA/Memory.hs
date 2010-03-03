@@ -8,6 +8,7 @@ module Simulation.CUDA.Memory (
 ) where
 
 
+import Control.Monad (when)
 import Data.Maybe (Maybe)
 import qualified Data.Map as Map (Map, fromList)
 import Foreign.C.Types
@@ -150,4 +151,5 @@ allocRT stdp psize maxProbePeriod = do
         psize
         (stdpEnabled stdp)
         maxProbePeriod
+    when (rt == nullPtr) $ fail "Failed to create CUDA simulation"
     return rt

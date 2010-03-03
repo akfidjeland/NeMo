@@ -82,6 +82,42 @@ RuntimeData::~RuntimeData()
 }
 
 
+int RuntimeData::s_device = -1;
+
+int
+RuntimeData::selectDevice()
+{
+	/*! \todo might want to use thread-local, rather than process-local storage
+	 * for s_device in order to support multiple threads */
+	if(s_device != -1) {
+		return s_device;
+	}
+
+	int dev;
+	cudaDeviceProp prop;
+	prop.major = 1;
+	prop.minor = 2;
+	cudaGetDevice(&dev);
+	CUDA_SAFE_CALL(cudaChooseDevice(&dev, &prop));
+
+	// 9999.9999 is the 'emulation device' which is always present
+	if(prop.major == 9999 || prop.minor == 9999) {
+		std::cerr << "No physical devices available" << std::endl;
+		return -1;
+	}
+
+	// 1.2 requires for shared memory atomics
+	if(prop.major <= 1 && prop.minor < 2) {
+		std::cerr << "No device with compute capability 1.2 available" << std::endl;
+		return -1;
+	}
+
+	CUDA_SAFE_CALL(cudaSetDevice(dev));
+	s_device = dev;
+	return dev;
+}
+
+
 
 /*! Enabled STDP */
 void

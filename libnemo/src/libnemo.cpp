@@ -270,29 +270,6 @@ nemo_enable_stdp(NETWORK network,
 }
 
 
-//! \todo no need to expose this in API
-//! \todo move this into nemo::Network::create
-int
-nemo_device_count()
-{
-	int count;
-	//! \todo error handling
-	cudaGetDeviceCount(&count);
-
-	/* Even if there are no actual devices, this function will return 1, which
-	 * means that device emulation can be used. We therefore need to check the
-	 * major and minor device numbers as well */
-	if(count == 1) {
-		struct cudaDeviceProp prop;
-		cudaGetDeviceProperties(&prop, 0);
-		if(prop.major == 9999 && prop.minor == 9999) {
-			count = 0;
-		}
-	}
-	return count;
-}
-
-
 
 const char*
 nemo_strerror(NETWORK network)
