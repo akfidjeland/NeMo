@@ -392,6 +392,7 @@ RuntimeData::finishSimulation()
 	m_state = ZOMBIE;
 	//! \todo perhaps clear device data here instead of in dtor
 	if(m_logging) {
+		m_cm->printMemoryUsage(std::cout);
 		m_cycleCounters->printCounters(std::cout);
 		//! \todo add time summary
 	}

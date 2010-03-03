@@ -100,6 +100,8 @@ class ConnectivityMatrix
 		 * called */
 		uint fractionalBits() const;
 
+		void printMemoryUsage(std::ostream&) const;
+
 	private:
 
 		/* Add a single synapse to both forward and reverse matrix */
@@ -149,7 +151,6 @@ class ConnectivityMatrix
 
 		/* Memory usage. All values in bytes */
 		size_t d_allocatedRCM() const;
-		void printMemoryUsage(FILE* out);
 
 		void moveFcmToDevice();
 

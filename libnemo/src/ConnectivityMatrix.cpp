@@ -230,27 +230,22 @@ ConnectivityMatrix::moveToDevice()
 				r_partitionFAddress());
 
 	} catch (DeviceAllocationException& e) {
-		FILE* out = stderr;
-		fprintf(out, e.what());
-		printMemoryUsage(out);
+		std::cerr << e.what() << std::endl;
+		printMemoryUsage(std::cerr);
 		throw;
 	}
-	//! \todo remove debugging code
-	//printMemoryUsage(stderr);
 }
 
 
 
 void
-ConnectivityMatrix::printMemoryUsage(FILE* out)
+ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
 	const size_t MEGA = 1<<20;
-	fprintf(out, "forward matrix:     %6luMB\n",
-			md_allocatedFCM / MEGA);
-	fprintf(out, "reverse matrix:     %6luMB (%lu groups)\n",
-			d_allocatedRCM() / MEGA, m_rsynapses.size());
-	fprintf(out, "incoming:           %6luMB\n", m_incoming.allocated() / MEGA);
-	fprintf(out, "outgoing:           %6luMB\n", m_outgoing.allocated() / MEGA);
+	out << "forward matrix: " << (md_allocatedFCM / MEGA) << "MB\n";
+	out << "reverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
+	out << "incoming: " << (m_incoming.allocated() / MEGA) << "MB\n";
+	out << "outgoing: " << (m_outgoing.allocated() / MEGA) << "MB" << std::endl;
 }
 
 
