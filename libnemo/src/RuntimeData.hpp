@@ -49,12 +49,12 @@ class RuntimeData : public Network
 		 * NETWORK CONSTRUCTION
 		 */
 
-		void addNeuron(unsigned int idx,
+		void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
 		void addSynapses(
-				uint source,
+				unsigned source,
 				const std::vector<uint>& targets,
 				const std::vector<uint>& delays,
 				const std::vector<float>& weights,
@@ -67,8 +67,7 @@ class RuntimeData : public Network
 
 		void startSimulation();
 
-		void stepSimulation(const std::vector<uint>& fstim)
-			throw(DeviceAssertionFailure, std::logic_error);
+		void stepSimulation(const std::vector<uint>& fstim = std::vector<uint>());
 
 		void applyStdp(float reward);
 

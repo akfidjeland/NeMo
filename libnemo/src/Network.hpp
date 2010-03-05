@@ -128,11 +128,10 @@ class Network
 		/*! Run simulation for a single cycle (1ms)
 		 *
 		 * \param fstim
-		 * 		(Possibly empty) list of neurons which should be forced to fire
-		 * 		this cycle.
+		 * 		An optional list of neurons, which will be forced to fire this
+		 * 		cycle.
 		 */
-		virtual void stepSimulation(const std::vector<unsigned>& fstim)
-			throw(class DeviceAssertionFailure, std::logic_error) = 0;
+		virtual void stepSimulation(const std::vector<unsigned>& fstim = std::vector<unsigned>()) = 0;
 
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *
