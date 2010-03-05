@@ -42,7 +42,7 @@ class FiringOutput {
 		 * 		this for sanity checking.
 		 */
 		//! \todo require min and max expected cycle number to detect possible overflow
-		uint readFiring(
+		unsigned readFiring(
 				const std::vector<uint>** cycles,
 				const std::vector<uint>** neuronIdx);
 

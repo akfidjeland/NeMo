@@ -5,6 +5,7 @@
 #include "FiringOutput.hpp"
 #include "util.h"
 #include "bitvector.cu_h"
+#include "nemo_types.h"
 
 namespace nemo {
 
@@ -72,8 +73,7 @@ FiringOutput::readFiring(
 				md_buffer,
 				m_bufferedCycles * m_partitionCount * m_pitch * sizeof(uint32_t),
 				cudaMemcpyDeviceToHost));
-	populateSparse(m_bufferedCycles, mh_buffer,
-			m_cycles, m_neuronIdx);
+	populateSparse(m_bufferedCycles, mh_buffer, m_cycles, m_neuronIdx);
 
 	*cycles = &m_cycles;
 	*neuronIdx = &m_neuronIdx;
@@ -109,8 +109,9 @@ FiringOutput::populateSparse(
 
 					bool fired = word & (1 << nbit);
 					if(fired) {
+						nidx_t nidx = partition * m_partitionSize + nword*32 + nbit;
 						firingCycle.push_back(cycle);	
-						neuronIdx.push_back(partition * m_partitionSize + nword*32 + nbit);
+						neuronIdx.push_back(nidx);
 					}
 				}
 			}

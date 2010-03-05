@@ -153,10 +153,11 @@ class Network
 		 * \param cycles The cycle numbers during which firing occured
 		 * \param nidx The corresponding neuron indices
 		 *
+		 *
 		 * \return
-		 * 		Total number of cycles for which we return firing. The caller
-		 * 		would most likely already know what this should be, so can use
-		 * 		this for sanity checking.
+		 *		Total number of cycles for which we return firing. The caller
+		 *		would most likely already know what this should be, so can use
+		 *		this for sanity checking.
 		 */
 		virtual unsigned readFiring(
 				const std::vector<unsigned>** cycles,
