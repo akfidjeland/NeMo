@@ -4,8 +4,6 @@
 //! \file Network.hpp
 
 #include <vector>
-#include "except.hpp"
-#include "DeviceAssertions.hpp"
 
 namespace nemo {
 
@@ -24,7 +22,7 @@ class Network
 
 		/* \} */ // end init section
 
-		virtual ~Network() {};
+		virtual ~Network();
 
 		/*
 		 * CONFIGURATION
@@ -42,10 +40,6 @@ class Network
 				float minWeight, float maxWeight) = 0;
 
 		/* \} */ // end configuration
-
-		/*
-		 * NETWORK CONSTRUCTION
-		 */
 
 		/*!\name Construction
 		 *

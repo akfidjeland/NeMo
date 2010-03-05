@@ -10,4 +10,11 @@ Network::create(bool setReverse, unsigned maxReadPeriod)
 	return dev == -1 ? NULL : new RuntimeData(setReverse, maxReadPeriod);
 }
 
+
+
+Network::~Network()
+{
+	;
+}
+
 } // end namespace nemo

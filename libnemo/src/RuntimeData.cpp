@@ -340,7 +340,6 @@ RuntimeData::startSimulation()
 
 void
 RuntimeData::stepSimulation(const std::vector<uint>& fstim)
-		throw(DeviceAssertionFailure, std::logic_error)
 {
 	startSimulation(); // only has effect on first cycle
 
