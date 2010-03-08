@@ -1,6 +1,15 @@
 #ifndef TARGET_PARTITIONS_CU_H
 #define TARGET_PARTITIONS_CU_H
 
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of nemo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* For L1 spike delivery we need to know to which target partitions each firing
  * neuron has outgoing synapses. We store this information in a matrix indexed
  * by partition, neuron, and delay. Each entry is a row listing partition
