@@ -1,0 +1,35 @@
+Build installation
+------------------
+
+The build process uses cmake. Basic usage on UNIX
+
+mkdir build
+cd build
+cmake ..
+make
+su
+make install
+
+Dependencies
+------------
+
+Required:
+
+- CUDA toolkit >= 2.1 (SDK not required)
+- Boost
+
+Optional:
+
+- Doxygen (for man-page generation)
+
+Usage
+-----
+
+The 'examples' directory contains an example network using the C++ API.
+
+On UNIX, the build process generates man pages (if Doxgyen is installed). Check
+'man 3 libnemo.h' for C API reference and 'man 3 nemo::Network' for a C++ API
+reference.
+
+Andreas Fidjeland
+March 2010
