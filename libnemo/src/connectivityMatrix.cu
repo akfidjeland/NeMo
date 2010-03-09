@@ -148,26 +148,27 @@ __constant__ DEVICE_UINT_PTR_T cr_stdp[MAX_THREAD_BLOCKS];
 __constant__ DEVICE_UINT_PTR_T cr_faddress[MAX_THREAD_BLOCKS];
 
 
-#define SET_CR_ADDRESS_VECTOR(symbol, vec) CUDA_SAFE_CALL(\
-		cudaMemcpyToSymbol(symbol, &vec[0], vec.size() * sizeof(DEVICE_UINT_PTR_T), 0, cudaMemcpyHostToDevice)\
-	)
 
+#define SET_CR_ADDRESS_VECTOR(symbol, vec, len) CUDA_SAFE_CALL(\
+		cudaMemcpyToSymbol(symbol, vec, len * sizeof(DEVICE_UINT_PTR_T), 0, cudaMemcpyHostToDevice)\
+	)
 
 
 
 __host__
 void
 configureReverseAddressing(
-        const std::vector<DEVICE_UINT_PTR_T>& r_pitch,
-        const std::vector<DEVICE_UINT_PTR_T>& r_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r_stdp,
-        const std::vector<DEVICE_UINT_PTR_T>& r_faddress)
+        DEVICE_UINT_PTR_T* r_pitch,
+        DEVICE_UINT_PTR_T* r_address,
+        DEVICE_UINT_PTR_T* r_stdp,
+        DEVICE_UINT_PTR_T* r_faddress,
+		size_t len)
 {
 	//! \todo extend vectors and fill with NULLs
-	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch);
-	SET_CR_ADDRESS_VECTOR(cr_address, r_address);
-	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp);
-	SET_CR_ADDRESS_VECTOR(cr_faddress, r_faddress);
+	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch, len);
+	SET_CR_ADDRESS_VECTOR(cr_address, r_address, len);
+	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp, len);
+	SET_CR_ADDRESS_VECTOR(cr_faddress, r_faddress, len);
 }
 
 #endif

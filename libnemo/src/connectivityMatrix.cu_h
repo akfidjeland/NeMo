@@ -48,12 +48,14 @@ __device__ __host__ uint sourcePartition(uint rsynapse);
 __device__ __host__ uint forwardIdx(uint rsynapse);
 __device__ __host__ uint r_delay1(uint rsynapse);
 
+
 __host__
 void
 configureReverseAddressing(
-        const std::vector<DEVICE_UINT_PTR_T>& r_pitch,
-        const std::vector<DEVICE_UINT_PTR_T>& r_address,
-        const std::vector<DEVICE_UINT_PTR_T>& r_stdp,
-        const std::vector<DEVICE_UINT_PTR_T>& r_faddress);
+        DEVICE_UINT_PTR_T* r_pitch,
+        DEVICE_UINT_PTR_T* r_address,
+        DEVICE_UINT_PTR_T* r_stdp,
+        DEVICE_UINT_PTR_T* r_faddress,
+		size_t len);
 
 #endif

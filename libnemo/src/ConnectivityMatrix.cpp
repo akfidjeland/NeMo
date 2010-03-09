@@ -233,10 +233,11 @@ ConnectivityMatrix::moveToDevice()
 		m_incoming.allocate(partitionCount, maxWarps, 0.1);
 
 		configureReverseAddressing(
-				r_partitionPitch(),
-				r_partitionAddress(),
-				r_partitionStdp(),
-				r_partitionFAddress());
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionPitch()[0]),
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionAddress()[0]),
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionStdp()[0]),
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionFAddress()[0]),
+				r_partitionPitch().size());
 
 	} catch (DeviceAllocationException& e) {
 		std::cerr << e.what() << std::endl;
