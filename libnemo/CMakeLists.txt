@@ -1,4 +1,3 @@
-# Note set CUDA_BUILD_EMULATION to OFF to enable Device mode compilation.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
@@ -20,10 +19,14 @@ FIND_PACKAGE(Doxygen)
 
 SUBDIRS(src)
 
+OPTION(CREATE_EXAMPLES "Build binaries for example networks" ON)
+IF(CREATE_EXAMPLES)
+	SUBDIRS(examples)
+ENDIF(CREATE_EXAMPLES)
+
+
 SET(CPACK_SOURCE_GENERATOR "TGZ")
-SET(CPACK_SOURCE_IGNORE_FILES "build;tmp;${CPACK_SOURCE_IGNORE_FILES}")
-# TODO: set package source name?
-# TODO: add ignore files
+SET(CPACK_SOURCE_IGNORE_FILES "*.swp;build;tmp*;${CPACK_SOURCE_IGNORE_FILES}")
 
 SET(CPACK_GENERATOR "DEB")
 # Debian packaging

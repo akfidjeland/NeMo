@@ -1,3 +1,4 @@
+# Note set CUDA_BUILD_EMULATION to OFF to enable Device mode compilation.
 ##############################################################################
 
 # Boost libraries
