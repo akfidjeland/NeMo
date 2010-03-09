@@ -10,7 +10,7 @@ FIND_PACKAGE(Boost REQUIRED)
 # CUDA configuration
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake/cuda" ${CMAKE_MODULE_PATH})
-FIND_PACKAGE(CUDA)
+FIND_PACKAGE(CUDA REQUIRED)
 
 # FindCUDA sets a number of variables which or not of relevance to our build.
 # Mark these as advanced, so as not to clutter the configuration.
@@ -21,10 +21,7 @@ MARK_AS_ADVANCED(FORCE
 	CUDA_ATTACH_VS_BUILD_RULE_TO_C
 	CUDA_HOST_COMPILATION_CPP)
 
-# CUDA includes
-CUDA_INCLUDE_DIRECTORIES(
-	${CMAKE_CURRENT_SOURCE_DIR}
-  )
+CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 # C++ only includes
 INCLUDE_DIRECTORIES(
@@ -33,8 +30,6 @@ INCLUDE_DIRECTORIES(
 	${Boost_INCLUDE_DIR}	
   )
 
-##############################################################################
-
 
 # We need shared memory atomics
 SET(CUDA_NVCC_FLAGS "-arch=sm_12")
@@ -42,7 +37,6 @@ SET(CUDA_NVCC_FLAGS "-arch=sm_12")
 # We rely on 32-bit floats
 INCLUDE(CheckTypeSize)
 CHECK_TYPE_SIZE(float FLOAT_SIZE)
-
 IF(NOT ${FLOAT_SIZE} EQUAL 4)
 	MESSAGE(SEND_ERROR "float does not have expected size (4B)")
 ENDIF(NOT ${FLOAT_SIZE} EQUAL 4)
@@ -108,54 +102,76 @@ INSTALL(FILES libnemo.h DESTINATION include)
 # API Documentation
 ##############################################################################
 
-FIND_PACKAGE(Doxygen)
+# Users shouldn't normally need to build to documentation themselves.
+OPTION(REBUILD_API_DOCS "Rebuild API documentation" OFF)
 
-IF(DOXYGEN_FOUND)
+SET(DOXYGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/doc)
+SET(DOXYGEN_MAN_OUTPUT_DIR ${DOXYGEN_OUTPUT_DIR}/man/man3)
+SET(DOXYGEN_MAN_OUTPUTS
+	${DOXYGEN_MAN_OUTPUT_DIR}/libnemo.h.3
+	${DOXYGEN_MAN_OUTPUT_DIR}/nemo_Network.3
+)
 
-	SET(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-	SET(DOXYGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/doc)
-	SET(DOXYGEN_MAN_OUTPUT_DIR ${DOXYGEN_OUTPUT_DIR}/man/man3)
-	SET(DOXYGEN_MAN_OUTPUTS
-		${DOXYGEN_MAN_OUTPUT_DIR}/libnemo.h.3
-		${DOXYGEN_MAN_OUTPUT_DIR}/nemo_Network.3
-	)
-	# Some extra pages, which should be cleaned but not installed
-	SET(DOXYGEN_MAN_EXTRA_OUTPUTS
-		${DOXYGEN_MAN_OUTPUT_DIR}/Network.hpp.3
-	)
-	SET(DOXYGEN_OUTPUTS
-		${DOXYGEN_MAN_OUTPUTS}
-		${DOXYGEN_MAN_EXTRA_OUTPUTS}
-	)
+# Some extra pages, which should be cleaned but not installed
+# TODO: add these to source package ignore files
+SET(DOXYGEN_MAN_EXTRA_OUTPUTS
+	${DOXYGEN_MAN_OUTPUT_DIR}/Network.hpp.3
+)
 
-	CONFIGURE_FILE(${DOXYFILE_IN} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ESCAPE_QUOTES @ONLY)
+SET(DOXYGEN_OUTPUTS
+	${DOXYGEN_MAN_OUTPUTS}
+	${DOXYGEN_MAN_EXTRA_OUTPUTS}
+)
 
-	# Run doxygen
+IF(REBUILD_API_DOCS)
+	FIND_PACKAGE(Doxygen)
+
+	IF(DOXYGEN_FOUND)
+
+		SET(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+		CONFIGURE_FILE(${DOXYFILE_IN} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ESCAPE_QUOTES @ONLY)
+
+		# Run Doxygen
+		# TODO: don't copy the whole doc-tree into the source tree. Most of
+		# the generated files are not needed for the source installation.
+		ADD_CUSTOM_COMMAND(
+			OUTPUT ${DOXYGEN_OUTPUTS}
+			COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+			COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_MAN_OUTPUT_DIR} ${CMAKE_SOURCE_DIR}/doc/man/man3
+			DEPENDS
+				${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+				${CMAKE_SOURCE_DIR}/src/libnemo.h
+				${CMAKE_SOURCE_DIR}/src/Network.hpp
+		)
+
+		# TODO: generate PDF manual
+
+	ENDIF(DOXYGEN_FOUND)
+
+ELSE(REBUILD_API_DOCS)
+
+	# The generated documentation should already be present in the source tree.
+	# Copy it into the build tree.
 	ADD_CUSTOM_COMMAND(
 		OUTPUT ${DOXYGEN_OUTPUTS}
-		COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-		DEPENDS
-			${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-			${CMAKE_SOURCE_DIR}/src/libnemo.h
-			${CMAKE_SOURCE_DIR}/src/Network.hpp
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/doc ${CMAKE_BINARY_DIR}/doc
 	)
 
-	# Create all documentation
-	ADD_CUSTOM_TARGET(api-doc 
-		DEPENDS ${DOXYGEN_OUTPUTS}
-		COMMENT "Generating documentation"		
-		VERBATIM
-	)
-
-	# Always create API documentation
-	ADD_DEPENDENCIES(nemo api-doc)
-
-	IF(UNIX)
-		INSTALL(FILES ${DOXYGEN_MAN_OUTPUTS} DESTINATION man/man3)
-	ENDIF(UNIX)
-
-	# TODO: generate PDF manual
-
-ENDIF(DOXYGEN_FOUND)
+ENDIF(REBUILD_API_DOCS)
 
 
+# Create all documentation
+ADD_CUSTOM_TARGET(api-doc
+	DEPENDS ${DOXYGEN_OUTPUTS} ${DOXYGEN_SRC_OUTPUT}
+	COMMENT "Generating documentation"
+	VERBATIM
+)
+
+
+# Always create API documentation
+ADD_DEPENDENCIES(nemo api-doc)
+
+
+IF(UNIX)
+	INSTALL(FILES ${DOXYGEN_MAN_OUTPUTS} DESTINATION man/man3)
+ENDIF(UNIX)
