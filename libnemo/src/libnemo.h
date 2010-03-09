@@ -45,8 +45,8 @@ typedef int nemo_status_t;
 //-----------------------------------------------------------------------------
 
 
-/*! \name Initialisation */
-/* \{ */ // begin init section
+/*! \name Initialisation
+ * \{ */
 
 //! \todo get rid of setReverse. Just deal with this in the host code
 //! \todo dynamically resize the firing buffer?
@@ -70,7 +70,9 @@ nemo_new_network(unsigned setReverse, unsigned maxReadPeriod);
 /*! \name Configuration */
 /* \{ */ // begin configuration
 
-nemo_status_t nemo_log_stdout(NETWORK network);
+
+/*! \copydoc nemo::Network::logToStdout */
+nemo_status_t nemo_log_stdout(NETWORK);
 
 /*! Enable spike-timing dependent plasticity in the simulation.
  *
@@ -95,7 +97,7 @@ void
 nemo_enable_stdp(NETWORK,
 		float prefire_fn[],
 		size_t prefire_len,
-		float postFireFn[],
+		float postfire_fn[],
 		size_t postfire_len,
 		float min_weight,
 		float max_weight);
@@ -168,7 +170,8 @@ nemo_add_synapses(NETWORK,
 // SIMULATION STEPPING
 //-----------------------------------------------------------------------------
 
-/*! \name Simulation \{ */
+/*! \name Simulation
+ * \{ */
 
 //! \todo rename to finalise network
 /*! \copydoc nemo::Network::startSimulation */
@@ -185,19 +188,20 @@ nemo_start_simulation(NETWORK);
  * 		Length of fstimIdx
  */
 nemo_status_t
-nemo_step(NETWORK network, unsigned fstimIdx[], size_t fstimCount);
+nemo_step(NETWORK, unsigned fstimIdx[], size_t fstimCount);
 
 
 /*! \copydoc nemo::Network::applyStdp */
 nemo_status_t
-nemo_apply_stdp(NETWORK network, float reward);
+nemo_apply_stdp(NETWORK, float reward);
 
 
 //-----------------------------------------------------------------------------
 // FIRING PROBE
 //-----------------------------------------------------------------------------
 
-/*! \name Simulation (firing) \{ */
+/*! \name Simulation (firing)
+ * \{ */
 
 /*! Return all buffered firing data and empty buffers.
  *
@@ -208,7 +212,7 @@ nemo_apply_stdp(NETWORK network, float reward);
  * cycles for which we have firing.
  */
 nemo_status_t
-nemo_read_firing(NETWORK network,
+nemo_read_firing(NETWORK,
 		unsigned* cycles[],
 		unsigned* neuronIdx[],
 		unsigned* nfired,
@@ -217,7 +221,7 @@ nemo_read_firing(NETWORK network,
 
 /*! \copydoc nemo::Network::flushFiringBuffer */
 nemo_status_t
-nemo_flush_firing_buffer(NETWORK network);
+nemo_flush_firing_buffer(NETWORK);
 
 /* \} */ // end firing group
 
@@ -228,7 +232,7 @@ nemo_flush_firing_buffer(NETWORK network);
 
 /*! Read connectivity matrix back from device for a single neuron and delay. */
 size_t
-nemo_get_synapses(NETWORK network,
+nemo_get_synapses(NETWORK,
 		unsigned sourcePartition,
 		unsigned sourceNeuron,
 		unsigned delay,
@@ -250,8 +254,7 @@ nemo_get_synapses(NETWORK network,
 //-----------------------------------------------------------------------------
 
 /*! \name Error handling
- */
-/*! \{ */ // begin error group
+ * \{ */
 
 //! \todo consider putting the error codes here
 
@@ -266,8 +269,8 @@ nemo_strerror(NETWORK);
 
 
 
-/*! \name Finalization */
-/* \{ */ // begin finalize section
+/*! \name Finalization
+ * \{ */
 
 /*! Delete network object, freeing up all its associated resources */
 void nemo_delete_network(NETWORK);
@@ -283,13 +286,13 @@ void nemo_delete_network(NETWORK);
 /*! \name Simulation (timing) \{ */
 
 /*! \copydoc nemo::Network::elapsedWallclock */
-unsigned long nemo_elapsed_wallclock(NETWORK network);
+unsigned long nemo_elapsed_wallclock(NETWORK);
 
 /*! \copydoc nemo::Network::elapsedSimulation */
-unsigned long nemo_elapsed_simulation(NETWORK network);
+unsigned long nemo_elapsed_simulation(NETWORK);
 
 /*! \copydoc nemo::Network::resetTimer */
-void nemo_reset_timer(NETWORK network);
+void nemo_reset_timer(NETWORK);
 
 /* \} */ // end timing section
 

@@ -50,15 +50,13 @@ class Network
 
 		/* \} */ // end configuration
 
-		/*!\name Construction
+		/*! \name Construction
 		 *
-		 * Networks are constructed by adding individual
-		 * neurons, and single or groups of synapses to the
-		 * network. Neurons are given indices (from 0) which
-		 * should be unique for each neuron. When adding
-		 * synapses the source or target neurons need not
-		 * necessarily exist yet, but should be defined before
-		 * the network is finalised.
+		 * Networks are constructed by adding individual neurons, and single or
+		 * groups of synapses to the network. Neurons are given indices (from
+		 * 0) which should be unique for each neuron. When adding synapses the
+		 * source or target neurons need not necessarily exist yet, but should
+		 * be defined before the network is finalised.
 		 * \{ */
 
 		/*! Add a single neuron to the network
@@ -67,6 +65,8 @@ class Network
 		 * model of spiking neurons", \e IEEE \e Trans. \e Neural \e Networks, vol 14,
 		 * pp 1569-1572, 2003 for a full description of the model and the parameters.
 		 *
+		 * \param idx
+		 * 		Neuron index. This should be unique
 		 * \param a
 		 * 		Time scale of the recovery variable \a u
 		 * \param b
@@ -119,7 +119,8 @@ class Network
 		 * NETWORK SIMULATION
 		 */
 
-		/*! \name Simulation \{ */
+		/*! \name Simulation
+		 * \{ */
 
 		/*! Finalise network construction to prepare it for
 		 * simulation
@@ -151,7 +152,8 @@ class Network
 
 		/* \} */ // end simulation group
 
-		/*! \name Simulation (firing) \{ */
+		/*! \name Simulation (firing)
+		 * \{ */
 
 		//! \todo return pairs instead here
 		/*! Read all firing data buffered on the device since the previous
@@ -181,7 +183,8 @@ class Network
 
 		/* \} */ // end simulation (firing)
 
-		/*! \name Simulation (timing) \{ */
+		/*! \name Simulation (timing)
+		 * \{ */
 
 		/*! \return number of milliseconds of wall-clock time elapsed since
 		 * first simulation step (or last timer reset). */
