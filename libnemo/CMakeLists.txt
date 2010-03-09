@@ -9,7 +9,7 @@ SET(CPACK_PACKAGE_VERSION_PATCH 0)
 #SET(CPACK_PACKAGE_VERSION 0.5)
 SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
 
-SUBDIRS(src)
+SUBDIRS(src doc)
 
 OPTION(CREATE_EXAMPLES "Build binaries for example networks" ON)
 IF(CREATE_EXAMPLES)
