@@ -7,6 +7,19 @@ SET(Boost_USE_MULTITHREAD OFF)
 FIND_PACKAGE(Boost REQUIRED)
 
 ##############################################################################
+# CUDA configuration
+
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake/cuda" ${CMAKE_MODULE_PATH})
+FIND_PACKAGE(CUDA)
+
+# FindCUDA sets a number of variables which or not of relevance to our build.
+# Mark these as advanced, so as not to clutter the configuration.
+MARK_AS_ADVANCED(FORCE
+	FOUND_CUT
+	FOUND_CUT_INCLUDE
+	CUDA_SDK_INSTALL_PREFIX
+	CUDA_ATTACH_VS_BUILD_RULE_TO_C
+	CUDA_HOST_COMPILATION_CPP)
 
 # CUDA includes
 CUDA_INCLUDE_DIRECTORIES(
@@ -94,6 +107,8 @@ INSTALL(FILES libnemo.h DESTINATION include)
 ##############################################################################
 # API Documentation
 ##############################################################################
+
+FIND_PACKAGE(Doxygen)
 
 IF(DOXYGEN_FOUND)
 
