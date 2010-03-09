@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-__host__ void configurePartitionSize(const std::vector<uint>& d_partitionSize);
+__host__ void configurePartitionSize(const uint* d_partitionSize, size_t len);
 __host__ void configureKernel(uint maxDelay, uint pitch32, uint pitch64);
 
 #endif

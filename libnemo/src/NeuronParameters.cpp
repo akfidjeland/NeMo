@@ -151,7 +151,7 @@ NeuronParameters::configurePartitionSizes()
 		partitionSizes[i->first] = i->second + 1;
 	}
 
-	configurePartitionSize(partitionSizes);
+	configurePartitionSize(&partitionSizes[0], partitionSizes.size());
 }
 
 } // end namespace nemo

@@ -57,7 +57,7 @@ __host__
 void
 configureKernel(uint maxDelay, uint pitch32, uint pitch64)
 {
-	std::vector<uint> param(NPARAM_COUNT);
+	uint param[NPARAM_COUNT];
 	SET_CONSTANT(maxDelay,  maxDelay);
 	SET_CONSTANT(pitch32,   pitch32);
 	SET_CONSTANT(pitch64,   pitch64);
@@ -70,6 +70,7 @@ configureKernel(uint maxDelay, uint pitch32, uint pitch64)
 }
 
 
+//! \todo just use constant memory directly
 __device__
 void
 loadNetworkParameters()
@@ -87,13 +88,14 @@ __constant__ uint c_partitionSize[MAX_THREAD_BLOCKS];
 
 __host__
 void
-configurePartitionSize(const std::vector<uint>& d_partitionSize)
+configurePartitionSize(const uint* d_partitionSize, size_t len)
 {
-	assert(d_partitionSize.size() <= MAX_THREAD_BLOCKS);
+	//! \todo set padding to zero
+	assert(len <= MAX_THREAD_BLOCKS);
 	CUDA_SAFE_CALL(
 		cudaMemcpyToSymbol(
 			c_partitionSize,
-			&d_partitionSize[0],
+			(void*) d_partitionSize,
 			MAX_THREAD_BLOCKS*sizeof(uint), 
 			0, cudaMemcpyHostToDevice));
 }
