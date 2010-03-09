@@ -28,7 +28,7 @@ Usage
 The 'examples' directory contains an example network using the C++ API.
 
 On UNIX, the build process generates man pages (if Doxgyen is installed). Check
-'man 3 libnemo.h' for C API reference and 'man 3 nemo::Network' for a C++ API
+'man 3 nemo.h' for C API reference and 'man 3 nemo::Network' for a C++ API
 reference.
 
 Andreas Fidjeland

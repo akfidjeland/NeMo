@@ -1,7 +1,7 @@
 #ifndef LIBNEMO_H
 #define LIBNEMO_H
 
-/*! \file libnemo.h
+/*! \file nemo.h
  *
  * \author Andreas Fidjeland
  * \date February 2010

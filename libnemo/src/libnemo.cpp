@@ -8,7 +8,7 @@
  */
 
 extern "C" {
-#include "libnemo.h"
+#include "nemo.h"
 }
 
 #include "RuntimeData.hpp"
