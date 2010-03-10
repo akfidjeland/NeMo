@@ -6,7 +6,8 @@
  * at 20x32.  Conductance delays are linearly dependent on distance and ranges
  * from 1ms to 20ms.
  *
- * This network shows usage of libnemo and can be used for timing purposes.
+ * This network shows usage of libnemo and can be used for benchmarking
+ * purposes.
  *
  * Author: Andreas K. Fidjelnad <andreas.fidjeland@imperial.ac.uk>
  * Date: March 2010
