@@ -44,6 +44,29 @@ IF(REBUILD_API_DOCS)
 				${CMAKE_SOURCE_DIR}/src/Network.hpp
 		)
 
+		ADD_CUSTOM_TARGET(api-doc
+			DEPENDS ${DOXYGEN_OUTPUTS} ${DOXYGEN_SRC_OUTPUT}
+			COMMENT "Generating man pages"
+			VERBATIM
+		)
+
+		# Doxygen produces rather cruddy man-pages. We do some replacements to fix header etc.
+		FIND_PROGRAM(SED sed)
+		IF(SED)
+			FOREACH(MANPAGE ${DOXYGEN_MAN_OUTPUTS})
+				# TODO: get date from somewhere
+				SET(SED_SET_HEADER -e s/.TH.*/.TH\ nemo.h\ 3\ \"Mar\ 2010\"\ \"\"\ \"Nemo\ Reference\ Manual\"/)
+				SET(SED_SET_AUTHOR -e s/Generated\ automatically\ by\ Doxygen.*/Andreas\ Fidjeland\ \(using\ Doxygen\)/)
+				# Add reference to main man-page and upper-case author header
+				SET(SED_SET_SEE -e /.SH\ .Author/\ c.SH\ SEE\ ALSO\\nnemo\(3\)\ for\ library\ overview\\n.SH\ AUTHOR)
+				ADD_CUSTOM_COMMAND(
+					TARGET api-doc POST_BUILD
+					COMMAND ${SED} -i ${SED_SET_HEADER} ${SED_SET_AUTHOR} ${SED_SET_SEE} ${MANPAGE}
+					VERBATIM
+				)
+			ENDFOREACH(MANPAGE ${DOXYGEN_MAN_OUTPUTS})
+		ENDIF(SED)
+
 		# TODO: generate PDF manual
 
 	ENDIF(DOXYGEN_FOUND)
@@ -57,15 +80,13 @@ ELSE(REBUILD_API_DOCS)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/doc ${CMAKE_BINARY_DIR}/doc
 	)
 
+	ADD_CUSTOM_TARGET(api-doc
+		DEPENDS ${DOXYGEN_OUTPUTS} ${DOXYGEN_SRC_OUTPUT}
+		COMMENT "Generating man pages"
+		VERBATIM
+	)
+
 ENDIF(REBUILD_API_DOCS)
-
-
-# Create all documentation
-ADD_CUSTOM_TARGET(api-doc
-	DEPENDS ${DOXYGEN_OUTPUTS} ${DOXYGEN_SRC_OUTPUT}
-	COMMENT "Generating documentation"
-	VERBATIM
-)
 
 
 # Always create API documentation
