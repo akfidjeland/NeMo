@@ -213,7 +213,7 @@ nemo_apply_stdp(NETWORK, float reward);
  * 		Neuron indices of fired neurons
  * \param[out] nfired
  * 		Number of neurons which fired since the previous call to \a nemo_read_firing 
- * \param[out] ncycle
+ * \param[out] ncycles
  * 		Number of cycles for which firing data is returned
  */
 nemo_status_t

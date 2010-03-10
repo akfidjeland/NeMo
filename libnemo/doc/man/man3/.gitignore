@@ -1,2 +1,3 @@
 # Ignore all auto-generated man pages
-*.3
+nemo-c.3
+nemo-cpp.3

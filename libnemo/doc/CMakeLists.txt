@@ -62,14 +62,22 @@ IF(REBUILD_API_DOCS)
 			# Doxygen produces rather cruddy man-pages. We do some replacements to fix header etc.
 			IF(SED)
 				# TODO: get date from somewhere
-				# TODO: get correct title
-				SET(SED_SET_HEADER -e s/.TH.*/.TH\ nemo.h\ 3\ \"Mar\ 2010\"\ \"\"\ \"Nemo\ Reference\ Manual\"/)
+				STRING(REGEX REPLACE "${MAN_DIR}/(.*).3" "\\1" MANPAGE_TITLE ${MANPAGE})
+				SET(SED_SET_HEADER -e s/.TH.*/.TH\ ${MANPAGE_TITLE}\ 3\ \"Mar\ 2010\"\ \"\"\ \"Nemo\ Reference\ Manual\"/)
 				SET(SED_SET_AUTHOR -e s/Generated\ automatically\ by\ Doxygen.*/Andreas\ Fidjeland\ \(using\ Doxygen\)/)
+
+				# The title page is incorrect as it referes to filename or
+				# class. Just hard-code the relevant replacements.
+				SET(SED_SET_TITLE_C -e s/^nemo.h\ \\\\-/${MANPAGE_TITLE}\ \\\\-/)
+				SET(SED_SET_TITLE_CPP -e s/^nemo::Network\ \\\\-/${MANPAGE_TITLE}\ \\\\-/)
+				SET(SED_SET_TITLE ${SED_SET_TITLE_C} ${SED_SET_TITLE_CPP})
+
 				# Add reference to main man-page and upper-case author header
 				SET(SED_SET_SEE -e /.SH\ .Author/\ c.SH\ SEE\ ALSO\\nnemo\(3\)\ for\ library\ overview\\n.SH\ AUTHOR)
+
 				ADD_CUSTOM_COMMAND(
 					TARGET api-doc POST_BUILD
-					COMMAND ${SED} -i ${SED_SET_HEADER} ${SED_SET_AUTHOR} ${SED_SET_SEE} ${MANPAGE}
+					COMMAND ${SED} -i ${SED_SET_HEADER} ${SED_SET_AUTHOR} ${SED_SET_TITLE} ${SED_SET_SEE} ${MANPAGE}
 					VERBATIM
 				)
 			ENDIF(SED)
