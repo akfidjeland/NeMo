@@ -5,23 +5,13 @@
 # Users shouldn't normally need to build to documentation themselves.
 OPTION(REBUILD_API_DOCS "Rebuild API documentation" OFF)
 
-SET(DOXYGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/doc)
-SET(DOXYGEN_MAN_OUTPUT_DIR ${DOXYGEN_OUTPUT_DIR}/man/man3)
-SET(DOXYGEN_MAN_OUTPUTS
-	${DOXYGEN_MAN_OUTPUT_DIR}/nemo.h.3
-	${DOXYGEN_MAN_OUTPUT_DIR}/nemo_Network.3
+SET(DOC_DIR ${CMAKE_BINARY_DIR}/doc)
+SET(MAN_DIR ${DOC_DIR}/man/man3)
+SET(GENERATED_MAN_PAGES
+	${MAN_DIR}/nemo-c.3
+	${MAN_DIR}/nemo-cpp.3
 )
 
-# Some extra pages, which should be cleaned but not installed
-# TODO: add these to source package ignore files
-SET(DOXYGEN_MAN_EXTRA_OUTPUTS
-	${DOXYGEN_MAN_OUTPUT_DIR}/Network.hpp.3
-)
-
-SET(DOXYGEN_OUTPUTS
-	${DOXYGEN_MAN_OUTPUTS}
-	${DOXYGEN_MAN_EXTRA_OUTPUTS}
-)
 
 IF(REBUILD_API_DOCS)
 	FIND_PACKAGE(Doxygen)
@@ -32,29 +22,45 @@ IF(REBUILD_API_DOCS)
 		CONFIGURE_FILE(${DOXYFILE_IN} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ESCAPE_QUOTES @ONLY)
 
 		# Run Doxygen
-		# TODO: don't copy the whole doc-tree into the source tree. Most of
-		# the generated files are not needed for the source installation.
 		ADD_CUSTOM_COMMAND(
-			OUTPUT ${DOXYGEN_OUTPUTS}
+			OUTPUT
+				${MAN_DIR}/nemo.h.3
+				${MAN_DIR}/nemo_Network.3
+				${MAN_DIR}/Network.hpp.3
 			COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-			COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_MAN_OUTPUT_DIR} ${CMAKE_SOURCE_DIR}/doc/man/man3
 			DEPENDS
 				${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 				${CMAKE_SOURCE_DIR}/src/nemo.h
 				${CMAKE_SOURCE_DIR}/src/Network.hpp
 		)
 
+		# Name C API man page correctly
+		ADD_CUSTOM_COMMAND(
+			OUTPUT ${MAN_DIR}/nemo-c.3
+			COMMAND ${CMAKE_COMMAND} -E copy ${MAN_DIR}/nemo.h.3 ${MAN_DIR}/nemo-c.3
+			DEPENDS ${MAN_DIR}/nemo.h.3
+		)
+
+		# Name C++ API man page correctly
+		ADD_CUSTOM_COMMAND(
+			OUTPUT ${MAN_DIR}/nemo-cpp.3
+			COMMAND ${CMAKE_COMMAND} -E copy ${MAN_DIR}/nemo_Network.3 ${MAN_DIR}/nemo-cpp.3
+			DEPENDS ${MAN_DIR}/nemo_Network.3
+		)
+
 		ADD_CUSTOM_TARGET(api-doc
-			DEPENDS ${DOXYGEN_OUTPUTS} ${DOXYGEN_SRC_OUTPUT}
-			COMMENT "Generating man pages"
+			DEPENDS ${GENERATED_MAN_PAGES}
+			COMMENT "Generating man pages for API"
 			VERBATIM
 		)
 
-		# Doxygen produces rather cruddy man-pages. We do some replacements to fix header etc.
 		FIND_PROGRAM(SED sed)
-		IF(SED)
-			FOREACH(MANPAGE ${DOXYGEN_MAN_OUTPUTS})
+		FOREACH(MANPAGE ${GENERATED_MAN_PAGES})
+
+			# Doxygen produces rather cruddy man-pages. We do some replacements to fix header etc.
+			IF(SED)
 				# TODO: get date from somewhere
+				# TODO: get correct title
 				SET(SED_SET_HEADER -e s/.TH.*/.TH\ nemo.h\ 3\ \"Mar\ 2010\"\ \"\"\ \"Nemo\ Reference\ Manual\"/)
 				SET(SED_SET_AUTHOR -e s/Generated\ automatically\ by\ Doxygen.*/Andreas\ Fidjeland\ \(using\ Doxygen\)/)
 				# Add reference to main man-page and upper-case author header
@@ -64,8 +70,15 @@ IF(REBUILD_API_DOCS)
 					COMMAND ${SED} -i ${SED_SET_HEADER} ${SED_SET_AUTHOR} ${SED_SET_SEE} ${MANPAGE}
 					VERBATIM
 				)
-			ENDFOREACH(MANPAGE ${DOXYGEN_MAN_OUTPUTS})
-		ENDIF(SED)
+			ENDIF(SED)
+
+			# Copy final generated files into source directory, for inclusion in source package
+			ADD_CUSTOM_COMMAND(
+				TARGET api-doc POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy ${MANPAGE} ${CMAKE_SOURCE_DIR}/doc/man/man3
+			)
+
+		ENDFOREACH(MANPAGE ${GENERATED_MAN_PAGES})
 
 		# TODO: generate PDF manual
 
@@ -76,13 +89,13 @@ ELSE(REBUILD_API_DOCS)
 	# The generated documentation should already be present in the source tree.
 	# Copy it into the build tree.
 	ADD_CUSTOM_COMMAND(
-		OUTPUT ${DOXYGEN_OUTPUTS}
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/doc ${CMAKE_BINARY_DIR}/doc
+		OUTPUT ${GENERATED_MAN_PAGES}
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/doc/man/man3 ${CMAKE_BINARY_DIR}/doc/man/man3
 	)
 
 	ADD_CUSTOM_TARGET(api-doc
-		DEPENDS ${DOXYGEN_OUTPUTS} ${DOXYGEN_SRC_OUTPUT}
-		COMMENT "Generating man pages"
+		DEPENDS ${GENERATED_MAN_PAGES}
+		COMMENT "Using existing man pages"
 		VERBATIM
 	)
 
@@ -95,6 +108,6 @@ ADD_DEPENDENCIES(nemo api-doc)
 
 IF(UNIX)
 	SET(MAN_INSTALL_DIR share/man/man3)
-	INSTALL(FILES ${DOXYGEN_MAN_OUTPUTS} DESTINATION ${MAN_INSTALL_DIR})
+	INSTALL(FILES ${GENERATED_MAN_PAGES} DESTINATION ${MAN_INSTALL_DIR})
 	INSTALL(FILES man/man3/nemo.3 DESTINATION ${MAN_INSTALL_DIR})
 ENDIF(UNIX)
