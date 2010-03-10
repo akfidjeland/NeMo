@@ -1,5 +1,5 @@
-#ifndef NETWORK_HPP
-#define NETWORK_HPP
+#ifndef NEMO_HPP
+#define NEMO_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -10,13 +10,13 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \file Network.hpp
+//! \file nemo.hpp
 
 #include <vector>
 
 namespace nemo {
 
-/*! \brief Network class */
+/*! \brief C++ API for nemo */
 class Network
 {
 	public :

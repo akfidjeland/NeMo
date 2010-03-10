@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Network.hpp"
+#include "nemo.hpp"
 #include "RuntimeData.hpp"
 
 namespace nemo {

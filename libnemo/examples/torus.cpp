@@ -15,10 +15,10 @@
 
 #include <vector>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <boost/random.hpp>
 
-#include <Network.hpp>
+#include <nemo.hpp>
 
 
 #define PATCH_WIDTH 32

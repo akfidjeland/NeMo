@@ -24,14 +24,16 @@ IF(REBUILD_API_DOCS)
 		# Run Doxygen
 		ADD_CUSTOM_COMMAND(
 			OUTPUT
+				# Files we are interested in
 				${MAN_DIR}/nemo.h.3
 				${MAN_DIR}/nemo_Network.3
-				${MAN_DIR}/Network.hpp.3
+				# Extra crud
+				${MAN_DIR}/nemo.hpp.3
 			COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 			DEPENDS
 				${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 				${CMAKE_SOURCE_DIR}/src/nemo.h
-				${CMAKE_SOURCE_DIR}/src/Network.hpp
+				${CMAKE_SOURCE_DIR}/src/nemo.hpp
 		)
 
 		# Name C API man page correctly

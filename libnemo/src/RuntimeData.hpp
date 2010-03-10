@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "Network.hpp"
+#include "nemo.hpp"
 #include "NVector.hpp"
 #include "DeviceAssertions.hpp"
 #include "Timer.hpp"

@@ -12,7 +12,7 @@ extern "C" {
 }
 
 #include "RuntimeData.hpp"
-#include "Network.hpp"
+#include "nemo.hpp"
 //! \todo combine these into a single header file
 #include "DeviceAssertions.hpp"
 #include "except.hpp"
