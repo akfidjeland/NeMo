@@ -1,7 +1,7 @@
 Build installation
 ------------------
 
-The build process uses cmake. Basic usage on UNIX
+The build process uses cmake. Basic usage on UNIX:
 
 mkdir build
 cd build
@@ -13,23 +13,17 @@ make install
 Dependencies
 ------------
 
-Required:
-
 - CUDA toolkit >= 2.1 (SDK not required)
-- Boost
-
-Optional:
-
-- Doxygen (for man-page generation)
+- Boost (for smart pointers and random number generation)
 
 Usage
 -----
 
 The 'examples' directory contains an example network using the C++ API.
 
-On UNIX, the build process generates man pages (if Doxgyen is installed). Check
-'man 3 nemo.h' for C API reference and 'man 3 nemo::Network' for a C++ API
-reference.
+On UNIX, the build process generates man pages. Check 'man 3 nemo' for an
+overview of the library, 'man 3 nemo.h' for C API reference and 'man 3
+nemo_Network' for the C++ API reference.
 
-Andreas Fidjeland
+Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>
 March 2010
