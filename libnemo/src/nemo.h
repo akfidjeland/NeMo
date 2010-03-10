@@ -1,20 +1,16 @@
-#ifndef LIBNEMO_H
-#define LIBNEMO_H
+#ifndef NEMO_H
+#define NEMO_H
 
 /*! \file nemo.h
  *
- * \author Andreas Fidjeland
- * \date February 2010
  * \brief C API for the nemo spiking neural network simulator
- *
- * The C API wraps a C++ class which can be used directly.
  */
 //! \todo write a brief overview
 //! \todo mention CUDA
 //! \todo briefly document the izhikevich model
 //! \todo refer to own paper
 //! \todo mention neuron indexing
-//! \todo mention millisecond accuracy
+//! \todo add reference to main man page
 //! \todo document STDP
 
 #include <stddef.h> // for size_t
@@ -91,7 +87,7 @@ nemo_status_t nemo_log_stdout(NETWORK);
  * \param max_weight
  * 		Weight beyond which excitatory synapses are not allowed to move
  * \param min_weight
- * 		Weight beyond which excitatory synapses are not allowed to move
+ * 		Weight beyond which inhibitory synapses are not allowed to move
  */
 void
 nemo_enable_stdp(NETWORK,
@@ -201,20 +197,29 @@ nemo_apply_stdp(NETWORK, float reward);
 //-----------------------------------------------------------------------------
 
 /*! \name Simulation (firing)
+ *
+ * The indices of the fired neurons are buffered on the device, and can be read
+ * back at run-time. The desired size of the buffer is specified when
+ * constructing the network. Each read empties the buffer. To avoid overflow if
+ * the firing data is not needed, call \a nemo_flush_firing_buffer periodically.
+ *
  * \{ */
 
-/*! Return all buffered firing data and empty buffers.
+/*! Return contents of firing buffer in the output parameters.
  *
- * The three arrays together form a vector of 3-tuples specifying cycle,
- * partition index, and neuron index for all the fired neurons. 
- *
- * The last two output variables contain the number of neurons and the number of
- * cycles for which we have firing.
+ * \param[out] cycles
+ * 		Cycle numbers (relative to start of buffer) at which neurons fired
+ * \param[out] nidx
+ * 		Neuron indices of fired neurons
+ * \param[out] nfired
+ * 		Number of neurons which fired since the previous call to \a nemo_read_firing 
+ * \param[out] ncycle
+ * 		Number of cycles for which firing data is returned
  */
 nemo_status_t
 nemo_read_firing(NETWORK,
 		unsigned* cycles[],
-		unsigned* neuronIdx[],
+		unsigned* nidx[],
 		unsigned* nfired,
 		unsigned* ncycles);
 
@@ -230,6 +235,8 @@ nemo_flush_firing_buffer(NETWORK);
 // QUERIES
 //-----------------------------------------------------------------------------
 
+/*! \name Simulation (queries) \{ */
+
 /*! Read connectivity matrix back from device for a single neuron and delay. */
 size_t
 nemo_get_synapses(NETWORK,
@@ -243,8 +250,33 @@ nemo_get_synapses(NETWORK,
 
 
 
-
 /* \} */ // end simulation group
+
+
+//-----------------------------------------------------------------------------
+// TIMERS
+//-----------------------------------------------------------------------------
+
+/*! \name Simulation (timing)
+ *
+ * The simulation has two internal timers which keep track of the elapsed \e
+ * simulated time and \e wallclock time. Both timers measure from the first
+ * simulation step, or from the last timer reset, whichever comes last.
+ *
+ * \{ */
+
+/*! \copydoc nemo::Network::elapsedWallclock */
+unsigned long nemo_elapsed_wallclock(NETWORK);
+
+/*! \copydoc nemo::Network::elapsedSimulation */
+unsigned long nemo_elapsed_simulation(NETWORK);
+
+/*! \copydoc nemo::Network::resetTimer */
+void nemo_reset_timer(NETWORK);
+
+/* \} */ // end timing section
+
+
 
 
 
@@ -254,6 +286,11 @@ nemo_get_synapses(NETWORK,
 //-----------------------------------------------------------------------------
 
 /*! \name Error handling
+ *
+ * The API functions generally return an error status of type \a nemo_status_t.
+ * A non-zero value indicates an error. An error string describing this error
+ * is stored internally and can be queried by the user.
+ *
  * \{ */
 
 //! \todo consider putting the error codes here
@@ -280,24 +317,6 @@ void nemo_delete_network(NETWORK);
 
 
 //-----------------------------------------------------------------------------
-// TIMERS
-//-----------------------------------------------------------------------------
-
-/*! \name Simulation (timing) \{ */
-
-/*! \copydoc nemo::Network::elapsedWallclock */
-unsigned long nemo_elapsed_wallclock(NETWORK);
-
-/*! \copydoc nemo::Network::elapsedSimulation */
-unsigned long nemo_elapsed_simulation(NETWORK);
-
-/*! \copydoc nemo::Network::resetTimer */
-void nemo_reset_timer(NETWORK);
-
-/* \} */ // end timing section
-
-
-//-----------------------------------------------------------------------------
 // DEBUGGING/INTERNALS
 //-----------------------------------------------------------------------------
 
@@ -307,7 +326,5 @@ nemo_new_network_(
 		unsigned setReverse,
 		unsigned maxReadPeriod,
 		unsigned maxPartitionSize);
-
-
 
 #endif

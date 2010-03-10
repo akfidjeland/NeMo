@@ -33,10 +33,6 @@ class Network
 
 		virtual ~Network();
 
-		/*
-		 * CONFIGURATION
-		 */
-
 		/*! \name Configuration */
 		/* \{ */ // begin configuration
 
@@ -61,16 +57,18 @@ class Network
 
 		/*! Add a single neuron to the network
 		 *
-		 * The neuron uses the Izhikevich neuron model. See E. M. Izhikevich "Simple
-		 * model of spiking neurons", \e IEEE \e Trans. \e Neural \e Networks, vol 14,
-		 * pp 1569-1572, 2003 for a full description of the model and the parameters.
+		 * The neuron uses the Izhikevich neuron model. See E. M. Izhikevich
+		 * "Simple model of spiking neurons", \e IEEE \e Trans. \e Neural \e
+		 * Networks, vol 14, pp 1569-1572, 2003 for a full description of the
+		 * model and the parameters.
 		 *
 		 * \param idx
 		 * 		Neuron index. This should be unique
 		 * \param a
 		 * 		Time scale of the recovery variable \a u
 		 * \param b
-		 * 		Sensitivity to sub-threshold fluctutations in the membrane potential \a v
+		 * 		Sensitivity to sub-threshold fluctutations in the membrane
+		 * 		potential \a v
 		 * \param c
 		 * 		After-spike reset value of the membrane potential \a v
 		 * \param d
@@ -80,9 +78,10 @@ class Network
 		 * \param v
 		 * 		Initial value for the membrane potential
 		 * \param sigma
-		 * 		Parameter for a random gaussian per-neuron process which generates
-		 * 		random input current drawn from an N(0,\a sigma) distribution. If set
-		 * 		to zero no random input current will be generated.
+		 * 		Parameter for a random gaussian per-neuron process which
+		 * 		generates random input current drawn from an N(0,\a sigma)
+		 * 		distribution. If set to zero no random input current will be
+		 * 		generated.
 		 */
 		virtual void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
@@ -99,7 +98,8 @@ class Network
 		 * \param weights
 		 * 		Synapse weights
 		 * \param isPlastic
-		 * 		Specifies for each synapse whether or not it is plastic. See section on STDP.
+		 * 		Specifies for each synapse whether or not it is plastic.
+		 * 		See section on STDP.
 		 *
 		 * \pre
 		 * 		\a targets, \a delays, \a weights, and
@@ -114,10 +114,6 @@ class Network
 				const std::vector<unsigned char> isPlastic) = 0;
 
 		/* \} */ // end construction group
-
-		/*
-		 * NETWORK SIMULATION
-		 */
 
 		/*! \name Simulation
 		 * \{ */
@@ -153,6 +149,13 @@ class Network
 		/* \} */ // end simulation group
 
 		/*! \name Simulation (firing)
+		 *
+		 * The indices of the fired neurons are buffered on the device, and can
+		 * be read back at run-time. The desired size of the buffer is
+		 * specified when constructing the network. Each read empties the
+		 * buffer. To avoid overflow if the firing data is not needed, call
+		 * \a flushFiringBuffer periodically.
+		 *
 		 * \{ */
 
 		//! \todo return pairs instead here
@@ -184,6 +187,12 @@ class Network
 		/* \} */ // end simulation (firing)
 
 		/*! \name Simulation (timing)
+		 *
+		 * The simulation has two internal timers which keep track of the
+		 * elapsed \e simulated time and \e wallclock time. Both timers measure
+		 * from the first simulation step, or from the last timer reset,
+		 * whichever comes last.
+		 *
 		 * \{ */
 
 		/*! \return number of milliseconds of wall-clock time elapsed since
