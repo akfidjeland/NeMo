@@ -318,14 +318,6 @@ ConnectivityMatrix::clearStdpAccumulator()
 	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
 		i->second->clearStdpAccumulator();
 	}
-#if 0
-	for(rcm_t::const_iterator i = m0_rsynapses.begin(); i != m0_rsynapses.end(); ++i) {
-		i->second->clearStdpAccumulator();
-	}
-	for(rcm_t::const_iterator i = m1_rsynapses.begin(); i != m1_rsynapses.end(); ++i) {
-		i->second->clearStdpAccumulator();
-	}
-#endif
 }
 
 
