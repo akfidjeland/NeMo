@@ -13,9 +13,10 @@
  * Date: March 2010
  */ 
 
-#include <vector>
-#include <iostream>
+#include <algorithm>
 #include <cmath>
+#include <iostream>
+#include <vector>
 #include <boost/random.hpp>
 
 #include <nemo.hpp>
@@ -25,7 +26,7 @@
 #define PATCH_HEIGHT 32
 #define PATCH_SIZE ((PATCH_WIDTH) * (PATCH_HEIGHT))
 
-#define MAX_DELAY 20
+#define MAX_DELAY 20U
 
 #define PI 3.14159265358979323846264338327
 
@@ -111,7 +112,9 @@ targetNeuron(
 		urng_t& angle)
 {
 	//! \todo should we set an upper limit to the distance? 
-	double dist = abs(distance());
+	/* Make sure we don't connect back to self with (near) 0-distance connection.
+	 * Perhaps better to simply reject very short distances? */
+	double dist = 1.0 + abs(distance());
 	double theta = angle();
 
 	double distX = dist * cos(theta);
@@ -134,6 +137,9 @@ targetNeuron(
 	// deal with negative numbers here
 	int targetPatch = globalX / PATCH_WIDTH;
 	int targetX = globalX % PATCH_WIDTH;
+
+	/* Don't connect to self unless we wrap around torus */
+	assert(!(targetX == sourceX && targetY == sourceY && dist < PATCH_HEIGHT));
 
 	return std::make_pair<uint, double>(neuronIndex(targetPatch, targetX, targetY), dist);
 }
@@ -205,7 +211,7 @@ addInhibitorySynapses(
 		target_t target = targetNeuron(patch, x, y, pcount, distance, angle);
 		targets.at(sidx) = target.first;
 		weights.at(sidx) = -rweight();
-		delays.at(sidx) = 1; 
+		delays.at(sidx) = delay(target.second);
 		//std::cout << neuronIndex(patch, x, y) << " -> " << target.first << " d=" << target.second << "\n";
 	}
 
@@ -319,6 +325,7 @@ simulate(nemo::Network* net, unsigned pcount, unsigned m, bool stdp)
 		}
 		net->flushFiringBuffer();
 	}
+	std::cout << "[" << net->elapsedWallclock() << "ms elapsed]" << std::endl;
 	net->resetTimer();
 
 	uint seconds = 10;
@@ -367,27 +374,29 @@ simulate(nemo::Network* net, unsigned pcount, unsigned m, bool stdp)
 	std::cout << "Total firings: " << nfired << std::endl;
 	std::cout << "Avg. firing rate: " << f << "Hz\n";
 	std::cout << "Spike arrivals: " << narrivals << std::endl;
-	std::cout << "Performace both with and without PCI traffic overheads:\n"; 
-	std::cout << "Approx. throughput: " << throughputPCI/1000000 << "/" << throughputNoPCI/1000000 << "Ma/s (million spike arrivals per second)\n";
-	std::cout << "Speedup wrt real-time: " << speedupPCI << "/" << speedupNoPCI << std::endl;
+	std::cout << "Performace both with and without PCI traffic overheads:\n";
+	std::cout << "Approx. throughput: " << throughputPCI/1000000 << "/"
+			<< throughputNoPCI/1000000 << "Ma/s (million spike arrivals per second)\n";
+	std::cout << "Speedup wrt real-time: " << speedupPCI << "/"
+			<< speedupNoPCI << std::endl;
 
 	//net->stopSimulation();
 }
 
 
+#ifndef TORUS_NO_MAIN
 
 int
 main(int argc, char* argv[])
 {
-	if(argc != 2) {
-		fprintf(stderr, "Usage: run pcount\n");
+	if(argc != 3) {
+		fprintf(stderr, "Usage: run pcount sigma\n");
 		exit(-1);
 	}
 
 	uint pcount = atoi(argv[1]);
-	//! \todo get sigma from command-line
-	//double sigma = atof(argv[2]);
-	double sigma = PATCH_WIDTH/2;
+	uint sigma = atoi(argv[2]);
+	assert(sigma >= PATCH_WIDTH/2);
 
 	//! \todo get RNG seed option from command line
 	//! \todo otherwise seed from system time
@@ -402,4 +411,8 @@ main(int argc, char* argv[])
 	configure(net, stdp);
 	construct(net, pcount, m, stdp, sigma);
 	simulate(net, pcount, m, stdp);
+	delete net;
 }
+
+#endif
+
