@@ -219,7 +219,7 @@ ConnectivityMatrix::maxPartitionIdx() const
 
 
 void
-ConnectivityMatrix::moveToDevice()
+ConnectivityMatrix::moveToDevice(bool logging)
 {
 	try {
 		moveFcmToDevice();
@@ -243,6 +243,12 @@ ConnectivityMatrix::moveToDevice()
 		std::cerr << e.what() << std::endl;
 		printMemoryUsage(std::cerr);
 		throw;
+	}
+
+	if(logging) {
+		//! \todo get output stream from caller
+		m_outgoing.reportWarpSizeHistogram(std::cout);
+		printMemoryUsage(std::cout);
 	}
 }
 

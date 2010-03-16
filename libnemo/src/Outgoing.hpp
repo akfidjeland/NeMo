@@ -41,6 +41,10 @@ class Outgoing
 
 		size_t totalWarpCount() const;
 
+		/*! \return print histogram of sizes of each synapse
+		 * warp to stdout */
+		void reportWarpSizeHistogram(std::ostream& out) const;
+
 	private :
 
 		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay

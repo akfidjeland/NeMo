@@ -66,8 +66,10 @@ class ConnectivityMatrix
 
 		delay_t maxDelay() const { return m_maxDelay; }
 
-		/* Copy data to device and clear host buffers */
-		void moveToDevice();
+		/*! Copy data to device and clear host buffers. If \a
+		 * logging is enabled, print info (memory usage etc.)
+		 * to stdout */
+		void moveToDevice(bool logging);
 
 		size_t getRow(
 				pidx_t sourcePartition,

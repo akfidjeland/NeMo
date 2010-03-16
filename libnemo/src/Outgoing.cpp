@@ -9,6 +9,7 @@
 
 #include "Outgoing.hpp"
 
+#include <iostream>
 #include <vector>
 #include <cuda_runtime.h>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -57,6 +58,34 @@ Outgoing::totalWarpCount() const
 		count += warpCount(i->second);
 	}
 	return count;
+}
+
+
+
+void
+Outgoing::reportWarpSizeHistogram(std::ostream& out) const
+{
+	uint total = 0;
+	std::vector<uint> hist(WARP_SIZE+1, 0);
+	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
+		targets_t targets = i->second;
+		for(targets_t::const_iterator j = targets.begin(); j != targets.end(); ++j) {
+			uint fullWarps = j->second / WARP_SIZE;
+			uint partialWarp = j->second % WARP_SIZE;
+			hist.at(WARP_SIZE) += fullWarps;
+			total += fullWarps;
+			if(partialWarp != 0) {
+				hist.at(partialWarp) += 1;
+				total += 1;
+			}
+		}
+	}
+	for(uint size=1; size < WARP_SIZE+1; ++size) {
+		uint count = hist.at(size);
+		double percentage = double(100 * count) / double(total);
+		std::cout << size << ": " << count << "(" << percentage << "%)\n";
+	}
+	std::cout << "total: " << total << std::endl;
 }
 
 

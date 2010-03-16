@@ -323,7 +323,7 @@ void
 RuntimeData::startSimulation()
 {
 	if(m_state != SIMULATING) {
-		m_cm->moveToDevice();
+		m_cm->moveToDevice(m_logging);
 		m_neurons->moveToDevice();
 		configureStdp();
 		m_partitionCount = m_neurons->partitionCount();
@@ -441,7 +441,6 @@ RuntimeData::finishSimulation()
 	m_state = ZOMBIE;
 	//! \todo perhaps clear device data here instead of in dtor
 	if(m_logging) {
-		m_cm->printMemoryUsage(std::cout);
 		m_cycleCounters->printCounters(std::cout);
 		//! \todo add time summary
 	}
