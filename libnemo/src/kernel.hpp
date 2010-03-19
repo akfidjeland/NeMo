@@ -56,4 +56,7 @@ configureStdp(
 		uint64_t depressionBits,
 		weight_dt* stdpFn);
 
+void configurePartitionSize(const uint* d_partitionSize, size_t len);
+void configureKernel(uint maxDelay, uint pitch32, uint pitch64);
+
 #endif
