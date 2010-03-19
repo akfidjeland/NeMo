@@ -27,9 +27,9 @@
 #include "except.hpp"
 
 #include "partitionConfiguration.cu_h"
-#include "kernel.hpp"
-#include "kernel.cu_h"
 #include "device_assert.cu_h"
+#include "kernel.cu_h"
+#include "kernel.hpp"
 
 
 
@@ -339,7 +339,7 @@ RuntimeData::startSimulation()
 
 		setPitch();
 		//! \todo do this configuration as part of CM setup
-		::configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
+		configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
 		resetTimer();
 		m_state = SIMULATING;
 	}

@@ -262,7 +262,7 @@ ENDMACRO(CUDA_INCLUDE_NVCC_DEPENDENCIES)
 # Set whether we are using emulation or device mode.
 OPTION(CUDA_BUILD_EMULATION "Build in Emulation mode" OFF)
 # Parse HOST_COMPILATION mode.
-OPTION(CUDA_HOST_COMPILATION_CPP "Generated file extension" ON)
+OPTION(CUDA_HOST_COMPILATION_CPP "Generated file extension" OFF)
 # Allow the user to specify if the device code is supposed to be 32 or 64 bit.
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(CUDA_64_BIT_DEVICE_CODE_DEFAULT ON)
@@ -648,7 +648,7 @@ MACRO(CUDA_add_custom_commands cuda_target format)
         )
 
       # Make sure the build system knows the file is generated.
-      set_source_files_properties(${generated_file} PROPERTIES GENERATED TRUE)
+	  set_source_files_properties(${generated_file} PROPERTIES GENERATED TRUE)
 
       # Add the generated file name to the source list.  ######################
       SET(cuda_cu_sources ${cuda_cu_sources} ${source_file})

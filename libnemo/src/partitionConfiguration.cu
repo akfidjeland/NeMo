@@ -24,8 +24,6 @@
 // (MAX_THREAD_BLOCKS) and size the data structures statically.
 //-----------------------------------------------------------------------------
 
-
-#include "partitionConfiguration.cu_h"
 #include "util.h"
 #include "kernel.cu_h"
 

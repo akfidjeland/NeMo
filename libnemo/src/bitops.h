@@ -45,4 +45,21 @@ inline int clz32(uint32_t val) { return clzN<uint32_t, 32>(val); }
 inline int ctz64(uint64_t val) { return __builtin_ctzll(val); }
 
 
+/* compute the next highest power of 2 of 32-bit v. From "bit-twiddling hacks".  */
+inline
+uint32_t
+ceilPowerOfTwo(uint32_t v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
+}
+
+
+
 #endif // BITOPS_H
