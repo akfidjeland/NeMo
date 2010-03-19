@@ -269,7 +269,7 @@ gather(
 		if(threadIdx.x < s_groupSize) {
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
 			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
-			DEBUG_MSG("c%u w%u -> p%u\n", incomingWarpOffset(sgin), CURRENT_PARTITION);
+			DEBUG_MSG("c%u w%u -> p%u\n", cycle, incomingWarpOffset(sgin), CURRENT_PARTITION);
 		}
 
 		__syncthreads();

@@ -49,14 +49,8 @@ struct RSMatrix
 				unsigned int targetNeuron,
 				unsigned int delay);
 
-	private :
-
-		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
-
-	public :
-
 		void moveToDevice(
-				const std::map<fcm_key_t, class SynapseGroup>& fcm,
+				const class WarpAddressTable& wtable,
 				pidx_t targetPartition);
 
 		void clearStdpAccumulator();
@@ -107,7 +101,7 @@ struct RSMatrix
 		boost::shared_ptr<uint32_t>& allocateDeviceMemory();
 
 		void copyToDevice(
-				const std::map<fcm_key_t, class SynapseGroup>& fcm,
+				const class WarpAddressTable& wtable,
 				pidx_t targetPartition,
 				host_sparse_t h_mem,
 				uint32_t* d_mem);

@@ -15,7 +15,6 @@
 #include <boost/tuple/tuple.hpp>
 
 #include "outgoing.cu_h"
-#include "SynapseGroup.hpp"
 
 namespace nemo {
 
@@ -45,12 +44,6 @@ class Outgoing
 		 * warp to stdout */
 		void reportWarpSizeHistogram(std::ostream& out) const;
 
-	private :
-
-		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
-
-	public :
-
 		/*! Set the device data containing the outgoing spike groups.
 		 *
 		 * \return
@@ -58,8 +51,7 @@ class Outgoing
 		 * 		This is a worst-case value, which assumes that every source
 		 * 		neuron fires every cycle for some time.
 		 */
-		size_t moveToDevice(size_t partitionCount,
-				const std::map<fcm_key_t, class SynapseGroup>& fcm);
+		size_t moveToDevice(size_t partitionCount, const class WarpAddressTable& wtable);
 
 	private :
 

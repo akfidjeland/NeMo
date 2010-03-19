@@ -137,11 +137,18 @@ class ConnectivityMatrix
 
 		bool m_setReverse;
 
-		/* The connectivity matrix is stored in small blocks specific to a
-		 * combination of source partiton, target partition and delay */
-		typedef boost::tuple<pidx_t, pidx_t, delay_t> fcm_key_t; // source, target, delay
-		typedef std::map<fcm_key_t, class SynapseGroup> fcm_t;
-		fcm_t m_fsynapses;
+	private:
+
+		typedef boost::tuple<nidx_t, weight_t> synapse_ht;
+
+		typedef std::vector<synapse_ht> bundle_t;
+		typedef boost::tuple<pidx_t, delay_t> bundle_idx_t; // target partition, target delay
+
+		typedef std::map<bundle_idx_t, bundle_t> axon_t;
+		typedef boost::tuple<pidx_t, nidx_t> neuron_idx_t; // source partition, source neuron
+
+		typedef std::map<neuron_idx_t, axon_t> fcm_ht;
+		fcm_ht mh_fcm;
 
 		/* Compact fcm on device */
 		boost::shared_ptr<synapse_t> md_fcm;
@@ -153,17 +160,16 @@ class ConnectivityMatrix
 		/* We also need device memory for the firing queue */
 		Incoming m_incoming;
 
-		/* When the user requests a row of synapses we need to combine data
-		 * from several synapse groups */
-		std::vector<pidx_t> mf_targetPartition;
-		std::vector<nidx_t> mf_targetNeuron;
-		std::vector<uchar> mf_plastic;
-		std::vector<weight_t> mf_weights;
-
 		/* Memory usage. All values in bytes */
 		size_t d_allocatedRCM() const;
 
-		void moveFcmToDevice();
+		void moveFcmToDevice(class WarpAddressTable*);
+		void moveBundleToDevice(
+				const bundle_t& bundle,
+				size_t totalWarps,
+				uint fractionalBits,
+				std::vector<synapse_t>& h_data,
+				size_t* woffset);
 
 		size_t md_allocatedFCM;
 
@@ -172,9 +178,9 @@ class ConnectivityMatrix
 
 		/* Convert global neuron index to partition index */
 		pidx_t partitionIdx(nidx_t);
+		pidx_t m_maxPartitionIdx;
 
-		pidx_t maxPartitionIdx() const;
-
+		weight_t m_maxAbsWeight;
 		uint m_fractionalBits;
 		uint setFractionalBits();
 
@@ -183,7 +189,6 @@ class ConnectivityMatrix
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress() const;
-
 
 };
 

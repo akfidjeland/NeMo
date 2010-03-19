@@ -19,9 +19,10 @@
 #include "log.hpp"
 #include "RSMatrix.hpp"
 #include "except.hpp"
-#include "SynapseGroup.hpp"
+#include "WarpAddressTable.hpp"
 #include "connectivityMatrix.cu_h"
 #include "fixedpoint.hpp"
+
 
 namespace nemo {
 
@@ -32,16 +33,12 @@ ConnectivityMatrix::ConnectivityMatrix(
     m_maxDelay(0),
 	m_setReverse(setReverse),
 	md_allocatedFCM(0),
+	m_maxPartitionIdx(0),
+	m_maxAbsWeight(0.0),
 	m_fractionalBits(~0)
 { }
 
 
-
-boost::tuple<pidx_t, pidx_t, delay_t>
-make_fcm_key(pidx_t source, pidx_t target, delay_t delay)
-{
-	return boost::tuple<pidx_t, pidx_t, delay_t>(source, target, delay);
-}
 
 
 void
@@ -53,11 +50,11 @@ ConnectivityMatrix::addSynapse(pidx_t sp, nidx_t sn, delay_t delay,
 		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
 	}
 
-	SynapseGroup& fgroup = m_fsynapses[make_fcm_key(sp, tp, delay)];
-
-	/* targetPartition not strictly needed here, but left in (in place of
-	 * padding) for better code re-use */
-	sidx_t sidx = fgroup.addSynapse(sn, tp, tn, w, plastic);
+	bundle_t& bundle = mh_fcm[neuron_idx_t(sp, sn)][bundle_idx_t(tp, delay)];
+	sidx_t sidx = bundle.size();
+	bundle.push_back(synapse_ht(tn, w));
+	m_maxAbsWeight = std::max(m_maxAbsWeight, w);
+	m_maxPartitionIdx = std::max(m_maxPartitionIdx, std::max(sp, tp));
 
 	if(m_setReverse && plastic) {
 		/*! \todo should modify RSMatrix so that we don't need the partition
@@ -114,11 +111,6 @@ ConnectivityMatrix::addSynapses(
 uint
 ConnectivityMatrix::setFractionalBits()
 {
-	weight_t maxAbsWeight = 0.0f;
-	for(fcm_t::const_iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
-		maxAbsWeight = std::max(maxAbsWeight, i->second.maxAbsWeight());
-	}
-
 	/* In the worst case we may have all presynaptic neurons for some neuron
 	 * firing, and having all the relevant synapses have the maximum weight we
 	 * just computed. Based on this, it's possible to set the radix point such
@@ -133,7 +125,7 @@ ConnectivityMatrix::setFractionalBits()
 	 * For now just assume that at most a fixed number of neurons will fire at
 	 * max weight. */
 	//! \todo do this based on both max weight and max number of incoming synapses
-	uint log2Ceil = ceilf(log2(maxAbsWeight));
+	uint log2Ceil = ceilf(log2(m_maxAbsWeight));
 	uint fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
 	//! \todo log this to file
 	//fprintf(stderr, "Using fixed point format %u.%u\n", 31-fbits, fbits);
@@ -153,8 +145,53 @@ ConnectivityMatrix::fractionalBits() const
 }
 
 
+
 void
-ConnectivityMatrix::moveFcmToDevice()
+ConnectivityMatrix::moveBundleToDevice(
+		const bundle_t& bundle,
+		size_t totalWarps,
+		uint fbits,
+		std::vector<synapse_t>& h_data,
+		size_t* woffset)
+{
+	size_t writtenWarps = 0; // warps
+
+	std::vector<synapse_t> addresses;
+	std::vector<weight_dt> weights;
+
+	// fill in addresses and weights in separate vectors
+	//! \todo reorganise this for improved memory performance
+	for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
+		addresses.push_back(f_packSynapse(boost::tuples::get<0>(*s)));
+		weights.push_back(fixedPoint(boost::tuples::get<1>(*s), fbits));
+	}
+
+	assert(sizeof(nidx_t) == sizeof(synapse_t));
+	assert(sizeof(weight_dt) == sizeof(synapse_t));
+
+	size_t startWarp = *woffset;
+	size_t newWarps = DIV_CEIL(addresses.size(), WARP_SIZE);
+
+	synapse_t* aptr = &h_data.at((startWarp) * WARP_SIZE);
+	//! \todo get totalWarps from arg
+	synapse_t* wptr = &h_data.at((totalWarps + startWarp) * WARP_SIZE);
+
+	// now copy data into buffer
+	/*! note that std::copy won't work as it will silently cast floats to integers */
+	memcpy(aptr, &addresses[0], addresses.size() * sizeof(synapse_t));
+	memcpy(wptr, &weights[0], weights.size() * sizeof(synapse_t));
+
+	//! \todo also keep track of first warp for this neuron
+	//! \todo could write this straight to outgoing?
+
+	*woffset += newWarps;
+}
+
+
+
+
+void
+ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 {
 	/* We add 1 extra warp here, so we can leave a null warp at the beginning */
 	size_t totalWarpCount = 1 + m_outgoing.totalWarpCount();
@@ -191,9 +228,20 @@ ConnectivityMatrix::moveFcmToDevice()
 
 	uint fbits = setFractionalBits();
 
-	size_t woffset = 1; // leave space for the null warp
-	for(fcm_t::iterator i = m_fsynapses.begin(); i != m_fsynapses.end(); ++i) {
-		woffset += i->second.fillFcm(fbits, woffset, totalWarpCount, h_data);
+	/* Move all synapses to allocated device data, starting at given warp index.
+	 * Return next free warp index */
+	//! \todo copy this using a fixed-size buffer (e.g. max 100MB, determine based on PCIx spec)
+	size_t woffset1 = 1; // leave space for the null warp
+	for(fcm_ht::const_iterator ai = mh_fcm.begin(); ai != mh_fcm.end(); ++ai) {
+		pidx_t sourcePartition = boost::tuples::get<0>(ai->first);
+		nidx_t sourceNeuron    = boost::tuples::get<1>(ai->first);
+		const axon_t& axon = ai->second;
+		for(axon_t::const_iterator bundle = axon.begin(); bundle != axon.end(); ++bundle) {
+			pidx_t targetPartition = boost::tuples::get<0>(bundle->first);
+			delay_t delay          = boost::tuples::get<1>(bundle->first);
+			warpOffsets->set(sourcePartition, sourceNeuron, targetPartition, delay, woffset1);
+			moveBundleToDevice(bundle->second, totalWarpCount, fbits, h_data, &woffset1);
+		}
 	}
 
 	md_allocatedFCM = height * bpitch;
@@ -205,31 +253,26 @@ ConnectivityMatrix::moveFcmToDevice()
 
 
 
-pidx_t
-ConnectivityMatrix::maxPartitionIdx() const
-{
-	pidx_t maxIdx = 0;
-	for(fcm_t::const_iterator i = m_fsynapses.begin();
-			i != m_fsynapses.end(); ++i) {
-		maxIdx = std::max(maxIdx, boost::get<0>(i->first));
-		maxIdx = std::max(maxIdx, boost::get<1>(i->first));
-	}
-	return maxIdx;
-}
-
-
 void
 ConnectivityMatrix::moveToDevice(bool logging)
 {
+	//! \todo raise exception
+	assert(!mh_fcm.empty());
+
 	try {
-		moveFcmToDevice();
+
+		// table of initial warp index for different partition/neuron/partition/delay combinations
+		//wtable woffsets;
+		WarpAddressTable wtable;
+		moveFcmToDevice(&wtable);
 
 		for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-			i->second->moveToDevice(m_fsynapses, i->first);
+			i->second->moveToDevice(wtable, i->first);
 		}
 
-		size_t partitionCount = maxPartitionIdx() + 1;
-		size_t maxWarps = m_outgoing.moveToDevice(partitionCount, m_fsynapses);
+		size_t partitionCount = m_maxPartitionIdx + 1;
+		size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
+
 		m_incoming.allocate(partitionCount, maxWarps, 0.1);
 
 		configureReverseAddressing(
@@ -258,10 +301,11 @@ void
 ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
 	const size_t MEGA = 1<<20;
+	out << "Memory usage on device:\n";
 	out << "forward matrix: " << (md_allocatedFCM / MEGA) << "MB\n";
 	out << "reverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
 	out << "incoming: " << (m_incoming.allocated() / MEGA) << "MB\n";
-	out << "outgoing: " << (m_outgoing.allocated() / MEGA) << "MB" << std::endl;
+	out << "outgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
 
 

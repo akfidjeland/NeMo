@@ -14,6 +14,7 @@
 #include <cuda_runtime.h>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include "WarpAddressTable.hpp"
 #include "kernel.cu_h"
 #include "util.h"
 #include "except.hpp"
@@ -113,8 +114,7 @@ compare_warp_counts(
 
 
 size_t
-Outgoing::moveToDevice(size_t partitionCount,
-				const std::map<fcm_key_t, SynapseGroup>& fcm)
+Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 {
 	using namespace boost::tuples;
 
@@ -149,29 +149,24 @@ Outgoing::moveToDevice(size_t partitionCount,
 
 		assert(targets.size() <= wpitch);
 
-		//! \todo rename sourcePN
-		pidx_t partition = get<0>(key);
-		nidx_t neuron = get<1>(key);
+		pidx_t sourcePartition = get<0>(key);
+		nidx_t sourceNeuron = get<1>(key);
 
-		size_t t_addr = outgoingRow(partition, neuron, wpitch);
+		size_t t_addr = outgoingRow(sourcePartition, sourceNeuron, wpitch);
 
 		size_t j = 0;
 		for(targets_t::const_iterator r = targets.begin(); r != targets.end(); ++r) {
-			tkey_t tkey = r->first;
-			pidx_t targetPartition = get<0>(tkey);
-			delay_t delay = get<1>(tkey);
+
+			pidx_t targetPartition = get<0>(r->first);
+			delay_t delay = get<1>(r->first);
 			//! \todo add run-time test that warp-size is as expected
 			uint warps = DIV_CEIL(r->second, WARP_SIZE);
-
-			std::map<fcm_key_t, SynapseGroup>::const_iterator groupref =
-					fcm.find(fcm_key_t(partition, targetPartition, delay));
-			assert(groupref != fcm.end());
 
 			incoming[targetPartition] += warps;
 
 			//! \todo check for overflow here
 			for(uint warp = 0; warp < warps; ++warp) {
-				uint32_t offset = groupref->second.warpOffset(neuron, warp);
+				uint32_t offset = wtable.get(sourcePartition, sourceNeuron, targetPartition, delay);
 				h_arr[t_addr + j + warp] =
 					make_outgoing(targetPartition, delay, offset);
 			}
@@ -180,7 +175,7 @@ Outgoing::moveToDevice(size_t partitionCount,
 		}
 
 		//! \todo move this into shared __device__/__host__ function
-		size_t r_addr = partition * MAX_PARTITION_SIZE + neuron;
+		size_t r_addr = sourcePartition * MAX_PARTITION_SIZE + sourceNeuron;
 		h_rowLength.at(r_addr) = warpCount(targets);
 	}
 

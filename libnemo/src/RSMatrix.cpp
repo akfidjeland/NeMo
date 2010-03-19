@@ -11,7 +11,7 @@
 #include "connectivityMatrix.cu_h"
 #include "util.h"
 #include "except.hpp"
-#include "SynapseGroup.hpp"
+#include "WarpAddressTable.hpp"
 
 #include <cuda_runtime.h>
 #include <stdexcept>
@@ -86,11 +86,9 @@ RSMatrix::maxSynapsesPerNeuron() const
 }
 
 
-
-//! \todo pass in parameters here
 void
 RSMatrix::copyToDevice(
-		const std::map<fcm_key_t, SynapseGroup>& fcm,
+		const WarpAddressTable& wtable,
 		pidx_t targetPartition,
 		host_sparse_t h_mem,
 		uint32_t* d_mem)
@@ -117,12 +115,11 @@ RSMatrix::copyToDevice(
 
 		for(std::vector<uint32_t>::const_iterator rs = n->begin();
 				rs != n->end(); ++rs) {
-			std::map<fcm_key_t, SynapseGroup>::const_iterator groupref =
-					fcm.find(fcm_key_t(sourcePartition(*rs),
-								targetPartition,
-								r_delay1(*rs)));
-			assert(groupref != fcm.end());
-			uint32_t warpOffset = groupref->second.warpOffset(sourceNeuron(*rs), 0);
+			uint32_t warpOffset = wtable.get(
+					sourcePartition(*rs),
+					sourceNeuron(*rs),
+					targetPartition,
+					r_delay1(*rs));
 			size_t faddress = (warpOffset * WARP_SIZE) + forwardIdx(*rs);
 			assert(faddress < (size_t(1)<<32));
 			buf.at(offset) = uint32_t(faddress);
@@ -140,13 +137,14 @@ RSMatrix::copyToDevice(
 }
 
 
+
 void
 RSMatrix::moveToDevice(
-		const std::map<fcm_key_t, SynapseGroup>& fcm,
+		const WarpAddressTable& wtable,
 		pidx_t targetPartition)
 {
 	boost::shared_ptr<uint32_t> d_mem = allocateDeviceMemory();
-	copyToDevice(fcm, targetPartition, m_hostData, d_mem.get());
+	copyToDevice(wtable, targetPartition, m_hostData, d_mem.get());
 	m_hostData.clear();
 }
 
