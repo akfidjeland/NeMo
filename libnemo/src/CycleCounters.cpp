@@ -8,12 +8,14 @@
  */
 
 #include "CycleCounters.hpp"
-#include "cycleCounting.cu_h"
+
 #include <algorithm>
 #include <numeric>
 #include <iterator>
 #include <iostream>
 #include <iomanip>
+
+#include "kernel.cu_h"
 
 namespace nemo {
 

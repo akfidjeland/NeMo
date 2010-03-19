@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cycleCounting.cu_h"
+#include "kernel.cu_h"
 
 /* Each kernel has a separate cycle counter */
 #ifdef KERNEL_TIMING
