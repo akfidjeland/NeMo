@@ -11,6 +11,7 @@
  */
 
 #include "bitvector.cu_h"
+#include "nemo_cuda_types.h"
 
 
 __constant__ size_t c_bv_pitch;

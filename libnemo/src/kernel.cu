@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "kernel.hpp"
 #include "log.hpp"
 #include "util.h"
 
@@ -37,7 +36,8 @@ applyStdp(
 		uint partitionCount,
 		uint fractionalBits,
 		synapse_t* d_fcm,
-		const nemo::STDP<float>& stdpFn,
+		float maxWeight,
+		float minWeight,
 		float reward)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
@@ -49,8 +49,8 @@ applyStdp(
 #endif
 			d_fcm,
 			fixedPoint(reward, fractionalBits),
-			fixedPoint(stdpFn.maxWeight(), fractionalBits),
-			fixedPoint(stdpFn.minWeight(), fractionalBits));
+			fixedPoint(maxWeight, fractionalBits),
+			fixedPoint(minWeight, fractionalBits));
 }
 
 

@@ -13,7 +13,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "STDP.hpp"
 #include "outgoing.cu_h"
 #include "incoming.cu_h"
 #include "nemo_cuda_types.h"
@@ -25,7 +24,8 @@ applyStdp(
 		uint partitionCount,
 		uint fractionalBits,
 		synapse_t* d_fcm,
-		const nemo::STDP<float>& stdpFn,
+		float maxWeight,
+		float minWeight,
 		float reward);
 
 

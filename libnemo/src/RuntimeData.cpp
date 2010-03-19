@@ -410,7 +410,8 @@ RuntimeData::applyStdp(float reward)
 				m_partitionCount,
 				m_cm->fractionalBits(),
 				m_cm->d_fcm(),
-				m_stdpFn,
+				m_stdpFn.maxWeight(),
+				m_stdpFn.minWeight(),
 				reward);
 	}
 
