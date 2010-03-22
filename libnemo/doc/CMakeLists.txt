@@ -63,7 +63,7 @@ IF(REBUILD_API_DOCS)
 			IF(SED)
 				# TODO: get date from somewhere
 				STRING(REGEX REPLACE "${MAN_DIR}/(.*).3" "\\1" MANPAGE_TITLE ${MANPAGE})
-				SET(SED_SET_HEADER -e s/.TH.*/.TH\ ${MANPAGE_TITLE}\ 3\ \"Mar\ 2010\"\ \"\"\ \"Nemo\ Reference\ Manual\"/)
+				SET(SED_SET_HEADER -e s/^\\.TH.*/.TH\ ${MANPAGE_TITLE}\ 3\ \"Mar\ 2010\"\ \"\"\ \"Nemo\ Reference\ Manual\"/)
 				SET(SED_SET_AUTHOR -e s/Generated\ automatically\ by\ Doxygen.*/Andreas\ Fidjeland\ \(using\ Doxygen\)/)
 
 				# The title page is incorrect as it referes to filename or

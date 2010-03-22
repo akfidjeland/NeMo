@@ -1,4 +1,4 @@
-.Dd March 9, 2010
+.Dd March 22, 2010
 .Dt NEMO(3) "" "Nemo Reference Manual"
 .Os POSIX
 .Sh NAME
@@ -29,11 +29,10 @@ Run the simulation; and
 Delete the network object
 .El
 
-For details of the function API look at the relevant man pages (libnemo.h(3) for C API and
-nemo::Network(3) for C++ API).
+For details of the API look at the relevant man pages (nemo-c(3) and nemo-cpp(3)).
 
 .Sh SIMULATION MODEL
-The simulation is discrete-time with a fixed 1 millisecond step size.
+The simulation is discrete-time with a fixed one millisecond step size.
 Neurons are based on the Izhikevich neuron model.
 Within each step the following actions take place in a fixed order:
 
@@ -158,4 +157,4 @@ vol 14, pp 1569-1572, 2003, for a full description of the model and the paramete
 
 .Sh AUTHOR
 Andreas K. Fidjeland <andreas.fidjeland@imperial.ac.uk>,
-Imperial College London, Dept. of Computing
+Imperial College London, Department of Computing
