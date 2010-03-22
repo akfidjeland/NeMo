@@ -64,6 +64,7 @@ CUDA_ADD_LIBRARY(nemo
 	Outgoing.cpp
 	RSMatrix.cpp
 	RuntimeData.cpp
+	SynapseAddressTable.cpp
 	ThalamicInput.cpp
 	WarpAddressTable.cpp
 	time.cpp

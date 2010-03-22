@@ -19,7 +19,7 @@
 
 /* \brief Synapse encoding/decoding
  *
- * Forward synapse: target partition / target neuron
+ * Forward synapse: target neuron
  * Reverse synapse: source synapse / source partition / source neuron
  */
 

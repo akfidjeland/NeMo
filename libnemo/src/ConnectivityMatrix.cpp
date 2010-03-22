@@ -52,7 +52,7 @@ ConnectivityMatrix::addSynapse(pidx_t sp, nidx_t sn, delay_t delay,
 
 	bundle_t& bundle = mh_fcm[neuron_idx_t(sp, sn)][bundle_idx_t(tp, delay)];
 	sidx_t sidx = bundle.size();
-	bundle.push_back(synapse_ht(tn, w));
+	bundle.push_back(synapse_ht(tn, w, plastic));
 	m_maxAbsWeight = std::max(m_maxAbsWeight, w);
 	m_maxPartitionIdx = std::max(m_maxPartitionIdx, std::max(sp, tp));
 
@@ -148,22 +148,33 @@ ConnectivityMatrix::fractionalBits() const
 
 void
 ConnectivityMatrix::moveBundleToDevice(
+		nidx_t globalSourceNeuron,
+		pidx_t targetPartition,
+		delay_t delay,
 		const bundle_t& bundle,
 		size_t totalWarps,
+		size_t axonStart, // first warp for current source neuron
 		uint fbits,
 		std::vector<synapse_t>& h_data,
-		size_t* woffset)
+		size_t* woffset)  // first warp to write to for this bundle
 {
 	size_t writtenWarps = 0; // warps
 
 	std::vector<synapse_t> addresses;
 	std::vector<weight_dt> weights;
 
+	/* Data used when user reads FCM back from device */
+	std::vector<nidx_t>& h_fcmTarget = mh_fcmTargets[globalSourceNeuron];
+	std::vector<uchar>& h_fcmStatic = mh_fcmStatic[globalSourceNeuron];
+
 	// fill in addresses and weights in separate vectors
 	//! \todo reorganise this for improved memory performance
 	for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
-		addresses.push_back(f_packSynapse(boost::tuples::get<0>(*s)));
+		nidx_t targetNeuron = boost::tuples::get<0>(*s);
+		addresses.push_back(f_packSynapse(targetNeuron));
 		weights.push_back(fixedPoint(boost::tuples::get<1>(*s), fbits));
+		h_fcmTarget.push_back(globalIndex(targetPartition, targetNeuron));
+		h_fcmStatic.push_back(boost::tuples::get<2>(*s));
 	}
 
 	assert(sizeof(nidx_t) == sizeof(synapse_t));
@@ -178,10 +189,19 @@ ConnectivityMatrix::moveBundleToDevice(
 
 	// now copy data into buffer
 	/*! note that std::copy won't work as it will silently cast floats to integers */
-	memcpy(aptr, &addresses[0], addresses.size() * sizeof(synapse_t));
-	memcpy(wptr, &weights[0], weights.size() * sizeof(synapse_t));
+	size_t len = addresses.size();
+	memcpy(aptr, &addresses[0], len * sizeof(synapse_t));
+	memcpy(wptr, &weights[0], len * sizeof(synapse_t));
 
-	//! \todo also keep track of first warp for this neuron
+	/* /Word/ offset relative to first warp for this neuron. In principle this
+	 * function could write synapses to a non-contigous range of memory.
+	 * However, we currently write this as a single range. */
+	//! \todo write the remaining FCM data in the correct order
+	size_t bundleStart = (axonStart - *woffset) * WARP_SIZE;
+	m_synapseAddresses.addBlock(globalSourceNeuron, bundleStart, bundleStart + len);
+
+	std::fill_n(std::back_inserter(mh_fcmDelays[globalSourceNeuron]), len, delay);
+
 	//! \todo could write this straight to outgoing?
 
 	*woffset += newWarps;
@@ -228,19 +248,25 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 
 	uint fbits = setFractionalBits();
 
-	/* Move all synapses to allocated device data, starting at given warp index.
-	 * Return next free warp index */
+	/* Move all synapses to allocated device data, starting at given warp
+	 * index. Return next free warp index */
+	//! \todo only do the mapping from global to device indices here
 	//! \todo copy this using a fixed-size buffer (e.g. max 100MB, determine based on PCIx spec)
-	size_t woffset1 = 1; // leave space for the null warp
+	size_t woffset = 1; // leave space for the null warp
 	for(fcm_ht::const_iterator ai = mh_fcm.begin(); ai != mh_fcm.end(); ++ai) {
 		pidx_t sourcePartition = boost::tuples::get<0>(ai->first);
 		nidx_t sourceNeuron    = boost::tuples::get<1>(ai->first);
+		size_t axonStart = woffset;
 		const axon_t& axon = ai->second;
 		for(axon_t::const_iterator bundle = axon.begin(); bundle != axon.end(); ++bundle) {
 			pidx_t targetPartition = boost::tuples::get<0>(bundle->first);
 			delay_t delay          = boost::tuples::get<1>(bundle->first);
-			warpOffsets->set(sourcePartition, sourceNeuron, targetPartition, delay, woffset1);
-			moveBundleToDevice(bundle->second, totalWarpCount, fbits, h_data, &woffset1);
+			warpOffsets->set(sourcePartition, sourceNeuron, targetPartition, delay, woffset);
+			//! \todo need global source neuron here
+			moveBundleToDevice(
+					globalIndex(sourcePartition, sourceNeuron), targetPartition,
+					delay, bundle->second, totalWarpCount, axonStart, fbits,
+					h_data, &woffset);
 		}
 	}
 
@@ -260,9 +286,7 @@ ConnectivityMatrix::moveToDevice(bool logging)
 	assert(!mh_fcm.empty());
 
 	try {
-
 		// table of initial warp index for different partition/neuron/partition/delay combinations
-		//wtable woffsets;
 		WarpAddressTable wtable;
 		moveFcmToDevice(&wtable);
 
@@ -477,6 +501,14 @@ pidx_t
 ConnectivityMatrix::partitionIdx(pidx_t pidx)
 {
 	return pidx / m_maxPartitionSize;	
+}
+
+
+
+nidx_t
+ConnectivityMatrix::globalIndex(pidx_t p, nidx_t n)
+{
+	return p * m_maxPartitionSize + n;
 }
 
 } // end namespace nemo

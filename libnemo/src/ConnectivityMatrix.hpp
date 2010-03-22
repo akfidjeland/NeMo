@@ -24,6 +24,7 @@
 #include "kernel.cu_h"
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
+#include "SynapseAddressTable.hpp"
 
 namespace nemo {
 
@@ -139,7 +140,7 @@ class ConnectivityMatrix
 
 	private:
 
-		typedef boost::tuple<nidx_t, weight_t> synapse_ht;
+		typedef boost::tuple<nidx_t, weight_t, uchar> synapse_ht;
 
 		typedef std::vector<synapse_ht> bundle_t;
 		typedef boost::tuple<pidx_t, delay_t> bundle_idx_t; // target partition, target delay
@@ -153,21 +154,25 @@ class ConnectivityMatrix
 		/* Compact fcm on device */
 		boost::shared_ptr<synapse_t> md_fcm;
 
-		/* For L1 delivery we need to keep track of all target partitions for
-		 * each neuron */
+		/* For spike delivery we need to keep track of all target partitions
+		 * for each neuron */
 		Outgoing m_outgoing;
 
 		/* We also need device memory for the firing queue */
 		Incoming m_incoming;
 
-		/* Memory usage. All values in bytes */
+		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
 
 		void moveFcmToDevice(class WarpAddressTable*);
 		void moveBundleToDevice(
+				nidx_t globalSourceNeuron,
+				pidx_t targetPartition,
+				delay_t delay,
 				const bundle_t& bundle,
 				size_t totalWarps,
-				uint fractionalBits,
+				size_t axonStart,
+				uint fbits,
 				std::vector<synapse_t>& h_data,
 				size_t* woffset);
 
@@ -180,6 +185,8 @@ class ConnectivityMatrix
 		pidx_t partitionIdx(nidx_t);
 		pidx_t m_maxPartitionIdx;
 
+		nidx_t globalIndex(pidx_t p, nidx_t n);
+
 		weight_t m_maxAbsWeight;
 		uint m_fractionalBits;
 		uint setFractionalBits();
@@ -189,6 +196,21 @@ class ConnectivityMatrix
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress() const;
+
+		/* Static FCM data, stored the same order as on the device for each
+		 * neuron. This data is used when the user requests synapse data at
+		 * run-time. Neuron indices are global rather than the partition/neuron
+		 * scheme used on the device, so no decoding needs to take place at
+		 * run-time. */
+		std::map<nidx_t, std::vector<nidx_t> > mh_fcmTargets;
+		std::map<nidx_t, std::vector<delay_t> > mh_fcmDelays;
+		std::map<nidx_t, std::vector<uchar> > mh_fcmStatic;
+
+		/* The weights may change at run-time, so we need to read them back
+		 * from the device, and reconstruct possibly disparate data into a
+		 * single vector. The synapse addresses contains the relevant data for
+		 * this reconstruction. */
+		SynapseAddressTable m_synapseAddresses;
 
 };
 

@@ -113,6 +113,8 @@ RSMatrix::copyToDevice(
 
 		size_t offset = (n - h_mem.begin()) * m_pitch; // to beginning of current row
 
+		//! \todo store RSMatrix in a sensible format to begin with, so we
+		//don't have to extract this data again.
 		for(std::vector<uint32_t>::const_iterator rs = n->begin();
 				rs != n->end(); ++rs) {
 			uint32_t warpOffset = wtable.get(
