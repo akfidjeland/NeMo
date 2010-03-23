@@ -202,7 +202,7 @@ nemo_apply_stdp(NETWORK, float reward);
  * The indices of the fired neurons are buffered on the device, and can be read
  * back at run-time. The desired size of the buffer is specified when
  * constructing the network. Each read empties the buffer. To avoid overflow if
- * the firing data is not needed, call \a nemo_flush_firing_buffer periodically.
+ * the firing data is not needed, call \ref nemo_flush_firing_buffer periodically.
  *
  * \{ */
 
@@ -213,7 +213,8 @@ nemo_apply_stdp(NETWORK, float reward);
  * \param[out] nidx
  * 		Neuron indices of fired neurons
  * \param[out] nfired
- * 		Number of neurons which fired since the previous call to \a nemo_read_firing 
+ * 		Number of neurons which fired since the previous call
+ * 		to \ref nemo_read_firing
  * \param[out] ncycles
  * 		Number of cycles for which firing data is returned
  */
@@ -248,7 +249,8 @@ nemo_flush_firing_buffer(NETWORK);
  * The output vectors are valid until the next call to this function.
  *
  * \post
- * 		Output vectors \a targetNeuron, \a weights, \a delays, and \a is_plastic all have length \a len
+ * 		Output vectors \a targetNeuron, \a weights, \a delays,
+ * 		and \a is_plastic all have length \a len
  */
 nemo_status_t
 nemo_get_synapses(NETWORK,
@@ -298,7 +300,7 @@ void nemo_reset_timer(NETWORK);
 
 /*! \name Error handling
  *
- * The API functions generally return an error status of type \a nemo_status_t.
+ * The API functions generally return an error status of type \ref nemo_status_t.
  * A non-zero value indicates an error. An error string describing this error
  * is stored internally and can be queried by the user.
  *

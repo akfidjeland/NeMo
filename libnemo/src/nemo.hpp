@@ -16,7 +16,19 @@
 
 namespace nemo {
 
-/*! \brief C++ API for nemo */
+
+/*! \class Network
+ * \brief C++ API for nemo
+ *
+ * To use, create an network object using \ref nemo::Network::create, configure
+ * it using any of the configuration commands, construct a network by adding
+ * neurons and synapses, and finally run the simulation.
+ *
+ * \section errors Error Handling
+ *
+ * Internal errors are signaled by exceptions. Thrown exceptions are all
+ * subclasses of std::exception.
+ */
 class Network
 {
 	public :
@@ -102,16 +114,16 @@ class Network
 		 * 		See section on STDP.
 		 *
 		 * \pre
-		 * 		\a targets, \a delays, \a weights, and
-		 * 		\a isPlastic have the same length
+		 * 		\a targets, \a delays, \a weights, and \a isPlastic have the
+		 * 		same length
 		 */
 		virtual void addSynapses(
 				unsigned source,
 				const std::vector<unsigned>& targets,
 				const std::vector<unsigned>& delays,
 				const std::vector<float>& weights,
-				//! \todo change to bool
 				const std::vector<unsigned char> isPlastic) = 0;
+		//! \todo change to bool
 
 		/* \} */ // end construction group
 
@@ -124,7 +136,7 @@ class Network
 		 * After specifying the network in the construction
 		 * stage, it may need to be set up on the backend, and
 		 * optimised etc. This can be time-consuming if the
-		 * network is large. Calling \a nemo_start_simulation
+		 * network is large. Calling \ref startSimulation
 		 * causes all this setup to be done. Calling this
 		 * function is not strictly required as the setup will
 		 * be done the first time any simulation function is
@@ -154,7 +166,7 @@ class Network
 		 * be read back at run-time. The desired size of the buffer is
 		 * specified when constructing the network. Each read empties the
 		 * buffer. To avoid overflow if the firing data is not needed, call
-		 * \a flushFiringBuffer periodically.
+		 * \ref flushFiringBuffer periodically.
 		 *
 		 * \{ */
 
