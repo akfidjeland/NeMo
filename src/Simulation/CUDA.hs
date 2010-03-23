@@ -35,13 +35,13 @@ instance Simulation_Iface State where
     run = runCuda
     run_ = runCuda_
     step = stepCuda
-    step_ = Kernel.stepNonBuffering
-    applyStdp sim reward = Kernel.applyStdp sim reward
-    elapsed = Kernel.elapsedMs
-    resetTimer = Kernel.resetTimer
-    getWeights sim = Memory.getWeights sim
+    step_ sim fstim = Kernel.stepNonBuffering (rtdata sim) fstim
+    applyStdp sim reward = Kernel.applyStdp (rtdata sim) reward
+    elapsed = Kernel.elapsedMs . rtdata
+    resetTimer = Kernel.resetTimer . rtdata
+    getWeights = Memory.getWeights
     start sim = return () -- copy to device forced during initSim
-    stop = Kernel.freeRT
+    stop = Kernel.freeRT . rtdata
 
 
 {- | Initialise simulation and return a function to step through the rest of it -}
@@ -63,25 +63,25 @@ initSim partitionSize net stdpConf = do
 
 runCuda :: State -> [[Idx]] -> IO [FiringOutput]
 runCuda sim fstim = do
-    mapM_ (Kernel.stepBuffering sim) fstim
+    mapM_ (Kernel.stepBuffering $ rtdata sim) fstim
     readFiring sim $! length fstim
 
 
 runCuda_ :: State -> [[Idx]] -> IO ()
 runCuda_ sim fstim = do
-    mapM_ (Kernel.stepNonBuffering sim) fstim
+    mapM_ (Kernel.stepNonBuffering $ rtdata sim) fstim
 
 
 stepCuda :: State -> [Idx] -> IO FiringOutput
 stepCuda sim fstim = do
-    Kernel.stepBuffering sim fstim
+    Kernel.stepBuffering (rtdata sim) fstim
     [firing] <- readFiring sim 1
     return $! firing
 
 
 readFiring :: State -> Time -> IO [FiringOutput]
 readFiring sim ncycles = do
-    (ncycles', fired) <- Kernel.readFiring sim
+    (ncycles', fired) <- Kernel.readFiring $ rtdata sim
     assert (ncycles == ncycles') $ do
     return $! densifyDeviceFiring ncycles' fired
 

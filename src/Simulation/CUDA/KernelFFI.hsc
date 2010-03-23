@@ -8,8 +8,7 @@ module Simulation.CUDA.KernelFFI (
     stepNonBuffering,
     readFiring,
     applyStdp,
-    -- TODO: rename
-    getCMDRow,
+    getSynapses,
     startSimulation,
     freeRT,
     CuRT,
@@ -20,11 +19,11 @@ module Simulation.CUDA.KernelFFI (
     resetTimer
 ) where
 
-import Control.Monad (when, forM)
+import Control.Monad (when, forM, liftM)
 import Data.Array.MArray (newListArray)
 import Data.Array.Storable (StorableArray, withStorableArray)
 import Data.Bits (setBit)
-import Data.List (foldl')
+import Data.List (foldl', zip4)
 import Data.Word (Word64)
 import Foreign.C.Types
 import Foreign.C.String (peekCString)
@@ -44,6 +43,10 @@ import Types (Time, Delay, Weight, Idx)
 
 {- Runtime data is managed on the CUDA-side in a single structure -}
 data CuRT = CuRT
+
+{- Most functions return an error status -}
+-- TODO: make sure we specify FFI functions to return this correctly
+type NemoStatus = CInt
 
 
 foreign import ccall unsafe "nemo_new_network"
@@ -132,43 +135,35 @@ addSynapses rt pre nbuf dbuf wbuf spbuf len =
         (fromIntegral $! len)
 
 
-foreign import ccall unsafe "nemo_get_synapses" c_getCMDRow
+foreign import ccall unsafe "nemo_get_synapses" c_getSynapses
         :: Ptr CuRT
-        -> CUInt            -- ^ source partition
         -> CUInt            -- ^ source neuron
-        -> CUInt            -- ^ delay
-        -> Ptr (Ptr CUInt)  -- ^ target partitions
         -> Ptr (Ptr CUInt)  -- ^ target neurons
+        -> Ptr (Ptr CUInt)  -- ^ conductance delays
         -> Ptr (Ptr CFloat) -- ^ synapse weights
         -> Ptr (Ptr CUChar) -- ^ synapse plasticity
-        -> IO CSize         -- ^ length of returned array
-
+        -> Ptr CSize        -- ^ length of returned array
+        -> IO NemoStatus
 
 
 {- | Get (possibly modified) synapses for a single neuron and delay -}
-getCMDRow
+getSynapses
     :: Ptr CuRT
-    -> PartitionIdx             -- ^ source partition
-    -> NeuronIdx                -- ^ source neuron
-    -> Delay                    -- ^ delay
-    -> IO [(DeviceIdx, Weight, Bool)] -- ^ synapses
-getCMDRow rt sp sn d = do
-    alloca $ \p_ptr -> do
-    alloca $ \n_ptr -> do
-    alloca $ \w_ptr -> do
-    alloca $ \s_ptr -> do -- plasticity
-    c_len <- c_getCMDRow rt
-            (fromIntegral sp)
-            (fromIntegral sn)
-            (fromIntegral d)
-            p_ptr n_ptr w_ptr s_ptr
-    let len = fromIntegral c_len
-    p_list <- peekWith fromIntegral len p_ptr
+    -> NeuronIdx -- ^ source neuron
+    -> IO [(Idx, Delay, Weight, Bool)]
+getSynapses rt src = do
+    alloca $ \n_ptr -> do -- target neuron
+    alloca $ \d_ptr -> do -- delay
+    alloca $ \w_ptr -> do -- weights
+    alloca $ \p_ptr -> do -- plasticity
+    alloca $ \len_ptr -> do
+    checkStatus rt =<< c_getSynapses rt (fromIntegral src) n_ptr d_ptr w_ptr p_ptr len_ptr
+    len <- return . fromIntegral =<< peek len_ptr
     n_list <- peekWith fromIntegral len n_ptr
+    d_list <- peekWith fromIntegral len d_ptr
     w_list <- peekWith realToFrac len w_ptr
-    s_list <- peekWith toBool len s_ptr
-    let didx = zip p_list n_list
-    return $! zip3 didx w_list s_list
+    p_list <- peekWith toBool len p_ptr
+    return $! zip4 n_list d_list w_list p_list
     where
         peekWith f len ptr = (return . map f) =<< peekArray len =<< peek ptr
 
@@ -291,7 +286,7 @@ errorString rt = peekCString =<< c_errorString rt
 
 
 {- | Check libnemo return status and fail with an error message if appropriate -}
-checkStatus :: Ptr CuRT -> CInt -> IO ()
+checkStatus :: Ptr CuRT -> NemoStatus -> IO ()
 checkStatus rt status = when (status /= 0) $ fail =<< errorString rt
 
 

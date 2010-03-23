@@ -4,13 +4,14 @@
 module Simulation.CUDA.Memory (
     initMemory,
     getWeights,
-    State
+    State(..)
 ) where
 
 
-import Control.Monad (when)
+import Control.Monad (when, foldM)
 import Data.Maybe (Maybe)
 import qualified Data.Map as Map (Map, fromList)
+import qualified Data.Set as Set (Set, empty, insert, toList)
 import Foreign.C.Types
 import Foreign.Marshal.Array (mallocArray)
 import Foreign.Marshal.Utils (fromBool)
@@ -19,22 +20,25 @@ import Foreign.Storable (pokeElemOff)
 
 import Construction.Axon (terminalsUnordered)
 import Construction.Neuron (Neuron(..))
-import Construction.Network (Network, toList)
+import qualified Construction.Network as Network (Network, toList)
 import Construction.Izhikevich (IzhNeuron(..), stateSigma)
 import Construction.Synapse (AxonTerminal(AxonTerminal), Static(..),
     plastic, target, weight, delay)
+import Data.Set
 import Simulation.CUDA.Address
 import Simulation.CUDA.KernelFFI
 import Simulation.STDP
 import Types
 
 
-type State = Ptr CuRT -- ^ kernel runtime data
-
+data State = State {
+        rtdata :: Ptr CuRT,     -- ^ kernel runtime data
+        indices :: Set.Set Idx -- ^ all neurons in the network
+    }
 
 {- Initialise memory on a single device -}
 initMemory
-    :: Network IzhNeuron Static
+    :: Network.Network IzhNeuron Static
     -> Maybe Int -- ^ requested partition size
     -> Int
     -> StdpConf
@@ -42,18 +46,18 @@ initMemory
 initMemory net reqPsize maxProbePeriod stdp = do
     rt <- allocRT stdp reqPsize maxProbePeriod
     configureStdp rt stdp
-    setNeurons rt $ toList net
+    indices <- setNeurons rt $ Network.toList net
     startSimulation rt
-    return $ rt
+    return $ State rt indices
 
 
 
-setNeurons :: Ptr CuRT -> [(Idx, Neuron IzhNeuron Static)] -> IO ()
+setNeurons :: Ptr CuRT -> [(Idx, Neuron IzhNeuron Static)] -> IO (Set.Set Idx)
 setNeurons rt ns = do
     buf <- allocOutbuf $ 2^16
-    mapM_ (setOne rt buf) ns
+    foldM (setOne rt buf) Set.empty ns
     where
-        setOne rt buf (idx, neuron) = do
+        setOne rt buf indices (idx, neuron) = do
             let n = ndata neuron
                 sigma = maybe 0 id $ stateSigma n
             addNeuron rt idx
@@ -63,6 +67,7 @@ setNeurons rt ns = do
             len <- pokeSynapses buf 0 ss
             addSynapses rt idx
                 (nidx buf) (delays buf) (weights buf) (plasticity buf) len
+            return $! Set.insert idx indices
 
 
 {- | Write a row of synapses (i.e for a single presynaptic/delay) to output
@@ -109,36 +114,23 @@ allocOutbuf len = do
     return $! Outbuf wbuf nbuf spbuf dbuf
 
 
-
 {- | Get (possibly modified) connectivity matrix back from device -}
 getWeights :: State -> IO (Map.Map Idx [AxonTerminal Static])
-getWeights sim = error "need to implement getWeights"
-    --(return . Map.fromList) =<< mapM (getNWeights sim) (deviceIndices (att sim))
-
-
--- return data for a single neuron (all delays)
-getNWeights :: State -> DeviceIdx -> IO (Idx, [AxonTerminal Static])
-getNWeights sim sdidx = do
-    -- TODO: fix this, without relying on knowing delays on this side of API
-    error "need to implement getNWeights"
-    -- sgidx <- globalIdxM (att sim) sdidx
-    -- ss <- (return . concat) =<< mapM (getNDWeights sim sdidx) [1..maxDelay sim]
-    -- return $! (sgidx, ss)
+getWeights sim = do
+    let idxs = Set.toList $ indices sim
+    axons <- mapM (getNWeights sim) idxs
+    return $! Map.fromList $ zip idxs axons
 
 
 -- return data for a single neuron (single delay)
-{-
-getNDWeights :: State -> DeviceIdx -> Delay -> IO [AxonTerminal Static]
-getNDWeights sim source d = do
-    let sp = partitionIdx source
-    let sn = neuronIdx source
-    ws <- getCMDRow (rt sim) sp sn d
-    return $! map pack $ ws
+getNWeights :: State -> Idx -> IO [AxonTerminal Static]
+getNWeights sim source = do
+    ws <- getSynapses (rtdata sim) source
+    return $! fmap pack $ ws
     where
-        pack :: (DeviceIdx, Weight, Bool) -> AxonTerminal Static
-        pack (didx, w, plastic) =
-            AxonTerminal (globalIdx (att sim) didx) d w plastic ()
--}
+        pack :: (Idx, Delay, Weight, Bool) -> AxonTerminal Static
+        pack (idx, d, w, plastic) = AxonTerminal idx d w plastic ()
+
 
 -------------------------------------------------------------------------------
 -- Runtime data
