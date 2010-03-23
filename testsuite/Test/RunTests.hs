@@ -36,7 +36,7 @@ runHUnitTests dir = runTestTT $ TestList $ [
         rtests,
 #if defined(CUDA_ENABLED)
         Mapping.tests,
-        -- Memory.tests,
+        Memory.tests,
 #endif
 #if defined(MATLAB_ENABLED)
         Matlab.tests,

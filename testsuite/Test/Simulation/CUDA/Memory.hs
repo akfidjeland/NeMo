@@ -2,8 +2,9 @@ module Test.Simulation.CUDA.Memory (tests) where
 
 import Control.Monad (zipWithM_)
 import Control.Monad.Writer (runWriter)
-import qualified Data.Map as Map
+import Data.Function (on)
 import Data.List (sort)
+import qualified Data.Map as Map
 import Foreign.C.Types (CFloat)
 import Test.HUnit
 
@@ -11,11 +12,11 @@ import Construction.Construction (build)
 import Construction.Izhikevich (IzhNeuron)
 import Construction.Network (Network, networkNeurons)
 import Construction.Neurons (synapses, withWeights, synapseCount, size, weightMatrix)
-import Construction.Synapse (Static(..))
+import Construction.Synapse (Static(..), Synaptic(..))
 import Examples.Smallworld (smallworld, smallworldOrig)
 import Examples.Ring (ring)
 import Options (defaults)
-import Simulation.CUDA.Memory (initMemory, getWeights)
+import Simulation.CUDA.Memory (initMemory, getWeights, rtdata)
 import Simulation.CUDA.KernelFFI (startSimulation)
 import Simulation.STDP.Options (stdpOptions)
 import Types (FT)
@@ -35,7 +36,7 @@ testWeightQuery = TestCase $ do
         nsteps = 1000 -- irrelevant for this test
     sim  <- initMemory net psize nsteps (defaults stdpOptions)
     {- When initialising memory, the device may not be involved yet -}
-    startSimulation sim
+    startSimulation $ rtdata sim
     ns' <- getWeights sim
 
     assertEqual "Same number of neurons in weight matrix before and after writing to device"
@@ -62,10 +63,22 @@ testWeightQuery = TestCase $ do
         viaCFloat x = realToFrac x'
             where x' = realToFrac x :: CFloat
 
+        {- Additionally, we cast to fixed-point format and back again, which
+         - may give different results. We just test that it's not too different -}
+        weightsClose :: Double -> Double -> Bool
+        weightsClose w1 w2 = w1 - w2 < 0.00001
+
+        checkSynapses :: (Synaptic s) => String -> s -> s -> Assertion
+        checkSynapses msg s1 s2 = do
+            let check fieldname field = assertEqual (msg ++ fieldname) (field s1) (field s2)
+            check " target" target
+            check " delay" delay
+            check " plastic" plastic
+            assertBool (msg ++ " weight") $ (weightsClose `on` weight) s1 s2
+
         comparePresynaptic (k, ss) (k', ss') = do
             let sorted = sort ss
                 sorted' = sort ss'
                 msg = "Synapses for " ++ show k
             assertEqual "Presynaptic neuron " k k'
-            zipWithM_ (assertEqual msg) sorted sorted'
-
+            zipWithM_ (checkSynapses msg) sorted sorted'
