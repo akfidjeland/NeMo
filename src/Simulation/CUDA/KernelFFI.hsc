@@ -9,7 +9,7 @@ module Simulation.CUDA.KernelFFI (
     readFiring,
     applyStdp,
     getSynapses,
-    startSimulation,
+    initSimulation,
     freeRT,
     CuRT,
     addNeuron,
@@ -104,8 +104,7 @@ foreign import ccall unsafe "nemo_delete_network" freeRT :: Ptr CuRT -> IO ()
 
 
 {- | Force copy of data to device -}
-foreign import ccall unsafe "nemo_start_simulation" startSimulation :: Ptr CuRT -> IO ()
-
+foreign import ccall unsafe "nemo_init_simulation" initSimulation :: Ptr CuRT -> IO ()
 
 
 foreign import ccall unsafe "nemo_add_synapses"

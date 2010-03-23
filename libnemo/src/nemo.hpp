@@ -133,15 +133,13 @@ class Network
 		/*! Finalise network construction to prepare it for
 		 * simulation
 		 *
-		 * After specifying the network in the construction
-		 * stage, it may need to be set up on the backend, and
-		 * optimised etc. This can be time-consuming if the
-		 * network is large. Calling \ref startSimulation
-		 * causes all this setup to be done. Calling this
-		 * function is not strictly required as the setup will
-		 * be done the first time any simulation function is
-		 * called. */
-		virtual void startSimulation() = 0;
+		 * After specifying the network in the construction stage, it may need
+		 * to be set up on the backend, and optimised etc. This can be
+		 * time-consuming if the network is large. Calling the simulation
+		 * initialization function causes all this setup to be done. Calling
+		 * this function is not strictly required as the setup will be done the
+		 * first time any simulation function is called. */
+		virtual void initSimulation() = 0;
 
 		/*! Run simulation for a single cycle (1ms)
 		 *

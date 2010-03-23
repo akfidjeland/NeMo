@@ -47,7 +47,7 @@ initMemory net reqPsize maxProbePeriod stdp = do
     rt <- allocRT stdp reqPsize maxProbePeriod
     configureStdp rt stdp
     indices <- setNeurons rt $ Network.toList net
-    startSimulation rt
+    initSimulation rt
     return $ State rt indices
 
 

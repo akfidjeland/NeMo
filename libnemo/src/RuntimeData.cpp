@@ -319,7 +319,7 @@ RuntimeData::addSynapses(
 
 
 void
-RuntimeData::startSimulation()
+RuntimeData::initSimulation()
 {
 	if(m_state != SIMULATING) {
 		m_cm->moveToDevice(m_logging);
@@ -349,7 +349,7 @@ RuntimeData::startSimulation()
 void
 RuntimeData::stepSimulation(const std::vector<uint>& fstim)
 {
-	startSimulation(); // only has effect on first cycle
+	initSimulation(); // only has effect on first cycle
 
 	/* A 32-bit counter can count up to around 4M seconds which is around 1200
 	 * hours or 50 days */

@@ -73,7 +73,7 @@ class RuntimeData : public Network
 		 * NETWORK SIMULATION
 		 */
 
-		void startSimulation();
+		void initSimulation();
 
 		void stepSimulation(const std::vector<uint>& fstim = std::vector<uint>());
 

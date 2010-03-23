@@ -186,9 +186,9 @@ nemo_get_synapses(NETWORK ptr,
 
 
 nemo_status_t
-nemo_start_simulation(NETWORK network)
+nemo_init_simulation(NETWORK network)
 {
-	CATCH(network, startSimulation());
+	CATCH(network, initSimulation());
 }
 
 

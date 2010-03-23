@@ -312,7 +312,7 @@ simulate(nemo::Network* net, unsigned pcount, unsigned m, bool stdp)
 {
 	const unsigned MS_PER_SECOND = 1000;
 
-	net->startSimulation();
+	net->initSimulation();
 	//! \todo fix timing code in kernel so that we don't have to force data onto device
 	net->stepSimulation();
 	net->resetTimer();

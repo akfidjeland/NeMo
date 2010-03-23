@@ -170,10 +170,9 @@ nemo_add_synapses(NETWORK,
 /*! \name Simulation
  * \{ */
 
-//! \todo rename to finalise network
-/*! \copydoc nemo::Network::startSimulation */
+/*! \copydoc nemo::Network::initSimulation */
 nemo_status_t
-nemo_start_simulation(NETWORK);
+nemo_init_simulation(NETWORK);
 
 /*! Run simulation for a single cycle (1ms)
  *
