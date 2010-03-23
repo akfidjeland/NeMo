@@ -15,6 +15,7 @@
 
 #include <stddef.h> // for size_t
 
+//! \todo rename nemo_network_t to avoid namespace polution
 /*! Opaque pointer to network object. */
 typedef void* NETWORK;
 
@@ -235,18 +236,28 @@ nemo_flush_firing_buffer(NETWORK);
 // QUERIES
 //-----------------------------------------------------------------------------
 
-/*! \name Simulation (queries) \{ */
+/*! \name Simulation (queries)
+ *
+ * If STDP is enabled, the synaptic weights may change at
+ * run-time. The user can read these back on a per-(source)
+ * neuron basis.
+ * \{ */
 
-/*! Read connectivity matrix back from device for a single neuron and delay. */
-size_t
+/*! Read connectivity matrix back from device for a single neuron and delay.
+ * Every call to this function will return synapses in the same order.
+ * The output vectors are valid until the next call to this function.
+ *
+ * \post
+ * 		Output vectors \a targetNeuron, \a weights, \a delays, and \a is_plastic all have length \a len
+ */
+nemo_status_t
 nemo_get_synapses(NETWORK,
-		unsigned sourcePartition,
 		unsigned sourceNeuron,
-		unsigned delay,
-		unsigned* targetPartition[],
 		unsigned* targetNeuron[],
+		unsigned* delays[],
 		float* weights[],
-		unsigned char* plastic[]);
+		unsigned char* is_plastic[],
+		size_t* len);
 
 
 

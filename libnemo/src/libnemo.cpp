@@ -23,6 +23,7 @@ extern "C" {
 
 /* Call method on network object, and /set/ status and error */
 #define CATCH_(net, call) {                                                   \
+        net->setStatus(NEMO_OK);                                              \
         try {                                                                 \
             call;                                                             \
         } catch (DeviceAllocationException& e) {                              \
@@ -41,7 +42,6 @@ extern "C" {
             net->setErrorMsg("unknown exception");                            \
             net->setStatus(NEMO_UNKNOWN_ERROR);                               \
         }                                                                     \
-        net->setStatus(NEMO_OK);                                              \
     }
 
 /* Call method on network object, and /return/ status and error */
@@ -151,20 +151,30 @@ nemo_add_synapses(NETWORK network,
 
 
 
-size_t
-nemo_get_synapses(NETWORK /*network*/,
-		unsigned /*sourcePartition*/,
-		unsigned /*sourceNeuron*/,
-		unsigned /*delay*/,
-		unsigned** /*targetPartition[]*/,
-		unsigned** /*targetNeuron[]*/,
-		float** /*weights[]*/,
-		unsigned char** /*plastic[]*/)
+nemo_status_t
+nemo_get_synapses(NETWORK ptr,
+		unsigned source,
+		unsigned* targets_[],
+		unsigned* delays_[],
+		float* weights_[],
+		unsigned char* plastic_[],
+		size_t* len)
 {
-	//! \todo implement this again.
-	return 0;
-	//return (static_cast<Network*>(network))->cm()->getRow(sourcePartition, sourceNeuron, delay,
-	//		static_cast<Network*>(network)->cycle(), targetPartition, targetNeuron, weights, plastic);
+	const std::vector<unsigned>* targets;
+	const std::vector<unsigned>* delays;
+	const std::vector<float>* weights;
+	const std::vector<unsigned char>* plastic;
+	Network* net = static_cast<Network*>(ptr);
+	CATCH_(net, net->m_impl->getSynapses(source,
+				&targets, &delays, &weights, &plastic));
+	if(net->status() == NEMO_OK) {
+		*targets_ = const_cast<unsigned*>(&(*targets)[0]);
+		*delays_ = const_cast<unsigned*>(&(*delays)[0]);
+		*weights_ = const_cast<float*>(&(*weights)[0]);
+		*plastic_ = const_cast<unsigned char*>(&(*plastic)[0]);
+		*len = targets->size();
+	}
+	return net->status();
 }
 
 
@@ -204,10 +214,12 @@ nemo_read_firing(NETWORK ptr,
 	const std::vector<unsigned>* nidx;
 	Network* net = static_cast<Network*>(ptr);
 	CATCH_(net, *ncycles = net->m_impl->readFiring(&cycles, &nidx));
-	*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
-	*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);
-	*nfired = cycles->size();
-	assert(cycles->size() == nidx->size());
+	if(net->status() == NEMO_OK) {
+		*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
+		*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);
+		*nfired = cycles->size();
+		assert(cycles->size() == nidx->size());
+	}
 	return net->status();
 }
 

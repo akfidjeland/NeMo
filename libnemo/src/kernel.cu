@@ -48,9 +48,9 @@ applyStdp(
 			d_cc, ccPitch,
 #endif
 			d_fcm,
-			fixedPoint(reward, fractionalBits),
-			fixedPoint(maxWeight, fractionalBits),
-			fixedPoint(minWeight, fractionalBits));
+			fx_toFix(reward, fractionalBits),
+			fx_toFix(maxWeight, fractionalBits),
+			fx_toFix(minWeight, fractionalBits));
 }
 
 

@@ -79,6 +79,12 @@ class RuntimeData : public Network
 
 		void applyStdp(float reward);
 
+		void getSynapses(unsigned sourceNeuron,
+				const std::vector<unsigned>** targetNeuron,
+				const std::vector<unsigned>** delays,
+				const std::vector<float>** weights,
+				const std::vector<unsigned char>** plastic);
+
 		/*! Read all firing data buffered on the device since the previous
 		 * call to this function (or the start of simulation if this is the
 		 * first call). The return vectors are valid until the next call to

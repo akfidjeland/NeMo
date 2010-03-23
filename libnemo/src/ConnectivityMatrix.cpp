@@ -32,7 +32,8 @@ ConnectivityMatrix::ConnectivityMatrix(
     m_maxPartitionSize(maxPartitionSize),
     m_maxDelay(0),
 	m_setReverse(setReverse),
-	md_allocatedFCM(0),
+	md_fcmPlaneSize(0),
+	md_fcmAllocated(0),
 	m_maxPartitionIdx(0),
 	m_maxAbsWeight(0.0),
 	m_fractionalBits(~0)
@@ -165,16 +166,16 @@ ConnectivityMatrix::moveBundleToDevice(
 
 	/* Data used when user reads FCM back from device */
 	std::vector<nidx_t>& h_fcmTarget = mh_fcmTargets[globalSourceNeuron];
-	std::vector<uchar>& h_fcmStatic = mh_fcmStatic[globalSourceNeuron];
+	std::vector<uchar>& h_fcmPlastic = mh_fcmPlastic[globalSourceNeuron];
 
 	// fill in addresses and weights in separate vectors
 	//! \todo reorganise this for improved memory performance
 	for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
 		nidx_t targetNeuron = boost::tuples::get<0>(*s);
 		addresses.push_back(f_packSynapse(targetNeuron));
-		weights.push_back(fixedPoint(boost::tuples::get<1>(*s), fbits));
+		weights.push_back(fx_toFix(boost::tuples::get<1>(*s), fbits));
 		h_fcmTarget.push_back(globalIndex(targetPartition, targetNeuron));
-		h_fcmStatic.push_back(boost::tuples::get<2>(*s));
+		h_fcmPlastic.push_back(boost::tuples::get<2>(*s));
 	}
 
 	assert(sizeof(nidx_t) == sizeof(synapse_t));
@@ -197,7 +198,8 @@ ConnectivityMatrix::moveBundleToDevice(
 	 * function could write synapses to a non-contigous range of memory.
 	 * However, we currently write this as a single range. */
 	//! \todo write the remaining FCM data in the correct order
-	size_t bundleStart = (axonStart - *woffset) * WARP_SIZE;
+	size_t bundleStart = (*woffset - axonStart) * WARP_SIZE;
+	assert(*woffset >= axonStart);
 	m_synapseAddresses.addBlock(globalSourceNeuron, bundleStart, bundleStart + len);
 
 	std::fill_n(std::back_inserter(mh_fcmDelays[globalSourceNeuron]), len, delay);
@@ -234,6 +236,7 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
 
 	if(bpitch != desiredBytePitch) {
+		//! \todo only write this if logging is enabled
 		std::cerr << "Returned byte pitch (" << desiredBytePitch
 			<< ") did  not match requested byte pitch (" << bpitch
 			<< ") when allocating forward connectivity matrix" << std::endl;
@@ -244,6 +247,7 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 
 	// allocate and intialise host memory
 	size_t wpitch = bpitch / sizeof(synapse_t);
+	md_fcmPlaneSize = totalWarpCount * wpitch;
 	std::vector<synapse_t> h_data(height * wpitch, f_nullSynapse());
 
 	uint fbits = setFractionalBits();
@@ -262,19 +266,20 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 			pidx_t targetPartition = boost::tuples::get<0>(bundle->first);
 			delay_t delay          = boost::tuples::get<1>(bundle->first);
 			warpOffsets->set(sourcePartition, sourceNeuron, targetPartition, delay, woffset);
-			//! \todo need global source neuron here
 			moveBundleToDevice(
 					globalIndex(sourcePartition, sourceNeuron), targetPartition,
 					delay, bundle->second, totalWarpCount, axonStart, fbits,
 					h_data, &woffset);
 		}
+		m_synapseAddresses.setWarpRange(
+				globalIndex(sourcePartition, sourceNeuron), axonStart, woffset);
 	}
 
-	md_allocatedFCM = height * bpitch;
-	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], md_allocatedFCM, cudaMemcpyHostToDevice));
+	md_fcmAllocated = height * bpitch;
+	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], md_fcmAllocated, cudaMemcpyHostToDevice));
 
 	setFcmPlaneSize(totalWarpCount * wpitch);
-	setFixedPointFormat(fbits);
+	fx_setFormat(fbits);
 }
 
 
@@ -282,11 +287,13 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 void
 ConnectivityMatrix::moveToDevice(bool logging)
 {
-	//! \todo raise exception
-	assert(!mh_fcm.empty());
+	if(mh_fcm.empty()) {
+		throw std::logic_error("Attempt to move empty FCM to device");
+	}
 
 	try {
-		// table of initial warp index for different partition/neuron/partition/delay combinations
+		/* Initial warp index for different partition/neuron/partition/delay
+		 * combinations */
 		WarpAddressTable wtable;
 		moveFcmToDevice(&wtable);
 
@@ -326,7 +333,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
 	const size_t MEGA = 1<<20;
 	out << "Memory usage on device:\n";
-	out << "forward matrix: " << (md_allocatedFCM / MEGA) << "MB\n";
+	out << "forward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
 	out << "reverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
 	out << "incoming: " << (m_incoming.allocated() / MEGA) << "MB\n";
 	out << "outgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
@@ -334,54 +341,43 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 
 
 
-size_t
-ConnectivityMatrix::getRow(
-		pidx_t sourcePartition,
-		nidx_t sourceNeuron,
-		delay_t delay,
-		uint currentCycle,
-		pidx_t* partition[],
-		nidx_t* neuron[],
-		weight_t* weight[],
-		uchar* plastic[])
+void
+ConnectivityMatrix::getSynapses(
+		nidx_t sourceNeuron, // global index
+		const std::vector<unsigned>** targets,
+		const std::vector<unsigned>** delays,
+		const std::vector<float>** weights,
+		const std::vector<unsigned char>** plastic)
 {
-	//! \todo need to add this back!
-#if 0
-	mf_targetPartition.clear();
-	mf_targetNeuron.clear();
-	mf_weights.clear();
-	mf_plastic.clear();
+	//! \todo assert that we have moved onto device
+	AddressRange warps = m_synapseAddresses.warpsOf(sourceNeuron);
+	size_t words = warps.size() * WARP_SIZE;
 
-	size_t rowLength = 0;
+	mh_weightBuffer.resize(words);
+	CUDA_SAFE_CALL(cudaMemcpy(&mh_weightBuffer[0],
+				md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize + warps.start * WARP_SIZE,
+				words * sizeof(synapse_t),
+				cudaMemcpyDeviceToHost));
+	/*! \todo read back data for more than one neuron. Keep
+	 * track of what cycle we last accessed each neuron and
+	 * what device data is currently cached here. */
 
-	// get all synapse groups for which this neuron is present
-	for(pidx_t targetPartition = 0; targetPartition < m_partitionCount; ++targetPartition) {
-		fcm_t::iterator group = m_fsynapses.find(make_fcm_key(sourcePartition, targetPartition, delay));
-		if(group != m_fsynapses.end()) {
-
-			pidx_t* pbuf;
-			nidx_t* nbuf;
-			weight_t* wbuf;
-			uchar* sbuf;
-
-			size_t len = group->second.getWeights(sourceNeuron, currentCycle, &pbuf, &nbuf, &wbuf, &sbuf);
-
-			std::copy(pbuf, pbuf+len, back_inserter(mf_targetPartition));
-			std::copy(nbuf, nbuf+len, back_inserter(mf_targetNeuron));
-			std::copy(wbuf, wbuf+len, back_inserter(mf_weights));
-			std::copy(sbuf, sbuf+len, back_inserter(mf_plastic));
-
-			rowLength += len;
+	// fill in weights
+	assert(m_fractionalBits != ~0U);
+	mh_fcmWeights.clear();
+	const std::vector<AddressRange>& ranges = m_synapseAddresses.synapsesOf(sourceNeuron);
+	for(std::vector<AddressRange>::const_iterator i = ranges.begin();
+			i != ranges.end(); ++i) {
+		for(uint addr = i->start; addr < i->end; ++addr) {
+			weight_t w = fx_toFloat(mh_weightBuffer[addr], m_fractionalBits);
+			mh_fcmWeights.push_back(w);
 		}
 	}
 
-	*partition = &mf_targetPartition[0];
-	*neuron = &mf_targetNeuron[0];
-	*weight = &mf_weights[0];
-	*plastic = &mf_plastic[0];
-	return rowLength;
-#endif
-	return 0;
+	*targets = &mh_fcmTargets[sourceNeuron];
+	*delays = &mh_fcmDelays[sourceNeuron];
+	*weights = &mh_fcmWeights;
+	*plastic = &mh_fcmPlastic[sourceNeuron];
 }
 
 
@@ -411,8 +407,7 @@ ConnectivityMatrix::d_allocatedRCM() const
 size_t
 ConnectivityMatrix::d_allocated() const
 {
-
-	return md_allocatedFCM
+	return md_fcmAllocated
 		+ d_allocatedRCM()
 		+ m_incoming.allocated()
 		+ m_outgoing.allocated();

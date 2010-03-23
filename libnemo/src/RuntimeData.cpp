@@ -150,7 +150,7 @@ RuntimeData::configureStdp()
 	std::vector<fix_t> fxfn(flfn.size());
 	uint fb = m_cm->fractionalBits();
 	for(uint i=0; i < fxfn.size(); ++i) {
-		fxfn.at(i) = fixedPoint(flfn[i], fb);
+		fxfn.at(i) = fx_toFix(flfn[i], fb);
 	}
 	::configureStdp(m_stdpFn.preFireWindow(),
 			m_stdpFn.postFireWindow(),
@@ -415,6 +415,19 @@ RuntimeData::applyStdp(float reward)
 	}
 
 	m_deviceAssertions->check(m_cycle);
+}
+
+
+
+void
+RuntimeData::getSynapses(unsigned sn,
+		const std::vector<unsigned>** tn,
+		const std::vector<unsigned>** d,
+		const std::vector<float>** w,
+		const std::vector<unsigned char>** p)
+{
+	ensureState(SIMULATING);
+	return m_cm->getSynapses(sn, tn, d, w, p);
 }
 
 

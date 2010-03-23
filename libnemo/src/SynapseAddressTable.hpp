@@ -19,6 +19,19 @@
 
 namespace nemo {
 
+struct AddressRange
+{
+	uint start;
+	uint end;
+
+	AddressRange() : start(0), end(0) {}
+	AddressRange(uint s, uint e) : start(s), end(e) {}
+
+	bool valid() const { return end > start; }
+
+	uint size() const { return end - start; }
+};
+
 
 /*! \brief Table specifying synapse addresses on the device 
  *
@@ -27,6 +40,7 @@ namespace nemo {
  * non-contigous blocks of memory. If the user queries the connectivity data at
  * run-time, we need to be able to combine these blocks. This class stores the
  * address ranges for the relevant data on the device to facilitate this.
+ * Additionally it stores the start warp and end warp for each neuron.
  */
 class SynapseAddressTable
 {
@@ -34,19 +48,25 @@ class SynapseAddressTable
 
 		// using default ctor
 
-		typedef std::pair<uint, uint> range_t; // a single contiguous block
-
 		void addBlock(nidx_t sourceNeuron, uint blockStart, uint blockEnd);
 
-		const std::vector<range_t>& synapsesOf(nidx_t sourceNeuron) const;
+		void setWarpRange(nidx_t sourceNeuron, uint start, uint end);
+
+		/*! \return start and end warps for the given neuron */
+		const AddressRange& warpsOf(nidx_t sourceNeuron) const;
+
+		const std::vector<AddressRange>& synapsesOf(nidx_t sourceNeuron) const;
 
 	private : 
 
 		// all the blocks for a single neuron
-		typedef std::vector<range_t> neuron_ranges_t;
+		typedef std::vector<AddressRange> neuron_ranges_t;
+
+		// warps + blocks for a single neuron
+		typedef std::pair<AddressRange, neuron_ranges_t> neuron_data_t;
 
 		// all the blocks for the whole network 
-		std::map<nidx_t, neuron_ranges_t> m_data;
+		std::map<nidx_t, neuron_data_t > m_data;
 };
 
 } // end namespace nemo

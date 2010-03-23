@@ -13,8 +13,11 @@
 #include "nemo_cuda_types.h"
 
 /* Convert floating point to fixed-point */
-fix_t fixedPoint(float f, unsigned fractionalBits);
+fix_t fx_toFix(float f, unsigned fractionalBits);
 
-void setFixedPointFormat(unsigned fractionalBits);
+/* Convert fixed-point to floating point */
+float fx_toFloat(fix_t f, unsigned fractionalBits);
+
+void fx_setFormat(unsigned fractionalBits);
 
 #endif

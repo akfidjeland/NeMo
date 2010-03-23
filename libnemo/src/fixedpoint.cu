@@ -23,7 +23,7 @@ __constant__ uint c_fixedPointFractionalBits;
 
 __host__
 void
-setFixedPointFormat(uint fracbits)
+fx_setFormat(uint fracbits)
 {
 	uint scale = 1 << fracbits;
 	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_fixedPointScale,

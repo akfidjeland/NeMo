@@ -167,7 +167,6 @@ class Network
 		 * \param cycles The cycle numbers during which firing occured
 		 * \param nidx The corresponding neuron indices
 		 *
-		 *
 		 * \return
 		 *		Total number of cycles for which we return firing. The caller
 		 *		would most likely already know what this should be, so can use
@@ -185,6 +184,29 @@ class Network
 		virtual void flushFiringBuffer() = 0;
 
 		/* \} */ // end simulation (firing)
+
+		/*! \name Simulation (queries)
+		 *
+		 * If STDP is enabled, the synaptic weights may change
+		 * at run-time. The user can read these back on a
+		 * per-(source) neuron basis.
+		 *
+		 * \{ */
+
+		/*! Return synapse data for a specific source neuron. If STDP is
+		 * enabled the weights may change at run-time. The order of synapses in
+		 * each returned vector is guaranteed to be the same on subsequent
+		 * calls to this function. The output vectors are
+		 * valid until the next call to this function.
+		 *
+		 * \post The output vectors all have the same length */
+		virtual void getSynapses(unsigned sourceNeuron,
+				const std::vector<unsigned>** targetNeuron,
+				const std::vector<unsigned>** delays,
+				const std::vector<float>** weights,
+				const std::vector<unsigned char>** plastic) = 0;
+
+		/* \} */ // end simulation (queries) section
 
 		/*! \name Simulation (timing)
 		 *

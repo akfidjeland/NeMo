@@ -63,7 +63,7 @@ class ConnectivityMatrix
 				const std::vector<uint>& targets,
 				const std::vector<uint>& delays,
 				const std::vector<float>& weights,
-				const std::vector<unsigned char> is_plastic);
+				const std::vector<unsigned char> plastic);
 
 		delay_t maxDelay() const { return m_maxDelay; }
 
@@ -72,22 +72,24 @@ class ConnectivityMatrix
 		 * to stdout */
 		void moveToDevice(bool logging);
 
-		size_t getRow(
-				pidx_t sourcePartition,
-				nidx_t sourceNeuron,
-				delay_t delay,
-				uint currentCycle,
-				pidx_t* partition[],
-				nidx_t* neuron[],
-				weight_t* weight[],
-				uchar* plastic[]);
+		/*! Write all synapse data for a single neuron to output vectors.
+		 *
+		 * The output vectors are valid until the next call to
+		 * this method.
+		 *
+		 * \post all output vectors have the same length
+		 */
+		void getSynapses(
+				unsigned sourceNeuron, // global index
+				const std::vector<unsigned>** targets,
+				const std::vector<unsigned>** delays,
+				const std::vector<float>** weights,
+				const std::vector<unsigned char>** plastic);
 
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
 
 		size_t d_allocated() const;
-
-	public:
 
 		synapse_t* d_fcm() const { return md_fcm.get(); }
 
@@ -138,8 +140,6 @@ class ConnectivityMatrix
 
 		bool m_setReverse;
 
-	private:
-
 		typedef boost::tuple<nidx_t, weight_t, uchar> synapse_ht;
 
 		typedef std::vector<synapse_ht> bundle_t;
@@ -153,6 +153,7 @@ class ConnectivityMatrix
 
 		/* Compact fcm on device */
 		boost::shared_ptr<synapse_t> md_fcm;
+		size_t md_fcmPlaneSize; // in words
 
 		/* For spike delivery we need to keep track of all target partitions
 		 * for each neuron */
@@ -176,7 +177,7 @@ class ConnectivityMatrix
 				std::vector<synapse_t>& h_data,
 				size_t* woffset);
 
-		size_t md_allocatedFCM;
+		size_t md_fcmAllocated;
 
 		/* Convert global neuron index to local neuron index */
 		nidx_t neuronIdx(nidx_t);
@@ -204,14 +205,23 @@ class ConnectivityMatrix
 		 * run-time. */
 		std::map<nidx_t, std::vector<nidx_t> > mh_fcmTargets;
 		std::map<nidx_t, std::vector<delay_t> > mh_fcmDelays;
-		std::map<nidx_t, std::vector<uchar> > mh_fcmStatic;
+		std::map<nidx_t, std::vector<uchar> > mh_fcmPlastic;
 
 		/* The weights may change at run-time, so we need to read them back
 		 * from the device, and reconstruct possibly disparate data into a
-		 * single vector. The synapse addresses contains the relevant data for
-		 * this reconstruction. */
+		 * single vector. The synapse addresses table contains the relevant
+		 * data for this reconstruction */
 		SynapseAddressTable m_synapseAddresses;
 
+		/* We buffer data for only a single source neuron at a time */
+		std::vector<weight_t> mh_fcmWeights;
+
+		/* The weight buffer contains the FCM data for a
+		 * single neuron, exactly as stored on the device. In
+		 * principle, we could load weights for more than one
+		 * source neuron at a time, to cut down on PCI traffic
+		 * */
+		std::vector<synapse_t> mh_weightBuffer;
 };
 
 } // end namespace nemo

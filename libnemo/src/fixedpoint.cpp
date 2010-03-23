@@ -14,7 +14,7 @@
 
 
 fix_t
-fixedPoint(float f, uint fractionalBits)
+fx_toFix(float f, uint fractionalBits)
 {
 	if(abs(int(f)) >= 1 << (31 - fractionalBits)) {
 		std::ostringstream msg;
@@ -24,4 +24,12 @@ fixedPoint(float f, uint fractionalBits)
 		throw std::runtime_error(msg.str());
 	}
 	return static_cast<fix_t>(f * (1<<fractionalBits));
+}
+
+
+
+float
+fx_toFloat(fix_t v, uint fractionalBits)
+{
+	return float(v) / float(1<<fractionalBits);
 }
