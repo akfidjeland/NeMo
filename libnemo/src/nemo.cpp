@@ -7,6 +7,12 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+//! \file nemo.cpp
+
+/*! C API for libnemo
+ *
+ * This simply wrapes the API exposed in nemo::Network */
+
 extern "C" {
 #include "nemo.h"
 }
