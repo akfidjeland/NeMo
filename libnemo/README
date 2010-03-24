@@ -1,4 +1,4 @@
-Build installation
+Build/installation
 ------------------
 
 The build process uses cmake. Basic usage on UNIX:
@@ -14,7 +14,10 @@ Dependencies
 ------------
 
 - CUDA toolkit >= 2.1 (SDK not required)
-- Boost (for smart pointers and random number generation)
+- Boost (smart pointers, tuples, and random number generation)
+
+Note that the CUDA compiler driver 'nvcc' is not compatible with all versions
+of gcc, especially newer versions of gcc.
 
 Usage
 -----
@@ -22,8 +25,8 @@ Usage
 The 'examples' directory contains an example network using the C++ API.
 
 On UNIX, the build process generates man pages. Check 'man 3 nemo' for an
-overview of the library, 'man 3 nemo.h' for C API reference and 'man 3
-nemo_Network' for the C++ API reference.
+overview of the library, 'man 3 nemo-c' for C API reference and 'man 3
+nemo-cpp' for the C++ API reference.
 
 Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>
 March 2010

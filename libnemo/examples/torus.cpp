@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <boost/random.hpp>
 
@@ -384,6 +385,33 @@ simulate(nemo::Network* net, unsigned pcount, unsigned m, bool stdp)
 }
 
 
+
+/* Simulate for some time, writing firing data to file */
+void
+simulateToFile(nemo::Network* net, unsigned pcount, unsigned m, bool stdp, const char* firingFile)
+{
+	net->initSimulation();
+
+	/* Dummy buffers for firing data */
+	const std::vector<unsigned>* cycles;
+	const std::vector<unsigned>* fired;
+
+	std::cout << "Running simulation (gathering performance data)...";
+	unsigned nfired = 0;
+	for(uint ms=0; ms<1000; ++ms) {
+		net->stepSimulation();
+	}
+	net->readFiring(&cycles, &fired);
+
+	std::ofstream file;
+	file.open(firingFile);
+	for(size_t i = 0; i < cycles->size(); ++i) {
+		file << cycles->at(i) << " " << fired->at(i) << "\n";
+	}
+	file.close();
+}
+
+
 #ifndef TORUS_NO_MAIN
 
 int
@@ -411,6 +439,7 @@ main(int argc, char* argv[])
 	configure(net, stdp);
 	construct(net, pcount, m, stdp, sigma);
 	simulate(net, pcount, m, stdp);
+	//simulateToFile(net, pcount, m, stdp, "firing.dat");
 	delete net;
 }
 
