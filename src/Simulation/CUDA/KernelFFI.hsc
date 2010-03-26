@@ -5,6 +5,10 @@
 module Simulation.CUDA.KernelFFI (
     allocateRuntime,
     stepBuffering,
+    -- configuration
+    setFiringBufferLength,
+    getFiringBufferLength,
+    -- simulation
     stepNonBuffering,
     readFiring,
     applyStdp,
@@ -93,6 +97,30 @@ addNeuron rt nidx a b c d u v sigma =
 
 -- free the device, clear all memory in Sim
 foreign import ccall unsafe "nemo_delete_network" freeRT :: Ptr CuRT -> IO ()
+
+
+-------------------------------------------------------------------------------
+-- Configuration
+-------------------------------------------------------------------------------
+
+
+foreign import ccall unsafe "nemo_set_firing_buffer_length" c_setFiringBufferLength
+    :: Ptr CuRT -> CUInt -> IO NemoStatus
+
+setFiringBufferLength :: Ptr CuRT -> Int -> IO ()
+setFiringBufferLength rt len = do
+    st <- c_setFiringBufferLength rt $ fromIntegral len
+    checkStatus rt st
+
+foreign import ccall unsafe "nemo_get_firing_buffer_length" c_getFiringBufferLength
+    :: Ptr CuRT -> Ptr CUInt -> IO NemoStatus
+
+getFiringBufferLength :: Ptr CuRT -> IO Int
+getFiringBufferLength rt = do
+    alloca $ \ptr -> do
+    st <- c_getFiringBufferLength rt ptr
+    checkStatus rt st
+    return . fromIntegral =<< peek ptr
 
 
 -------------------------------------------------------------------------------

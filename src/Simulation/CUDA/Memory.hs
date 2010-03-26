@@ -48,12 +48,14 @@ initSim net reqPsize stdp = do
     rt <- allocateRuntime reqPsize (stdpEnabled stdp)
     when (rt == nullPtr) $ fail "Failed to create CUDA simulation"
     configureStdp rt stdp
+    setFiringBufferLength rt 1000
     indices <- setNeurons rt $ Network.toList net
     initSimulation rt
     return $ State rt indices
 
 
 
+{- | Add neurons to network and return the set of neuron indices -}
 setNeurons :: Ptr CuRT -> [(Idx, Neuron IzhNeuron Static)] -> IO (Set.Set Idx)
 setNeurons rt ns = do
     buf <- allocOutbuf $ 2^16

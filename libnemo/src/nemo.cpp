@@ -293,6 +293,24 @@ nemo_enable_stdp(NETWORK network,
 
 
 
+nemo_status_t
+nemo_set_firing_buffer_length(NETWORK network, unsigned cycles)
+{
+	CATCH(network, setFiringBufferLength(cycles));
+}
+
+
+
+nemo_status_t
+nemo_get_firing_buffer_length(NETWORK ptr, unsigned* cycles)
+{
+	Network* net = static_cast<Network*>(ptr);                            \
+	CATCH_(net, *cycles = net->m_impl->getFiringBufferLength());
+	return net->status();
+}
+
+
+
 const char*
 nemo_strerror(NETWORK network)
 {

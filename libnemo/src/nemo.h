@@ -97,6 +97,16 @@ nemo_enable_stdp(NETWORK,
 		float min_weight,
 		float max_weight);
 
+
+/*! \copydoc nemo::Network::setFiringBufferLength */
+nemo_status_t
+nemo_set_firing_buffer_length(NETWORK, unsigned cycles);
+
+
+/*! \copydoc nemo::Network::getFiringBufferLength */
+nemo_status_t
+nemo_get_firing_buffer_length(NETWORK, unsigned* cycles);
+
 /* \} */ // end configuration
 
 

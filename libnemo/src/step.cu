@@ -194,7 +194,7 @@ scatter(uint cycle,
 					size_t headsAddr = incomingCountAddr(targetPartition, cycle, delay);
 					/*! \todo we might be able to reduce the number of atomic
 					 * operations here, by writing warps going to the same
-					 * target in the same go. This would be easire if we did
+					 * target in the same go. This would be easier if we did
 					 * just-in-time delivery, in which case we could do
 					 * multiple smem atomics, and just a single gmem atomic */
 					uint offset = atomicAdd(g_incomingHeads + headsAddr, 1);
