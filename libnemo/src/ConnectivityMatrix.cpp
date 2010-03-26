@@ -110,7 +110,7 @@ ConnectivityMatrix::addSynapses(
 /* Determine the number of fractional bits to use when storing weights in
  * fixed-point format on the device. */
 uint
-ConnectivityMatrix::setFractionalBits()
+ConnectivityMatrix::setFractionalBits(bool logging)
 {
 	/* In the worst case we may have all presynaptic neurons for some neuron
 	 * firing, and having all the relevant synapses have the maximum weight we
@@ -128,8 +128,12 @@ ConnectivityMatrix::setFractionalBits()
 	//! \todo do this based on both max weight and max number of incoming synapses
 	uint log2Ceil = ceilf(log2(m_maxAbsWeight));
 	uint fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
-	//! \todo log this to file
-	//fprintf(stderr, "Using fixed point format %u.%u\n", 31-fbits, fbits);
+
+	if(logging) {
+		//! \todo log to correct output stream
+		std::cout << "Using fixed point format Q"
+			<< 31-fbits << "." << fbits << " for weights\n";
+	}
 	m_fractionalBits = fbits;
 	return fbits;
 }
@@ -213,7 +217,7 @@ ConnectivityMatrix::moveBundleToDevice(
 
 
 void
-ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
+ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets, bool logging)
 {
 	/* We add 1 extra warp here, so we can leave a null warp at the beginning */
 	size_t totalWarpCount = 1 + m_outgoing.totalWarpCount();
@@ -235,9 +239,9 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 	}
 	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
 
-	if(bpitch != desiredBytePitch) {
-		//! \todo only write this if logging is enabled
-		std::cerr << "Returned byte pitch (" << desiredBytePitch
+	if(logging && bpitch != desiredBytePitch) {
+		//! \todo write this to the correct logging output stream
+		std::cout << "Returned byte pitch (" << desiredBytePitch
 			<< ") did  not match requested byte pitch (" << bpitch
 			<< ") when allocating forward connectivity matrix" << std::endl;
 		/* This only matters, as we'll waste memory otherwise, and we'd expect the
@@ -250,7 +254,7 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 	md_fcmPlaneSize = totalWarpCount * wpitch;
 	std::vector<synapse_t> h_data(height * wpitch, f_nullSynapse());
 
-	uint fbits = setFractionalBits();
+	uint fbits = setFractionalBits(logging);
 
 	/* Move all synapses to allocated device data, starting at given warp
 	 * index. Return next free warp index */
@@ -295,7 +299,7 @@ ConnectivityMatrix::moveToDevice(bool logging)
 		/* Initial warp index for different partition/neuron/partition/delay
 		 * combinations */
 		WarpAddressTable wtable;
-		moveFcmToDevice(&wtable);
+		moveFcmToDevice(&wtable, logging);
 
 		for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
 			i->second->moveToDevice(wtable, i->first);
@@ -321,7 +325,7 @@ ConnectivityMatrix::moveToDevice(bool logging)
 
 	if(logging) {
 		//! \todo get output stream from caller
-		m_outgoing.reportWarpSizeHistogram(std::cout);
+		//m_outgoing.reportWarpSizeHistogram(std::cout);
 		printMemoryUsage(std::cout);
 	}
 }
@@ -333,10 +337,10 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
 	const size_t MEGA = 1<<20;
 	out << "Memory usage on device:\n";
-	out << "forward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
-	out << "reverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
-	out << "incoming: " << (m_incoming.allocated() / MEGA) << "MB\n";
-	out << "outgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
+	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
+	out << "\treverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
+	out << "\tincoming: " << (m_incoming.allocated() / MEGA) << "MB\n";
+	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
 
 

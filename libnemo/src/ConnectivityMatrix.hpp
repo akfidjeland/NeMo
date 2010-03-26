@@ -165,7 +165,7 @@ class ConnectivityMatrix
 		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
 
-		void moveFcmToDevice(class WarpAddressTable*);
+		void moveFcmToDevice(class WarpAddressTable*, bool logging);
 		void moveBundleToDevice(
 				nidx_t globalSourceNeuron,
 				pidx_t targetPartition,
@@ -190,7 +190,7 @@ class ConnectivityMatrix
 
 		weight_t m_maxAbsWeight;
 		uint m_fractionalBits;
-		uint setFractionalBits();
+		uint setFractionalBits(bool logging);
 
 		/* Per-partition addressing of RCM */
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
