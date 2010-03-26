@@ -22,7 +22,7 @@ import Simulation.CUDA.Address
 import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
      elapsedMs, resetTimer, freeRT)
-import Simulation.CUDA.Memory as Memory
+import Simulation.CUDA.Memory as Memory (initSim, getWeights, State(rtdata))
 import Simulation.STDP (StdpConf)
 
 
@@ -42,17 +42,6 @@ instance Simulation_Iface State where
     getWeights = Memory.getWeights
     start sim = return () -- copy to device forced during initSim
     stop = Kernel.freeRT . rtdata
-
-
-{- | Initialise simulation and return a function to step through the rest of it -}
-initSim
-    :: Maybe Int            -- ^ cluster size which mapper should be forced to use
-    -> Network IzhNeuron Static
-    -> StdpConf
-    -> IO State
-initSim partitionSize net stdpConf = do
-    let maxProbePeriod = 1000
-    initMemory net partitionSize maxProbePeriod stdpConf
 
 
 -------------------------------------------------------------------------------

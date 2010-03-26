@@ -36,7 +36,7 @@ class FiringOutput {
 		 *		The frequency is determined in terms of steps of whatever
 		 *		temporal resolution the simulation is running at.
 		 */
-		FiringOutput(size_t partitionCount, size_t partitionSize, uint maxReadPeriod);
+		FiringOutput(size_t partitionCount, size_t partitionSize, uint maxReadPeriod=1000);
 
 		~FiringOutput();
 

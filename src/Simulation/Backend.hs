@@ -31,7 +31,7 @@ initSim net simOpts cudaOpts stdpConf = do
             return . BS =<< CPU.initSim net stdpConf
 #if defined(CUDA_ENABLED)
         CUDA ->
-            return . BS =<< CUDA.initSim (optPartitionSize cudaOpts) net stdpConf
+            return . BS =<< CUDA.initSim net (optPartitionSize cudaOpts) stdpConf
 #endif
         (RemoteHost hostname port) ->
             return . BS =<< Remote.initSim hostname port net simOpts stdpConf

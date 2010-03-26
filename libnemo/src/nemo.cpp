@@ -68,15 +68,13 @@ class Network
 {
 	public :
 
-		Network(bool setReverse, unsigned maxReadPeriod) :
-			m_impl(nemo::Network::create(setReverse, maxReadPeriod)),
+		Network(bool setReverse) :
+			m_impl(nemo::Network::create(setReverse)),
 			m_errorMsg("No error") { }
 
 		//! \todo set partition size through a separate configuration function
-		Network(bool setReverse,
-				unsigned maxReadPeriod,
-				unsigned maxPartitionSize) :
-			m_impl(new nemo::RuntimeData(setReverse, maxReadPeriod, maxPartitionSize)),
+		Network(bool setReverse, unsigned maxPartitionSize) :
+			m_impl(new nemo::RuntimeData(setReverse, maxPartitionSize)),
 			m_errorMsg("No error") { }
 
 		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
@@ -102,20 +100,17 @@ class Network
 
 
 NETWORK
-nemo_new_network(unsigned setReverse, unsigned maxReadPeriod)
+nemo_new_network(unsigned char usingStdp)
 {
-	return new Network((bool) setReverse, maxReadPeriod);
+	return new Network((bool) usingStdp);
 }
 
 
 
 NETWORK
-nemo_new_network_(
-		unsigned setReverse,
-		unsigned maxReadPeriod,
-		unsigned maxPartitionSize)
+nemo_new_network_(unsigned char usingStdp, unsigned maxPartitionSize)
 {
-	return new Network((bool) setReverse, maxReadPeriod, maxPartitionSize);
+	return new Network((bool) usingStdp, maxPartitionSize);
 }
 
 

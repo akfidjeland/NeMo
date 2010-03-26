@@ -1,8 +1,10 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+-- TODO: merge whole file with KernelFFI?
+
 module Simulation.CUDA.Memory (
-    initMemory,
+    initSim,
     getWeights,
     State(..)
 ) where
@@ -37,14 +39,14 @@ data State = State {
     }
 
 {- Initialise memory on a single device -}
-initMemory
+initSim
     :: Network.Network IzhNeuron Static
     -> Maybe Int -- ^ requested partition size
-    -> Int
     -> StdpConf
     -> IO State
-initMemory net reqPsize maxProbePeriod stdp = do
-    rt <- allocRT stdp reqPsize maxProbePeriod
+initSim net reqPsize stdp = do
+    rt <- allocateRuntime reqPsize (stdpEnabled stdp)
+    when (rt == nullPtr) $ fail "Failed to create CUDA simulation"
     configureStdp rt stdp
     indices <- setNeurons rt $ Network.toList net
     initSimulation rt
@@ -130,18 +132,3 @@ getNWeights sim source = do
     where
         pack :: (Idx, Delay, Weight, Bool) -> AxonTerminal Static
         pack (idx, d, w, plastic) = AxonTerminal idx d w plastic ()
-
-
--------------------------------------------------------------------------------
--- Runtime data
--------------------------------------------------------------------------------
-
-
-allocRT :: StdpConf -> Maybe Int -> Int -> IO (Ptr CuRT)
-allocRT stdp psize maxProbePeriod = do
-    rt <- allocateRuntime
-        psize
-        (stdpEnabled stdp)
-        maxProbePeriod
-    when (rt == nullPtr) $ fail "Failed to create CUDA simulation"
-    return rt

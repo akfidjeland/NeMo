@@ -36,10 +36,14 @@ class Network
 		/*! \name Initialisation */
 		/* \{ */ // begin init section
 
-		/*! \return
+		/*!
+		 * \param usingStdp
+		 * 		Will STDP be used?
+		 *
+		 * \return
 		 * 		new Network object, or NULL if no suitable CUDA device was
 		 * 		found. For CUDA device 0 will be used.  */
-		static Network* create(bool setReverse, unsigned maxReadPeriod);
+		static Network* create(bool setReverse);
 
 		/* \} */ // end init section
 
@@ -55,6 +59,13 @@ class Network
 				std::vector<float> prefire,
 				std::vector<float> postfire,
 				float minWeight, float maxWeight) = 0;
+
+		/*! Set the size of the firing buffer such that it can contain a fixed
+		 * number of \a cycles worth of firing data before overflowing. */
+		virtual void setFiringBufferLength(unsigned cycles) = 0;
+
+		/*! \return the number of cycles the firing buffer can hold */
+		virtual unsigned getFiringBufferLength() const = 0;
 
 		/* \} */ // end configuration
 

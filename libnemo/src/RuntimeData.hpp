@@ -25,12 +25,10 @@ class RuntimeData : public Network
 {
 	public :
 
-		RuntimeData(bool setReverse, unsigned maxReadPeriod);
+		RuntimeData(bool setReverse);
 
 		// for debugging purposes, fix the partition size used
-		RuntimeData(bool setReverse,
-				unsigned maxReadPeriod,
-				unsigned maxPartitionSize);
+		RuntimeData(bool setReverse, unsigned maxPartitionSize);
 
 		~RuntimeData();
 
@@ -52,6 +50,10 @@ class RuntimeData : public Network
 				std::vector<float> postfire,
 				float minWeight,
 				float maxWeight);
+
+		void setFiringBufferLength(unsigned cycles) { m_maxReadPeriod = cycles; }
+
+		unsigned getFiringBufferLength() const { return m_maxReadPeriod; }
 
 		/*
 		 * NETWORK CONSTRUCTION
@@ -152,7 +154,11 @@ class RuntimeData : public Network
 		/* Densely packed, one bit per neuron */
 		NVector<uint32_t>* m_firingStimulus;
 
+		/* The firing buffer keeps data for a certain duration. One bit is
+		 * required per neuron (regardless of whether or not it's firing */
 		struct FiringOutput* m_firingOutput;
+		unsigned m_maxReadPeriod;
+		static const unsigned DEFAULT_FIRING_BUFFER_SIZE = 1000; // cycles
 
 		struct CycleCounters* m_cycleCounters;
 
@@ -164,8 +170,6 @@ class RuntimeData : public Network
 		size_t m_pitch64;
 
 		nemo::Timer m_timer;
-
-		unsigned int m_maxReadPeriod;
 
 		STDP<float> m_stdpFn;
 		void configureStdp();

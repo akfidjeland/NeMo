@@ -13,10 +13,10 @@
 namespace nemo {
 
 Network*
-Network::create(bool setReverse, unsigned maxReadPeriod)
+Network::create(bool setReverse)
 {
 	int dev = RuntimeData::selectDevice();
-	return dev == -1 ? NULL : new RuntimeData(setReverse, maxReadPeriod);
+	return dev == -1 ? NULL : new RuntimeData(setReverse);
 }
 
 

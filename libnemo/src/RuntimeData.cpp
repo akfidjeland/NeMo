@@ -34,7 +34,7 @@
 
 namespace nemo {
 
-RuntimeData::RuntimeData(bool setReverse, unsigned int maxReadPeriod) :
+RuntimeData::RuntimeData(bool setReverse) :
 	m_state(CONFIGURING),
 	m_partitionCount(0),
 	m_maxPartitionSize(MAX_PARTITION_SIZE),
@@ -48,15 +48,13 @@ RuntimeData::RuntimeData(bool setReverse, unsigned int maxReadPeriod) :
 	m_deviceAssertions(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
-	m_maxReadPeriod(maxReadPeriod),
+	m_maxReadPeriod(DEFAULT_FIRING_BUFFER_SIZE),
 	m_logging(false)
 { }
 
 
 
-RuntimeData::RuntimeData(bool setReverse,
-		unsigned maxReadPeriod,
-		unsigned maxPartitionSize) :
+RuntimeData::RuntimeData(bool setReverse, unsigned maxPartitionSize) :
 	m_state(CONFIGURING),
 	m_partitionCount(0),
 	m_maxPartitionSize(maxPartitionSize),
@@ -70,7 +68,7 @@ RuntimeData::RuntimeData(bool setReverse,
 	m_deviceAssertions(NULL),
 	m_pitch32(0),
 	m_pitch64(0),
-	m_maxReadPeriod(maxReadPeriod),
+	m_maxReadPeriod(DEFAULT_FIRING_BUFFER_SIZE),
 	m_logging(false)
 { }
 
