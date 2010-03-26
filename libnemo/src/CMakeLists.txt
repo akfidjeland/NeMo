@@ -54,6 +54,7 @@ CUDA_ADD_LIBRARY(nemo
 	kernel.cu
 	nemo.cpp
 	ConnectivityMatrix.cpp
+	CudaNetwork.cpp
 	CycleCounters.cpp
 	DeviceAssertions.cpp
 	FiringOutput.cpp
@@ -63,7 +64,6 @@ CUDA_ADD_LIBRARY(nemo
 	Network.cpp
 	Outgoing.cpp
 	RSMatrix.cpp
-	RuntimeData.cpp
 	SynapseAddressTable.cpp
 	ThalamicInput.cpp
 	WarpAddressTable.cpp

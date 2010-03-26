@@ -17,7 +17,7 @@ extern "C" {
 #include "nemo.h"
 }
 
-#include "RuntimeData.hpp"
+#include "CudaNetwork.hpp"
 #include "nemo.hpp"
 //! \todo combine these into a single header file
 #include "DeviceAssertions.hpp"
@@ -74,7 +74,7 @@ class Network
 
 		//! \todo set partition size through a separate configuration function
 		Network(bool setReverse, unsigned maxPartitionSize) :
-			m_impl(new nemo::RuntimeData(setReverse, maxPartitionSize)),
+			m_impl(new nemo::CudaNetwork(setReverse, maxPartitionSize)),
 			m_errorMsg("No error") { }
 
 		void setErrorMsg(const char* msg) { m_errorMsg = msg; }

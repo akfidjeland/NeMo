@@ -8,15 +8,15 @@
  */
 
 #include "nemo.hpp"
-#include "RuntimeData.hpp"
+#include "CudaNetwork.hpp"
 
 namespace nemo {
 
 Network*
 Network::create(bool setReverse)
 {
-	int dev = RuntimeData::selectDevice();
-	return dev == -1 ? NULL : new RuntimeData(setReverse);
+	int dev = CudaNetwork::selectDevice();
+	return dev == -1 ? NULL : new CudaNetwork(setReverse);
 }
 
 

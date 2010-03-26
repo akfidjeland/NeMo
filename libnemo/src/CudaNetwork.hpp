@@ -1,5 +1,5 @@
-#ifndef RUNTIME_DATA_HPP
-#define RUNTIME_DATA_HPP
+#ifndef CUDA_NETWORK_HPP
+#define CUDA_NETWORK_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -21,16 +21,16 @@
 
 namespace nemo {
 
-class RuntimeData : public Network
+class CudaNetwork : public Network
 {
 	public :
 
-		RuntimeData(bool setReverse);
+		CudaNetwork(bool setReverse);
 
 		// for debugging purposes, fix the partition size used
-		RuntimeData(bool setReverse, unsigned maxPartitionSize);
+		CudaNetwork(bool setReverse, unsigned maxPartitionSize);
 
-		~RuntimeData();
+		~CudaNetwork();
 
 		/*! Select device (for this thread) if a device with the minimum
 		 * required characteristics is present on the host system.

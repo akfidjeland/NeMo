@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "RuntimeData.hpp"
+#include "CudaNetwork.hpp"
 
 #include <vector>
 #include <iostream>
@@ -31,10 +31,9 @@
 #include "kernel.hpp"
 
 
-
 namespace nemo {
 
-RuntimeData::RuntimeData(bool setReverse) :
+CudaNetwork::CudaNetwork(bool setReverse) :
 	m_state(CONFIGURING),
 	m_partitionCount(0),
 	m_maxPartitionSize(MAX_PARTITION_SIZE),
@@ -54,7 +53,7 @@ RuntimeData::RuntimeData(bool setReverse) :
 
 
 
-RuntimeData::RuntimeData(bool setReverse, unsigned maxPartitionSize) :
+CudaNetwork::CudaNetwork(bool setReverse, unsigned maxPartitionSize) :
 	m_state(CONFIGURING),
 	m_partitionCount(0),
 	m_maxPartitionSize(maxPartitionSize),
@@ -73,7 +72,7 @@ RuntimeData::RuntimeData(bool setReverse, unsigned maxPartitionSize) :
 { }
 
 
-RuntimeData::~RuntimeData()
+CudaNetwork::~CudaNetwork()
 {
 	finishSimulation();
 	//! \todo used shared_ptr instead to deal with this
@@ -88,10 +87,10 @@ RuntimeData::~RuntimeData()
 }
 
 
-int RuntimeData::s_device = -1;
+int CudaNetwork::s_device = -1;
 
 int
-RuntimeData::selectDevice()
+CudaNetwork::selectDevice()
 {
 	/*! \todo might want to use thread-local, rather than process-local storage
 	 * for s_device in order to support multiple threads */
@@ -127,7 +126,7 @@ RuntimeData::selectDevice()
 
 /*! Enabled STDP */
 void
-RuntimeData::enableStdp(
+CudaNetwork::enableStdp(
 		std::vector<float> prefire,
 		std::vector<float> postfire,
 		float minWeight, float maxWeight)
@@ -138,7 +137,7 @@ RuntimeData::enableStdp(
 
 
 void
-RuntimeData::configureStdp()
+CudaNetwork::configureStdp()
 {
 	if(!usingStdp()) {
 		return;
@@ -171,7 +170,7 @@ RuntimeData::configureStdp()
  *		Pointer to pass to kernel (which is NULL if there's no firing data).
  */
 uint32_t*
-RuntimeData::setFiringStimulus(const std::vector<uint>& nidx)
+CudaNetwork::setFiringStimulus(const std::vector<uint>& nidx)
 {
 	if(nidx.empty())
 		return NULL;
@@ -208,14 +207,14 @@ void
 checkPitch(size_t expected, size_t found)
 {
 	if(expected != found) {
-		ERROR("RuntimeData::checkPitch: pitch mismatch in device memory allocation. Found %d, expected %d\n",
+		ERROR("CudaNetwork::checkPitch: pitch mismatch in device memory allocation. Found %d, expected %d\n",
 				(int) found, (int) expected);
 	}
 }
 
 
 size_t
-RuntimeData::d_allocated() const
+CudaNetwork::d_allocated() const
 {
 	size_t total = 0;
 	total += m_firingStimulus ? m_firingStimulus->d_allocated()   : 0;
@@ -231,7 +230,7 @@ RuntimeData::d_allocated() const
 /* Set common pitch and check that all relevant arrays have the same pitch. The
  * kernel uses a single pitch for all 32-bit data */ 
 void
-RuntimeData::setPitch()
+CudaNetwork::setPitch()
 {
 	size_t pitch1 = m_firingStimulus->wordPitch();
 	m_pitch32 = m_neurons->wordPitch();
@@ -251,7 +250,7 @@ RuntimeData::setPitch()
 
 
 unsigned long
-RuntimeData::elapsedWallclock() const
+CudaNetwork::elapsedWallclock() const
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	return m_timer.elapsedWallclock();
@@ -260,7 +259,7 @@ RuntimeData::elapsedWallclock() const
 
 
 unsigned long
-RuntimeData::elapsedSimulation() const
+CudaNetwork::elapsedSimulation() const
 {
 	return m_timer.elapsedSimulation();
 }
@@ -268,7 +267,7 @@ RuntimeData::elapsedSimulation() const
 
 
 void
-RuntimeData::resetTimer()
+CudaNetwork::resetTimer()
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	m_timer.reset();
@@ -283,7 +282,7 @@ RuntimeData::resetTimer()
 
 
 bool
-RuntimeData::usingStdp() const
+CudaNetwork::usingStdp() const
 {
 	return m_stdpFn.enabled();
 }
@@ -291,7 +290,7 @@ RuntimeData::usingStdp() const
 
 
 void
-RuntimeData::addNeuron(
+CudaNetwork::addNeuron(
 		unsigned int idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
@@ -303,7 +302,7 @@ RuntimeData::addNeuron(
 
 
 void
-RuntimeData::addSynapses(
+CudaNetwork::addSynapses(
 		uint source,
 		const std::vector<uint>& targets,
 		const std::vector<uint>& delays,
@@ -317,7 +316,7 @@ RuntimeData::addSynapses(
 
 
 void
-RuntimeData::initSimulation()
+CudaNetwork::initSimulation()
 {
 	if(m_state != SIMULATING) {
 		m_cm->moveToDevice(m_logging);
@@ -345,7 +344,7 @@ RuntimeData::initSimulation()
 
 
 void
-RuntimeData::stepSimulation(const std::vector<uint>& fstim)
+CudaNetwork::stepSimulation(const std::vector<uint>& fstim)
 {
 	initSimulation(); // only has effect on first cycle
 
@@ -389,7 +388,7 @@ RuntimeData::stepSimulation(const std::vector<uint>& fstim)
 
 
 void
-RuntimeData::applyStdp(float reward)
+CudaNetwork::applyStdp(float reward)
 {
 	ensureState(SIMULATING);
 
@@ -418,7 +417,7 @@ RuntimeData::applyStdp(float reward)
 
 
 void
-RuntimeData::getSynapses(unsigned sn,
+CudaNetwork::getSynapses(unsigned sn,
 		const std::vector<unsigned>** tn,
 		const std::vector<unsigned>** d,
 		const std::vector<float>** w,
@@ -431,7 +430,7 @@ RuntimeData::getSynapses(unsigned sn,
 
 
 uint
-RuntimeData::readFiring(
+CudaNetwork::readFiring(
 		const std::vector<uint>** cycles,
 		const std::vector<uint>** nidx)
 {
@@ -440,14 +439,14 @@ RuntimeData::readFiring(
 
 
 void
-RuntimeData::flushFiringBuffer()
+CudaNetwork::flushFiringBuffer()
 {
 	m_firingOutput->flushBuffer();
 }
 
 
 void
-RuntimeData::finishSimulation()
+CudaNetwork::finishSimulation()
 {
 	m_state = ZOMBIE;
 	//! \todo perhaps clear device data here instead of in dtor
@@ -459,14 +458,14 @@ RuntimeData::finishSimulation()
 
 
 void
-RuntimeData::logToStdout()
+CudaNetwork::logToStdout()
 {
 	m_logging = true;
 }
 
 
 void
-RuntimeData::ensureState(State s)
+CudaNetwork::ensureState(State s)
 {
 	if(m_state == s) {
 		return;
