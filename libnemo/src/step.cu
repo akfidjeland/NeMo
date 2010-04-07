@@ -129,12 +129,21 @@ fire(
 
 				//! \todo consider *only* updating this here, and setting u and v separately
 				uint i = atomicAdd(s_firingCount, 1);
+
+				/* can overwrite current as long as i < neuron. See notes below
+				 * on synchronisation and declaration of s_current/s_fired. */
 				s_fired[i] = neuron;
 			}
 
 			g_v[neuron] = v;
 			g_u[neuron] = u;
 		}
+
+		/* synchronise to ensure accesses to s_fired and s_current (which use
+		 * the same underlying buffer) do not overlap. Even in the worst case
+		 * (all neurons firing) the write to s_fired will be at least one
+		 * before the first unconsumed s_current entry. */
+		__syncthreads();
 	}
 }
 
@@ -377,13 +386,25 @@ step (
 {
 	SET_COUNTER(s_ccMain, 0);
 
-	/* The shared memory is allocated in fixed-sized blocks. During the
-	 * different stages of the kernel each block may be used for different
-	 * purposes. */
-
 	/* Per-neuron buffers */
-	__shared__ float s_current[MAX_PARTITION_SIZE];
-	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
+
+	/* We're re-using the same bit of shared memory here for both the current
+	 * (per-neuron) and the list of firing (per *fired*-neuron). These are both
+	 * used in the firing step (with different addressing). We end up writing
+	 * firing data to the lower part of this array while the upper region still
+	 * contains unconsumed current. This is safe since the read part s_fired is
+	 * offset from the start, and we use a synchronisation in the fire step.
+	 * See notes there as well.
+	 *
+	 * While this might seem borderline insane, it frees up
+	 * 4*MAX_PARTITION_SIZE bytes of shared memory, which is a big deal */
+	__shared__ uint32_t s_N32[MAX_PARTITION_SIZE + THREADS_PER_BLOCK];
+	float* s_current = (float*) s_N32 + THREADS_PER_BLOCK;
+	nidx_dt* s_fired = (nidx_dt*) s_N32;
+
+	// in practice the above works out the same as
+	//__shared__ float s_current[MAX_PARTITION_SIZE];
+	//__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
 	__shared__ uint32_t s_N1A[MAX_PARTITION_SIZE/32];
