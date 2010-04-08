@@ -58,7 +58,7 @@ neuronIndex(uint patch, uint x, uint y)
 
 
 void
-addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
+addExcitatoryNeuron(nemo::Simulation* net, unsigned nidx, urng_t& param)
 {
 	float v = -65.0f;
 	float a = 0.02f;
@@ -75,7 +75,7 @@ addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 
 
 void
-addInhibitoryNeuron(nemo::Network* net, uint nidx, urng_t& param)
+addInhibitoryNeuron(nemo::Simulation* net, uint nidx, urng_t& param)
 {
 	float v = -65.0f;
 	double r1 = param();
@@ -164,7 +164,7 @@ delay(uint distance)
 
 void
 addExcitatorySynapses(
-		nemo::Network* net,
+		nemo::Simulation* net,
 		uint patch, uint x, uint y,
 		uint pcount, uint m,
 		bool stdp,
@@ -194,7 +194,7 @@ addExcitatorySynapses(
 
 void
 addInhibitorySynapses(
-		nemo::Network* net,
+		nemo::Simulation* net,
 		uint patch, uint x, uint y,
 		uint pcount, uint m,
 		bool stdp,
@@ -224,7 +224,7 @@ addInhibitorySynapses(
 
 
 void
-configure(nemo::Network* net, bool stdp)
+configure(nemo::Simulation* net, bool stdp)
 {
 	net->logToStdout();
 	//! \todo make network report STDP function
@@ -243,7 +243,7 @@ configure(nemo::Network* net, bool stdp)
 
 
 void
-construct(nemo::Network* net, unsigned pcount, unsigned m, bool stdp, double sigma)
+construct(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp, double sigma)
 {
 	/* The network is a torus which consists of pcount rectangular patches,
 	 * each with dimensions height * width. The size of each patch is the same
@@ -309,7 +309,7 @@ construct(nemo::Network* net, unsigned pcount, unsigned m, bool stdp, double sig
 
 
 void
-simulate(nemo::Network* net, unsigned pcount, unsigned m, bool stdp)
+simulate(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp)
 {
 	const unsigned MS_PER_SECOND = 1000;
 
@@ -388,7 +388,7 @@ simulate(nemo::Network* net, unsigned pcount, unsigned m, bool stdp)
 
 /* Simulate for some time, writing firing data to file */
 void
-simulateToFile(nemo::Network* net, unsigned pcount, unsigned m, bool stdp, const char* firingFile)
+simulateToFile(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp, const char* firingFile)
 {
 	net->initSimulation();
 
@@ -435,7 +435,7 @@ main(int argc, char* argv[])
 	bool stdp = false;
 	unsigned m = 1000; // synapses per neuron
 	
-	nemo::Network* net = nemo::Network::create(stdp, 1000); 
+	nemo::Simulation* net = nemo::Simulation::create(stdp);
 	configure(net, stdp);
 	construct(net, pcount, m, stdp, sigma);
 	simulate(net, pcount, m, stdp);

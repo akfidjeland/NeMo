@@ -61,7 +61,7 @@ CUDA_ADD_LIBRARY(nemo
 	fixedpoint.cpp
 	Incoming.cpp
 	NeuronParameters.cpp
-	Network.cpp
+	Simulation.cpp
 	Outgoing.cpp
 	RSMatrix.cpp
 	SynapseAddressTable.cpp

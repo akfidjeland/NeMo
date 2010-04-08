@@ -22,7 +22,7 @@
 namespace nemo {
 	namespace cuda {
 
-class CudaNetwork : public Network
+class CudaNetwork : public Simulation
 {
 	public :
 

@@ -17,10 +17,10 @@
 namespace nemo {
 
 
-/*! \class Network
+/*! \class Simulation
  * \brief C++ API for nemo
  *
- * To use, create an network object using \ref nemo::Network::create, configure
+ * To use, create an network object using \ref nemo::Simulation::create, configure
  * it using any of the configuration commands, construct a network by adding
  * neurons and synapses, and finally run the simulation.
  *
@@ -29,7 +29,7 @@ namespace nemo {
  * Internal errors are signaled by exceptions. Thrown exceptions are all
  * subclasses of std::exception.
  */
-class Network
+class Simulation
 {
 	public :
 
@@ -41,13 +41,13 @@ class Network
 		 * 		Will STDP be used?
 		 *
 		 * \return
-		 * 		new Network object, or NULL if no suitable CUDA device was
+		 * 		new Simulation object, or NULL if no suitable CUDA device was
 		 * 		found. For CUDA device 0 will be used.  */
-		static Network* create(bool setReverse);
+		static Simulation* create(bool setReverse);
 
 		/* \} */ // end init section
 
-		virtual ~Network();
+		virtual ~Simulation();
 
 		/*! \name Configuration */
 		/* \{ */ // begin configuration

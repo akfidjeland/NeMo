@@ -11,7 +11,7 @@
 
 /*! C API for libnemo
  *
- * This simply wrapes the API exposed in nemo::Network */
+ * This simply wrapes the API exposed in nemo::Simulation */
 
 extern "C" {
 #include "nemo.h"
@@ -69,7 +69,7 @@ class Network
 	public :
 
 		Network(bool setReverse) :
-			m_impl(nemo::Network::create(setReverse)),
+			m_impl(nemo::Simulation::create(setReverse)),
 			m_errorMsg("No error") { }
 
 		//! \todo set partition size through a separate configuration function
@@ -85,7 +85,7 @@ class Network
 
 		nemo_status_t status() const { return m_status; }
 
-		nemo::Network* m_impl;
+		nemo::Simulation* m_impl;
 
 	private :
 

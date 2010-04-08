@@ -12,8 +12,8 @@
 
 namespace nemo {
 
-Network*
-Network::create(bool setReverse)
+Simulation*
+Simulation::create(bool setReverse)
 {
 	int dev = cuda::CudaNetwork::selectDevice();
 	return dev == -1 ? NULL : new cuda::CudaNetwork(setReverse);
@@ -21,7 +21,7 @@ Network::create(bool setReverse)
 
 
 
-Network::~Network()
+Simulation::~Simulation()
 {
 	;
 }
