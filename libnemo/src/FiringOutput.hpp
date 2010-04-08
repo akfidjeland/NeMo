@@ -20,6 +20,7 @@
  */
 
 namespace nemo {
+	namespace cuda {
 
 class FiringOutput {
 
@@ -114,6 +115,7 @@ class FiringOutput {
 		size_t m_partitionSize;
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

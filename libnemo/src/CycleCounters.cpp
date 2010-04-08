@@ -18,6 +18,8 @@
 #include "kernel.cu_h"
 
 namespace nemo {
+	namespace cuda {
+
 
 CycleCounters::CycleCounters(size_t partitionCount, bool stdpEnabled) :
 	m_ccMain(partitionCount, CC_MAIN_COUNT-1, true),
@@ -124,4 +126,5 @@ CycleCounters::pitch() const
 	return m_ccMain.wordPitch();
 }
 
+	} // end namespace cuda
 } // end namespace nemo

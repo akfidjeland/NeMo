@@ -25,8 +25,10 @@
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
 #include "SynapseAddressTable.hpp"
+#include "WarpAddressTable.hpp"
 
 namespace nemo {
+	namespace cuda {
 
 /*! \brief Connectivity matrix
  *
@@ -165,7 +167,7 @@ class ConnectivityMatrix
 		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
 
-		void moveFcmToDevice(class WarpAddressTable*, bool logging);
+		void moveFcmToDevice(WarpAddressTable*, bool logging);
 		void moveBundleToDevice(
 				nidx_t globalSourceNeuron,
 				pidx_t targetPartition,
@@ -224,6 +226,7 @@ class ConnectivityMatrix
 		std::vector<synapse_t> mh_weightBuffer;
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

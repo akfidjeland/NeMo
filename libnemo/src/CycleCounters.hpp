@@ -13,6 +13,7 @@
 #include "NVector.hpp"
 
 namespace nemo {
+	namespace cuda {
 
 struct CycleCounters
 {
@@ -50,6 +51,7 @@ struct CycleCounters
 				std::ostream& outfile);
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

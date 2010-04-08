@@ -15,6 +15,7 @@
 #include "nemo_cuda_types.h"
 
 namespace nemo {
+	namespace cuda {
 
 class WarpAddressTable
 {
@@ -31,6 +32,7 @@ class WarpAddressTable
 		std::map<idx_t, size_t> m_data;
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

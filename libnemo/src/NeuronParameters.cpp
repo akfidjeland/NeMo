@@ -19,6 +19,7 @@
 #include "kernel.hpp"
 
 namespace nemo {
+	namespace cuda {
 
 NeuronParameters::NeuronParameters(size_t partitionSize) :
 	m_partitionSize(partitionSize),
@@ -154,4 +155,5 @@ NeuronParameters::configurePartitionSizes()
 	configurePartitionSize(&partitionSizes[0], partitionSizes.size());
 }
 
+	} // end namespace cuda
 } // end namespace nemo

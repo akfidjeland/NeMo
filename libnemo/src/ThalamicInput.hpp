@@ -26,6 +26,7 @@
  */
 
 namespace nemo {
+	namespace cuda {
 
 class ThalamicInput 
 {
@@ -72,6 +73,7 @@ class ThalamicInput
 		void initRngState();
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

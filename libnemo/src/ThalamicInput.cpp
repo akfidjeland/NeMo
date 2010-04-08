@@ -14,6 +14,7 @@
 
 
 namespace nemo {
+	namespace cuda {
 
 ThalamicInput::ThalamicInput(
         size_t partitionCount,
@@ -111,4 +112,5 @@ ThalamicInput::wordPitch() const
     return p1 == p2 ? p1 : 0;
 }
 
+	} // end namespace cuda
 } // end namespace nemo

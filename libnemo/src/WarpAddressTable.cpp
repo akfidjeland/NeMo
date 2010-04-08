@@ -14,6 +14,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 namespace nemo {
+	namespace cuda {
 
 void
 WarpAddressTable::set(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d, size_t wa)
@@ -38,4 +39,5 @@ WarpAddressTable::get(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const
 	return wa->second;
 }
 
+	} // end namespace cuda
 } // end namespace nemo

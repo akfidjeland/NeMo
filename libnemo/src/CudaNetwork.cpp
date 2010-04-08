@@ -32,6 +32,7 @@
 
 
 namespace nemo {
+	namespace cuda {
 
 CudaNetwork::CudaNetwork(bool setReverse) :
 	m_state(CONFIGURING),
@@ -479,4 +480,5 @@ CudaNetwork::ensureState(State s)
 	}
 }
 
-}
+	} // end namespace cuda
+} // end namespace nemo

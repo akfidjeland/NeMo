@@ -20,6 +20,7 @@
 #include "STDP.hpp"
 
 namespace nemo {
+	namespace cuda {
 
 class CudaNetwork : public Network
 {
@@ -180,6 +181,7 @@ class CudaNetwork : public Network
 		static int s_device;
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

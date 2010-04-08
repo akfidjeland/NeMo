@@ -19,6 +19,7 @@
 #include "nemo_cuda_types.h"
 
 namespace nemo {
+	namespace cuda {
 
 class NeuronParameters
 {
@@ -65,6 +66,7 @@ class NeuronParameters
 		void configurePartitionSizes();
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

@@ -23,6 +23,7 @@
 #include "nemo_cuda_types.h"
 
 namespace nemo {
+	namespace cuda {
 
 /*! \brief Sparse synapse matrix in reverse format for a single partition
  *
@@ -107,6 +108,7 @@ struct RSMatrix
 				uint32_t* d_mem);
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

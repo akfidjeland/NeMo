@@ -20,6 +20,7 @@
 #include "except.hpp"
 
 namespace nemo {
+	namespace cuda {
 
 Outgoing::Outgoing() : m_allocated(0) {}
 
@@ -204,4 +205,5 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	return std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second;
 }
 
+	} // end namespace cuda
 } // end namespace nemo

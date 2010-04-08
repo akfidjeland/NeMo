@@ -74,7 +74,7 @@ class Network
 
 		//! \todo set partition size through a separate configuration function
 		Network(bool setReverse, unsigned maxPartitionSize) :
-			m_impl(new nemo::CudaNetwork(setReverse, maxPartitionSize)),
+			m_impl(new nemo::cuda::CudaNetwork(setReverse, maxPartitionSize)),
 			m_errorMsg("No error") { }
 
 		void setErrorMsg(const char* msg) { m_errorMsg = msg; }

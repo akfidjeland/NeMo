@@ -18,6 +18,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 namespace nemo {
+	namespace cuda {
 
 
 RSMatrix::RSMatrix(size_t partitionSize) :
@@ -211,4 +212,5 @@ RSMatrix::d_stdp() const
 	return (float*) m_deviceData.get() + RCM_STDP * planeSize();
 }
 
+	} // end namespace cuda
 } // end namespace nemo

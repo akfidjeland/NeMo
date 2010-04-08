@@ -17,6 +17,7 @@
 #include "nemo_types.h"
 
 namespace nemo {
+	namespace cuda {
 
 FiringOutput::FiringOutput(
 		size_t partitionCount,
@@ -136,4 +137,5 @@ FiringOutput::flushBuffer()
 	m_bufferedCycles = 0;
 }
 
+	} // end namespace cuda
 } // end namespace nemo

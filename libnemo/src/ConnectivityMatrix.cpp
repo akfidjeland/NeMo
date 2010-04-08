@@ -25,6 +25,7 @@
 
 
 namespace nemo {
+	namespace cuda {
 
 ConnectivityMatrix::ConnectivityMatrix(
         size_t maxPartitionSize,
@@ -510,4 +511,5 @@ ConnectivityMatrix::globalIndex(pidx_t p, nidx_t n)
 	return p * m_maxPartitionSize + n;
 }
 
+	} // end namespace cuda
 } // end namespace nemo
