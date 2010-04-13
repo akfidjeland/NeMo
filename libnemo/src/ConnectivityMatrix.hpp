@@ -117,17 +117,6 @@ class ConnectivityMatrix
 		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
 		rcm_t m_rsynapses;
 
-		typedef boost::tuple<nidx_t, weight_t, uchar> synapse_ht;
-
-		typedef std::vector<synapse_ht> bundle_t;
-		typedef boost::tuple<pidx_t, delay_t> bundle_idx_t; // target partition, target delay
-
-		typedef std::map<bundle_idx_t, bundle_t> axon_t;
-		typedef boost::tuple<pidx_t, nidx_t> neuron_idx_t; // source partition, source neuron
-
-		typedef std::map<neuron_idx_t, axon_t> fcm_ht;
-		fcm_ht mh_fcm;
-
 		/* Compact fcm on device */
 		boost::shared_ptr<synapse_t> md_fcm;
 		size_t md_fcmPlaneSize; // in words
@@ -143,9 +132,6 @@ class ConnectivityMatrix
 		size_t d_allocatedRCM() const;
 
 		size_t md_fcmAllocated;
-
-		/* Convert global neuron index to local neuron index */
-		nidx_t neuronIdx(nidx_t);
 
 		uint m_fractionalBits;
 		uint setFractionalBits(weight_t wmin, weight_t wmax, bool logging);;
