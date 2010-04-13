@@ -37,13 +37,10 @@ class Simulation
 		/* \{ */ // begin init section
 
 		/*!
-		 * \param usingStdp
-		 * 		Will STDP be used?
-		 *
 		 * \return
 		 * 		new Simulation object, or NULL if no suitable CUDA device was
 		 * 		found. For CUDA device 0 will be used.  */
-		static Simulation* create(bool setReverse);
+		static Simulation* create();
 
 		/* \} */ // end init section
 

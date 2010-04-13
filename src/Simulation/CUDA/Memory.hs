@@ -45,7 +45,7 @@ initSim
     -> StdpConf
     -> IO State
 initSim net reqPsize stdp = do
-    rt <- allocateRuntime reqPsize (stdpEnabled stdp)
+    rt <- allocateRuntime reqPsize
     when (rt == nullPtr) $ fail "Failed to create CUDA simulation"
     configureStdp rt stdp
     setFiringBufferLength rt 1000

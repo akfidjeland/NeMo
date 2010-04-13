@@ -53,24 +53,17 @@ data CuRT = CuRT
 type NemoStatus = CInt
 
 
-foreign import ccall unsafe "nemo_new_network"
-    c_newNetwork
-        :: CUChar  -- ^ set reverse matrix (bool)
-        -> IO (Ptr CuRT)
+foreign import ccall unsafe "nemo_new_network" c_newNetwork :: IO (Ptr CuRT)
 
 -- for debugging, specify partition size
 foreign import ccall unsafe "nemo_new_network_"
     c_newNetwork_
-        :: CUChar  -- ^ set reverse matrix (bool)
-        -> CUInt  -- ^ max partition size
+        :: CUInt  -- ^ max partition size
         -> IO (Ptr CuRT)
 
 
-allocateRuntime :: Maybe Int -> Bool -> IO (Ptr CuRT)
-allocateRuntime psize usingStdp =
-    maybe (c_newNetwork us) (c_newNetwork_ us . fromIntegral) psize
-    where
-        us = fromBool usingStdp
+allocateRuntime :: Maybe Int -> IO (Ptr CuRT)
+allocateRuntime psize = maybe c_newNetwork (c_newNetwork_ . fromIntegral) psize
 
 
 foreign import ccall unsafe "nemo_add_neuron" c_addNeuron

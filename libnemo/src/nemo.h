@@ -47,13 +47,9 @@ typedef int nemo_status_t;
 
 //! \todo get rid of setReverse. Just deal with this in the host code
 //! \todo dynamically resize the firing buffer?
-/*! Create an empty network object
- *
- * \param stdp_enabled
- * 		Will STDP be used? zero indicates false, non-zero indicates true
- */
+/*! Create an empty network object */
 NETWORK
-nemo_new_network(unsigned char using_stdp);
+nemo_new_network();
 
 /* \} */ // end init section
 
@@ -342,6 +338,6 @@ void nemo_delete_network(NETWORK);
 
 // for debugging purposes it might be useful to fix the partition size
 NETWORK
-nemo_new_network_(unsigned char using_stdp, unsigned maxPartitionSize);
+nemo_new_network_(unsigned partitionSize);
 
 #endif

@@ -27,10 +27,10 @@ class CudaNetwork : public Simulation
 {
 	public :
 
-		CudaNetwork(bool setReverse);
+		CudaNetwork();
 
 		// for debugging purposes, fix the partition size used
-		CudaNetwork(bool setReverse, unsigned maxPartitionSize);
+		CudaNetwork(unsigned maxPartitionSize);
 
 		~CudaNetwork();
 

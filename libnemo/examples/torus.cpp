@@ -435,7 +435,7 @@ main(int argc, char* argv[])
 	bool stdp = false;
 	unsigned m = 1000; // synapses per neuron
 	
-	nemo::Simulation* net = nemo::Simulation::create(stdp);
+	nemo::Simulation* net = nemo::Simulation::create();
 	configure(net, stdp);
 	construct(net, pcount, m, stdp, sigma);
 	simulate(net, pcount, m, stdp);

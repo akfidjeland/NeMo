@@ -68,13 +68,13 @@ class Network
 {
 	public :
 
-		Network(bool setReverse) :
-			m_impl(nemo::Simulation::create(setReverse)),
+		Network() :
+			m_impl(nemo::Simulation::create()),
 			m_errorMsg("No error") { }
 
 		//! \todo set partition size through a separate configuration function
-		Network(bool setReverse, unsigned maxPartitionSize) :
-			m_impl(new nemo::cuda::CudaNetwork(setReverse, maxPartitionSize)),
+		Network(unsigned partitionSize) :
+			m_impl(new nemo::cuda::CudaNetwork(partitionSize)),
 			m_errorMsg("No error") { }
 
 		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
@@ -100,17 +100,17 @@ class Network
 
 
 NETWORK
-nemo_new_network(unsigned char usingStdp)
+nemo_new_network()
 {
-	return new Network((bool) usingStdp);
+	return new Network();
 }
 
 
 
 NETWORK
-nemo_new_network_(unsigned char usingStdp, unsigned maxPartitionSize)
+nemo_new_network_(unsigned partitionSize)
 {
-	return new Network((bool) usingStdp, maxPartitionSize);
+	return new Network(partitionSize);
 }
 
 
