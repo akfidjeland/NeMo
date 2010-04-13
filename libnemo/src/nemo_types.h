@@ -7,6 +7,7 @@ typedef unsigned char uchar;
 typedef unsigned int nidx_t; // neuron index
 typedef unsigned int sidx_t; // synapse index
 typedef unsigned int delay_t;
+typedef float weight_t;  // on the host
 typedef unsigned int cycle_t;
 
 #endif

@@ -5,11 +5,11 @@
 #include <stdint.h>
 
 typedef int32_t fix_t;
-typedef float weight_t;  // on the host
 typedef fix_t weight_dt; // on the device
 typedef unsigned int pidx_t; // partition index 
 
-/* On the device both address and weight data rae squeezed into 32b */
+/* On the device both address and weight data are squeezed into 32b */
+//! \todo use a union type here?
 typedef uint32_t synapse_t;
 
 /* Type for storing (within-partition) neuron indices on the device. We could

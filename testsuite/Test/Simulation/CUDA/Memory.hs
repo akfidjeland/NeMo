@@ -70,14 +70,14 @@ testWeightQuery = TestCase $ do
         checkSynapses :: (Synaptic s) => String -> s -> s -> Assertion
         checkSynapses msg s1 s2 = do
             let check fieldname field = assertEqual (msg ++ fieldname) (field s1) (field s2)
-            check " target" target
-            check " delay" delay
-            check " plastic" plastic
+            check "target" target
+            check "delay" delay
+            check "plastic" plastic
             assertBool (msg ++ " weight") $ (weightsClose `on` weight) s1 s2
 
         comparePresynaptic (k, ss) (k', ss') = do
             let sorted = sort ss
                 sorted' = sort ss'
-                msg = "Synapses for " ++ show k
+                msg = "Synapses for n" ++ show k ++ "'s "
             assertEqual "Presynaptic neuron " k k'
             zipWithM_ (checkSynapses msg) sorted sorted'

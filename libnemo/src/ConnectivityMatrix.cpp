@@ -42,6 +42,244 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 
 
+struct Synapse
+{
+	//! \todo change type name here
+	synapse_t target;
+	weight_dt weight;
+	//! \todo change to bool?
+	uchar plastic;
+
+	Synapse(nidx_t t, weight_dt w, uchar p) : target(t), weight(w), plastic(p) {}
+};
+
+
+
+//! \todo move to separate class
+class DeviceIdx
+{
+	public:
+
+		pidx_t partition;
+		nidx_t neuron;
+
+		DeviceIdx(nidx_t global) :
+			partition(global / s_partitionSize),
+			neuron(global % s_partitionSize) {}
+
+		DeviceIdx(pidx_t p, nidx_t n) :
+			partition(p),
+			neuron(n) {}
+
+		static void setPartitionSize(unsigned ps) { s_partitionSize = ps; }
+
+		/*! \return the global address again */
+		nidx_t hostIdx() const { return partition * s_partitionSize + neuron; }
+
+	private:
+
+		static unsigned s_partitionSize;
+};
+
+
+unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
+
+
+ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm, size_t partitionSize, bool logging) :
+	//m_maxPartitionSize(0),
+	m_maxDelay(cm.maxDelay()),
+	//! \todo remove member variable
+	m_setReverse(false),
+	md_fcmPlaneSize(0),
+	md_fcmAllocated(0),
+	//! \todo remove member variable
+	m_maxPartitionIdx(0),
+	//! \todo remove member variable
+	m_maxAbsWeight(std::max(abs(cm.maxWeight()), abs(cm.minWeight()))),
+	m_fractionalBits(~0)
+{
+	DeviceIdx::setPartitionSize(partitionSize);
+
+	//! \todo change synapse_t, perhaps to nidx_dt
+	std::vector<synapse_t> h_targets(WARP_SIZE, f_nullSynapse());
+	std::vector<weight_dt> h_weights(WARP_SIZE, 0);
+	WarpAddressTable wtable;
+	size_t currentWarp = 1; // leave space for null warp at beginning
+
+	//! \todo remove use of m_maxAbsWeight intermediary. Modify setFractionalBits prototype
+	//m_maxAbsWeight = cm.maxAbsWeight();
+	int fbits = setFractionalBits(logging);
+	fx_setFormat(fbits);
+
+	/*! \todo perhaps we should reserve a large chunk of memory for
+	 * h_targets/h_weights in advance? It's hard to know exactly how much is
+	 * needed, though, due the organisation in warp-sized chunks. */
+
+	for(std::map<nidx_t, Connectivity::axon_t>::const_iterator axon = cm.m_fcm.begin();
+			axon != cm.m_fcm.end(); ++axon) {
+
+		nidx_t h_sourceIdx = axon->first;
+		DeviceIdx d_sourceIdx(h_sourceIdx);
+		size_t neuronStartWarp = currentWarp;
+
+		for(std::map<delay_t, Connectivity::bundle_t>::const_iterator bi = axon->second.begin();
+				bi != axon->second.end(); ++bi) {
+
+			delay_t delay = bi->first;
+			Connectivity::bundle_t bundle = bi->second;
+
+			/* A bundle contains a number of synapses with the same source
+			 * neuron and delay. On the device we need to further subdivide
+			 * this into groups of synapses with the same target partition */
+			std::map<pidx_t, std::vector<Synapse> > pgroups;
+
+			/* Populate the partition groups. We only need to store the target
+			 * neuron and weight. We store these as a pair so that we can
+			 * reorganise these later. */
+			for(Connectivity::bundle_t::const_iterator si = bundle.begin();
+					si != bundle.end(); ++si) {
+
+				Connectivity::synapse_t s = *si;
+				//! \todo create synapse struct as part of Connectivity
+				nidx_t h_targetIdx = boost::tuples::get<0>(s);
+				DeviceIdx d_targetIdx(h_targetIdx);
+				weight_dt weight = fx_toFix(boost::tuples::get<1>(s), fbits);
+				unsigned char plastic = boost::tuples::get<2>(s);
+				pgroups[d_targetIdx.partition].push_back(Synapse(d_targetIdx.neuron, weight, plastic));
+			}
+
+			/* Data used when user reads FCM back from device */
+			std::vector<nidx_t>& h_fcmTarget = mh_fcmTargets[h_sourceIdx];
+			std::vector<uchar>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
+
+			for(std::map<pidx_t, std::vector<Synapse> >::const_iterator g = pgroups.begin();
+					g != pgroups.end(); ++g) {
+
+				pidx_t targetPartition = g->first;
+				std::vector<Synapse> bundle = g->second;
+				size_t warps = DIV_CEIL(bundle.size(), WARP_SIZE);
+				size_t words = warps * WARP_SIZE;
+				//! \todo change prototype to accept DeviceIdx
+				wtable.set(d_sourceIdx.partition, d_sourceIdx.neuron,
+						targetPartition, delay, currentWarp);
+
+				//! \todo allocate these only only once (in outer context)
+				/* Stage new addresses/weights in temporary buffer. We can re-order
+				 * this buffer before writing to h_targets/h_weights in order
+				 * to, e.g. optimise for shared memory bank conflicts. */
+				std::vector<synapse_t> targets(words, f_nullSynapse());
+				std::vector<weight_dt> weights(words, 0);
+
+				for(std::vector<Synapse>::const_iterator s = bundle.begin();
+						s != bundle.end(); ++s) {
+					size_t sidx = s - bundle.begin();
+					//! \todo remove f_packSynapse method
+					targets.at(sidx) = s->target;
+					weights.at(sidx) = s->weight;
+					//! \todo just push the whole targets vector after loop?
+					//! \todo remove unused host/device address translation functions
+					h_fcmTarget.push_back(DeviceIdx(targetPartition, s->target).hostIdx());
+					h_fcmPlastic.push_back(s->plastic);
+
+					//! \todo use a struct for device addresses in outgoing arglist as well
+					m_outgoing.addSynapse(d_sourceIdx.partition,
+							d_sourceIdx.neuron, delay, targetPartition);
+
+					/*! \todo simplify RCM structure, using a format similar to the FCM */
+					//! \todo factor out
+					if(s->plastic) {
+						rcm_t& rcm = m_rsynapses;
+						if(rcm.find(targetPartition) == rcm.end()) {
+							rcm[targetPartition] = new RSMatrix(partitionSize);
+						}
+						//! \todo pass in DeviceIdx here
+						rcm[targetPartition]->addSynapse(d_sourceIdx.partition, d_sourceIdx.neuron, sidx, s->target, delay);
+					}
+				}
+				std::fill_n(std::back_inserter(mh_fcmDelays[h_sourceIdx]), bundle.size(), delay);
+
+				/* /Word/ offset relative to first warp for this neuron. In principle this
+				 * function could write synapses to a non-contigous range of memory.
+				 * However, we currently write this as a single range. */
+				size_t bundleStart = (currentWarp - neuronStartWarp) * WARP_SIZE;
+				m_synapseAddresses.addBlock(h_sourceIdx, bundleStart, bundleStart + bundle.size());
+
+				std::copy(targets.begin(), targets.end(), back_inserter(h_targets));
+				std::copy(weights.begin(), weights.end(), back_inserter(h_weights));
+
+				currentWarp += warps;
+			}
+			/*! \todo optionally clear Connectivity data structure as we
+			 * iterate over it, so we can work in constant space */
+		}
+
+		m_synapseAddresses.setWarpRange(h_sourceIdx, neuronStartWarp, currentWarp);
+	}
+
+	size_t totalWarps = currentWarp;
+
+	//! \todo remove warp count from outgoing data structure. It's no longer needed.
+	size_t height = totalWarps * 2; // *2 as we keep target and weight separately
+	size_t desiredBytePitch = WARP_SIZE * sizeof(synapse_t);
+
+	// allocate device memory
+	size_t bpitch;
+	synapse_t* d_data;
+	//! \todo wrap this in try/catch block and log memory usage if catching
+	cudaError err = cudaMallocPitch((void**) &d_data, &bpitch, desiredBytePitch, height);
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException("forward connectivity matrix",
+				height * desiredBytePitch, err);
+	}
+	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
+	size_t wpitch = bpitch / sizeof(synapse_t);
+	md_fcmPlaneSize = totalWarps * wpitch;
+	setFcmPlaneSize(md_fcmPlaneSize);
+
+	if(logging && bpitch != desiredBytePitch) {
+		//! \todo make this an exception.
+		//! \todo write this to the correct logging output stream
+		std::cout << "Returned byte pitch (" << desiredBytePitch
+			<< ") did  not match requested byte pitch (" << bpitch
+			<< ") when allocating forward connectivity matrix" << std::endl;
+		/* This only matters, as we'll waste memory otherwise, and we'd expect the
+		 * desired pitch to always match the returned pitch, since pitch is defined
+		 * in terms of warp size */
+	}
+
+	md_fcmAllocated = height * bpitch;
+	//! \todo copy these separately
+	CUDA_SAFE_CALL(cudaMemcpy(d_data + md_fcmPlaneSize * FCM_ADDRESS,
+				&h_targets[0], md_fcmPlaneSize*sizeof(synapse_t),
+				cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpy(d_data + md_fcmPlaneSize * FCM_WEIGHT,
+				&h_weights[0], md_fcmPlaneSize*sizeof(synapse_t),
+				cudaMemcpyHostToDevice));
+
+	//! \todo factor out function
+
+	//! \todo remove need for creating intermediary warp address table. Just
+	//construct this directly in m_outgoing.
+	//! \todo should we get maxWarps directly in this function?
+	size_t partitionCount = DeviceIdx(cm.maxSourceIdx()).partition + 1;
+	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
+	m_incoming.allocate(partitionCount, maxWarps, 0.1);
+
+	//! \todo factor out
+	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
+		i->second->moveToDevice(wtable, i->first);
+	}
+
+	configureReverseAddressing(
+			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionPitch()[0]),
+			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionAddress()[0]),
+			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionStdp()[0]),
+			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionFAddress()[0]),
+			r_partitionPitch().size());
+}
+
+
+
 
 void
 ConnectivityMatrix::addSynapse(pidx_t sp, nidx_t sn, delay_t delay,
@@ -486,6 +724,9 @@ ConnectivityMatrix::r_partitionFAddress() const
 {
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));
 }
+
+
+
 
 
 

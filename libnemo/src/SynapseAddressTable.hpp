@@ -62,7 +62,7 @@ class SynapseAddressTable
 		// all the blocks for a single neuron
 		typedef std::vector<AddressRange> neuron_ranges_t;
 
-		// warps + blocks for a single neuron
+		// warps + blocks (word addresses) for a single neuron
 		typedef std::pair<AddressRange, neuron_ranges_t> neuron_data_t;
 
 		// all the blocks for the whole network 

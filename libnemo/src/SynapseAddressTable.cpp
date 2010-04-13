@@ -1,6 +1,7 @@
 #include "SynapseAddressTable.hpp"
 
 #include <stdexcept>
+#include <sstream>
 
 namespace nemo {
 
@@ -30,7 +31,10 @@ SynapseAddressTable::warpsOf(nidx_t sourceNeuron) const
 	}
 	const AddressRange& range = v->second.first;
 	if(!range.valid()) {
-		throw std::logic_error("Incomplete warp range requested");
+		std::ostringstream msg;
+		msg << "Incomplete warp range requested. warpsOf(" << sourceNeuron <<
+			") = " << range.start << "-" << range.end << std::endl;
+		throw std::logic_error(msg.str());
 	}
 	return range;
 }

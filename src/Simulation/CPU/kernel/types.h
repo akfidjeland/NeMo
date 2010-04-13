@@ -11,10 +11,11 @@ typedef enum {
 #ifdef CPU_SINGLE_PRECISION
 typedef float fp_t;
 #else
+#error "Change weight_t definitions of double precision required"
 typedef double fp_t;
 #endif
 
-typedef fp_t weight_t;
+//typedef fp_t weight_t;
 
 
 #endif

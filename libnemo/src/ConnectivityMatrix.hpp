@@ -22,6 +22,7 @@
 #include "nemo_cuda_types.h"
 #include "NVector.hpp"
 #include "kernel.cu_h"
+#include "Connectivity.hpp"
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
 #include "SynapseAddressTable.hpp"
@@ -57,6 +58,8 @@ class ConnectivityMatrix
 	public:
 
 		ConnectivityMatrix(size_t maxPartitionSize, bool setReverse);
+
+		ConnectivityMatrix(nemo::Connectivity& cm, size_t maxPartitionSize, bool logging);
 
 		/* Set row in both forward and reverse matrix. The input should be
 		 * provided in forward order */

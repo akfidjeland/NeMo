@@ -34,7 +34,7 @@ flag Benchmark
 
 flag Single
     description:            Use single-precisison floating points in the CPU backend
-    default:                False
+    default:                True
 
 flag ProfileCPU
     description:            Profile the c-based CPU backend

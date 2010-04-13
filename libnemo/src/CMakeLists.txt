@@ -53,6 +53,7 @@ SET(BUILD_SHARED_LIBS TRUE)
 CUDA_ADD_LIBRARY(nemo
 	kernel.cu
 	nemo.cpp
+	Connectivity.cpp
 	ConnectivityMatrix.cpp
 	CudaNetwork.cpp
 	CycleCounters.cpp

@@ -7,6 +7,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+//#define OLD_CM
+
 #include "CudaNetwork.hpp"
 
 #include <vector>
@@ -39,7 +41,11 @@ CudaNetwork::CudaNetwork(bool setReverse) :
 	m_partitionCount(0),
 	m_maxPartitionSize(MAX_PARTITION_SIZE),
 	m_neurons(new NeuronParameters(m_maxPartitionSize)),
+#ifdef OLD_CM
 	m_cm(new ConnectivityMatrix(m_maxPartitionSize, setReverse)),
+#else
+	m_cm(NULL),
+#endif
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),
@@ -59,7 +65,11 @@ CudaNetwork::CudaNetwork(bool setReverse, unsigned maxPartitionSize) :
 	m_partitionCount(0),
 	m_maxPartitionSize(maxPartitionSize),
 	m_neurons(new NeuronParameters(m_maxPartitionSize)),
+#ifdef OLD_CM
 	m_cm(new ConnectivityMatrix(m_maxPartitionSize, setReverse)),
+#else
+	m_cm(NULL),
+#endif
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),
@@ -83,7 +93,7 @@ CudaNetwork::~CudaNetwork()
 	if(m_firingStimulus) delete m_firingStimulus;
 	if(m_thalamicInput) delete m_thalamicInput;
 	if(m_cycleCounters) delete m_cycleCounters;
-	delete m_cm;
+	if(m_cm) delete m_cm;
 	delete m_neurons;
 }
 
@@ -311,7 +321,11 @@ CudaNetwork::addSynapses(
 		const std::vector<unsigned char> is_plastic)
 {
 	ensureState(CONSTRUCTING);
+#ifdef OLD_CM
 	m_cm->addSynapses(source, targets, delays, weights, is_plastic);
+#else
+	mh_cm.addSynapses(source, targets, delays, weights, is_plastic);
+#endif
 }
 
 
@@ -320,7 +334,12 @@ void
 CudaNetwork::initSimulation()
 {
 	if(m_state != SIMULATING) {
+		//! \this directly moves data onto device
+#ifdef OLD_CM
 		m_cm->moveToDevice(m_logging);
+#else
+		m_cm = new ConnectivityMatrix(mh_cm, m_maxPartitionSize, m_logging);
+#endif
 		m_neurons->moveToDevice();
 		configureStdp();
 		m_partitionCount = m_neurons->partitionCount();

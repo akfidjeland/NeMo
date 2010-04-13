@@ -196,9 +196,9 @@ ConnectivityMatrix::applyStdpOne(nidx_t target,
 		weight_t* w_old = weight(rsynapse);
 		weight_t w_new = 0.0;
 		if(*w_old > 0.0f) {
-			w_new = std::min(maxWeight, std::max(*w_old + w_diff, 0.0));
+			w_new = std::min((weight_t) maxWeight, std::max(*w_old + w_diff, (weight_t) 0.0));
 		} else if(*w_old < 0.0) {
-			w_new = std::min(0.0, std::max(*w_old + w_diff, minWeight));
+			w_new = std::min((weight_t) 0.0, std::max(*w_old + w_diff, (weight_t) minWeight));
 		}
 
 		if(*w_old != w_new) {

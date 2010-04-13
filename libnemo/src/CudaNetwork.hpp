@@ -18,6 +18,7 @@
 #include "DeviceAssertions.hpp"
 #include "Timer.hpp"
 #include "STDP.hpp"
+#include "Connectivity.hpp"
 
 namespace nemo {
 	namespace cuda {
@@ -145,6 +146,9 @@ class CudaNetwork : public Simulation
 		class NeuronParameters* m_neurons;
 
 		uint32_t m_cycle;
+
+		//! \todo move this out of this class
+		nemo::Connectivity mh_cm;
 
 		struct ConnectivityMatrix* m_cm;
 
