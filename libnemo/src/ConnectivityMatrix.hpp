@@ -100,10 +100,8 @@ class ConnectivityMatrix
 		 * the fill) for the incoming spike buffer */
 		uint* incomingHeads() const { return m_incoming.heads(); }
 
-		/*! \return number of fractional bits used for weights. This is only
-		 * known once the FCM is finalised, i.e. once moveToDevice has been
-		 * called */
-		uint fractionalBits() const;
+		/*! \return number of fractional bits used for weights. */
+		uint fractionalBits() const { return m_fractionalBits; }
 
 		void printMemoryUsage(std::ostream&) const;
 

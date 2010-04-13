@@ -294,17 +294,6 @@ ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging
 
 
 
-uint
-ConnectivityMatrix::fractionalBits() const
-{
-	if(m_fractionalBits == ~0U) {
-		throw std::runtime_error("Fractional bits requested before it was set");
-	}
-	return m_fractionalBits;
-}
-
-
-
 void
 ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
