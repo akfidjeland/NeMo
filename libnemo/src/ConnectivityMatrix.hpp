@@ -116,6 +116,10 @@ class ConnectivityMatrix
 		rcm_t m_rsynapses;
 
 		/* Compact fcm on device */
+		void moveFcmToDevice(size_t totalWarps,
+				const std::vector<synapse_t>& h_targets,
+				const std::vector<weight_dt>& h_weights,
+				bool logging);
 		boost::shared_ptr<synapse_t> md_fcm;
 		size_t md_fcmPlaneSize; // in words
 

@@ -195,8 +195,26 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm,
 		m_synapseAddresses.setWarpRange(h_sourceIdx, neuronStartWarp, currentWarp);
 	}
 
-	size_t totalWarps = currentWarp;
+	moveFcmToDevice(currentWarp, h_targets, h_weights, logging);
 
+	//! \todo remove need for creating intermediary warp address table. Just
+	//construct this directly in m_outgoing.
+	//! \todo should we get maxWarps directly in this function?
+	size_t partitionCount = DeviceIdx(cm.maxSourceIdx()).partition + 1;
+	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
+	m_incoming.allocate(partitionCount, maxWarps, 0.1);
+
+	moveRcmToDevice(wtable);
+}
+
+
+
+void
+ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
+		const std::vector<synapse_t>& h_targets,
+		const std::vector<weight_dt>& h_weights,
+		bool logging)
+{
 	//! \todo remove warp count from outgoing data structure. It's no longer needed.
 	size_t height = totalWarps * 2; // *2 as we keep target and weight separately
 	size_t desiredBytePitch = WARP_SIZE * sizeof(synapse_t);
@@ -227,24 +245,12 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm,
 	}
 
 	md_fcmAllocated = height * bpitch;
-	//! \todo copy these separately
 	CUDA_SAFE_CALL(cudaMemcpy(d_data + md_fcmPlaneSize * FCM_ADDRESS,
 				&h_targets[0], md_fcmPlaneSize*sizeof(synapse_t),
 				cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpy(d_data + md_fcmPlaneSize * FCM_WEIGHT,
 				&h_weights[0], md_fcmPlaneSize*sizeof(synapse_t),
 				cudaMemcpyHostToDevice));
-
-	//! \todo factor out function
-
-	//! \todo remove need for creating intermediary warp address table. Just
-	//construct this directly in m_outgoing.
-	//! \todo should we get maxWarps directly in this function?
-	size_t partitionCount = DeviceIdx(cm.maxSourceIdx()).partition + 1;
-	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
-	m_incoming.allocate(partitionCount, maxWarps, 0.1);
-
-	moveRcmToDevice(wtable);
 }
 
 
