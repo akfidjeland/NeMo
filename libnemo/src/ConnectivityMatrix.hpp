@@ -147,9 +147,8 @@ class ConnectivityMatrix
 		/* Convert global neuron index to local neuron index */
 		nidx_t neuronIdx(nidx_t);
 
-		weight_t m_maxAbsWeight;
 		uint m_fractionalBits;
-		uint setFractionalBits(bool logging);
+		uint setFractionalBits(weight_t wmin, weight_t wmax, bool logging);;
 
 		/* Per-partition addressing of RCM */
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;

@@ -71,12 +71,12 @@ class DeviceIdx
 unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
 
 
-ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm, size_t partitionSize, bool logging) :
+ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm,
+		size_t partitionSize,
+		bool logging) :
 	m_maxDelay(cm.maxDelay()),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
-	//! \todo remove member variable
-	m_maxAbsWeight(std::max(abs(cm.maxWeight()), abs(cm.minWeight()))),
 	m_fractionalBits(~0)
 {
 	DeviceIdx::setPartitionSize(partitionSize);
@@ -87,9 +87,7 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm, size_t partitionS
 	WarpAddressTable wtable;
 	size_t currentWarp = 1; // leave space for null warp at beginning
 
-	//! \todo remove use of m_maxAbsWeight intermediary. Modify setFractionalBits prototype
-	//m_maxAbsWeight = cm.maxAbsWeight();
-	int fbits = setFractionalBits(logging);
+	int fbits = setFractionalBits(cm.minWeight(), cm.maxWeight(), logging);
 	fx_setFormat(fbits);
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
@@ -265,7 +263,7 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm, size_t partitionS
 /* Determine the number of fractional bits to use when storing weights in
  * fixed-point format on the device. */
 uint
-ConnectivityMatrix::setFractionalBits(bool logging)
+ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging)
 {
 	/* In the worst case we may have all presynaptic neurons for some neuron
 	 * firing, and having all the relevant synapses have the maximum weight we
@@ -281,7 +279,8 @@ ConnectivityMatrix::setFractionalBits(bool logging)
 	 * For now just assume that at most a fixed number of neurons will fire at
 	 * max weight. */
 	//! \todo do this based on both max weight and max number of incoming synapses
-	uint log2Ceil = ceilf(log2(m_maxAbsWeight));
+	weight_t maxAbsWeight = std::max(abs(wmin), abs(wmax));
+	uint log2Ceil = ceilf(log2(maxAbsWeight));
 	uint fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
 
 	if(logging) {
