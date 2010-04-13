@@ -244,7 +244,14 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm,
 	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
 	m_incoming.allocate(partitionCount, maxWarps, 0.1);
 
-	//! \todo factor out
+	moveRcmToDevice(wtable);
+}
+
+
+
+void
+ConnectivityMatrix::moveRcmToDevice(const WarpAddressTable& wtable)
+{
 	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
 		i->second->moveToDevice(wtable, i->first);
 	}
