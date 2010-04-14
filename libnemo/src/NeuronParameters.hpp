@@ -28,17 +28,9 @@ class NeuronParameters
 {
 	public:
 
-		NeuronParameters(size_t partitionSize);
-
 		NeuronParameters(const nemo::Network& net, size_t partitionSize);
 
-		void addNeuron(nidx_t neuronIndex,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
-
 		void setSigma(class ThalamicInput& th) const;
-
-		void moveToDevice();
 
 		float* deviceData() { return md_arr.get(); }
 
@@ -52,6 +44,8 @@ class NeuronParameters
 	private:
 
 		void addNeuron(nidx_t, const nemo::Neuron<float>&);
+
+		void moveToDevice();
 
 		size_t m_partitionSize; // max partition size
 

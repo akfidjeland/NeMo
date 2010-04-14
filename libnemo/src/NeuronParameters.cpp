@@ -22,13 +22,6 @@
 namespace nemo {
 	namespace cuda {
 
-NeuronParameters::NeuronParameters(size_t partitionSize) :
-	m_partitionSize(partitionSize),
-	m_allocated(0),
-	m_wpitch(0)
-{ }
-
-
 
 NeuronParameters::NeuronParameters(const nemo::Network& net, size_t partitionSize) :
 	m_partitionSize(partitionSize),
@@ -40,6 +33,7 @@ NeuronParameters::NeuronParameters(const nemo::Network& net, size_t partitionSiz
 			i != net.m_neurons.end(); ++i) {
 		addNeuron(i->first, i->second);
 	}
+	moveToDevice();
 }
 
 
@@ -58,27 +52,6 @@ NeuronParameters::addNeuron(nidx_t nidx, const nemo::Neuron<float>& n)
 	pidx_t pi = nidx / m_partitionSize;
 
 	m_maxPartitionNeuron[pi] = std::max(m_maxPartitionNeuron[pi], ni);
-}
-
-
-
-void
-NeuronParameters::addNeuron(
-		nidx_t neuronIndex,
-		float a, float b, float c, float d,
-		float u, float v, float sigma)
-{
-	if(m_acc.find(neuronIndex) != m_acc.end()) {
-		//! \todo construct a sensible error message here using sstream
-		throw std::runtime_error("duplicate neuron index");
-	}
-	m_acc[neuronIndex] = Neuron<float>(a, b, c, d, u, v, sigma);
-
-	//! \todo share mapper code with moveToDevice and ConnectivityMatrixImpl
-	nidx_t n = neuronIndex % m_partitionSize;
-	pidx_t p = neuronIndex / m_partitionSize;
-
-	m_maxPartitionNeuron[p] = std::max(m_maxPartitionNeuron[p], n);
 }
 
 
