@@ -415,6 +415,12 @@ CudaNetwork::finishSimulation()
 }
 
 
+unsigned
+CudaNetwork::defaultPartitionSize()
+{
+	return MAX_PARTITION_SIZE;
+}
+
 
 	} // end namespace cuda
 } // end namespace nemo

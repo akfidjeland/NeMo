@@ -20,12 +20,7 @@ class Configuration
 {
 	public:
 
-		Configuration() :
-			m_logging(false),
-			m_stdpFn(NULL),
-			//! \todo get this from kernel.cu_h or from CudaNetwork
-			m_cudaMaxPartitionSize(1024),
-			m_cudaFiringBufferLength(1000) {}
+		Configuration();
 
 		/*! Switch on logging and send output to stdout */
 		void enableLogging() { m_logging = true; }

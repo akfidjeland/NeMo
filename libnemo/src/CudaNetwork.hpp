@@ -101,6 +101,9 @@ class CudaNetwork : public Simulation
 		/*! Reset both wall-clock and simulation timer */
 		void resetTimer();
 
+		static unsigned defaultPartitionSize();
+		static unsigned defaultFiringBufferLength() { return 1000; } // cycles
+
 	private :
 
 		nemo::Configuration m_conf;
@@ -134,8 +137,6 @@ class CudaNetwork : public Simulation
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
 		struct FiringOutput* m_firingOutput;
-		//! \todo return this to configuration
-		static const unsigned DEFAULT_FIRING_BUFFER_SIZE = 1000; // cycles
 
 		struct CycleCounters* m_cycleCounters;
 

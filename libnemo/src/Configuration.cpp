@@ -12,6 +12,15 @@
 
 namespace nemo {
 
+Configuration::Configuration() :
+	m_logging(false),
+	m_stdpFn(NULL),
+	m_cudaMaxPartitionSize(cuda::CudaNetwork::defaultPartitionSize()),
+	m_cudaFiringBufferLength(cuda::CudaNetwork::defaultFiringBufferLength())
+{
+	;
+}
+
 void
 Configuration::setStdpFunction(
 		const std::vector<float>& prefire,
