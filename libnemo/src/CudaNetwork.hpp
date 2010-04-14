@@ -28,11 +28,6 @@ class CudaNetwork : public Simulation
 {
 	public :
 
-		CudaNetwork();
-
-		// for debugging purposes, fix the partition size used
-		CudaNetwork(unsigned maxPartitionSize);
-
 		CudaNetwork(const nemo::Network& net, const nemo::Configuration& conf=Configuration());
 
 		~CudaNetwork();
@@ -48,40 +43,11 @@ class CudaNetwork : public Simulation
 		 * CONFIGURATION
 		 */
 
-		/*! Switch on logging and send output to stdout */
-		void logToStdout();
-
-		void enableStdp(
-				std::vector<float> prefire,
-				std::vector<float> postfire,
-				float minWeight,
-				float maxWeight);
-
-		void setFiringBufferLength(unsigned cycles) { m_maxReadPeriod = cycles; }
-
-		unsigned getFiringBufferLength() const { return m_maxReadPeriod; }
-
-		/*
-		 * NETWORK CONSTRUCTION
-		 */
-
-		void addNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
-
-		void addSynapses(
-				unsigned source,
-				const std::vector<uint>& targets,
-				const std::vector<uint>& delays,
-				const std::vector<float>& weights,
-				//! \todo change to bool
-				const std::vector<unsigned char> isPlastic);
+		unsigned getFiringBufferLength() const { return m_conf.cudaFiringBufferLength(); }
 
 		/*
 		 * NETWORK SIMULATION
 		 */
-
-		void initSimulation();
 
 		void stepSimulation(const std::vector<uint>& fstim = std::vector<uint>());
 
@@ -126,13 +92,7 @@ class CudaNetwork : public Simulation
 
 	private :
 
-		/* At any time the network is in one of three states. Some methods can
-		 * only be called in a specific state. */
-		//! \todo only set reverse matrix at the end, and merge config and construction
-		enum State { CONFIGURING, CONSTRUCTING, SIMULATING, ZOMBIE };
-		State m_state;
-
-		void ensureState(State);
+		nemo::Configuration m_conf;
 
 		uint32_t* setFiringStimulus(const std::vector<uint>& nidx);
 
@@ -151,9 +111,6 @@ class CudaNetwork : public Simulation
 
 		uint32_t m_cycle;
 
-		//! \todo move this out of this class. At the same time remove header from this file
-		nemo::Network mh_cm;
-
 		struct ConnectivityMatrix* m_cm;
 
 		NVector<uint64_t>* m_recentFiring;
@@ -166,7 +123,7 @@ class CudaNetwork : public Simulation
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
 		struct FiringOutput* m_firingOutput;
-		unsigned m_maxReadPeriod;
+		//! \todo return this to configuration
 		static const unsigned DEFAULT_FIRING_BUFFER_SIZE = 1000; // cycles
 
 		struct CycleCounters* m_cycleCounters;
@@ -183,8 +140,6 @@ class CudaNetwork : public Simulation
 		STDP<float> m_stdpFn;
 		void configureStdp();
 		bool usingStdp() const;
-
-		bool m_logging;
 
 		static int s_device;
 };

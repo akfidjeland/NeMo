@@ -34,56 +34,16 @@
 namespace nemo {
 	namespace cuda {
 
-CudaNetwork::CudaNetwork() :
-	m_state(CONFIGURING),
-	m_partitionCount(0),
-	m_maxPartitionSize(MAX_PARTITION_SIZE),
-	m_neurons(new NeuronParameters(m_maxPartitionSize)),
-	m_cm(NULL),
-	m_recentFiring(NULL),
-	m_thalamicInput(NULL),
-	m_firingStimulus(NULL),
-	m_firingOutput(NULL),
-	m_cycleCounters(NULL),
-	m_deviceAssertions(NULL),
-	m_pitch32(0),
-	m_pitch64(0),
-	m_maxReadPeriod(DEFAULT_FIRING_BUFFER_SIZE),
-	m_logging(false)
-{ }
-
-
-
-CudaNetwork::CudaNetwork(unsigned maxPartitionSize) :
-	m_state(CONFIGURING),
-	m_partitionCount(0),
-	m_maxPartitionSize(maxPartitionSize),
-	m_neurons(new NeuronParameters(m_maxPartitionSize)),
-	m_cm(NULL),
-	m_recentFiring(NULL),
-	m_thalamicInput(NULL),
-	m_firingStimulus(NULL),
-	m_firingOutput(NULL),
-	m_cycleCounters(NULL),
-	m_deviceAssertions(NULL),
-	m_pitch32(0),
-	m_pitch64(0),
-	m_maxReadPeriod(DEFAULT_FIRING_BUFFER_SIZE),
-	m_logging(false)
-{ }
-
-
 
 CudaNetwork::CudaNetwork(
 		const nemo::Network& net,
 		const nemo::Configuration& conf) :
-	//! \todo get rid of internal state logic
-	m_state(CONFIGURING),
+	m_conf(conf),
 	m_partitionCount(0),
 	//! \todo get rid of member variable
 	m_maxPartitionSize(conf.cudaMaxPartitionSize()),
 	m_neurons(new NeuronParameters(net, conf.cudaMaxPartitionSize())),
-	m_cm(new ConnectivityMatrix(net, conf.cudaMaxPartitionSize(), false)),
+	m_cm(new ConnectivityMatrix(net, conf.cudaMaxPartitionSize(), conf.loggingEnabled())),
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),
@@ -91,17 +51,32 @@ CudaNetwork::CudaNetwork(
 	m_cycleCounters(NULL),
 	m_deviceAssertions(NULL),
 	m_pitch32(0),
-	m_pitch64(0),
-	//! \todo use value from configuration
-	//! \todo get rid fo the default firing buffer size
-	m_maxReadPeriod(DEFAULT_FIRING_BUFFER_SIZE),
-	m_logging(conf.loggingEnabled())
+	m_pitch64(0)
 {
 	if(conf.stdpFunction() != NULL) {
 		m_stdpFn = *conf.stdpFunction();
 	}
 
-	initSimulation();
+	//! \todo move to device as part of construction
+	m_neurons->moveToDevice();
+	configureStdp();
+
+	//! \todo merge with init list
+	m_partitionCount = m_neurons->partitionCount();
+	m_deviceAssertions = new DeviceAssertions(m_partitionCount);
+	m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, conf.cudaFiringBufferLength());
+	m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
+	//! \todo seed properly from outside function
+	m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
+	m_neurons->setSigma(*m_thalamicInput);
+	m_thalamicInput->moveToDevice();
+	m_cycleCounters = new CycleCounters(m_partitionCount, usingStdp());
+	m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
+
+	setPitch();
+	//! \todo do this configuration as part of CM setup
+	configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
+	resetTimer();
 }
 
 
@@ -157,19 +132,7 @@ CudaNetwork::selectDevice()
 
 
 
-/*! Enabled STDP */
-void
-CudaNetwork::enableStdp(
-		std::vector<float> prefire,
-		std::vector<float> postfire,
-		float minWeight, float maxWeight)
-{
-	ensureState(CONFIGURING);
-	m_stdpFn = STDP<float>(prefire, postfire, minWeight, maxWeight);
-}
-
-
-
+//! \todo simplify
 void
 CudaNetwork::configureStdp()
 {
@@ -323,71 +286,10 @@ CudaNetwork::usingStdp() const
 
 
 
-void
-CudaNetwork::addNeuron(
-		unsigned int idx,
-		float a, float b, float c, float d,
-		float u, float v, float sigma)
-{
-	ensureState(CONSTRUCTING);
-	m_neurons->addNeuron(idx, a, b, c, d, u, v, sigma);
-}
-
-
-
-void
-CudaNetwork::addSynapses(
-		uint source,
-		const std::vector<uint>& targets,
-		const std::vector<uint>& delays,
-		const std::vector<float>& weights,
-		const std::vector<unsigned char> is_plastic)
-{
-	ensureState(CONSTRUCTING);
-	mh_cm.addSynapses(source, targets, delays, weights, is_plastic);
-}
-
-
-
-//! \todo fold this into ctor
-void
-CudaNetwork::initSimulation()
-{
-	//! \todo remove state logic
-	if(m_state != SIMULATING) {
-		//! \todo tidy use of mh_cm
-		if(m_cm == NULL) {
-			//! \this directly moves data onto device
-			m_cm = new ConnectivityMatrix(mh_cm, m_maxPartitionSize, m_logging);
-		}
-		m_neurons->moveToDevice();
-		configureStdp();
-		m_partitionCount = m_neurons->partitionCount();
-		m_deviceAssertions = new DeviceAssertions(m_partitionCount);
-		m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, m_maxReadPeriod);
-		m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
-		//! \todo seed properly from outside function
-		m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
-		m_neurons->setSigma(*m_thalamicInput);
-		m_thalamicInput->moveToDevice();
-		m_cycleCounters = new CycleCounters(m_partitionCount, usingStdp());
-		m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
-
-		setPitch();
-		//! \todo do this configuration as part of CM setup
-		configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
-		resetTimer();
-		m_state = SIMULATING;
-	}
-}
-
-
 
 void
 CudaNetwork::stepSimulation(const std::vector<uint>& fstim)
 {
-	initSimulation(); // only has effect on first cycle
-
 	/* A 32-bit counter can count up to around 4M seconds which is around 1200
 	 * hours or 50 days */
 	//! \todo use a 64-bit counter instead
@@ -430,8 +332,6 @@ CudaNetwork::stepSimulation(const std::vector<uint>& fstim)
 void
 CudaNetwork::applyStdp(float reward)
 {
-	ensureState(SIMULATING);
-
 	if(!usingStdp()) {
 		//! \todo issue a warning here?
 		return;
@@ -463,7 +363,6 @@ CudaNetwork::getSynapses(unsigned sn,
 		const std::vector<float>** w,
 		const std::vector<unsigned char>** p)
 {
-	ensureState(SIMULATING);
 	return m_cm->getSynapses(sn, tn, d, w, p);
 }
 
@@ -488,36 +387,14 @@ CudaNetwork::flushFiringBuffer()
 void
 CudaNetwork::finishSimulation()
 {
-	m_state = ZOMBIE;
 	//! \todo perhaps clear device data here instead of in dtor
-	if(m_logging) {
+	if(m_conf.loggingEnabled()) {
 		m_cycleCounters->printCounters(std::cout);
 		//! \todo add time summary
 	}
 }
 
 
-void
-CudaNetwork::logToStdout()
-{
-	m_logging = true;
-}
-
-
-void
-CudaNetwork::ensureState(State s)
-{
-	if(m_state == s) {
-		return;
-	} else if(s == CONSTRUCTING && m_state == CONFIGURING) {
-		m_state = s;
-	} else {
-		std::ostringstream msg;
-		msg << "Expected to be in state " << s <<
-			" but found state " << m_state << std::endl;
-		throw std::runtime_error(msg.str());
-	}
-}
 
 	} // end namespace cuda
 } // end namespace nemo
