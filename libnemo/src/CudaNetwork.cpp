@@ -111,7 +111,7 @@ CudaNetwork::selectDevice()
 		return -1;
 	}
 
-	// 1.2 requires for shared memory atomics
+	// 1.2 required for shared memory atomics
 	if(prop.major <= 1 && prop.minor < 2) {
 		std::cerr << "No device with compute capability 1.2 available" << std::endl;
 		return -1;
@@ -124,7 +124,33 @@ CudaNetwork::selectDevice()
 
 
 
-//! \todo simplify
+int
+CudaNetwork::setDevice(int dev)
+{
+	cudaDeviceProp prop;
+	cudaGetDeviceProperties(&prop, dev);
+
+	//! \todo throw exceptions instead here?
+	// 9999.9999 is the 'emulation device' which is always present
+	if(prop.major == 9999 || prop.minor == 9999) {
+		std::cerr << "No physical devices available" << std::endl;
+		return -1;
+	}
+
+	// 1.2 required for shared memory atomics
+	if(prop.major <= 1 && prop.minor < 2) {
+		std::cerr << "Device has compute capability less than 1.2" << std::endl;
+		return -1;
+	}
+
+	CUDA_SAFE_CALL(cudaSetDevice(dev));
+	s_device = dev;
+	return dev;
+
+}
+
+
+
 void
 CudaNetwork::configureStdp(const STDP<float>* stdp)
 {

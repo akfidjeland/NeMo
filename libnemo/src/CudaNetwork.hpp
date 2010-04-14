@@ -41,6 +41,15 @@ class CudaNetwork : public Simulation
 		//! \todo move this to configuration
 		static int selectDevice();
 
+		/*! Set the device (for this thread) if the chosen device exists and
+		 * meets the minimum required capabilities.
+		 *
+		 * \return
+		 * 		-1 if the chosen device is not suitable
+		 * 		\a dev otherwise
+		 */
+		static int setDevice(int dev);
+
 		/*
 		 * CONFIGURATION
 		 */

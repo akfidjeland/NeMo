@@ -41,14 +41,21 @@ class Configuration
 		void setCudaFiringBufferLength(unsigned cycles) { m_cudaFiringBufferLength = cycles; }
 		unsigned cudaFiringBufferLength() const { return m_cudaFiringBufferLength; }
 
+		/*! Set the cuda device to \a dev. The CUDA library allows the device
+		 * to be set only once per thread, so this function may fail if called
+		 * multiple times.
+		 *
+		 * \return
+		 * 		-1 if not suitable device found;
+		 * 		number of device that will be used, otherwise
+		 */
+		int setCudaDevice(int dev);
+
 		void setStdpFunction(
 				const std::vector<float>& prefire,
 				const std::vector<float>& postfire,
 				float minWeight,
-				float maxWeight) 
-		{
-			m_stdpFn = new STDP<float>(prefire, postfire, minWeight, maxWeight);
-		}
+				float maxWeight);
 
 		const STDP<float>* stdpFunction() const { return m_stdpFn; }
 
