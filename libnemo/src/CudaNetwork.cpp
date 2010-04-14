@@ -16,7 +16,6 @@
 
 #include "DeviceAssertions.hpp"
 #include "FiringOutput.hpp"
-#include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
 #include "ThalamicInput.hpp"
 #include "util.h"
@@ -42,7 +41,7 @@ CudaNetwork::CudaNetwork(
 	//! \todo get rid of member variable
 	m_maxPartitionSize(conf.cudaMaxPartitionSize()),
 	m_neurons(net, conf.cudaMaxPartitionSize()),
-	m_cm(new ConnectivityMatrix(net, conf.cudaMaxPartitionSize(), conf.loggingEnabled())),
+	m_cm(net, conf.cudaMaxPartitionSize(), conf.loggingEnabled()),
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),
@@ -74,7 +73,7 @@ CudaNetwork::CudaNetwork(
 
 	setPitch();
 	//! \todo do this configuration as part of CM setup
-	configureKernel(m_cm->maxDelay(), m_pitch32, m_pitch64);
+	configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64);
 	resetTimer();
 }
 
@@ -89,7 +88,6 @@ CudaNetwork::~CudaNetwork()
 	if(m_firingStimulus) delete m_firingStimulus;
 	if(m_thalamicInput) delete m_thalamicInput;
 	if(m_cycleCounters) delete m_cycleCounters;
-	if(m_cm) delete m_cm;
 }
 
 
@@ -140,7 +138,7 @@ CudaNetwork::configureStdp()
 
 	const std::vector<float>& flfn = m_stdpFn.function();
 	std::vector<fix_t> fxfn(flfn.size());
-	uint fb = m_cm->fractionalBits();
+	uint fb = m_cm.fractionalBits();
 	for(uint i=0; i < fxfn.size(); ++i) {
 		fxfn.at(i) = fx_toFix(flfn[i], fb);
 	}
@@ -217,7 +215,7 @@ CudaNetwork::d_allocated() const
 	total += m_neurons.d_allocated();
 	total += m_firingOutput   ? m_firingOutput->d_allocated()     : 0;
 	total += m_thalamicInput  ? m_thalamicInput->d_allocated()    : 0;
-	total += m_cm             ? m_cm->d_allocated()             : 0;
+	total += m_cm.d_allocated();
 	return total;
 }
 
@@ -309,11 +307,11 @@ CudaNetwork::stepSimulation(const std::vector<uint>& fstim)
 			m_thalamicInput->deviceSigma(),
 			d_fstim, 
 			d_fout,
-			m_cm->d_fcm(),
-			m_cm->outgoingCount(),
-			m_cm->outgoing(),
-			m_cm->incomingHeads(),
-			m_cm->incoming(),
+			m_cm.d_fcm(),
+			m_cm.outgoingCount(),
+			m_cm.outgoing(),
+			m_cm.incomingHeads(),
+			m_cm.incoming(),
 			m_cycleCounters->data(),
 			m_cycleCounters->pitch());
 
@@ -336,14 +334,14 @@ CudaNetwork::applyStdp(float reward)
 	}
 
 	if(reward == 0.0f) {
-		m_cm->clearStdpAccumulator();
+		m_cm.clearStdpAccumulator();
 	} else  {
 		::applyStdp(
 				m_cycleCounters->dataApplySTDP(),
 				m_cycleCounters->pitchApplySTDP(),
 				m_partitionCount,
-				m_cm->fractionalBits(),
-				m_cm->d_fcm(),
+				m_cm.fractionalBits(),
+				m_cm.d_fcm(),
 				m_stdpFn.maxWeight(),
 				m_stdpFn.minWeight(),
 				reward);
@@ -361,7 +359,7 @@ CudaNetwork::getSynapses(unsigned sn,
 		const std::vector<float>** w,
 		const std::vector<unsigned char>** p)
 {
-	return m_cm->getSynapses(sn, tn, d, w, p);
+	return m_cm.getSynapses(sn, tn, d, w, p);
 }
 
 

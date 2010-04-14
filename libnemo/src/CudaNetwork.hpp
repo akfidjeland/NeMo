@@ -16,6 +16,7 @@
 #include "nemo.hpp"
 #include "NVector.hpp"
 #include "Configuration.hpp"
+#include "ConnectivityMatrix.hpp"
 #include "DeviceAssertions.hpp"
 #include "NeuronParameters.hpp"
 #include "Timer.hpp"
@@ -112,7 +113,7 @@ class CudaNetwork : public Simulation
 
 		uint32_t m_cycle;
 
-		struct ConnectivityMatrix* m_cm;
+		ConnectivityMatrix m_cm;
 
 		NVector<uint64_t>* m_recentFiring;
 
