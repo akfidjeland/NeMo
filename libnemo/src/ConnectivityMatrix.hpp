@@ -18,8 +18,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "nemo_cuda_types.h"
-#include "nemo_types.hpp"
+#include "cuda_types.h"
+#include "types.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
 #include "Network.hpp"

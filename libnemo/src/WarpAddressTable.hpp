@@ -12,7 +12,7 @@
 
 #include <map>
 #include <boost/tuple/tuple.hpp>
-#include "nemo_cuda_types.h"
+#include "cuda_types.h"
 
 namespace nemo {
 	namespace cuda {

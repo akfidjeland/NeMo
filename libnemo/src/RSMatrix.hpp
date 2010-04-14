@@ -20,7 +20,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "kernel.cu_h"
-#include "nemo_cuda_types.h"
+#include "cuda_types.h"
 
 namespace nemo {
 	namespace cuda {

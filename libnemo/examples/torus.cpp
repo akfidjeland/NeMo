@@ -317,24 +317,24 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma)
 
 
 void
-simulate(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp)
+simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 {
 	const unsigned MS_PER_SECOND = 1000;
 
 	//! \todo fix timing code in kernel so that we don't have to force data onto device
-	net->stepSimulation();
-	net->resetTimer();
+	sim->stepSimulation();
+	sim->resetTimer();
 
 	/* Run for a few seconds to warm up the network */
 	std::cout << "Running simulation (warming up)...";
 	for(uint s=0; s < 5; ++s) {
 		for(uint ms = 0; ms < MS_PER_SECOND; ++ms) {
-			net->stepSimulation();
+			sim->stepSimulation();
 		}
-		net->flushFiringBuffer();
+		sim->flushFiringBuffer();
 	}
-	std::cout << "[" << net->elapsedWallclock() << "ms elapsed]" << std::endl;
-	net->resetTimer();
+	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]" << std::endl;
+	sim->resetTimer();
 
 	uint seconds = 10;
 
@@ -343,12 +343,12 @@ simulate(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp)
 	for(uint s=0; s < seconds; ++s) {
 		std::cout << s << " ";
 		for(uint ms = 0; ms < MS_PER_SECOND; ++ms) {
-			net->stepSimulation();
+			sim->stepSimulation();
 		}
-		net->flushFiringBuffer();
+		sim->flushFiringBuffer();
 	}
-	long int elapsedTiming = net->elapsedWallclock();
-	net->resetTimer();
+	long int elapsedTiming = sim->elapsedWallclock();
+	sim->resetTimer();
 	std::cout << "[" << elapsedTiming << "ms elapsed]" << std::endl;
 
 	/* Dummy buffers for firing data */
@@ -360,12 +360,12 @@ simulate(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp)
 	for(uint s=0; s < seconds; ++s) {
 		std::cout << s << " ";
 		for(uint ms=0; ms<1000; ++ms) {
-			net->stepSimulation();
+			sim->stepSimulation();
 		}
-		net->readFiring(&cycles, &fired);
+		sim->readFiring(&cycles, &fired);
 		nfired += fired->size();
 	}
-	long int elapsedData = net->elapsedWallclock();
+	long int elapsedData = sim->elapsedWallclock();
 	std::cout << "[" << elapsedData << "ms elapsed]" << std::endl;
 
 	unsigned long narrivals = nfired * m;
@@ -388,14 +388,14 @@ simulate(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp)
 	std::cout << "Speedup wrt real-time: " << speedupPCI << "/"
 			<< speedupNoPCI << std::endl;
 
-	//net->stopSimulation();
+	//sim->stopSimulation();
 }
 
 
 
 /* Simulate for some time, writing firing data to file */
 void
-simulateToFile(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp, const char* firingFile)
+simulateToFile(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp, const char* firingFile)
 {
 	/* Dummy buffers for firing data */
 	const std::vector<unsigned>* cycles;
@@ -404,9 +404,9 @@ simulateToFile(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp, co
 	std::cout << "Running simulation (gathering performance data)...";
 	unsigned nfired = 0;
 	for(uint ms=0; ms<1000; ++ms) {
-		net->stepSimulation();
+		sim->stepSimulation();
 	}
-	net->readFiring(&cycles, &fired);
+	sim->readFiring(&cycles, &fired);
 
 	std::ofstream file;
 	file.open(firingFile);

@@ -12,7 +12,7 @@
 
 #include "device_assert.cu"
 #include "util.h"
-#include "nemo_cuda_types.h"
+#include "cuda_types.h"
 
 #define FX_SIGN_BIT 0x80000000
 

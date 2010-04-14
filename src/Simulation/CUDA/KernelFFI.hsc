@@ -42,7 +42,7 @@ import Simulation.CUDA.Address
 
 import Types (Time, Delay, Weight, Idx)
 
-#include <libnemo.h>
+#include <nemo.h>
 
 
 {- Runtime data is managed on the CUDA-side in a single structure -}

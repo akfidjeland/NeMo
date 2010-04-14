@@ -15,7 +15,7 @@
 
 #include "outgoing.cu_h"
 #include "incoming.cu_h"
-#include "nemo_cuda_types.h"
+#include "cuda_types.h"
 
 void
 applyStdp(

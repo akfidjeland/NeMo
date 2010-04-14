@@ -2,7 +2,7 @@
 #define CPU_KERNEL_H
 
 #include <stddef.h>
-#include "types.h"
+#include "cpu_types.h"
 
 
 // opaque pointer

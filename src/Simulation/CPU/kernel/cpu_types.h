@@ -1,7 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <nemo_types.h>
+#include <types.h>
 
 typedef enum {
 	STATUS_OK,

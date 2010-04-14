@@ -108,4 +108,6 @@ INSTALL(FILES nemo.h
 			STDP.hpp
 			STDP.ipp
 			nemo.hpp
+			types.hpp
+			types.h
 		DESTINATION include/nemo)

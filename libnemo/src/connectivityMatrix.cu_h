@@ -15,7 +15,7 @@
 #include <cuda_runtime.h>
 
 #include "kernel.cu_h"
-#include "nemo_cuda_types.h"
+#include "cuda_types.h"
 
 /* \brief Synapse encoding/decoding
  *

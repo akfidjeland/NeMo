@@ -5,8 +5,8 @@
 #include <map>
 #include <set>
 
-#include "types.h"
-#include <nemo_types.hpp>
+#include "cpu_types.h"
+#include <types.hpp>
 
 namespace nemo {
 	namespace cpu {

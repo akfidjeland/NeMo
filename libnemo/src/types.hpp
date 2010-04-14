@@ -12,7 +12,7 @@
 
 /* The basic types in nemo_types are also used without an enclosing namespace
  * inside the kernel (which is pure C). */
-#include "nemo_types.h"
+#include "types.h"
 
 
 namespace nemo {

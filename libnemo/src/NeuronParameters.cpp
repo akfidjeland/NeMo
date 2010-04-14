@@ -16,7 +16,7 @@
 #include "except.hpp"
 #include "Network.hpp"
 #include "ThalamicInput.hpp"
-#include "nemo_cuda_types.h"
+#include "cuda_types.h"
 #include "kernel.hpp"
 
 namespace nemo {

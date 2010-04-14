@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-
+{-# LANGUAGE TypeSynonymInstances #-}
 {- | Wrapper for C-based simulation kernel -}
 
 module Simulation.CPU.KernelFFI (
@@ -174,7 +174,7 @@ foreign import ccall unsafe "cpu_enable_stdp"
 foreign import ccall unsafe "cpu_apply_stdp"
     c_apply_stdp :: Ptr ForeignData -> CFt -> IO ()
 
-instance ForeignKernel ForeignData CDouble where
+instance ForeignKernel ForeignData CFt where
     ffi_enable_stdp = c_enable_stdp
     ffi_apply_stdp = c_apply_stdp
 
