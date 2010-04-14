@@ -18,8 +18,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <nemo_types.hpp>
 #include "nemo_cuda_types.h"
+#include "nemo_types.hpp"
 #include "NVector.hpp"
 #include "kernel.cu_h"
 #include "Network.hpp"
@@ -107,6 +107,9 @@ class ConnectivityMatrix
 		void printMemoryUsage(std::ostream&) const;
 
 	private:
+
+		//! \todo use a union type here to ensure both fields are the same size?
+		typedef Synapse<nidx_t, weight_dt> synapse_ht;
 
 		delay_t m_maxDelay;
 

@@ -56,6 +56,7 @@ Network::addSynapse(
 }
 
 
+
 void
 Network::addSynapses(
 		nidx_t source,

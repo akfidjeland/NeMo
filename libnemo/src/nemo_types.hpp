@@ -28,6 +28,20 @@ struct Neuron {
 
 
 
+template<typename I, typename W>
+struct Synapse
+{
+	I target;
+	W weight;
+	//! \todo change to bool?
+	uchar plastic;
+
+	Synapse(I t, W w, uchar p) : target(t), weight(w), plastic(p) {}
+};
+
+
+
+
 //! \todo can probably get rid of this. Use boost::tuple instead
 struct ForwardIdx
 {

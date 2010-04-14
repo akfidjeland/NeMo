@@ -30,20 +30,6 @@ namespace nemo {
 
 
 
-//! \todo use this type in Connectivity as well
-struct Synapse
-{
-	//! \todo change type name here
-	synapse_t target;
-	weight_dt weight;
-	//! \todo change to bool?
-	uchar plastic;
-
-	Synapse(nidx_t t, weight_dt w, uchar p) : target(t), weight(w), plastic(p) {}
-};
-
-
-
 unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
 
 
@@ -115,32 +101,29 @@ ConnectivityMatrix::createFcm(
 			/* A bundle contains a number of synapses with the same source
 			 * neuron and delay. On the device we need to further subdivide
 			 * this into groups of synapses with the same target partition */
-			std::map<pidx_t, std::vector<Synapse> > pgroups;
+			std::map<pidx_t, std::vector<synapse_ht> > pgroups;
 
 			/* Populate the partition groups. We only need to store the target
 			 * neuron and weight. We store these as a pair so that we can
 			 * reorganise these later. */
 			for(Network::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
-
-				Network::synapse_t s = *si;
-				//! \todo create synapse struct as part of nemo::Network
-				nidx_t h_targetIdx = boost::tuples::get<0>(s);
+				nidx_t h_targetIdx = si->target;
 				DeviceIdx d_targetIdx(h_targetIdx);
-				weight_dt weight = fx_toFix(boost::tuples::get<1>(s), fbits);
-				unsigned char plastic = boost::tuples::get<2>(s);
-				pgroups[d_targetIdx.partition].push_back(Synapse(d_targetIdx.neuron, weight, plastic));
+				weight_dt weight = fx_toFix(si->weight, fbits);
+				unsigned char plastic = si->plastic;
+				pgroups[d_targetIdx.partition].push_back(synapse_ht(d_targetIdx.neuron, weight, plastic));
 			}
 
 			/* Data used when user reads FCM back from device */
 			std::vector<nidx_t>& h_fcmTarget = mh_fcmTargets[h_sourceIdx];
 			std::vector<uchar>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
 
-			for(std::map<pidx_t, std::vector<Synapse> >::const_iterator g = pgroups.begin();
+			for(std::map<pidx_t, std::vector<synapse_ht> >::const_iterator g = pgroups.begin();
 					g != pgroups.end(); ++g) {
 
 				pidx_t targetPartition = g->first;
-				std::vector<Synapse> bundle = g->second;
+				std::vector<synapse_ht> bundle = g->second;
 				size_t warps = DIV_CEIL(bundle.size(), WARP_SIZE);
 				size_t words = warps * WARP_SIZE;
 				//! \todo change prototype to accept DeviceIdx
@@ -154,7 +137,7 @@ ConnectivityMatrix::createFcm(
 				std::vector<synapse_t> targets(words, f_nullSynapse());
 				std::vector<weight_dt> weights(words, 0);
 
-				for(std::vector<Synapse>::const_iterator s = bundle.begin();
+				for(std::vector<synapse_ht>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
 					size_t sidx = s - bundle.begin();
 					//! \todo remove f_packSynapse method

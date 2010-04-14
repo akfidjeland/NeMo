@@ -3,7 +3,6 @@
 
 #include <map>
 #include <vector>
-#include <boost/tuple/tuple.hpp>
 
 #include "nemo_types.hpp"
 
@@ -54,7 +53,7 @@ class Network
 		typedef nemo::Neuron<float> neuron_t;
 		std::map<nidx_t, neuron_t> m_neurons;
 
-		typedef boost::tuple<nidx_t, weight_t, unsigned char> synapse_t;
+		typedef Synapse<nidx_t, weight_t> synapse_t;
 		typedef std::vector<synapse_t> bundle_t;
 		typedef std::map<delay_t, bundle_t> axon_t;
 		typedef std::map<nidx_t, axon_t> fcm_t;
