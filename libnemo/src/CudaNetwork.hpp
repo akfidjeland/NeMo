@@ -19,7 +19,7 @@
 #include "DeviceAssertions.hpp"
 #include "Timer.hpp"
 #include "STDP.hpp"
-#include "Connectivity.hpp"
+#include "Network.hpp"
 
 namespace nemo {
 	namespace cuda {
@@ -33,7 +33,7 @@ class CudaNetwork : public Simulation
 		// for debugging purposes, fix the partition size used
 		CudaNetwork(unsigned maxPartitionSize);
 
-		CudaNetwork(const nemo::Connectivity& net, const nemo::Configuration& conf=Configuration());
+		CudaNetwork(const nemo::Network& net, const nemo::Configuration& conf=Configuration());
 
 		~CudaNetwork();
 
@@ -152,7 +152,7 @@ class CudaNetwork : public Simulation
 		uint32_t m_cycle;
 
 		//! \todo move this out of this class. At the same time remove header from this file
-		nemo::Connectivity mh_cm;
+		nemo::Network mh_cm;
 
 		struct ConnectivityMatrix* m_cm;
 

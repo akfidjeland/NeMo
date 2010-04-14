@@ -17,9 +17,11 @@
 
 #include "nemo_types.hpp"
 #include "nemo_cuda_types.h"
-#include "Connectivity.hpp"
 
 namespace nemo {
+
+	class Network;
+
 	namespace cuda {
 
 class NeuronParameters
@@ -28,7 +30,7 @@ class NeuronParameters
 
 		NeuronParameters(size_t partitionSize);
 
-		NeuronParameters(const nemo::Connectivity& net, size_t partitionSize);
+		NeuronParameters(const nemo::Network& net, size_t partitionSize);
 
 		void addNeuron(nidx_t neuronIndex,
 				float a, float b, float c, float d,

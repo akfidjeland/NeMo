@@ -16,11 +16,11 @@ namespace nemo {
 	}
 
 
-class Connectivity
+class Network
 {
 	public :
 
-		Connectivity();
+		Network();
 
 		void addNeuron(nidx_t neuronIndex,
 				float a, float b, float c, float d,

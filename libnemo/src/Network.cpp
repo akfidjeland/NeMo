@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Connectivity.hpp"
+#include "Network.hpp"
 
 #include <assert.h>
 #include <stdexcept>
@@ -15,7 +15,7 @@
 namespace nemo {
 
 
-Connectivity::Connectivity() :
+Network::Network() :
 	m_maxSourceIdx(0),
 	m_maxDelay(0),
 	m_maxWeight(0),
@@ -24,7 +24,7 @@ Connectivity::Connectivity() :
 
 
 void
-Connectivity::addNeuron(nidx_t nidx,
+Network::addNeuron(nidx_t nidx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
@@ -38,7 +38,7 @@ Connectivity::addNeuron(nidx_t nidx,
 
 
 void
-Connectivity::addSynapse(
+Network::addSynapse(
 		nidx_t source,
 		nidx_t target,
 		delay_t delay,
@@ -47,7 +47,7 @@ Connectivity::addSynapse(
 {
 	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
 
-	//! \todo make sure we don't have maxDelay in cuda::Connectivity
+	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix
 	m_maxSourceIdx = std::max(m_maxSourceIdx, source);
 	m_maxDelay = std::max(m_maxDelay, delay);
 	m_maxWeight = std::max(m_maxWeight, weight);
@@ -56,7 +56,7 @@ Connectivity::addSynapse(
 
 
 void
-Connectivity::addSynapses(
+Network::addSynapses(
 		nidx_t source,
 		const std::vector<nidx_t>& targets,
 		const std::vector<delay_t>& delays,

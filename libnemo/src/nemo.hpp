@@ -17,7 +17,7 @@
 namespace nemo {
 
 
-class Connectivity;
+class Network;
 class Configuration;
 
 
@@ -46,7 +46,7 @@ class Simulation
 		 * 		found. For CUDA device 0 will be used.  */
 		static Simulation* create();
 
-		Simulation* create(const Connectivity& net, const Configuration&);
+		Simulation* create(const Network& net, const Configuration&);
 
 		/* \} */ // end init section
 

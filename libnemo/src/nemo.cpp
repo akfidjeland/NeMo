@@ -18,7 +18,7 @@ extern "C" {
 }
 
 #include "CudaNetwork.hpp"
-#include "Connectivity.hpp"
+#include "Network.hpp"
 #include "Configuration.hpp"
 #include "nemo.hpp"
 //! \todo combine these into a single header file
@@ -86,7 +86,7 @@ class Network
 		nemo::Simulation* m_impl;
 
 		//! \todo expose this class in the API
-		nemo::Connectivity m_net;
+		nemo::Network m_net;
 
 		//! \todo expose this class in the API
 		nemo::Configuration m_conf;

@@ -48,10 +48,10 @@ unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
 
 
 ConnectivityMatrix::ConnectivityMatrix(
-		const nemo::Connectivity& cm,
+		const nemo::Network& net,
 		size_t partitionSize,
 		bool logging) :
-	m_maxDelay(cm.maxDelay()),
+	m_maxDelay(net.maxDelay()),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
 	m_fractionalBits(~0)
@@ -63,13 +63,13 @@ ConnectivityMatrix::ConnectivityMatrix(
 	std::vector<weight_dt> h_weights(WARP_SIZE, 0);
 	WarpAddressTable wtable;
 
-	uint fbits = setFractionalBits(cm.minWeight(), cm.maxWeight(), logging);
+	uint fbits = setFractionalBits(net.minWeight(), net.maxWeight(), logging);
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(cm, fbits, partitionSize, wtable, h_targets, h_weights);
+	size_t totalWarps = createFcm(net, fbits, partitionSize, wtable, h_targets, h_weights);
 
 	moveFcmToDevice(totalWarps, h_targets, h_weights, logging);
 	h_targets.clear();
@@ -78,7 +78,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo remove need for creating intermediary warp address table. Just
 	//construct this directly in m_outgoing.
 	//! \todo should we get maxWarps directly in this function?
-	size_t partitionCount = DeviceIdx(cm.maxSourceIdx()).partition + 1;
+	size_t partitionCount = DeviceIdx(net.maxSourceIdx()).partition + 1;
 	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
 	m_incoming.allocate(partitionCount, maxWarps, 0.1);
 
@@ -90,7 +90,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 size_t
 ConnectivityMatrix::createFcm(
-		const nemo::Connectivity& cm,
+		const nemo::Network& net,
 		uint fbits,
 		size_t partitionSize,
 		WarpAddressTable& wtable,
@@ -99,18 +99,18 @@ ConnectivityMatrix::createFcm(
 {
 	size_t currentWarp = 1; // leave space for null warp at beginning
 
-	for(std::map<nidx_t, Connectivity::axon_t>::const_iterator axon = cm.m_fcm.begin();
-			axon != cm.m_fcm.end(); ++axon) {
+	for(std::map<nidx_t, Network::axon_t>::const_iterator axon = net.m_fcm.begin();
+			axon != net.m_fcm.end(); ++axon) {
 
 		nidx_t h_sourceIdx = axon->first;
 		DeviceIdx d_sourceIdx(h_sourceIdx);
 		size_t neuronStartWarp = currentWarp;
 
-		for(std::map<delay_t, Connectivity::bundle_t>::const_iterator bi = axon->second.begin();
+		for(std::map<delay_t, Network::bundle_t>::const_iterator bi = axon->second.begin();
 				bi != axon->second.end(); ++bi) {
 
 			delay_t delay = bi->first;
-			Connectivity::bundle_t bundle = bi->second;
+			Network::bundle_t bundle = bi->second;
 
 			/* A bundle contains a number of synapses with the same source
 			 * neuron and delay. On the device we need to further subdivide
@@ -120,11 +120,11 @@ ConnectivityMatrix::createFcm(
 			/* Populate the partition groups. We only need to store the target
 			 * neuron and weight. We store these as a pair so that we can
 			 * reorganise these later. */
-			for(Connectivity::bundle_t::const_iterator si = bundle.begin();
+			for(Network::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
 
-				Connectivity::synapse_t s = *si;
-				//! \todo create synapse struct as part of Connectivity
+				Network::synapse_t s = *si;
+				//! \todo create synapse struct as part of nemo::Network
 				nidx_t h_targetIdx = boost::tuples::get<0>(s);
 				DeviceIdx d_targetIdx(h_targetIdx);
 				weight_dt weight = fx_toFix(boost::tuples::get<1>(s), fbits);
@@ -193,7 +193,7 @@ ConnectivityMatrix::createFcm(
 
 				currentWarp += warps;
 			}
-			/*! \todo optionally clear Connectivity data structure as we
+			/*! \todo optionally clear nemo::Network data structure as we
 			 * iterate over it, so we can work in constant space */
 		}
 

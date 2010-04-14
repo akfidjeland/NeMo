@@ -22,7 +22,7 @@
 #include "nemo_cuda_types.h"
 #include "NVector.hpp"
 #include "kernel.cu_h"
-#include "Connectivity.hpp"
+#include "Network.hpp"
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
 #include "SynapseAddressTable.hpp"
@@ -58,7 +58,7 @@ class ConnectivityMatrix
 	public:
 
 		ConnectivityMatrix(
-				const nemo::Connectivity& cm,
+				const nemo::Network& net,
 				size_t partitionSize=MAX_PARTITION_SIZE,
 				bool logging=false);
 
@@ -124,7 +124,7 @@ class ConnectivityMatrix
 
 		/*! \return total number of warps */
 		size_t createFcm(
-				const nemo::Connectivity& cm,
+				const nemo::Network& net,
 				uint fbits,
 				size_t partitionSize,
 				WarpAddressTable& wtable,

@@ -14,6 +14,7 @@
 
 #include "kernel.cu_h"
 #include "except.hpp"
+#include "Network.hpp"
 #include "ThalamicInput.hpp"
 #include "nemo_cuda_types.h"
 #include "kernel.hpp"
@@ -29,7 +30,7 @@ NeuronParameters::NeuronParameters(size_t partitionSize) :
 
 
 
-NeuronParameters::NeuronParameters(const nemo::Connectivity& net, size_t partitionSize) :
+NeuronParameters::NeuronParameters(const nemo::Network& net, size_t partitionSize) :
 	m_partitionSize(partitionSize),
 	m_allocated(0),
 	m_wpitch(0)

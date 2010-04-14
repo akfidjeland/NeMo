@@ -74,9 +74,8 @@ CudaNetwork::CudaNetwork(unsigned maxPartitionSize) :
 
 
 
-//! \todo change nemo::Connectivity to nemo::Network
 CudaNetwork::CudaNetwork(
-		const nemo::Connectivity& net,
+		const nemo::Network& net,
 		const nemo::Configuration& conf) :
 	//! \todo get rid of internal state logic
 	m_state(CONFIGURING),
