@@ -57,25 +57,11 @@ class ConnectivityMatrix
 {
 	public:
 
-		ConnectivityMatrix(size_t maxPartitionSize, bool setReverse);
-
-		ConnectivityMatrix(nemo::Connectivity& cm, size_t maxPartitionSize, bool logging);
-
-		/* Set row in both forward and reverse matrix. The input should be
-		 * provided in forward order */
-		void addSynapses(
-				uint sourceNeuron, // global neuron indices
-				const std::vector<uint>& targets,
-				const std::vector<uint>& delays,
-				const std::vector<float>& weights,
-				const std::vector<unsigned char> plastic);
+		ConnectivityMatrix(nemo::Connectivity& cm,
+				size_t partitionSize=MAX_PARTITION_SIZE,
+				bool logging=false);
 
 		delay_t maxDelay() const { return m_maxDelay; }
-
-		/*! Copy data to device and clear host buffers. If \a
-		 * logging is enabled, print info (memory usage etc.)
-		 * to stdout */
-		void moveToDevice(bool logging);
 
 		/*! Write all synapse data for a single neuron to output vectors.
 		 *
@@ -123,18 +109,6 @@ class ConnectivityMatrix
 
 	private:
 
-		/* Add a single synapse to both forward and reverse matrix */
-		void addSynapse(
-				pidx_t sourcePartition,
-				nidx_t sourceNeuron,
-				delay_t delay,
-				pidx_t targetPartition,
-				nidx_t targetNeuron,
-				weight_t weight,
-				uchar isPlastic);
-
-		size_t m_maxPartitionSize;
-
 		delay_t m_maxDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
@@ -142,8 +116,6 @@ class ConnectivityMatrix
 		 * for each partition */
 		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
 		rcm_t m_rsynapses;
-
-		bool m_setReverse;
 
 		typedef boost::tuple<nidx_t, weight_t, uchar> synapse_ht;
 
@@ -170,28 +142,10 @@ class ConnectivityMatrix
 		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
 
-		void moveFcmToDevice(WarpAddressTable*, bool logging);
-		void moveBundleToDevice(
-				nidx_t globalSourceNeuron,
-				pidx_t targetPartition,
-				delay_t delay,
-				const bundle_t& bundle,
-				size_t totalWarps,
-				size_t axonStart,
-				uint fbits,
-				std::vector<synapse_t>& h_data,
-				size_t* woffset);
-
 		size_t md_fcmAllocated;
 
 		/* Convert global neuron index to local neuron index */
 		nidx_t neuronIdx(nidx_t);
-
-		/* Convert global neuron index to partition index */
-		pidx_t partitionIdx(nidx_t);
-		pidx_t m_maxPartitionIdx;
-
-		nidx_t globalIndex(pidx_t p, nidx_t n);
 
 		weight_t m_maxAbsWeight;
 		uint m_fractionalBits;

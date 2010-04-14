@@ -27,20 +27,6 @@
 namespace nemo {
 	namespace cuda {
 
-ConnectivityMatrix::ConnectivityMatrix(
-        size_t maxPartitionSize,
-		bool setReverse) :
-    m_maxPartitionSize(maxPartitionSize),
-    m_maxDelay(0),
-	m_setReverse(setReverse),
-	md_fcmPlaneSize(0),
-	md_fcmAllocated(0),
-	m_maxPartitionIdx(0),
-	m_maxAbsWeight(0.0),
-	m_fractionalBits(~0)
-{ }
-
-
 
 struct Synapse
 {
@@ -86,14 +72,9 @@ unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
 
 
 ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm, size_t partitionSize, bool logging) :
-	//m_maxPartitionSize(0),
 	m_maxDelay(cm.maxDelay()),
-	//! \todo remove member variable
-	m_setReverse(false),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
-	//! \todo remove member variable
-	m_maxPartitionIdx(0),
 	//! \todo remove member variable
 	m_maxAbsWeight(std::max(abs(cm.maxWeight()), abs(cm.minWeight()))),
 	m_fractionalBits(~0)
@@ -281,71 +262,6 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm, size_t partitionS
 
 
 
-void
-ConnectivityMatrix::addSynapse(pidx_t sp, nidx_t sn, delay_t delay,
-		pidx_t tp, nidx_t tn, weight_t w, uchar plastic)
-{
-	//! \todo make sure caller checks validity of sourcePartition
-	if(delay > MAX_DELAY || delay == 0) {
-		ERROR("delay (%u) out of range (1-%u)", delay, m_maxDelay);
-	}
-
-	bundle_t& bundle = mh_fcm[neuron_idx_t(sp, sn)][bundle_idx_t(tp, delay)];
-	sidx_t sidx = bundle.size();
-	bundle.push_back(synapse_ht(tn, w, plastic));
-	m_maxAbsWeight = std::max(m_maxAbsWeight, w);
-	m_maxPartitionIdx = std::max(m_maxPartitionIdx, std::max(sp, tp));
-
-	if(m_setReverse && plastic) {
-		/*! \todo should modify RSMatrix so that we don't need the partition
-		 * size until we move to device */
-		//! \todo simplify
-		rcm_t& rcm = m_rsynapses;
-		if(rcm.find(tp) == rcm.end()) {
-			rcm[tp] = new RSMatrix(m_maxPartitionSize);
-		}
-		rcm[tp]->addSynapse(sp, sn, sidx, tn, delay);
-	}
-
-	m_maxDelay = std::max(m_maxDelay, delay);
-}
-
-
-
-void
-ConnectivityMatrix::addSynapses(
-		uint src,
-		const std::vector<uint>& targets,
-		const std::vector<uint>& delays,
-		const std::vector<float>& weights,
-		const std::vector<unsigned char> isPlastic)
-{
-	size_t length = targets.size();
-	assert(length == delays.size());
-	assert(length == weights.size());
-	assert(length == isPlastic.size());
-
-    if(length == 0)
-        return;
-
-	pidx_t sourcePartition = partitionIdx(src);
-
-	nidx_t sourceNeuron = neuronIdx(src);
-	if(sourceNeuron >= m_maxPartitionSize) {
-		ERROR("source neuron index out of range");
-	}
-
-	for(size_t i=0; i < length; ++i) {
-		pidx_t targetPartition = partitionIdx(targets[i]);
-		nidx_t targetNeuron = neuronIdx(targets[i]);
-		addSynapse(sourcePartition, sourceNeuron, delays[i],
-				targetPartition, targetNeuron, weights[i], isPlastic[i]);
-		m_outgoing.addSynapse(sourcePartition, sourceNeuron, delays[i], targetPartition);
-	}
-}
-
-
-
 /* Determine the number of fractional bits to use when storing weights in
  * fixed-point format on the device. */
 uint
@@ -386,187 +302,6 @@ ConnectivityMatrix::fractionalBits() const
 		throw std::runtime_error("Fractional bits requested before it was set");
 	}
 	return m_fractionalBits;
-}
-
-
-
-void
-ConnectivityMatrix::moveBundleToDevice(
-		nidx_t globalSourceNeuron,
-		pidx_t targetPartition,
-		delay_t delay,
-		const bundle_t& bundle,
-		size_t totalWarps,
-		size_t axonStart, // first warp for current source neuron
-		uint fbits,
-		std::vector<synapse_t>& h_data,
-		size_t* woffset)  // first warp to write to for this bundle
-{
-	size_t writtenWarps = 0; // warps
-
-	std::vector<synapse_t> addresses;
-	std::vector<weight_dt> weights;
-
-	/* Data used when user reads FCM back from device */
-	std::vector<nidx_t>& h_fcmTarget = mh_fcmTargets[globalSourceNeuron];
-	std::vector<uchar>& h_fcmPlastic = mh_fcmPlastic[globalSourceNeuron];
-
-	// fill in addresses and weights in separate vectors
-	//! \todo reorganise this for improved memory performance
-	for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
-		nidx_t targetNeuron = boost::tuples::get<0>(*s);
-		addresses.push_back(f_packSynapse(targetNeuron));
-		weights.push_back(fx_toFix(boost::tuples::get<1>(*s), fbits));
-		h_fcmTarget.push_back(globalIndex(targetPartition, targetNeuron));
-		h_fcmPlastic.push_back(boost::tuples::get<2>(*s));
-	}
-
-	assert(sizeof(nidx_t) == sizeof(synapse_t));
-	assert(sizeof(weight_dt) == sizeof(synapse_t));
-
-	size_t startWarp = *woffset;
-	size_t newWarps = DIV_CEIL(addresses.size(), WARP_SIZE);
-
-	synapse_t* aptr = &h_data.at((startWarp) * WARP_SIZE);
-	//! \todo get totalWarps from arg
-	synapse_t* wptr = &h_data.at((totalWarps + startWarp) * WARP_SIZE);
-
-	// now copy data into buffer
-	/*! note that std::copy won't work as it will silently cast floats to integers */
-	size_t len = addresses.size();
-	memcpy(aptr, &addresses[0], len * sizeof(synapse_t));
-	memcpy(wptr, &weights[0], len * sizeof(synapse_t));
-
-	/* /Word/ offset relative to first warp for this neuron. In principle this
-	 * function could write synapses to a non-contigous range of memory.
-	 * However, we currently write this as a single range. */
-	//! \todo write the remaining FCM data in the correct order
-	size_t bundleStart = (*woffset - axonStart) * WARP_SIZE;
-	assert(*woffset >= axonStart);
-	m_synapseAddresses.addBlock(globalSourceNeuron, bundleStart, bundleStart + len);
-
-	std::fill_n(std::back_inserter(mh_fcmDelays[globalSourceNeuron]), len, delay);
-
-	//! \todo could write this straight to outgoing?
-
-	*woffset += newWarps;
-}
-
-
-
-
-void
-ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets, bool logging)
-{
-	/* We add 1 extra warp here, so we can leave a null warp at the beginning */
-	size_t totalWarpCount = 1 + m_outgoing.totalWarpCount();
-
-	size_t height = totalWarpCount * 2; // *2 as we keep address and weights separately
-	size_t desiredBytePitch = WARP_SIZE * sizeof(synapse_t);
-
-	size_t bpitch;
-	synapse_t* d_data;
-
-	// allocate device memory
-	cudaError err = cudaMallocPitch((void**) &d_data,
-				&bpitch,
-				desiredBytePitch,
-				height);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("forward connectivity matrix",
-				height * desiredBytePitch, err);
-	}
-	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
-
-	if(logging && bpitch != desiredBytePitch) {
-		//! \todo write this to the correct logging output stream
-		std::cout << "Returned byte pitch (" << desiredBytePitch
-			<< ") did  not match requested byte pitch (" << bpitch
-			<< ") when allocating forward connectivity matrix" << std::endl;
-		/* This only matters, as we'll waste memory otherwise, and we'd expect the
-		 * desired pitch to always match the returned pitch, since pitch is defined
-		 * in terms of warp size */
-	}
-
-	// allocate and intialise host memory
-	size_t wpitch = bpitch / sizeof(synapse_t);
-	md_fcmPlaneSize = totalWarpCount * wpitch;
-	std::vector<synapse_t> h_data(height * wpitch, f_nullSynapse());
-
-	uint fbits = setFractionalBits(logging);
-
-	/* Move all synapses to allocated device data, starting at given warp
-	 * index. Return next free warp index */
-	//! \todo only do the mapping from global to device indices here
-	//! \todo copy this using a fixed-size buffer (e.g. max 100MB, determine based on PCIx spec)
-	size_t woffset = 1; // leave space for the null warp
-	for(fcm_ht::const_iterator ai = mh_fcm.begin(); ai != mh_fcm.end(); ++ai) {
-		pidx_t sourcePartition = boost::tuples::get<0>(ai->first);
-		nidx_t sourceNeuron    = boost::tuples::get<1>(ai->first);
-		size_t axonStart = woffset;
-		const axon_t& axon = ai->second;
-		for(axon_t::const_iterator bundle = axon.begin(); bundle != axon.end(); ++bundle) {
-			pidx_t targetPartition = boost::tuples::get<0>(bundle->first);
-			delay_t delay          = boost::tuples::get<1>(bundle->first);
-			warpOffsets->set(sourcePartition, sourceNeuron, targetPartition, delay, woffset);
-			moveBundleToDevice(
-					globalIndex(sourcePartition, sourceNeuron), targetPartition,
-					delay, bundle->second, totalWarpCount, axonStart, fbits,
-					h_data, &woffset);
-		}
-		m_synapseAddresses.setWarpRange(
-				globalIndex(sourcePartition, sourceNeuron), axonStart, woffset);
-	}
-
-	md_fcmAllocated = height * bpitch;
-	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], md_fcmAllocated, cudaMemcpyHostToDevice));
-
-	setFcmPlaneSize(totalWarpCount * wpitch);
-	fx_setFormat(fbits);
-}
-
-
-
-void
-ConnectivityMatrix::moveToDevice(bool logging)
-{
-	if(mh_fcm.empty()) {
-		throw std::logic_error("Attempt to move empty FCM to device");
-	}
-
-	try {
-		/* Initial warp index for different partition/neuron/partition/delay
-		 * combinations */
-		WarpAddressTable wtable;
-		moveFcmToDevice(&wtable, logging);
-
-		for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-			i->second->moveToDevice(wtable, i->first);
-		}
-
-		size_t partitionCount = m_maxPartitionIdx + 1;
-		size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
-
-		m_incoming.allocate(partitionCount, maxWarps, 0.1);
-
-		configureReverseAddressing(
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionPitch()[0]),
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionAddress()[0]),
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionStdp()[0]),
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionFAddress()[0]),
-				r_partitionPitch().size());
-
-	} catch (DeviceAllocationException& e) {
-		std::cerr << e.what() << std::endl;
-		printMemoryUsage(std::cerr);
-		throw;
-	}
-
-	if(logging) {
-		//! \todo get output stream from caller
-		//m_outgoing.reportWarpSizeHistogram(std::cout);
-		printMemoryUsage(std::cout);
-	}
 }
 
 
@@ -725,32 +460,6 @@ ConnectivityMatrix::r_partitionFAddress() const
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));
 }
 
-
-
-
-
-
-nidx_t
-ConnectivityMatrix::neuronIdx(nidx_t nidx)
-{
-	return nidx % m_maxPartitionSize;	
-}
-
-
-
-pidx_t
-ConnectivityMatrix::partitionIdx(pidx_t pidx)
-{
-	return pidx / m_maxPartitionSize;	
-}
-
-
-
-nidx_t
-ConnectivityMatrix::globalIndex(pidx_t p, nidx_t n)
-{
-	return p * m_maxPartitionSize + n;
-}
 
 	} // end namespace cuda
 } // end namespace nemo
