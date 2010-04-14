@@ -57,7 +57,8 @@ class ConnectivityMatrix
 {
 	public:
 
-		ConnectivityMatrix(nemo::Connectivity& cm,
+		ConnectivityMatrix(
+				const nemo::Connectivity& cm,
 				size_t partitionSize=MAX_PARTITION_SIZE,
 				bool logging=false);
 
@@ -116,12 +117,24 @@ class ConnectivityMatrix
 		rcm_t m_rsynapses;
 
 		/* Compact fcm on device */
+		boost::shared_ptr<synapse_t> md_fcm;
+
+		size_t md_fcmPlaneSize; // in words
+		size_t md_fcmAllocated; // in bytes
+
+		/*! \return total number of warps */
+		size_t createFcm(
+				const nemo::Connectivity& cm,
+				uint fbits,
+				size_t partitionSize,
+				WarpAddressTable& wtable,
+				std::vector<synapse_t>& targets,
+				std::vector<weight_dt>& weights);
+
 		void moveFcmToDevice(size_t totalWarps,
 				const std::vector<synapse_t>& h_targets,
 				const std::vector<weight_dt>& h_weights,
 				bool logging);
-		boost::shared_ptr<synapse_t> md_fcm;
-		size_t md_fcmPlaneSize; // in words
 
 		/* For spike delivery we need to keep track of all target partitions
 		 * for each neuron */
@@ -132,8 +145,6 @@ class ConnectivityMatrix
 
 		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
-
-		size_t md_fcmAllocated;
 
 		uint m_fractionalBits;
 		uint setFractionalBits(weight_t wmin, weight_t wmax, bool logging);;

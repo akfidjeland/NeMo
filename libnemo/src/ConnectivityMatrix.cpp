@@ -71,7 +71,8 @@ class DeviceIdx
 unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
 
 
-ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm,
+ConnectivityMatrix::ConnectivityMatrix(
+		const nemo::Connectivity& cm,
 		size_t partitionSize,
 		bool logging) :
 	m_maxDelay(cm.maxDelay()),
@@ -85,14 +86,41 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm,
 	std::vector<synapse_t> h_targets(WARP_SIZE, f_nullSynapse());
 	std::vector<weight_dt> h_weights(WARP_SIZE, 0);
 	WarpAddressTable wtable;
-	size_t currentWarp = 1; // leave space for null warp at beginning
 
-	int fbits = setFractionalBits(cm.minWeight(), cm.maxWeight(), logging);
+	uint fbits = setFractionalBits(cm.minWeight(), cm.maxWeight(), logging);
 	fx_setFormat(fbits);
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
+
+	size_t totalWarps = createFcm(cm, fbits, partitionSize, wtable, h_targets, h_weights);
+
+	moveFcmToDevice(totalWarps, h_targets, h_weights, logging);
+
+	//! \todo remove need for creating intermediary warp address table. Just
+	//construct this directly in m_outgoing.
+	//! \todo should we get maxWarps directly in this function?
+	size_t partitionCount = DeviceIdx(cm.maxSourceIdx()).partition + 1;
+	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
+	m_incoming.allocate(partitionCount, maxWarps, 0.1);
+
+	moveRcmToDevice(wtable);
+}
+
+
+
+
+size_t
+ConnectivityMatrix::createFcm(
+		const nemo::Connectivity& cm,
+		uint fbits,
+		size_t partitionSize,
+		WarpAddressTable& wtable,
+		std::vector<synapse_t>& h_targets,
+		std::vector<weight_dt>& h_weights)
+{
+	size_t currentWarp = 1; // leave space for null warp at beginning
 
 	for(std::map<nidx_t, Connectivity::axon_t>::const_iterator axon = cm.m_fcm.begin();
 			axon != cm.m_fcm.end(); ++axon) {
@@ -195,16 +223,7 @@ ConnectivityMatrix::ConnectivityMatrix(nemo::Connectivity& cm,
 		m_synapseAddresses.setWarpRange(h_sourceIdx, neuronStartWarp, currentWarp);
 	}
 
-	moveFcmToDevice(currentWarp, h_targets, h_weights, logging);
-
-	//! \todo remove need for creating intermediary warp address table. Just
-	//construct this directly in m_outgoing.
-	//! \todo should we get maxWarps directly in this function?
-	size_t partitionCount = DeviceIdx(cm.maxSourceIdx()).partition + 1;
-	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
-	m_incoming.allocate(partitionCount, maxWarps, 0.1);
-
-	moveRcmToDevice(wtable);
+	return currentWarp;
 }
 
 
