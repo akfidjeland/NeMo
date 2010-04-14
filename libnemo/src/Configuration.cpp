@@ -14,7 +14,6 @@ namespace nemo {
 
 Configuration::Configuration() :
 	m_logging(false),
-	m_stdpFn(NULL),
 	m_cudaMaxPartitionSize(cuda::CudaNetwork::defaultPartitionSize()),
 	m_cudaFiringBufferLength(cuda::CudaNetwork::defaultFiringBufferLength())
 {
@@ -28,7 +27,7 @@ Configuration::setStdpFunction(
 		float minWeight,
 		float maxWeight)
 {
-	m_stdpFn = new STDP<float>(prefire, postfire, minWeight, maxWeight);
+	m_stdpFn = STDP<float>(prefire, postfire, minWeight, maxWeight);
 }
 
 

@@ -154,13 +154,13 @@ CudaNetwork::setDevice(int dev)
 
 
 void
-CudaNetwork::configureStdp(const STDP<float>* stdp)
+CudaNetwork::configureStdp(const STDP<float>& stdp)
 {
-	if(stdp == NULL) {
+	if(!stdp.enabled()) {
 		return;
 	}
 
-	m_stdpFn = *stdp;
+	m_stdpFn = stdp;
 
 	const std::vector<float>& flfn = m_stdpFn.function();
 	std::vector<fix_t> fxfn(flfn.size());
@@ -423,6 +423,13 @@ CudaNetwork::defaultPartitionSize()
 	return MAX_PARTITION_SIZE;
 }
 
+
+
+unsigned
+CudaNetwork::defaultFiringBufferLength()
+{
+	return FiringOutput::defaultBufferLength();
+}
 
 	} // end namespace cuda
 } // end namespace nemo

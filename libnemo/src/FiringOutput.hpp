@@ -31,13 +31,12 @@ class FiringOutput {
 		 * \param partitionSize
 		 *		This is the maximum number of neurons in a partition.
 		 * \param maxReadPeriod
-		 *		The maximum period between reads issued from the host. If this
-		 *		period is exceeded, a buffer overflow will occur. Whether or
-		 *		not this will happen depends on the firing rate in the network.
-		 *		The frequency is determined in terms of steps of whatever
-		 *		temporal resolution the simulation is running at.
+		 *		The maximum period (in cycles) between reads issued from the host. If this
+		 *		period is exceeded, a buffer overflow will occur.
 		 */
-		FiringOutput(size_t partitionCount, size_t partitionSize, uint maxReadPeriod=1000);
+		FiringOutput(size_t partitionCount,
+				size_t partitionSize,
+				uint maxReadPeriod=defaultBufferLength());
 
 		~FiringOutput();
 
@@ -84,6 +83,8 @@ class FiringOutput {
 		size_t d_allocated() const { return md_allocated; }
 
 		size_t wordPitch() const { return m_pitch; }
+
+		static unsigned defaultBufferLength() { return 1000; } // cycles
 
 	private:
 

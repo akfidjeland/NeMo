@@ -52,12 +52,12 @@ class Configuration
 				float minWeight,
 				float maxWeight);
 
-		const STDP<float>* stdpFunction() const { return m_stdpFn; }
+		const STDP<float>& stdpFunction() const { return m_stdpFn; }
 
 	private:
 
 		bool m_logging;
-		class STDP<float>* m_stdpFn;
+		class STDP<float> m_stdpFn;
 
 		/* CUDA-specific */
 		unsigned m_cudaMaxPartitionSize;
