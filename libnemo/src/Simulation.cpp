@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "nemo.hpp"
+#include "Simulation.hpp"
 #include "CudaNetwork.hpp"
 
 namespace nemo {

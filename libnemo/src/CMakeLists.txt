@@ -101,4 +101,11 @@ ADD_DEPENDENCIES(nemo
 CUDA_BUILD_CLEAN_TARGET()
 
 INSTALL(TARGETS nemo DESTINATION lib)
-INSTALL(FILES nemo.h nemo.hpp DESTINATION include)
+INSTALL(FILES nemo.h
+			Network.hpp
+			Configuration.hpp
+			Simulation.hpp
+			STDP.hpp
+			STDP.ipp
+			nemo.hpp
+		DESTINATION include/nemo)

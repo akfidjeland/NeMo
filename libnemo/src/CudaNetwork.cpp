@@ -14,9 +14,11 @@
 #include <fstream>
 #include <assert.h>
 
+#include "Configuration.hpp"
+#include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
 #include "FiringOutput.hpp"
-#include "CycleCounters.hpp"
+#include "Network.hpp"
 #include "ThalamicInput.hpp"
 #include "util.h"
 #include "log.hpp"

@@ -18,10 +18,8 @@ extern "C" {
 }
 
 #include "CudaNetwork.hpp"
-#include "Network.hpp"
 #include "Configuration.hpp"
-#include "nemo.hpp"
-//! \todo combine these into a single header file
+#include "Network.hpp"
 #include "DeviceAssertions.hpp"
 #include "except.hpp"
 

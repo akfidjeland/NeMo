@@ -13,17 +13,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "nemo.hpp"
 #include "NVector.hpp"
 #include "Configuration.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "DeviceAssertions.hpp"
 #include "NeuronParameters.hpp"
 #include "Timer.hpp"
+#include "Simulation.hpp"
 #include "STDP.hpp"
-#include "Network.hpp"
 
 namespace nemo {
+
+	class Network;
+
 	namespace cuda {
 
 class CudaNetwork : public Simulation
