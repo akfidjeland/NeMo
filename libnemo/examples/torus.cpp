@@ -321,7 +321,6 @@ simulate(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp)
 {
 	const unsigned MS_PER_SECOND = 1000;
 
-	net->initSimulation();
 	//! \todo fix timing code in kernel so that we don't have to force data onto device
 	net->stepSimulation();
 	net->resetTimer();
@@ -398,8 +397,6 @@ simulate(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp)
 void
 simulateToFile(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp, const char* firingFile)
 {
-	net->initSimulation();
-
 	/* Dummy buffers for firing data */
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* fired;

@@ -1,6 +1,8 @@
 #ifndef NEMO_CONFIGURATION_HPP
 #define NEMO_CONFIGURATION_HPP
 
+//! \file Configuration.hpp
+
 /* Copyright 2010 Imperial College London
  *
  * This file is part of nemo.
@@ -25,15 +27,18 @@ class Configuration
 			m_cudaMaxPartitionSize(1024),
 			m_cudaFiringBufferLength(1000) {}
 
+		/*! Switch on logging and send output to stdout */
 		void enableLogging() { m_logging = true; }
+
 		void disableLogging() { m_logging = false; }
 		bool loggingEnabled() const { return m_logging; }
 
 		void setCudaMaxPartitionSize(unsigned ps) { m_cudaMaxPartitionSize = ps; }
 		unsigned cudaMaxPartitionSize() const { return m_cudaMaxPartitionSize; }
 
-		/*! Set firing buffer length (in cycles) */
-		void setCudaFiringBufferLength(unsigned len) { m_cudaFiringBufferLength = len; }
+		/*! Set the size of the firing buffer such that it can contain a fixed
+		 * number of \a cycles worth of firing data before overflowing. */
+		void setCudaFiringBufferLength(unsigned cycles) { m_cudaFiringBufferLength = cycles; }
 		unsigned cudaFiringBufferLength() const { return m_cudaFiringBufferLength; }
 
 		void setStdpFunction(
