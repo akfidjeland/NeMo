@@ -84,7 +84,7 @@ nemo_status_t nemo_log_stdout(NETWORK);
  * \param min_weight
  * 		Weight beyond which inhibitory synapses are not allowed to move
  */
-void
+nemo_status_t
 nemo_enable_stdp(NETWORK,
 		float prefire_fn[],
 		size_t prefire_len,

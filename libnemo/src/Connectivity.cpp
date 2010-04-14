@@ -1,6 +1,16 @@
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of nemo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "Connectivity.hpp"
 
 #include <assert.h>
+#include <stdexcept>
 
 namespace nemo {
 
@@ -11,6 +21,20 @@ Connectivity::Connectivity() :
 	m_maxWeight(0),
 	m_minWeight(0)
 { }
+
+
+void
+Connectivity::addNeuron(nidx_t nidx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	if(m_neurons.find(nidx) != m_neurons.end()) {
+		//! \todo construct a sensible error message here using sstream
+		throw std::runtime_error("duplicate neuron index");
+	}
+	m_neurons[nidx] = Neuron<float>(a, b, c, d, u, v, sigma);
+}
+
 
 
 void

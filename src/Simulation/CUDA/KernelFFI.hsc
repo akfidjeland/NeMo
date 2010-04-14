@@ -270,6 +270,7 @@ readFiringCount rt = do
 -- STDP
 -------------------------------------------------------------------------------
 
+-- TODO: make use of return value from c_enableStdp
 foreign import ccall unsafe "nemo_enable_stdp" c_enableStdp
     :: Ptr rt
     -> Ptr CFloat -> CSize

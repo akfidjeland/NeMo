@@ -15,8 +15,9 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 
-#include <nemo_types.hpp>
+#include "nemo_types.hpp"
 #include "nemo_cuda_types.h"
+#include "Connectivity.hpp"
 
 namespace nemo {
 	namespace cuda {
@@ -26,6 +27,8 @@ class NeuronParameters
 	public:
 
 		NeuronParameters(size_t partitionSize);
+
+		NeuronParameters(const nemo::Connectivity& net, size_t partitionSize);
 
 		void addNeuron(nidx_t neuronIndex,
 				float a, float b, float c, float d,
@@ -45,6 +48,8 @@ class NeuronParameters
 		size_t partitionCount() const;
 
 	private:
+
+		void addNeuron(nidx_t, const nemo::Neuron<float>&);
 
 		size_t m_partitionSize; // max partition size
 

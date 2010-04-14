@@ -17,6 +17,10 @@
 namespace nemo {
 
 
+class Connectivity;
+class Configuration;
+
+
 /*! \class Simulation
  * \brief C++ API for nemo
  *
@@ -41,6 +45,8 @@ class Simulation
 		 * 		new Simulation object, or NULL if no suitable CUDA device was
 		 * 		found. For CUDA device 0 will be used.  */
 		static Simulation* create();
+
+		Simulation* create(const Connectivity& net, const Configuration&);
 
 		/* \} */ // end init section
 

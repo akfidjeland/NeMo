@@ -28,6 +28,39 @@ NeuronParameters::NeuronParameters(size_t partitionSize) :
 { }
 
 
+
+NeuronParameters::NeuronParameters(const nemo::Connectivity& net, size_t partitionSize) :
+	m_partitionSize(partitionSize),
+	m_allocated(0),
+	m_wpitch(0)
+{
+	//! \todo change to using internal data in nemo::Network directly
+	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
+			i != net.m_neurons.end(); ++i) {
+		addNeuron(i->first, i->second);
+	}
+}
+
+
+
+void
+NeuronParameters::addNeuron(nidx_t nidx, const nemo::Neuron<float>& n)
+{
+	if(m_acc.find(nidx) != m_acc.end()) {
+		//! \todo construct a sensible error message here using sstream
+		throw std::runtime_error("duplicate neuron index");
+	}
+	m_acc[nidx] = n;
+
+	//! \todo share mapper code with moveToDevice and ConnectivityMatrixImpl
+	nidx_t ni = nidx % m_partitionSize;
+	pidx_t pi = nidx / m_partitionSize;
+
+	m_maxPartitionNeuron[pi] = std::max(m_maxPartitionNeuron[pi], ni);
+}
+
+
+
 void
 NeuronParameters::addNeuron(
 		nidx_t neuronIndex,

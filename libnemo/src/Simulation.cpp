@@ -9,6 +9,7 @@
 
 #include "nemo.hpp"
 #include "CudaNetwork.hpp"
+#include "Connectivity.hpp"
 
 namespace nemo {
 
@@ -17,6 +18,14 @@ Simulation::create()
 {
 	int dev = cuda::CudaNetwork::selectDevice();
 	return dev == -1 ? NULL : new cuda::CudaNetwork();
+}
+
+
+Simulation*
+Simulation::create(const Connectivity& net, const Configuration& conf)
+{
+	int dev = cuda::CudaNetwork::selectDevice();
+	return dev == -1 ? NULL : new cuda::CudaNetwork(net, conf);
 }
 
 

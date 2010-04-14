@@ -15,6 +15,7 @@
 
 #include "nemo.hpp"
 #include "NVector.hpp"
+#include "Configuration.hpp"
 #include "DeviceAssertions.hpp"
 #include "Timer.hpp"
 #include "STDP.hpp"
@@ -32,12 +33,15 @@ class CudaNetwork : public Simulation
 		// for debugging purposes, fix the partition size used
 		CudaNetwork(unsigned maxPartitionSize);
 
+		CudaNetwork(const nemo::Connectivity& net, const nemo::Configuration& conf=Configuration());
+
 		~CudaNetwork();
 
 		/*! Select device (for this thread) if a device with the minimum
 		 * required characteristics is present on the host system.
 		 *
 		 * \return device number or -1 if no suitable device found */
+		//! \todo move this to configuration
 		static int selectDevice();
 
 		/*
@@ -147,7 +151,7 @@ class CudaNetwork : public Simulation
 
 		uint32_t m_cycle;
 
-		//! \todo move this out of this class
+		//! \todo move this out of this class. At the same time remove header from this file
 		nemo::Connectivity mh_cm;
 
 		struct ConnectivityMatrix* m_cm;

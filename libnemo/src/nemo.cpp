@@ -18,6 +18,8 @@ extern "C" {
 }
 
 #include "CudaNetwork.hpp"
+#include "Connectivity.hpp"
+#include "Configuration.hpp"
 #include "nemo.hpp"
 //! \todo combine these into a single header file
 #include "DeviceAssertions.hpp"
@@ -68,13 +70,9 @@ class Network
 {
 	public :
 
+		//! \todo merge the two ctors. Just use default parameter
 		Network() :
-			m_impl(nemo::Simulation::create()),
-			m_errorMsg("No error") { }
-
-		//! \todo set partition size through a separate configuration function
-		Network(unsigned partitionSize) :
-			m_impl(new nemo::cuda::CudaNetwork(partitionSize)),
+			m_impl(NULL),
 			m_errorMsg("No error") { }
 
 		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
@@ -86,6 +84,12 @@ class Network
 		nemo_status_t status() const { return m_status; }
 
 		nemo::Simulation* m_impl;
+
+		//! \todo expose this class in the API
+		nemo::Connectivity m_net;
+
+		//! \todo expose this class in the API
+		nemo::Configuration m_conf;
 
 	private :
 
@@ -102,15 +106,20 @@ class Network
 NETWORK
 nemo_new_network()
 {
+	//! \todo return nemo::Network instead here
 	return new Network();
 }
 
 
 
+//! \todo split this up. The user can simply set the partition size separately
 NETWORK
 nemo_new_network_(unsigned partitionSize)
 {
-	return new Network(partitionSize);
+	Network* net = new Network();
+	net->m_conf.setCudaMaxPartitionSize(partitionSize);
+	return net;
+	//! \todo return nemo::Network instead here
 }
 
 
@@ -118,18 +127,21 @@ nemo_new_network_(unsigned partitionSize)
 void
 nemo_delete_network(NETWORK mem)
 {
+	//! \todo cast to nemo::Network instead here
 	delete static_cast<Network*>(mem);
 }
 
 
 
 nemo_status_t
-nemo_add_neuron(NETWORK rt,
+nemo_add_neuron(NETWORK ptr,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	CATCH(rt, addNeuron(idx, a, b, c, d, u, v, sigma));
+	Network* net = static_cast<Network*>(ptr);
+	CATCH_(net, net->m_net.addNeuron(idx, a, b, c, d, u, v, sigma));
+	return net->status();
 }
 
 
@@ -143,11 +155,13 @@ nemo_add_synapses(NETWORK network,
 		unsigned char is_plastic[],
 		size_t length)
 {
-	CATCH(network, addSynapses(source,
+	Network* net = static_cast<Network*>(network);
+	CATCH_(net, net->m_net.addSynapses(source,
 				std::vector<unsigned>(targets, targets+length),
 				std::vector<unsigned>(delays, delays+length),
 				std::vector<float>(weights, weights+length),
 				std::vector<unsigned char>(is_plastic, is_plastic+length)));
+	return net->status();
 }
 
 
@@ -183,7 +197,9 @@ nemo_get_synapses(NETWORK ptr,
 nemo_status_t
 nemo_init_simulation(NETWORK network)
 {
-	CATCH(network, initSimulation());
+	Network* net = static_cast<Network*>(network);
+	net->m_impl = new nemo::cuda::CudaNetwork(net->m_net, net->m_conf);
+	return net->status();
 }
 
 
@@ -243,7 +259,9 @@ nemo_flush_firing_buffer(NETWORK network)
 nemo_status_t
 nemo_log_stdout(NETWORK network)
 {
-	CATCH(network, logToStdout())
+	Network* net = static_cast<Network*>(network);
+	net->m_conf.enableLogging();
+	return NEMO_OK;
 }
 
 
@@ -276,7 +294,7 @@ nemo_reset_timer(NETWORK network)
 //-----------------------------------------------------------------------------
 
 
-void
+nemo_status_t
 nemo_enable_stdp(NETWORK network,
 		float* pre_fn,
 		size_t pre_len,
@@ -285,10 +303,12 @@ nemo_enable_stdp(NETWORK network,
 		float w_min,
 		float w_max)
 {
-	NOCATCH(network, enableStdp(
+	Network* net = static_cast<Network*>(network);
+	net->m_conf.setStdpFunction(
 				std::vector<float>(pre_fn, pre_fn+pre_len),
 				std::vector<float>(post_fn, post_fn+post_len),
-				w_min, w_max));
+				w_min, w_max);
+	return net->status();
 }
 
 
@@ -296,7 +316,9 @@ nemo_enable_stdp(NETWORK network,
 nemo_status_t
 nemo_set_firing_buffer_length(NETWORK network, unsigned cycles)
 {
-	CATCH(network, setFiringBufferLength(cycles));
+	Network* net = static_cast<Network*>(network);
+	net->m_conf.setCudaFiringBufferLength(cycles);
+	return NEMO_OK;
 }
 
 

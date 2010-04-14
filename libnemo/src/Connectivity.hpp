@@ -5,11 +5,15 @@
 #include <vector>
 #include <boost/tuple/tuple.hpp>
 
-#include "nemo_types.h"
+#include "nemo_types.hpp"
 
 namespace nemo {
 
-	namespace cuda { class ConnectivityMatrix; } // needed for 'friend'
+	namespace cuda {
+		// needed for 'friend' declarations
+		class ConnectivityMatrix;
+		class NeuronParameters;
+	}
 
 
 class Connectivity
@@ -17,6 +21,10 @@ class Connectivity
 	public :
 
 		Connectivity();
+
+		void addNeuron(nidx_t neuronIndex,
+				float a, float b, float c, float d,
+				float u, float v, float sigma);
 
 		/* Add a single synapse */
 		void addSynapse(
@@ -26,6 +34,7 @@ class Connectivity
 				weight_t weight,
 				uchar isPlastic);
 
+		//! \todo remove addSynapses from this interface
 		/*! Add multiple synapses with the same source neuron */
 		void addSynapses(
 				nidx_t source,
@@ -41,6 +50,10 @@ class Connectivity
 
 	private :
 
+		//! \todo perhaps store this as double?
+		typedef nemo::Neuron<float> neuron_t;
+		std::map<nidx_t, neuron_t> m_neurons;
+
 		typedef boost::tuple<nidx_t, weight_t, unsigned char> synapse_t;
 		typedef std::vector<synapse_t> bundle_t;
 		typedef std::map<delay_t, bundle_t> axon_t;
@@ -54,6 +67,7 @@ class Connectivity
 		weight_t m_minWeight;
 
 		friend class cuda::ConnectivityMatrix;
+		friend class cuda::NeuronParameters;
 };
 
 } // end namespace nemo

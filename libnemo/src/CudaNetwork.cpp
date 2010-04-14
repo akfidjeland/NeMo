@@ -73,6 +73,39 @@ CudaNetwork::CudaNetwork(unsigned maxPartitionSize) :
 { }
 
 
+
+//! \todo change nemo::Connectivity to nemo::Network
+CudaNetwork::CudaNetwork(
+		const nemo::Connectivity& net,
+		const nemo::Configuration& conf) :
+	//! \todo get rid of internal state logic
+	m_state(CONFIGURING),
+	m_partitionCount(0),
+	//! \todo get rid of member variable
+	m_maxPartitionSize(conf.cudaMaxPartitionSize()),
+	m_neurons(new NeuronParameters(net, conf.cudaMaxPartitionSize())),
+	m_cm(new ConnectivityMatrix(net, conf.cudaMaxPartitionSize(), false)),
+	m_recentFiring(NULL),
+	m_thalamicInput(NULL),
+	m_firingStimulus(NULL),
+	m_firingOutput(NULL),
+	m_cycleCounters(NULL),
+	m_deviceAssertions(NULL),
+	m_pitch32(0),
+	m_pitch64(0),
+	//! \todo use value from configuration
+	//! \todo get rid fo the default firing buffer size
+	m_maxReadPeriod(DEFAULT_FIRING_BUFFER_SIZE),
+	m_logging(conf.loggingEnabled())
+{
+	if(conf.stdpFunction() != NULL) {
+		m_stdpFn = *conf.stdpFunction();
+	}
+
+	initSimulation();
+}
+
+
 CudaNetwork::~CudaNetwork()
 {
 	finishSimulation();
@@ -135,6 +168,7 @@ CudaNetwork::enableStdp(
 	ensureState(CONFIGURING);
 	m_stdpFn = STDP<float>(prefire, postfire, minWeight, maxWeight);
 }
+
 
 
 void
@@ -316,12 +350,17 @@ CudaNetwork::addSynapses(
 
 
 
+//! \todo fold this into ctor
 void
 CudaNetwork::initSimulation()
 {
+	//! \todo remove state logic
 	if(m_state != SIMULATING) {
-		//! \this directly moves data onto device
-		m_cm = new ConnectivityMatrix(mh_cm, m_maxPartitionSize, m_logging);
+		//! \todo tidy use of mh_cm
+		if(m_cm == NULL) {
+			//! \this directly moves data onto device
+			m_cm = new ConnectivityMatrix(mh_cm, m_maxPartitionSize, m_logging);
+		}
 		m_neurons->moveToDevice();
 		configureStdp();
 		m_partitionCount = m_neurons->partitionCount();
