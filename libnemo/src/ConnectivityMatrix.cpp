@@ -19,6 +19,7 @@
 #include "log.hpp"
 #include "RSMatrix.hpp"
 #include "except.hpp"
+#include "DeviceIdx.hpp"
 #include "WarpAddressTable.hpp"
 #include "connectivityMatrix.cu_h"
 #include "fixedpoint.hpp"
@@ -28,6 +29,8 @@ namespace nemo {
 	namespace cuda {
 
 
+
+//! \todo use this type in Connectivity as well
 struct Synapse
 {
 	//! \todo change type name here
@@ -39,33 +42,6 @@ struct Synapse
 	Synapse(nidx_t t, weight_dt w, uchar p) : target(t), weight(w), plastic(p) {}
 };
 
-
-
-//! \todo move to separate class
-class DeviceIdx
-{
-	public:
-
-		pidx_t partition;
-		nidx_t neuron;
-
-		DeviceIdx(nidx_t global) :
-			partition(global / s_partitionSize),
-			neuron(global % s_partitionSize) {}
-
-		DeviceIdx(pidx_t p, nidx_t n) :
-			partition(p),
-			neuron(n) {}
-
-		static void setPartitionSize(unsigned ps) { s_partitionSize = ps; }
-
-		/*! \return the global address again */
-		nidx_t hostIdx() const { return partition * s_partitionSize + neuron; }
-
-	private:
-
-		static unsigned s_partitionSize;
-};
 
 
 unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
@@ -88,7 +64,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 	WarpAddressTable wtable;
 
 	uint fbits = setFractionalBits(cm.minWeight(), cm.maxWeight(), logging);
-	fx_setFormat(fbits);
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
@@ -97,6 +72,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	size_t totalWarps = createFcm(cm, fbits, partitionSize, wtable, h_targets, h_weights);
 
 	moveFcmToDevice(totalWarps, h_targets, h_weights, logging);
+	h_targets.clear();
+	h_weights.clear();
 
 	//! \todo remove need for creating intermediary warp address table. Just
 	//construct this directly in m_outgoing.
@@ -321,6 +298,7 @@ ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging
 			<< 31-fbits << "." << fbits << " for weights\n";
 	}
 	m_fractionalBits = fbits;
+	fx_setFormat(fbits);
 	return fbits;
 }
 
