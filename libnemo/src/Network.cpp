@@ -9,8 +9,8 @@
 
 #include "Network.hpp"
 
-#include <assert.h>
 #include <stdexcept>
+#include <sstream>
 
 namespace nemo {
 
@@ -29,8 +29,9 @@ Network::addNeuron(nidx_t nidx,
 		float u, float v, float sigma)
 {
 	if(m_neurons.find(nidx) != m_neurons.end()) {
-		//! \todo construct a sensible error message here using sstream
-		throw std::runtime_error("duplicate neuron index");
+		std::ostringstream msg;
+		msg << "Duplicate neuron index for neuron " << nidx;
+		throw std::runtime_error(msg.str());
 	}
 	m_neurons[nidx] = Neuron<float>(a, b, c, d, u, v, sigma);
 }
@@ -64,10 +65,12 @@ Network::addSynapses(
 		const std::vector<uchar> plastic)
 {
 	size_t length = targets.size();
-	//! \todo use exceptions here
-	assert(length == delays.size());
-	assert(length == weights.size());
-	assert(length == plastic.size());
+
+	if(length != delays.size() || length != weights.size() || length != plastic.size()) {
+		std::ostringstream msg;
+		msg << "Synapse vector length mismatch for neuron " << source;
+		throw std::runtime_error(msg.str());
+	}
 
     if(length == 0) {
         return;
