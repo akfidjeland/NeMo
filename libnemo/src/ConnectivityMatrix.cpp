@@ -140,7 +140,6 @@ ConnectivityMatrix::createFcm(
 				for(std::vector<synapse_ht>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
 					size_t sidx = s - bundle.begin();
-					//! \todo remove f_packSynapse method
 					targets.at(sidx) = s->target;
 					weights.at(sidx) = s->weight;
 					//! \todo just push the whole targets vector after loop?

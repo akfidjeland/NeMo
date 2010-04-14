@@ -31,8 +31,6 @@
 
 __host__ void setFcmPlaneSize(size_t planeSize);
 
-__host__ uint f_packSynapse(uint neuron);
-
 __host__ synapse_t f_nullSynapse();
 
 __host__ uint r_packSynapse(

@@ -50,13 +50,6 @@ setFcmPlaneSize(size_t sz)
 }
 
 
-__host__
-uint
-f_packSynapse(uint neuron)
-{
-	return neuron;
-}
-
 
 __host__ __device__
 uint
