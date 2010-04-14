@@ -17,6 +17,7 @@
 #include "NVector.hpp"
 #include "Configuration.hpp"
 #include "DeviceAssertions.hpp"
+#include "NeuronParameters.hpp"
 #include "Timer.hpp"
 #include "STDP.hpp"
 #include "Network.hpp"
@@ -107,7 +108,7 @@ class CudaNetwork : public Simulation
 		size_t m_partitionCount;
 		size_t m_maxPartitionSize;
 
-		class NeuronParameters* m_neurons;
+		NeuronParameters m_neurons;
 
 		uint32_t m_cycle;
 

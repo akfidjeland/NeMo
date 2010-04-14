@@ -18,7 +18,6 @@
 #include "FiringOutput.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
-#include "NeuronParameters.hpp"
 #include "ThalamicInput.hpp"
 #include "util.h"
 #include "log.hpp"
@@ -42,7 +41,7 @@ CudaNetwork::CudaNetwork(
 	m_partitionCount(0),
 	//! \todo get rid of member variable
 	m_maxPartitionSize(conf.cudaMaxPartitionSize()),
-	m_neurons(new NeuronParameters(net, conf.cudaMaxPartitionSize())),
+	m_neurons(net, conf.cudaMaxPartitionSize()),
 	m_cm(new ConnectivityMatrix(net, conf.cudaMaxPartitionSize(), conf.loggingEnabled())),
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
@@ -58,17 +57,17 @@ CudaNetwork::CudaNetwork(
 	}
 
 	//! \todo move to device as part of construction
-	m_neurons->moveToDevice();
+	m_neurons.moveToDevice();
 	configureStdp();
 
 	//! \todo merge with init list
-	m_partitionCount = m_neurons->partitionCount();
+	m_partitionCount = m_neurons.partitionCount();
 	m_deviceAssertions = new DeviceAssertions(m_partitionCount);
 	m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, conf.cudaFiringBufferLength());
 	m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
 	//! \todo seed properly from outside function
 	m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
-	m_neurons->setSigma(*m_thalamicInput);
+	m_neurons.setSigma(*m_thalamicInput);
 	m_thalamicInput->moveToDevice();
 	m_cycleCounters = new CycleCounters(m_partitionCount, usingStdp());
 	m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
@@ -91,7 +90,6 @@ CudaNetwork::~CudaNetwork()
 	if(m_thalamicInput) delete m_thalamicInput;
 	if(m_cycleCounters) delete m_cycleCounters;
 	if(m_cm) delete m_cm;
-	delete m_neurons;
 }
 
 
@@ -216,7 +214,7 @@ CudaNetwork::d_allocated() const
 	size_t total = 0;
 	total += m_firingStimulus ? m_firingStimulus->d_allocated()   : 0;
 	total += m_recentFiring   ? m_recentFiring->d_allocated()     : 0;
-	total += m_neurons        ? m_neurons->d_allocated()        : 0;
+	total += m_neurons.d_allocated();
 	total += m_firingOutput   ? m_firingOutput->d_allocated()     : 0;
 	total += m_thalamicInput  ? m_thalamicInput->d_allocated()    : 0;
 	total += m_cm             ? m_cm->d_allocated()             : 0;
@@ -230,7 +228,7 @@ void
 CudaNetwork::setPitch()
 {
 	size_t pitch1 = m_firingStimulus->wordPitch();
-	m_pitch32 = m_neurons->wordPitch();
+	m_pitch32 = m_neurons.wordPitch();
 	m_pitch64 = m_recentFiring->wordPitch();
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, m_thalamicInput->wordPitch());
@@ -306,7 +304,7 @@ CudaNetwork::stepSimulation(const std::vector<uint>& fstim)
 			usingStdp(),
 			m_cycle,
 			m_recentFiring->deviceData(),
-			m_neurons->deviceData(),
+			m_neurons.deviceData(),
 			m_thalamicInput->deviceRngState(),
 			m_thalamicInput->deviceSigma(),
 			d_fstim, 
