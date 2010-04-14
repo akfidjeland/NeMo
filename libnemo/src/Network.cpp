@@ -24,7 +24,7 @@ Network::Network() :
 
 
 void
-Network::addNeuron(nidx_t nidx,
+Network::addNeuron(unsigned nidx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
@@ -40,10 +40,10 @@ Network::addNeuron(nidx_t nidx,
 
 void
 Network::addSynapse(
-		nidx_t source,
-		nidx_t target,
-		delay_t delay,
-		weight_t weight,
+		unsigned source,
+		unsigned target,
+		unsigned delay,
+		float weight,
 		uchar plastic)
 {
 	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
@@ -59,10 +59,10 @@ Network::addSynapse(
 
 void
 Network::addSynapses(
-		nidx_t source,
-		const std::vector<nidx_t>& targets,
-		const std::vector<delay_t>& delays,
-		const std::vector<weight_t>& weights,
+		unsigned source,
+		const std::vector<unsigned>& targets,
+		const std::vector<unsigned>& delays,
+		const std::vector<float>& weights,
 		const std::vector<uchar> plastic)
 {
 	size_t length = targets.size();

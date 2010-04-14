@@ -56,16 +56,16 @@ class Network
 		 * 		distribution. If set to zero no random input current will be
 		 * 		generated.
 		 */
-		void addNeuron(nidx_t neuronIndex,
+		void addNeuron(unsigned neuronIndex,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
 		/* Add a single synapse */
 		void addSynapse(
-				nidx_t source,
-				delay_t delay,
-				nidx_t target,
-				weight_t weight,
+				unsigned source,
+				unsigned delay,
+				unsigned target,
+				float weight,
 				uchar isPlastic);
 
 		//! \todo remove addSynapses from this interface use addSynape only
@@ -89,10 +89,10 @@ class Network
 		 * 		same length
 		 */
 		void addSynapses(
-				nidx_t source,
-				const std::vector<nidx_t>& targets,
-				const std::vector<delay_t>& delays,
-				const std::vector<weight_t>& weights,
+				unsigned source,
+				const std::vector<unsigned>& targets,
+				const std::vector<unsigned>& delays,
+				const std::vector<float>& weights,
 				const std::vector<uchar> is_plastic);
 
 		nidx_t maxSourceIdx() const { return m_maxSourceIdx; }
@@ -103,7 +103,7 @@ class Network
 	private :
 
 		//! \todo perhaps store this as double?
-		typedef nemo::Neuron<float> neuron_t;
+		typedef nemo::Neuron<weight_t> neuron_t;
 		std::map<nidx_t, neuron_t> m_neurons;
 
 		typedef Synapse<nidx_t, weight_t> synapse_t;
