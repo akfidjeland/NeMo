@@ -51,11 +51,7 @@ CudaNetwork::CudaNetwork(
 	m_pitch32(0),
 	m_pitch64(0)
 {
-	if(conf.stdpFunction() != NULL) {
-		m_stdpFn = *conf.stdpFunction();
-	}
-
-	configureStdp();
+	configureStdp(conf.stdpFunction());
 
 	//! \todo merge with init list
 	//! \todo remove m_partitionCount member variable
@@ -130,11 +126,13 @@ CudaNetwork::selectDevice()
 
 //! \todo simplify
 void
-CudaNetwork::configureStdp()
+CudaNetwork::configureStdp(const STDP<float>* stdp)
 {
-	if(!usingStdp()) {
+	if(stdp == NULL) {
 		return;
 	}
+
+	m_stdpFn = *stdp;
 
 	const std::vector<float>& flfn = m_stdpFn.function();
 	std::vector<fix_t> fxfn(flfn.size());

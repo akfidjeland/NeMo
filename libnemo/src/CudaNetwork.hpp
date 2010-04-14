@@ -140,7 +140,7 @@ class CudaNetwork : public Simulation
 		nemo::Timer m_timer;
 
 		STDP<float> m_stdpFn;
-		void configureStdp();
+		void configureStdp(const STDP<float>* stdp);
 		bool usingStdp() const;
 
 		static int s_device;
