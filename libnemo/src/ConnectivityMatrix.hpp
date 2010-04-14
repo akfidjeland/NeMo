@@ -166,7 +166,7 @@ class ConnectivityMatrix
 		 * run-time. */
 		std::map<nidx_t, std::vector<nidx_t> > mh_fcmTargets;
 		std::map<nidx_t, std::vector<delay_t> > mh_fcmDelays;
-		std::map<nidx_t, std::vector<uchar> > mh_fcmPlastic;
+		std::map<nidx_t, std::vector<unsigned char> > mh_fcmPlastic;
 
 		/* The weights may change at run-time, so we need to read them back
 		 * from the device, and reconstruct possibly disparate data into a

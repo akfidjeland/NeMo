@@ -10,7 +10,10 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* The basic types in nemo_types are also used without an enclosing namespace
+ * inside the kernel (which is pure C). */
 #include "nemo_types.h"
+
 
 namespace nemo {
 
@@ -34,9 +37,9 @@ struct Synapse
 	I target;
 	W weight;
 	//! \todo change to bool?
-	uchar plastic;
+	unsigned char plastic;
 
-	Synapse(I t, W w, uchar p) : target(t), weight(w), plastic(p) {}
+	Synapse(I t, W w, unsigned char p) : target(t), weight(w), plastic(p) {}
 };
 
 

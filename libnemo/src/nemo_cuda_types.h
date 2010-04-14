@@ -1,8 +1,9 @@
-#ifndef NEMO_CUDA_TYPES
-#define NEMO_CUDA_TYPES
+#ifndef NEMO_CUDA_TYPES_HPP
+#define NEMO_CUDA_TYPES_HPP
 
-#include <nemo_types.h>
 #include <stdint.h>
+
+#include "nemo_types.h"
 
 typedef int32_t fix_t;
 typedef fix_t weight_dt; // on the device

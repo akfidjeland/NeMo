@@ -44,7 +44,7 @@ Network::addSynapse(
 		unsigned target,
 		unsigned delay,
 		float weight,
-		uchar plastic)
+		unsigned char plastic)
 {
 	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
 
@@ -63,7 +63,7 @@ Network::addSynapses(
 		const std::vector<unsigned>& targets,
 		const std::vector<unsigned>& delays,
 		const std::vector<float>& weights,
-		const std::vector<uchar> plastic)
+		const std::vector<unsigned char>& plastic)
 {
 	size_t length = targets.size();
 

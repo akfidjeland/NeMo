@@ -66,7 +66,7 @@ class Network
 				unsigned delay,
 				unsigned target,
 				float weight,
-				uchar isPlastic);
+				unsigned char plastic);
 
 		//! \todo remove addSynapses from this interface use addSynape only
 		//! \todo change from uchar to bool
@@ -80,12 +80,12 @@ class Network
 		 * 		Synapse conductance delays in milliseconds
 		 * \param weights
 		 * 		Synapse weights
-		 * \param isPlastic
+		 * \param plastic
 		 * 		Specifies for each synapse whether or not it is plastic.
 		 * 		See section on STDP.
 		 *
 		 * \pre
-		 * 		\a targets, \a delays, \a weights, and \a isPlastic have the
+		 * 		\a targets, \a delays, \a weights, and \a plastic have the
 		 * 		same length
 		 */
 		void addSynapses(
@@ -93,7 +93,7 @@ class Network
 				const std::vector<unsigned>& targets,
 				const std::vector<unsigned>& delays,
 				const std::vector<float>& weights,
-				const std::vector<uchar> is_plastic);
+				const std::vector<unsigned char>& plastic);
 
 		nidx_t maxSourceIdx() const { return m_maxSourceIdx; }
 		delay_t maxDelay() const { return m_maxDelay; }

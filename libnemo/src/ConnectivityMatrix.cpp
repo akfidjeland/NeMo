@@ -117,7 +117,7 @@ ConnectivityMatrix::createFcm(
 
 			/* Data used when user reads FCM back from device */
 			std::vector<nidx_t>& h_fcmTarget = mh_fcmTargets[h_sourceIdx];
-			std::vector<uchar>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
+			std::vector<unsigned char>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
 
 			for(std::map<pidx_t, std::vector<synapse_ht> >::const_iterator g = pgroups.begin();
 					g != pgroups.end(); ++g) {
