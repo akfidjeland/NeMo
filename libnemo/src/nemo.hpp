@@ -14,11 +14,10 @@
 
 #include <vector>
 
+#include "Network.hpp"
+#include "Configuration.hpp"
+
 namespace nemo {
-
-
-class Network;
-class Configuration;
 
 
 /*! \class Simulation
@@ -44,9 +43,7 @@ class Simulation
 		 * \return
 		 * 		new Simulation object, or NULL if no suitable CUDA device was
 		 * 		found. For CUDA device 0 will be used.  */
-		static Simulation* create();
-
-		Simulation* create(const Network& net, const Configuration&);
+		static Simulation* create(const Network& net, const Configuration&);
 
 		/* \} */ // end init section
 

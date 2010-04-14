@@ -58,7 +58,7 @@ neuronIndex(uint patch, uint x, uint y)
 
 
 void
-addExcitatoryNeuron(nemo::Simulation* net, unsigned nidx, urng_t& param)
+addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 {
 	float v = -65.0f;
 	float a = 0.02f;
@@ -75,7 +75,7 @@ addExcitatoryNeuron(nemo::Simulation* net, unsigned nidx, urng_t& param)
 
 
 void
-addInhibitoryNeuron(nemo::Simulation* net, uint nidx, urng_t& param)
+addInhibitoryNeuron(nemo::Network* net, uint nidx, urng_t& param)
 {
 	float v = -65.0f;
 	double r1 = param();
@@ -164,7 +164,7 @@ delay(uint distance)
 
 void
 addExcitatorySynapses(
-		nemo::Simulation* net,
+		nemo::Network* net,
 		uint patch, uint x, uint y,
 		uint pcount, uint m,
 		bool stdp,
@@ -194,7 +194,7 @@ addExcitatorySynapses(
 
 void
 addInhibitorySynapses(
-		nemo::Simulation* net,
+		nemo::Network* net,
 		uint patch, uint x, uint y,
 		uint pcount, uint m,
 		bool stdp,
@@ -223,10 +223,12 @@ addInhibitorySynapses(
 
 
 
-void
-configure(nemo::Simulation* net, bool stdp)
+nemo::Configuration
+configure(bool stdp)
 {
-	net->logToStdout();
+	nemo::Configuration conf;
+
+	conf.enableLogging();
 	//! \todo make network report STDP function
 	if(stdp) {
 		std::vector<float> pre(20);
@@ -236,15 +238,19 @@ configure(nemo::Simulation* net, bool stdp)
 			pre.at(i) = 1.0 * expf(-dt / 20.0f);
 			pre.at(i) = -0.8 * expf(-dt / 20.0f);
 		}
-		net->enableStdp(pre, post, 10.0, -10.0);
+		conf.setStdpFunction(pre, post, 10.0, -10.0);
 	}
+
+	return conf;
 }
 
 
 
-void
-construct(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp, double sigma)
+nemo::Network*
+construct(unsigned pcount, unsigned m, bool stdp, double sigma)
 {
+	nemo::Network* net = new nemo::Network();
+
 	/* The network is a torus which consists of pcount rectangular patches,
 	 * each with dimensions height * width. The size of each patch is the same
 	 * as the partition size on the device. */
@@ -303,6 +309,8 @@ construct(nemo::Simulation* net, unsigned pcount, unsigned m, bool stdp, double 
 		<< "\t" << exCount << " excitatory\n"		
 		<< "\t" << inCount << " inhibitory\n";
 	//! \todo report connectivity stats as well
+
+	return net;
 }
 
 
@@ -435,10 +443,10 @@ main(int argc, char* argv[])
 	bool stdp = false;
 	unsigned m = 1000; // synapses per neuron
 	
-	nemo::Simulation* net = nemo::Simulation::create();
-	configure(net, stdp);
-	construct(net, pcount, m, stdp, sigma);
-	simulate(net, pcount, m, stdp);
+	nemo::Network* net = construct(pcount, m, stdp, sigma);
+	nemo::Configuration conf = configure(stdp);
+	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
+	simulate(sim, pcount, m, stdp);
 	//simulateToFile(net, pcount, m, stdp, "firing.dat");
 	delete net;
 }

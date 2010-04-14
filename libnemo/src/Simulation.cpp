@@ -12,13 +12,6 @@
 
 namespace nemo {
 
-Simulation*
-Simulation::create()
-{
-	int dev = cuda::CudaNetwork::selectDevice();
-	return dev == -1 ? NULL : new cuda::CudaNetwork();
-}
-
 
 Simulation*
 Simulation::create(const Network& net, const Configuration& conf)
