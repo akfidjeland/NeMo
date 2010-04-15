@@ -9,6 +9,11 @@ SET(CPACK_PACKAGE_VERSION_PATCH 0)
 #SET(CPACK_PACKAGE_VERSION 0.5)
 SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
 
+# Boost libraries
+SET(Boost_USE_STATIC_LIBS ON)
+SET(Boost_USE_MULTITHREAD OFF)
+FIND_PACKAGE(Boost REQUIRED)
+
 SUBDIRS(src doc)
 
 OPTION(CREATE_EXAMPLES "Build binaries for example networks" ON)
