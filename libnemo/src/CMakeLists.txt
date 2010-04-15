@@ -76,21 +76,21 @@ CUDA_ADD_LIBRARY(nemo
 
 # A number of .cu files are #included in the main .cu file
 ADD_DEPENDENCIES(nemo
-	src/applySTDP.cu
-	src/bitvector.cu
-	src/connectivityMatrix.cu
-	src/cycleCounting.cu
-	src/cycle.cu
-	src/debug.cu
-	src/device_assert.cu
-	src/double_buffer.cu
-	src/fixedpoint.cu
-	src/incoming.cu
-	src/outgoing.cu
-	src/partitionConfiguration.cu
-	src/stdp.cu
-	src/step.cu
-	src/thalamicInput.cu
+	applySTDP.cu
+	bitvector.cu
+	connectivityMatrix.cu
+	cycleCounting.cu
+	cycle.cu
+	debug.cu
+	device_assert.cu
+	double_buffer.cu
+	fixedpoint.cu
+	incoming.cu
+	outgoing.cu
+	partitionConfiguration.cu
+	stdp.cu
+	step.cu
+	thalamicInput.cu
   )
 
 
