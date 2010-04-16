@@ -37,7 +37,7 @@ ThalamicInput::ThalamicInput(
 void
 ThalamicInput::setNeuronSigma(size_t partition, size_t neuron, float val)
 {
-	m_inUse = true;
+	m_inUse = val != 0.0f;
 	m_sigma.setNeuron(partition, neuron, val);
 }
 

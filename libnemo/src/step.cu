@@ -228,8 +228,7 @@ scatter(unsigned cycle,
 
 __device__
 void
-gather(
-		unsigned cycle,
+gather( unsigned cycle,
 		synapse_t* g_fcm,
 		unsigned* g_incomingCount,
 		incoming_t* g_incoming,

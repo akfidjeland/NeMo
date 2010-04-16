@@ -61,7 +61,7 @@ CudaNetwork::CudaNetwork(
 	m_deviceAssertions = new DeviceAssertions(m_partitionCount);
 	m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, conf.cudaFiringBufferLength());
 	m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
-	//! \todo seed properly from outside function
+	//! \todo seed properly from configuration
 	m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
 	//! \todo change NeuronParameters API for this function
 	m_neurons.setSigma(*m_thalamicInput);
