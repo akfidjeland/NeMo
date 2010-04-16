@@ -44,23 +44,23 @@ STDP<T>::lookupPost(int dt) const
 
 
 template<typename T>
-uint
+unsigned
 STDP<T>::closestPreFire(uint64_t arrivals) const
 {
 	uint64_t validArrivals = arrivals & m_preFireBits;
 	int dt =  ctz64(validArrivals >> m_postFireWindow);
-	return validArrivals ? (uint) dt : STDP_NO_APPLICATION;
+	return validArrivals ? (unsigned) dt : STDP_NO_APPLICATION;
 }
 
 
 
 template<typename T>
-uint
+unsigned
 STDP<T>::closestPostFire(uint64_t arrivals) const
 {
 	uint64_t validArrivals = arrivals & m_postFireBits;
 	int dt = clz64(validArrivals << uint64_t(64 - m_postFireWindow));
-	return validArrivals ? (uint) dt : STDP_NO_APPLICATION;
+	return validArrivals ? (unsigned) dt : STDP_NO_APPLICATION;
 }
 
 

@@ -13,16 +13,16 @@
  * for either the read or write part of the buffer */
 
 __device__
-uint
-readBuffer(uint cycle)
+unsigned
+readBuffer(unsigned cycle)
 {
     return (cycle & 0x1) ^ 0x1;
 }
 
 
 __device__
-uint
-writeBuffer(uint cycle)
+unsigned
+writeBuffer(unsigned cycle)
 {
     return cycle & 0x1;
 }

@@ -152,7 +152,7 @@ NeuronParameters::configurePartitionSizes()
 	}
 
 	size_t maxPidx = m_maxPartitionNeuron.rbegin()->first;
-	std::vector<uint> partitionSizes(maxPidx, 0);
+	std::vector<unsigned> partitionSizes(maxPidx, 0);
 
 	for(std::map<pidx_t, nidx_t>::const_iterator i = m_maxPartitionNeuron.begin();
 			i != m_maxPartitionNeuron.end(); ++i) {

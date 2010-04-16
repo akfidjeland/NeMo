@@ -45,7 +45,7 @@ assertion_offset(size_t partition, size_t thread)
 
 __host__
 void
-getDeviceAssertions(uint partitions, int* h_assertions)
+getDeviceAssertions(unsigned partitions, int* h_assertions)
 {
 #ifdef DEVICE_ASSERTIONS
 	size_t bytes = partitions * THREADS_PER_BLOCK * sizeof(int);

@@ -34,7 +34,7 @@ class Outgoing
 
 		outgoing_t* data() const { return md_arr.get(); }
 
-		uint* count() const { return md_rowLength.get(); }
+		unsigned* count() const { return md_rowLength.get(); }
 
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
@@ -59,10 +59,10 @@ class Outgoing
 		boost::shared_ptr<outgoing_t> md_arr;  // device data
 		size_t m_pitch;                       // max pitch
 
-		boost::shared_ptr<uint> md_rowLength; // per-neuron pitch
+		boost::shared_ptr<unsigned> md_rowLength; // per-neuron pitch
 
 		typedef boost::tuple<pidx_t, delay_t> tkey_t;
-		typedef std::map<tkey_t, uint> targets_t;
+		typedef std::map<tkey_t, unsigned> targets_t;
 
 		typedef boost::tuple<pidx_t, nidx_t> skey_t;
 		typedef std::map<skey_t, targets_t> map_t;

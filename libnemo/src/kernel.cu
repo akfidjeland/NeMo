@@ -33,8 +33,8 @@ void
 applyStdp(
 		unsigned long long* d_cc,
 		size_t ccPitch,
-		uint partitionCount,
-		uint fractionalBits,
+		unsigned partitionCount,
+		unsigned fractionalBits,
 		synapse_t* d_fcm,
 		float maxWeight,
 		float minWeight,
@@ -60,9 +60,9 @@ applyStdp(
 __host__
 void
 stepSimulation(
-		uint partitionCount,
+		unsigned partitionCount,
 		bool usingStdp,
-		uint cycle,
+		unsigned cycle,
 		uint64_t* d_recentFiring,
 		float* d_neuronState,
 		unsigned* d_rngState,
@@ -70,9 +70,9 @@ stepSimulation(
 		uint32_t* d_fstim,
 		uint32_t* d_fout,
 		synapse_t* d_fcm,
-		uint* d_outgoingCount,
+		unsigned* d_outgoingCount,
 		outgoing_t* d_outgoing,
-		uint* d_incomingHeads,
+		unsigned* d_incomingHeads,
 		incoming_t* d_incoming,
 		unsigned long long* d_cc,
 		size_t ccPitch)

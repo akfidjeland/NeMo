@@ -22,11 +22,11 @@ void
 Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMultiplier)
 {
 	// allocate space for the incoming count
-	uint* d_count;
-	size_t len = ALIGN(partitionCount * MAX_DELAY, 32) * sizeof(uint);
+	unsigned* d_count;
+	size_t len = ALIGN(partitionCount * MAX_DELAY, 32) * sizeof(unsigned);
 	CUDA_SAFE_CALL(cudaMalloc((void**)&d_count, len));
 	CUDA_SAFE_CALL(cudaMemset(d_count, 0, len));
-	m_count = boost::shared_ptr<uint>(d_count, cudaFree);
+	m_count = boost::shared_ptr<unsigned>(d_count, cudaFree);
 
 	m_allocated = len;
 

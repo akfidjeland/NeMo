@@ -16,7 +16,7 @@
 #include "kernel.cu_h"
 
 
-DeviceAssertions::DeviceAssertions(uint partitionCount) :
+DeviceAssertions::DeviceAssertions(unsigned partitionCount) :
 	m_partitionCount(partitionCount),
 	mh_mem(partitionCount * THREADS_PER_BLOCK, 0)
 {
@@ -31,14 +31,14 @@ DeviceAssertions::DeviceAssertions(uint partitionCount) :
 
 
 void
-DeviceAssertions::check(uint cycle) throw (DeviceAssertionFailure)
+DeviceAssertions::check(unsigned cycle) throw (DeviceAssertionFailure)
 {
 #ifdef DEVICE_ASSERTIONS
 	int* h_mem = &mh_mem[0];
 	::getDeviceAssertions(m_partitionCount, h_mem);
 
-	for(uint partition=0; partition < m_partitionCount; ++partition) {
-		for(uint thread=0; thread < THREADS_PER_BLOCK; ++thread) {
+	for(unsigned partition=0; partition < m_partitionCount; ++partition) {
+		for(unsigned thread=0; thread < THREADS_PER_BLOCK; ++thread) {
 			int line = h_mem[assertion_offset(partition, thread)];
 			if(line != 0) {
 				throw DeviceAssertionFailure(partition, thread, line, cycle);
@@ -51,8 +51,8 @@ DeviceAssertions::check(uint cycle) throw (DeviceAssertionFailure)
 
 
 
-DeviceAssertionFailure::DeviceAssertionFailure(uint partition,
-		uint thread, uint line, uint cycle)
+DeviceAssertionFailure::DeviceAssertionFailure(unsigned partition,
+		unsigned thread, unsigned line, unsigned cycle)
 {
 	std::ostringstream msg;
 	msg << "Device assertion failure for partition "

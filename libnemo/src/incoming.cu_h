@@ -12,7 +12,7 @@
 
 #include <cuda_runtime.h>
 
-typedef uint incoming_t;
+typedef unsigned incoming_t;
 
 __host__ void setIncomingPitch(size_t wordPitch);
 

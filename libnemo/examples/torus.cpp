@@ -39,14 +39,14 @@ typedef boost::variate_generator<rng_t&, boost::normal_distribution<double> > gr
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 
 /* Global neuron index and distance */
-typedef std::pair<uint, double> target_t;
+typedef std::pair<unsigned, double> target_t;
 
 
 
 
 /* Return global neuron index given location on torus */
-uint
-neuronIndex(uint patch, uint x, uint y)
+unsigned
+neuronIndex(unsigned patch, unsigned x, unsigned y)
 {
 	assert(x >= 0);
 	assert(x < PATCH_WIDTH);
@@ -75,7 +75,7 @@ addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 
 
 void
-addInhibitoryNeuron(nemo::Network* net, uint nidx, urng_t& param)
+addInhibitoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 {
 	float v = -65.0f;
 	double r1 = param();
@@ -105,10 +105,10 @@ round(double r) {
 
 target_t
 targetNeuron(
-		uint sourcePartition,
-		uint sourceX,
-		uint sourceY,
-		uint pcount,
+		unsigned sourcePartition,
+		unsigned sourceX,
+		unsigned sourceY,
+		unsigned pcount,
 		grng_t& distance,
 		urng_t& angle)
 {
@@ -142,19 +142,19 @@ targetNeuron(
 	/* Don't connect to self unless we wrap around torus */
 	assert(!(targetX == sourceX && targetY == sourceY && dist < PATCH_HEIGHT));
 
-	return std::make_pair<uint, double>(neuronIndex(targetPatch, targetX, targetY), dist);
+	return std::make_pair<unsigned, double>(neuronIndex(targetPatch, targetX, targetY), dist);
 }
 
 
 
 
-uint
-delay(uint distance)
+unsigned
+delay(unsigned distance)
 {
 	if(distance > MAX_DELAY*PATCH_WIDTH) {
 		return MAX_DELAY;
 	} else {
-		uint d = 1 + distance / PATCH_WIDTH;
+		unsigned d = 1 + distance / PATCH_WIDTH;
 		assert(d <= MAX_DELAY);
 		return d;
 	}
@@ -165,19 +165,19 @@ delay(uint distance)
 void
 addExcitatorySynapses(
 		nemo::Network* net,
-		uint patch, uint x, uint y,
-		uint pcount, uint m,
+		unsigned patch, unsigned x, unsigned y,
+		unsigned pcount, unsigned m,
 		bool stdp,
 		grng_t& distance,
 		urng_t& angle,
 		urng_t& rweight)
 {
-	std::vector<unsigned> targets(m, 0);
-	std::vector<unsigned> delays(m, 0);
+	std::vector<unsigned> targets(m, 0U);
+	std::vector<unsigned> delays(m, 0U);
 	std::vector<float> weights(m, 0.0f);
 	std::vector<uchar> isPlastic(m, stdp ? 1 : 0);
 
-	for(uint sidx = 0; sidx < m; ++sidx) {
+	for(unsigned sidx = 0; sidx < m; ++sidx) {
 		//! \todo add dependence of delay on distance
 		target_t target = targetNeuron(patch, x, y, pcount, distance, angle);
 
@@ -195,8 +195,8 @@ addExcitatorySynapses(
 void
 addInhibitorySynapses(
 		nemo::Network* net,
-		uint patch, uint x, uint y,
-		uint pcount, uint m,
+		unsigned patch, unsigned x, unsigned y,
+		unsigned pcount, unsigned m,
 		bool stdp,
 		grng_t& distance,
 		urng_t& angle,
@@ -207,7 +207,7 @@ addInhibitorySynapses(
 	std::vector<float> weights(m, 0.0f);
 	std::vector<uchar> isPlastic(m, stdp ? 1 : 0);
 
-	for(uint sidx = 0; sidx < m; ++sidx) {
+	for(unsigned sidx = 0; sidx < m; ++sidx) {
 		//! \todo add dependence of delay on distance
 		target_t target = targetNeuron(patch, x, y, pcount, distance, angle);
 		targets.at(sidx) = target.first;
@@ -233,7 +233,7 @@ configure(bool stdp)
 	if(stdp) {
 		std::vector<float> pre(20);
 		std::vector<float> post(20);
-		for(uint i = 0; i < 20; ++i) {
+		for(unsigned i = 0; i < 20; ++i) {
 			float dt = float(i + 1);
 			pre.at(i) = 1.0 * expf(-dt / 20.0f);
 			pre.at(i) = -0.8 * expf(-dt / 20.0f);
@@ -254,8 +254,8 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma)
 	/* The network is a torus which consists of pcount rectangular patches,
 	 * each with dimensions height * width. The size of each patch is the same
 	 * as the partition size on the device. */
-	const uint height = PATCH_HEIGHT;
-	const uint width = PATCH_WIDTH;
+	const unsigned height = PATCH_HEIGHT;
+	const unsigned width = PATCH_WIDTH;
 	//! \todo check that this matches partition size
 	
 	rng_t rng;
@@ -282,14 +282,14 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma)
 	/* Neuron parameters and weights are partially randomised */
 	urng_t randomParameter(rng, boost::uniform_real<double>(0, 1));
 
-	uint exCount = 0;
-	uint inCount = 0;
+	unsigned exCount = 0;
+	unsigned inCount = 0;
 
-	for(uint p = 0; p < pcount; ++p) {
+	for(unsigned p = 0; p < pcount; ++p) {
 		std::cout << "Partition " << p << std::endl; 
-		for(uint y = 0; y < height; ++y) {
-			for(uint x = 0; x < width; ++x) {
-				uint nidx = neuronIndex(p, x, y);
+		for(unsigned y = 0; y < height; ++y) {
+			for(unsigned x = 0; x < width; ++x) {
+				unsigned nidx = neuronIndex(p, x, y);
 				if(isExcitatory()) {
 					addExcitatoryNeuron(net, nidx, randomParameter);
 					addExcitatorySynapses(net, p, x, y, pcount, m, stdp,
@@ -327,8 +327,8 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 
 	/* Run for a few seconds to warm up the network */
 	std::cout << "Running simulation (warming up)...";
-	for(uint s=0; s < 5; ++s) {
-		for(uint ms = 0; ms < MS_PER_SECOND; ++ms) {
+	for(unsigned s=0; s < 5; ++s) {
+		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms) {
 			sim->stepSimulation();
 		}
 		sim->flushFiringBuffer();
@@ -336,13 +336,13 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]" << std::endl;
 	sim->resetTimer();
 
-	uint seconds = 10;
+	unsigned seconds = 10;
 
 	/* Run once without reading data back, in order to estimate PCIe overhead */ 
 	std::cout << "Running simulation (without reading data back)...";
-	for(uint s=0; s < seconds; ++s) {
+	for(unsigned s=0; s < seconds; ++s) {
 		std::cout << s << " ";
-		for(uint ms = 0; ms < MS_PER_SECOND; ++ms) {
+		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms) {
 			sim->stepSimulation();
 		}
 		sim->flushFiringBuffer();
@@ -357,9 +357,9 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 
 	std::cout << "Running simulation (gathering performance data)...";
 	unsigned nfired = 0;
-	for(uint s=0; s < seconds; ++s) {
+	for(unsigned s=0; s < seconds; ++s) {
 		std::cout << s << " ";
-		for(uint ms=0; ms<1000; ++ms) {
+		for(unsigned ms=0; ms<1000; ++ms) {
 			sim->stepSimulation();
 		}
 		sim->readFiring(&cycles, &fired);
@@ -403,7 +403,7 @@ simulateToFile(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp, co
 
 	std::cout << "Running simulation (gathering performance data)...";
 	unsigned nfired = 0;
-	for(uint ms=0; ms<1000; ++ms) {
+	for(unsigned ms=0; ms<1000; ++ms) {
 		sim->stepSimulation();
 	}
 	sim->readFiring(&cycles, &fired);
@@ -427,8 +427,8 @@ main(int argc, char* argv[])
 		exit(-1);
 	}
 
-	uint pcount = atoi(argv[1]);
-	uint sigma = atoi(argv[2]);
+	unsigned pcount = atoi(argv[1]);
+	unsigned sigma = atoi(argv[2]);
 	assert(sigma >= PATCH_WIDTH/2);
 
 	//! \todo get RNG seed option from command line

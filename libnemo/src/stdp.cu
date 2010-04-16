@@ -43,19 +43,19 @@ __constant__ uint64_t c_stdpDepression;
 __constant__ weight_dt c_stdpFn[STDP_WINDOW_SIZE];
 
 /* Length of the window (in cycles) which is post firing */
-__constant__ uint c_stdpPostFireWindow;
+__constant__ unsigned c_stdpPostFireWindow;
 
 /* Length of the window (in cycles) which is pre firing */
-__constant__ uint c_stdpPreFireWindow;
+__constant__ unsigned c_stdpPreFireWindow;
 
-__constant__ uint c_stdpWindow;
+__constant__ unsigned c_stdpWindow;
 
 
 __shared__ uint64_t s_stdpPotentiation;
 __shared__ uint64_t s_stdpDepression;
 __shared__ weight_dt s_stdpFn[STDP_WINDOW_SIZE];
-__shared__ uint s_stdpPostFireWindow;
-__shared__ uint s_stdpPreFireWindow;
+__shared__ unsigned s_stdpPostFireWindow;
+__shared__ unsigned s_stdpPreFireWindow;
 
 
 #define SET_STDP_PARAMETER(symbol, val) CUDA_SAFE_CALL(\
@@ -66,8 +66,8 @@ __shared__ uint s_stdpPreFireWindow;
 __host__
 void
 configureStdp(
-		uint preFireWindow,
-		uint postFireWindow,
+		unsigned preFireWindow,
+		unsigned postFireWindow,
 		uint64_t potentiationBits, // remainder are depression
 		uint64_t depressionBits,   // remainder are depression
 		weight_dt* stdpFn)
@@ -77,7 +77,7 @@ configureStdp(
 	SET_STDP_PARAMETER(c_stdpWindow, preFireWindow + postFireWindow);
 	SET_STDP_PARAMETER(c_stdpPotentiation, potentiationBits);
 	SET_STDP_PARAMETER(c_stdpDepression, depressionBits);
-	uint window = preFireWindow + postFireWindow;
+	unsigned window = preFireWindow + postFireWindow;
 	assert(window <= STDP_WINDOW_SIZE);
 	cudaMemcpyToSymbol(c_stdpFn, stdpFn, sizeof(weight_dt)*window, 0, cudaMemcpyHostToDevice);
 }
@@ -154,21 +154,21 @@ loadStdpParameters_()
  * STDP is not applicable if the postsynaptic neuron also fired closer to the
  * incoming spike than the firing currently under consideration. */
 __device__
-uint
+unsigned
 closestPreFire(uint64_t spikes)
 {
 	int dt =  __ffsll(spikes >> s_stdpPostFireWindow);
-	return dt ? (uint) dt-1 : STDP_NO_APPLICATION;
+	return dt ? (unsigned) dt-1 : STDP_NO_APPLICATION;
 }
 
 
 
 __device__
-uint
+unsigned
 closestPostFire(uint64_t spikes)
 {
 	int dt = __clzll(spikes << (64 - s_stdpPostFireWindow));
-	return spikes ? (uint) dt : STDP_NO_APPLICATION;
+	return spikes ? (unsigned) dt : STDP_NO_APPLICATION;
 }
 
 
@@ -177,7 +177,7 @@ closestPostFire(uint64_t spikes)
 
 __device__
 void
-logStdp(int dt, float w_diff, uint targetNeuron, uint32_t r_synapse)
+logStdp(int dt, float w_diff, unsigned targetNeuron, uint32_t r_synapse)
 {
 	const char* type[] = { "ltd", "ltp" };
 
@@ -199,14 +199,14 @@ __device__
 weight_dt
 updateRegion(
 		uint64_t spikes,
-		uint targetNeuron,
+		unsigned targetNeuron,
 		uint32_t r_synapse) // used for logging only
 {
 	/* The potentiation can happen on either side of the firing. We want to
 	 * find the one closest to the firing. We therefore need to compute the
 	 * prefire and postfire dt's separately. */
-	uint dt_pre = closestPreFire(spikes);
-	uint dt_post = closestPostFire(spikes);
+	unsigned dt_pre = closestPreFire(spikes);
+	unsigned dt_post = closestPostFire(spikes);
 
 	/* For logging. Positive values: post-fire, negative values: pre-fire */
 #if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
@@ -245,7 +245,7 @@ __device__
 weight_dt
 updateSynapse(
 		uint32_t r_synapse,
-		uint targetNeuron,
+		unsigned targetNeuron,
 		uint64_t* g_sourceFiring)
 {
 	int inFlight = r_delay0(r_synapse);
@@ -270,15 +270,15 @@ updateSTDP_(
 	uint32_t* s_dfired,
 	uint64_t* g_recentFiring,
 	size_t pitch64,
-	uint partitionSize,
+	unsigned partitionSize,
 	DEVICE_UINT_PTR_T* cr_address,
 	DEVICE_UINT_PTR_T* cr_stdp,
 	DEVICE_UINT_PTR_T* cr_pitch,
 	nidx_dt* s_firingIdx) // s_NIdx, so can handle /all/ neurons firing
 {
 	/* Determine what postsynaptic neurons needs processing in small batches */
-	for(uint nbase = 0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
-		uint target = nbase + threadIdx.x;
+	for(unsigned nbase = 0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
+		unsigned target = nbase + threadIdx.x;
 
 		uint64_t targetRecentFiring =
 			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target];
@@ -291,27 +291,27 @@ updateSTDP_(
 		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target] =
 				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
-		__shared__ uint s_firingCount;
+		__shared__ unsigned s_firingCount;
 		if(threadIdx.x == 0) {
 			s_firingCount = 0;
 		}
 		__syncthreads();
 
 		if(fired && target < partitionSize) {
-			uint i = atomicAdd(&s_firingCount, 1);
+			unsigned i = atomicAdd(&s_firingCount, 1);
 			s_firingIdx[i] = target;
 		}
 		__syncthreads();
 
-		for(uint i=0; i<s_firingCount; ++i) {
+		for(unsigned i=0; i<s_firingCount; ++i) {
 
-			uint target = s_firingIdx[i];
-			uint r_maxSynapses = cr_pitch[CURRENT_PARTITION];
+			unsigned target = s_firingIdx[i];
+			unsigned r_maxSynapses = cr_pitch[CURRENT_PARTITION];
 
 			//! \todo consider using per-neuron maximum here instead
-			for(uint sbase = 0; sbase < r_maxSynapses; sbase += THREADS_PER_BLOCK) {
+			for(unsigned sbase = 0; sbase < r_maxSynapses; sbase += THREADS_PER_BLOCK) {
 
-				uint r_sidx = sbase + threadIdx.x;
+				unsigned r_sidx = sbase + threadIdx.x;
 				if(r_sidx < r_maxSynapses) {
 
 					size_t r_offset = target * r_maxSynapses + r_sidx;

@@ -29,25 +29,24 @@
 #define FCM_WEIGHT 1         // float packed as int
 #define FCM_SUBMATRICES 2
 
-__host__ void setFcmPlaneSize(size_t planeSize);
+void setFcmPlaneSize(size_t planeSize);
 
-__host__ synapse_t f_nullSynapse();
+synapse_t f_nullSynapse();
 
-__host__ uint r_packSynapse(
-		uint sourcePartition,
-		uint sourceNeuron,
-		uint sourceSynapse,
-		uint delay);
+unsigned r_packSynapse(
+		unsigned sourcePartition,
+		unsigned sourceNeuron,
+		unsigned sourceSynapse,
+		unsigned delay);
 
-#define INVALID_REVERSE_SYNAPSE ((uint) ~0)
+#define INVALID_REVERSE_SYNAPSE ((unsigned) ~0)
 
-__device__ __host__ uint sourceNeuron(uint rsynapse);
-__device__ __host__ uint sourcePartition(uint rsynapse);
-__device__ __host__ uint forwardIdx(uint rsynapse);
-__device__ __host__ uint r_delay1(uint rsynapse);
+unsigned sourceNeuron(unsigned rsynapse);
+unsigned sourcePartition(unsigned rsynapse);
+unsigned forwardIdx(unsigned rsynapse);
+unsigned r_delay1(unsigned rsynapse);
 
 
-__host__
 void
 configureReverseAddressing(
         DEVICE_UINT_PTR_T* r_pitch,

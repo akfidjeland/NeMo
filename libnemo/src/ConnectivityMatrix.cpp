@@ -49,7 +49,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	std::vector<weight_dt> h_weights(WARP_SIZE, 0);
 	WarpAddressTable wtable;
 
-	uint fbits = setFractionalBits(net.minWeight(), net.maxWeight(), logging);
+	unsigned fbits = setFractionalBits(net.minWeight(), net.maxWeight(), logging);
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
@@ -77,7 +77,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 size_t
 ConnectivityMatrix::createFcm(
 		const nemo::Network& net,
-		uint fbits,
+		unsigned fbits,
 		size_t partitionSize,
 		WarpAddressTable& wtable,
 		std::vector<synapse_t>& h_targets,
@@ -253,7 +253,7 @@ ConnectivityMatrix::moveRcmToDevice(const WarpAddressTable& wtable)
 
 /* Determine the number of fractional bits to use when storing weights in
  * fixed-point format on the device. */
-uint
+unsigned
 ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging)
 {
 	/* In the worst case we may have all presynaptic neurons for some neuron
@@ -271,8 +271,8 @@ ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging
 	 * max weight. */
 	//! \todo do this based on both max weight and max number of incoming synapses
 	weight_t maxAbsWeight = std::max(abs(wmin), abs(wmax));
-	uint log2Ceil = ceilf(log2(maxAbsWeight));
-	uint fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
+	unsigned log2Ceil = ceilf(log2(maxAbsWeight));
+	unsigned fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
 
 	if(logging) {
 		//! \todo log to correct output stream
@@ -326,7 +326,7 @@ ConnectivityMatrix::getSynapses(
 	const std::vector<AddressRange>& ranges = m_synapseAddresses.synapsesOf(sourceNeuron);
 	for(std::vector<AddressRange>::const_iterator i = ranges.begin();
 			i != ranges.end(); ++i) {
-		for(uint addr = i->start; addr < i->end; ++addr) {
+		for(unsigned addr = i->start; addr < i->end; ++addr) {
 			weight_t w = fx_toFloat(mh_weightBuffer[addr], m_fractionalBits);
 			mh_fcmWeights.push_back(w);
 		}

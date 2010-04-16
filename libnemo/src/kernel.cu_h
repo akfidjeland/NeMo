@@ -62,7 +62,7 @@
 #define DEVICE_UINT_PTR_T uint64_t
 #else
 //! \todo should probably make this uint32_t explicitly
-#define DEVICE_UINT_PTR_T uint
+#define DEVICE_UINT_PTR_T unsigned
 #endif
 
 /* If kernel timing is enabled, device cycle counters will be used at run-time

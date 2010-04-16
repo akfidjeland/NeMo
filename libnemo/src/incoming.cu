@@ -29,8 +29,8 @@ setIncomingPitch(size_t pitch)
 
 /*! \return the buffer number to use for the given delay, given current cycle */
 __device__
-uint
-incomingSlot(uint cycle, uint delay1)
+unsigned
+incomingSlot(unsigned cycle, unsigned delay1)
 {
 	return (cycle + delay1) % MAX_DELAY;
 }
@@ -40,8 +40,8 @@ incomingSlot(uint cycle, uint delay1)
 /* Return offset into full buffer data structure to beginning of buffer for a
  * particular targetPartition and a particular delay. */
 __device__
-uint
-incomingBufferStart(uint targetPartition, uint cycle, uint delay1)
+unsigned
+incomingBufferStart(unsigned targetPartition, unsigned cycle, unsigned delay1)
 {
 	return (targetPartition * MAX_DELAY + incomingSlot(cycle, delay1)) * c_incomingPitch;
 }
@@ -50,7 +50,7 @@ incomingBufferStart(uint targetPartition, uint cycle, uint delay1)
 
 __device__
 incoming_t
-getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
+getIncoming(unsigned cycle, unsigned offset, incoming_t* g_incoming)
 {
 	return g_incoming[incomingBufferStart(CURRENT_PARTITION, cycle, 0) + offset];
 }
@@ -58,15 +58,15 @@ getIncoming(uint cycle, uint offset, incoming_t* g_incoming)
 
 
 /*! \return incoming spike group from a particular source */
-__device__ incoming_t make_incoming(uint warpOffset) { return warpOffset; }
+__device__ incoming_t make_incoming(unsigned warpOffset) { return warpOffset; }
 
-__device__ uint incomingWarpOffset(incoming_t in) { return in; }
+__device__ unsigned incomingWarpOffset(incoming_t in) { return in; }
 
 
 /*! \return address into matrix with number of incoming synapse groups */
 __device__
 size_t
-incomingCountAddr(uint targetPartition, uint cycle, uint delay1)
+incomingCountAddr(unsigned targetPartition, unsigned cycle, unsigned delay1)
 {
 	return targetPartition * MAX_DELAY + incomingSlot(cycle, delay1);
 }

@@ -21,8 +21,8 @@ void
 applyStdp(
 		unsigned long long* d_cc,
 		size_t ccPitch,
-		uint partitionCount,
-		uint fractionalBits,
+		unsigned partitionCount,
+		unsigned fractionalBits,
 		synapse_t* d_fcm,
 		float maxWeight,
 		float minWeight,
@@ -31,9 +31,9 @@ applyStdp(
 
 void
 stepSimulation(
-		uint partitionCount,
+		unsigned partitionCount,
 		bool usingStdp,
-		uint cycle,
+		unsigned cycle,
 		uint64_t* d_recentFiring,
 		float* d_neuronState,
 		unsigned* d_rngState,
@@ -41,22 +41,22 @@ stepSimulation(
 		uint32_t* d_fstim,
 		uint32_t* d_fout,
 		synapse_t* d_fcm,
-		uint* d_outgoingCount,
+		unsigned* d_outgoingCount,
 		outgoing_t* d_outgoing,
-		uint* d_incomingHeads,
+		unsigned* d_incomingHeads,
 		incoming_t* d_incoming,
 		unsigned long long* d_cc,
 		size_t ccPitch);
 
 void
 configureStdp(
-		uint preFireWindow,
-		uint postFireWindow,
+		unsigned preFireWindow,
+		unsigned postFireWindow,
 		uint64_t potentiationBits,
 		uint64_t depressionBits,
 		weight_dt* stdpFn);
 
-void configurePartitionSize(const uint* d_partitionSize, size_t len);
-void configureKernel(uint maxDelay, uint pitch32, uint pitch64);
+void configurePartitionSize(const unsigned* d_partitionSize, size_t len);
+void configureKernel(unsigned maxDelay, unsigned pitch32, unsigned pitch64);
 
 #endif

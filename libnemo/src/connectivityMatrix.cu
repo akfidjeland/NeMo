@@ -52,8 +52,8 @@ setFcmPlaneSize(size_t sz)
 
 
 __host__ __device__
-uint
-targetNeuron(uint synapse)
+unsigned
+targetNeuron(unsigned synapse)
 {
 #ifdef __DEVICE_EMULATION__
     return synapse & NEURON_MASK;
@@ -64,12 +64,12 @@ targetNeuron(uint synapse)
 
 
 __host__
-uint
+unsigned
 r_packSynapse(
-        uint sourcePartition,
-        uint sourceNeuron,
-        uint sourceSynapse,
-        uint delay)
+        unsigned sourcePartition,
+        unsigned sourceNeuron,
+        unsigned sourceSynapse,
+        unsigned delay)
 {
     assert(!(sourcePartition & ~PARTITION_MASK));
     assert(!(sourceNeuron & ~NEURON_MASK));
@@ -83,24 +83,24 @@ r_packSynapse(
 
 
 __device__ __host__
-uint
-sourceNeuron(uint rsynapse)
+unsigned
+sourceNeuron(unsigned rsynapse)
 {
     return (rsynapse >> R_NEURON_SHIFT) & NEURON_MASK;
 }
 
 
 __device__ __host__
-uint
-sourcePartition(uint rsynapse)
+unsigned
+sourcePartition(unsigned rsynapse)
 {
     return (rsynapse >> R_PARTITION_SHIFT) & PARTITION_MASK;
 }
 
 
 __device__ __host__
-uint
-forwardIdx(uint rsynapse)
+unsigned
+forwardIdx(unsigned rsynapse)
 {
     return rsynapse >> R_FSYNAPSE_SHIFT;
 }
@@ -108,16 +108,16 @@ forwardIdx(uint rsynapse)
 
 
 __device__ __host__
-uint
-r_delay1(uint rsynapse)
+unsigned
+r_delay1(unsigned rsynapse)
 {
     return rsynapse & DELAY_MASK; 
 }
 
 
 __device__
-uint
-r_delay0(uint rsynapse)
+unsigned
+r_delay0(unsigned rsynapse)
 {
 	return r_delay1(rsynapse) - 1;
 }

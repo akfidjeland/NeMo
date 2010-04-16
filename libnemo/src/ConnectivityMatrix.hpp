@@ -10,7 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
 #include <stddef.h>
 #include <cuda_runtime.h>
 
@@ -91,7 +90,7 @@ class ConnectivityMatrix
 
 		/*! \return pointer to device data containing the number of outgoing
 		 * spike groups for each neuron */
-		uint* outgoingCount() const { return m_outgoing.count(); }
+		unsigned* outgoingCount() const { return m_outgoing.count(); }
 
 		/*! \return pointer to device data continaing incoming spike group
 		 * buffer for each partition */
@@ -99,10 +98,10 @@ class ConnectivityMatrix
 
 		/*! \return pointer to device data containing the queue heads (i.e.
 		 * the fill) for the incoming spike buffer */
-		uint* incomingHeads() const { return m_incoming.heads(); }
+		unsigned* incomingHeads() const { return m_incoming.heads(); }
 
 		/*! \return number of fractional bits used for weights. */
-		uint fractionalBits() const { return m_fractionalBits; }
+		unsigned fractionalBits() const { return m_fractionalBits; }
 
 		void printMemoryUsage(std::ostream&) const;
 
@@ -128,7 +127,7 @@ class ConnectivityMatrix
 		/*! \return total number of warps */
 		size_t createFcm(
 				const nemo::Network& net,
-				uint fbits,
+				unsigned fbits,
 				size_t partitionSize,
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& targets,
@@ -149,8 +148,8 @@ class ConnectivityMatrix
 		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
 
-		uint m_fractionalBits;
-		uint setFractionalBits(weight_t wmin, weight_t wmax, bool logging);;
+		unsigned m_fractionalBits;
+		unsigned setFractionalBits(weight_t wmin, weight_t wmax, bool logging);;
 
 		/* Per-partition addressing of RCM */
 		void moveRcmToDevice(const WarpAddressTable& wtable);

@@ -14,7 +14,7 @@
 
 
 fix_t
-fx_toFix(float f, uint fractionalBits)
+fx_toFix(float f, unsigned fractionalBits)
 {
 	if(abs(int(f)) >= 1 << (31 - fractionalBits)) {
 		std::ostringstream msg;
@@ -29,7 +29,7 @@ fx_toFix(float f, uint fractionalBits)
 
 
 float
-fx_toFloat(fix_t v, uint fractionalBits)
+fx_toFloat(fix_t v, unsigned fractionalBits)
 {
 	return float(v) / float(1<<fractionalBits);
 }

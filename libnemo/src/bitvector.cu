@@ -64,7 +64,7 @@ __device__
 void
 bv_atomicSet(nidx_t neuron, uint32_t* s_vec)
 {
-	uint word = neuron / 32;
+	unsigned word = neuron / 32;
 	uint32_t mask = 0x1 << (neuron % 32);
 	atomicOr(s_vec + word, mask);
 }
@@ -76,7 +76,7 @@ __device__
 void
 bv_atomicSetPredicated(bool condition, nidx_t neuron, uint32_t* s_vec)
 {
-	uint word = neuron / 32;
+	unsigned word = neuron / 32;
 	uint32_t mask = 0x1 << (neuron % 32);
 	if(condition) {
 		atomicOr(s_vec + word, mask);

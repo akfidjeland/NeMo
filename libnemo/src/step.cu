@@ -32,14 +32,14 @@
  */
 __device__
 void
-storeFiringOutput(uint nfired, nidx_dt* s_fired,
+storeFiringOutput(unsigned nfired, nidx_dt* s_fired,
 		uint32_t* s_dfired, uint32_t* g_dfired)
 {
 	bv_clear_(s_dfired);
 
-	for(uint nbase=0; nbase < nfired; nbase += THREADS_PER_BLOCK) {
-		uint i = nbase + threadIdx.x;
-		uint neuron = s_fired[i];
+	for(unsigned nbase=0; nbase < nfired; nbase += THREADS_PER_BLOCK) {
+		unsigned i = nbase + threadIdx.x;
+		unsigned neuron = s_fired[i];
 		bv_atomicSetPredicated(i < nfired, neuron, s_dfired);
 	}
 	__syncthreads();
@@ -68,14 +68,14 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
 __device__
 void
 fire(
-	uint s_partitionSize,
+	unsigned s_partitionSize,
 	float* g_neuronParameters,
 	// input
 	float* s_current,    // input current
 	// buffers
 	uint32_t* s_fstim,
 	// output
-	uint* s_firingCount,
+	unsigned* s_firingCount,
 	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
 	//! \todo put s_pitch32 in cmem
@@ -87,9 +87,9 @@ fire(
 	float* g_u = g_neuronParameters + STATE_U * neuronParametersSize;
 	float* g_v = g_neuronParameters + STATE_V * neuronParametersSize;
 
-	for(uint nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
+	for(unsigned nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
 
-		uint neuron = nbase + threadIdx.x;
+		unsigned neuron = nbase + threadIdx.x;
 
 		if(neuron < s_partitionSize) {
 
@@ -128,7 +128,7 @@ fire(
 						forceFiring, threadIdx.x);
 
 				//! \todo consider *only* updating this here, and setting u and v separately
-				uint i = atomicAdd(s_firingCount, 1);
+				unsigned i = atomicAdd(s_firingCount, 1);
 
 				/* can overwrite current as long as i < neuron. See notes below
 				 * on synchronisation and declaration of s_current/s_fired. */
@@ -157,56 +157,56 @@ fire(
 
 __device__
 void
-scatter(uint cycle,
-		uint s_firingCount,
+scatter(unsigned cycle,
+		unsigned s_firingCount,
 		nidx_dt* s_fired,
-		uint* g_outgoingCount,
+		unsigned* g_outgoingCount,
 		outgoing_t* g_outgoing,
-		uint* g_incomingHeads,
+		unsigned* g_incomingHeads,
 		incoming_t* g_incoming)
 {
-	for(uint fidxBase = 0; fidxBase < s_firingCount;
+	for(unsigned fidxBase = 0; fidxBase < s_firingCount;
 			fidxBase += THREADS_PER_BLOCK) {
 
 		// load row lengths in parallel
 		//! \note could probably use ushort here
-		__shared__ uint s_len[THREADS_PER_BLOCK]; // 1KB
-		uint fidx = fidxBase + threadIdx.x;
-		uint presynaptic = s_fired[fidx];
+		__shared__ unsigned s_len[THREADS_PER_BLOCK]; // 1KB
+		unsigned fidx = fidxBase + threadIdx.x;
+		unsigned presynaptic = s_fired[fidx];
 		if(fidx < s_firingCount) {
 			s_len[threadIdx.x] = outgoingCount(presynaptic, g_outgoingCount);
 		}
 		__syncthreads();
 
-		uint fidxMax = min(fidxBase + THREADS_PER_BLOCK, s_firingCount);
+		unsigned fidxMax = min(fidxBase + THREADS_PER_BLOCK, s_firingCount);
 
-		for(uint fidx = fidxBase; fidx < fidxMax; ++fidx) {
+		for(unsigned fidx = fidxBase; fidx < fidxMax; ++fidx) {
 
-			uint presynaptic = s_fired[fidx];
+			unsigned presynaptic = s_fired[fidx];
 			ASSERT(presynaptic < MAX_PARTITION_SIZE);
 
-			uint len = s_len[fidx % THREADS_PER_BLOCK];
+			unsigned len = s_len[fidx % THREADS_PER_BLOCK];
 
-			for(uint jobBase = 0; jobBase < len; jobBase += THREADS_PER_BLOCK) {
+			for(unsigned jobBase = 0; jobBase < len; jobBase += THREADS_PER_BLOCK) {
 
-				uint jobIdx = jobBase + threadIdx.x;
+				unsigned jobIdx = jobBase + threadIdx.x;
 
 				if(jobIdx < len) {
 
 					outgoing_t sout = outgoing(presynaptic, jobIdx, g_outgoing);
 
-					uint delay = outgoingDelay(sout);
+					unsigned delay = outgoingDelay(sout);
 
 					ASSERT(delay > 0);
 
-					uint targetPartition = outgoingTargetPartition(sout);
+					unsigned targetPartition = outgoingTargetPartition(sout);
 					size_t headsAddr = incomingCountAddr(targetPartition, cycle, delay);
 					/*! \todo we might be able to reduce the number of atomic
 					 * operations here, by writing warps going to the same
 					 * target in the same go. This would be easier if we did
 					 * just-in-time delivery, in which case we could do
 					 * multiple smem atomics, and just a single gmem atomic */
-					uint offset = atomicAdd(g_incomingHeads + headsAddr, 1);
+					unsigned offset = atomicAdd(g_incomingHeads + headsAddr, 1);
 
 					ASSERT(offset < c_incomingPitch);
 
@@ -229,9 +229,9 @@ scatter(uint cycle,
 __device__
 void
 gather(
-		uint cycle,
+		unsigned cycle,
 		synapse_t* g_fcm,
-		uint* g_incomingCount,
+		unsigned* g_incomingCount,
 		incoming_t* g_incoming,
 		float* s_current,
 		uint32_t* s_overflow, // 1b per neuron overflow detection
@@ -240,7 +240,7 @@ gather(
 	//! \todo move init of current to here, so that we can ensure that it's zero
 	/* Update incoming current in-place in fixed-point format */
 	fix_t* s_fx_current = (fix_t*) s_current;
-	__shared__ uint s_incomingCount;
+	__shared__ unsigned s_incomingCount;
 
 	bv_clear(s_overflow);
 	bv_clear(s_negative);
@@ -260,11 +260,11 @@ gather(
 	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
 
 	//! \todo rename variables here
-	for(uint groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
+	for(unsigned groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
 
-		__shared__ uint s_groupSize;
+		__shared__ unsigned s_groupSize;
 
-		uint group = groupBase + threadIdx.x;
+		unsigned group = groupBase + threadIdx.x;
 
 		if(threadIdx.x == 0) {
 			s_groupSize =
@@ -283,12 +283,12 @@ gather(
 
 		__syncthreads();
 
-		for(uint gwarp_base = 0; gwarp_base < s_groupSize; gwarp_base += WARPS_PER_BLOCK) {
+		for(unsigned gwarp_base = 0; gwarp_base < s_groupSize; gwarp_base += WARPS_PER_BLOCK) {
 
-			uint bwarp = threadIdx.x / WARP_SIZE; // warp index within a block
-			uint gwarp = gwarp_base + bwarp;      // warp index within the global schedule
+			unsigned bwarp = threadIdx.x / WARP_SIZE; // warp index within a block
+			unsigned gwarp = gwarp_base + bwarp;      // warp index within the global schedule
 
-			uint postsynaptic;
+			unsigned postsynaptic;
 			fix_t weight = 0;
 
 			synapse_t* base = s_warpAddress[gwarp] + threadIdx.x % WARP_SIZE;
@@ -296,7 +296,7 @@ gather(
 			/* only warps at the very end of the group are invalid here */
 			if(gwarp < s_groupSize) {
 				postsynaptic = targetNeuron(*base);
-				weight = *((uint*)base + c_fcmPlaneSize);
+				weight = *((unsigned*)base + c_fcmPlaneSize);
 			}
 
 			if(weight != 0) {
@@ -317,8 +317,8 @@ gather(
 
 	/* If any accumulators overflow, clamp to max positive or minimum value */
 #ifdef FIXPOINT_SATURATION
-	for(uint nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
-		uint nidx = nbase + threadIdx.x;
+	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
+		unsigned nidx = nbase + threadIdx.x;
 		bool overflow = bv_isSet(nidx, s_overflow);
 		if(overflow) {
 			bool negative = bv_isSet(nidx, s_negative);
@@ -369,9 +369,9 @@ step (
 		float* g_rngSigma,			//! \todo combine with g_neuronParameters
 		// spike delivery
 		synapse_t* g_fcm,
-		uint* g_outgoingCount,
+		unsigned* g_outgoingCount,
 		outgoing_t* g_outgoing,
-		uint* g_incomingHeads,
+		unsigned* g_incomingHeads,
 		incoming_t* g_incoming,
 		// firing stimulus
 		uint32_t* g_fstim,
@@ -411,8 +411,8 @@ step (
 	__shared__ uint32_t s_N1B[MAX_PARTITION_SIZE/32];
 
 	/* Per-partition parameters */
-	__shared__ uint s_partitionSize;
-	__shared__ uint s_firingCount;
+	__shared__ unsigned s_partitionSize;
+	__shared__ unsigned s_firingCount;
 
 	if(threadIdx.x == 0) {
 #ifdef __DEVICE_EMULATION__

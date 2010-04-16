@@ -22,7 +22,7 @@ namespace nemo {
 FiringOutput::FiringOutput(
 		size_t partitionCount,
 		size_t partitionSize,
-		uint maxReadPeriod):
+		unsigned maxReadPeriod):
 	md_buffer(NULL),
 	mh_buffer(NULL),
 	m_pitch(0),
@@ -70,10 +70,10 @@ FiringOutput::step()
 
 
 
-uint
+unsigned
 FiringOutput::readFiring(
-		const std::vector<uint>** cycles,
-		const std::vector<uint>** neuronIdx)
+		const std::vector<unsigned>** cycles,
+		const std::vector<unsigned>** neuronIdx)
 {
 	m_cycles.clear();
 	m_neuronIdx.clear();
@@ -87,7 +87,7 @@ FiringOutput::readFiring(
 
 	*cycles = &m_cycles;
 	*neuronIdx = &m_neuronIdx;
-	uint readCycles = m_bufferedCycles;
+	unsigned readCycles = m_bufferedCycles;
 	m_bufferedCycles = 0;
 	return readCycles;
 }
@@ -96,12 +96,12 @@ FiringOutput::readFiring(
 
 void
 FiringOutput::populateSparse(
-		uint bufferedCycles,
+		unsigned bufferedCycles,
 		const uint32_t* hostBuffer,
-		std::vector<uint>& firingCycle,
-		std::vector<uint>& neuronIdx)
+		std::vector<unsigned>& firingCycle,
+		std::vector<unsigned>& neuronIdx)
 {
-	for(uint cycle=0; cycle < bufferedCycles; ++cycle) {
+	for(unsigned cycle=0; cycle < bufferedCycles; ++cycle) {
 		size_t cycleOffset = cycle * m_partitionCount * m_pitch;
 
 		for(size_t partition=0; partition < m_partitionCount; ++partition) {

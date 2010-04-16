@@ -72,10 +72,10 @@ class STDP
 		uint64_t postFireBits() const { return m_postFireBits; }
 
 		/*! \return dt of first spike closest to post-firing, /before/ post-firing. */
-		uint closestPreFire(uint64_t arrivals) const;
+		unsigned closestPreFire(uint64_t arrivals) const;
 
 		/*! \return dt of first spike closest to post-firing, /after/ post-firing. */
-		uint closestPostFire(uint64_t arrivals) const;
+		unsigned closestPostFire(uint64_t arrivals) const;
 
 		/*! \return the STDP function lookup-table */
 		const std::vector<T>& function() const { return m_function; }

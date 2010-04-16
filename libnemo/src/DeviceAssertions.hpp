@@ -31,7 +31,7 @@ class DeviceAssertionFailure : public std::exception
 {
 	public :
 
-		DeviceAssertionFailure(uint partition, uint thread, uint line, uint cycle);
+		DeviceAssertionFailure(unsigned partition, unsigned thread, unsigned line, unsigned cycle);
 
 		~DeviceAssertionFailure() throw () {}
 
@@ -49,17 +49,17 @@ class DeviceAssertions
 	public :
 
 		/* Allocate device memory for device assertions */
-		DeviceAssertions(uint partitionCount);
+		DeviceAssertions(unsigned partitionCount);
 
 		/* Check whether any device assertions have failed. Only the last
 		 * assertion failure for each thread will be reported. Checking device
 		 * assertions require reading device memory and can therefore be
 		 * costly. */
-		void check(uint cycle) throw(DeviceAssertionFailure);
+		void check(unsigned cycle) throw(DeviceAssertionFailure);
 
 	private :
 
-		uint m_partitionCount;
+		unsigned m_partitionCount;
 
 		std::vector<int> mh_mem;
 };

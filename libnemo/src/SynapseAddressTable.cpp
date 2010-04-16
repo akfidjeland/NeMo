@@ -7,7 +7,7 @@ namespace nemo {
 
 
 void
-SynapseAddressTable::addBlock(nidx_t sourceNeuron, uint blockStart, uint blockEnd)
+SynapseAddressTable::addBlock(nidx_t sourceNeuron, unsigned blockStart, unsigned blockEnd)
 {
 	m_data[sourceNeuron].second.push_back(AddressRange(blockStart, blockEnd));
 }
@@ -15,7 +15,7 @@ SynapseAddressTable::addBlock(nidx_t sourceNeuron, uint blockStart, uint blockEn
 
 
 void
-SynapseAddressTable::setWarpRange(nidx_t sourceNeuron, uint start, uint end)
+SynapseAddressTable::setWarpRange(nidx_t sourceNeuron, unsigned start, unsigned end)
 {
 	m_data[sourceNeuron].first = AddressRange(start, end);
 }

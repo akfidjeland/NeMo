@@ -42,7 +42,7 @@ class Incoming
 
 		incoming_t* buffer() const { return m_buffer.get(); }
 
-		uint* heads() const { return m_count.get(); }
+		unsigned* heads() const { return m_count.get(); }
 
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
@@ -55,7 +55,7 @@ class Incoming
 
 		/* At run-time, we keep track of how many incoming spike groups are
 		 * queued for each target partition */
-		boost::shared_ptr<uint> m_count;
+		boost::shared_ptr<unsigned> m_count;
 
 		size_t m_allocated;
 };

@@ -18,17 +18,17 @@ __constant__ size_t c_outgoingPitch; // word pitch
 
 __host__
 outgoing_t
-make_outgoing(pidx_t partition, delay_t delay, uint warpOffset)
+make_outgoing(pidx_t partition, delay_t delay, unsigned warpOffset)
 {
 	//! \todo could share pointer packing with dispatchTable code
 	assert(partition < MAX_PARTITION_COUNT);
 	assert(delay < MAX_DELAY);
 
-	uint targetData =
-	       ((uint(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS))
-	     |  (uint(delay)     & MASK(DELAY_BITS));
+	unsigned targetData =
+	       ((unsigned(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS))
+	     |  (unsigned(delay)     & MASK(DELAY_BITS));
 
-	return make_uint2(targetData, (uint) warpOffset);
+	return make_uint2(targetData, (unsigned) warpOffset);
 }
 
 
@@ -55,31 +55,31 @@ outgoingRow(pidx_t partition, nidx_t neuron, size_t pitch)
 
 
 __device__
-uint
+unsigned
 outgoingTargetPartition(outgoing_t out)
 {
-	return uint((out.x >> (DELAY_BITS)) & MASK(PARTITION_BITS));
+	return unsigned((out.x >> (DELAY_BITS)) & MASK(PARTITION_BITS));
 }
 
 
 
 __device__
-uint
+unsigned
 outgoingDelay(outgoing_t out)
 {
-	return uint(out.x & MASK(DELAY_BITS));
+	return unsigned(out.x & MASK(DELAY_BITS));
 }
 
 
 
-__device__ uint outgoingWarpOffset(outgoing_t out) { return out.y; }
+__device__ unsigned outgoingWarpOffset(outgoing_t out) { return out.y; }
 
 
 
 __device__
 outgoing_t
-outgoing(uint presynaptic,
-		uint jobIdx,
+outgoing(unsigned presynaptic,
+		unsigned jobIdx,
 		outgoing_t* g_targets)
 {
 	size_t addr = outgoingRow(CURRENT_PARTITION, presynaptic, c_outgoingPitch);
@@ -92,8 +92,8 @@ outgoing(uint presynaptic,
  *		the number of jobs for a particular firing neuron in the current
  *		partition */
 __device__
-uint
-outgoingCount(uint presynaptic, uint* g_counts)
+unsigned
+outgoingCount(unsigned presynaptic, unsigned* g_counts)
 {
 	return g_counts[CURRENT_PARTITION * MAX_PARTITION_SIZE + presynaptic];
 }

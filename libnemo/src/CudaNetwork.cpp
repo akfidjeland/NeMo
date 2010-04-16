@@ -164,8 +164,8 @@ CudaNetwork::configureStdp(const STDP<float>& stdp)
 
 	const std::vector<float>& flfn = m_stdpFn.function();
 	std::vector<fix_t> fxfn(flfn.size());
-	uint fb = m_cm.fractionalBits();
-	for(uint i=0; i < fxfn.size(); ++i) {
+	unsigned fb = m_cm.fractionalBits();
+	for(unsigned i=0; i < fxfn.size(); ++i) {
 		fxfn.at(i) = fx_toFix(flfn[i], fb);
 	}
 	::configureStdp(m_stdpFn.preFireWindow(),
@@ -189,7 +189,7 @@ CudaNetwork::configureStdp(const STDP<float>& stdp)
  *		Pointer to pass to kernel (which is NULL if there's no firing data).
  */
 uint32_t*
-CudaNetwork::setFiringStimulus(const std::vector<uint>& nidx)
+CudaNetwork::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
 	if(nidx.empty())
 		return NULL;
@@ -198,7 +198,7 @@ CudaNetwork::setFiringStimulus(const std::vector<uint>& nidx)
 	size_t pitch = m_firingStimulus->wordPitch();
 	std::vector<uint32_t> hostArray(m_firingStimulus->size(), 0);
 
-	for(std::vector<uint>::const_iterator i = nidx.begin();
+	for(std::vector<unsigned>::const_iterator i = nidx.begin();
 			i != nidx.end(); ++i) {
 		//! \todo share this translation with NeuronParameters and CMImpl
 		size_t nn = *i % m_maxPartitionSize;
@@ -310,7 +310,7 @@ CudaNetwork::usingStdp() const
 
 
 void
-CudaNetwork::stepSimulation(const std::vector<uint>& fstim)
+CudaNetwork::stepSimulation(const std::vector<unsigned>& fstim)
 {
 	/* A 32-bit counter can count up to around 4M seconds which is around 1200
 	 * hours or 50 days */
@@ -390,10 +390,10 @@ CudaNetwork::getSynapses(unsigned sn,
 
 
 
-uint
+unsigned
 CudaNetwork::readFiring(
-		const std::vector<uint>** cycles,
-		const std::vector<uint>** nidx)
+		const std::vector<unsigned>** cycles,
+		const std::vector<unsigned>** nidx)
 {
 	return m_firingOutput->readFiring(cycles, nidx);
 }

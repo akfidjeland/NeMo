@@ -67,13 +67,13 @@ Outgoing::totalWarpCount() const
 void
 Outgoing::reportWarpSizeHistogram(std::ostream& out) const
 {
-	uint total = 0;
-	std::vector<uint> hist(WARP_SIZE+1, 0);
+	unsigned total = 0;
+	std::vector<unsigned> hist(WARP_SIZE+1, 0);
 	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
 		targets_t targets = i->second;
 		for(targets_t::const_iterator j = targets.begin(); j != targets.end(); ++j) {
-			uint fullWarps = j->second / WARP_SIZE;
-			uint partialWarp = j->second % WARP_SIZE;
+			unsigned fullWarps = j->second / WARP_SIZE;
+			unsigned partialWarp = j->second % WARP_SIZE;
 			hist.at(WARP_SIZE) += fullWarps;
 			total += fullWarps;
 			if(partialWarp != 0) {
@@ -82,8 +82,8 @@ Outgoing::reportWarpSizeHistogram(std::ostream& out) const
 			}
 		}
 	}
-	for(uint size=1; size < WARP_SIZE+1; ++size) {
-		uint count = hist.at(size);
+	for(unsigned size=1; size < WARP_SIZE+1; ++size) {
+		unsigned count = hist.at(size);
 		double percentage = double(100 * count) / double(total);
 		std::cout << size << ": " << count << "(" << percentage << "%)\n";
 	}
@@ -137,7 +137,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	std::vector<outgoing_t> h_arr(height * wpitch, INVALID_OUTGOING);
 
 	// allocate temporary host memory for row lengths
-	std::vector<uint> h_rowLength(height, 0);
+	std::vector<unsigned> h_rowLength(height, 0);
 
 	// accumulate the number of incoming warps for each partition.
 	std::map<pidx_t, size_t> incoming;
@@ -161,12 +161,12 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 			pidx_t targetPartition = get<0>(r->first);
 			delay_t delay = get<1>(r->first);
 			//! \todo add run-time test that warp-size is as expected
-			uint warps = DIV_CEIL(r->second, WARP_SIZE);
+			unsigned warps = DIV_CEIL(r->second, WARP_SIZE);
 
 			incoming[targetPartition] += warps;
 
 			//! \todo check for overflow here
-			for(uint warp = 0; warp < warps; ++warp) {
+			for(unsigned warp = 0; warp < warps; ++warp) {
 				uint32_t offset = wtable.get(sourcePartition, sourceNeuron, targetPartition, delay);
 				h_arr[t_addr + j + warp] =
 					make_outgoing(targetPartition, delay, offset);
@@ -188,17 +188,17 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	setOutgoingPitch(wpitch);
 
 	// allocate device memory for row lengths
-	uint* d_rowLength;
-	err = cudaMalloc((void**)&d_rowLength, height * sizeof(uint));
+	unsigned* d_rowLength;
+	err = cudaMalloc((void**)&d_rowLength, height * sizeof(unsigned));
 	if(cudaSuccess != err) {
 		throw DeviceAllocationException("outgoing spikes (row lengths)",
-				height * sizeof(uint), err);
+				height * sizeof(unsigned), err);
 	}
-	md_rowLength = boost::shared_ptr<uint>(d_rowLength, cudaFree);
-	m_allocated += height * sizeof(uint);
+	md_rowLength = boost::shared_ptr<unsigned>(d_rowLength, cudaFree);
+	m_allocated += height * sizeof(unsigned);
 
 	// copy row lengths from host to device
-	CUDA_SAFE_CALL(cudaMemcpy(d_rowLength, &h_rowLength[0], h_rowLength.size() * sizeof(uint),
+	CUDA_SAFE_CALL(cudaMemcpy(d_rowLength, &h_rowLength[0], h_rowLength.size() * sizeof(unsigned),
 				cudaMemcpyHostToDevice));
 
 	// return maximum number of incoming groups for any one partition

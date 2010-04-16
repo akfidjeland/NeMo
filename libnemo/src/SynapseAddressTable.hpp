@@ -21,15 +21,15 @@ namespace nemo {
 
 struct AddressRange
 {
-	uint start;
-	uint end;
+	unsigned start;
+	unsigned end;
 
 	AddressRange() : start(0), end(0) {}
-	AddressRange(uint s, uint e) : start(s), end(e) {}
+	AddressRange(unsigned s, unsigned e) : start(s), end(e) {}
 
 	bool valid() const { return end > start; }
 
-	uint size() const { return end - start; }
+	unsigned size() const { return end - start; }
 };
 
 
@@ -48,9 +48,9 @@ class SynapseAddressTable
 
 		// using default ctor
 
-		void addBlock(nidx_t sourceNeuron, uint blockStart, uint blockEnd);
+		void addBlock(nidx_t sourceNeuron, unsigned blockStart, unsigned blockEnd);
 
-		void setWarpRange(nidx_t sourceNeuron, uint start, uint end);
+		void setWarpRange(nidx_t sourceNeuron, unsigned start, unsigned end);
 
 		/*! \return start and end warps for the given neuron */
 		const AddressRange& warpsOf(nidx_t sourceNeuron) const;

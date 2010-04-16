@@ -45,11 +45,11 @@ applySTDP_(
 {
 	SET_COUNTER(s_ccApplySTDP, 0);
 
-	__shared__ uint s_chunkCount;
-	__shared__ uint s_partitionSize;
+	__shared__ unsigned s_chunkCount;
+	__shared__ unsigned s_partitionSize;
 
 	weight_dt* gr_stdp = (weight_dt*) cr_stdp[CURRENT_PARTITION];
-	uint r_pitch = cr_pitch[CURRENT_PARTITION];
+	unsigned r_pitch = cr_pitch[CURRENT_PARTITION];
 
 #if __DEVICE_EMULATION__
 	uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
@@ -63,10 +63,10 @@ applySTDP_(
 	}
 	__syncthreads();
 
-	for(uint target=0; target < s_partitionSize; ++target) {
-		for(uint chunk=0; chunk < s_chunkCount; ++chunk) {
+	for(unsigned target=0; target < s_partitionSize; ++target) {
+		for(unsigned chunk=0; chunk < s_chunkCount; ++chunk) {
 
-			uint r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+			unsigned r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
 
 			if(r_sidx < r_pitch) {
 
@@ -74,7 +74,7 @@ applySTDP_(
 				size_t gf_offset = gr_faddress[gr_offset];
 #if __DEVICE_EMULATION__
 				//! \todo remove loading of rsynapse
-				uint rsynapse = gr_address[gr_offset];
+				unsigned rsynapse = gr_address[gr_offset];
 #endif
 
 				if(gf_offset != 0) {

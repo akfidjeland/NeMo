@@ -38,8 +38,8 @@
 
 /* Configuration array is stored in constant memory, and is loaded in
  * (parallel) into shared memory for each thread block */
-__constant__ uint c_networkParameters[NPARAM_COUNT];
-__shared__ uint s_networkParameters[NPARAM_COUNT];
+__constant__ unsigned c_networkParameters[NPARAM_COUNT];
+__shared__ unsigned s_networkParameters[NPARAM_COUNT];
 
 /* Some more pleasant names for the parameters */
 // s_maxDelay is not currently in use, and could potentially be removed
@@ -53,16 +53,16 @@ __shared__ uint s_networkParameters[NPARAM_COUNT];
 //! \todo split this up
 __host__
 void
-configureKernel(uint maxDelay, uint pitch32, uint pitch64)
+configureKernel(unsigned maxDelay, unsigned pitch32, unsigned pitch64)
 {
-	uint param[NPARAM_COUNT];
+	unsigned param[NPARAM_COUNT];
 	SET_CONSTANT(maxDelay,  maxDelay);
 	SET_CONSTANT(pitch32,   pitch32);
 	SET_CONSTANT(pitch64,   pitch64);
 	CUDA_SAFE_CALL(
 			cudaMemcpyToSymbol(c_networkParameters,
-				&param[0], 
-				sizeof(uint)*NPARAM_COUNT, 
+				&param[0],
+				sizeof(unsigned)*NPARAM_COUNT,
 				0,
 				cudaMemcpyHostToDevice));
 }
@@ -82,11 +82,11 @@ loadNetworkParameters()
 
 /* Per-partition configuration */
 
-__constant__ uint c_partitionSize[MAX_THREAD_BLOCKS];
+__constant__ unsigned c_partitionSize[MAX_THREAD_BLOCKS];
 
 __host__
 void
-configurePartitionSize(const uint* d_partitionSize, size_t len)
+configurePartitionSize(const unsigned* d_partitionSize, size_t len)
 {
 	//! \todo set padding to zero
 	assert(len <= MAX_THREAD_BLOCKS);
@@ -94,7 +94,7 @@ configurePartitionSize(const uint* d_partitionSize, size_t len)
 		cudaMemcpyToSymbol(
 			c_partitionSize,
 			(void*) d_partitionSize,
-			MAX_THREAD_BLOCKS*sizeof(uint), 
+			MAX_THREAD_BLOCKS*sizeof(unsigned),
 			0, cudaMemcpyHostToDevice));
 }
 

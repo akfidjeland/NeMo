@@ -37,7 +37,7 @@ typedef uint2 outgoing_t;
  * \param warpOffset
  *		offset into FCM in terms of number of warps
  */
-__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, uint warpOffset);
+__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, unsigned warpOffset);
 
 const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
 

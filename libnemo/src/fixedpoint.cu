@@ -17,19 +17,19 @@
 #define FX_SIGN_BIT 0x80000000
 
 /* Scaling factor used for fixed-points (used for weight storage) */
-__constant__ uint c_fixedPointScale;
-__constant__ uint c_fixedPointFractionalBits;
+__constant__ unsigned c_fixedPointScale;
+__constant__ unsigned c_fixedPointFractionalBits;
 
 
 __host__
 void
-fx_setFormat(uint fracbits)
+fx_setFormat(unsigned fracbits)
 {
-	uint scale = 1 << fracbits;
+	unsigned scale = 1 << fracbits;
 	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_fixedPointScale,
-				&scale, sizeof(uint), 0, cudaMemcpyHostToDevice));
+				&scale, sizeof(unsigned), 0, cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_fixedPointFractionalBits,
-				&fracbits, sizeof(uint), 0, cudaMemcpyHostToDevice));
+				&fracbits, sizeof(unsigned), 0, cudaMemcpyHostToDevice));
 }
 
 

@@ -36,7 +36,7 @@ class FiringOutput {
 		 */
 		FiringOutput(size_t partitionCount,
 				size_t partitionSize,
-				uint maxReadPeriod=defaultBufferLength());
+				unsigned maxReadPeriod=defaultBufferLength());
 
 		~FiringOutput();
 
@@ -52,8 +52,8 @@ class FiringOutput {
 		 */
 		//! \todo require min and max expected cycle number to detect possible overflow
 		unsigned readFiring(
-				const std::vector<uint>** cycles,
-				const std::vector<uint>** neuronIdx);
+				const std::vector<unsigned>** cycles,
+				const std::vector<unsigned>** neuronIdx);
 
 		/*! Flush the buffer. Any data on the device is left there as garbage,
 		 * so there's no significant cost to doing this. */
@@ -98,20 +98,20 @@ class FiringOutput {
 		/* While the firing is stored in a dense format on the device, the
 		 * external interface uses sparse firing. Pointers into the sparse
 		 * storage is valid from one call to \a readFiring to the next */
-		std::vector<uint> m_cycles;
-		std::vector<uint> m_neuronIdx;
+		std::vector<unsigned> m_cycles;
+		std::vector<unsigned> m_neuronIdx;
 
 		/*! \see step() */
-		uint m_bufferedCycles;
-		uint m_maxReadPeriod;
+		unsigned m_bufferedCycles;
+		unsigned m_maxReadPeriod;
 
 		size_t md_allocated;
 
 		void populateSparse(
-				uint cycles,
+				unsigned cycles,
 				const uint32_t* hostBuffer,
-				std::vector<uint>& cycles,
-				std::vector<uint>& neuronIdx);
+				std::vector<unsigned>& cycles,
+				std::vector<unsigned>& neuronIdx);
 
 		size_t m_partitionSize;
 };

@@ -82,9 +82,9 @@ thalamicInput(
 	/* Copy the input state from memory into our local state */
 	rng_loadState(rngState, g_rngState, pitch);
 	
-	for(uint nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
+	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 
-		uint neuron = nbase + threadIdx.x;
+		unsigned neuron = nbase + threadIdx.x;
 
 		if(neuron < partitionSize) {
 
