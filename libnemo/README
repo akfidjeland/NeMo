@@ -14,10 +14,13 @@ Dependencies
 ------------
 
 - CUDA toolkit >= 2.1 (SDK not required)
-- Boost (smart pointers, tuples, and random number generation)
+- Boost
 
 Note that the CUDA compiler driver 'nvcc' is not compatible with all versions
 of gcc, especially newer versions of gcc.
+
+For Boost, only a few header-only libraries are required (shared_ptr, tuples,
+random, date_time), so a full install/build is not required.
 
 Usage
 -----

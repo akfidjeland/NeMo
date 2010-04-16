@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/time.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace nemo {
 
@@ -25,7 +25,7 @@ class Timer
 
 		Timer() { reset(); }
 
-		// call for every simulation step
+		/*! Update internal counters. Should be called for every simulation step */
 		void step() { m_simCycles++ ; }
 
 		/*! \return elapsed wall-clock time in milliseconds */
@@ -34,11 +34,12 @@ class Timer
 		/*! \return elapsed simulation time in milliseconds */
 		unsigned long elapsedSimulation() const;
 
+		/*! Reset internal counters. */
 		void reset();
 
 	private:
 
-		struct timeval m_start;
+		boost::posix_time::ptime m_start;
 
 		unsigned long m_simCycles;
 };
@@ -49,11 +50,10 @@ inline
 unsigned long
 Timer::elapsedWallclock() const
 {
-	struct timeval m_end;
-	gettimeofday(&m_end, NULL);
-	struct timeval m_res;
-	timersub(&m_end, &m_start, &m_res);
-	return 1000 * m_res.tv_sec + m_res.tv_usec / 1000;
+	using namespace boost::posix_time;
+
+	time_duration elapsed = ptime(microsec_clock::local_time()) - m_start;
+	return elapsed.total_milliseconds();
 }
 
 
@@ -71,7 +71,9 @@ inline
 void
 Timer::reset()
 {
-	gettimeofday(&m_start, NULL);
+	using namespace boost::posix_time;
+
+	m_start = ptime(microsec_clock::local_time());
 	m_simCycles = 0;
 }
 
