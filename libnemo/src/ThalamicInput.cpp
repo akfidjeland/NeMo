@@ -12,6 +12,8 @@
 #include "ThalamicInput.hpp"
 #include "thalamicInput.cu_h"
 
+#include <boost/random.hpp>
+
 
 namespace nemo {
 	namespace cuda {
@@ -66,22 +68,24 @@ ThalamicInput::moveToDevice()
 void
 ThalamicInput::initRngState()
 {
-    srand48(m_seed);
+	typedef boost::mt19937 rng_t;
+
+	//! \todo use seed here
+	rng_t rng;
+
+	boost::variate_generator<rng_t, boost::uniform_int<unsigned long> >
+		seed(rng, boost::uniform_int<unsigned long>(0, 0x7fffffff));
 
     /* This RNG state vector needs to be filled with initialisation data.  Each
      * RNG needs 4 32-bit words of seed data, with each thread having a
-     * diferent seed. 
-     *
-     * Fill it up from lrand48 -- in practice you would probably use something
-     * a bit better. */
+     * diferent seed. */
     std::vector<unsigned> rngbuf(m_partitionSize);
     for(unsigned partition=0; partition<m_partitionCount; ++partition) {
         for(unsigned plane=0; plane<4; ++plane) {
             for(unsigned i=0; i<rngbuf.size(); ++i) {
-                rngbuf[i] = ((unsigned) lrand48()) << 1;
+				rngbuf[i] = seed();
             }
-            m_rngState.setPartition(partition, 
-                    &rngbuf[0], rngbuf.size(), plane);
+            m_rngState.setPartition(partition, &rngbuf[0], rngbuf.size(), plane);
         }
     }
 }
