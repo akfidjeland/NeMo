@@ -1,0 +1,8 @@
+#ifndef NEMO_CONFIG_H
+#define NEMO_CONFIG_H
+
+#cmakedefine HAVE_BUILTIN_CLZLL
+#cmakedefine HAVE_BUILTIN_CLZ
+#cmakedefine HAVE_RAND
+
+#endif

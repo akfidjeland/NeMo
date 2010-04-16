@@ -1,6 +1,16 @@
 # Note set CUDA_BUILD_EMULATION to OFF to enable Device mode compilation.
 ##############################################################################
 
+
+##############################################################################
+# General system configuration
+
+INCLUDE(CheckCXXSourceCompiles)
+# CheckFunctionExists does not seem to work with GCC builtins
+CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clzll(0); }" HAVE_BUILTIN_CLZLL)
+CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clz(0); }" HAVE_BUILTIN_CLZ)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
 ##############################################################################
 # CUDA configuration
 
@@ -26,6 +36,7 @@ CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(
 	${CUDA_INCLUDE_DIRS}
 	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_BINARY_DIR} # for configured files
 	${Boost_INCLUDE_DIR}	
   )
 

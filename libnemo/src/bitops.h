@@ -1,7 +1,8 @@
-#ifndef BITOPS_H
-#define BITOPS_H
+#ifndef NEMO_BITOPS_H
+#define NEMO_BITOPS_H
 
 #include <limits.h>
+#include <config.h>
 
 /* Compute leading zeros for type T which should have B bits.
  *
@@ -23,19 +24,19 @@ clzN(T v)
  * with this is not explicitly 64 bit. Instead it is defined for long long. In
  * C99 this is required to be /at least/ 64 bits. However, we require it to be
  * /exactly/ 64 bits. */
-#if LLONG_MAX == 9223372036854775807
+#if LLONG_MAX == 9223372036854775807 && defined(HAVE_BUILTIN_CLZLL)
 inline int clz64(uint64_t val) { return __builtin_clzll(val); }
 #else
-#warning "long long is not 64 bit, using slow clzll"
+#warning "__builtint_clzll not defined or long long is not 64 bit. Using slow clzll instead"
 inline int clz64(uint64_t val) { return clzN<uint64_t, 64>(val); }
-#endif // LLONG_MAX
+#endif
 
 
 /* Ditto for 32 bits */
-#if UINT_MAX == 4294967295U
+#if UINT_MAX == 4294967295U && defined(HAVE_BUILTIN_CLZ)
 inline int clz32(uint32_t val) { return __builtin_clz(val); }
 #else
-#warning "long int is not 32 bit, using slow clzl"
+#warning "__builtin_clz not defined or long int is not 32 bit. Using slow clzl"
 inline int clz32(uint32_t val) { return clzN<uint32_t, 32>(val); }
 #endif // LONG_MAX
 
