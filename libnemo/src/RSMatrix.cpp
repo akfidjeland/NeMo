@@ -7,15 +7,16 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cuda_runtime.h>
+#include <stdexcept>
+#include <boost/tuple/tuple_comparison.hpp>
+
 #include "RSMatrix.hpp"
 #include "connectivityMatrix.cu_h"
 #include "util.h"
 #include "except.hpp"
 #include "WarpAddressTable.hpp"
 
-#include <cuda_runtime.h>
-#include <stdexcept>
-#include <boost/tuple/tuple_comparison.hpp>
 
 namespace nemo {
 	namespace cuda {

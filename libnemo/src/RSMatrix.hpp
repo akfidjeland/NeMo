@@ -12,7 +12,6 @@
 
 //! \file RSMatrix.hpp
 
-#include <stdint.h>
 #include <stddef.h>
 #include <vector>
 #include <map>

@@ -10,9 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include <stddef.h>
-
 #include "outgoing.cu_h"
 #include "incoming.cu_h"
 #include "cuda_types.h"

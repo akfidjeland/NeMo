@@ -1,8 +1,6 @@
 #ifndef NEMO_CUDA_TYPES_HPP
 #define NEMO_CUDA_TYPES_HPP
 
-#include <stdint.h>
-
 #include "types.h"
 
 typedef int32_t fix_t;

@@ -12,8 +12,9 @@
 
 //! \file STDP.hpp
 
-#include <stdint.h>
 #include <vector>
+
+#include "types.h"
 
 namespace nemo {
 

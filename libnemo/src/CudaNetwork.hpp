@@ -11,7 +11,6 @@
  */
 
 #include <stddef.h>
-#include <stdint.h>
 
 #include "NVector.hpp"
 #include "Configuration.hpp"
@@ -21,6 +20,7 @@
 #include "Timer.hpp"
 #include "Simulation.hpp"
 #include "STDP.hpp"
+#include "types.h"
 
 namespace nemo {
 
@@ -62,7 +62,7 @@ class CudaNetwork : public Simulation
 		 * NETWORK SIMULATION
 		 */
 
-		void stepSimulation(const std::vector<uint>& fstim = std::vector<uint>());
+		void stepSimulation(const std::vector<unsigned>& fstim = std::vector<unsigned>());
 
 		void applyStdp(float reward);
 
@@ -82,7 +82,7 @@ class CudaNetwork : public Simulation
 		 * 		would most likely already know what this should be, so can use
 		 * 		this for sanity checking.
 		 */
-		uint readFiring(const std::vector<uint>** cycles, const std::vector<uint>** nidx);
+		unsigned readFiring(const std::vector<unsigned>** cycles, const std::vector<unsigned>** nidx);
 
 		void flushFiringBuffer();
 
@@ -110,7 +110,7 @@ class CudaNetwork : public Simulation
 
 		nemo::Configuration m_conf;
 
-		uint32_t* setFiringStimulus(const std::vector<uint>& nidx);
+		uint32_t* setFiringStimulus(const std::vector<unsigned>& nidx);
 
 		//! \todo add this to logging output
 		/*! \return
