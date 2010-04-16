@@ -81,22 +81,32 @@ thalamicInput(
 
 	/* Copy the input state from memory into our local state */
 	rng_loadState(rngState, g_rngState, pitch);
-	
+
 	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 
 		unsigned neuron = nbase + threadIdx.x;
 
 		if(neuron < partitionSize) {
 
-            size_t partitionOffset = CURRENT_PARTITION * pitch;
-            //! \todo make use of  both randoms
-            float2 r = rng_genGaussian(rngState);
-            float sigma = g_sigma[partitionOffset + neuron];
-            s_current[neuron] += r.x * sigma;
-        }
-    }
-	
-    /* Copy the current RNG state back to memory (not strictly necessary, you
-     * can just generate a new random state every time if you want). */
+			size_t partitionOffset = CURRENT_PARTITION * pitch;
+			//! \todo make use of  both randoms
+			float2 r = rng_genGaussian(rngState);
+			float sigma = g_sigma[partitionOffset + neuron];
+
+			/*! \bug It seems that if r.x is very small the result of the
+			 * multiplication is NaN (at least if sigma is 0, possibly in other
+			 * cases as well). This issue seems unrelated to fusing
+			 * multiply-add operations. Forcing separate multiplication does
+			 * not fix. For instance with sigma=0 and r.x=0x00007f80
+			 * (4.57384e-41) we get a NaN result */
+			//! \todo consider using fixed-point arithmetic here as well.
+			s_current[neuron] += r.x * sigma;
+		}
+	}
+
+	/* Copy the current RNG state back to memory (not strictly necessary, you
+	 * can just generate a new random state every time if you want). */
 	rng_saveState(rngState, g_rngState, pitch);
+
+	__syncthreads();
 }
