@@ -3,6 +3,6 @@
 
 #cmakedefine HAVE_BUILTIN_CLZLL
 #cmakedefine HAVE_BUILTIN_CLZ
-#cmakedefine HAVE_RAND
+#cmakedefine HAVE_BUILTIN_CTZLL
 
 #endif

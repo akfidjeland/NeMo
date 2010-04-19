@@ -98,7 +98,8 @@ thalamicInput(
 			 * cases as well). This issue seems unrelated to fusing
 			 * multiply-add operations. Forcing separate multiplication does
 			 * not fix. For instance with sigma=0 and r.x=0x00007f80
-			 * (4.57384e-41) we get a NaN result */
+			 * (4.57384e-41) we get a NaN result. Could not reproduce in
+			 * standalone test-case, however. */
 			//! \todo consider using fixed-point arithmetic here as well.
 			s_current[neuron] += r.x * sigma;
 		}

@@ -9,7 +9,7 @@ INCLUDE(CheckCXXSourceCompiles)
 # CheckFunctionExists does not seem to work with GCC builtins
 CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clzll(0); }" HAVE_BUILTIN_CLZLL)
 CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clz(0); }" HAVE_BUILTIN_CLZ)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_ctzll(0); }" HAVE_BUILTIN_CTZLL)
 
 ##############################################################################
 # CUDA configuration
@@ -30,7 +30,10 @@ MARK_AS_ADVANCED(FORCE
 	CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE
 	CUDA_HOST_COMPILATION_CPP)
 
-CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+CUDA_INCLUDE_DIRECTORIES(
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_BINARY_DIR} # for configured files
+  )
 
 # C++ only includes
 INCLUDE_DIRECTORIES(
@@ -50,6 +53,13 @@ CHECK_TYPE_SIZE(float FLOAT_SIZE)
 IF(NOT ${FLOAT_SIZE} EQUAL 4)
 	MESSAGE(SEND_ERROR "float does not have expected size (4B)")
 ENDIF(NOT ${FLOAT_SIZE} EQUAL 4)
+
+# Unless we're on a windows platform we need stdint.h
+IF(NOT HAVE_STDINT_H AND NOT WIN32)
+	MESSAGE(FATAL_ERROR "No valid stdint.h file found on this platform")
+ENDIF(NOT HAVE_STDINT_H AND NOT WIN32)
+
+
 
 
 
@@ -116,4 +126,9 @@ INSTALL(FILES nemo.h
 			nemo.hpp
 			types.hpp
 			types.h
+			${CMAKE_CURRENT_BINARY_DIR}/config.h
 		DESTINATION include/nemo)
+
+CONFIGURE_FILE(
+	${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/config.h)
