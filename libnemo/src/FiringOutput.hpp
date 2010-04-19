@@ -11,6 +11,7 @@
  */
 
 #include <vector>
+#include "types.h"
 
 //! \file FiringOutput.hpp
 

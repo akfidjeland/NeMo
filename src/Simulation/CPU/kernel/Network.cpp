@@ -10,6 +10,8 @@
 #include <algorithm>
 
 #include "Network.hpp"
+#warning "Bitops not configured properly"
+#include <bitops.h>
 
 
 #define SUBSTEPS 4
@@ -371,6 +373,24 @@ Network::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 
+unsigned
+closestPreFire(const STDP<double>& stdp, uint64_t arrivals)
+{
+	uint64_t validArrivals = arrivals & stdp.preFireBits();
+	int dt =  ctz64(validArrivals >> stdp.postFireWindow());
+	return validArrivals ? (unsigned) dt : STDP<double>::STDP_NO_APPLICATION;
+}
+
+
+
+unsigned
+closestPostFire(const STDP<double>& stdp, uint64_t arrivals)
+{
+	uint64_t validArrivals = arrivals & stdp.postFireBits();
+	int dt = clz64(validArrivals << uint64_t(64 - stdp.postFireWindow()));
+	return validArrivals ? (unsigned) dt : STDP<double>::STDP_NO_APPLICATION;
+}
+
 weight_t
 Network::updateRegion(
 		uint64_t spikes,
@@ -384,8 +404,8 @@ Network::updateRegion(
 
 	if(spikes) {
 
-		uint dt_pre = m_stdp.closestPreFire(spikes);
-		uint dt_post = m_stdp.closestPostFire(spikes);
+		uint dt_pre = closestPreFire(m_stdp, spikes);
+		uint dt_post = closestPostFire(m_stdp, spikes);
 
 		if(dt_pre < dt_post) {
 			w_diff = m_stdp.lookupPre(dt_pre);

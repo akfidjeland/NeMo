@@ -4,8 +4,6 @@
 #include <stdexcept>
 #include <assert.h>
 
-#include "bitops.h"
-
 namespace nemo {
 
 
@@ -39,28 +37,6 @@ STDP<T>::lookupPost(int dt) const
 	assert(dt >= 0);
 	assert(dt < m_postFireWindow);
 	return m_fnPost.at(dt);
-}
-
-
-
-template<typename T>
-unsigned
-STDP<T>::closestPreFire(uint64_t arrivals) const
-{
-	uint64_t validArrivals = arrivals & m_preFireBits;
-	int dt =  ctz64(validArrivals >> m_postFireWindow);
-	return validArrivals ? (unsigned) dt : STDP_NO_APPLICATION;
-}
-
-
-
-template<typename T>
-unsigned
-STDP<T>::closestPostFire(uint64_t arrivals) const
-{
-	uint64_t validArrivals = arrivals & m_postFireBits;
-	int dt = clz64(validArrivals << uint64_t(64 - m_postFireWindow));
-	return validArrivals ? (unsigned) dt : STDP_NO_APPLICATION;
 }
 
 
