@@ -17,7 +17,6 @@ import Examples.Smallworld (smallworld, smallworldOrig)
 import Examples.Ring (ring)
 import Options (defaults)
 import Simulation.CUDA.Memory (initSim, getWeights, rtdata)
-import Simulation.CUDA.KernelFFI (initSimulation)
 import Simulation.STDP.Options (stdpOptions)
 import Types (FT)
 
@@ -34,8 +33,6 @@ testWeightQuery = TestCase $ do
         net = build 123456 $ smallworldOrig :: Network IzhNeuron Static
         ns = weightMatrix $ withWeights viaCFloat $ networkNeurons net
     sim  <- initSim net psize (defaults stdpOptions)
-    {- When initialising memory, the device may not be involved yet -}
-    initSimulation $ rtdata sim
     ns' <- getWeights sim
 
     assertEqual "Same number of neurons in weight matrix before and after writing to device"

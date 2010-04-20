@@ -12,6 +12,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ostream>
 #include "STDP.hpp"
 
 namespace nemo {
@@ -65,8 +66,8 @@ class Configuration
 
 };
 
-
 }
 
+std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf);
 
 #endif

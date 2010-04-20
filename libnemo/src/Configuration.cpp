@@ -39,3 +39,12 @@ Configuration::setCudaDevice(int dev)
 }
 
 } // namespace nemo
+
+
+std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf)
+{
+	return o
+		<< "STDP=" << conf.stdpFunction().enabled() << " "
+		<< "cuda_ps=" << conf.cudaPartitionSize();
+	//! \todo print more infor about STDP
+}

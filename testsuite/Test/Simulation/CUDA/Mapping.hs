@@ -25,7 +25,8 @@ tests = TestList [
         testClusterSize False 1000 512,
         testClusterSize False 1000 256,
         testClusterSize False 1000 250,
-        testClusterSize True 1000 512
+        testClusterSize True 1000 512,
+        testClusterSize True 512 512
     ]
 
 
