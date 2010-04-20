@@ -29,7 +29,6 @@ clzN(T v)
 #if LLONG_MAX == 9223372036854775807 && defined(HAVE_BUILTIN_CLZLL)
 inline int clz64(uint64_t val) { return __builtin_clzll(val); }
 #else
-#warning "__builtint_clzll not defined or long long is not 64 bit. Using slow clzll instead"
 inline int clz64(uint64_t val) { return clzN<uint64_t, 64>(val); }
 #endif
 
@@ -38,7 +37,6 @@ inline int clz64(uint64_t val) { return clzN<uint64_t, 64>(val); }
 #if UINT_MAX == 4294967295U && defined(HAVE_BUILTIN_CLZ)
 inline int clz32(uint32_t val) { return __builtin_clz(val); }
 #else
-#warning "__builtin_clz not defined or long int is not 32 bit. Using slow clzl"
 inline int clz32(uint32_t val) { return clzN<uint32_t, 32>(val); }
 #endif // LONG_MAX
 
@@ -71,7 +69,6 @@ ctzN(T v)
  * 64-bit. The uint64_t will be safely extended to the appropriate length */
 inline int ctz64(uint64_t val) { return __builtin_ctzll(val); }
 #else
-#warning "__builtin_ctzll not defined or long int is not 32 bit. Using slow ctzll"
 inline int ctz64(uint64_t val) { return ctzN<uint64_t, 64>(val); }
 #endif
 

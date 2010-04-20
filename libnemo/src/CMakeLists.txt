@@ -66,6 +66,7 @@ ENDIF(NOT HAVE_STDINT_H AND NOT WIN32)
 ##############################################################################
 SET(BUILD_SHARED_LIBS TRUE)
 
+
 CUDA_ADD_LIBRARY(nemo
 	kernel.cu
 	nemo.cpp
@@ -90,24 +91,6 @@ CUDA_ADD_LIBRARY(nemo
 
 #SET_TARGET_PROPERTIES(nemo PROPERTIES SOVERSION 1)
 
-# A number of .cu files are #included in the main .cu file
-ADD_DEPENDENCIES(nemo
-	applySTDP.cu
-	bitvector.cu
-	connectivityMatrix.cu
-	cycleCounting.cu
-	cycle.cu
-	debug.cu
-	device_assert.cu
-	double_buffer.cu
-	fixedpoint.cu
-	incoming.cu
-	outgoing.cu
-	partitionConfiguration.cu
-	stdp.cu
-	step.cu
-	thalamicInput.cu
-  )
 
 
 # Generating PTX files. 
