@@ -153,6 +153,7 @@ ConnectivityMatrix::createFcm(
 
 					/*! \todo simplify RCM structure, using a format similar to the FCM */
 					//! \todo factor out
+					//! \todo only need to set this if stdp is enabled
 					if(s->plastic) {
 						rcm_t& rcm = m_rsynapses;
 						if(rcm.find(targetPartition) == rcm.end()) {

@@ -15,9 +15,10 @@
 
 #include <stddef.h> // for size_t
 
-//! \todo rename nemo_network_t to avoid namespace polution
-/*! Opaque pointer to network object. */
-typedef void* NETWORK;
+/*! Only opaque pointers are exposed in the C API */
+typedef void* nemo_network_t;
+typedef void* nemo_simulation_t;
+typedef void* nemo_configuration_t;
 
 /*! Status of API calls which can fail. */
 typedef int nemo_status_t;
@@ -37,21 +38,6 @@ typedef int nemo_status_t;
 #define NEMO_UNKNOWN_ERROR 4
 
 
-//-----------------------------------------------------------------------------
-// RUNTIME DATA
-//-----------------------------------------------------------------------------
-
-
-/*! \name Initialisation
- * \{ */
-
-//! \todo get rid of setReverse. Just deal with this in the host code
-//! \todo dynamically resize the firing buffer?
-/*! Create an empty network object */
-NETWORK
-nemo_new_network();
-
-/* \} */ // end init section
 
 
 //-----------------------------------------------------------------------------
@@ -61,9 +47,10 @@ nemo_new_network();
 /*! \name Configuration */
 /* \{ */ // begin configuration
 
+nemo_configuration_t nemo_new_configuration();
 
 /*! \copydoc nemo::Network::logToStdout */
-nemo_status_t nemo_log_stdout(NETWORK);
+nemo_status_t nemo_log_stdout(nemo_configuration_t);
 
 /*! Enable spike-timing dependent plasticity in the simulation.
  *
@@ -85,7 +72,7 @@ nemo_status_t nemo_log_stdout(NETWORK);
  * 		Weight beyond which inhibitory synapses are not allowed to move
  */
 nemo_status_t
-nemo_enable_stdp(NETWORK,
+nemo_enable_stdp(nemo_configuration_t,
 		float prefire_fn[],
 		size_t prefire_len,
 		float postfire_fn[],
@@ -94,14 +81,20 @@ nemo_enable_stdp(NETWORK,
 		float max_weight);
 
 
-/*! \copydoc nemo::Network::setFiringBufferLength */
+/*! \copydoc nemo::Configuration::setCudaFiringBufferLength */
 nemo_status_t
-nemo_set_firing_buffer_length(NETWORK, unsigned cycles);
+nemo_set_firing_buffer_length(nemo_configuration_t, unsigned cycles);
 
 
-/*! \copydoc nemo::Network::getFiringBufferLength */
+/*! \copydoc nemo::Configuration::cudaFiringBufferLength */
 nemo_status_t
-nemo_get_firing_buffer_length(NETWORK, unsigned* cycles);
+nemo_get_firing_buffer_length(nemo_configuration_t, unsigned* cycles);
+
+
+/*! \copydoc nemo::Configuration::setCudaPartitionSize */
+nemo_status_t
+nemo_set_cuda_partition_size(nemo_configuration_t conf, unsigned size);
+
 
 /* \} */ // end configuration
 
@@ -121,11 +114,15 @@ nemo_get_firing_buffer_length(NETWORK, unsigned* cycles);
  *
  * \{ */
 
+
+/*! Create an empty network object */
+nemo_network_t nemo_new_network();
+
 //! \todo make sure we handle the issue of non-unique indices
 //! \todo add description of neuron indices
 /*! \copydoc nemo::Network::addNeuron */
 nemo_status_t
-nemo_add_neuron(NETWORK,
+nemo_add_neuron(nemo_network_t,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
@@ -155,7 +152,7 @@ nemo_add_neuron(NETWORK,
  * 		\a length elements.
  */
 nemo_status_t
-nemo_add_synapses(NETWORK,
+nemo_add_synapses(nemo_network_t,
 		unsigned source,
 		unsigned targets[],
 		unsigned delays[],
@@ -163,20 +160,26 @@ nemo_add_synapses(NETWORK,
 		unsigned char is_plastic[],
 		size_t length);
 
+/*! Delete network object, freeing up all its associated resources */
+void nemo_delete_network(nemo_network_t);
+
+
 /* \} */ // end construction group
 
 
 
 //-----------------------------------------------------------------------------
-// SIMULATION STEPPING
+// SIMULATION
 //-----------------------------------------------------------------------------
 
 /*! \name Simulation
  * \{ */
 
+nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_simulation_t);
+
 /*! \copydoc nemo::Network::initSimulation */
-nemo_status_t
-nemo_init_simulation(NETWORK);
+//nemo_status_t
+//nemo_init_simulation(nemo_network_t);
 
 /*! Run simulation for a single cycle (1ms)
  *
@@ -188,12 +191,12 @@ nemo_init_simulation(NETWORK);
  * 		Length of fstimIdx
  */
 nemo_status_t
-nemo_step(NETWORK, unsigned fstimIdx[], size_t fstimCount);
+nemo_step(nemo_simulation_t, unsigned fstimIdx[], size_t fstimCount);
 
 
-/*! \copydoc nemo::Network::applyStdp */
+/*! \copydoc nemo::Simulation::applyStdp */
 nemo_status_t
-nemo_apply_stdp(NETWORK, float reward);
+nemo_apply_stdp(nemo_simulation_t, float reward);
 
 
 //-----------------------------------------------------------------------------
@@ -222,7 +225,7 @@ nemo_apply_stdp(NETWORK, float reward);
  * 		Number of cycles for which firing data is returned
  */
 nemo_status_t
-nemo_read_firing(NETWORK,
+nemo_read_firing(nemo_simulation_t,
 		unsigned* cycles[],
 		unsigned* nidx[],
 		unsigned* nfired,
@@ -231,7 +234,7 @@ nemo_read_firing(NETWORK,
 
 /*! \copydoc nemo::Network::flushFiringBuffer */
 nemo_status_t
-nemo_flush_firing_buffer(NETWORK);
+nemo_flush_firing_buffer(nemo_simulation_t);
 
 /* \} */ // end firing group
 
@@ -256,7 +259,7 @@ nemo_flush_firing_buffer(NETWORK);
  * 		and \a is_plastic all have length \a len
  */
 nemo_status_t
-nemo_get_synapses(NETWORK,
+nemo_get_synapses(nemo_simulation_t,
 		unsigned sourceNeuron,
 		unsigned* targetNeuron[],
 		unsigned* delays[],
@@ -282,13 +285,13 @@ nemo_get_synapses(NETWORK,
  * \{ */
 
 /*! \copydoc nemo::Network::elapsedWallclock */
-unsigned long nemo_elapsed_wallclock(NETWORK);
+unsigned long nemo_elapsed_wallclock(nemo_simulation_t);
 
 /*! \copydoc nemo::Network::elapsedSimulation */
-unsigned long nemo_elapsed_simulation(NETWORK);
+unsigned long nemo_elapsed_simulation(nemo_simulation_t);
 
 /*! \copydoc nemo::Network::resetTimer */
-void nemo_reset_timer(NETWORK);
+void nemo_reset_timer(nemo_simulation_t);
 
 /* \} */ // end timing section
 
@@ -311,11 +314,12 @@ void nemo_reset_timer(NETWORK);
 
 //! \todo consider putting the error codes here
 
-/*! \return
+/*! \param obj
+ * 		A network, configuration, or simulation object
+ * \return
  * 		string describing the most recent error (if any)
  */
-const char*
-nemo_strerror(NETWORK);
+const char* nemo_strerror(void* obj);
 
 /*! \} */  //end error group
 
@@ -325,8 +329,11 @@ nemo_strerror(NETWORK);
 /*! \name Finalization
  * \{ */
 
-/*! Delete network object, freeing up all its associated resources */
-void nemo_delete_network(NETWORK);
+/*! Delete configuration object, freeing up all its associated resources */
+void nemo_delete_configuration(nemo_configuration_t);
+
+/*! Delete simulation object, freeing up all its associated resources */
+void nemo_delete_simulation(nemo_simulation_t);
 
 /* \} */ // end finalize section
 
@@ -337,7 +344,7 @@ void nemo_delete_network(NETWORK);
 //-----------------------------------------------------------------------------
 
 // for debugging purposes it might be useful to fix the partition size
-NETWORK
+nemo_network_t
 nemo_new_network_(unsigned partitionSize);
 
 #endif

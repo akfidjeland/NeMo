@@ -63,8 +63,8 @@ class Network
 		/* Add a single synapse */
 		void addSynapse(
 				unsigned source,
-				unsigned delay,
 				unsigned target,
+				unsigned delay,
 				float weight,
 				unsigned char plastic);
 

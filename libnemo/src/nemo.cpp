@@ -23,71 +23,64 @@ extern "C" {
 #include "DeviceAssertions.hpp"
 #include "except.hpp"
 
-/* We cannot propagate exceptions via the C API, so convert to an error code
- * instead */
+/* We cannot propagate exceptions via the C API, so we catch all and convert to
+ * an error codes instead */
 
 
-/* Call method on network object, and /set/ status and error */
-#define CATCH_(net, call) {                                                   \
-        net->setStatus(NEMO_OK);                                              \
+/* Call method on wrapped object, and /set/ status and error */
+#define CALL(ptr, call) {                                                     \
+        ptr->setStatus(NEMO_OK);                                              \
         try {                                                                 \
             call;                                                             \
         } catch (DeviceAllocationException& e) {                              \
-            net->setErrorMsg(e.what());                                       \
-            net->setStatus(NEMO_CUDA_MEMORY_ERROR);                           \
+            ptr->setResult(e.what(), NEMO_CUDA_MEMORY_ERROR);                 \
         } catch (KernelInvocationError& e) {                                  \
-            net->setErrorMsg(e.what());                                       \
-            net->setStatus(NEMO_CUDA_INVOCATION_ERROR);                       \
+            ptr->setResult(e.what(), NEMO_CUDA_INVOCATION_ERROR);             \
         } catch (DeviceAssertionFailure& e) {                                 \
-            net->setErrorMsg(e.what());                                       \
-            net->setStatus(NEMO_CUDA_ASSERTION_FAILURE);                      \
+            ptr->setResult(e.what(), NEMO_CUDA_ASSERTION_FAILURE);            \
         } catch (std::exception& e) {                                         \
-            net->setErrorMsg(e.what());                                       \
-            net->setStatus(NEMO_UNKNOWN_ERROR);                               \
+            ptr->setResult(e.what(), NEMO_UNKNOWN_ERROR);                     \
         } catch (...) {                                                       \
-            net->setErrorMsg("unknown exception");                            \
-            net->setStatus(NEMO_UNKNOWN_ERROR);                               \
+			ptr->setResult("unknown exception", NEMO_UNKNOWN_ERROR);          \
         }                                                                     \
     }
 
-/* Call method on network object, and /return/ status and error */
-#define CATCH(ptr, call) {                                                    \
-        Network* net = static_cast<Network*>(ptr);                            \
-        CATCH_(net, net->m_impl->call)                                        \
-        return net->status();                                                 \
+/* Call method on wrapper object, and return status and error */
+#define CATCH_(T, ptr, call) {                                                \
+        Wrapper<nemo::T>* wrapper = static_cast<Wrapper<nemo::T>*>(ptr);      \
+        CALL(wrapper, wrapper->data->call)                                    \
+        return wrapper->status();                                             \
 	}
 
+/* Call method on wrapper object, set output value, and return status and error */
+#define CATCH(T, ptr, call, ret) {                                            \
+        Wrapper<nemo::T>* wrapper = static_cast<Wrapper<nemo::T>*>(ptr);      \
+        CALL(wrapper, ret = wrapper->data->call);                             \
+        return wrapper->status();                                             \
+	}
 
-//! \todo enforce no throw in the class interface
-/* Call function without handling exceptions */
-#define NOCATCH(ptr, call) static_cast<Network*>(ptr)->m_impl->call
+#define NOCATCH(T, ptr, call) static_cast<Wrapper<nemo::T>*>(ptr)->data->call
 
 
 
-class Network
+class Catching
 {
 	public :
 
-		//! \todo merge the two ctors. Just use default parameter
-		Network() :
-			m_impl(NULL),
-			m_errorMsg("No error") { }
+		Catching() : m_errorMsg("No error") { }
 
-		void setErrorMsg(const char* msg) { m_errorMsg = msg; }
-
-		const char* lastErrorMsg() { return m_errorMsg.c_str(); }
+		void setResult(const char* msg, nemo_status_t status) {
+			m_errorMsg = msg;
+			m_status = status;
+		}
 
 		void setStatus(nemo_status_t s) { m_status = s; }
 
+		//void setErrorMsg(const char* msg) { m_errorMsg = msg; }
+		const char* errorMsg() const { return m_errorMsg.c_str(); }
+
+		//void setStatus(nemo_status_t s) { m_status = s; }
 		nemo_status_t status() const { return m_status; }
-
-		nemo::Simulation* m_impl;
-
-		//! \todo expose this class in the API
-		nemo::Network m_net;
-
-		//! \todo expose this class in the API
-		nemo::Configuration m_conf;
 
 	private :
 
@@ -97,55 +90,92 @@ class Network
 
 		/* Status after last call */
 		nemo_status_t m_status;
-
 };
 
 
-NETWORK
-nemo_new_network()
+
+template<class T>
+class Wrapper : public Catching
 {
-	//! \todo return nemo::Network instead here
-	return new Network();
+	public :
+		Wrapper() : data(new T()) {}
+		Wrapper(T* data) : data(data) {}
+		~Wrapper() { delete data; }
+		T* data;
+};
+
+
+template<class T>
+Wrapper<T>*
+fromOpaque(void *ptr)
+{
+	return static_cast<Wrapper<T>*>(ptr);
 }
 
 
 
-//! \todo split this up. The user can simply set the partition size separately
-NETWORK
-nemo_new_network_(unsigned partitionSize)
+nemo_network_t
+nemo_new_network()
 {
-	Network* net = new Network();
-	net->m_conf.setCudaMaxPartitionSize(partitionSize);
-	return net;
-	//! \todo return nemo::Network instead here
+	return new Wrapper<nemo::Network>();
+}
+
+
+void
+nemo_delete_network(nemo_network_t net)
+{
+	delete fromOpaque<nemo::Network>(net);
+}
+
+
+
+nemo_configuration_t
+nemo_new_configuration()
+{
+	return new Wrapper<nemo::Configuration>();
 }
 
 
 
 void
-nemo_delete_network(NETWORK mem)
+nemo_delete_configuration(nemo_configuration_t conf)
 {
-	//! \todo cast to nemo::Network instead here
-	delete static_cast<Network*>(mem);
+	delete fromOpaque<nemo::Configuration>(conf);
+}
+
+
+
+nemo_simulation_t
+nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
+{
+	nemo::Network& net = *(fromOpaque<nemo::Network>(net_ptr)->data);
+	nemo::Configuration& conf = *(fromOpaque<nemo::Configuration>(conf_ptr)->data);
+	return new Wrapper<nemo::Simulation>(nemo::Simulation::create(net, conf));
+}
+
+
+
+void
+nemo_delete_simulation(nemo_simulation_t sim)
+{
+	delete fromOpaque<nemo::Simulation>(sim);
 }
 
 
 
 nemo_status_t
-nemo_add_neuron(NETWORK ptr,
+nemo_add_neuron(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	Network* net = static_cast<Network*>(ptr);
-	CATCH_(net, net->m_net.addNeuron(idx, a, b, c, d, u, v, sigma));
-	return net->status();
+	CATCH_(Network, net, addNeuron(idx, a, b, c, d, u, v, sigma));
 }
 
 
 
 nemo_status_t
-nemo_add_synapses(NETWORK network,
+nemo_add_synapses(nemo_network_t net,
 		unsigned source,
 		unsigned targets[],
 		unsigned delays[],
@@ -153,19 +183,17 @@ nemo_add_synapses(NETWORK network,
 		unsigned char is_plastic[],
 		size_t length)
 {
-	Network* net = static_cast<Network*>(network);
-	CATCH_(net, net->m_net.addSynapses(source,
+	CATCH_(Network, net, addSynapses(source,
 				std::vector<unsigned>(targets, targets+length),
 				std::vector<unsigned>(delays, delays+length),
 				std::vector<float>(weights, weights+length),
 				std::vector<unsigned char>(is_plastic, is_plastic+length)));
-	return net->status();
 }
 
 
 
 nemo_status_t
-nemo_get_synapses(NETWORK ptr,
+nemo_get_synapses(nemo_simulation_t ptr,
 		unsigned source,
 		unsigned* targets_[],
 		unsigned* delays_[],
@@ -177,49 +205,40 @@ nemo_get_synapses(NETWORK ptr,
 	const std::vector<unsigned>* delays;
 	const std::vector<float>* weights;
 	const std::vector<unsigned char>* plastic;
-	Network* net = static_cast<Network*>(ptr);
-	CATCH_(net, net->m_impl->getSynapses(source,
+	Wrapper<nemo::Simulation>* sim = fromOpaque<nemo::Simulation>(ptr);
+	CALL(sim, sim->data->getSynapses(source,
 				&targets, &delays, &weights, &plastic));
-	if(net->status() == NEMO_OK) {
+	if(sim->status() == NEMO_OK) {
 		*targets_ = const_cast<unsigned*>(&(*targets)[0]);
 		*delays_ = const_cast<unsigned*>(&(*delays)[0]);
 		*weights_ = const_cast<float*>(&(*weights)[0]);
 		*plastic_ = const_cast<unsigned char*>(&(*plastic)[0]);
 		*len = targets->size();
 	}
-	return net->status();
+	return sim->status();
 }
 
 
 
 nemo_status_t
-nemo_init_simulation(NETWORK network)
+nemo_step(nemo_simulation_t sim, unsigned fstimIdx[], size_t fstimCount)
 {
-	Network* net = static_cast<Network*>(network);
-	net->m_impl = new nemo::cuda::CudaNetwork(net->m_net, net->m_conf);
-	return net->status();
+	CATCH_(Simulation, sim, stepSimulation(std::vector<unsigned>(fstimIdx, fstimIdx + fstimCount)));
 }
 
 
 
 nemo_status_t
-nemo_step(NETWORK network, unsigned fstimIdx[], size_t fstimCount)
+nemo_apply_stdp(nemo_simulation_t sim, float reward)
 {
-	CATCH(network, stepSimulation(std::vector<unsigned>(fstimIdx, fstimIdx + fstimCount)));
-}
-
-
-nemo_status_t
-nemo_apply_stdp(NETWORK network, float reward)
-{
-	CATCH(network, applyStdp(reward));
+	CATCH_(Simulation, sim, applyStdp(reward));
 }
 
 
 
 
 nemo_status_t
-nemo_read_firing(NETWORK ptr,
+nemo_read_firing(nemo_simulation_t ptr,
 		unsigned* cycles_[],
 		unsigned* nidx_[],
 		unsigned* nfired,
@@ -227,24 +246,24 @@ nemo_read_firing(NETWORK ptr,
 {
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* nidx;
-	Network* net = static_cast<Network*>(ptr);
-	CATCH_(net, *ncycles = net->m_impl->readFiring(&cycles, &nidx));
-	if(net->status() == NEMO_OK) {
+	Wrapper<nemo::Simulation>* sim = fromOpaque<nemo::Simulation>(ptr);
+	CALL(sim, sim->data->readFiring(&cycles, &nidx));
+	if(sim->status() == NEMO_OK) {
 		*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
 		*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);
 		*nfired = cycles->size();
 		assert(cycles->size() == nidx->size());
 	}
-	return net->status();
+	return sim->status();
 }
 
 
 
+
 nemo_status_t
-nemo_flush_firing_buffer(NETWORK network)
+nemo_flush_firing_buffer(nemo_simulation_t sim)
 {
-	NOCATCH(network, flushFiringBuffer());
-	return NEMO_OK;
+	CATCH_(Simulation, sim, flushFiringBuffer());
 }
 
 
@@ -255,34 +274,34 @@ nemo_flush_firing_buffer(NETWORK network)
 
 
 nemo_status_t
-nemo_log_stdout(NETWORK network)
+nemo_log_stdout(nemo_configuration_t conf)
 {
-	Network* net = static_cast<Network*>(network);
-	net->m_conf.enableLogging();
-	return NEMO_OK;
+	CATCH_(Configuration, conf, enableLogging());
+}
+
+
+
+//! \todo set status here as well, return data via pointer
+unsigned long
+nemo_elapsed_wallclock(nemo_simulation_t sim)
+{
+	return NOCATCH(Simulation, sim, elapsedWallclock());
 }
 
 
 
 unsigned long
-nemo_elapsed_wallclock(NETWORK network)
+nemo_elapsed_simulation(nemo_simulation_t sim)
 {
-	return NOCATCH(network, elapsedWallclock());
+	return NOCATCH(Simulation, sim, elapsedWallclock());
 }
 
-
-
-unsigned long
-nemo_elapsed_simulation(NETWORK network)
-{
-	return NOCATCH(network, elapsedSimulation());
-}
 
 
 void
-nemo_reset_timer(NETWORK network)
+nemo_reset_timer(nemo_simulation_t sim)
 {
-	NOCATCH(network, resetTimer());
+	NOCATCH(Simulation, sim, resetTimer());
 }
 
 
@@ -293,7 +312,7 @@ nemo_reset_timer(NETWORK network)
 
 
 nemo_status_t
-nemo_enable_stdp(NETWORK network,
+nemo_enable_stdp(nemo_configuration_t conf,
 		float* pre_fn,
 		size_t pre_len,
 		float* post_fn,
@@ -301,39 +320,40 @@ nemo_enable_stdp(NETWORK network,
 		float w_min,
 		float w_max)
 {
-	Network* net = static_cast<Network*>(network);
-	net->m_conf.setStdpFunction(
+	CATCH_(Configuration, conf, setStdpFunction(
 				std::vector<float>(pre_fn, pre_fn+pre_len),
 				std::vector<float>(post_fn, post_fn+post_len),
-				w_min, w_max);
-	return net->status();
+				w_min, w_max));
 }
 
 
 
 nemo_status_t
-nemo_set_firing_buffer_length(NETWORK network, unsigned cycles)
+nemo_set_firing_buffer_length(nemo_configuration_t conf, unsigned cycles)
 {
-	Network* net = static_cast<Network*>(network);
-	net->m_conf.setCudaFiringBufferLength(cycles);
-	return NEMO_OK;
+	CATCH_(Configuration, conf, setCudaFiringBufferLength(cycles));
 }
 
 
 
 nemo_status_t
-nemo_get_firing_buffer_length(NETWORK ptr, unsigned* cycles)
+nemo_get_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
 {
-	Network* net = static_cast<Network*>(ptr);                            \
-	CATCH_(net, *cycles = net->m_impl->getFiringBufferLength());
-	return net->status();
+	CATCH(Configuration, conf, cudaFiringBufferLength(), *cycles);
+}
+
+
+
+nemo_status_t
+nemo_set_cuda_partition_size(nemo_configuration_t conf, unsigned size)
+{
+	CATCH_(Configuration, conf, setCudaPartitionSize(size));
 }
 
 
 
 const char*
-nemo_strerror(NETWORK network)
+nemo_strerror(void* ptr)
 {
-	return const_cast<char*>(static_cast<Network*>(network)->lastErrorMsg());
+	return static_cast<Catching*>(ptr)->errorMsg();
 }
-
