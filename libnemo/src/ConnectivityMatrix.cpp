@@ -23,6 +23,7 @@
 #include "WarpAddressTable.hpp"
 #include "connectivityMatrix.cu_h"
 #include "fixedpoint.hpp"
+#include "bitops.h"
 
 
 namespace nemo {

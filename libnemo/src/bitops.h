@@ -12,7 +12,7 @@ template<typename T, int B>
 int
 clzN(T v)
 {
-	uint r = 0;
+	unsigned r = 0;
 	while (v >>= 1) {
 		r++;
 	}
@@ -89,6 +89,14 @@ ceilPowerOfTwo(uint32_t v)
     v++;
     return v;
 }
+
+
+#ifndef HAVE_LOG2
+
+/* log2 is part of the C99 spec, so Microsoft support is patchy */
+inline double log2(double n) { return log(n) / log(double(2)); }
+
+#endif
 
 
 

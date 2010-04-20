@@ -4,5 +4,6 @@
 #cmakedefine HAVE_BUILTIN_CLZLL
 #cmakedefine HAVE_BUILTIN_CLZ
 #cmakedefine HAVE_BUILTIN_CTZLL
+#cmakedefine HAVE_LOG2
 
 #endif

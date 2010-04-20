@@ -6,10 +6,15 @@
 # General system configuration
 
 INCLUDE(CheckCXXSourceCompiles)
+INCLUDE(CheckFunctionExists)
+
 # CheckFunctionExists does not seem to work with GCC builtins
 CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clzll(0); }" HAVE_BUILTIN_CLZLL)
 CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clz(0); }" HAVE_BUILTIN_CLZ)
 CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_ctzll(0); }" HAVE_BUILTIN_CTZLL)
+
+# log2 is part of C99 standard, so Microsoft support is patchy
+CHECK_CXX_SOURCE_COMPILES("#include <math.h>\nint main() { log2(double(0)); }" HAVE_LOG2)
 
 ##############################################################################
 # CUDA configuration
