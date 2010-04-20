@@ -224,11 +224,13 @@ addInhibitorySynapses(
 
 
 nemo::Configuration
-configure(bool stdp)
+configure(bool stdp, bool logging=true)
 {
 	nemo::Configuration conf;
 
-	conf.enableLogging();
+	if(logging) {
+		conf.enableLogging();
+	}
 	//! \todo make network report STDP function
 	if(stdp) {
 		std::vector<float> pre(20);
@@ -247,7 +249,7 @@ configure(bool stdp)
 
 
 nemo::Network*
-construct(unsigned pcount, unsigned m, bool stdp, double sigma)
+construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging=true)
 {
 	nemo::Network* net = new nemo::Network();
 
@@ -286,7 +288,9 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma)
 	unsigned inCount = 0;
 
 	for(unsigned p = 0; p < pcount; ++p) {
-		std::cout << "Partition " << p << std::endl; 
+		if(logging) {
+			std::cout << "Partition " << p << std::endl;
+		}
 		for(unsigned y = 0; y < height; ++y) {
 			for(unsigned x = 0; x < width; ++x) {
 				unsigned nidx = neuronIndex(p, x, y);
@@ -305,10 +309,12 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma)
 		}
 	}
 
-	std::cout << "Constructed network with " << exCount + inCount << " neurons\n"
-		<< "\t" << exCount << " excitatory\n"		
-		<< "\t" << inCount << " inhibitory\n";
-	//! \todo report connectivity stats as well
+	if(logging) {
+		std::cout << "Constructed network with " << exCount + inCount << " neurons\n"
+			<< "\t" << exCount << " excitatory\n"		
+			<< "\t" << inCount << " inhibitory\n";
+		//! \todo report connectivity stats as well
+	}
 
 	return net;
 }
