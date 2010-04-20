@@ -11,6 +11,7 @@
  */
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 namespace nemo {
 
@@ -53,7 +54,7 @@ Timer::elapsedWallclock() const
 	using namespace boost::posix_time;
 
 	time_duration elapsed = ptime(microsec_clock::local_time()) - m_start;
-	return elapsed.total_milliseconds();
+	return boost::numeric_cast<unsigned long, time_duration::tick_type>(elapsed.total_milliseconds());
 }
 
 

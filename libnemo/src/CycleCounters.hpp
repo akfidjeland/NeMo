@@ -15,7 +15,7 @@
 namespace nemo {
 	namespace cuda {
 
-struct CycleCounters
+class CycleCounters
 {
 	public:
 

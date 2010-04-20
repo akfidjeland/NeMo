@@ -138,9 +138,9 @@ class CudaNetwork : public Simulation
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
-		struct FiringOutput* m_firingOutput;
+		class FiringOutput* m_firingOutput;
 
-		struct CycleCounters* m_cycleCounters;
+		class CycleCounters* m_cycleCounters;
 
 		class DeviceAssertions* m_deviceAssertions;
 

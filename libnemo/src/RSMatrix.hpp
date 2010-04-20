@@ -36,7 +36,7 @@ namespace nemo {
  * \author Andreas Fidjeland
  */
 
-struct RSMatrix
+class RSMatrix
 {
 	public:
 

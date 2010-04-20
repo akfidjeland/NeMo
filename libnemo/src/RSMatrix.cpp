@@ -125,7 +125,7 @@ RSMatrix::copyToDevice(
 					targetPartition,
 					r_delay1(*rs));
 			size_t faddress = (warpOffset * WARP_SIZE) + forwardIdx(*rs);
-			assert(faddress < (size_t(1)<<32));
+			assert(faddress <= 0xffffffff);
 			buf.at(offset) = uint32_t(faddress);
 			++offset;
 		}

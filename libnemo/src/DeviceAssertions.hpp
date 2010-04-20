@@ -26,6 +26,9 @@
 #include <stdexcept>
 #include <string>
 
+// visual studio warning re non-implementation of throw specifiers
+#pragma warning(disable: 4290)
+
 
 class DeviceAssertionFailure : public std::exception
 {
