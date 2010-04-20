@@ -21,49 +21,30 @@ import Simulation.STDP.Options (stdpOptions)
 import Types
 
 
-data RingState = RingState {
-        active :: Idx,
-        size   :: Int,
-        t      :: Time
-    }
 
-
--- The ring network should produce a fixed pattern of just a single neuron
--- firing
-checkFiring :: Int -> Idx -> Int -> IORef RingState -> Time -> FiringOutput -> Assertion
-checkFiring size impulse delay ref = \_ p -> do
-    s <- readIORef ref
-    let s' = next s
-    writeIORef ref s'
-    check p s
-    return ()
+checkFiring :: Int -> Idx -> Int -> Time -> FiringOutput -> Assertion
+checkFiring size impulse delay = \t (FiringOutput fs) -> do
+    when (delay == 1 && length fs /= 1) $ assertFailure $
+        "ring network did not produce exactly one firing during cycle "
+        ++ (show t) ++ ", instead it produced " ++ (show fs)
+    let expected = if t `mod` delay == 0
+            then [(impulse + (t `div` delay)) `mod` size]
+            else []
+    assertEqual (mismatch_msg t) expected fs
     where
-        next (RingState a sz t) =
-            if t `mod` delay == 0
-                then RingState ((a+1) `mod` sz) sz (t+1)
-                else RingState a sz (t+1)
-        check (FiringOutput fs) (RingState expected _ t) = do
-            when (delay == 1 && length fs /= 1) $ assertFailure $
-                "ring network did not produce exactly one firing during cycle "
-                ++ (show t) ++ ", instead it produced " ++ (show fs)
-            if t `mod` delay == 0
-                then assertEqual "ring network firing mistmatch" [expected] fs
-                else assertEqual "ring network firing mistmatch" [] fs
-
+        mismatch_msg c = "ring network firing mismatch in cycle " ++ show c
 
 
 testRing :: Int -> Idx -> Int -> Backend -> Maybe Int -> Assertion
 testRing size impulse delay backend partitionSize = do
     let net = build 123456 $ ring size delay :: Network IzhNeuron Static
         fstim = FiringList [(0, [impulse])]
-        -- test = checkFiring size impulse delay
 #if defined(CUDA_ENABLED)
         opts = (defaults cudaOptions) { optPartitionSize = partitionSize }
 #else
         opts = defaults cudaOptions
 #endif
-    ref <- newIORef $ RingState impulse size 0
-    let test = checkFiring size impulse delay ref
+    let test = checkFiring size impulse delay
     runSim simOpts net fstim test opts (defaults stdpOptions)
     where
         simOpts = (defaults $ simOptions LocalBackends) {
@@ -77,7 +58,6 @@ tests = TestList [
 #if defined(CUDA_ENABLED)
         TestLabel "1000-sized ring on gpu"
            (TestCase $ testRing 1000 0 1 CUDA $ Just 1000),
-
         -- excercise 10 partitions
         TestLabel "1000-sized ring on gpu using partition size of 128"
            (TestCase $ testRing 1000 0 1 CUDA $ Just 128),
