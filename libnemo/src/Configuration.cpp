@@ -14,7 +14,7 @@ namespace nemo {
 
 Configuration::Configuration() :
 	m_logging(false),
-	m_cudaMaxPartitionSize(cuda::CudaNetwork::defaultPartitionSize()),
+	m_cudaPartitionSize(cuda::CudaNetwork::defaultPartitionSize()),
 	m_cudaFiringBufferLength(cuda::CudaNetwork::defaultFiringBufferLength())
 {
 	;

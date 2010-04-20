@@ -28,8 +28,8 @@ class Configuration
 		void disableLogging() { m_logging = false; }
 		bool loggingEnabled() const { return m_logging; }
 
-		void setCudaMaxPartitionSize(unsigned ps) { m_cudaMaxPartitionSize = ps; }
-		unsigned cudaMaxPartitionSize() const { return m_cudaMaxPartitionSize; }
+		void setCudaPartitionSize(unsigned ps) { m_cudaPartitionSize = ps; }
+		unsigned cudaPartitionSize() const { return m_cudaPartitionSize; }
 
 		/*! Set the size of the firing buffer such that it can contain a fixed
 		 * number of \a cycles worth of firing data before overflowing. */
@@ -60,7 +60,7 @@ class Configuration
 		class STDP<float> m_stdpFn;
 
 		/* CUDA-specific */
-		unsigned m_cudaMaxPartitionSize;
+		unsigned m_cudaPartitionSize;
 		unsigned m_cudaFiringBufferLength; // in cycles
 
 };

@@ -41,9 +41,10 @@ CudaNetwork::CudaNetwork(
 	m_conf(conf),
 	m_partitionCount(0),
 	//! \todo get rid of member variable
-	m_maxPartitionSize(conf.cudaMaxPartitionSize()),
-	m_neurons(net, conf.cudaMaxPartitionSize()),
-	m_cm(net, conf.cudaMaxPartitionSize(), conf.loggingEnabled()),
+	m_maxPartitionSize(conf.cudaPartitionSize()),
+	m_neurons(net, conf.cudaPartitionSize()),
+	m_cycle(0),
+	m_cm(net, conf.cudaPartitionSize(), conf.loggingEnabled()),
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),
