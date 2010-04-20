@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "log.hpp"
+#include "log.cu_h"
 #include "device_assert.cu"
 #include "cycle.cu"
 #include "util.h"

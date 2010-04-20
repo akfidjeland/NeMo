@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "log.hpp"
+#include "log.cu_h"
 #include "util.h"
 
 #include "device_assert.cu"

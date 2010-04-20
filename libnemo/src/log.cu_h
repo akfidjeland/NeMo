@@ -1,0 +1,38 @@
+#ifndef LOG_HPP
+#define LOG_HPP
+
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of nemo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define VERBOSE
+
+/* Device logging in emulation mode */
+
+#if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
+
+/* Log message in device emulation regardless of thread */
+#define DEBUG_MSG(...) fprintf(stderr, __VA_ARGS__)
+
+/* Log message in device emulation only for specific thread */
+#define DEBUG_THREAD_MSG(tix, ...)                                            \
+    if(threadIdx.x == tix) {                                                  \
+        DEBUG_MSG(__VA_ARGS__);                                               \
+    }
+
+#else
+
+#define DEBUG_MSG(msg, ...)
+#define DEBUG_THREAD_MSG(msg, ...)
+
+#endif
+
+#endif

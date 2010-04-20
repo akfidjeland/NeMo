@@ -16,7 +16,6 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include "util.h"
-#include "log.hpp"
 #include "RSMatrix.hpp"
 #include "except.hpp"
 #include "DeviceIdx.hpp"

@@ -10,6 +10,8 @@
 #include "CudaNetwork.hpp"
 
 #include <vector>
+#include <stdexcept>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <assert.h>
@@ -21,7 +23,6 @@
 #include "Network.hpp"
 #include "ThalamicInput.hpp"
 #include "util.h"
-#include "log.hpp"
 #include "fixedpoint.hpp"
 #include "bitvector.hpp"
 #include "except.hpp"
@@ -227,8 +228,10 @@ void
 checkPitch(size_t expected, size_t found)
 {
 	if(expected != found) {
-		ERROR("CudaNetwork::checkPitch: pitch mismatch in device memory allocation. Found %d, expected %d\n",
-				(int) found, (int) expected);
+		std::ostringstream msg;
+		msg << "CudaNetwork::checkPitch: pitch mismatch in device memory allocation. "
+			"Found " << found << ", expected " << expected << std::endl;
+		throw std::runtime_error(msg.str());
 	}
 }
 
