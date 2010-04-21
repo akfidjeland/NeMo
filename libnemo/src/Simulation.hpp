@@ -33,7 +33,7 @@ class Configuration;
  * Internal errors are signaled by exceptions. Thrown exceptions are all
  * subclasses of std::exception.
  */
-class Simulation
+class DLL_PUBLIC Simulation
 {
 	public :
 

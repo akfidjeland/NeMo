@@ -27,6 +27,8 @@ IF(CUDA_BUILD_EMULATION)
 	ADD_DEFINITIONS(-D__DEVICE_EMULATION__)
 ENDIF()
 
+ADD_DEFINITIONS(-DBUILDING_DLL)
+
 # FindCUDA sets a number of variables which or not of relevance to our build.
 # Mark these as advanced, so as not to clutter the configuration.
 MARK_AS_ADVANCED(FORCE

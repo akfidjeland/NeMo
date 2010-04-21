@@ -13,11 +13,12 @@
  */
 
 #include <ostream>
+#include <config.h>
 #include "STDP.hpp"
 
 namespace nemo {
 
-class Configuration
+class DLL_PUBLIC Configuration
 {
 	public:
 

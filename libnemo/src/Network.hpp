@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 
+#include "config.h"
 #include "types.hpp"
 
 namespace nemo {
@@ -22,7 +23,7 @@ namespace nemo {
  * be unique for each neuron. When adding synapses the source or target neurons
  * need not necessarily exist yet, but should be defined before the network is
  * finalised. */
-class Network
+class DLL_PUBLIC Network
 {
 	public :
 
