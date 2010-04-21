@@ -1,0 +1,252 @@
+\documentclass[a4paper]{article}
+
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{hyperref}
+
+\setlength{\parindent}{0pt} 
+\setlength{\parskip}{2ex}
+
+\lstset{
+	tabsize=4,
+	%basicstyle=\small \ttfamily,
+	%basicstyle={\rmfamily},
+	%basicstyle={\ttfamily},
+	%numbers=left,
+	numberstyle=\tiny,
+	stepnumber=1,
+	numbersep=5pt,
+	frame=none,
+}
+
+\lstnewenvironment
+	{matlab}
+	{ 	\lstset{
+			language=Matlab,
+			%basicstyle=\small \ttfamily,
+			frame=single,
+			numbers=none
+	}	}
+	{ }
+
+\lstnewenvironment
+	{shell}
+	{ 	\lstset{
+			%language=Matlab,
+			%basicstyle=\small \ttfamily,
+			basicstyle={\ttfamily},
+			frame=off,
+			numbers=none
+	}	}
+	{ }
+
+\newcommand{\nemo}{\texttt{nemo}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\command}[1]{\texttt{#1}}
+\newcommand{\file}[1]{\texttt{#1}}
+\newcommand{\directory}[1]{\texttt{#1}}
+\newcommand{\library}[1]{\texttt{#1}}
+
+% rst2latex leaves in title references
+\newcommand{\titlereference}[1]{\textsl{#1}}
+
+% rst2latex also sets this on inside the document
+\newlength{\locallinewidth}
+
+% TODO: configure this file to get the correct version number
+\title{Nemo user manual\\v0.5.1}
+\author{Andreas Fidjeland}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+nemo is a library for discrete-time simulation of spiking neural networks.
+It runs simulations on CUDA-enabled GPUs (device generation $\geq$ 1.2).
+The library provides a C++ and a C interface. 
+
+\section{Installation}
+
+\subsection{General dependencies}
+
+\begin{itemize}
+	\item CUDA toolkit $\geq$ 2.1. The SDK is not required.
+	\item Boost
+\end{itemize}
+
+Note that the CUDA compiler driver \command{nvcc} is not compatible with all versions
+of \command{gcc}, especially newer versions of \command{gcc}.
+
+For Boost, mostly header-only libraries are required (\library{shared\_ptr}, \library{tuples},
+\library{random}, \library{date\_time}), so a full install/build is generally not required. 
+Note, however, that some versions of Visual C++ requires \library{date\_time} to be compiled as
+a proper library. 
+The \library{date\_time} library is only required for simulation timing,
+	and can be disabled in the cmake configuration stage via the \code{INCLUDE\_TIMING\_API} variable.
+
+\subsection{Unix}
+
+The source package can be built using cmake. The basic procedure is 
+
+% TODO: use code environment
+\begin{shell}
+cd <nemo-directory>
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+\end{shell}
+
+By default this installs headers to \directory{/usr/include/nemo} and the
+library to \directory{/usr/lib}. 
+
+\subsection{Windows}
+
+A precompiled library is available (NSIS installer).
+Both header and library files are stored in \directory{c:\textbackslash Program Files\textbackslash nemo-<version>}.
+To use, make sure this directory is on the include path and on the library path
+and then include either \file{nemo.hpp} or \file{nemo.h}.
+
+The source package can be built by using \command{cmake-gui} to generate an MSVC project file,
+	and then building from within MSVC:
+
+\begin{enumerate}
+	\item start \command{cmake-gui}
+	\item enter the source and target directories (these should be different)
+	\item configure
+	\item generate
+	\item open the resulting project file and build from within visual studio
+\end{enumerate}
+
+Builds via cygwin or msys/mingw have not been tested.
+
+\section{Usage}
+
+Both the C++ and C interfaces follow the same general usage pattern:
+
+\begin{enumerate}
+	\item Create a network object (\code{nemo::Network}) and add neurons and synapses
+	\item Create a configuration object (\code{nemo::Configuration}) and configure as appropriate
+	\item Create a simulation object (\code{nemo::Simulation}) from a network and a configuration and run the simulation
+\end{enumerate}
+
+For the C++ API include the header file \file{nemo.hpp}.
+Errors are reported via exceptions, all of which are subclasses of \code{std::exception}.
+
+For the C API, include the header file \file{nemo.h}. 
+In the C API the network, configuration, and simulation objects are controlled
+via opaque pointers.
+The objects are generated with methods 
+\code{nemo\_new\_x} (\code{x} $=$ \code{network}, \code{configuration}, or \code{simulation}),
+and should be explicitly destroyed with the corresponding methods 
+\code{nemo\_delete\_x}.
+The class methods are accessed with functions with names prefixed with \code{nemo\_},
+	all of which take the relevant opaque pointer as the first parameter.
+The C API communicates errors via error codes.
+Most functions return a value of type \code{nemo\_status\_t},
+	which will be \code{NEMO\_OK} if everything went fine and some other value otherwise.
+
+The header files \file{nemo.hpp} and \file{nemo.h} document the API functions in more detail.
+The files in the example directory in the distribution shows how to use the library.
+
+\subsection{Simulation model}
+
+The simulation is discrete-time with a fixed one millisecond step size.
+Neurons are based on the Izhikevich neuron model \cite{izhikevich2003simple_model}.
+Within each step the following actions take place in a fixed order:
+
+\begin{enumerate}
+	\item Compute accumulated current for incoming spikes;
+	\item Update the neuron state;
+	\item Determine if any neurons fired. The user can specify neurons which should be forced to fire at this point;
+	\item Update the state of the fired neurons
+	\item Accumulate STDP statistics, if STDP is enabled
+\end{enumerate}
+
+The state update step uses the Euler method with a step size of 0.25ms. 
+
+The weights are stored in a fixed-point format internally for performance reasons.
+The specific fixed-point format in use depends on the range of weights in the input network.
+The current accumulation uses saturating arithmetic to avoid overflow.
+Neuron parameters are stored in single-precision floating point.
+
+The maximum delay is currently limited to 64ms.
+
+\subsection{STDP model}
+\label{stdp}
+
+\nemo\ supports spike-timing dependant plasticity,
+	i.e. synapses can change during simulation depending on the temporal relationship 
+between the firing of the pre- and post-synaptic neurons. 
+To make use of STDP the user must first enable STDP globally by specifying an STDP function,
+and then enable plasticity for each synapse as appropriate.
+A single STDP function is applied to the whole network.
+
+Synapses can be either potentiated or depressed.
+With STDP enabled,
+	the simulation accumulates a weight change
+	which is the sum of potentiation and depression for each synapse. 
+Potentiation always moves the synaptic weight away from zero,
+	which for excitatory synapses is more positive,
+	and for inhibitory synapses is more negative.
+Depression always moves the synapses weight towards zero.
+The accumulation of potentiation and depression statistics takes place every cycle,
+	but the modification of the weight only takes place when explicitly requested.
+
+Generally a synapse is potentiated if a spike arrives shortly before the postsynaptic neuron fires. 
+Conversely, if a spike arrives shortly after the postsynaptic firing the synapse is depressed. 
+Also, the effect of either potentiation or depression generally weakens as the time difference, $dt$, 
+	between spike arrival and firing increases. 
+Beyond certain values of $dt$ before or after the firing, STDP has no effect. 
+These limits for $dt$ specify the size of the STDP window.
+
+The user can specify the following aspects of the STDP function:
+
+\begin{itemize}
+	\item the size of the STDP window;
+	\item what values of $dt$ cause potentiation and which cause depression;
+	\item the strength of either potentiation or depression for each value of $dt$, 
+		i.e. the shape of the STDP function;
+	\item maximum weight of plastic excitatory synapses; and
+	\item minimum weight of plastic inhibitory synapses.
+\end{itemize}
+
+Since the simulation is discrete-time,
+	the STDP function can be specified by providing values of the underlying function
+	sampled at integer values of $dt$.
+For any value of $dt$ a positive value of the function denotes potentiation, 
+	while a negative value denotes depression.
+The STDP function is described using two vectors: 
+	one for spike arrivals \emph{before} the postsynaptic firing (pre-post pair),
+	and one for spike arrivals \emph{after} the postsynaptic firing (post-pre pair).
+The total length of these two vectors is the size of the STDP window.
+The typical scheme is to have positive values for pre-post pairs and negative values for post-pre pairs,
+but other schemes can be used.
+
+When accumulating statistics a pairwise nearest-neighbour protocol is used.
+For each postsynaptic firing potentiation and depression statistics are updated based
+on the nearest pre-post spike pair (if any inside STDP window) 
+and the nearest post-pre spike pair (if any inside the STDP window).
+
+Excitatory synapses are never potentiated beyond the user-specified maximum weight,
+and are never depressed below zero.
+Likewise, inhibitory synapses are never potentiated beyond the  user-specified minimum weight,
+and are never depressed above zero.
+Synapses can thus be deactivated, but never change from excitatory to inhibitory or vice versa.
+
+% TODO: max size of window
+
+
+%As a practical example, consider an asymmetric STDP scheme specified using the following functions for LTP and LTD:
+%\[ stdp(dt) = \alpha e^{-dt / \tau} \]
+%where $\alpha$ specifies a scaling and $\tau$ the size of either the potentiation or depression window. For LTP, let $\alpha = 1.0, \tau=20$, and for LTD let $alpha=0.8, \tau=20$. This STDP function is specified using two vectors like this:
+
+
+\bibliographystyle{abbrv}
+\bibliography{manual}
+
+\end{document}

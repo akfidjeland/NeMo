@@ -5,6 +5,8 @@
 # Users shouldn't normally need to build to documentation themselves.
 OPTION(REBUILD_API_DOCS "Rebuild API documentation" OFF)
 
+SUBDIRS(latex)
+
 SET(DOC_DIR ${CMAKE_BINARY_DIR}/doc)
 SET(MAN_DIR ${DOC_DIR}/man/man3)
 SET(GENERATED_MAN_PAGES
