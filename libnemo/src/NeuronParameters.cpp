@@ -128,12 +128,12 @@ NeuronParameters::moveToDevice()
 
 		const neuron_t& n = i->second;
 
-		h_arr[PARAM_A * veclen + addr] = n.a;
-		h_arr[PARAM_B * veclen + addr] = n.b;
-		h_arr[PARAM_C * veclen + addr] = n.c;
-		h_arr[PARAM_D * veclen + addr] = n.d;
-		h_arr[STATE_U * veclen + addr] = n.u;
-		h_arr[STATE_V * veclen + addr] = n.v;
+		h_arr.at(PARAM_A * veclen + addr) = n.a;
+		h_arr.at(PARAM_B * veclen + addr) = n.b;
+		h_arr.at(PARAM_C * veclen + addr) = n.c;
+		h_arr.at(PARAM_D * veclen + addr) = n.d;
+		h_arr.at(STATE_U * veclen + addr) = n.u;
+		h_arr.at(STATE_V * veclen + addr) = n.v;
 	}
 
 	// copy data across
@@ -152,11 +152,11 @@ NeuronParameters::configurePartitionSizes()
 	}
 
 	size_t maxPidx = m_maxPartitionNeuron.rbegin()->first;
-	std::vector<unsigned> partitionSizes(maxPidx, 0);
+	std::vector<unsigned> partitionSizes(maxPidx+1, 0);
 
 	for(std::map<pidx_t, nidx_t>::const_iterator i = m_maxPartitionNeuron.begin();
 			i != m_maxPartitionNeuron.end(); ++i) {
-		partitionSizes[i->first] = i->second + 1;
+		partitionSizes.at(i->first) = i->second + 1;
 	}
 
 	configurePartitionSize(&partitionSizes[0], partitionSizes.size());
