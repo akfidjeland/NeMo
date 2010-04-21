@@ -22,44 +22,30 @@ class Configuration;
 
 
 /*! \class Simulation
- * \brief C++ API for nemo
  *
- * To use, create an network object using \ref nemo::Simulation::create, configure
+ * To use, create a network object using \ref nemo::Simulation::create, configure
  * it using any of the configuration commands, construct a network by adding
  * neurons and synapses, and finally run the simulation.
  *
- * \section errors Error Handling
- *
  * Internal errors are signaled by exceptions. Thrown exceptions are all
  * subclasses of std::exception.
+ *
+ * \ingroup cpp-api
  */
 class DLL_PUBLIC Simulation
 {
 	public :
 
-		/*! \name Initialisation */
-		/* \{ */ // begin init section
-
 		/*!
 		 * \return
 		 * 		new Simulation object, or NULL if no suitable CUDA device was
-		 * 		found. For CUDA device 0 will be used.  */
+		 * 		found. */
 		static Simulation* create(const Network& net, const Configuration&);
-
-		/* \} */ // end init section
 
 		virtual ~Simulation();
 
-		/*! \name Configuration */
-		/* \{ */ // begin configuration
-
 		/*! \return the number of cycles the firing buffer can hold */
 		virtual unsigned getFiringBufferLength() const = 0;
-
-		/* \} */ // end configuration
-
-		/*! \name Simulation
-		 * \{ */
 
 		/*! Run simulation for a single cycle (1ms)
 		 *
@@ -75,8 +61,6 @@ class DLL_PUBLIC Simulation
 		 * 		Multiplier for the accumulated weight change
 		 */
 		virtual void applyStdp(float reward) = 0;
-
-		/* \} */ // end simulation group
 
 		/*! \name Simulation (firing)
 		 *

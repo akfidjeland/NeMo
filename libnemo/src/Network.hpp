@@ -57,7 +57,7 @@ class DLL_PUBLIC Network
 		 * 		distribution. If set to zero no random input current will be
 		 * 		generated.
 		 */
-		void addNeuron(unsigned neuronIndex,
+		void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
