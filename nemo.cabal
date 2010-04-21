@@ -149,6 +149,7 @@ executable nemo
         extra-libraries:    nemo
         extra-lib-dirs:     dist/build/libnemo/src
         include-dirs:       libnemo/src
+                            dist/build/libnemo/src
 
 
 

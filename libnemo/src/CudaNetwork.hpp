@@ -12,7 +12,7 @@
 
 #include <stddef.h>
 
-#include <config.h>
+#include <nemo_config.h>
 #include "NVector.hpp"
 #include "Configuration.hpp"
 #include "ConnectivityMatrix.hpp"

@@ -13,7 +13,7 @@
  */
 
 #include <ostream>
-#include <config.h>
+#include <nemo_config.h>
 #include "STDP.hpp"
 
 namespace nemo {

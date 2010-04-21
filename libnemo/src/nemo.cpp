@@ -22,7 +22,7 @@ extern "C" {
 #include "Network.hpp"
 #include "DeviceAssertions.hpp"
 #include "except.hpp"
-#include <config.h>
+#include <nemo_config.h>
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to
  * an error codes instead */

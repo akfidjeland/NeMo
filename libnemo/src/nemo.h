@@ -14,7 +14,7 @@
 //! \todo document STDP
 
 #include <stddef.h> // for size_t
-#include <config.h>
+#include <nemo_config.h>
 
 /*! Only opaque pointers are exposed in the C API */
 typedef void* nemo_network_t;

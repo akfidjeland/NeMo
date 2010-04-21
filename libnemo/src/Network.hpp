@@ -6,7 +6,7 @@
 #include <map>
 #include <vector>
 
-#include "config.h"
+#include "nemo_config.h"
 #include "types.hpp"
 
 namespace nemo {

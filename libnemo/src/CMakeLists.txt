@@ -117,9 +117,9 @@ INSTALL(FILES nemo.h
 			nemo.hpp
 			types.hpp
 			types.h
-			${CMAKE_CURRENT_BINARY_DIR}/config.h
+			${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h
 		DESTINATION include/nemo)
 
 CONFIGURE_FILE(
-	${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
-	${CMAKE_CURRENT_BINARY_DIR}/config.h)
+	${CMAKE_CURRENT_SOURCE_DIR}/nemo_config.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h)

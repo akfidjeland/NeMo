@@ -13,7 +13,7 @@
 //! \file Simulation.hpp
 
 #include <vector>
-#include <config.h>
+#include <nemo_config.h>
 
 namespace nemo {
 
