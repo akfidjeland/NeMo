@@ -14,6 +14,7 @@
 //! \todo document STDP
 
 #include <stddef.h> // for size_t
+#include <config.h>
 
 /*! Only opaque pointers are exposed in the C API */
 typedef void* nemo_network_t;
@@ -276,6 +277,8 @@ nemo_get_synapses(nemo_simulation_t,
 // TIMERS
 //-----------------------------------------------------------------------------
 
+#ifdef INCLUDE_TIMING_API
+
 /*! \name Simulation (timing)
  *
  * The simulation has two internal timers which keep track of the elapsed \e
@@ -294,6 +297,8 @@ unsigned long nemo_elapsed_simulation(nemo_simulation_t);
 void nemo_reset_timer(nemo_simulation_t);
 
 /* \} */ // end timing section
+
+#endif
 
 
 

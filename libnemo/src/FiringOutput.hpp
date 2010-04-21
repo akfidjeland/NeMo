@@ -109,9 +109,9 @@ class FiringOutput {
 		size_t md_allocated;
 
 		void populateSparse(
-				unsigned cycles,
+				unsigned bufferedCycles,
 				const uint32_t* hostBuffer,
-				std::vector<unsigned>& cycles,
+				std::vector<unsigned>& firingCycle,
 				std::vector<unsigned>& neuronIdx);
 
 		size_t m_partitionSize;

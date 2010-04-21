@@ -10,6 +10,14 @@ make
 su
 make install
 
+To build on Windows using MSVC:
+
+- start cmake-gui
+- enter the source and target directories (these should be different)
+- configure
+- generate
+- open the resulting project file and build from within visual studio.
+
 Dependencies
 ------------
 
@@ -19,8 +27,11 @@ Dependencies
 Note that the CUDA compiler driver 'nvcc' is not compatible with all versions
 of gcc, especially newer versions of gcc.
 
-For Boost, only a few header-only libraries are required (shared_ptr, tuples,
-random, date_time), so a full install/build is not required.
+For Boost, mostly header-only libraries are required (shared_ptr, tuples,
+random, date_time), so a full install/build is generally not required. Note,
+however, that some versions of Visual C++ requires date_time to be compiled as
+a proper library. The date_time library is only required for simulation timing,
+and can be disabled in the cmake configuration stage.
 
 Usage
 -----
@@ -32,4 +43,4 @@ overview of the library, 'man 3 nemo-c' for C API reference and 'man 3
 nemo-cpp' for the C++ API reference.
 
 Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>
-March 2010
+April 2010

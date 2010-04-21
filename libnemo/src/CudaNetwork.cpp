@@ -32,6 +32,7 @@
 #include "kernel.hpp"
 
 
+
 namespace nemo {
 	namespace cuda {
 
@@ -74,7 +75,9 @@ CudaNetwork::CudaNetwork(
 	setPitch();
 	//! \todo do this configuration as part of CM setup
 	configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64);
+#ifdef INCLUDE_TIMING_API
 	resetTimer();
+#endif
 }
 
 
@@ -271,6 +274,7 @@ CudaNetwork::setPitch()
 //-----------------------------------------------------------------------------
 
 
+#ifdef INCLUDE_TIMING_API
 
 unsigned long
 CudaNetwork::elapsedWallclock() const
@@ -296,7 +300,7 @@ CudaNetwork::resetTimer()
 	m_timer.reset();
 }
 
-
+#endif
 
 
 //-----------------------------------------------------------------------------
@@ -323,7 +327,9 @@ CudaNetwork::stepSimulation(const std::vector<unsigned>& fstim)
 		throw std::overflow_error("Cycle counter overflow");
 	}
 	m_cycle += 1;
+#ifdef INCLUDE_TIMING_API
 	m_timer.step();
+#endif
 
 	uint32_t* d_fstim = setFiringStimulus(fstim);
 	uint32_t* d_fout = m_firingOutput->step();

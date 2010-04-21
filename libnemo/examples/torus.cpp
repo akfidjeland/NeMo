@@ -63,8 +63,8 @@ addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 	float v = -65.0f;
 	float a = 0.02f;
 	float b = 0.2f;
-	double r1 = param();
-	double r2 = param();
+	float r1 = float(param());
+	float r2 = float(param());
 	float c = v + 15.0f * r1 * r1;
 	float d = 8.0f - 6.0f * r2 * r2;
 	float u = b * v;
@@ -78,9 +78,9 @@ void
 addInhibitoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 {
 	float v = -65.0f;
-	double r1 = param();
+	float r1 = float(param());
 	float a = 0.02f + 0.08f * r1;
-	double r2 = param();
+	float r2 = float(param());
 	float b = 0.25f - 0.05 * r2;
 	float c = v; 
 	float d = 2.0f;
@@ -329,7 +329,9 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 
 	//! \todo fix timing code in kernel so that we don't have to force data onto device
 	sim->stepSimulation();
+#ifdef INCLUDE_TIMING_API
 	sim->resetTimer();
+#endif
 
 	/* Run for a few seconds to warm up the network */
 	std::cout << "Running simulation (warming up)...";
@@ -339,8 +341,10 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 		}
 		sim->flushFiringBuffer();
 	}
+#ifdef INCLUDE_TIMING_API
 	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]" << std::endl;
 	sim->resetTimer();
+#endif
 
 	unsigned seconds = 10;
 
@@ -353,9 +357,11 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 		}
 		sim->flushFiringBuffer();
 	}
+#ifdef INCLUDE_TIMING_API
 	long int elapsedTiming = sim->elapsedWallclock();
 	sim->resetTimer();
 	std::cout << "[" << elapsedTiming << "ms elapsed]" << std::endl;
+#endif
 
 	/* Dummy buffers for firing data */
 	const std::vector<unsigned>* cycles;
@@ -371,12 +377,15 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 		sim->readFiring(&cycles, &fired);
 		nfired += fired->size();
 	}
+#ifdef INCLUDE_TIMING_API
 	long int elapsedData = sim->elapsedWallclock();
 	std::cout << "[" << elapsedData << "ms elapsed]" << std::endl;
+#endif
 
 	unsigned long narrivals = nfired * m;
 	double f = (double(nfired) / (pcount * PATCH_SIZE)) / double(seconds);
 
+#ifdef INCLUDE_TIMING_API
 	/* Throughput is measured in terms of the number of spike arrivals per
 	 * wall-clock second */
 	unsigned long throughputNoPCI = MS_PER_SECOND * narrivals / elapsedTiming;
@@ -384,15 +393,18 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 
 	double speedupNoPCI = double(seconds*MS_PER_SECOND)/elapsedTiming;
 	double speedupPCI = double(seconds*MS_PER_SECOND)/elapsedData;
+#endif
 
 	std::cout << "Total firings: " << nfired << std::endl;
 	std::cout << "Avg. firing rate: " << f << "Hz\n";
 	std::cout << "Spike arrivals: " << narrivals << std::endl;
+#ifdef INCLUDE_TIMING_API
 	std::cout << "Performace both with and without PCI traffic overheads:\n";
 	std::cout << "Approx. throughput: " << throughputPCI/1000000 << "/"
 			<< throughputNoPCI/1000000 << "Ma/s (million spike arrivals per second)\n";
 	std::cout << "Speedup wrt real-time: " << speedupPCI << "/"
 			<< speedupNoPCI << std::endl;
+#endif
 
 	//sim->stopSimulation();
 }

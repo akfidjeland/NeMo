@@ -12,12 +12,15 @@
 
 #include <stddef.h>
 
+#include <config.h>
 #include "NVector.hpp"
 #include "Configuration.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "DeviceAssertions.hpp"
 #include "NeuronParameters.hpp"
+#ifdef INCLUDE_TIMING_API
 #include "Timer.hpp"
+#endif
 #include "Simulation.hpp"
 #include "STDP.hpp"
 #include "types.h"
@@ -88,6 +91,7 @@ class CudaNetwork : public Simulation
 
 		void finishSimulation();
 
+#ifdef INCLUDE_TIMING_API
 		/*
 		 * TIMING
 		 */
@@ -102,6 +106,7 @@ class CudaNetwork : public Simulation
 
 		/*! Reset both wall-clock and simulation timer */
 		void resetTimer();
+#endif
 
 		static unsigned defaultPartitionSize();
 		static unsigned defaultFiringBufferLength();
@@ -149,7 +154,9 @@ class CudaNetwork : public Simulation
 		size_t m_pitch32;
 		size_t m_pitch64;
 
+#ifdef INCLUDE_TIMING_API
 		nemo::Timer m_timer;
+#endif
 
 		STDP<float> m_stdpFn;
 		void configureStdp(const STDP<float>& stdp);

@@ -13,6 +13,7 @@
 //! \file Simulation.hpp
 
 #include <vector>
+#include <config.h>
 
 namespace nemo {
 
@@ -137,6 +138,7 @@ class Simulation
 
 		/* \} */ // end simulation (queries) section
 
+#ifdef INCLUDE_TIMING_API
 		/*! \name Simulation (timing)
 		 *
 		 * The simulation has two internal timers which keep track of the
@@ -156,6 +158,7 @@ class Simulation
 
 		/*! Reset both wall-clock and simulation timer */
 		virtual void resetTimer() = 0;
+#endif
 
 		/* \} */ // end simulation (timing) section
 

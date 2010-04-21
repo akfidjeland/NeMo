@@ -16,6 +16,8 @@ FIND_PACKAGE(Boost REQUIRED)
 
 SUBDIRS(src doc)
 
+OPTION(INCLUDE_TIMING_API "Include API functions for timing (may require boost::date_time library)" ON)
+
 OPTION(CREATE_EXAMPLES "Build binaries for example networks" ON)
 IF(CREATE_EXAMPLES)
 	SUBDIRS(examples)

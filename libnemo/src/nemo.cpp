@@ -22,6 +22,7 @@ extern "C" {
 #include "Network.hpp"
 #include "DeviceAssertions.hpp"
 #include "except.hpp"
+#include <config.h>
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to
  * an error codes instead */
@@ -280,6 +281,7 @@ nemo_log_stdout(nemo_configuration_t conf)
 }
 
 
+#ifdef INCLUDE_TIMING_API
 
 //! \todo set status here as well, return data via pointer
 unsigned long
@@ -303,6 +305,8 @@ nemo_reset_timer(nemo_simulation_t sim)
 {
 	NOCATCH(Simulation, sim, resetTimer());
 }
+
+#endif
 
 
 
