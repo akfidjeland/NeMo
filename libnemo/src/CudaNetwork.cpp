@@ -109,11 +109,13 @@ CudaNetwork::selectDevice()
 	cudaDeviceProp prop;
 	prop.major = 1;
 	prop.minor = 2;
-	cudaGetDevice(&dev);
+
 	CUDA_SAFE_CALL(cudaChooseDevice(&dev, &prop));
+	CUDA_SAFE_CALL(cudaGetDeviceProperties(&prop, dev));
 
 	// 9999.9999 is the 'emulation device' which is always present
 	if(prop.major == 9999 || prop.minor == 9999) {
+		//! \todo perhaps throw exception instead?
 		std::cerr << "No physical devices available" << std::endl;
 		return -1;
 	}
