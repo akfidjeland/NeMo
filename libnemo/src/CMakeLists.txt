@@ -94,7 +94,6 @@ CUDA_ADD_LIBRARY(nemo
 	SynapseAddressTable.cpp
 	ThalamicInput.cpp
 	WarpAddressTable.cpp
-	time.cpp
   )
 
 #SET_TARGET_PROPERTIES(nemo PROPERTIES SOVERSION 1)
