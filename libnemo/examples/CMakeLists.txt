@@ -9,3 +9,7 @@ TARGET_LINK_LIBRARIES(torus nemo)
 IF(UNIX)
 	INSTALL(FILES torus.cpp DESTINATION share/nemo/examples)
 ENDIF(UNIX)
+
+IF(WIN32)
+	INSTALL(FILES torus.cpp DESTINATION examples)
+ENDIF(WIN32)

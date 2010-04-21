@@ -81,7 +81,7 @@ addInhibitoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 	float r1 = float(param());
 	float a = 0.02f + 0.08f * r1;
 	float r2 = float(param());
-	float b = 0.25f - 0.05 * r2;
+	float b = 0.25f - 0.05f * r2;
 	float c = v; 
 	float d = 2.0f;
 	float u = b * v;
@@ -122,8 +122,8 @@ targetNeuron(
 	double distY = dist * sin(theta);
 
 	/* global x,y-coordinates */
-	int globalX = sourcePartition * PATCH_WIDTH + sourceX + round(distX);
-	int globalY = sourceY + round(distY);
+	int globalX = sourcePartition * PATCH_WIDTH + sourceX + int(round(distX));
+	int globalY = sourceY + int(round(distY));
 
 	int targetY = globalY % PATCH_HEIGHT;
 	if(targetY < 0)
@@ -140,7 +140,7 @@ targetNeuron(
 	int targetX = globalX % PATCH_WIDTH;
 
 	/* Don't connect to self unless we wrap around torus */
-	assert(!(targetX == sourceX && targetY == sourceY && dist < PATCH_HEIGHT));
+	assert(!(targetX == sourceX && targetY == sourceY && dist < PATCH_HEIGHT-1));
 
 	return std::make_pair<unsigned, double>(neuronIndex(targetPatch, targetX, targetY), dist);
 }
@@ -182,8 +182,8 @@ addExcitatorySynapses(
 		target_t target = targetNeuron(patch, x, y, pcount, distance, angle);
 
 		targets.at(sidx) = target.first;
-		weights.at(sidx) = 0.5 * rweight();
-		delays.at(sidx) = delay(target.second);
+		weights.at(sidx) = 0.5f * float(rweight());
+		delays.at(sidx) = delay(unsigned(target.second));
 		//std::cout << neuronIndex(patch, x, y) << " -> " << target.first << " d=" << target.second << "\n";
 	}
 
@@ -211,8 +211,8 @@ addInhibitorySynapses(
 		//! \todo add dependence of delay on distance
 		target_t target = targetNeuron(patch, x, y, pcount, distance, angle);
 		targets.at(sidx) = target.first;
-		weights.at(sidx) = -rweight();
-		delays.at(sidx) = delay(target.second);
+		weights.at(sidx) = float(-rweight());
+		delays.at(sidx) = delay(unsigned(target.second));
 		//std::cout << neuronIndex(patch, x, y) << " -> " << target.first << " d=" << target.second << "\n";
 	}
 
@@ -237,8 +237,8 @@ configure(bool stdp, bool logging=true)
 		std::vector<float> post(20);
 		for(unsigned i = 0; i < 20; ++i) {
 			float dt = float(i + 1);
-			pre.at(i) = 1.0 * expf(-dt / 20.0f);
-			pre.at(i) = -0.8 * expf(-dt / 20.0f);
+			pre.at(i) = 1.0f * expf(-dt / 20.0f);
+			pre.at(i) = -0.8f * expf(-dt / 20.0f);
 		}
 		conf.setStdpFunction(pre, post, 10.0, -10.0);
 	}
@@ -441,7 +441,7 @@ int
 main(int argc, char* argv[])
 {
 	if(argc != 3) {
-		fprintf(stderr, "Usage: run pcount sigma\n");
+		std::cerr << "Usage: run pcount sigma" << std::endl;
 		exit(-1);
 	}
 
@@ -452,8 +452,6 @@ main(int argc, char* argv[])
 	//! \todo get RNG seed option from command line
 	//! \todo otherwise seed from system time
 
-	fprintf(stderr, "%s w/%u partitions\n", argv[1], pcount);
-
 	//! \todo add stdp command-line option
 	bool stdp = false;
 	unsigned m = 1000; // synapses per neuron
@@ -461,9 +459,14 @@ main(int argc, char* argv[])
 	nemo::Network* net = construct(pcount, m, stdp, sigma);
 	nemo::Configuration conf = configure(stdp);
 	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
+	if(sim == NULL) {
+		std::cerr << "failed to create simulation" << std::endl;
+		return -1;
+	}
 	simulate(sim, pcount, m, stdp);
 	//simulateToFile(net, pcount, m, stdp, "firing.dat");
 	delete net;
+	return 0;
 }
 
 #endif
