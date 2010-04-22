@@ -34,8 +34,8 @@ import Types
 
 
 data State = State {
-        rtdata :: Ptr CuRT,     -- ^ kernel runtime data
-        indices :: Set.Set Idx -- ^ all neurons in the network
+        rtdata :: Ptr CSim,     -- ^ kernel runtime data
+        indices :: Set.Set Idx  -- ^ all neurons in the network
     }
 
 {- Initialise memory on a single device -}
@@ -45,31 +45,36 @@ initSim
     -> StdpConf
     -> IO State
 initSim net reqPsize stdp = do
-    rt <- allocateRuntime reqPsize
-    when (rt == nullPtr) $ fail "Failed to create CUDA simulation"
-    configureStdp rt stdp
-    setFiringBufferLength rt 1000
-    indices <- setNeurons rt $ Network.toList net
-    initSimulation rt
-    return $ State rt indices
+    (cnet, indices) <- setNeurons $ Network.toList net
+    conf <- newConfiguration
+    maybe (return ()) (setCudaPartitionSize conf) reqPsize
+    configureStdp conf stdp
+    sim <- newSimulation cnet conf
+    deleteNetwork cnet
+    deleteConfiguration conf
+    when (sim == nullPtr) $ fail "Failed to create CUDA simulation"
+    return $ State sim indices
 
 
 
 {- | Add neurons to network and return the set of neuron indices -}
-setNeurons :: Ptr CuRT -> [(Idx, Neuron IzhNeuron Static)] -> IO (Set.Set Idx)
-setNeurons rt ns = do
+-- TODO: fold the staging buffer into KernelFFI interface
+setNeurons :: [(Idx, Neuron IzhNeuron Static)] -> IO (Ptr CNetwork, Set.Set Idx)
+setNeurons ns = do
+    net <- newNetwork
     buf <- allocOutbuf $ 2^16
-    foldM (setOne rt buf) Set.empty ns
+    indices <- foldM (setOne net buf) Set.empty ns
+    return (net, indices)
     where
-        setOne rt buf indices (idx, neuron) = do
+        setOne net buf indices (idx, neuron) = do
             let n = ndata neuron
                 sigma = maybe 0 id $ stateSigma n
-            addNeuron rt idx
+            addNeuron net idx
                 (paramA n) (paramB n) (paramC n) (paramD n)
                 (initU n) (initV n) sigma
             let ss = terminalsUnordered $ axon neuron
             len <- pokeSynapses buf 0 ss
-            addSynapses rt idx
+            addSynapses net idx
                 (nidx buf) (delays buf) (weights buf) (plasticity buf) len
             return $! Set.insert idx indices
 

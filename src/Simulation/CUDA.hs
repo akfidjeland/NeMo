@@ -11,6 +11,9 @@ module Simulation.CUDA (initSim) where
 
 import Control.Exception (assert)
 
+import Control.Exception (assert, evaluate)
+import Control.Parallel.Strategies (rnf)
+
 import Construction.Network (Network)
 import Construction.Izhikevich (IzhNeuron)
 import Construction.Synapse (Static)
@@ -21,7 +24,7 @@ import qualified Util.Assocs as A (elems, keys, mapAssocs, mapElems, groupBy, de
 import Simulation.CUDA.Address
 import qualified Simulation.CUDA.KernelFFI as Kernel
     (stepBuffering, stepNonBuffering, applyStdp, readFiring,
-     elapsedMs, resetTimer, freeRT)
+     elapsedMs, resetTimer, deleteSimulation)
 import Simulation.CUDA.Memory as Memory (initSim, getWeights, State(rtdata))
 import Simulation.STDP (StdpConf)
 
@@ -41,7 +44,7 @@ instance Simulation_Iface State where
     resetTimer = Kernel.resetTimer . rtdata
     getWeights = Memory.getWeights
     start sim = return () -- copy to device forced during initSim
-    stop = Kernel.freeRT . rtdata
+    stop = Kernel.deleteSimulation . rtdata
 
 
 -------------------------------------------------------------------------------
@@ -71,6 +74,7 @@ stepCuda sim fstim = do
 readFiring :: State -> Time -> IO [FiringOutput]
 readFiring sim ncycles = do
     (ncycles', fired) <- Kernel.readFiring $ rtdata sim
+    evaluate (rnf fired)
     assert (ncycles == ncycles') $ do
     return $! densifyDeviceFiring ncycles' fired
 
