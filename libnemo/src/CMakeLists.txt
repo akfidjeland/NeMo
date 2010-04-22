@@ -80,7 +80,7 @@ CUDA_ADD_LIBRARY(nemo
 	nemo.cpp
 	Configuration.cpp
 	ConnectivityMatrix.cpp
-	CudaNetwork.cpp
+	CudaSimulation.cpp
 	CycleCounters.cpp
 	DeviceAssertions.cpp
 	FiringOutput.cpp

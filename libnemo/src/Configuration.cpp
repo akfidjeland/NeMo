@@ -8,14 +8,14 @@
  */
 
 #include "Configuration.hpp"
-#include "CudaNetwork.hpp"
+#include "CudaSimulation.hpp"
 
 namespace nemo {
 
 Configuration::Configuration() :
 	m_logging(false),
-	m_cudaPartitionSize(cuda::CudaNetwork::defaultPartitionSize()),
-	m_cudaFiringBufferLength(cuda::CudaNetwork::defaultFiringBufferLength())
+	m_cudaPartitionSize(cuda::Simulation::defaultPartitionSize()),
+	m_cudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength())
 {
 	;
 }
@@ -35,7 +35,7 @@ Configuration::setStdpFunction(
 int
 Configuration::setCudaDevice(int dev)
 {
-	return cuda::CudaNetwork::setDevice(dev);
+	return cuda::Simulation::setDevice(dev);
 }
 
 } // namespace nemo

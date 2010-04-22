@@ -17,7 +17,7 @@ extern "C" {
 #include "nemo.h"
 }
 
-#include "CudaNetwork.hpp"
+#include "CudaSimulation.hpp"
 #include "Configuration.hpp"
 #include "Network.hpp"
 #include "DeviceAssertions.hpp"

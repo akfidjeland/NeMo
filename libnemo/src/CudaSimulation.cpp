@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CudaNetwork.hpp"
+#include "CudaSimulation.hpp"
 
 #include <vector>
 #include <stdexcept>
@@ -37,7 +37,7 @@ namespace nemo {
 	namespace cuda {
 
 
-CudaNetwork::CudaNetwork(
+Simulation::Simulation(
 		const nemo::Network& net,
 		const nemo::Configuration& conf) :
 	m_conf(conf),
@@ -81,7 +81,7 @@ CudaNetwork::CudaNetwork(
 }
 
 
-CudaNetwork::~CudaNetwork()
+Simulation::~Simulation()
 {
 	finishSimulation();
 	//! \todo used shared_ptr instead to deal with this
@@ -94,10 +94,10 @@ CudaNetwork::~CudaNetwork()
 }
 
 
-int CudaNetwork::s_device = -1;
+int Simulation::s_device = -1;
 
 int
-CudaNetwork::selectDevice()
+Simulation::selectDevice()
 {
 	/*! \todo might want to use thread-local, rather than process-local storage
 	 * for s_device in order to support multiple threads */
@@ -134,7 +134,7 @@ CudaNetwork::selectDevice()
 
 
 int
-CudaNetwork::setDevice(int dev)
+Simulation::setDevice(int dev)
 {
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, dev);
@@ -161,7 +161,7 @@ CudaNetwork::setDevice(int dev)
 
 
 void
-CudaNetwork::configureStdp(const STDP<float>& stdp)
+Simulation::configureStdp(const STDP<float>& stdp)
 {
 	if(!stdp.enabled()) {
 		return;
@@ -196,7 +196,7 @@ CudaNetwork::configureStdp(const STDP<float>& stdp)
  *		Pointer to pass to kernel (which is NULL if there's no firing data).
  */
 uint32_t*
-CudaNetwork::setFiringStimulus(const std::vector<unsigned>& nidx)
+Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
 	if(nidx.empty())
 		return NULL;
@@ -234,7 +234,7 @@ checkPitch(size_t expected, size_t found)
 {
 	if(expected != found) {
 		std::ostringstream msg;
-		msg << "CudaNetwork::checkPitch: pitch mismatch in device memory allocation. "
+		msg << "Simulation::checkPitch: pitch mismatch in device memory allocation. "
 			"Found " << found << ", expected " << expected << std::endl;
 		throw std::runtime_error(msg.str());
 	}
@@ -242,7 +242,7 @@ checkPitch(size_t expected, size_t found)
 
 
 size_t
-CudaNetwork::d_allocated() const
+Simulation::d_allocated() const
 {
 	size_t total = 0;
 	total += m_firingStimulus ? m_firingStimulus->d_allocated()   : 0;
@@ -258,7 +258,7 @@ CudaNetwork::d_allocated() const
 /* Set common pitch and check that all relevant arrays have the same pitch. The
  * kernel uses a single pitch for all 32-bit data */ 
 void
-CudaNetwork::setPitch()
+Simulation::setPitch()
 {
 	size_t pitch1 = m_firingStimulus->wordPitch();
 	m_pitch32 = m_neurons.wordPitch();
@@ -279,7 +279,7 @@ CudaNetwork::setPitch()
 #ifdef INCLUDE_TIMING_API
 
 unsigned long
-CudaNetwork::elapsedWallclock() const
+Simulation::elapsedWallclock() const
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	return m_timer.elapsedWallclock();
@@ -288,7 +288,7 @@ CudaNetwork::elapsedWallclock() const
 
 
 unsigned long
-CudaNetwork::elapsedSimulation() const
+Simulation::elapsedSimulation() const
 {
 	return m_timer.elapsedSimulation();
 }
@@ -296,7 +296,7 @@ CudaNetwork::elapsedSimulation() const
 
 
 void
-CudaNetwork::resetTimer()
+Simulation::resetTimer()
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	m_timer.reset();
@@ -311,7 +311,7 @@ CudaNetwork::resetTimer()
 
 
 bool
-CudaNetwork::usingStdp() const
+Simulation::usingStdp() const
 {
 	return m_stdpFn.enabled();
 }
@@ -320,7 +320,7 @@ CudaNetwork::usingStdp() const
 
 
 void
-CudaNetwork::stepSimulation(const std::vector<unsigned>& fstim)
+Simulation::stepSimulation(const std::vector<unsigned>& fstim)
 {
 	/* A 32-bit counter can count up to around 4M seconds which is around 1200
 	 * hours or 50 days */
@@ -364,7 +364,7 @@ CudaNetwork::stepSimulation(const std::vector<unsigned>& fstim)
 
 
 void
-CudaNetwork::applyStdp(float reward)
+Simulation::applyStdp(float reward)
 {
 	if(!usingStdp()) {
 		//! \todo issue a warning here?
@@ -391,7 +391,7 @@ CudaNetwork::applyStdp(float reward)
 
 
 void
-CudaNetwork::getSynapses(unsigned sn,
+Simulation::getSynapses(unsigned sn,
 		const std::vector<unsigned>** tn,
 		const std::vector<unsigned>** d,
 		const std::vector<float>** w,
@@ -403,7 +403,7 @@ CudaNetwork::getSynapses(unsigned sn,
 
 
 unsigned
-CudaNetwork::readFiring(
+Simulation::readFiring(
 		const std::vector<unsigned>** cycles,
 		const std::vector<unsigned>** nidx)
 {
@@ -412,14 +412,14 @@ CudaNetwork::readFiring(
 
 
 void
-CudaNetwork::flushFiringBuffer()
+Simulation::flushFiringBuffer()
 {
 	m_firingOutput->flushBuffer();
 }
 
 
 void
-CudaNetwork::finishSimulation()
+Simulation::finishSimulation()
 {
 	//! \todo perhaps clear device data here instead of in dtor
 	if(m_conf.loggingEnabled()) {
@@ -430,7 +430,7 @@ CudaNetwork::finishSimulation()
 
 
 unsigned
-CudaNetwork::defaultPartitionSize()
+Simulation::defaultPartitionSize()
 {
 	return MAX_PARTITION_SIZE;
 }
@@ -438,7 +438,7 @@ CudaNetwork::defaultPartitionSize()
 
 
 unsigned
-CudaNetwork::defaultFiringBufferLength()
+Simulation::defaultFiringBufferLength()
 {
 	return FiringOutput::defaultBufferLength();
 }

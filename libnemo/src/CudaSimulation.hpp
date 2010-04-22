@@ -31,13 +31,13 @@ namespace nemo {
 
 	namespace cuda {
 
-class CudaNetwork : public Simulation
+class Simulation : public nemo::Simulation
 {
 	public :
 
-		CudaNetwork(const nemo::Network& net, const nemo::Configuration& conf=Configuration());
+		Simulation(const nemo::Network& net, const nemo::Configuration& conf=Configuration());
 
-		~CudaNetwork();
+		~Simulation();
 
 		/*! Select device (for this thread) if a device with the minimum
 		 * required characteristics is present on the host system.

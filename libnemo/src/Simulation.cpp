@@ -8,7 +8,7 @@
  */
 
 #include "Simulation.hpp"
-#include "CudaNetwork.hpp"
+#include "CudaSimulation.hpp"
 
 namespace nemo {
 
@@ -16,8 +16,8 @@ namespace nemo {
 Simulation*
 Simulation::create(const Network& net, const Configuration& conf)
 {
-	int dev = cuda::CudaNetwork::selectDevice();
-	return dev == -1 ? NULL : new cuda::CudaNetwork(net, conf);
+	int dev = cuda::Simulation::selectDevice();
+	return dev == -1 ? NULL : new cuda::Simulation(net, conf);
 }
 
 
