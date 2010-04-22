@@ -282,15 +282,7 @@ unsigned long
 Simulation::elapsedWallclock() const
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
-	return m_timer.elapsedWallclock();
-}
-
-
-
-unsigned long
-Simulation::elapsedSimulation() const
-{
-	return m_timer.elapsedSimulation();
+	return nemo::Simulation::elapsedWallclock();
 }
 
 
@@ -299,7 +291,7 @@ void
 Simulation::resetTimer()
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
-	m_timer.reset();
+	nemo::Simulation::resetTimer();
 }
 
 #endif
@@ -330,7 +322,7 @@ Simulation::stepSimulation(const std::vector<unsigned>& fstim)
 	}
 	m_cycle += 1;
 #ifdef INCLUDE_TIMING_API
-	m_timer.step();
+	stepTimer();
 #endif
 
 	uint32_t* d_fstim = setFiringStimulus(fstim);

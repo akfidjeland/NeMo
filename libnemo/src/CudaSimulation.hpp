@@ -1,5 +1,5 @@
-#ifndef CUDA_NETWORK_HPP
-#define CUDA_NETWORK_HPP
+#ifndef NEMO_CUDA_SIMULATION_HPP
+#define NEMO_CUDA_SIMULATION_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -18,9 +18,6 @@
 #include "ConnectivityMatrix.hpp"
 #include "DeviceAssertions.hpp"
 #include "NeuronParameters.hpp"
-#ifdef INCLUDE_TIMING_API
-#include "Timer.hpp"
-#endif
 #include "Simulation.hpp"
 #include "STDP.hpp"
 #include "types.h"
@@ -100,10 +97,6 @@ class Simulation : public nemo::Simulation
 		 * simulation step (or last timer reset) */
 		unsigned long elapsedWallclock() const;
 
-		/*! \return number of milliseconds of simulated time elapsed since first
-		 * simulation step (or last timer reset) */
-		unsigned long elapsedSimulation() const;
-
 		/*! Reset both wall-clock and simulation timer */
 		void resetTimer();
 #endif
@@ -153,10 +146,6 @@ class Simulation : public nemo::Simulation
 
 		size_t m_pitch32;
 		size_t m_pitch64;
-
-#ifdef INCLUDE_TIMING_API
-		nemo::Timer m_timer;
-#endif
 
 		STDP<float> m_stdpFn;
 		void configureStdp(const STDP<float>& stdp);

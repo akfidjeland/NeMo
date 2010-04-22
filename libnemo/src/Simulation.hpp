@@ -134,17 +134,35 @@ class DLL_PUBLIC Simulation
 
 		/*! \return number of milliseconds of wall-clock time elapsed since
 		 * first simulation step (or last timer reset). */
-		virtual unsigned long elapsedWallclock() const = 0;
+		virtual unsigned long elapsedWallclock() const;
 
 		/*! \return number of milliseconds of simulated time elapsed since first
 		 * simulation step (or last timer reset) */
-		virtual unsigned long elapsedSimulation() const = 0;
+		virtual unsigned long elapsedSimulation() const;
 
 		/*! Reset both wall-clock and simulation timer */
-		virtual void resetTimer() = 0;
-#endif
+		virtual void resetTimer();
+
+	protected :
+
+		void stepTimer();
 
 		/* \} */ // end simulation (timing) section
+	private :
+
+		class Timer* m_timer;
+
+#endif
+
+	protected :
+
+		Simulation();
+
+	private :
+
+		/* Disallow copying of Simulation object */
+		Simulation(const Simulation&);
+		Simulation& operator=(const Simulation&);
 
 };
 
