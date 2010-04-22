@@ -106,7 +106,20 @@ CUDA_ADD_LIBRARY(nemo
 # Add a special target to clean nvcc generated files.
 CUDA_BUILD_CLEAN_TARGET()
 
-INSTALL(TARGETS nemo DESTINATION lib)
+
+
+
+# On windows just put everyting in one directory
+IF(WIN32)
+	SET(INSTALL_INCLUDE_DIR .)
+	SET(INSTALL_LIB_DIR .)
+ELSE(WIN32)
+	SET(INSTALL_INCLUDE_DIR include/nemo)
+	SET(INSTALL_LIB_DIR lib)
+ENDIF(WIN32)
+
+
+INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
 INSTALL(FILES nemo.h
 			Network.hpp
 			Configuration.hpp
@@ -117,7 +130,7 @@ INSTALL(FILES nemo.h
 			types.hpp
 			types.h
 			${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h
-		DESTINATION include/nemo)
+		DESTINATION ${INSTALL_INCLUDE_DIR})
 
 CONFIGURE_FILE(
 	${CMAKE_CURRENT_SOURCE_DIR}/nemo_config.h.in
