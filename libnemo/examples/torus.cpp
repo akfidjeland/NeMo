@@ -328,7 +328,7 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 	const unsigned MS_PER_SECOND = 1000;
 
 	//! \todo fix timing code in kernel so that we don't have to force data onto device
-	sim->stepSimulation();
+	sim->step();
 #ifdef INCLUDE_TIMING_API
 	sim->resetTimer();
 #endif
@@ -337,7 +337,7 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 	std::cout << "Running simulation (warming up)...";
 	for(unsigned s=0; s < 5; ++s) {
 		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms) {
-			sim->stepSimulation();
+			sim->step();
 		}
 		sim->flushFiringBuffer();
 	}
@@ -353,7 +353,7 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 	for(unsigned s=0; s < seconds; ++s) {
 		std::cout << s << " ";
 		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms) {
-			sim->stepSimulation();
+			sim->step();
 		}
 		sim->flushFiringBuffer();
 	}
@@ -372,7 +372,7 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 	for(unsigned s=0; s < seconds; ++s) {
 		std::cout << s << " ";
 		for(unsigned ms=0; ms<1000; ++ms) {
-			sim->stepSimulation();
+			sim->step();
 		}
 		sim->readFiring(&cycles, &fired);
 		nfired += fired->size();
@@ -422,7 +422,7 @@ simulateToFile(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp, co
 	std::cout << "Running simulation (gathering performance data)...";
 	unsigned nfired = 0;
 	for(unsigned ms=0; ms<1000; ++ms) {
-		sim->stepSimulation();
+		sim->step();
 	}
 	sim->readFiring(&cycles, &fired);
 

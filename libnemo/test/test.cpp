@@ -24,7 +24,7 @@ runSimulation(
 	
 	for(unsigned s = 0; s < seconds; ++s)
 	for(unsigned ms = 0; ms < 1000; ++ms) {
-		sim->stepSimulation();
+		sim->step();
 
 		//! \todo could modify API here to make this nicer
 		const std::vector<unsigned>* cycles_tmp;

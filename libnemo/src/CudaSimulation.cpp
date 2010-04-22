@@ -312,7 +312,7 @@ Simulation::usingStdp() const
 
 
 void
-Simulation::stepSimulation(const std::vector<unsigned>& fstim)
+Simulation::step(const std::vector<unsigned>& fstim)
 {
 	/* A 32-bit counter can count up to around 4M seconds which is around 1200
 	 * hours or 50 days */

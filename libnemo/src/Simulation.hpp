@@ -53,7 +53,7 @@ class DLL_PUBLIC Simulation
 		 * 		An optional list of neurons, which will be forced to fire this
 		 * 		cycle.
 		 */
-		virtual void stepSimulation(const std::vector<unsigned>& fstim = std::vector<unsigned>()) = 0;
+		virtual void step(const std::vector<unsigned>& fstim = std::vector<unsigned>()) = 0;
 
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *

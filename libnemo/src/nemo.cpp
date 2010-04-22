@@ -224,7 +224,7 @@ nemo_get_synapses(nemo_simulation_t ptr,
 nemo_status_t
 nemo_step(nemo_simulation_t sim, unsigned fstimIdx[], size_t fstimCount)
 {
-	CATCH_(Simulation, sim, stepSimulation(std::vector<unsigned>(fstimIdx, fstimIdx + fstimCount)));
+	CATCH_(Simulation, sim, step(std::vector<unsigned>(fstimIdx, fstimIdx + fstimCount)));
 }
 
 
