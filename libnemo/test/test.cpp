@@ -1,3 +1,4 @@
+#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE nemo test
 #include <boost/test/unit_test.hpp>
 #include <nemo.hpp>
@@ -12,13 +13,13 @@ runSimulation(
 		const nemo::Network* net,
 		const nemo::Configuration& conf,
 		unsigned seconds,
-		std::vector<unsigned> fcycles,
-		std::vector<unsigned> fnidx)
+		std::vector<unsigned>* fcycles,
+		std::vector<unsigned>* fnidx)
 {
 	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
 
-	fcycles.clear();
-	fnidx.clear();
+	fcycles->clear();
+	fnidx->clear();
 
 	//! todo vary the step size between reads to firing buffer
 	
@@ -33,8 +34,8 @@ runSimulation(
 		sim->readFiring(&cycles_tmp, &nidx_tmp);
 
 		// push data back onto local buffers
-		std::copy(cycles_tmp->begin(), cycles_tmp->end(), back_inserter(fcycles));
-		std::copy(nidx_tmp->begin(), nidx_tmp->end(), back_inserter(fnidx));
+		std::copy(cycles_tmp->begin(), cycles_tmp->end(), back_inserter(*fcycles));
+		std::copy(nidx_tmp->begin(), nidx_tmp->end(), back_inserter(*fnidx));
 	}
 
 	delete sim;
@@ -56,8 +57,8 @@ compareSimulations(
 	          << "      and " << conf2 << "\n";
 	    
 	std::vector<unsigned> cycles1, cycles2, nidx1, nidx2;
-	runSimulation(net1, conf1, duration, cycles1, nidx1);
-	runSimulation(net2, conf2, duration, cycles2, nidx2);
+	runSimulation(net1, conf1, duration, &cycles1, &nidx1);
+	runSimulation(net2, conf2, duration, &cycles2, &nidx2);
 
 	BOOST_REQUIRE(cycles1.size() == nidx1.size());
 	BOOST_REQUIRE(cycles2.size() == nidx2.size());
@@ -66,7 +67,7 @@ compareSimulations(
 	for(size_t i = 0; i < cycles1.size(); ++i) {
 		// no point continuing after first divergence, it's only going to make
 		// output hard to read.
-		BOOST_CHECK(cycles1.at(i) == cycles2.at(i) + 1);
+		BOOST_CHECK(cycles1.at(i) == (cycles2.at(i)));
 		BOOST_REQUIRE(nidx1.at(i) == nidx2.at(i));
 	}
 }
@@ -97,6 +98,7 @@ configuration(bool stdp, unsigned partitionSize)
 
 BOOST_AUTO_TEST_CASE(mapping_tests)
 {
+	//! \todo run for larger networks as well
 	unsigned pcount = 1;
 	unsigned m = 1000;
 	bool stdp = false;
