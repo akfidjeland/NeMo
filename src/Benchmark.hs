@@ -68,10 +68,9 @@ inN r = mkNeuron2 (0.02 + 0.08*r) b c 2.0 u v thalamic
 -------------------------------------------------------------------------------
 
 
-clusteredNetwork seed cc m p = Network ns t
+clusteredNetwork seed cc cs m p = Network ns t
     where
         r  = mkStdGen seed -- thread RNG through whole program
-        cs = 1024
         n  = cc * cs
         ns = Neurons.fromList $ take n $
                 clusteredNeurons (exN, exSynapse) (inN, inSynapse) 0 cc cs m p r
@@ -182,20 +181,26 @@ rtsCvs name (RunTimeStatistics cycles elapsed fired spikes neurons synapses) =
 
 
 {- RTS initialised with network statistics -}
-initRTS :: Network IzhNeuron () -> RTS
-initRTS net = RunTimeStatistics {
+-- initRTS :: Network IzhNeuron () -> RTS
+initRTS :: Int -> Int  -> RTS
+initRTS ncount scount = RunTimeStatistics {
         rtsCycles   = 0,
         rtsElapsed  = 0,
         rtsFired    = 0,
         rtsSpikes   = 0,
-        rtsNeurons  = fromIntegral $! size net,
-        rtsSynapses = fromIntegral $! synapseCount net
+        -- TODO: could initialise this from network, but this forces
+        -- construction of full network before any transfer to the device. This
+        -- will use a very large amount of memory.
+        rtsNeurons  = fromIntegral ncount,
+        rtsSynapses = fromIntegral scount
     }
 
 
 data Benchmark = Benchmark {
         bmName     :: String,
         bmNet      :: Network IzhNeuron (),
+        bmNeurons  :: Int,
+        bmSynapses :: Int,
         bmFStim    :: FiringStimulus,
         bmCycles   :: Int
     }
@@ -205,7 +210,9 @@ data Benchmark = Benchmark {
 clusteredBenchmark n m p = Benchmark {
         bmName = "clustered-" ++ show p,
         -- TODO: get seed from options
-        bmNet = clusteredNetwork 123456 n m p,
+        bmNet = clusteredNetwork 123456 n 1024 m p,
+        bmNeurons = n * 1024,
+        bmSynapses = n * 1024 * m,
         bmFStim = NoFiring,
         -- TODO: get cycles from options
         bmCycles = 10000
@@ -218,8 +225,14 @@ cudaOpts = defaults cudaOptions
 
 {- Measure latency by always providing some stimulus and always reading back
  - data -}
-runBenchmarkLatency :: SimulationOptions -> StdpConf -> Benchmark -> IO ()
-runBenchmarkLatency simOpts stdpOpts bm = do
+runBenchmarkLatency
+    :: BenchmarkOptions
+    -> SimulationOptions
+    -> StdpConf
+    -> Benchmark
+    -> IO ()
+-- TODO: re-build network here
+runBenchmarkLatency _ simOpts stdpOpts bm = do
     putStrLn "Setting up sim"
     sim <- initSim net simOpts cudaOpts stdpOpts
     putStrLn "Warming up"
@@ -239,9 +252,9 @@ runBenchmarkLatency simOpts stdpOpts bm = do
     let latency = (1000 * rtsElapsed rts2) `div` (rtsCycles rts2)
     hPutStrLn stderr $ "Latency: " ++ show latency ++ "ms/kcycle"
     where
-        rts0 = initRTS net
-        net = bmNet bm `using` rnf
-        sz = size net
+        rts0 = initRTS (bmNeurons bm) (bmSynapses bm)
+        net = bmNet bm
+        sz = bmNeurons bm
         runCycles = bmCycles bm
         {- We want /some/ stimulus, so that we do a copy operation. The amount of
          - data is not so important, so just stimulate a single neuron -}
@@ -249,22 +262,34 @@ runBenchmarkLatency simOpts stdpOpts bm = do
         -- fstim n = map (\_ -> []) [0..n-1]
 
 
-runBenchmarkThroughput :: SimulationOptions -> StdpConf -> Benchmark -> IO ()
-runBenchmarkThroughput simOpts stdpOpts bm = do
+runBenchmarkThroughput
+    :: BenchmarkOptions
+    -> SimulationOptions
+    -> StdpConf
+    -> Benchmark
+    -> IO ()
+runBenchmarkThroughput bmOpts simOpts stdpOpts bm = do
     -- TODO: average over multiple runs
-    let net = bmNet bm `using` rnf
-        rts0 = initRTS net
-    rts1 <- runBenchmarkTiming simOpts stdpOpts net bm rts0
+    rts1 <- runBenchmarkTiming bmOpts simOpts stdpOpts bm
     hPutStrLn stderr $ show rts1 -- intermediate results
-    rts2 <- runBenchmarkData simOpts stdpOpts net bm rts1
+    rts2 <- runBenchmarkData bmOpts simOpts stdpOpts bm rts1
     putStrLn $ rtsCvs (bmName bm) rts2
     let throughput = (rtsSpikes rts2) * 1000 `div` (rtsElapsed rts2)
     hPutStrLn stderr $ "Throughput: " ++ show (throughput `div` 1000000) ++ "M"
 
 
-runBenchmarkTiming simOpts stdpOpts net bm rts = do
+runBenchmarkTiming bmOpts simOpts stdpOpts bm = do
+    let
+        n = optN bmOpts
+        m = optM bmOpts
+        seed = 123456
+        cs = 1024
+        p = optP bmOpts
+        net = clusteredNetwork seed n cs m p
+        rts = initRTS (n*cs) (n*cs*m)
     sim <- initSim net simOpts cudaOpts stdpOpts
     -- Note: only provide firing stimulus during the warm-up
+    -- TODO: hard-code stimulus here as well
     fstim <- firingStimulus $ bmFStim bm
     hPutStrLn stderr "Warming up timing run"
     run sim $ take initCycles fstim
@@ -287,7 +312,14 @@ runBenchmarkTiming simOpts stdpOpts net bm rts = do
 
 initCycles = 1000
 
-runBenchmarkData simOpts stdpOpts net bm rts = do
+runBenchmarkData bmOpts simOpts stdpOpts bm rts = do
+    let
+        n = optN bmOpts
+        m = optM bmOpts
+        seed = 123456
+        cs = 1024
+        p = optP bmOpts
+        net = clusteredNetwork seed n cs m p
     sim <- initSim net simOpts cudaOpts stdpOpts
     -- Note: only provide firing stimulus during the warm-up
     fstim <- firingStimulus $ bmFStim bm
@@ -296,7 +328,11 @@ runBenchmarkData simOpts stdpOpts net bm rts = do
     -- TODO: not needed:
     resetTimer sim
     hPutStrLn stderr "Gathering data"
+    t0 <- getCPUTime
     rts' <- foldM (\x _ -> runChunk sim x) rts $ [1.. (runCycles `div` chunkSize)]
+    t1 <- getCPUTime
+    t <- elapsed sim
+    hPutStrLn stderr $ "Elapsed: " ++ show t
     stop sim
     return rts'
     where
@@ -394,8 +430,8 @@ runBenchmark args0 = do
     when (optPrintHeader bmOpts) $ do
         putStrLn rtsCvsHeader
         exitWith ExitSuccess
-    let f = runFunction $ optMeasurement bmOpts
+    let f = runFunction (optMeasurement bmOpts) bmOpts
     f simOpts stdpOpts (createBenchmark bmOpts)
     where
-        runFunction Throughput = runBenchmarkThroughput
-        runFunction Latency = runBenchmarkLatency
+        runFunction Throughput bmOpts = runBenchmarkThroughput bmOpts
+        runFunction Latency bmOpts = runBenchmarkLatency bmOpts
