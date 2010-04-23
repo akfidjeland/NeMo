@@ -117,7 +117,7 @@ FiringOutput::populateSparse(
 				//! \todo skip loop if nothing is set
 				for(size_t nbit=0; nbit < 32; ++nbit) {
 
-					bool fired = word & (1 << nbit);
+					bool fired = (word & (1 << nbit)) != 0;
 					if(fired) {
 						nidx_t nidx = partition * m_partitionSize + nword*32 + nbit;
 						firingCycle.push_back(cycle);	

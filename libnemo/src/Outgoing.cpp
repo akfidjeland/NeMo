@@ -85,9 +85,9 @@ Outgoing::reportWarpSizeHistogram(std::ostream& out) const
 	for(unsigned size=1; size < WARP_SIZE+1; ++size) {
 		unsigned count = hist.at(size);
 		double percentage = double(100 * count) / double(total);
-		std::cout << size << ": " << count << "(" << percentage << "%)\n";
+		out << size << ": " << count << "(" << percentage << "%)\n";
 	}
-	std::cout << "total: " << total << std::endl;
+	out << "total: " << total << std::endl;
 }
 
 

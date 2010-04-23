@@ -41,10 +41,6 @@ class Outgoing
 
 		size_t totalWarpCount() const;
 
-		/*! \return print histogram of sizes of each synapse
-		 * warp to stdout */
-		void reportWarpSizeHistogram(std::ostream& out) const;
-
 		/*! Set the device data containing the outgoing spike groups.
 		 *
 		 * \return
@@ -73,6 +69,11 @@ class Outgoing
 		size_t warpCount(const targets_t& targets) const;
 
 		size_t m_allocated;
+
+		/*! \return print histogram of sizes of each synapse
+		 * warp to stdout */
+		void reportWarpSizeHistogram(std::ostream& out) const;
+
 };
 
 	} // end namespace cuda
