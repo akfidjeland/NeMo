@@ -247,6 +247,9 @@ configure(bool stdp, bool logging=true)
 		conf.setStdpFunction(pre, post, 10.0, -10.0);
 	}
 
+	//! \todo control this from command line
+	conf.setBackend(NEMO_BACKEND_CUDA);
+
 	return conf;
 }
 

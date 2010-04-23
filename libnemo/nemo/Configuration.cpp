@@ -102,8 +102,14 @@ Configuration::setFractionalBits(unsigned bits)
 }
 
 
-} // end namespace nemo
+void
+Configuration::setBackend(backend_t backend)
+{
+	m_impl->setBackend(backend);
+}
 
+
+} // end namespace nemo
 
 
 std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf)

@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "errors.h"
+#include "constants.h"
 
 namespace nemo {
 

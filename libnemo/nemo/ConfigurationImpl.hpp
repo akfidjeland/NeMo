@@ -16,6 +16,7 @@
 
 #include <nemo/config.h>
 #include "STDP.hpp"
+#include "constants.h"
 
 #ifdef INCLUDE_MPI
 
@@ -68,6 +69,9 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		bool fractionalBitsSet() const;
 
+		void setBackend(backend_t backend);
+		backend_t backend() const { return m_backend; }
+
 	private:
 
 		bool m_logging;
@@ -82,6 +86,8 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		friend void check_close(const ConfigurationImpl& lhs, const ConfigurationImpl& rhs);
 
+		backend_t m_backend;
+
 #ifdef INCLUDE_MPI
 		friend class boost::serialization::access;
 
@@ -92,6 +98,7 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 			ar & m_fractionalBits;
 			ar & m_cudaPartitionSize;
 			ar & m_cudaFiringBufferLength;
+			ar & m_backend;
 		}
 #endif
 };

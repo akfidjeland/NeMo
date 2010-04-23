@@ -7,6 +7,7 @@
 #include <nemo/exception.hpp>
 
 #include <nemo/cuda/CudaSimulation.hpp>
+#include <nemo/cpu/Simulation.hpp>
 
 namespace nemo {
 
@@ -21,11 +22,21 @@ simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf)
 				"Cannot create simulation from empty network");
 		return NULL;
 	}
-	int dev = cuda::Simulation::selectDevice();
-	if(dev == -1) {
-		throw nemo::exception(NEMO_CUDA_ERROR, "Failed to create simulation");
+
+	int dev;
+	switch(conf.backend()) {
+		case NEMO_BACKEND_UNSPECIFIED:
+		case NEMO_BACKEND_CUDA:
+			dev = cuda::Simulation::selectDevice();
+			if(dev == -1) {
+				throw nemo::exception(NEMO_CUDA_ERROR, "Failed to create simulation");
+			}
+			return new cuda::Simulation(net, conf);
+		case NEMO_BACKEND_CPU:
+			return new cpu::Simulation(net, conf);
+		default :
+			throw nemo::exception(NEMO_LOGIC_ERROR, "unknown backend in configuration");
 	}
-	return new cuda::Simulation(net, conf);
 }
 
 

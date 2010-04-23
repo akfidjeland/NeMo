@@ -38,21 +38,18 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 
 		virtual unsigned getFractionalBits() const = 0;
 
-		/*! Copy firing stimulus from host to device, setting the (member
-		 * variable) devce pointer containing firing stimulus. If there is no
-		 * input data the pointer is NULL. Array indices only tested in
-		 * debugging mode.
+		/*! Set firing stimulus for the next simulation step.
 		 *
-		 * \param nidx
-		 * 		Neuron indices of neurons whose firing should be forced
-		 */
+		 * The behaviour is undefined if this function is called multiple times
+		 * between two calls to \a step */
 		virtual void setFiringStimulus(const std::vector<unsigned>& nidx) = 0;
 
 		/*! Set per-neuron input current on the device and set the relevant
 		 * member variable containing the device pointer. If there is no input
 		 * the device pointer is NULL.
 		 *
-		 * This function should only be called once per cycle. */
+		 * The behaviour is undefined if this function is called multiple times
+		 * between two calls to \a step */
 		void setCurrentStimulus(const std::vector<float>& current);
 
 		/*! Set per-neuron input current on the device and set the relevant

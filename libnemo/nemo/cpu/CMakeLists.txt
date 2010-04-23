@@ -1,0 +1,13 @@
+INCLUDE_DIRECTORIES(
+	${CMAKE_BINARY_DIR}  # for configuration files
+	${CMAKE_SOURCE_DIR}
+	${Boost_INCLUDE_DIR}
+)
+
+ADD_LIBRARY(nemo_cpu
+	Simulation.cpp
+	RNG.cpp
+)
+
+SET_TARGET_PROPERTIES(nemo_base PROPERTIES DEFINE_SYMBOL NEMO_CPU_EXPORTS)
+TARGET_LINK_LIBRARIES(nemo_cpu nemo_base)

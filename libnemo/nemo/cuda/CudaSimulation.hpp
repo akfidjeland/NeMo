@@ -59,7 +59,14 @@ class NEMO_CUDA_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		 * NETWORK SIMULATION
 		 */
 
-		/*! \copydoc nemo::SimulationBackend::setFiringStimulus */
+		/*! Copy firing stimulus from host to device, setting the (member
+		 * variable) devce pointer containing firing stimulus. If there is no
+		 * input data the pointer is NULL. Array indices only tested in
+		 * debugging mode.
+		 *
+		 * \param nidx
+		 * 		Neuron indices of neurons whose firing should be forced
+		 */
 		void setFiringStimulus(const std::vector<unsigned>& nidx);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */

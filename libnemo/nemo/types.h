@@ -26,6 +26,5 @@ typedef unsigned nidx_t; // neuron index
 typedef unsigned sidx_t; // synapse index
 typedef unsigned delay_t;
 typedef float weight_t;  // on the host
-typedef unsigned cycle_t;
 
 #endif

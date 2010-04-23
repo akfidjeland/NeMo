@@ -77,6 +77,10 @@ class ConnectivityMatrix
 		delay_iterator delay_begin(nidx_t source) const;
 		delay_iterator delay_end(nidx_t source) const;
 
+		unsigned fractionalBits() const { return m_fractionalBits; }
+
+		delay_t maxDelay() const { return m_maxDelay; }
+
 	private:
 
 		unsigned m_fractionalBits;

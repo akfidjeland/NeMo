@@ -1,5 +1,5 @@
-#ifndef NEMO_ERRORS_H
-#define NEMO_ERRORS_H
+#ifndef NEMO_CONSTANTS_H
+#define NEMO_CONSTANTS_H
 
 /* Copyright 2010 Imperial College London
  *
@@ -36,5 +36,14 @@
 #define NEMO_MPI_ERROR 10
 
 #define NEMO_UNKNOWN_ERROR 11
+
+
+enum {
+	NEMO_BACKEND_CUDA,
+	NEMO_BACKEND_CPU,
+	NEMO_BACKEND_UNSPECIFIED
+};
+
+typedef unsigned backend_t;
 
 #endif

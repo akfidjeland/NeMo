@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <nemo.hpp>
+#include <nemo/constants.h>
 #include <examples.hpp>
 
 #include "utils.hpp"
@@ -30,7 +31,8 @@ compareSimulations(
 
 
 nemo::Configuration
-configuration(bool stdp, unsigned partitionSize)
+configuration(bool stdp, unsigned partitionSize,
+		backend_t backend = NEMO_BACKEND_CUDA)
 {
 	nemo::Configuration conf;
 
@@ -46,6 +48,7 @@ configuration(bool stdp, unsigned partitionSize)
 	}
 
 	conf.setCudaPartitionSize(partitionSize);
+	conf.setBackend(backend);
 
 	return conf;
 }
@@ -57,8 +60,8 @@ runComparisions(nemo::Network* net)
 {
 	unsigned duration = 2;
 
-	/* network should produce repeatable results both with the same partition
-	 * size and with different ones. */
+	/* simulations should produce repeatable results both with the same
+	 * partition size and with different ones. */
 	{
 		bool stdp_conf[2] = { false, true };
 		unsigned psize_conf[3] = { 1024, 512, 256 };
@@ -68,8 +71,6 @@ runComparisions(nemo::Network* net)
 		for(unsigned pi2=0; pi2 < 3; ++pi2) {
 			nemo::Configuration conf1 = configuration(stdp_conf[si], psize_conf[pi1]);
 			nemo::Configuration conf2 = configuration(stdp_conf[si], psize_conf[pi2]);
-			//! \note tests with different partition sizes may fail due to
-			//randomised input working differently.
 			compareSimulations(net, conf1, net, conf2, duration);
 		}
 	}
@@ -77,6 +78,25 @@ runComparisions(nemo::Network* net)
 }
 
 
+void
+runBackendComparisions(nemo::Network* net)
+{
+	unsigned duration = 2; // seconds
+
+	/* simulations should produce repeatable results regardless of the backend
+	 * which is used */
+	//! \todo add test for stdp as well;
+	{
+		bool stdp_conf[1] = { false };
+
+		for(unsigned si=0; si < 1; ++si) {
+			nemo::Configuration conf1 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CPU);
+			nemo::Configuration conf2 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CUDA);
+			compareSimulations(net, conf1, net, conf2, duration);
+		}
+	}
+
+}
 
 void
 runSimple(unsigned startNeuron, unsigned neuronCount)
@@ -169,6 +189,14 @@ BOOST_AUTO_TEST_CASE(ring_tests)
 }
 
 
+BOOST_AUTO_TEST_CASE(compare_backends)
+{
+	nemo::Network* net = nemo::random1k::construct(4000, 1000);
+	runBackendComparisions(net);
+	delete net;
+}
+
+
 
 BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
 {
@@ -197,6 +225,8 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 
 
 
+
+//! \todo test this for cpu backend as well
 BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 {
 	nemo::Network* net = nemo::random1k::construct(1000, 1000);

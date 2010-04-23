@@ -16,6 +16,7 @@
 #include <vector>
 
 #include <nemo/config.h>
+#include <nemo/constants.h>
 
 
 namespace nemo {
@@ -77,12 +78,13 @@ class NEMO_DLL_PUBLIC Configuration
 				float minWeight,
 				float maxWeight);
 
-
 		/*! The simulation uses a fixed-point format internally for synaptics
 		 * weights. Call this method to specify how many fractional bits to
 		 * use. If nothing is specified the backend chooses a sensible value
 		 * based on the range of weights. */
 		void setFractionalBits(unsigned bits);
+
+		void setBackend(backend_t backend);
 
 	private:
 

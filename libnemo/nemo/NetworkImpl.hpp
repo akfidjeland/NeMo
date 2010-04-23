@@ -18,6 +18,10 @@ namespace nemo {
 		class ThalamicInput;
 	}
 
+	namespace cpu {
+		class Simulation;
+	}
+
 	namespace mpi {
 		class Master;
 	}
@@ -88,9 +92,11 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 		weight_t m_minWeight;
 		weight_t m_maxWeight;
 
+		//! \todo modify public interface to avoid friendship here
 		friend class cuda::ConnectivityMatrix;
 		friend class cuda::NeuronParameters;
 		friend class cuda::ThalamicInput;
+		friend class cpu::Simulation;
 		friend class mpi::Master;
 };
 

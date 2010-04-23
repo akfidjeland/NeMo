@@ -1,4 +1,4 @@
-SUBDIRS(cuda)
+SUBDIRS(cuda cpu)
 
 INCLUDE_DIRECTORIES(
 	${CMAKE_BINARY_DIR}  # for configuration files
@@ -29,13 +29,13 @@ ADD_LIBRARY(nemo
 	Configuration.cpp
 )
 SET_TARGET_PROPERTIES(nemo PROPERTIES DEFINE_SYMBOL NEMO_EXPORTS)
-TARGET_LINK_LIBRARIES(nemo nemo_base nemo_cuda)
+TARGET_LINK_LIBRARIES(nemo nemo_base nemo_cuda nemo_cpu)
 
 
 INSTALL(TARGETS nemo nemo_base DESTINATION ${INSTALL_LIB_DIR})
 
 INSTALL(FILES
-		errors.h
+		constants.h
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp

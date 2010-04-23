@@ -15,7 +15,7 @@
 #include <cuda_runtime.h>
 
 #include <nemo/exception.hpp>
-#include <nemo/errors.h>
+#include <nemo/constants.h>
 
 #define CUDA_SAFE_CALL(call) {                                             \
     cudaError err = call;                                                  \

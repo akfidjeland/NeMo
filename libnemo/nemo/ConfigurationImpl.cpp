@@ -19,8 +19,9 @@ namespace nemo {
 ConfigurationImpl::ConfigurationImpl() :
 	m_logging(false),
 	m_fractionalBits(s_defaultFractionalBits),
-	m_cudaPartitionSize(0),     // set by interface class
-	m_cudaFiringBufferLength(0) // ditto
+	m_cudaPartitionSize(0),      // set by interface class
+	m_cudaFiringBufferLength(0), // ditto
+	m_backend(NEMO_BACKEND_UNSPECIFIED)
 {
 	;
 }
@@ -71,6 +72,21 @@ ConfigurationImpl::fractionalBitsSet() const
 	return m_fractionalBits != s_defaultFractionalBits;
 }
 
+
+
+void
+ConfigurationImpl::setBackend(backend_t backend)
+{
+	switch(backend) {
+		case NEMO_BACKEND_CUDA :
+		case NEMO_BACKEND_CPU :
+		case NEMO_BACKEND_UNSPECIFIED :
+			m_backend = backend;
+			break;
+		default :
+			throw std::runtime_error("Invalid backend selected");
+	}
+}
 
 
 } // namespace nemo
