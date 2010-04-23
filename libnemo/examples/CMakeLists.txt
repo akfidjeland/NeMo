@@ -3,13 +3,15 @@ INCLUDE_DIRECTORIES(
 	${CMAKE_BINARY_DIR}/src # for configuration files
 	${Boost_INCLUDE_DIR})
 ADD_DEFINITIONS("-L${CMAKE_BINARY_DIR}/src")
-ADD_EXECUTABLE(torus torus.cpp)
+ADD_EXECUTABLE(torus torus.cpp sim_runner.cpp)
 TARGET_LINK_LIBRARIES(torus nemo)
 
+SET(INSTALL_FILES torus.cpp sim_runner.cpp)
+
 IF(UNIX)
-	INSTALL(FILES torus.cpp DESTINATION share/nemo/examples)
+	INSTALL(FILES ${INSTALL_FILES} DESTINATION share/nemo/examples)
 ENDIF(UNIX)
 
 IF(WIN32)
-	INSTALL(FILES torus.cpp DESTINATION examples)
+	INSTALL(FILES ${INSTALL_FILES} DESTINATION examples)
 ENDIF(WIN32)
