@@ -151,7 +151,7 @@ targetNeuron(
 unsigned
 delay(unsigned distance)
 {
-	if(distance > MAX_DELAY*PATCH_WIDTH) {
+	if(distance >= MAX_DELAY*PATCH_WIDTH) {
 		return MAX_DELAY;
 	} else {
 		unsigned d = 1 + distance / PATCH_WIDTH;
@@ -368,7 +368,7 @@ simulate(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp)
 	const std::vector<unsigned>* fired;
 
 	std::cout << "Running simulation (gathering performance data)...";
-	unsigned nfired = 0;
+	unsigned long nfired = 0;
 	for(unsigned s=0; s < seconds; ++s) {
 		std::cout << s << " ";
 		for(unsigned ms=0; ms<1000; ++ms) {
@@ -419,7 +419,6 @@ simulateToFile(nemo::Simulation* sim, unsigned pcount, unsigned m, bool stdp, co
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* fired;
 
-	std::cout << "Running simulation (gathering performance data)...";
 	unsigned nfired = 0;
 	for(unsigned ms=0; ms<1000; ++ms) {
 		sim->step();
@@ -464,7 +463,7 @@ main(int argc, char* argv[])
 		return -1;
 	}
 	simulate(sim, pcount, m, stdp);
-	//simulateToFile(net, pcount, m, stdp, "firing.dat");
+	//simulateToFile(sim, pcount, m, stdp, "firing.dat");
 	delete net;
 	return 0;
 }
