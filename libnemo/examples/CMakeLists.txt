@@ -6,6 +6,9 @@ ADD_DEFINITIONS("-L${CMAKE_BINARY_DIR}/src")
 ADD_EXECUTABLE(torus torus.cpp sim_runner.cpp)
 TARGET_LINK_LIBRARIES(torus nemo)
 
+ADD_EXECUTABLE(random1k random1k.cpp sim_runner.cpp)
+TARGET_LINK_LIBRARIES(random1k nemo)
+
 SET(INSTALL_FILES torus.cpp sim_runner.cpp)
 
 IF(UNIX)
