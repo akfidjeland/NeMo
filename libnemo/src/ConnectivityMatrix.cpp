@@ -183,6 +183,7 @@ ConnectivityMatrix::moveBundleToDevice(
 
 	//! \todo also keep track of first warp for this neuron
 	//! \todo could write this straight to outgoing?
+	assert(newWarps > 0);
 
 	*woffset += newWarps;
 }
@@ -243,6 +244,10 @@ ConnectivityMatrix::moveFcmToDevice(WarpAddressTable* warpOffsets)
 			moveBundleToDevice(bundle->second, totalWarpCount, fbits, h_data, &woffset1);
 		}
 	}
+
+	/* If everything worked as expected we'll now have filled in the exact
+	 * number of warps that we allocated */
+	assert(woffset1 == 1 + m_outgoing.totalWarpCount());
 
 	md_allocatedFCM = height * bpitch;
 	CUDA_SAFE_CALL(cudaMemcpy(d_data, &h_data[0], md_allocatedFCM, cudaMemcpyHostToDevice));
