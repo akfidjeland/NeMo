@@ -1,10 +1,14 @@
 FIND_PACKAGE(Boost REQUIRED COMPONENTS unit_test_framework)
+SET(EXAMPLES_DIR ${CMAKE_SOURCE_DIR}/examples)
 INCLUDE_DIRECTORIES(
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_BINARY_DIR}/src # for configuration files
 	${Boost_INCLUDE_DIR}
-	${CMAKE_SOURCE_DIR}/examples)
+	${EXAMPLES_DIR})
 ADD_DEFINITIONS("-L${CMAKE_BINARY_DIR}/src")
-ADD_EXECUTABLE(test test.cpp)
+ADD_EXECUTABLE(test
+	test.cpp
+	${EXAMPLES_DIR}/torus.cpp
+	${EXAMPLES_DIR}/random1k.cpp)
 TARGET_LINK_LIBRARIES(test nemo ${Boost_LIBRARIES})
 

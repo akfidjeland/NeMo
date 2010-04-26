@@ -38,6 +38,10 @@ typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::normal_distribution<double> > grng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 
+
+namespace nemo {
+	namespace torus {
+
 /* Global neuron index and distance */
 typedef std::pair<unsigned, double> target_t;
 
@@ -319,9 +323,12 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging=tru
 	return net;
 }
 
+	} // namespace torus
+} // namespace nemo
 
 
-#ifndef TORUS_NO_MAIN
+
+#ifdef USING_MAIN
 
 int
 main(int argc, char* argv[])
@@ -341,9 +348,10 @@ main(int argc, char* argv[])
 	//! \todo add stdp command-line option
 	bool stdp = false;
 	unsigned m = 1000; // synapses per neuron
+	bool logging = true;
 	
-	nemo::Network* net = construct(pcount, m, stdp, sigma);
-	nemo::Configuration conf = configure(stdp);
+	nemo::Network* net = nemo::torus::construct(pcount, m, stdp, sigma);
+	nemo::Configuration conf = nemo::torus::configure(stdp, logging);
 	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
 	if(sim == NULL) {
 		std::cerr << "failed to create simulation" << std::endl;
@@ -352,6 +360,7 @@ main(int argc, char* argv[])
 	simulate(sim, pcount*PATCH_SIZE, m);
 	//simulateToFile(sim, 1000, "firing.dat");
 	delete net;
+	delete sim;
 	return 0;
 }
 

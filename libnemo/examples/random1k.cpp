@@ -13,7 +13,8 @@
 typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 
-
+namespace nemo {
+	namespace random1k {
 
 void
 addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
@@ -105,22 +106,35 @@ construct(unsigned ncount)
 	return net;
 }
 
+	} // namespace random1k
+} // namespace nemo
 
+
+#ifdef USING_MAIN
 
 int
 main(int argc, char* argv[])
 {
+	//! \todo do command-line processing properly
+	unsigned psize = 1024;
+	if(argc > 1)  {
+		psize = atoi(argv[1]);
+	}
+
 	unsigned ncount = 1000;
 
-	nemo::Network* net = construct(ncount);
+	nemo::Network* net = nemo::random1k::construct(ncount);
 	nemo::Configuration conf;
+	conf.setCudaPartitionSize(psize);
 	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
 	if(sim == NULL) {
 		std::cerr << "failed to create simulation" << std::endl;
 		return -1;
 	}
-	//simulate(sim, ncount, ncount);
-	simulateToFile(sim, 1000, "firing.dat");
+	simulate(sim, ncount, ncount);
+	//simulateToFile(sim, 1000, "firing.dat");
 	delete net;
 	return 0;
 }
+
+#endif

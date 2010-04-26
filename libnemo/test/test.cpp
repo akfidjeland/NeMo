@@ -1,10 +1,20 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE nemo test
+
+#include <iostream>
+#include <cmath>
 #include <boost/test/unit_test.hpp>
+
 #include <nemo.hpp>
 
-#define TORUS_NO_MAIN
-#include "torus.cpp"
+namespace nemo {
+	namespace random1k {
+		nemo::Network* construct(unsigned ncount);
+	}
+	namespace torus {
+		nemo::Network* construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging);
+	}
+}
 
 
 /* Run simulation for given length and return result in output vector */
@@ -60,15 +70,18 @@ compareSimulations(
 	runSimulation(net1, conf1, duration, &cycles1, &nidx1);
 	runSimulation(net2, conf2, duration, &cycles2, &nidx2);
 
-	BOOST_REQUIRE(cycles1.size() == nidx1.size());
-	BOOST_REQUIRE(cycles2.size() == nidx2.size());
-	BOOST_REQUIRE(cycles1.size() == cycles2.size());
+	BOOST_CHECK_EQUAL(cycles1.size(), nidx1.size());
+	BOOST_CHECK_EQUAL(cycles2.size(), nidx2.size());
+	BOOST_CHECK_EQUAL(cycles1.size(), cycles2.size());
 
 	for(size_t i = 0; i < cycles1.size(); ++i) {
 		// no point continuing after first divergence, it's only going to make
 		// output hard to read.
-		BOOST_CHECK(cycles1.at(i) == (cycles2.at(i)));
-		BOOST_REQUIRE(nidx1.at(i) == nidx2.at(i));
+		BOOST_CHECK_EQUAL(cycles1.at(i), cycles2.at(i));
+		BOOST_CHECK_EQUAL(nidx1.at(i), nidx2.at(i));
+		if(nidx1.at(i) != nidx2.at(i)) {
+			BOOST_FAIL("c" << cycles1.at(i) << "/" << cycles2.at(i));
+		}
 	}
 }
 
@@ -96,19 +109,13 @@ configuration(bool stdp, unsigned partitionSize)
 
 
 
-BOOST_AUTO_TEST_CASE(mapping_tests)
+void
+runComparisions(nemo::Network* net)
 {
-	//! \todo run for larger networks as well
-	unsigned pcount = 1;
-	unsigned m = 1000;
 	bool stdp = false;
-	unsigned sigma = 16;
 	const bool logging = false;
 	unsigned duration = 2;
-
-	// only need to create the network once
-	nemo::Network* net = construct(pcount, m, stdp, sigma, logging);
-	nemo::Configuration conf = configure(stdp, logging);
+	nemo::Configuration conf = configuration(stdp, logging);
 
 	/* network should produce repeatable results both with the same partition
 	 * size and with different ones. */
@@ -121,9 +128,39 @@ BOOST_AUTO_TEST_CASE(mapping_tests)
 		for(unsigned pi2=0; pi2 < 3; ++pi2) {
 			nemo::Configuration conf1 = configuration(stdp_conf[si], psize_conf[pi1]);
 			nemo::Configuration conf2 = configuration(stdp_conf[si], psize_conf[pi2]);
+			//! \note tests with different partition sizes may fail due to
+			//randomised input working differently.
 			compareSimulations(net, conf1, net, conf2, 2);
 		}
 	}
 
+}
+
+
+
+BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
+{
+	unsigned m = 1000;
+	unsigned sigma = 16;
+
+	// only need to create the network once
+	nemo::Network* net = nemo::random1k::construct(1000);
+	runComparisions(net);
+	delete net;
+}
+
+
+BOOST_AUTO_TEST_CASE(mapping_tests_torus)
+{
+	//! \todo run for larger networks as well
+	unsigned pcount = 1;
+	unsigned m = 1000;
+	unsigned sigma = 16;
+	bool logging = false;
+
+	// only need to create the network once
+	nemo::Network* net = nemo::torus::construct(pcount, m, true, sigma, logging);
+
+	runComparisions(net);
 	delete net;
 }
