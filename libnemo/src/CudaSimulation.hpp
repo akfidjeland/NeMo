@@ -13,6 +13,7 @@
 #include <stddef.h>
 
 #include <nemo_config.h>
+#include "DeviceIdx.hpp"
 #include "NVector.hpp"
 #include "Configuration.hpp"
 #include "ConnectivityMatrix.hpp"
@@ -105,6 +106,8 @@ class Simulation : public nemo::Simulation
 		static unsigned defaultFiringBufferLength();
 
 	private :
+
+		Mapper m_mapper;
 
 		nemo::Configuration m_conf;
 

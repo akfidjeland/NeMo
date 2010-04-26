@@ -40,13 +40,14 @@ namespace nemo {
 Simulation::Simulation(
 		const nemo::Network& net,
 		const nemo::Configuration& conf) :
+	m_mapper(conf.cudaPartitionSize()),
 	m_conf(conf),
 	m_partitionCount(0),
 	//! \todo get rid of member variable
 	m_maxPartitionSize(conf.cudaPartitionSize()),
 	m_neurons(net, conf.cudaPartitionSize()),
 	m_cycle(0),
-	m_cm(net, conf.cudaPartitionSize(), conf.loggingEnabled()),
+	m_cm(net, m_mapper, conf.cudaPartitionSize(), conf.loggingEnabled()),
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),

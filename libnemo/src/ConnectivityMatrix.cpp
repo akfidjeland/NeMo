@@ -30,11 +30,10 @@ namespace nemo {
 
 
 
-unsigned DeviceIdx::s_partitionSize = MAX_PARTITION_SIZE;
-
 
 ConnectivityMatrix::ConnectivityMatrix(
 		const nemo::Network& net,
+		const Mapper& mapper,
 		size_t partitionSize,
 		bool logging) :
 	m_maxDelay(net.maxDelay()),
@@ -42,8 +41,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 	md_fcmAllocated(0),
 	m_fractionalBits(~0)
 {
-	DeviceIdx::setPartitionSize(partitionSize);
-
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> h_targets(WARP_SIZE, f_nullSynapse());
 	std::vector<weight_dt> h_weights(WARP_SIZE, 0);
@@ -55,7 +52,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(net, fbits, partitionSize, wtable, h_targets, h_weights);
+	size_t totalWarps = createFcm(net, mapper, fbits, partitionSize, wtable, h_targets, h_weights);
 
 	moveFcmToDevice(totalWarps, h_targets, h_weights, logging);
 	h_targets.clear();
@@ -64,7 +61,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo remove need for creating intermediary warp address table. Just
 	//construct this directly in m_outgoing.
 	//! \todo should we get maxWarps directly in this function?
-	size_t partitionCount = DeviceIdx(net.maxSourceIdx()).partition + 1;
+	size_t partitionCount = mapper.deviceIdx(net.maxSourceIdx()).partition + 1;
 	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
 	m_incoming.allocate(partitionCount, maxWarps, 0.1);
 
@@ -77,6 +74,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 size_t
 ConnectivityMatrix::createFcm(
 		const nemo::Network& net,
+		const Mapper& mapper,
 		unsigned fbits,
 		size_t partitionSize,
 		WarpAddressTable& wtable,
@@ -89,7 +87,7 @@ ConnectivityMatrix::createFcm(
 			axon != net.m_fcm.end(); ++axon) {
 
 		nidx_t h_sourceIdx = axon->first;
-		DeviceIdx d_sourceIdx(h_sourceIdx);
+		DeviceIdx d_sourceIdx = mapper.deviceIdx(h_sourceIdx);
 		size_t neuronStartWarp = currentWarp;
 
 		for(std::map<delay_t, Network::bundle_t>::const_iterator bi = axon->second.begin();
@@ -109,7 +107,7 @@ ConnectivityMatrix::createFcm(
 			for(Network::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
 				nidx_t h_targetIdx = si->target;
-				DeviceIdx d_targetIdx(h_targetIdx);
+				DeviceIdx d_targetIdx = mapper.deviceIdx(h_targetIdx);
 				weight_dt weight = fx_toFix(si->weight, fbits);
 				unsigned char plastic = si->plastic;
 				pgroups[d_targetIdx.partition].push_back(synapse_ht(d_targetIdx.neuron, weight, plastic));
@@ -144,7 +142,7 @@ ConnectivityMatrix::createFcm(
 					weights.at(sidx) = s->weight;
 					//! \todo just push the whole targets vector after loop?
 					//! \todo remove unused host/device address translation functions
-					h_fcmTarget.push_back(DeviceIdx(targetPartition, s->target).hostIdx());
+					h_fcmTarget.push_back(mapper.hostIdx(targetPartition, s->target));
 					h_fcmPlastic.push_back(s->plastic);
 
 					//! \todo use a struct for device addresses in outgoing arglist as well
