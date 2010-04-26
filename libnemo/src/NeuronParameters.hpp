@@ -47,19 +47,14 @@ class NeuronParameters
 
 		boost::shared_ptr<float> md_arr;  // device data
 
+		//! \todo place pcount and psize into mapper object
 		size_t m_partitionCount;
 
 		size_t m_allocated;
 
 		size_t m_wpitch;
 
-		typedef nemo::Neuron<float> neuron_t;
-		typedef std::map<nidx_t, neuron_t> acc_t;
-
-		void addNeurons(const nemo::Network&, const Mapper&, acc_t*,
-				std::map<pidx_t, nidx_t>* maxPartitionNeuron);
-
-		void moveToDevice(const acc_t&, const Mapper&, size_t partitionSize);
+		size_t allocateDeviceData(size_t pcount, size_t psize);
 
 		void configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron);
 };

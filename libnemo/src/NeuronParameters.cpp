@@ -33,56 +33,48 @@ NeuronParameters::NeuronParameters(
 	m_allocated(0),
 	m_wpitch(0)
 {
-	acc_t acc; // accumulor for neuron data
-	std::map<pidx_t, nidx_t> maxPartitionNeuron;
-	addNeurons(net, mapper, &acc, &maxPartitionNeuron);
-	// map is guaranteed to be sorted
-	nidx_t maxIdx = acc.size() == 0 ? 0 : acc.rbegin()->first;
+	nidx_t maxIdx = net.maxSourceIdx();
 	m_partitionCount = (0 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);
-	moveToDevice(acc, mapper, partitionSize);
+
+	size_t height = allocateDeviceData(m_partitionCount, partitionSize);
+
+	std::vector<float> h_arr(height * m_wpitch, 0);
+	std::map<pidx_t, nidx_t> maxPartitionNeuron;
+
+	size_t veclen = m_partitionCount * m_wpitch;
+
+	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
+			i != net.m_neurons.end(); ++i) {
+
+		DeviceIdx dev = mapper.deviceIdx(i->first);
+		// address within a plane
+		size_t addr = dev.partition * m_wpitch + dev.neuron;
+
+		const nemo::Neuron<float>& n = i->second;
+
+		h_arr.at(PARAM_A * veclen + addr) = n.a;
+		h_arr.at(PARAM_B * veclen + addr) = n.b;
+		h_arr.at(PARAM_C * veclen + addr) = n.c;
+		h_arr.at(PARAM_D * veclen + addr) = n.d;
+		h_arr.at(STATE_U * veclen + addr) = n.u;
+		h_arr.at(STATE_V * veclen + addr) = n.v;
+
+		maxPartitionNeuron[dev.partition] =
+			std::max(maxPartitionNeuron[dev.partition], dev.neuron);
+	}
+
+	// copy data to device
+	size_t bpitch = m_wpitch * sizeof(float);
+	CUDA_SAFE_CALL(cudaMemcpy(md_arr.get(), &h_arr[0], height * bpitch, cudaMemcpyHostToDevice));
 	configurePartitionSizes(maxPartitionNeuron);
 }
 
 
 
-void
-NeuronParameters::addNeurons(
-		const nemo::Network& net,
-		const Mapper& mapper,
-		acc_t* acc,
-		std::map<pidx_t, nidx_t>* maxPartitionNeuron)
+size_t
+NeuronParameters::allocateDeviceData(size_t pcount, size_t psize)
 {
-	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
-			i != net.m_neurons.end(); ++i) {
-
-		nidx_t nidx = i->first;
-		const nemo::Neuron<float>& n = i->second;
-
-		std::pair<acc_t::iterator, bool> insertion =
-			acc->insert(std::make_pair(nidx, n));
-		if(!insertion.second) {
-			std::ostringstream msg;
-			msg << "Multiple neurons specified for neuron index " << nidx;
-			throw std::runtime_error(msg.str());
-		}
-
-		DeviceIdx dev = mapper.deviceIdx(nidx);
-
-		(*maxPartitionNeuron)[dev.partition] =
-			std::max((*maxPartitionNeuron)[dev.partition], dev.neuron);
-	}
-}
-
-
-
-void
-NeuronParameters::moveToDevice(const acc_t& acc,
-		const Mapper& mapper, size_t partitionSize)
-{
-	//! \todo could just allocate sigma here as well
-	const size_t pcount = m_partitionCount;
-
-	size_t width = partitionSize * sizeof(float);
+	size_t width = psize * sizeof(float);
 	size_t height = NVEC_COUNT * pcount;
 	size_t bpitch = 0;
 
@@ -92,7 +84,6 @@ NeuronParameters::moveToDevice(const acc_t& acc,
 		throw DeviceAllocationException("neuron parameters", width * height, err);
 	}
 	m_wpitch = bpitch / sizeof(float);
-	size_t veclen = pcount * m_wpitch;
 	md_arr = boost::shared_ptr<float>(d_arr, cudaFree);
 	m_allocated = height * bpitch;
 
@@ -100,28 +91,7 @@ NeuronParameters::moveToDevice(const acc_t& acc,
 	 * some warps may read beyond the end of these arrays. */
 	CUDA_SAFE_CALL(cudaMemset2D(d_arr, bpitch, 0x0, bpitch, height));
 
-	//! \todo write data directly to buffer. No need for intermediate map structure
-	// create host buffer
-	std::vector<float> h_arr(height * m_wpitch, 0);
-
-	// copy data from accumulator to buffer
-	for(acc_t::const_iterator i = acc.begin(); i != acc.end(); ++i) {
-		DeviceIdx dev = mapper.deviceIdx(i->first);
-		// address within a plane
-		size_t addr = dev.partition * m_wpitch + dev.neuron;
-
-		const neuron_t& n = i->second;
-
-		h_arr.at(PARAM_A * veclen + addr) = n.a;
-		h_arr.at(PARAM_B * veclen + addr) = n.b;
-		h_arr.at(PARAM_C * veclen + addr) = n.c;
-		h_arr.at(PARAM_D * veclen + addr) = n.d;
-		h_arr.at(STATE_U * veclen + addr) = n.u;
-		h_arr.at(STATE_V * veclen + addr) = n.v;
-	}
-
-	// copy data across
-	CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * bpitch, cudaMemcpyHostToDevice));
+	return height;
 }
 
 
