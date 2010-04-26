@@ -167,7 +167,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 
 			//! \todo check for overflow here
 			uint32_t offset = wtable.get(sourcePartition, sourceNeuron, targetPartition, delay);
-			for(uint warp = 0; warp < warps; ++warp) {
+			for(unsigned warp = 0; warp < warps; ++warp) {
 				h_arr[t_addr + j + warp] =
 					make_outgoing(targetPartition, delay, offset + warp);
 			}

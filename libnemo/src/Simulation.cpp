@@ -9,7 +9,9 @@
 
 #include "Simulation.hpp"
 #include "CudaSimulation.hpp"
+#ifdef INCLUDE_TIMING_API
 #include "Timer.hpp"
+#endif
 
 namespace nemo {
 
@@ -22,8 +24,10 @@ Simulation::create(const Network& net, const Configuration& conf)
 }
 
 
-Simulation::Simulation() :
-	m_timer(new Timer())
+Simulation::Simulation()
+#ifdef INCLUDE_TIMING_API
+	: m_timer(new Timer())
+#endif
 {
 	;
 }
@@ -31,7 +35,9 @@ Simulation::Simulation() :
 
 Simulation::~Simulation()
 {
+#ifdef INCLUDE_TIMING_API
 	delete m_timer;
+#endif
 }
 
 
