@@ -205,14 +205,10 @@ Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 
 	for(std::vector<unsigned>::const_iterator i = nidx.begin();
 			i != nidx.end(); ++i) {
-		//! \todo share this translation with NeuronParameters and CMImpl
-		size_t nn = *i % m_maxPartitionSize;
-		size_t pn = *i / m_maxPartitionSize;
-		//! \todo should check the size of this particular partition
-		assert(nn < m_maxPartitionSize );
-		assert(pn < m_partitionCount);
-		size_t word = pn * pitch + nn / 32;
-		size_t bit = nn % 32;
+		//! \todo should check that this neuron exists
+		DeviceIdx dev = m_mapper.deviceIdx(*i);
+		size_t word = dev.partition * pitch + dev.neuron / 32;
+		size_t bit = dev.neuron % 32;
 		hostArray[word] |= 1 << bit;
 	}
 
