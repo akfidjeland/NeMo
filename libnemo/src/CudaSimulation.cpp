@@ -66,10 +66,7 @@ Simulation::Simulation(
 	m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, conf.cudaFiringBufferLength());
 	m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
 	//! \todo seed properly from configuration
-	m_thalamicInput = new ThalamicInput(m_partitionCount, m_maxPartitionSize, 0);
-	//! \todo change NeuronParameters API for this function
-	m_neurons.setSigma(*m_thalamicInput);
-	m_thalamicInput->moveToDevice();
+	m_thalamicInput = new ThalamicInput(net, m_mapper, m_partitionCount, m_maxPartitionSize);
 	m_cycleCounters = new CycleCounters(m_partitionCount, usingStdp());
 	m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
 

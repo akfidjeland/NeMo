@@ -15,6 +15,7 @@ namespace nemo {
 		// needed for 'friend' declarations
 		class ConnectivityMatrix;
 		class NeuronParameters;
+		class ThalamicInput;
 	}
 
 
@@ -121,6 +122,7 @@ class DLL_PUBLIC Network
 
 		friend class cuda::ConnectivityMatrix;
 		friend class cuda::NeuronParameters;
+		friend class cuda::ThalamicInput;
 };
 
 } // end namespace nemo

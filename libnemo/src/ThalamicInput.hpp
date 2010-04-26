@@ -26,19 +26,20 @@
  */
 
 namespace nemo {
+
+	class Network;
+
 	namespace cuda {
 
 class ThalamicInput 
 {
 	public :
 
-		ThalamicInput(size_t partitionCount, size_t partitionSize, int seed);
-
-		/*! Set values of sigma for a single neuron */
-		void setNeuronSigma(size_t partition, size_t neuron, float val);
-
-		/*! Move data to device and clear host-side data */
-		void moveToDevice();
+		//! \todo add seed input
+		ThalamicInput(const nemo::Network& net,
+				const class Mapper&,
+				size_t partitionCount,
+				size_t partitionSize);
 
 		/*! \return pointer to device memory containing the RNG state. If
 		 * thalamic input is not used, i.e. setSigma has never been called,
@@ -63,14 +64,6 @@ class ThalamicInput
 		NVector<float> m_sigma;
 
 		bool m_inUse;
-
-		size_t m_partitionCount;
-
-		size_t m_partitionSize;
-
-		int m_seed;
-
-		void initRngState();
 };
 
 	} // end namespace cuda

@@ -15,9 +15,10 @@
 #include "kernel.cu_h"
 #include "except.hpp"
 #include "Network.hpp"
-#include "ThalamicInput.hpp"
 #include "cuda_types.h"
 #include "kernel.hpp"
+#include "util.h"
+
 
 namespace nemo {
 	namespace cuda {
@@ -38,6 +39,7 @@ NeuronParameters::NeuronParameters(const nemo::Network& net, size_t partitionSiz
 
 
 
+//! \todo fold into caller
 void
 NeuronParameters::addNeuron(nidx_t nidx, const nemo::Neuron<float>& n)
 {
@@ -45,6 +47,8 @@ NeuronParameters::addNeuron(nidx_t nidx, const nemo::Neuron<float>& n)
 		//! \todo construct a sensible error message here using sstream
 		throw std::runtime_error("duplicate neuron index");
 	}
+
+	//! \todo use insert here instead.
 	m_acc[nidx] = n;
 
 	//! \todo share mapper code with moveToDevice and ConnectivityMatrixImpl
@@ -52,19 +56,6 @@ NeuronParameters::addNeuron(nidx_t nidx, const nemo::Neuron<float>& n)
 	pidx_t pi = nidx / m_partitionSize;
 
 	m_maxPartitionNeuron[pi] = std::max(m_maxPartitionNeuron[pi], ni);
-}
-
-
-
-void
-NeuronParameters::setSigma(ThalamicInput& th) const
-{
-	for(acc_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
-		//! \todo share mapper code with moveToDevice and ConnectivityMatrixImpl
-		nidx_t n = i->first % m_partitionSize;
-		pidx_t p = i->first / m_partitionSize;
-		th.setNeuronSigma(p, n, i->second.sigma);
-	}	
 }
 
 
@@ -80,6 +71,7 @@ NeuronParameters::maxNeuronIdx() const
 	}
 }
 
+
 size_t
 NeuronParameters::partitionCount() const
 {
@@ -92,11 +84,10 @@ void
 NeuronParameters::moveToDevice()
 {
 	//! \todo could just allocate sigma here as well
-	const size_t planeCount = 6; // a-d, u, v
 	const size_t pcount = partitionCount();
 
 	size_t width = m_partitionSize * sizeof(float);
-	size_t height = planeCount * pcount;
+	size_t height = NVEC_COUNT * pcount;
 	size_t bpitch = 0;
 
 	//! make this possibly failable

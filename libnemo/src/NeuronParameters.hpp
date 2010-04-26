@@ -30,8 +30,6 @@ class NeuronParameters
 
 		NeuronParameters(const nemo::Network& net, size_t partitionSize);
 
-		void setSigma(class ThalamicInput& th) const;
-
 		float* deviceData() { return md_arr.get(); }
 
 		/*! \return number of bytes allocated on the device */
