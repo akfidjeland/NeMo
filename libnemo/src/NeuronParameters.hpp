@@ -24,11 +24,15 @@ namespace nemo {
 
 	namespace cuda {
 
+	class Mapper;
+
 class NeuronParameters
 {
 	public:
 
-		NeuronParameters(const nemo::Network& net, size_t partitionSize);
+		NeuronParameters(const nemo::Network& net,
+				const Mapper&,
+				size_t partitionSize);
 
 		float* deviceData() { return md_arr.get(); }
 
@@ -37,32 +41,27 @@ class NeuronParameters
 
 		size_t wordPitch() const { return m_wpitch; }
 
-		size_t partitionCount() const;
+		size_t partitionCount() const { return m_partitionCount; }
 
 	private:
 
-		void addNeuron(nidx_t, const nemo::Neuron<float>&);
-
-		void moveToDevice();
-
-		size_t m_partitionSize; // max partition size
-
-		typedef nemo::Neuron<float> neuron_t;
-		typedef std::map<nidx_t, neuron_t> acc_t;
-		acc_t m_acc;
-
 		boost::shared_ptr<float> md_arr;  // device data
 
-		nidx_t maxNeuronIdx() const;
+		size_t m_partitionCount;
 
 		size_t m_allocated;
 
 		size_t m_wpitch;
 
-		// max index in each partition
-		std::map<pidx_t, nidx_t> m_maxPartitionNeuron;
+		typedef nemo::Neuron<float> neuron_t;
+		typedef std::map<nidx_t, neuron_t> acc_t;
 
-		void configurePartitionSizes();
+		void addNeurons(const nemo::Network&, const Mapper&, acc_t*,
+				std::map<pidx_t, nidx_t>* maxPartitionNeuron);
+
+		void moveToDevice(const acc_t&, const Mapper&, size_t partitionSize);
+
+		void configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron);
 };
 
 	} // end namespace cuda

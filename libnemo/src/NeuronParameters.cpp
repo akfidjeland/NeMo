@@ -9,9 +9,11 @@
 
 #include "NeuronParameters.hpp"
 
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
+#include "DeviceIdx.hpp"
 #include "kernel.cu_h"
 #include "except.hpp"
 #include "Network.hpp"
@@ -24,73 +26,66 @@ namespace nemo {
 	namespace cuda {
 
 
-NeuronParameters::NeuronParameters(const nemo::Network& net, size_t partitionSize) :
-	m_partitionSize(partitionSize),
+NeuronParameters::NeuronParameters(
+		const nemo::Network& net,
+		const Mapper& mapper,
+		size_t partitionSize) :
 	m_allocated(0),
 	m_wpitch(0)
 {
-	//! \todo change to using internal data in nemo::Network directly
+	acc_t acc; // accumulor for neuron data
+	std::map<pidx_t, nidx_t> maxPartitionNeuron;
+	addNeurons(net, mapper, &acc, &maxPartitionNeuron);
+	// map is guaranteed to be sorted
+	nidx_t maxIdx = acc.size() == 0 ? 0 : acc.rbegin()->first;
+	m_partitionCount = (0 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);
+	moveToDevice(acc, mapper, partitionSize);
+	configurePartitionSizes(maxPartitionNeuron);
+}
+
+
+
+void
+NeuronParameters::addNeurons(
+		const nemo::Network& net,
+		const Mapper& mapper,
+		acc_t* acc,
+		std::map<pidx_t, nidx_t>* maxPartitionNeuron)
+{
 	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
 			i != net.m_neurons.end(); ++i) {
-		addNeuron(i->first, i->second);
-	}
-	moveToDevice();
-}
 
+		nidx_t nidx = i->first;
+		const nemo::Neuron<float>& n = i->second;
 
+		std::pair<acc_t::iterator, bool> insertion =
+			acc->insert(std::make_pair(nidx, n));
+		if(!insertion.second) {
+			std::ostringstream msg;
+			msg << "Multiple neurons specified for neuron index " << nidx;
+			throw std::runtime_error(msg.str());
+		}
 
-//! \todo fold into caller
-void
-NeuronParameters::addNeuron(nidx_t nidx, const nemo::Neuron<float>& n)
-{
-	if(m_acc.find(nidx) != m_acc.end()) {
-		//! \todo construct a sensible error message here using sstream
-		throw std::runtime_error("duplicate neuron index");
-	}
+		DeviceIdx dev = mapper.deviceIdx(nidx);
 
-	//! \todo use insert here instead.
-	m_acc[nidx] = n;
-
-	//! \todo share mapper code with moveToDevice and ConnectivityMatrixImpl
-	nidx_t ni = nidx % m_partitionSize;
-	pidx_t pi = nidx / m_partitionSize;
-
-	m_maxPartitionNeuron[pi] = std::max(m_maxPartitionNeuron[pi], ni);
-}
-
-
-
-nidx_t
-NeuronParameters::maxNeuronIdx() const
-{
-	if(m_acc.size() == 0) {
-		return 0;
-	} else {
-		// map is guaranteed to be sorted
-		return m_acc.rbegin()->first;
+		(*maxPartitionNeuron)[dev.partition] =
+			std::max((*maxPartitionNeuron)[dev.partition], dev.neuron);
 	}
 }
 
-
-size_t
-NeuronParameters::partitionCount() const
-{
-	nidx_t max = maxNeuronIdx();
-	return (0 == max) ? 0 : DIV_CEIL(max+1, m_partitionSize);
-}
 
 
 void
-NeuronParameters::moveToDevice()
+NeuronParameters::moveToDevice(const acc_t& acc,
+		const Mapper& mapper, size_t partitionSize)
 {
 	//! \todo could just allocate sigma here as well
-	const size_t pcount = partitionCount();
+	const size_t pcount = m_partitionCount;
 
-	size_t width = m_partitionSize * sizeof(float);
+	size_t width = partitionSize * sizeof(float);
 	size_t height = NVEC_COUNT * pcount;
 	size_t bpitch = 0;
 
-	//! make this possibly failable
 	float* d_arr;
 	cudaError err = cudaMallocPitch((void**)&d_arr, &bpitch, width, height);
 	if(cudaSuccess != err) {
@@ -105,17 +100,15 @@ NeuronParameters::moveToDevice()
 	 * some warps may read beyond the end of these arrays. */
 	CUDA_SAFE_CALL(cudaMemset2D(d_arr, bpitch, 0x0, bpitch, height));
 
+	//! \todo write data directly to buffer. No need for intermediate map structure
 	// create host buffer
 	std::vector<float> h_arr(height * m_wpitch, 0);
 
-	// copy data from m_acc to buffer
-	for(acc_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
-		/*! \todo need to make sure that we use the same mapping here and in
-		 * FCM construction. Perhaps wrap this whole thing in a (very simple)
-		 * mapper class */
-		nidx_t n_idx = i->first % m_partitionSize;
-		pidx_t p_idx = i->first / m_partitionSize;
-		size_t addr = p_idx * m_wpitch + n_idx; // address within a plane
+	// copy data from accumulator to buffer
+	for(acc_t::const_iterator i = acc.begin(); i != acc.end(); ++i) {
+		DeviceIdx dev = mapper.deviceIdx(i->first);
+		// address within a plane
+		size_t addr = dev.partition * m_wpitch + dev.neuron;
 
 		const neuron_t& n = i->second;
 
@@ -129,24 +122,22 @@ NeuronParameters::moveToDevice()
 
 	// copy data across
 	CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * bpitch, cudaMemcpyHostToDevice));
-
-	configurePartitionSizes();
 }
 
 
 
 void
-NeuronParameters::configurePartitionSizes()
+NeuronParameters::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
 {
-	if(m_maxPartitionNeuron.size() == 0) {
+	if(maxPartitionNeuron.size() == 0) {
 		return;
 	}
 
-	size_t maxPidx = m_maxPartitionNeuron.rbegin()->first;
+	size_t maxPidx = maxPartitionNeuron.rbegin()->first;
 	std::vector<unsigned> partitionSizes(maxPidx+1, 0);
 
-	for(std::map<pidx_t, nidx_t>::const_iterator i = m_maxPartitionNeuron.begin();
-			i != m_maxPartitionNeuron.end(); ++i) {
+	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
+			i != maxPartitionNeuron.end(); ++i) {
 		partitionSizes.at(i->first) = i->second + 1;
 	}
 

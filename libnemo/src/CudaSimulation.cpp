@@ -45,7 +45,7 @@ Simulation::Simulation(
 	m_partitionCount(0),
 	//! \todo get rid of member variable
 	m_maxPartitionSize(conf.cudaPartitionSize()),
-	m_neurons(net, conf.cudaPartitionSize()),
+	m_neurons(net, m_mapper, conf.cudaPartitionSize()),
 	m_cycle(0),
 	m_cm(net, m_mapper, conf.cudaPartitionSize(), conf.loggingEnabled()),
 	m_recentFiring(NULL),
