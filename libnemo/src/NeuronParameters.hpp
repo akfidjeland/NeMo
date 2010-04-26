@@ -30,9 +30,7 @@ class NeuronParameters
 {
 	public:
 
-		NeuronParameters(const nemo::Network& net,
-				const Mapper&,
-				size_t partitionSize);
+		NeuronParameters(const nemo::Network& net, const Mapper&);
 
 		float* deviceData() { return md_arr.get(); }
 
@@ -41,14 +39,9 @@ class NeuronParameters
 
 		size_t wordPitch() const { return m_wpitch; }
 
-		size_t partitionCount() const { return m_partitionCount; }
-
 	private:
 
 		boost::shared_ptr<float> md_arr;  // device data
-
-		//! \todo place pcount and psize into mapper object
-		size_t m_partitionCount;
 
 		size_t m_allocated;
 

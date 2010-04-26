@@ -40,12 +40,12 @@ namespace nemo {
 Simulation::Simulation(
 		const nemo::Network& net,
 		const nemo::Configuration& conf) :
-	m_mapper(conf.cudaPartitionSize()),
+	m_mapper(net, conf.cudaPartitionSize()),
 	m_conf(conf),
 	m_partitionCount(0),
 	//! \todo get rid of member variable
 	m_maxPartitionSize(conf.cudaPartitionSize()),
-	m_neurons(net, m_mapper, conf.cudaPartitionSize()),
+	m_neurons(net, m_mapper),
 	m_cycle(0),
 	m_cm(net, m_mapper, conf.cudaPartitionSize(), conf.loggingEnabled()),
 	m_recentFiring(NULL),
@@ -61,7 +61,7 @@ Simulation::Simulation(
 
 	//! \todo merge with init list
 	//! \todo remove m_partitionCount member variable
-	m_partitionCount = m_neurons.partitionCount();
+	m_partitionCount = m_mapper.partitionCount();
 	m_deviceAssertions = new DeviceAssertions(m_partitionCount);
 	m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, conf.cudaFiringBufferLength());
 	m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);

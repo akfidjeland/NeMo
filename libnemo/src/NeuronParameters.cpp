@@ -26,22 +26,16 @@ namespace nemo {
 	namespace cuda {
 
 
-NeuronParameters::NeuronParameters(
-		const nemo::Network& net,
-		const Mapper& mapper,
-		size_t partitionSize) :
+NeuronParameters::NeuronParameters(const nemo::Network& net, const Mapper& mapper) :
 	m_allocated(0),
 	m_wpitch(0)
 {
-	nidx_t maxIdx = net.maxSourceIdx();
-	m_partitionCount = (0 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);
-
-	size_t height = allocateDeviceData(m_partitionCount, partitionSize);
+	size_t height = allocateDeviceData(mapper.partitionCount(), mapper.partitionSize());
 
 	std::vector<float> h_arr(height * m_wpitch, 0);
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
-	size_t veclen = m_partitionCount * m_wpitch;
+	size_t veclen = mapper.partitionCount() * m_wpitch;
 
 	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
 			i != net.m_neurons.end(); ++i) {

@@ -10,7 +10,9 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Network.hpp"
 #include "cuda_types.h"
+#include "util.h"
 
 namespace nemo {
 	namespace cuda {
@@ -36,8 +38,11 @@ class Mapper {
 
 	public :
 
-		explicit Mapper(unsigned partitionSize) :
-			m_partitionSize(partitionSize) {}
+		Mapper(const nemo::Network& net, unsigned partitionSize) :
+			m_partitionSize(partitionSize) {
+			nidx_t maxIdx = net.maxSourceIdx();
+			m_partitionCount = (0 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);
+		}
 
 		DeviceIdx deviceIdx(nidx_t global) const {
 			return DeviceIdx(global / m_partitionSize, global % m_partitionSize);
@@ -51,9 +56,15 @@ class Mapper {
 			return p * m_partitionSize + n;
 		}
 
+		unsigned partitionSize() const { return m_partitionSize; }
+
+		unsigned partitionCount() const { return m_partitionCount; }
+
 	private :
 
 		unsigned m_partitionSize;
+
+		unsigned m_partitionCount;
 };
 
 	} // end namespace cuda
