@@ -11,4 +11,8 @@ ADD_EXECUTABLE(test
 	${EXAMPLES_DIR}/torus.cpp
 	${EXAMPLES_DIR}/random1k.cpp)
 TARGET_LINK_LIBRARIES(test nemo ${Boost_LIBRARIES})
-
+ADD_EXECUTABLE(rtest
+	rtest.cpp
+	${EXAMPLES_DIR}/torus.cpp
+	${EXAMPLES_DIR}/random1k.cpp)
+TARGET_LINK_LIBRARIES(rtest nemo)

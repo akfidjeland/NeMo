@@ -6,15 +6,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <nemo.hpp>
-
-namespace nemo {
-	namespace random1k {
-		nemo::Network* construct(unsigned ncount);
-	}
-	namespace torus {
-		nemo::Network* construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging);
-	}
-}
+#include <examples.hpp>
 
 
 /* Run simulation for given length and return result in output vector */
