@@ -90,7 +90,7 @@ configureStdp conf stdp =
     when (stdpEnabled stdp) $ do
     withArray (map realToFrac $ prefire stdp)  $ \prefire_ptr  -> do
     withArray (map realToFrac $ postfire stdp) $ \postfire_ptr -> do
-    configure conf $ c_enableStdp conf
+    configure $ c_enableStdp conf
         prefire_ptr
         (fromIntegral $ prefireWindow stdp)
         postfire_ptr
@@ -103,7 +103,7 @@ foreign import ccall unsafe "nemo_set_firing_buffer_length" c_setFiringBufferLen
     :: Ptr CConfig -> CUInt -> IO CStatus
 
 setFiringBufferLength :: Ptr CConfig -> Int -> IO ()
-setFiringBufferLength conf len = configure conf $ c_setFiringBufferLength conf $ fromIntegral len
+setFiringBufferLength conf len = configure $ c_setFiringBufferLength conf $ fromIntegral len
 
 
 foreign import ccall unsafe "nemo_get_firing_buffer_length" c_getFiringBufferLength
@@ -112,7 +112,7 @@ foreign import ccall unsafe "nemo_get_firing_buffer_length" c_getFiringBufferLen
 getFiringBufferLength :: Ptr CConfig -> IO Int
 getFiringBufferLength conf = do
     alloca $ \ptr -> do
-    configure conf $ c_getFiringBufferLength conf ptr
+    configure $ c_getFiringBufferLength conf ptr
     return . fromIntegral =<< peek ptr
 
 
@@ -120,7 +120,7 @@ foreign import ccall unsafe "nemo_set_cuda_partition_size" c_setCudaPartitionSiz
     :: Ptr CConfig -> CUInt -> IO CStatus
 
 setCudaPartitionSize :: Ptr CConfig -> Int -> IO ()
-setCudaPartitionSize conf size = configure conf $ c_setCudaPartitionSize conf $ fromIntegral size
+setCudaPartitionSize conf size = configure $ c_setCudaPartitionSize conf $ fromIntegral size
 
 
 foreign import ccall unsafe "nemo_delete_configuration" deleteConfiguration :: Ptr CConfig -> IO ()
@@ -150,7 +150,7 @@ addNeuron :: Ptr CNetwork -> Int
     -> Double -> Double -> Double -> Double
     -> Double -> Double -> Double -> IO ()
 addNeuron net nidx a b c d u v sigma =
-    construct net $ c_addNeuron net (fromIntegral nidx) (f a) (f b) (f c) (f d) (f u) (f v) (f sigma)
+    construct $ c_addNeuron net (fromIntegral nidx) (f a) (f b) (f c) (f d) (f u) (f v) (f sigma)
     where
         f = realToFrac
 
@@ -175,7 +175,7 @@ addSynapses :: Ptr CNetwork
         -> Ptr CUChar   -- ^ per-synapse plasticity
         -> Int          -- ^ synapses count for this neuron/delay pair
         -> IO ()
-addSynapses net pre nbuf dbuf wbuf spbuf len = when (len > 0) $ construct net $
+addSynapses net pre nbuf dbuf wbuf spbuf len = when (len > 0) $ construct $
         c_addSynapses net (fromIntegral pre) nbuf dbuf wbuf spbuf (fromIntegral $! len)
 
 
@@ -223,7 +223,7 @@ stepBuffering sim fstim = do
         fbounds = (0, flen-1)
     fstim_arr <- newListArray fbounds $ map fromIntegral fstim
     withStorableArray fstim_arr  $ \fstim_ptr -> do
-    simulate sim $ c_step sim fstim_ptr (fromIntegral flen)
+    simulate $ c_step sim fstim_ptr (fromIntegral flen)
 
 
 stepNonBuffering sim fstim = do
@@ -252,7 +252,7 @@ readFiring sim = do
     alloca $ \nidxPtr   -> do
     alloca $ \nfiredPtr -> do
     alloca $ \ncyclesPtr -> do
-    simulate sim $! c_readFiring sim cyclesPtr nidxPtr nfiredPtr ncyclesPtr
+    simulate $! c_readFiring sim cyclesPtr nidxPtr nfiredPtr ncyclesPtr
     nfired <- return . fromIntegral =<< peek nfiredPtr
     cycles <- peekArray nfired =<< peek cyclesPtr
     nidx <- peekArray nfired =<< peek nidxPtr
@@ -273,7 +273,7 @@ readFiringCount sim = do
     alloca $ \nidxPtr    -> do
     alloca $ \nfiredPtr  -> do
     alloca $ \ncyclesPtr -> do
-    simulate sim $ c_readFiring sim cyclesPtr nidxPtr nfiredPtr ncyclesPtr
+    simulate $ c_readFiring sim cyclesPtr nidxPtr nfiredPtr ncyclesPtr
     nfired <- peek nfiredPtr
     return $! fromIntegral nfired
 
@@ -301,7 +301,7 @@ getSynapses sim src = do
     alloca $ \w_ptr -> do -- weights
     alloca $ \p_ptr -> do -- plasticity
     alloca $ \len_ptr -> do
-    simulate sim $ c_getSynapses sim (fromIntegral src) n_ptr d_ptr w_ptr p_ptr len_ptr
+    simulate $ c_getSynapses sim (fromIntegral src) n_ptr d_ptr w_ptr p_ptr len_ptr
     len <- return . fromIntegral =<< peek len_ptr
     n_list <- peekWith fromIntegral len n_ptr
     d_list <- peekWith fromIntegral len d_ptr
@@ -315,7 +315,7 @@ getSynapses sim src = do
 foreign import ccall unsafe "nemo_apply_stdp" c_applyStdp :: Ptr CSim -> CFloat -> IO CStatus
 
 applyStdp :: Ptr CSim -> Double -> IO ()
-applyStdp sim reward = simulate sim $ c_applyStdp sim $ realToFrac reward
+applyStdp sim reward = simulate $ c_applyStdp sim $ realToFrac reward
 
 
 
@@ -327,28 +327,28 @@ foreign import ccall unsafe "nemo_delete_simulation" deleteSimulation :: Ptr CSi
 -- Reporting
 -------------------------------------------------------------------------------
 
-foreign import ccall unsafe "nemo_strerror" c_errorString :: Ptr () -> IO (Ptr CChar)
+foreign import ccall unsafe "nemo_strerror" c_errorString :: IO (Ptr CChar)
 
-errorString :: Ptr a -> IO String
-errorString rt = peekCString =<< (c_errorString $ castPtr rt)
+errorString :: IO String
+errorString = peekCString =<< c_errorString
 
 
 
-configure :: Ptr CConfig -> IO CStatus -> IO ()
-configure conf action = do
+configure :: IO CStatus -> IO ()
+configure action = do
     status <- action
-    when (status /= 0) $ fail =<< errorString conf
+    when (status /= 0) $ fail =<< errorString
 
-construct :: Ptr CNetwork -> IO CStatus -> IO ()
-construct net action = do
+construct :: IO CStatus -> IO ()
+construct action = do
     status <- action
-    when (status /= 0) $ fail =<< errorString net
+    when (status /= 0) $ fail =<< errorString
 
 
-simulate :: Ptr CSim -> IO CStatus -> IO ()
-simulate sim action = do
+simulate :: IO CStatus -> IO ()
+simulate action = do
     status <- action
-    when (status /= 0) $ fail =<< errorString sim
+    when (status /= 0) $ fail =<< errorString
 
 
 -------------------------------------------------------------------------------

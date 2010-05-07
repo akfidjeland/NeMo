@@ -25,24 +25,36 @@ extern "C" {
 #include <nemo_config.h>
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to
- * an error codes instead */
+ * error codes instead. Error descriptions are stored on a per-process basis. */
+
+static std::string g_lastError;
+static nemo_status_t g_lastCallStatus = NEMO_OK;
+
+
+void
+setResult(const char* msg, nemo_status_t status) {
+	g_lastError = msg;
+	g_lastCallStatus = status;
+}
+
+
 
 
 /* Call method on wrapped object, and /set/ status and error */
 #define CALL(ptr, call) {                                                     \
-        ptr->setStatus(NEMO_OK);                                              \
+        g_lastCallStatus = NEMO_OK;                                           \
         try {                                                                 \
             call;                                                             \
         } catch (DeviceAllocationException& e) {                              \
-            ptr->setResult(e.what(), NEMO_CUDA_MEMORY_ERROR);                 \
+            setResult(e.what(), NEMO_CUDA_MEMORY_ERROR);                      \
         } catch (KernelInvocationError& e) {                                  \
-            ptr->setResult(e.what(), NEMO_CUDA_INVOCATION_ERROR);             \
+            setResult(e.what(), NEMO_CUDA_INVOCATION_ERROR);                  \
         } catch (DeviceAssertionFailure& e) {                                 \
-            ptr->setResult(e.what(), NEMO_CUDA_ASSERTION_FAILURE);            \
+            setResult(e.what(), NEMO_CUDA_ASSERTION_FAILURE);                 \
         } catch (std::exception& e) {                                         \
-            ptr->setResult(e.what(), NEMO_UNKNOWN_ERROR);                     \
+            setResult(e.what(), NEMO_UNKNOWN_ERROR);                          \
         } catch (...) {                                                       \
-			ptr->setResult("unknown exception", NEMO_UNKNOWN_ERROR);          \
+			setResult("unknown exception", NEMO_UNKNOWN_ERROR);               \
         }                                                                     \
     }
 
@@ -50,53 +62,22 @@ extern "C" {
 #define CATCH_(T, ptr, call) {                                                \
         Wrapper<nemo::T>* wrapper = static_cast<Wrapper<nemo::T>*>(ptr);      \
         CALL(wrapper, wrapper->data->call)                                    \
-        return wrapper->status();                                             \
+        return g_lastCallStatus;                                              \
 	}
 
 /* Call method on wrapper object, set output value, and return status and error */
 #define CATCH(T, ptr, call, ret) {                                            \
         Wrapper<nemo::T>* wrapper = static_cast<Wrapper<nemo::T>*>(ptr);      \
         CALL(wrapper, ret = wrapper->data->call);                             \
-        return wrapper->status();                                             \
+        return g_lastCallStatus;                                              \
 	}
 
 #define NOCATCH(T, ptr, call) static_cast<Wrapper<nemo::T>*>(ptr)->data->call
 
 
 
-class Catching
-{
-	public :
-
-		Catching() : m_errorMsg("No error") { }
-
-		void setResult(const char* msg, nemo_status_t status) {
-			m_errorMsg = msg;
-			m_status = status;
-		}
-
-		void setStatus(nemo_status_t s) { m_status = s; }
-
-		//void setErrorMsg(const char* msg) { m_errorMsg = msg; }
-		const char* errorMsg() const { return m_errorMsg.c_str(); }
-
-		//void setStatus(nemo_status_t s) { m_status = s; }
-		nemo_status_t status() const { return m_status; }
-
-	private :
-
-		/* In addition to the runtime data, we need to keep track of the latest
-		 * error and associated error message */
-		std::string m_errorMsg;
-
-		/* Status after last call */
-		nemo_status_t m_status;
-};
-
-
-
 template<class T>
-class Wrapper : public Catching
+class Wrapper
 {
 	public :
 		Wrapper() : data(new T()) {}
@@ -216,14 +197,14 @@ nemo_get_synapses(nemo_simulation_t ptr,
 	Wrapper<nemo::Simulation>* sim = fromOpaque<nemo::Simulation>(ptr);
 	CALL(sim, sim->data->getSynapses(source,
 				&targets, &delays, &weights, &plastic));
-	if(sim->status() == NEMO_OK) {
+	if(NEMO_OK == g_lastCallStatus) {
 		*targets_ = const_cast<unsigned*>(&(*targets)[0]);
 		*delays_ = const_cast<unsigned*>(&(*delays)[0]);
 		*weights_ = const_cast<float*>(&(*weights)[0]);
 		*plastic_ = const_cast<unsigned char*>(&(*plastic)[0]);
 		*len = targets->size();
 	}
-	return sim->status();
+	return g_lastCallStatus;
 }
 
 
@@ -256,13 +237,13 @@ nemo_read_firing(nemo_simulation_t ptr,
 	const std::vector<unsigned>* nidx;
 	Wrapper<nemo::Simulation>* sim = fromOpaque<nemo::Simulation>(ptr);
 	CALL(sim, sim->data->readFiring(&cycles, &nidx));
-	if(sim->status() == NEMO_OK) {
+	if(NEMO_OK == g_lastCallStatus) {
 		*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
 		*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);
 		*nfired = cycles->size();
 		assert(cycles->size() == nidx->size());
 	}
-	return sim->status();
+	return g_lastCallStatus;
 }
 
 
@@ -364,7 +345,7 @@ nemo_set_cuda_partition_size(nemo_configuration_t conf, unsigned size)
 
 
 const char*
-nemo_strerror(void* ptr)
+nemo_strerror()
 {
-	return static_cast<Catching*>(ptr)->errorMsg();
+	return g_lastError.c_str();
 }

@@ -338,13 +338,11 @@ void nemo_reset_timer(nemo_simulation_t);
 
 //! \todo consider putting the error codes here
 
-/*! \param obj
- * 		A network, configuration, or simulation object
- * \return
+/*! \return
  * 		string describing the most recent error (if any)
  */
 DLL_PUBLIC
-const char* nemo_strerror(void* obj);
+const char* nemo_strerror();
 
 /*! \} */  //end error group
 
