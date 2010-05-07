@@ -41,7 +41,7 @@ setResult(const char* msg, nemo_status_t status) {
 
 
 /* Call method on wrapped object, and /set/ status and error */
-#define CALL(ptr, call) {                                                     \
+#define CALL(call) {                                                          \
         g_lastCallStatus = NEMO_OK;                                           \
         try {                                                                 \
             call;                                                             \
@@ -60,53 +60,33 @@ setResult(const char* msg, nemo_status_t status) {
 
 /* Call method on wrapper object, and return status and error */
 #define CATCH_(T, ptr, call) {                                                \
-        Wrapper<nemo::T>* wrapper = static_cast<Wrapper<nemo::T>*>(ptr);      \
-        CALL(wrapper, wrapper->data->call)                                    \
+        nemo::T* obj = static_cast<nemo::T*>(ptr);                            \
+        CALL(obj->call)                                                       \
         return g_lastCallStatus;                                              \
 	}
 
 /* Call method on wrapper object, set output value, and return status and error */
 #define CATCH(T, ptr, call, ret) {                                            \
-        Wrapper<nemo::T>* wrapper = static_cast<Wrapper<nemo::T>*>(ptr);      \
-        CALL(wrapper, ret = wrapper->data->call);                             \
+        nemo::T* obj = static_cast<nemo::T*>(ptr);                            \
+        CALL(ret = obj->call);                                                \
         return g_lastCallStatus;                                              \
 	}
 
-#define NOCATCH(T, ptr, call) static_cast<Wrapper<nemo::T>*>(ptr)->data->call
-
-
-
-template<class T>
-class Wrapper
-{
-	public :
-		Wrapper() : data(new T()) {}
-		Wrapper(T* data) : data(data) {}
-		~Wrapper() { delete data; }
-		T* data;
-};
-
-
-template<class T>
-Wrapper<T>*
-fromOpaque(void *ptr)
-{
-	return static_cast<Wrapper<T>*>(ptr);
-}
+#define NOCATCH(T, ptr, call) static_cast<nemo::T*>(ptr)->call
 
 
 
 nemo_network_t
 nemo_new_network()
 {
-	return new Wrapper<nemo::Network>();
+	return static_cast<nemo_network_t>(new nemo::Network());
 }
 
 
 void
 nemo_delete_network(nemo_network_t net)
 {
-	delete fromOpaque<nemo::Network>(net);
+	delete static_cast<nemo::Network*>(net);
 }
 
 
@@ -114,7 +94,7 @@ nemo_delete_network(nemo_network_t net)
 nemo_configuration_t
 nemo_new_configuration()
 {
-	return new Wrapper<nemo::Configuration>();
+	return static_cast<nemo_configuration_t>(new nemo::Configuration());
 }
 
 
@@ -122,7 +102,7 @@ nemo_new_configuration()
 void
 nemo_delete_configuration(nemo_configuration_t conf)
 {
-	delete fromOpaque<nemo::Configuration>(conf);
+	delete static_cast<nemo::Configuration*>(conf);
 }
 
 
@@ -130,14 +110,12 @@ nemo_delete_configuration(nemo_configuration_t conf)
 nemo_simulation_t
 nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 {
-	nemo::Network& net = *(fromOpaque<nemo::Network>(net_ptr)->data);
-	nemo::Configuration& conf = *(fromOpaque<nemo::Configuration>(conf_ptr)->data);
-	Wrapper<nemo::Simulation>* sim;
+	nemo::Network* net = static_cast<nemo::Network*>(net_ptr);
+	nemo::Configuration* conf = static_cast<nemo::Configuration*>(conf_ptr);
 	try {
-		sim = new Wrapper<nemo::Simulation>(nemo::Simulation::create(net, conf));
-		return sim;
-	} catch(...) {
-		//! \todo should communicate error back to user
+		return static_cast<nemo_simulation_t>(nemo::Simulation::create(*net, *conf));
+	} catch(std::exception& e) {
+		setResult(e.what(), NEMO_UNKNOWN_ERROR);
 		return NULL;
 	}
 }
@@ -147,7 +125,7 @@ nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 void
 nemo_delete_simulation(nemo_simulation_t sim)
 {
-	delete fromOpaque<nemo::Simulation>(sim);
+	delete static_cast<nemo::Simulation*>(sim);
 }
 
 
@@ -194,9 +172,8 @@ nemo_get_synapses(nemo_simulation_t ptr,
 	const std::vector<unsigned>* delays;
 	const std::vector<float>* weights;
 	const std::vector<unsigned char>* plastic;
-	Wrapper<nemo::Simulation>* sim = fromOpaque<nemo::Simulation>(ptr);
-	CALL(sim, sim->data->getSynapses(source,
-				&targets, &delays, &weights, &plastic));
+	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
+	CALL(sim->getSynapses(source, &targets, &delays, &weights, &plastic));
 	if(NEMO_OK == g_lastCallStatus) {
 		*targets_ = const_cast<unsigned*>(&(*targets)[0]);
 		*delays_ = const_cast<unsigned*>(&(*delays)[0]);
@@ -235,8 +212,8 @@ nemo_read_firing(nemo_simulation_t ptr,
 {
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* nidx;
-	Wrapper<nemo::Simulation>* sim = fromOpaque<nemo::Simulation>(ptr);
-	CALL(sim, sim->data->readFiring(&cycles, &nidx));
+	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
+	CALL(sim->readFiring(&cycles, &nidx));
 	if(NEMO_OK == g_lastCallStatus) {
 		*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
 		*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);

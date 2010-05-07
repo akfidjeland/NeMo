@@ -28,12 +28,12 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	if(cudaSuccess != err) {
 		throw DeviceAllocationException("incoming spike queue counts", len, err);
 	}
+	m_count = boost::shared_ptr<unsigned>(d_count, cudaFree);
 
 	err = cudaMemset(d_count, 0, len);
 	if(cudaSuccess != err) {
 		throw std::runtime_error("failed to set incoming spike queue counts");
 	}
-	m_count = boost::shared_ptr<unsigned>(d_count, cudaFree);
 
 	m_allocated = len;
 
