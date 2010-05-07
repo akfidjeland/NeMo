@@ -83,4 +83,11 @@ Network::addSynapses(
 }
 
 
+
+unsigned
+Network::neuronCount() const
+{
+	return m_neurons.size();
+}
+
 }

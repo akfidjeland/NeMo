@@ -102,6 +102,8 @@ class DLL_PUBLIC Network
 		weight_t maxWeight() const { return m_maxWeight; }
 		weight_t minWeight() const { return m_minWeight; }
 
+		unsigned neuronCount() const;
+
 	private :
 
 		//! \todo perhaps store this as double?

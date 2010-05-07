@@ -19,6 +19,10 @@ namespace nemo {
 Simulation*
 Simulation::create(const Network& net, const Configuration& conf)
 {
+	if(net.neuronCount() == 0) {
+		throw std::runtime_error("Cannot create simulation from empty network");
+		return NULL;
+	}
 	int dev = cuda::Simulation::selectDevice();
 	return dev == -1 ? NULL : new cuda::Simulation(net, conf);
 }

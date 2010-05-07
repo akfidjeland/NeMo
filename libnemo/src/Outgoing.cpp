@@ -202,6 +202,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 				cudaMemcpyHostToDevice));
 
 	// return maximum number of incoming groups for any one partition
+	assert(incoming.size() > 0);
 	return std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second;
 }
 
