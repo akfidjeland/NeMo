@@ -151,7 +151,14 @@ nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 {
 	nemo::Network& net = *(fromOpaque<nemo::Network>(net_ptr)->data);
 	nemo::Configuration& conf = *(fromOpaque<nemo::Configuration>(conf_ptr)->data);
-	return new Wrapper<nemo::Simulation>(nemo::Simulation::create(net, conf));
+	Wrapper<nemo::Simulation>* sim;
+	try {
+		sim = new Wrapper<nemo::Simulation>(nemo::Simulation::create(net, conf));
+		return sim;
+	} catch(...) {
+		//! \todo should communicate error back to user
+		return NULL;
+	}
 }
 
 

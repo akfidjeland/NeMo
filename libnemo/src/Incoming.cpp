@@ -24,8 +24,15 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	// allocate space for the incoming count
 	unsigned* d_count;
 	size_t len = ALIGN(partitionCount * MAX_DELAY, 32) * sizeof(unsigned);
-	CUDA_SAFE_CALL(cudaMalloc((void**)&d_count, len));
-	CUDA_SAFE_CALL(cudaMemset(d_count, 0, len));
+	cudaError err = cudaMalloc((void**)&d_count, len);
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException("incoming spike queue counts", len, err);
+	}
+
+	err = cudaMemset(d_count, 0, len);
+	if(cudaSuccess != err) {
+		throw std::runtime_error("failed to set incoming spike queue counts");
+	}
 	m_count = boost::shared_ptr<unsigned>(d_count, cudaFree);
 
 	m_allocated = len;
@@ -46,7 +53,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	incoming_t* d_buffer;
 	size_t bpitch;
 
-	cudaError err = cudaMallocPitch((void**)&d_buffer, &bpitch, width, height);
+	err = cudaMallocPitch((void**)&d_buffer, &bpitch, width, height);
 	if(cudaSuccess != err) {
 		throw DeviceAllocationException("incoming spike queue", width * height, err);
 	}
