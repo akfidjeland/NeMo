@@ -91,7 +91,11 @@ Simulation::~Simulation()
 }
 
 
+#ifdef __DEVICE_EMULATION__
+int Simulation::s_device = 0;
+#else
 int Simulation::s_device = -1;
+#endif
 
 int
 Simulation::selectDevice()
@@ -110,7 +114,9 @@ Simulation::selectDevice()
 	CUDA_SAFE_CALL(cudaChooseDevice(&dev, &prop));
 	CUDA_SAFE_CALL(cudaGetDeviceProperties(&prop, dev));
 
-	// 9999.9999 is the 'emulation device' which is always present
+	/* 9999.9999 is the 'emulation device' which is always present. Unless the
+	 * library was built specifically for emulation mode, this should be
+	 * considered an error. */
 	if(prop.major == 9999 || prop.minor == 9999) {
 		//! \todo perhaps throw exception instead?
 		std::cerr << "No physical devices available" << std::endl;
