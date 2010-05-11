@@ -18,11 +18,11 @@ __constant__ size_t c_incomingPitch; // word pitch
 
 
 __host__
-void
+cudaError
 setIncomingPitch(size_t pitch)
 {
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_incomingPitch,
-				&pitch, sizeof(size_t), 0, cudaMemcpyHostToDevice));
+	return cudaMemcpyToSymbol(c_incomingPitch,
+				&pitch, sizeof(size_t), 0, cudaMemcpyHostToDevice);
 }
 
 

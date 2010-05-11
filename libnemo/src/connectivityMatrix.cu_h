@@ -29,7 +29,7 @@
 #define FCM_WEIGHT 1         // float packed as int
 #define FCM_SUBMATRICES 2
 
-void setFcmPlaneSize(size_t planeSize);
+cudaError setFcmPlaneSize(size_t planeSize);
 
 synapse_t f_nullSynapse();
 
@@ -47,7 +47,7 @@ unsigned forwardIdx(unsigned rsynapse);
 unsigned r_delay1(unsigned rsynapse);
 
 
-void
+cudaError
 configureReverseAddressing(
         DEVICE_UINT_PTR_T* r_pitch,
         DEVICE_UINT_PTR_T* r_address,

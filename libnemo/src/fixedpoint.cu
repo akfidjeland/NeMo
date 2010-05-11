@@ -11,7 +11,6 @@
  */
 
 #include "device_assert.cu"
-#include "util.h"
 #include "cuda_types.h"
 
 #define FX_SIGN_BIT 0x80000000
@@ -22,14 +21,18 @@ __constant__ unsigned c_fixedPointFractionalBits;
 
 
 __host__
-void
+cudaError
 fx_setFormat(unsigned fracbits)
 {
 	unsigned scale = 1 << fracbits;
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_fixedPointScale,
-				&scale, sizeof(unsigned), 0, cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_fixedPointFractionalBits,
-				&fracbits, sizeof(unsigned), 0, cudaMemcpyHostToDevice));
+	cudaError status;
+	status = cudaMemcpyToSymbol(c_fixedPointScale,
+				&scale, sizeof(unsigned), 0, cudaMemcpyHostToDevice);
+	if(cudaSuccess != status) {
+		return status;
+	}
+	return cudaMemcpyToSymbol(c_fixedPointFractionalBits,
+				&fracbits, sizeof(unsigned), 0, cudaMemcpyHostToDevice);
 }
 
 

@@ -42,11 +42,11 @@ f_nullSynapse()
 
 
 __host__
-void
+cudaError
 setFcmPlaneSize(size_t sz)
 {
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_fcmPlaneSize,
-				&sz, sizeof(size_t), 0, cudaMemcpyHostToDevice));
+	return cudaMemcpyToSymbol(c_fcmPlaneSize,
+				&sz, sizeof(size_t), 0, cudaMemcpyHostToDevice);
 }
 
 
@@ -142,14 +142,17 @@ __constant__ DEVICE_UINT_PTR_T cr_faddress[MAX_THREAD_BLOCKS];
 
 
 
-#define SET_CR_ADDRESS_VECTOR(symbol, vec, len) CUDA_SAFE_CALL(\
-		cudaMemcpyToSymbol(symbol, vec, len * sizeof(DEVICE_UINT_PTR_T), 0, cudaMemcpyHostToDevice)\
-	)
+#define SET_CR_ADDRESS_VECTOR(symbol, vec, len)                                \
+    err = cudaMemcpyToSymbol(symbol, vec,                                      \
+            len * sizeof(DEVICE_UINT_PTR_T), 0, cudaMemcpyHostToDevice);       \
+    if(cudaSuccess != err) {                                                   \
+        return err;                                                            \
+    }
 
 
 
 __host__
-void
+cudaError
 configureReverseAddressing(
         DEVICE_UINT_PTR_T* r_pitch,
         DEVICE_UINT_PTR_T* r_address,
@@ -157,11 +160,13 @@ configureReverseAddressing(
         DEVICE_UINT_PTR_T* r_faddress,
 		size_t len)
 {
+	cudaError err;
 	//! \todo extend vectors and fill with NULLs
 	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch, len);
 	SET_CR_ADDRESS_VECTOR(cr_address, r_address, len);
 	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp, len);
 	SET_CR_ADDRESS_VECTOR(cr_faddress, r_faddress, len);
+	return cudaSuccess;
 }
 
 #endif

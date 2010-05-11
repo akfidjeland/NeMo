@@ -10,7 +10,6 @@
 #include "log.cu_h"
 #include "device_assert.cu"
 #include "cycle.cu"
-#include "util.h"
 #include "fixedpoint.hpp"
 
 
@@ -58,13 +57,18 @@ __shared__ unsigned s_stdpPostFireWindow;
 __shared__ unsigned s_stdpPreFireWindow;
 
 
-#define SET_STDP_PARAMETER(symbol, val) CUDA_SAFE_CALL(\
-        cudaMemcpyToSymbol(symbol, &val, sizeof(val), 0, cudaMemcpyHostToDevice)\
-    )
+#define SET_STDP_PARAMETER(symbol, val) {                                      \
+        cudaError status;                                                      \
+        status = cudaMemcpyToSymbol(symbol, &val, sizeof(val),                 \
+                                    0, cudaMemcpyHostToDevice);                \
+        if(cudaSuccess != status) {                                            \
+            return status;                                                     \
+        }                                                                      \
+    }
 
 
 __host__
-void
+cudaError
 configureStdp(
 		unsigned preFireWindow,
 		unsigned postFireWindow,
@@ -79,7 +83,7 @@ configureStdp(
 	SET_STDP_PARAMETER(c_stdpDepression, depressionBits);
 	unsigned window = preFireWindow + postFireWindow;
 	assert(window <= STDP_WINDOW_SIZE);
-	cudaMemcpyToSymbol(c_stdpFn, stdpFn, sizeof(weight_dt)*window, 0, cudaMemcpyHostToDevice);
+	return cudaMemcpyToSymbol(c_stdpFn, stdpFn, sizeof(weight_dt)*window, 0, cudaMemcpyHostToDevice);
 }
 
 

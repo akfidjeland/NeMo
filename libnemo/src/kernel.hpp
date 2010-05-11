@@ -45,7 +45,7 @@ stepSimulation(
 		unsigned long long* d_cc,
 		size_t ccPitch);
 
-void
+cudaError
 configureStdp(
 		unsigned preFireWindow,
 		unsigned postFireWindow,
@@ -53,7 +53,7 @@ configureStdp(
 		uint64_t depressionBits,
 		weight_dt* stdpFn);
 
-void configurePartitionSize(const unsigned* d_partitionSize, size_t len);
-void configureKernel(unsigned maxDelay, unsigned pitch32, unsigned pitch64);
+cudaError configurePartitionSize(const unsigned* d_partitionSize, size_t len);
+cudaError configureKernel(unsigned maxDelay, unsigned pitch32, unsigned pitch64);
 
 #endif

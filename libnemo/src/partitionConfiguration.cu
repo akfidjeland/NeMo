@@ -24,7 +24,6 @@
 // (MAX_THREAD_BLOCKS) and size the data structures statically.
 //-----------------------------------------------------------------------------
 
-#include "util.h"
 #include "kernel.cu_h"
 
 
@@ -52,19 +51,18 @@ __shared__ unsigned s_networkParameters[NPARAM_COUNT];
 
 //! \todo split this up
 __host__
-void
+cudaError
 configureKernel(unsigned maxDelay, unsigned pitch32, unsigned pitch64)
 {
 	unsigned param[NPARAM_COUNT];
 	SET_CONSTANT(maxDelay,  maxDelay);
 	SET_CONSTANT(pitch32,   pitch32);
 	SET_CONSTANT(pitch64,   pitch64);
-	CUDA_SAFE_CALL(
-			cudaMemcpyToSymbol(c_networkParameters,
+	return cudaMemcpyToSymbol(c_networkParameters,
 				&param[0],
 				sizeof(unsigned)*NPARAM_COUNT,
 				0,
-				cudaMemcpyHostToDevice));
+				cudaMemcpyHostToDevice);
 }
 
 
@@ -85,17 +83,16 @@ loadNetworkParameters()
 __constant__ unsigned c_partitionSize[MAX_THREAD_BLOCKS];
 
 __host__
-void
+cudaError
 configurePartitionSize(const unsigned* d_partitionSize, size_t len)
 {
 	//! \todo set padding to zero
 	assert(len <= MAX_THREAD_BLOCKS);
-	CUDA_SAFE_CALL(
-		cudaMemcpyToSymbol(
+	return cudaMemcpyToSymbol(
 			c_partitionSize,
 			(void*) d_partitionSize,
 			MAX_THREAD_BLOCKS*sizeof(unsigned),
-			0, cudaMemcpyHostToDevice));
+			0, cudaMemcpyHostToDevice);
 }
 
 #endif

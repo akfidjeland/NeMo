@@ -48,4 +48,14 @@ class KernelInvocationError : public std::runtime_error
 			std::runtime_error(cudaGetErrorString(status)) {}
 };
 
+
+#define CUDA_SAFE_CALL(call) {                                             \
+    cudaError err = call;                                                  \
+    if(cudaSuccess != err) {                                               \
+        std::ostringstream msg;                                            \
+        msg << "Cuda error in file " << __FILE__ << " in line "            \
+            << __LINE__ << ": " << cudaGetErrorString(err);                \
+        throw std::runtime_error(msg.str().c_str());                       \
+    } }
+
 #endif

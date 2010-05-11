@@ -35,11 +35,11 @@ make_outgoing(pidx_t partition, delay_t delay, unsigned warpOffset)
 
 
 __host__
-void
+cudaError
 setOutgoingPitch(size_t targetPitch)
 {
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_outgoingPitch,
-				&targetPitch, sizeof(size_t), 0, cudaMemcpyHostToDevice));
+	return cudaMemcpyToSymbol(c_outgoingPitch,
+				&targetPitch, sizeof(size_t), 0, cudaMemcpyHostToDevice);
 }
 
 

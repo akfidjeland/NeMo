@@ -1,10 +1,8 @@
-#include "util.h"
-
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <assert.h>
-//! \todo add exceptions
-//#include <stdexcept>
+
+#include "except.hpp"
 
 
 template<typename T>

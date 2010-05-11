@@ -17,13 +17,13 @@
 __constant__ size_t c_bv_pitch;
 
 
-/*! Set common pitch for bitvectors */
+/*! Set common pitch for bitvectors. */
 __host__
-void
+cudaError
 bv_setPitch(size_t pitch)
 {
-	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_bv_pitch,
-				&pitch, sizeof(size_t), 0, cudaMemcpyHostToDevice));
+	return cudaMemcpyToSymbol(c_bv_pitch,
+				&pitch, sizeof(size_t), 0, cudaMemcpyHostToDevice);
 }
 
 

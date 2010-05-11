@@ -13,7 +13,6 @@
 
 #include "RSMatrix.hpp"
 #include "connectivityMatrix.cu_h"
-#include "util.h"
 #include "except.hpp"
 #include "WarpAddressTable.hpp"
 

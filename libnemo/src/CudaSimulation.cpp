@@ -22,7 +22,6 @@
 #include "FiringOutput.hpp"
 #include "Network.hpp"
 #include "ThalamicInput.hpp"
-#include "util.h"
 #include "fixedpoint.hpp"
 #include "bitvector.hpp"
 #include "except.hpp"
@@ -72,7 +71,7 @@ Simulation::Simulation(
 
 	setPitch();
 	//! \todo do this configuration as part of CM setup
-	configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64);
+	CUDA_SAFE_CALL(configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64));
 #ifdef INCLUDE_TIMING_API
 	resetTimer();
 #endif
@@ -173,11 +172,12 @@ Simulation::configureStdp(const STDP<float>& stdp)
 	for(unsigned i=0; i < fxfn.size(); ++i) {
 		fxfn.at(i) = fx_toFix(flfn[i], fb);
 	}
-	::configureStdp(m_stdpFn.preFireWindow(),
+	CUDA_SAFE_CALL(
+		::configureStdp(m_stdpFn.preFireWindow(),
 			m_stdpFn.postFireWindow(),
 			m_stdpFn.potentiationBits(),
 			m_stdpFn.depressionBits(),
-			const_cast<fix_t*>(&fxfn[0]));
+			const_cast<fix_t*>(&fxfn[0])));
 }
 
 
@@ -260,7 +260,7 @@ Simulation::setPitch()
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, m_thalamicInput->wordPitch());
 	checkPitch(pitch1, m_firingOutput->wordPitch());
-	bv_setPitch(pitch1);
+	CUDA_SAFE_CALL(bv_setPitch(pitch1));
 }
 
 

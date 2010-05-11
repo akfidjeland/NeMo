@@ -19,7 +19,6 @@
 #include "Network.hpp"
 #include "cuda_types.h"
 #include "kernel.hpp"
-#include "util.h"
 
 
 namespace nemo {
@@ -105,7 +104,7 @@ NeuronParameters::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPar
 		partitionSizes.at(i->first) = i->second + 1;
 	}
 
-	configurePartitionSize(&partitionSizes[0], partitionSizes.size());
+	CUDA_SAFE_CALL(configurePartitionSize(&partitionSizes[0], partitionSizes.size()));
 }
 
 	} // end namespace cuda

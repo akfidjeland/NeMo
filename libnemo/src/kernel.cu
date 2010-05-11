@@ -11,7 +11,6 @@
 #include <assert.h>
 
 #include "log.cu_h"
-#include "util.h"
 
 #include "device_assert.cu"
 #include "bitvector.cu"

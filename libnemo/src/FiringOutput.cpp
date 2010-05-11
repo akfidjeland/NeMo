@@ -12,7 +12,7 @@
 #include <cuda_runtime.h>
 
 #include "FiringOutput.hpp"
-#include "util.h"
+#include "except.hpp"
 #include "bitvector.cu_h"
 #include "types.h"
 

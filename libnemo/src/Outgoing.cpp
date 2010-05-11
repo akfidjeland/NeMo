@@ -185,7 +185,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 
 	// copy table from host to device
 	CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * m_pitch, cudaMemcpyHostToDevice));
-	setOutgoingPitch(wpitch);
+	CUDA_SAFE_CALL(setOutgoingPitch(wpitch));
 
 	// allocate device memory for row lengths
 	unsigned* d_rowLength;

@@ -12,6 +12,6 @@
 
 #include "bitvector.cu_h"
 
-void bv_setPitch(size_t pitch);
+cudaError bv_setPitch(size_t pitch);
 
 #endif

@@ -65,7 +65,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	 * anyway. The queue heads must be used to determine what's valid data */
 
 	size_t wpitch = bpitch / sizeof(incoming_t);
-	setIncomingPitch(wpitch);
+	CUDA_SAFE_CALL(setIncomingPitch(wpitch));
 }
 
 } // end namespace nemo

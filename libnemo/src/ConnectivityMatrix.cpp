@@ -15,7 +15,6 @@
 #include <cmath>
 #include <boost/tuple/tuple_comparison.hpp>
 
-#include "util.h"
 #include "RSMatrix.hpp"
 #include "except.hpp"
 #include "DeviceIdx.hpp"
@@ -208,7 +207,7 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
 	size_t wpitch = bpitch / sizeof(synapse_t);
 	md_fcmPlaneSize = totalWarps * wpitch;
-	setFcmPlaneSize(md_fcmPlaneSize);
+	CUDA_SAFE_CALL(setFcmPlaneSize(md_fcmPlaneSize));
 
 	if(logging && bpitch != desiredBytePitch) {
 		//! \todo make this an exception.
@@ -239,12 +238,14 @@ ConnectivityMatrix::moveRcmToDevice(const WarpAddressTable& wtable)
 		i->second->moveToDevice(wtable, i->first);
 	}
 
-	configureReverseAddressing(
-			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionPitch()[0]),
-			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionAddress()[0]),
-			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionStdp()[0]),
-			const_cast<DEVICE_UINT_PTR_T*>(&r_partitionFAddress()[0]),
-			r_partitionPitch().size());
+	CUDA_SAFE_CALL(
+		configureReverseAddressing(
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionPitch()[0]),
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionAddress()[0]),
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionStdp()[0]),
+				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionFAddress()[0]),
+				r_partitionPitch().size());
+	);
 }
 
 
@@ -279,7 +280,7 @@ ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging
 			<< 31-fbits << "." << fbits << " for weights\n";
 	}
 	m_fractionalBits = fbits;
-	fx_setFormat(fbits);
+	CUDA_SAFE_CALL(fx_setFormat(fbits));
 	return fbits;
 }
 
