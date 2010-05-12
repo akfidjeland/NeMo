@@ -1,7 +1,11 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#ifdef _WIN32
+#include <win_stdint.h> // in own local build directory
+#else
 #include <stdint.h>
+#endif
 
 #include <boost/numeric/conversion/cast.hpp>
 #include <mex.h>

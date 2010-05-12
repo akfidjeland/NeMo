@@ -1,4 +1,8 @@
-FIND_PROGRAM(MEX NAMES matlab-mex mex)	
+IF(WIN32)
+	FIND_PROGRAM(MEX NAMES mex.bat)
+ELSE(WIN32)
+	FIND_PROGRAM(MEX NAMES matlab-mex mex)
+ENDIF(WIN32)
 
 
 # Set the file extension used for generated MEX libraries. MEX help reports the
@@ -9,16 +13,17 @@ FIND_PROGRAM(MEX NAMES matlab-mex mex)
 #	glnx86          - .mexglx
 #	glnxi64         - .mexi64
 #	Mac OS X        - .mexmac
-#	Windows         - .dll
+#	Windows         - .mexw32. Older version use .dll
 # 
 # It looks like Cmake does not distinguish between unices, so we assume Linux. 
 MACRO(MEX_LIB_SUFFIX VAR)
 
 	SET(${VAR} "unknown")
 
-	IF(WIN)
-		SET(${VAR} "dll")
-	ENDIF(WIN)
+	IF(WIN32)
+		# TODO: not sure how/if this works with 64-bit OS
+		SET(${VAR} "mexw32")
+	ENDIF(WIN32)
 
 	IF(UNIX)
 		IF(CMAKE_SIZE_VOID_P EQUAL 8)
@@ -45,21 +50,25 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 	SET(MEX_INCLUDES
 		-I${CMAKE_SOURCE_DIR}/src
 		-I${CMAKE_BINARY_DIR}/src # for configured file
+		-I${Boost_INCLUDE_DIR}
 	)
 	SET(MEX_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matlab/nemo_mex.${SUFFIX})
 	SET(MEX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/matlab/nemo_mex.cpp)
+	SET(NEMO_LIB_DIR ${CMAKE_BINARY_DIR}/src/${CMAKE_CFG_INTDIR})
 	SET(MEX_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/matlab)
 
 	FILE(MAKE_DIRECTORY ${MEX_OUTPUT_DIR})
 
 	ADD_CUSTOM_COMMAND(
 		OUTPUT ${MEX_OUTPUT}
-		COMMAND ${MEX} -g ${MEX_INCLUDES} -lnemo ${MEX_SOURCE} -L${CMAKE_BINARY_DIR}/src
+		COMMAND ${MEX} ${MEX_INCLUDES} -L${NEMO_LIB_DIR} -lnemo ${MEX_SOURCE}
 		WORKING_DIRECTORY ${MEX_OUTPUT_DIR}
 		DEPENDS ${MEX_SOURCE}
 	)
 
 	ADD_CUSTOM_TARGET(mex-api ALL DEPENDS ${MEX_OUTPUT})
+
+	ADD_DEPENDENCIES(mex-api nemo)
 
 	IF(WIN32)
 		SET(INSTALL_DIR Matlab)
