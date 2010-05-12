@@ -12,7 +12,7 @@ SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>"
 SET(Boost_USE_MULTITHREAD OFF)
 FIND_PACKAGE(Boost REQUIRED)
 
-SUBDIRS(src doc)
+SUBDIRS(src doc api)
 
 OPTION(INCLUDE_TIMING_API "Include API functions for timing (may require boost::date_time library)" ON)
 
@@ -35,6 +35,8 @@ SET(CPACK_SOURCE_IGNORE_FILES
 	".*swp$"
 	"build"
 	mpi
+	api/autogen
+	api/matlab/sources
 	"tmp.*"
 	${CPACK_SOURCE_IGNORE_FILES})
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")

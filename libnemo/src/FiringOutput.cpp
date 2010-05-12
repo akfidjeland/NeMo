@@ -49,6 +49,7 @@ FiringOutput::FiringOutput(
 
 FiringOutput::~FiringOutput()
 {
+	//! \todo use shared_ptr here to do the freeing
 	cudaFreeHost(mh_buffer);
 	cudaFree(md_buffer);
 }
