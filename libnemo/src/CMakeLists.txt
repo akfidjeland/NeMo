@@ -65,10 +65,10 @@ IF(NOT ${FLOAT_SIZE} EQUAL 4)
 	MESSAGE(SEND_ERROR "float does not have expected size (4B)")
 ENDIF(NOT ${FLOAT_SIZE} EQUAL 4)
 
-# Unless we're on a windows platform we need stdint.h
-IF(NOT HAVE_STDINT_H AND NOT WIN32)
+# Unless we're on a windows/MSVC platform we need stdint.h
+IF(NOT HAVE_STDINT_H AND NOT MSVC)
 	MESSAGE(FATAL_ERROR "No valid stdint.h file found on this platform")
-ENDIF(NOT HAVE_STDINT_H AND NOT WIN32)
+ENDIF(NOT HAVE_STDINT_H AND NOT MSVC)
 
 
 

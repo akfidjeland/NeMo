@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 /* It seems that the 2010 version of Visual C++ have caught up to at least
  * *parts* of the C99 spec, in particular the stdint.h file. Versions prior to
  * this, however, do not include this file, so we have to use Alexander

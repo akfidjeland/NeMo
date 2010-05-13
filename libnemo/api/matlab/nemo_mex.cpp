@@ -1,7 +1,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
-#ifdef _WIN32
+#ifdef _MSC_VER
 #include <win_stdint.h> // in own local build directory
 #else
 #include <stdint.h>
