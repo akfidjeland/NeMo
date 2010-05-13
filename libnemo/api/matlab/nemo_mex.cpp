@@ -67,17 +67,24 @@ numeric(const mxArray* arr)
 
 
 
-template<typename T>
-T
+
+/* Return scalar from a numeric 1x1 array provided by Matlab. M and N refers to
+ * Matlab and Nemo types, rather than array dimensions. */
+template<typename N, typename M>
+N
 scalar(const mxArray* arr)
 {
 	if(mxGetN(arr) != 1 || mxGetM(arr) != 1) {
 		mexErrMsgIdAndTxt("nemo:api", "argument should be scalar");
 	}
-	return *((T*) mxGetData(numeric<T>(arr)));
+	// target, source
+	return boost::numeric_cast<N, M>(*static_cast<M*>(mxGetData(numeric<M>(arr))));
 }
 
 
+
+/* Return vector from a numeric 1 x m array provided by Matlab. M and N refers
+ * to Matlab and Nemo types, rather than array dimensions. */
 template<typename N, typename M>
 std::vector<N> // let's hope the compiler can optimise the return...
 vector(const mxArray* arr)
@@ -87,16 +94,13 @@ vector(const mxArray* arr)
 				"argument should be 1 x m vector. Size is %u x %u",
 				mxGetM(arr), mxGetN(arr));
 	}
-	if(!mxIsNumeric(arr)) {
-		mexErrMsgIdAndTxt("nemo:api", "argument should be numeric\n");
-	}
-	//! \todo check that the M is as expected
+
 	size_t length = mxGetN(arr);
 	std::vector<N> ret;
-	M* begin = static_cast<M*>(mxGetData(arr));
+	M* begin = static_cast<M*>(mxGetData(numeric<M>(arr)));
 	std::transform(begin, begin + length,
 			std::back_inserter(ret),
-			boost::numeric_cast<M, N>);
+			boost::numeric_cast<N, M>);
 	return ret;
 }
 
@@ -152,7 +156,7 @@ template<class T>
 uint32_t
 getHandleId(std::vector<T*> collection, const mxArray* prhs[], unsigned argno)
 {
-	uint32_t id = scalar<uint32_t>(prhs[argno]);
+	uint32_t id = scalar<uint32_t, uint32_t>(prhs[argno]);
 	if(id >= collection.size()) {
 		mexErrMsgIdAndTxt("nemo:mex", "%s handle id %u out of bounds (%u items)", 
 				collectionName<T>().c_str(), id, collection.size());
@@ -350,7 +354,8 @@ getSynapses(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	const std::vector<unsigned char>* plastic;
 
 	try {
-		getSimulation(prhs, 1)->getSynapses(scalar<uint32_t>(prhs[2]),
+		getSimulation(prhs, 1)->getSynapses(
+				scalar<unsigned, uint32_t>(prhs[2]),
 				&targets, &delays, &weights, &plastic);
 	} catch (std::exception& e) {     
 		mexErrMsgIdAndTxt("nemo:backend", e.what());
@@ -369,14 +374,14 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	checkInputCount(nrhs, 8);
 	try {
 		getNetwork(prhs, 1)->addNeuron(
-			scalar<uint32_t>(prhs[2]),
-			scalar<double>(prhs[3]),
-			scalar<double>(prhs[4]),
-			scalar<double>(prhs[5]),
-			scalar<double>(prhs[6]),
-			scalar<double>(prhs[7]),
-			scalar<double>(prhs[8]),
-			scalar<double>(prhs[9]));
+			scalar<unsigned,uint32_t>(prhs[2]),
+			scalar<float,double>(prhs[3]),
+			scalar<float,double>(prhs[4]),
+			scalar<float,double>(prhs[5]),
+			scalar<float,double>(prhs[6]),
+			scalar<float,double>(prhs[7]),
+			scalar<float,double>(prhs[8]),
+			scalar<float,double>(prhs[9]));
 	} catch (std::exception& e) {
 		mexErrMsgIdAndTxt("nemo:backend", e.what());
 	}
@@ -391,11 +396,11 @@ addSynapse(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	checkInputCount(nrhs, 5);
 	try {
 		getNetwork(prhs, 1)->addSynapse(
-			scalar<uint32_t>(prhs[2]),
-			scalar<uint32_t>(prhs[3]),
-			scalar<uint32_t>(prhs[4]),
-			scalar<double>(prhs[5]),
-			scalar<uint8_t>(prhs[6]));
+			scalar<unsigned,uint32_t>(prhs[2]),
+			scalar<unsigned,uint32_t>(prhs[3]),
+			scalar<unsigned,uint32_t>(prhs[4]),
+			scalar<float,double>(prhs[5]),
+			scalar<unsigned char,uint8_t>(prhs[6]));
 	} catch (std::exception& e) {
 		mexErrMsgIdAndTxt("nemo:backend", e.what());
 	}
@@ -410,7 +415,7 @@ addSynapses(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	checkInputCount(nrhs, 5);
 	try {
 		getNetwork(prhs, 1)->addSynapses(
-			scalar<uint32_t>(prhs[2]),
+			scalar<unsigned,uint32_t>(prhs[2]),
 			vector<unsigned, uint32_t>(prhs[3]),
 			vector<unsigned, uint32_t>(prhs[4]),
 			vector<float, double>(prhs[5]),
@@ -456,7 +461,7 @@ applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkInputCount(nrhs, 1);
 	try {
-		getSimulation(prhs, 1)->applyStdp(scalar<double>(prhs[2]));
+		getSimulation(prhs, 1)->applyStdp(scalar<float,double>(prhs[2]));
 	} catch (std::exception& e) {
 		mexErrMsgIdAndTxt("nemo:backend", e.what());
 	}
@@ -526,7 +531,7 @@ setCudaFiringBufferLength(int nlhs, mxArray* plhs[], int nrhs, const mxArray* pr
 {
 	checkInputCount(nrhs, 1);
 	try {
-		getConfiguration(prhs, 1)->setCudaFiringBufferLength(scalar<uint32_t>(prhs[2]));
+		getConfiguration(prhs, 1)->setCudaFiringBufferLength(scalar<unsigned,uint32_t>(prhs[2]));
 	} catch (std::exception& e) {
 		mexErrMsgIdAndTxt("nemo:backend", e.what());
 	}
@@ -554,7 +559,7 @@ setCudaDevice(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkInputCount(nrhs, 1);
 	try {
-		getConfiguration(prhs, 1)->setCudaDevice(scalar<int32_t>(prhs[2]));
+		getConfiguration(prhs, 1)->setCudaDevice(scalar<int,int32_t>(prhs[2]));
 	} catch (std::exception& e) {
 		mexErrMsgIdAndTxt("nemo:backend", e.what());
 	}
@@ -571,8 +576,8 @@ setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		getConfiguration(prhs, 1)->setStdpFunction(
 			vector<float, double>(prhs[2]),
 			vector<float, double>(prhs[3]),
-			scalar<double>(prhs[4]),
-			scalar<double>(prhs[5]));
+			scalar<float,double>(prhs[4]),
+			scalar<float,double>(prhs[5]));
 	} catch (std::exception& e) {
 		mexErrMsgIdAndTxt("nemo:backend", e.what());
 	}
@@ -616,7 +621,7 @@ void
 mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	/* The first argument specifies the function */
-	uint32_t fn_idx = scalar<uint32_t>(prhs[0]);
+	uint32_t fn_idx = scalar<uint32_t, uint32_t>(prhs[0]);
 	if(fn_idx >= FN_COUNT || fn_idx < 0) {
 		mexErrMsgIdAndTxt("nemo:mex", "Unknown function index %u", fn_idx);
 	}
