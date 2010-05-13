@@ -89,7 +89,6 @@ class Simulation : public nemo::Simulation
 
 		void finishSimulation();
 
-#ifdef INCLUDE_TIMING_API
 		/*
 		 * TIMING
 		 */
@@ -100,7 +99,6 @@ class Simulation : public nemo::Simulation
 
 		/*! Reset both wall-clock and simulation timer */
 		void resetTimer();
-#endif
 
 		static unsigned defaultPartitionSize();
 		static unsigned defaultFiringBufferLength();

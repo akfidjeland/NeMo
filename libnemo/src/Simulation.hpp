@@ -122,7 +122,6 @@ class DLL_PUBLIC Simulation
 
 		/* \} */ // end simulation (queries) section
 
-#ifdef INCLUDE_TIMING_API
 		/*! \name Simulation (timing)
 		 *
 		 * The simulation has two internal timers which keep track of the
@@ -148,10 +147,11 @@ class DLL_PUBLIC Simulation
 		void stepTimer();
 
 		/* \} */ // end simulation (timing) section
+
 	private :
 
+#ifdef INCLUDE_TIMING_API
 		class Timer* m_timer;
-
 #endif
 
 	protected :

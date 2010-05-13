@@ -45,20 +45,25 @@ Simulation::~Simulation()
 }
 
 
-#ifdef INCLUDE_TIMING_API
-
 
 void
 Simulation::stepTimer()
 {
+#ifdef INCLUDE_TIMING_API
 	m_timer->step();
+#endif
 }
+
 
 
 unsigned long
 Simulation::elapsedWallclock() const
 {
+#ifdef INCLUDE_TIMING_API
 	return m_timer->elapsedWallclock();
+#else
+	throw std::runtime_error("elapsedWallclock is not supported in this version");
+#endif
 }
 
 
@@ -66,7 +71,11 @@ Simulation::elapsedWallclock() const
 unsigned long
 Simulation::elapsedSimulation() const
 {
+#ifdef INCLUDE_TIMING_API
 	return m_timer->elapsedSimulation();
+#else
+	throw std::runtime_error("elapsedSimulation is not supported in this version");
+#endif
 }
 
 
@@ -74,9 +83,10 @@ Simulation::elapsedSimulation() const
 void
 Simulation::resetTimer()
 {
+#ifdef INCLUDE_TIMING_API
 	m_timer->reset();
+#endif
 }
 
-#endif
 
 } // end namespace nemo

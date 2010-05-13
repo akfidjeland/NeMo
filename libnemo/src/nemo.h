@@ -303,6 +303,8 @@ nemo_get_synapses(nemo_simulation_t,
  *
  * \{ */
 
+//! \todo change to using output arguments and return status instead.
+
 /*! \copydoc nemo::Network::elapsedWallclock */
 DLL_PUBLIC
 unsigned long nemo_elapsed_wallclock(nemo_simulation_t);
