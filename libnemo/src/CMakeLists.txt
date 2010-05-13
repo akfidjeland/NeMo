@@ -28,6 +28,7 @@ IF(CUDA_BUILD_EMULATION)
 	ADD_DEFINITIONS(-D__DEVICE_EMULATION__)
 ENDIF()
 
+# TODO: use the definition that's automatically used by CMake
 ADD_DEFINITIONS(-DBUILDING_DLL)
 
 
@@ -75,6 +76,18 @@ ENDIF(NOT HAVE_STDINT_H AND NOT WIN32)
 
 ##############################################################################
 SET(BUILD_SHARED_LIBS TRUE)
+
+# Statically link against MSVC runtime
+IF(MSVC)
+	FOREACH(flag_var
+		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+		CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+		IF(${flag_var} MATCHES "/MD")
+			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+		ENDIF(${flag_var} MATCHES "/MD")
+	ENDFOREACH(flag_var)
+ENDIF(MSVC)
+
 
 
 CUDA_ADD_LIBRARY(nemo
