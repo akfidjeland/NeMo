@@ -1,3 +1,23 @@
+% nemoSimulation
+%  
+% A simulation is created from a network and a configuration object.
+% The simulation is run by stepping through it, providing stimulus as
+% appropriate. The firing data can be read back separately (using
+% readFiring) from a firing buffer which is maintained within the
+% simulation itself. In the current version, some care must be taken
+% to avoid overflowing this buffer.
+%  
+% Methods:
+%     nemoSimulation (constructor)
+%     step
+%     applyStdp
+%     readFiring
+%     flushFiringBuffer
+%     getSynapses
+%     elapsedWallclock
+%     elapsedSimulation
+%     resetTimer
+%   
 classdef nemoSimulation < handle
 
 	properties
@@ -38,11 +58,12 @@ classdef nemoSimulation < handle
 
 		function applyStdp(obj, reward)
         % applyStdp - Update synapse weights using the accumulated STDP statistics
-        %
-        % Inputs:
-        %    reward - Multiplier for the accumulated weight change
-        %
-
+        %  
+        % Synopsis:
+        %   applyStdp(reward)
+        %  
+        % Inputs: reward  - Multiplier for the accumulated weight change
+        %   
 			nemo_mex(uint32(9), obj.id, double(reward));
 		end
 		function fired = readFiring(obj)
@@ -56,14 +77,16 @@ classdef nemoSimulation < handle
 
 		function flushFiringBuffer(obj)
         % flushFiringBuffer - 
-        %
-        %
+        %  
+        % Synopsis:
+        %   flushFiringBuffer()
+        %  
+        %  
         % If the user is not reading back firing, the firing output buffers
         % should be flushed to avoid buffer overflow. The overflow is not
         % harmful in that no memory accesses take place outside the buffer,
         % but an overflow may result in later calls to readFiring returning
-        % non-sensical results.
-
+        % non-sensical results. 
 			nemo_mex(uint32(11), obj.id);
 		end
 		% getSynapses - return synapse data for a single neuron
@@ -93,25 +116,31 @@ classdef nemoSimulation < handle
 
 		function elapsed = elapsedWallclock(obj)
         % elapsedWallclock - 
-        %
-        %
-
+        %  
+        % Synopsis:
+        %   elapsedWallclock()
+        %  
+        %   
 			elapsed = nemo_mex(uint32(13), obj.id);
 		end
 
 		function elapsed = elapsedSimulation(obj)
         % elapsedSimulation - 
-        %
-        %
-
+        %  
+        % Synopsis:
+        %   elapsedSimulation()
+        %  
+        %   
 			elapsed = nemo_mex(uint32(14), obj.id);
 		end
 
 		function resetTimer(obj)
         % resetTimer - reset both wall-clock and simulation timer
-        %
-        %
-
+        %  
+        % Synopsis:
+        %   resetTimer()
+        %  
+        %   
 			nemo_mex(uint32(15), obj.id);
 		end
 	end
