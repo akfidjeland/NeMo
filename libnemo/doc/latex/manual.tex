@@ -126,6 +126,8 @@ Builds via cygwin or msys/mingw have not been tested.
 
 \section{Usage}
 
+\subsection{General}
+
 Both the C++ and C interfaces follow the same general usage pattern:
 
 \begin{enumerate}
@@ -152,6 +154,29 @@ Most functions return a value of type \code{nemo\_status\_t},
 
 The header files \file{nemo.hpp} and \file{nemo.h} document the API functions in more detail.
 The files in the example directory in the distribution shows how to use the library.
+
+\subsection{Matlab}
+
+The Matlab interface closely mirrors the underlying C++ interface.
+The three objects nemoNetwork, nemoConfiguration and nemoSimulation corresponds
+to the relevant C++ objects,
+	and provides the same methods,
+	with only small variations in usage.
+The class methods are documented using Matlabs help system,
+	i.e. via calls such as \code{help nemoNetwork} and \code{help addNeuron}.
+
+Errors in the simulation backend result in Matlab errors,
+	(i.e. as when \code{error} is called in a script).
+
+The Matlab path must contain the directory with the m-files defining the three classes and the MEX
+library that interfaces with libnemo.
+On Windows this directory defaults to \file{C:\textbackslash Program Files\textbackslash nemo-<version>\textbackslash Matlab},
+and on Linux to \file{/usr/share/nemo/matlab}.
+Use \code{addpath} from within Matlab to set the path.
+
+Additionally, the nemo library and the CUDA runtime library needs to be on the
+system path (which is different from the Matlab path).
+If this is not the case Matlab will issue a rather unhelpful message about the MEX-file being invalid.
 
 \subsection{Simulation model}
 
