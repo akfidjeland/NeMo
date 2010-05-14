@@ -70,7 +70,6 @@ class DLL_PUBLIC Network
 				float weight,
 				unsigned char plastic);
 
-		//! \todo remove addSynapses from this interface use addSynape only
 		//! \todo change from uchar to bool
 		/*! Add to the network a group of synapses with the same presynaptic neuron
 		 *

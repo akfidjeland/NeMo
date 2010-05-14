@@ -69,7 +69,11 @@ Network::addSynapses(
 
 	if(length != delays.size() || length != weights.size() || length != plastic.size()) {
 		std::ostringstream msg;
-		msg << "Synapse vector length mismatch for neuron " << source;
+		msg << "The input vectors to addSynapses (for neuron " << source << ") have different lengths\n"
+			<< "\ttargets: " << targets.size() << std::endl
+			<< "\tdelays: " << delays.size() << std::endl
+			<< "\tweights: " << weights.size() << std::endl
+			<< "\tplastic: " << plastic.size() << std::endl;
 		throw std::runtime_error(msg.str());
 	}
 
