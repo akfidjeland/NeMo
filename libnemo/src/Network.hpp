@@ -96,6 +96,18 @@ class DLL_PUBLIC Network
 				const std::vector<float>& weights,
 				const std::vector<unsigned char>& plastic);
 
+		/* lower-level interface using raw C arrays. This is mainly intended
+		 * for use in foreign language interfaces such as C and Mex, where
+		 * constructing std::vectors would be redundant. */
+		template<typename N, typename D, typename W, typename B>
+		void addSynapses(
+				N source,
+				const N targets[],
+				const D delays[],
+				const W weights[],
+				const B plastic[],
+				size_t len);
+
 		nidx_t maxSourceIdx() const { return m_maxSourceIdx; }
 		delay_t maxDelay() const { return m_maxDelay; }
 		weight_t maxWeight() const { return m_maxWeight; }
@@ -125,6 +137,7 @@ class DLL_PUBLIC Network
 		friend class cuda::NeuronParameters;
 		friend class cuda::ThalamicInput;
 };
+
 
 } // end namespace nemo
 #endif

@@ -11,6 +11,7 @@
 
 #include <stdexcept>
 #include <sstream>
+#include <boost/numeric/conversion/cast.hpp>
 
 namespace nemo {
 
@@ -83,6 +84,40 @@ Network::addSynapses(
 
 	for(size_t i=0; i < length; ++i) {
 		addSynapse(source, targets[i], delays[i], weights[i], plastic[i]);
+	}
+}
+
+
+template
+void
+Network::addSynapses<unsigned, unsigned, float, unsigned char>(
+		unsigned, const unsigned[], const unsigned[], const float[], const unsigned char[], size_t);
+
+
+
+template<typename N, typename D, typename W, typename B>
+void
+Network::addSynapses(
+		N source,
+		const N targets[],
+		const D delays[],
+		const W weights[],
+		const B plastic[],
+		size_t length)
+{
+	using namespace boost;
+
+	if(length == 0) {
+		return;
+	}
+
+	for(size_t i=0; i < length; ++i) {
+		addSynapse(
+				numeric_cast<unsigned, N>(source),
+				numeric_cast<unsigned, N>(targets[i]),
+				numeric_cast<unsigned, D>(delays[i]),
+				numeric_cast<float, W>(weights[i]),
+				numeric_cast<unsigned char, B>(plastic[i]));
 	}
 }
 
