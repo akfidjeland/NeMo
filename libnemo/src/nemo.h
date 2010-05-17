@@ -141,6 +141,17 @@ nemo_add_neuron(nemo_network_t,
 //! \todo add documentation on the possible failure codes
 
 
+/* Add a single synapse to network */
+DLL_PUBLIC
+nemo_status_t
+nemo_add_synapse(nemo_network_t,
+		unsigned source,
+		unsigned target,
+		unsigned delay,
+		float weight,
+		unsigned char is_plastic);
+
+
 /*! Add to the network a group of synapses with the same presynaptic neuron
  *
  * \param source

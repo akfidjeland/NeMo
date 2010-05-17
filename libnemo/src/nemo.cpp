@@ -142,6 +142,19 @@ nemo_add_neuron(nemo_network_t net,
 
 
 nemo_status_t
+nemo_add_synapse(nemo_network_t net,
+		unsigned source,
+		unsigned target,
+		unsigned delay,
+		float weight,
+		unsigned char is_plastic)
+{
+	CATCH_(Network, net, addSynapse(source, target, delay, weight, is_plastic));
+}
+
+
+
+nemo_status_t
 nemo_add_synapses(nemo_network_t net,
 		unsigned source,
 		unsigned targets[],
