@@ -56,92 +56,105 @@ classdef nemoSimulation < handle
 		end
 
 
-		function applyStdp(obj, reward)
+        function applyStdp(obj, reward)
         % applyStdp - Update synapse weights using the accumulated STDP statistics
         %  
         % Synopsis:
         %   applyStdp(reward)
         %  
-        % Inputs: reward  - Multiplier for the accumulated weight change
-        %   
-			nemo_mex(uint32(9), obj.id, double(reward));
-		end
-		function fired = readFiring(obj)
-		% readFiring - return all buffered firing data
-		%
-		% Outputs:
-		%   fired - 2 x n matrix where each row consist of a (cycle, neuron_index) pair. 
-		    fired = nemo_mex(uint32(10), obj.id)
+        % Inputs:
+        %   reward  - Multiplier for the accumulated weight change
+        %     
+            nemo_mex(uint32(9), obj.id, double(reward));
 		end
 
+        function [cycles, nidx] = readFiring(obj)
+        % readFiring - read all buffered firing data
+        %  
+        % Synopsis:
+        %   [cycles, nidx] = readFiring()
+        %  
+        % Outputs:
+        %   cycles  - Cycles during which firings took place
+        %   nidx    - Neurons which fired
+        %    
+        % Firing data is buffered in the simulation while the simulation is
+        % running. readFiring reads all the data that has been buffered since
+        % the previous call to this function (or the start of the simulation
+        % of this is the first call. The return vectors are valid until the
+        % next call to this function. 
+            [cycles, nidx] = nemo_mex(uint32(10), obj.id);
+		end
 
-		function flushFiringBuffer(obj)
+        function flushFiringBuffer(obj)
         % flushFiringBuffer - 
         %  
         % Synopsis:
         %   flushFiringBuffer()
-        %  
         %  
         % If the user is not reading back firing, the firing output buffers
         % should be flushed to avoid buffer overflow. The overflow is not
         % harmful in that no memory accesses take place outside the buffer,
         % but an overflow may result in later calls to readFiring returning
         % non-sensical results. 
-			nemo_mex(uint32(11), obj.id);
-		end
-		% getSynapses - return synapse data for a single neuron
-		%
-		% Synopsis:
-		%
-		%	[targets, delays, weights, plastic] = getSynapses(source)
-		%
-		% Input:
-		%   source - index of source neuron
-		%
-		% Outputs:
-		%	targets - indices of target neurons
-		%	delays - conductance delay for each synapse
-		%	weights
-		%	plastic - per-neuron boolean specifying whether synapse is static. 
-		%
-		% The order of synapses returned by this function will almost certainly differ
-		% from the order in which they were specified during network construction.
-		% However, each call to getSynapses should return the synapses in the same
-		% order.
-		
-		function [targets, delays, weights, plastic] = getSynapses(obj, source)
-			[targets, delays, weights, plastic] = nemo_mex(uint32(12), obj.id, uint32(source));
+            nemo_mex(uint32(11), obj.id);
 		end
 
+        function [targets, delays, weights, plastic] = getSynapses(obj, source)
+        % getSynapses - return synapses for a single neuron
+        %  
+        % Synopsis:
+        %   [targets, delays, weights, plastic] = getSynapses(source)
+        %  
+        % Inputs:
+        %   source  - index of source neuron
+        %    
+        % Outputs:
+        %   targets - indices of target neurons
+        %   delays  - conductance delay for each synapse
+        %   weights -
+        %   plastic - per-neuron boolean specifying whether synapse is static
+        %    
+        % The order of synapses returned by this function will almost
+        % certainly differ from the order in which they were specified during
+        % network construction. However, each call to getSynapses should
+        % return the synapses in the same order. 
+            [targets, delays, weights, plastic] = nemo_mex(uint32(12), obj.id, uint32(source));
+		end
 
-		function elapsed = elapsedWallclock(obj)
+        function elapsed = elapsedWallclock(obj)
         % elapsedWallclock - 
         %  
         % Synopsis:
-        %   elapsedWallclock()
+        %   elapsed = elapsedWallclock()
         %  
-        %   
-			elapsed = nemo_mex(uint32(13), obj.id);
+        % Outputs:
+        %   elapsed - Return number of milliseconds of wall-clock time elapsed
+        %             since first simulation step (or last timer reset)
+        %     
+            elapsed = nemo_mex(uint32(13), obj.id);
 		end
 
-		function elapsed = elapsedSimulation(obj)
+        function elapsed = elapsedSimulation(obj)
         % elapsedSimulation - 
         %  
         % Synopsis:
-        %   elapsedSimulation()
+        %   elapsed = elapsedSimulation()
         %  
-        %   
-			elapsed = nemo_mex(uint32(14), obj.id);
+        % Outputs:
+        %   elapsed - Return number of milliseconds of simulation time elapsed
+        %             since first simulation step (or last timer reset)
+        %     
+            elapsed = nemo_mex(uint32(14), obj.id);
 		end
 
-		function resetTimer(obj)
+        function resetTimer(obj)
         % resetTimer - reset both wall-clock and simulation timer
         %  
         % Synopsis:
         %   resetTimer()
-        %  
         %   
-			nemo_mex(uint32(15), obj.id);
+            nemo_mex(uint32(15), obj.id);
 		end
 	end
 end
