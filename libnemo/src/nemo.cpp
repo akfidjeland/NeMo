@@ -169,6 +169,14 @@ nemo_add_synapses(nemo_network_t net,
 
 
 nemo_status_t
+nemo_neuron_count(nemo_network_t net, unsigned* ncount)
+{
+	CATCH(Network, net, neuronCount(), *ncount);
+}
+
+
+
+nemo_status_t
 nemo_get_synapses(nemo_simulation_t ptr,
 		unsigned source,
 		unsigned* targets_[],

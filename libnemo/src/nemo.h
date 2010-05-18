@@ -189,6 +189,11 @@ nemo_add_synapses(nemo_network_t,
 		size_t length);
 
 
+DLL_PUBLIC
+nemo_status_t
+nemo_neuron_count(nemo_network_t net, unsigned* ncount);
+
+
 /* \} */ // end construction group
 
 
