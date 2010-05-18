@@ -273,10 +273,10 @@ nemo_elapsed_simulation(nemo_simulation_t sim, unsigned long* elapsed)
 
 
 
-void
+nemo_status_t
 nemo_reset_timer(nemo_simulation_t sim)
 {
-	NOCATCH(Simulation, sim, resetTimer());
+	CATCH_(Simulation, sim, resetTimer());
 }
 
 #endif

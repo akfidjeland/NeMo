@@ -329,7 +329,7 @@ nemo_status_t nemo_elapsed_simulation(nemo_simulation_t, unsigned long*);
 
 /*! \copydoc nemo::Network::resetTimer */
 DLL_PUBLIC
-void nemo_reset_timer(nemo_simulation_t);
+nemo_status_t nemo_reset_timer(nemo_simulation_t);
 
 /* \} */ // end timing section
 
