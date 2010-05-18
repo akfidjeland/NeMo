@@ -306,7 +306,7 @@ nemo_enable_stdp(nemo_configuration_t conf,
 
 
 nemo_status_t
-nemo_set_firing_buffer_length(nemo_configuration_t conf, unsigned cycles)
+nemo_set_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned cycles)
 {
 	CATCH_(Configuration, conf, setCudaFiringBufferLength(cycles));
 }
@@ -314,7 +314,7 @@ nemo_set_firing_buffer_length(nemo_configuration_t conf, unsigned cycles)
 
 
 nemo_status_t
-nemo_get_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
+nemo_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
 {
 	CATCH(Configuration, conf, cudaFiringBufferLength(), *cycles);
 }
