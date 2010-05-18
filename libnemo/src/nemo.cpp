@@ -297,11 +297,9 @@ nemo_reset_timer(nemo_simulation_t sim)
 
 
 nemo_status_t
-nemo_enable_stdp(nemo_configuration_t conf,
-		float* pre_fn,
-		size_t pre_len,
-		float* post_fn,
-		size_t post_len,
+nemo_set_stdp_function(nemo_configuration_t conf,
+		float* pre_fn, size_t pre_len,
+		float* post_fn, size_t post_len,
 		float w_min,
 		float w_max)
 {

@@ -90,8 +90,10 @@ Network::addSynapses(
 
 template
 void
-Network::addSynapses<unsigned, unsigned, float, unsigned char>(
-		unsigned, const unsigned[], const unsigned[], const float[], const unsigned char[], size_t);
+Network::addSynapses<unsigned, unsigned, float, unsigned char>(unsigned,
+		const unsigned[], const unsigned[], const float[],
+		const unsigned char[], size_t);
+
 
 
 

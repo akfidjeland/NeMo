@@ -76,11 +76,9 @@ nemo_status_t nemo_log_stdout(nemo_configuration_t);
  */
 DLL_PUBLIC
 nemo_status_t
-nemo_enable_stdp(nemo_configuration_t,
-		float prefire_fn[],
-		size_t prefire_len,
-		float postfire_fn[],
-		size_t postfire_len,
+nemo_set_stdp_function(nemo_configuration_t,
+		float prefire_fn[], size_t prefire_len,
+		float postfire_fn[], size_t postfire_len,
 		float min_weight,
 		float max_weight);
 
