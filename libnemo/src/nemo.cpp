@@ -329,6 +329,13 @@ nemo_set_cuda_partition_size(nemo_configuration_t conf, unsigned size)
 
 
 
+nemo_status_t
+nemo_set_cuda_device(nemo_configuration_t conf, int dev)
+{
+	CATCH_(Configuration, conf, setCudaDevice(dev));
+}
+
+
 const char*
 nemo_strerror()
 {
