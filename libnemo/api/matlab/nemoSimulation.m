@@ -36,7 +36,7 @@ classdef nemoSimulation < handle
 		end
 
 		function delete(obj)
-			nemo_mex(uint32(7), obj.id);
+			nemo(uint32(7), obj.id);
 		end
 		% step - run simulation for a single cycle (1ms)
 		%
@@ -65,7 +65,7 @@ classdef nemoSimulation < handle
         % Inputs:
         %   reward  - Multiplier for the accumulated weight change
         %     
-            nemo_mex(uint32(9), obj.id, double(reward));
+            nemo(uint32(9), obj.id, double(reward));
 		end
 
         function [cycles, nidx] = readFiring(obj)
@@ -83,7 +83,7 @@ classdef nemoSimulation < handle
         % the previous call to this function (or the start of the simulation
         % of this is the first call. The return vectors are valid until the
         % next call to this function. 
-            [cycles, nidx] = nemo_mex(uint32(10), obj.id);
+            [cycles, nidx] = nemo(uint32(10), obj.id);
 		end
 
         function flushFiringBuffer(obj)
@@ -97,7 +97,7 @@ classdef nemoSimulation < handle
         % harmful in that no memory accesses take place outside the buffer,
         % but an overflow may result in later calls to readFiring returning
         % non-sensical results. 
-            nemo_mex(uint32(11), obj.id);
+            nemo(uint32(11), obj.id);
 		end
 
         function [targets, delays, weights, plastic] = getSynapses(obj, source)
@@ -119,7 +119,7 @@ classdef nemoSimulation < handle
         % certainly differ from the order in which they were specified during
         % network construction. However, each call to getSynapses should
         % return the synapses in the same order. 
-            [targets, delays, weights, plastic] = nemo_mex(uint32(12), obj.id, uint32(source));
+            [targets, delays, weights, plastic] = nemo(uint32(12), obj.id, uint32(source));
 		end
 
         function elapsed = elapsedWallclock(obj)
@@ -132,7 +132,7 @@ classdef nemoSimulation < handle
         %   elapsed - Return number of milliseconds of wall-clock time elapsed
         %             since first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(13), obj.id);
+            elapsed = nemo(uint32(13), obj.id);
 		end
 
         function elapsed = elapsedSimulation(obj)
@@ -145,7 +145,7 @@ classdef nemoSimulation < handle
         %   elapsed - Return number of milliseconds of simulation time elapsed
         %             since first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(14), obj.id);
+            elapsed = nemo(uint32(14), obj.id);
 		end
 
         function resetTimer(obj)
@@ -154,7 +154,7 @@ classdef nemoSimulation < handle
         % Synopsis:
         %   resetTimer()
         %   
-            nemo_mex(uint32(15), obj.id);
+            nemo(uint32(15), obj.id);
 		end
 	end
 end
