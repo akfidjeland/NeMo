@@ -257,19 +257,18 @@ nemo_log_stdout(nemo_configuration_t conf)
 
 #ifdef INCLUDE_TIMING_API
 
-//! \todo set status here as well, return data via pointer
-unsigned long
-nemo_elapsed_wallclock(nemo_simulation_t sim)
+nemo_status_t
+nemo_elapsed_wallclock(nemo_simulation_t sim, unsigned long* elapsed)
 {
-	return NOCATCH(Simulation, sim, elapsedWallclock());
+	CATCH(Simulation, sim, elapsedWallclock(), *elapsed);
 }
 
 
 
-unsigned long
-nemo_elapsed_simulation(nemo_simulation_t sim)
+nemo_status_t
+nemo_elapsed_simulation(nemo_simulation_t sim, unsigned long* elapsed)
 {
-	return NOCATCH(Simulation, sim, elapsedWallclock());
+	CATCH(Simulation, sim, elapsedSimulation(), *elapsed);
 }
 
 

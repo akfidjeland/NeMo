@@ -181,10 +181,6 @@ nemo_add_synapses(nemo_network_t,
 		unsigned char is_plastic[],
 		size_t length);
 
-/*! Delete network object, freeing up all its associated resources */
-DLL_PUBLIC
-void nemo_delete_network(nemo_network_t);
-
 
 /* \} */ // end construction group
 
@@ -318,11 +314,11 @@ nemo_get_synapses(nemo_simulation_t,
 
 /*! \copydoc nemo::Network::elapsedWallclock */
 DLL_PUBLIC
-unsigned long nemo_elapsed_wallclock(nemo_simulation_t);
+nemo_status_t nemo_elapsed_wallclock(nemo_simulation_t, unsigned long*);
 
 /*! \copydoc nemo::Network::elapsedSimulation */
 DLL_PUBLIC
-unsigned long nemo_elapsed_simulation(nemo_simulation_t);
+nemo_status_t nemo_elapsed_simulation(nemo_simulation_t, unsigned long*);
 
 /*! \copydoc nemo::Network::resetTimer */
 DLL_PUBLIC
@@ -361,13 +357,18 @@ const char* nemo_strerror();
 
 
 
-
 /*! \name Finalization
  * \{ */
 
-/*! Delete configuration object, freeing up all its associated resources */
+
+/*! Delete network object, freeing up all its associated resources */
+DLL_PUBLIC
+void nemo_delete_network(nemo_network_t);
+
+
 DLL_PUBLIC
 void nemo_delete_configuration(nemo_configuration_t);
+
 
 /*! Delete simulation object, freeing up all its associated resources */
 DLL_PUBLIC
