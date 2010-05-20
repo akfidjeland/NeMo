@@ -310,7 +310,6 @@ nemo_get_synapses(nemo_simulation_t,
 // TIMERS
 //-----------------------------------------------------------------------------
 
-#ifdef INCLUDE_TIMING_API
 
 /*! \name Simulation (timing)
  *
@@ -335,10 +334,6 @@ DLL_PUBLIC
 nemo_status_t nemo_reset_timer(nemo_simulation_t);
 
 /* \} */ // end timing section
-
-#endif
-
-
 
 
 

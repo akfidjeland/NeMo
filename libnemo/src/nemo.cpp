@@ -263,7 +263,6 @@ nemo_log_stdout(nemo_configuration_t conf)
 }
 
 
-#ifdef INCLUDE_TIMING_API
 
 nemo_status_t
 nemo_elapsed_wallclock(nemo_simulation_t sim, unsigned long* elapsed)
@@ -286,8 +285,6 @@ nemo_reset_timer(nemo_simulation_t sim)
 {
 	CATCH_(Simulation, sim, resetTimer());
 }
-
-#endif
 
 
 
