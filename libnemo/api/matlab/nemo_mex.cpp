@@ -208,59 +208,6 @@ getHandle(std::vector<void*>& collection, const mxArray* prhs[], unsigned argno)
 
 
 
-void
-freeNetworks()
-{
-	for(std::vector<nemo_network_t>::iterator i = g_networks.begin();
-			i != g_networks.end(); ++i) {
-		if(*i != NULL) {
-			nemo_delete_network(*i);
-		}
-	}
-	g_networks.clear();
-}
-
-
-
-void
-freeConfigurations()
-{
-	for(std::vector<nemo_configuration_t>::iterator i = g_configs.begin();
-			i != g_configs.end(); ++i) {
-		if(*i != NULL) {
-			nemo_delete_configuration(*i);
-		}
-	}
-	g_configs.clear();
-}
-
-
-
-void
-freeSimulations()
-{
-	for(std::vector<nemo_simulation_t>::iterator i = g_sims.begin();
-			i != g_sims.end(); ++i) {
-		if(*i != NULL) {
-			nemo_delete_simulation(*i);
-		}
-	}
-	g_sims.clear();
-}
-
-
-
-
-void
-freeGlobals()
-{
-	freeNetworks();
-	freeConfigurations();
-	freeSimulations();
-}
-
-
-
 nemo_network_t
 getNetwork(const mxArray* prhs[], unsigned argno)
 {
@@ -291,7 +238,6 @@ newNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	uint32_t id = g_networks.size();
 	nemo_network_t net = nemo_new_network();
 	g_networks.push_back(net);
-	mexAtExit(freeGlobals);
 	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
 }
 
@@ -316,7 +262,6 @@ newConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	uint32_t id = g_configs.size();
 	nemo_configuration_t conf = nemo_new_configuration();
 	g_configs.push_back(conf);
-	mexAtExit(freeGlobals);
 	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
 }
 
@@ -348,7 +293,6 @@ newSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		mexErrMsgIdAndTxt("nemo:backend", "failed to create simulation: %s", nemo_strerror());
 	}
 	g_sims.push_back(sim);	
-	mexAtExit(freeGlobals);
 	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
 }
 
