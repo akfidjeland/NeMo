@@ -234,6 +234,10 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 void
 ConnectivityMatrix::moveRcmToDevice(const WarpAddressTable& wtable)
 {
+	if(m_rsynapses.size() == 0) {
+		return;
+	}
+
 	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
 		i->second->moveToDevice(wtable, i->first);
 	}
