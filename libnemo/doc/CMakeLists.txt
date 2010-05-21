@@ -3,7 +3,7 @@
 ##############################################################################
 
 # Users shouldn't normally need to build to documentation themselves.
-OPTION(REBUILD_API_DOCS "Rebuild API documentation" OFF)
+OPTION(DOC_REBUILD_MANPAGES "Rebuild API documentation (man pages)" OFF)
 
 SUBDIRS(latex)
 
@@ -15,7 +15,7 @@ SET(GENERATED_MAN_PAGES
 )
 
 
-IF(REBUILD_API_DOCS)
+IF(DOC_REBUILD_MANPAGES)
 	FIND_PACKAGE(Doxygen)
 
 	IF(DOXYGEN_FOUND)
@@ -96,7 +96,7 @@ IF(REBUILD_API_DOCS)
 
 	ENDIF(DOXYGEN_FOUND)
 
-ELSE(REBUILD_API_DOCS)
+ELSE(DOC_REBUILD_MANPAGES)
 
 	# The generated documentation should already be present in the source tree.
 	# Copy it into the build tree.
@@ -111,7 +111,7 @@ ELSE(REBUILD_API_DOCS)
 		VERBATIM
 	)
 
-ENDIF(REBUILD_API_DOCS)
+ENDIF(DOC_REBUILD_MANPAGES)
 
 
 # Always create API documentation
