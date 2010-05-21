@@ -55,6 +55,16 @@ INCLUDE_DIRECTORIES(
   )
 
 
+IF(INCLUDE_TIMING_API)
+	IF(NOT Boost_LIBRARY_DIRS)
+		MESSAGE(WARNING "Boost_LIBRARY_DIRS is not set, which may cause linker errors. Either set this variable or set BOOST_ROOT")
+	ELSE(NOT Boost_LIBRARY_DIRS)
+		LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
+	ENDIF(NOT Boost_LIBRARY_DIRS)
+ENDIF(INCLUDE_TIMING_API)
+
+
+
 # We need shared memory atomics
 SET(CUDA_NVCC_FLAGS "-arch=sm_12")
 
