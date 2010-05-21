@@ -28,7 +28,7 @@ FiringOutput::FiringOutput(
 	m_pitch(0),
 	m_partitionCount(partitionCount),
 	m_bufferedCycles(0),
-    m_maxReadPeriod(maxReadPeriod),
+	m_maxReadPeriod(maxReadPeriod),
 	md_allocated(0),
 	m_partitionSize(partitionSize)
 {

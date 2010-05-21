@@ -364,7 +364,19 @@ ENDMACRO()
 # CUDA_LIBRARIES
 IF (NOT CUDA_LIBRARIES)
 
+  # From Cuda 3.0 emulation requires linking against a separate library.
+  # FindCuda does not give us access to the version number, but we can assume
+  # that if cudartemu exists, we should use it.
   FIND_LIBRARY_LOCAL_FIRST(FOUND_CUDART cudart "\"cudart\" library")
+  IF (CUDA_BUILD_EMULATION)
+	  # It seems that looking for cudartemu returns cudart
+	  #FIND_LIBRARY_LOCAL_FIRST(FOUND_CUDART cudartemu "\"cudartemu\" library")
+	  FIND_LIBRARY_LOCAL_FIRST(FOUND_CUDART cudart "\"cudart\" library")
+	  STRING(REGEX REPLACE "cudart" "cudartemu" CUDARTEMU ${FOUND_CUDART})
+	  IF(EXISTS ${CUDARTEMU})
+		SET(FOUND_CUDART ${CUDARTEMU})
+	  ENDIF(EXISTS ${CUDARTEMU})
+  ENDIF (CUDA_BUILD_EMULATION)
 
   # Check to see if cudart library was found.
   IF(NOT FOUND_CUDART)

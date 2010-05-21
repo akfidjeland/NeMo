@@ -222,12 +222,12 @@ updateRegion(
 		if(dt_pre < dt_post) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow - 1 - dt_pre];
 #if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
-			dt_log = -dt_pre;
+			dt_log = -int(dt_pre);
 #endif
 		} else if(dt_post < dt_pre) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow+dt_post];
 #if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
-			dt_log = dt_post;
+			dt_log = int(dt_post);
 #endif
 		}
 		// if neither is applicable dt_post == dt_pre
