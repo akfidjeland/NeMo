@@ -10,7 +10,7 @@ TARGET_LINK_LIBRARIES(torus nemo)
 ADD_EXECUTABLE(random1k random1k.cpp sim_runner.cpp)
 TARGET_LINK_LIBRARIES(random1k nemo)
 
-SET(INSTALL_FILES torus.cpp sim_runner.cpp)
+SET(INSTALL_FILES torus.cpp random1k.cpp sim_runner.cpp)
 
 IF(UNIX)
 	INSTALL(FILES ${INSTALL_FILES} DESTINATION share/nemo/examples)
