@@ -9,6 +9,7 @@
 
 #include "fixedpoint.hpp"
 
+#include <cstdlib>
 #include <stdexcept>
 #include <sstream>
 
