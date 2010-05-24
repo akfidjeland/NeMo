@@ -49,8 +49,9 @@ CUDA_INCLUDE_DIRECTORIES(
 # C++ only includes
 INCLUDE_DIRECTORIES(
 	${CUDA_INCLUDE_DIRS}
+	${CMAKE_SOURCE_DIR}/include
+	${CMAKE_BINARY_DIR}/include # for configuration files
 	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_BINARY_DIR} # for configuration files
 	${Boost_INCLUDE_DIR}	
   )
 
@@ -131,31 +132,13 @@ CUDA_ADD_LIBRARY(nemo
 CUDA_BUILD_CLEAN_TARGET()
 
 
-
-
-# On windows just put everyting in one directory
-IF(WIN32)
-	SET(INSTALL_INCLUDE_DIR .)
-	SET(INSTALL_LIB_DIR .)
-ELSE(WIN32)
-	SET(INSTALL_INCLUDE_DIR include/nemo)
-	SET(INSTALL_LIB_DIR lib)
-ENDIF(WIN32)
-
-
 INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
 INSTALL(FILES nemo.h
 			Network.hpp
 			Configuration.hpp
-			Simulation.hpp
 			STDP.hpp
 			STDP.ipp
 			nemo.hpp
 			types.hpp
 			types.h
-			${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h
 		DESTINATION ${INSTALL_INCLUDE_DIR})
-
-CONFIGURE_FILE(
-	${CMAKE_CURRENT_SOURCE_DIR}/nemo_config.h.in
-	${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h)
