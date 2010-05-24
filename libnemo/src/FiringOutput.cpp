@@ -62,9 +62,9 @@ FiringOutput::step()
 	uint32_t* ret = md_buffer + m_bufferedCycles * m_partitionCount * m_pitch;
 	m_bufferedCycles += 1;
 	if(m_bufferedCycles > m_maxReadPeriod) {
-		fprintf(stderr, "WARNING: firing buffer overflow. Firing buffer flushed\n");
 		m_bufferedCycles = 0;
 		ret = md_buffer;
+		throw std::runtime_error("Firing buffer overflow");
 	}
 	return ret;
 }

@@ -94,10 +94,7 @@ classdef nemoSimulation < handle
         %   flushFiringBuffer()
         %  
         % If the user is not reading back firing, the firing output buffers
-        % should be flushed to avoid buffer overflow. The overflow is not
-        % harmful in that no memory accesses take place outside the buffer,
-        % but an overflow may result in later calls to readFiring returning
-        % non-sensical results. 
+        % should be flushed to avoid buffer overflow. 
             nemo_mex(uint32(11), obj.id);
 		end
 
