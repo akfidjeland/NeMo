@@ -8,23 +8,35 @@ SET(CPACK_PACKAGE_VERSION_MINOR 5)
 SET(CPACK_PACKAGE_VERSION_PATCH 3)
 SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
 
-# Boost libraries
+
+OPTION(
+	INCLUDE_TIMING_API
+	"Include API functions for timing (requires boost_date_time library)"
+	ON
+)
+
+IF(INCLUDE_TIMING_API)
+	LIST(APPEND BOOST_COMPONENTS date_time)
+ENDIF(INCLUDE_TIMING_API)
+
+
+OPTION(INCLUDE_EXAMPLES "Build binaries for example networks" ON)
+IF(INCLUDE_EXAMPLES)
+	LIST(APPEND DIRS examples)
+ENDIF(INCLUDE_EXAMPLES)
+
+
+OPTION(INCLUDE_TESTS "Build testsuite" OFF)
+IF(INCLUDE_TESTS)
+	LIST(APPEND DIRS test)
+ENDIF(INCLUDE_TESTS)
+
+
 SET(Boost_USE_MULTITHREAD OFF)
-FIND_PACKAGE(Boost REQUIRED)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
-SUBDIRS(src doc api)
+SUBDIRS(src doc api ${DIRS})
 
-OPTION(INCLUDE_TIMING_API "Include API functions for timing (may require boost::date_time library)" ON)
-
-OPTION(CREATE_EXAMPLES "Build binaries for example networks" ON)
-IF(CREATE_EXAMPLES)
-	SUBDIRS(examples)
-ENDIF(CREATE_EXAMPLES)
-
-OPTION(CREATE_TESTS "Build testsuite" OFF)
-IF(CREATE_TESTS)
-	SUBDIRS(test)
-ENDIF(CREATE_TESTS)
 
 SET(CPACK_SOURCE_GENERATOR "TGZ" "ZIP")
 
