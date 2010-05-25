@@ -6,6 +6,7 @@
 #cmakedefine HAVE_BUILTIN_CTZLL
 #cmakedefine HAVE_LOG2
 #cmakedefine INCLUDE_TIMING_API
+#cmakedefine INCLUDE_MPI
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef BUILDING_DLL
