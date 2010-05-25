@@ -16,7 +16,7 @@
 #include "DeviceIdx.hpp"
 #include "kernel.cu_h"
 #include "except.hpp"
-#include "Network.hpp"
+#include "NetworkImpl.hpp"
 #include "cuda_types.h"
 #include "kernel.hpp"
 
@@ -25,7 +25,7 @@ namespace nemo {
 	namespace cuda {
 
 
-NeuronParameters::NeuronParameters(const nemo::Network& net, const Mapper& mapper) :
+NeuronParameters::NeuronParameters(const nemo::NetworkImpl& net, const Mapper& mapper) :
 	m_allocated(0),
 	m_wpitch(0)
 {

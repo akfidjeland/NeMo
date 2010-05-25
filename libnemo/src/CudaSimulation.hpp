@@ -25,7 +25,7 @@
 
 namespace nemo {
 
-	class Network;
+	class NetworkImpl;
 
 	namespace cuda {
 
@@ -33,7 +33,7 @@ class Simulation : public nemo::Simulation
 {
 	public :
 
-		Simulation(const nemo::Network& net, const nemo::Configuration& conf=Configuration());
+		Simulation(const nemo::NetworkImpl& net, const nemo::Configuration& conf=Configuration());
 
 		~Simulation();
 

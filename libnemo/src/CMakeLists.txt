@@ -114,6 +114,7 @@ CUDA_ADD_LIBRARY(nemo
 	Incoming.cpp
 	NeuronParameters.cpp
 	Network.cpp
+	NetworkImpl.cpp
 	Simulation.cpp
 	Outgoing.cpp
 	RSMatrix.cpp
@@ -134,7 +135,6 @@ CUDA_BUILD_CLEAN_TARGET()
 
 INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
 INSTALL(FILES nemo.h
-			Network.hpp
 			Configuration.hpp
 			STDP.hpp
 			STDP.ipp

@@ -7,8 +7,9 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Simulation.hpp"
+#include <Simulation.hpp>
 #include "CudaSimulation.hpp"
+#include <Network.hpp>
 #ifdef INCLUDE_TIMING_API
 #include "Timer.hpp"
 #endif
@@ -24,7 +25,7 @@ Simulation::create(const Network& net, const Configuration& conf)
 		return NULL;
 	}
 	int dev = cuda::Simulation::selectDevice();
-	return dev == -1 ? NULL : new cuda::Simulation(net, conf);
+	return dev == -1 ? NULL : new cuda::Simulation(*(net.m_impl), conf);
 }
 
 

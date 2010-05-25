@@ -1,42 +1,23 @@
-/* Copyright 2010 Imperial College London
- *
- * This file is part of nemo.
- *
- * This software is licenced for non-commercial academic use under the GNU
- * General Public Licence (GPL). You should have received a copy of this
- * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include "Network.hpp"
-
-#include <stdexcept>
-#include <sstream>
-#include <boost/numeric/conversion/cast.hpp>
+#include <NetworkImpl.hpp>
 
 namespace nemo {
 
-
-Network::Network() :
-	m_maxSourceIdx(0),
-	m_maxDelay(0),
-	m_maxWeight(0),
-	m_minWeight(0)
-{ }
+Network::Network():
+	m_impl(new NetworkImpl())
+{
+	;
+}
 
 
 void
-Network::addNeuron(unsigned nidx,
+Network::addNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	if(m_neurons.find(nidx) != m_neurons.end()) {
-		std::ostringstream msg;
-		msg << "Duplicate neuron index for neuron " << nidx;
-		throw std::runtime_error(msg.str());
-	}
-	m_neurons[nidx] = Neuron<float>(a, b, c, d, u, v, sigma);
+	//! \todo could use internal network type here
+	m_impl->addNeuron(idx, a, b, c, d, u, v, sigma);
 }
-
 
 
 void
@@ -47,15 +28,8 @@ Network::addSynapse(
 		float weight,
 		unsigned char plastic)
 {
-	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
-
-	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix
-	m_maxSourceIdx = std::max(m_maxSourceIdx, source);
-	m_maxDelay = std::max(m_maxDelay, delay);
-	m_maxWeight = std::max(m_maxWeight, weight);
-	m_minWeight = std::min(m_minWeight, weight);
+	m_impl->addSynapse(source, target, delay, weight, plastic);
 }
-
 
 
 void
@@ -66,26 +40,9 @@ Network::addSynapses(
 		const std::vector<float>& weights,
 		const std::vector<unsigned char>& plastic)
 {
-	size_t length = targets.size();
-
-	if(length != delays.size() || length != weights.size() || length != plastic.size()) {
-		std::ostringstream msg;
-		msg << "The input vectors to addSynapses (for neuron " << source << ") have different lengths\n"
-			<< "\ttargets: " << targets.size() << std::endl
-			<< "\tdelays: " << delays.size() << std::endl
-			<< "\tweights: " << weights.size() << std::endl
-			<< "\tplastic: " << plastic.size() << std::endl;
-		throw std::runtime_error(msg.str());
-	}
-
-    if(length == 0) {
-        return;
-	}
-
-	for(size_t i=0; i < length; ++i) {
-		addSynapse(source, targets[i], delays[i], weights[i], plastic[i]);
-	}
+	m_impl->addSynapses(source, targets, delays, weights, plastic);	
 }
+
 
 
 template
@@ -93,8 +50,6 @@ void
 Network::addSynapses<unsigned, unsigned, float, unsigned char>(unsigned,
 		const unsigned[], const unsigned[], const float[],
 		const unsigned char[], size_t);
-
-
 
 
 template<typename N, typename D, typename W, typename B>
@@ -107,28 +62,41 @@ Network::addSynapses(
 		const B plastic[],
 		size_t length)
 {
-	using namespace boost;
-
-	if(length == 0) {
-		return;
-	}
-
-	for(size_t i=0; i < length; ++i) {
-		addSynapse(
-				numeric_cast<unsigned, N>(source),
-				numeric_cast<unsigned, N>(targets[i]),
-				numeric_cast<unsigned, D>(delays[i]),
-				numeric_cast<float, W>(weights[i]),
-				numeric_cast<unsigned char, B>(plastic[i]));
-	}
+	m_impl->addSynapses<N, D, W, B>(source,
+			targets, delays, weights, plastic, length);
 }
 
 
 
 unsigned
-Network::neuronCount() const
+Network::maxDelay() const 
 {
-	return m_neurons.size();
+	return m_impl->maxDelay(); 
 }
 
+
+
+float
+Network::maxWeight() const
+{ 
+	return m_impl->maxWeight();
 }
+
+
+
+float
+Network::minWeight() const
+{ 
+	return m_impl->minWeight(); 
+}
+
+
+
+unsigned 
+Network::neuronCount() const
+{
+	return m_impl->neuronCount();
+}
+
+
+} // end namespace nemo

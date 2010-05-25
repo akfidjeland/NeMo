@@ -1,5 +1,7 @@
 
 INSTALL(FILES 
+		Configuration.hpp
+		Network.hpp
 		Simulation.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h
 	DESTINATION ${INSTALL_INCLUDE_DIR}
