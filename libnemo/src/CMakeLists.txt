@@ -105,6 +105,7 @@ CUDA_ADD_LIBRARY(nemo
 	kernel.cu
 	nemo.cpp
 	Configuration.cpp
+	ConfigurationImpl.cpp
 	ConnectivityMatrix.cpp
 	CudaSimulation.cpp
 	CycleCounters.cpp
@@ -135,7 +136,6 @@ CUDA_BUILD_CLEAN_TARGET()
 
 INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
 INSTALL(FILES nemo.h
-			Configuration.hpp
 			STDP.hpp
 			STDP.ipp
 			nemo.hpp

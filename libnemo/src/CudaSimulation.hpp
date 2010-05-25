@@ -15,7 +15,7 @@
 #include <nemo_config.h>
 #include "DeviceIdx.hpp"
 #include "NVector.hpp"
-#include "Configuration.hpp"
+#include "ConfigurationImpl.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "DeviceAssertions.hpp"
 #include "NeuronParameters.hpp"
@@ -33,7 +33,7 @@ class Simulation : public nemo::Simulation
 {
 	public :
 
-		Simulation(const nemo::NetworkImpl& net, const nemo::Configuration& conf=Configuration());
+		Simulation(const nemo::NetworkImpl& net, const nemo::ConfigurationImpl& conf = nemo::ConfigurationImpl());
 
 		~Simulation();
 
@@ -107,7 +107,7 @@ class Simulation : public nemo::Simulation
 
 		Mapper m_mapper;
 
-		nemo::Configuration m_conf;
+		nemo::ConfigurationImpl m_conf;
 
 		uint32_t* setFiringStimulus(const std::vector<unsigned>& nidx);
 

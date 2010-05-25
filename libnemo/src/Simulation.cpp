@@ -10,6 +10,7 @@
 #include <Simulation.hpp>
 #include "CudaSimulation.hpp"
 #include <Network.hpp>
+#include <Configuration.hpp>
 #ifdef INCLUDE_TIMING_API
 #include "Timer.hpp"
 #endif
@@ -25,7 +26,7 @@ Simulation::create(const Network& net, const Configuration& conf)
 		return NULL;
 	}
 	int dev = cuda::Simulation::selectDevice();
-	return dev == -1 ? NULL : new cuda::Simulation(*(net.m_impl), conf);
+	return dev == -1 ? NULL : new cuda::Simulation(*net.m_impl, *conf.m_impl);
 }
 
 

@@ -16,7 +16,6 @@
 #include <fstream>
 #include <assert.h>
 
-#include "Configuration.hpp"
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
 #include "FiringOutput.hpp"
@@ -38,7 +37,7 @@ namespace nemo {
 
 Simulation::Simulation(
 		const nemo::NetworkImpl& net,
-		const nemo::Configuration& conf) :
+		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net, conf.cudaPartitionSize()),
 	m_conf(conf),
 	m_partitionCount(0),
