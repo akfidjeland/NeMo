@@ -1,5 +1,7 @@
 
 INSTALL(FILES 
+		nemo.h
+		nemo.hpp
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp

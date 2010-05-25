@@ -135,10 +135,3 @@ CUDA_BUILD_CLEAN_TARGET()
 
 
 INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
-INSTALL(FILES nemo.h
-			STDP.hpp
-			STDP.ipp
-			nemo.hpp
-			types.hpp
-			types.h
-		DESTINATION ${INSTALL_INCLUDE_DIR})
