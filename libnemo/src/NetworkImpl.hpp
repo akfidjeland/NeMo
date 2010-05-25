@@ -33,6 +33,8 @@ class NetworkImpl
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
+		void addNeuron(nidx_t nidx, const Neuron<float>&);
+
 		void addSynapse(
 				unsigned source,
 				unsigned target,

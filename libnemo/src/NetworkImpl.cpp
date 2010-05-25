@@ -29,13 +29,21 @@ NetworkImpl::addNeuron(unsigned nidx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	m_maxSourceIdx = std::max(m_maxSourceIdx, int(nidx));
+	addNeuron(nidx, Neuron<float>(a, b, c, d, u, v, sigma));
+}
+
+
+
+void
+NetworkImpl::addNeuron(nidx_t nidx, const Neuron<float>& n)
+{
 	if(m_neurons.find(nidx) != m_neurons.end()) {
 		std::ostringstream msg;
 		msg << "Duplicate neuron index for neuron " << nidx;
 		throw std::runtime_error(msg.str());
 	}
-	m_neurons[nidx] = Neuron<float>(a, b, c, d, u, v, sigma);
+	m_maxSourceIdx = std::max(m_maxSourceIdx, int(nidx));
+	m_neurons[nidx] = n;
 }
 
 
