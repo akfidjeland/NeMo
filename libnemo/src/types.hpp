@@ -67,7 +67,7 @@ class Neuron
 
 
 template<typename I, typename W>
-class Synapse
+class AxonTerminal
 {
 	public :
 
@@ -76,9 +76,9 @@ class Synapse
 		//! \todo change to bool?
 		unsigned char plastic;
 
-		Synapse() : target(0), weight(0.0f), plastic(false) { }
+		AxonTerminal() : target(0), weight(0.0f), plastic(false) { }
 
-		Synapse(I t, W w, unsigned char p) : target(t), weight(w), plastic(p) {}
+		AxonTerminal(I t, W w, unsigned char p) : target(t), weight(w), plastic(p) {}
 
 	private :
 #ifdef INCLUDE_MPI
@@ -95,17 +95,17 @@ class Synapse
 
 
 
-//! \todo change names to Synapse and AxonTerminal
 template<typename I, typename D, typename W>
-class FullSynapse
+class Synapse
 {
 	public :
 
 		I source;
 		D delay;
-		Synapse<I, W> terminal;
+		AxonTerminal<I, W> terminal;
 
 	private :
+
 #ifdef INCLUDE_MPI
 		friend class boost::serialization::access;
 
@@ -115,7 +115,6 @@ class FullSynapse
 			ar & delay;
 			ar & terminal;
 		}
-
 #endif
 };
 

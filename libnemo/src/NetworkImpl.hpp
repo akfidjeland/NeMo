@@ -74,7 +74,7 @@ class NetworkImpl
 		typedef nemo::Neuron<weight_t> neuron_t;
 		std::map<nidx_t, neuron_t> m_neurons;
 
-		typedef Synapse<nidx_t, weight_t> synapse_t;
+		typedef AxonTerminal<nidx_t, weight_t> synapse_t;
 		typedef std::vector<synapse_t> bundle_t;
 		typedef std::map<delay_t, bundle_t> axon_t;
 		typedef std::map<nidx_t, axon_t> fcm_t;
