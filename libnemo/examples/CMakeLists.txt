@@ -1,5 +1,4 @@
 INCLUDE_DIRECTORIES(
-	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_BINARY_DIR}/include # for configuration files
 	${Boost_INCLUDE_DIR})
