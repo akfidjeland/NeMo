@@ -8,6 +8,9 @@
 
 namespace nemo {
 
+namespace mpi {
+	class Master;
+}
 class Simulation;
 
 /*! Networks are constructed by adding individual neurons, and single or groups
@@ -109,6 +112,7 @@ class DLL_PUBLIC Network
 	private :
 
 		friend class nemo::Simulation;
+		friend class nemo::mpi::Master;
 
 		class NetworkImpl* m_impl;
 };

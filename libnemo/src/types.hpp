@@ -100,6 +100,11 @@ class Synapse
 {
 	public :
 
+		Synapse() : source(0), delay(0) {}
+
+		Synapse(I source, D delay, const AxonTerminal<I, W>& terminal) :
+			source(source), delay(delay), terminal(terminal) { }
+
 		I source;
 		D delay;
 		AxonTerminal<I, W> terminal;
@@ -118,9 +123,6 @@ class Synapse
 #endif
 };
 
-
-
-
-};
+} // end namespace nemo
 
 #endif

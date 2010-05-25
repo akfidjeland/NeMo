@@ -13,6 +13,7 @@
  */
 
 #include "nemo_config.h"
+#include <ostream>
 #include <vector>
 
 
