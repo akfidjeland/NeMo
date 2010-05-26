@@ -58,7 +58,7 @@ Worker::Worker(boost::mpi::communicator& world) :
 		}
 	}
 
-	//! \todo exchange connectivity between nodes now
+	exchangeGlobalData(g_ss);
 
 	m_world.barrier();
 
@@ -99,6 +99,24 @@ Worker::addSynapseVector(const Mapper& mapper,
 			g_ss[targetRank].push_back(*i);
 			mg_scount++;
 		}
+	}
+}
+
+
+
+void
+Worker::exchangeGlobalData(global_fcm_t& g_ss)
+{
+	for(rank_t targetOffset = 1; targetOffset < m_world.size() - 1; ++targetOffset) {
+		/* We need to send something to all targets, so just use default-
+		 * constructed entry if nothing is present */
+		rank_t source = 1 + ((m_rank - 1 + (m_world.size() - 1) - targetOffset) % (m_world.size() - 1));
+		rank_t target = 1 + ((m_rank - 1 + targetOffset) % (m_world.size() - 1));
+		m_world.isend(target, SYNAPSE_VECTOR, g_ss[target]);
+		g_ss.erase(target);
+		m_ss.clear();
+		m_world.irecv(source, SYNAPSE_VECTOR, m_ss);
+		//! \todo do something with this data
 	}
 }
 

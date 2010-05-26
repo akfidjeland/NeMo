@@ -50,6 +50,8 @@ class Worker
 		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net, global_fcm_t&);
 		void addNeuron(nemo::NetworkImpl& net);
 
+		void exchangeGlobalData(global_fcm_t& g_ss);
+
 		boost::mpi::communicator m_world;
 
 		rank_t m_rank;
