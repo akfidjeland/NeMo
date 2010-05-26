@@ -41,11 +41,13 @@ Worker::Worker(boost::mpi::communicator& world) :
 	nemo::NetworkImpl net;
 	int buf;
 
+	global_fcm_t g_ss;
+
 	while(!constructionDone) {
 		boost::mpi::status msg = m_world.probe();
 		switch(msg.tag()) {
 			case NEURON_SCALAR: addNeuron(net); break;
-			case SYNAPSE_VECTOR: addSynapseVector(mapper, net); break;
+			case SYNAPSE_VECTOR: addSynapseVector(mapper, net, g_ss); break;
 			case END_CONSTRUCTION: 
 				world.recv(MASTER, END_CONSTRUCTION, buf);
 				constructionDone = true;
@@ -56,7 +58,6 @@ Worker::Worker(boost::mpi::communicator& world) :
 		}
 	}
 
-	//! \todo now split net into local and global networks. Just strip net in-place.
 	//! \todo exchange connectivity between nodes now
 
 	m_world.barrier();
@@ -79,12 +80,13 @@ Worker::addNeuron(nemo::NetworkImpl& net)
 
 
 void
-Worker::addSynapseVector(const Mapper& mapper, nemo::NetworkImpl& net)
+Worker::addSynapseVector(const Mapper& mapper,
+		nemo::NetworkImpl& net,
+		global_fcm_t& g_ss)
 {
 	m_ss.clear();
 	m_world.recv(MASTER, SYNAPSE_VECTOR, m_ss);
-	for(std::vector<Synapse<unsigned, unsigned, float> >::const_iterator i = m_ss.begin();
-			i != m_ss.end(); ++i) {
+	for(std::vector<synapse_t>::const_iterator i = m_ss.begin(); i != m_ss.end(); ++i) {
 		const AxonTerminal<unsigned, float>& t = i->terminal;
 		int targetRank = mapper.rankOf(t.target);
 		if(targetRank == m_rank) {
@@ -94,8 +96,8 @@ Worker::addSynapseVector(const Mapper& mapper, nemo::NetworkImpl& net)
 		} else {
 			m_targets.insert(t.target);
 			m_fcm[i->source].insert(t.target);
+			g_ss[targetRank].push_back(*i);
 			mg_scount++;
-			//! \todo store L2 synapses on a per-rank basis for later exchange
 		}
 	}
 }

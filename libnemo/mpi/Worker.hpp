@@ -31,17 +31,26 @@ class Worker
 
 	private:
 
+		typedef int rank_t;
+
+		typedef Synapse<unsigned, unsigned, float> synapse_t;
+
+		/* Most of the data for the global synapses will be stored at the node
+		 * where the target neuron is processed. We need to build up the collection
+		 * of these synapses and later send these to the target node.
+		 *
+		 * We could potentially interleave this with the other construction */
+		typedef std::map<rank_t, std::vector<synapse_t> > global_fcm_t;
+
 		//! \todo add a local simulation here
 
 		/* Buffer for incoming data */
-		std::vector<Synapse<unsigned, unsigned, float> > m_ss;
+		std::vector<synapse_t> m_ss;
 		
-		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net);
+		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net, global_fcm_t&);
 		void addNeuron(nemo::NetworkImpl& net);
 
 		boost::mpi::communicator m_world;
-
-		typedef int rank_t;
 
 		rank_t m_rank;
 
