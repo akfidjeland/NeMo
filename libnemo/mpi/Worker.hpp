@@ -11,6 +11,7 @@
  */
 
 #include <vector>
+#include <set>
 #include <boost/mpi/communicator.hpp>
 #include <types.hpp>
 
@@ -35,11 +36,24 @@ class Worker
 		/* Buffer for incoming data */
 		std::vector<Synapse<unsigned, unsigned, float> > m_ss;
 		
-		void addSynapseVector(nemo::NetworkImpl& net, const Mapper&);
+		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net);
+		void addNeuron(nemo::NetworkImpl& net);
 
 		boost::mpi::communicator m_world;
 
-		int m_rank;
+		typedef int rank_t;
+
+		rank_t m_rank;
+
+		/* All the ranks with which this worker should synchronise every simulation cycle */
+		std::set<rank_t> m_targets;
+
+		/* The specific source firings we should send */
+		std::map<nidx_t, std::set<rank_t> > m_fcm;
+
+		unsigned ml_scount;
+		unsigned mg_scount;
+		unsigned m_ncount;
 };
 
 	}
