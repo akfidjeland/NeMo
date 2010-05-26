@@ -28,8 +28,12 @@ void addNeuron(boost::mpi::communicator& world, nemo::NetworkImpl& net);
 
 
 Worker::Worker(boost::mpi::communicator& world) :
-	m_world(world)
+	m_world(world),
+	m_rank(world.rank())
 {
+	int workers = m_world.size() - 1;
+	Mapper mapper(workers);
+
 	bool constructionDone = false;
 	nemo::NetworkImpl net;
 	int buf;
@@ -38,7 +42,7 @@ Worker::Worker(boost::mpi::communicator& world) :
 		boost::mpi::status msg = m_world.probe();
 		switch(msg.tag()) {
 			case NEURON_SCALAR: addNeuron(m_world, net); break;
-			case SYNAPSE_VECTOR: addSynapseVector(net); break;
+			case SYNAPSE_VECTOR: addSynapseVector(net, mapper); break;
 			case END_CONSTRUCTION: 
 				world.recv(MASTER, END_CONSTRUCTION, buf);
 				constructionDone = true;
@@ -67,15 +71,18 @@ addNeuron(boost::mpi::communicator& world, nemo::NetworkImpl& net)
 
 
 void
-Worker::addSynapseVector(nemo::NetworkImpl& net)
+Worker::addSynapseVector(nemo::NetworkImpl& net, const Mapper& mapper)
 {
 	m_ss.clear();
 	m_world.recv(MASTER, SYNAPSE_VECTOR, m_ss);
 	for(std::vector<Synapse<unsigned, unsigned, float> >::const_iterator i = m_ss.begin();
 			i != m_ss.end(); ++i) {
 		const AxonTerminal<unsigned, float>& t = i->terminal;
-		//! \todo add alternative addSynapse method which uses AxonTerminal directly
-		net.addSynapse(i->source, t.target, i->delay, t.weight, t.plastic);
+		int targetRank = mapper.rankOf(t.target);
+		if(targetRank == m_rank) {
+			//! \todo add alternative addSynapse method which uses AxonTerminal directly
+			net.addSynapse(i->source, t.target, i->delay, t.weight, t.plastic);
+		}
 	}
 }
 

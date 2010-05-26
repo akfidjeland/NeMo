@@ -20,6 +20,8 @@ namespace nemo {
 
 	namespace mpi {
 
+	class Mapper;
+
 class Worker
 {
 	public:
@@ -33,9 +35,11 @@ class Worker
 		/* Buffer for incoming data */
 		std::vector<Synapse<unsigned, unsigned, float> > m_ss;
 		
-		void addSynapseVector(nemo::NetworkImpl& net);
+		void addSynapseVector(nemo::NetworkImpl& net, const Mapper&);
 
 		boost::mpi::communicator m_world;
+
+		int m_rank;
 };
 
 	}
