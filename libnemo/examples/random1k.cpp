@@ -12,6 +12,7 @@
 
 typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
+typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 namespace nemo {
 	namespace random1k {
@@ -33,16 +34,21 @@ addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 
 
 void
-addExcitatorySynapses(nemo::Network* net, unsigned source, unsigned ncount, urng_t& rweight)
+addExcitatorySynapses(nemo::Network* net,
+		unsigned source,
+		unsigned ncount,
+		unsigned scount,
+		uirng_t& rtarget,
+		urng_t& rweight)
 {
-	std::vector<unsigned> targets(ncount, 0U);
-	std::vector<unsigned> delays(ncount, 1U);
-	std::vector<float> weights(ncount, 0.0f);
-	std::vector<unsigned char> isPlastic(ncount, 0);
+	std::vector<unsigned> targets(scount, 0U);
+	std::vector<unsigned> delays(scount, 1U);
+	std::vector<float> weights(scount, 0.0f);
+	std::vector<unsigned char> isPlastic(scount, 0);
 
-	for(unsigned target = 0; target < 1000; ++target) {
-		targets.at(target) = target;
-		weights.at(target) = 0.5f * float(rweight());
+	for(unsigned s = 0; s < scount; ++s) {
+		targets.at(s) = rtarget();
+		weights.at(s) = 0.5f * float(rweight());
 	}
 
 	net->addSynapses(source, targets, delays, weights, isPlastic);
@@ -67,16 +73,21 @@ addInhibitoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 
 
 void
-addInhibitorySynapses(nemo::Network* net, unsigned source, unsigned ncount, urng_t& rweight)
+addInhibitorySynapses(nemo::Network* net,
+		unsigned source,
+		unsigned ncount,
+		unsigned scount,
+		uirng_t& rtarget,
+		urng_t& rweight)
 {
-	std::vector<unsigned> targets(ncount, 0);
-	std::vector<unsigned> delays(ncount, 1U);
-	std::vector<float> weights(ncount, 0.0f);
-	std::vector<unsigned char> isPlastic(ncount, 0);
+	std::vector<unsigned> targets(scount, 0);
+	std::vector<unsigned> delays(scount, 1U);
+	std::vector<float> weights(scount, 0.0f);
+	std::vector<unsigned char> isPlastic(scount, 0);
 
-	for(unsigned target = 0; target < ncount; ++target) {
-		targets.at(target) = target;
-		weights.at(target) = float(-rweight());
+	for(unsigned s = 0; s < scount; ++s) {
+		targets.at(s) = rtarget();
+		weights.at(s) = float(-rweight());
 	}
 
 	net->addSynapses(source, targets, delays, weights, isPlastic);
@@ -86,21 +97,22 @@ addInhibitorySynapses(nemo::Network* net, unsigned source, unsigned ncount, urng
 
 
 nemo::Network*
-construct(unsigned ncount)
+construct(unsigned ncount, unsigned scount)
 {
 	rng_t rng;
 	/* Neuron parameters and weights are partially randomised */
 	urng_t randomParameter(rng, boost::uniform_real<double>(0, 1));
+	uirng_t randomTarget(rng, boost::uniform_int<>(0, ncount-1));
 
 	nemo::Network* net = new nemo::Network();
 
 	for(unsigned nidx=0; nidx < ncount; ++nidx) {
 		if(nidx < (ncount * 4) / 5) { // excitatory
 			addExcitatoryNeuron(net, nidx, randomParameter);
-			addExcitatorySynapses(net, nidx, ncount, randomParameter);
+			addExcitatorySynapses(net, nidx, ncount, scount, randomTarget, randomParameter);
 		} else { // inhibitory
 			addInhibitoryNeuron(net, nidx, randomParameter);
-			addInhibitorySynapses(net, nidx, ncount, randomParameter);
+			addInhibitorySynapses(net, nidx, ncount, scount, randomTarget, randomParameter);
 		}
 	}
 	return net;
@@ -122,8 +134,9 @@ main(int argc, char* argv[])
 	}
 
 	unsigned ncount = 1000;
+	unsigned scount = 1000;
 
-	nemo::Network* net = nemo::random1k::construct(ncount);
+	nemo::Network* net = nemo::random1k::construct(ncount, scount);
 	nemo::Configuration conf;
 	conf.setCudaPartitionSize(psize);
 	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);

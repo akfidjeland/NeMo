@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
 	unsigned sigma = 16;
 
 	// only need to create the network once
-	nemo::Network* net = nemo::random1k::construct(1000);
+	nemo::Network* net = nemo::random1k::construct(1000, 1000);
 	runComparisions(net);
 	delete net;
 }
