@@ -1,5 +1,5 @@
-#ifndef EXCEPT_HPP
-#define EXCEPT_HPP
+#ifndef NEMO_CUDA_EXCEPT_HPP
+#define NEMO_CUDA_EXCEPT_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -14,39 +14,41 @@
 #include <sstream>
 
 #include <cuda_runtime.h>
+#include <boost/format.hpp>
 
-class DeviceAllocationException : public std::exception
+#include <exception.hpp>
+#include <nemo_error.h>
+
+namespace nemo {
+	namespace cuda {
+
+using boost::format;
+
+class DeviceAllocationException : public nemo::exception
 {
 	public :
 
 		DeviceAllocationException(const char* structname,
 				size_t bytes,
-				cudaError err)
-		{
-			std::ostringstream msg;
-			msg << "Failed to allocate " << bytes
-				<< " B for " << structname << std::endl
-				<< "CUDA error: " << cudaGetErrorString(err) << std::endl;
-			m_msg = msg.str();
-		}
-
-		~DeviceAllocationException() throw () {}
-
-		const char* what() const throw () { return m_msg.c_str(); }
-
-	private :
-
-		std::string m_msg;
+				cudaError err) :
+			nemo::exception(NEMO_CUDA_MEMORY_ERROR,
+					str(format("Failed to allocate %uB for %s.\nCuda error: %s\n")
+						% bytes % structname % cudaGetErrorString(err)))
+		{}
 };
 
 
-class KernelInvocationError : public std::runtime_error
+class KernelInvocationError : public nemo::exception
 {
 	public :
-
 		KernelInvocationError(cudaError_t status) :
-			std::runtime_error(cudaGetErrorString(status)) {}
+			nemo::exception(
+					NEMO_CUDA_INVOCATION_ERROR,
+					cudaGetErrorString(status)) {}
 };
+
+	} // end namespace cuda
+} // end namespace nemo
 
 
 #define CUDA_SAFE_CALL(call) {                                             \

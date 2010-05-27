@@ -9,11 +9,14 @@
 
 #include "DeviceAssertions.hpp"
 
-#include <sstream>
 #include <cuda_runtime.h>
+#include <boost/format.hpp>
 
 #include "device_assert.cu_h"
 #include "kernel.cu_h"
+
+namespace nemo {
+	namespace cuda {
 
 
 DeviceAssertions::DeviceAssertions(unsigned partitionCount) :
@@ -31,7 +34,7 @@ DeviceAssertions::DeviceAssertions(unsigned partitionCount) :
 
 
 void
-DeviceAssertions::check(unsigned cycle) throw (DeviceAssertionFailure)
+DeviceAssertions::check(unsigned cycle) throw (nemo::exception)
 {
 #ifdef DEVICE_ASSERTIONS
 	int* h_mem = &mh_mem[0];
@@ -41,7 +44,8 @@ DeviceAssertions::check(unsigned cycle) throw (DeviceAssertionFailure)
 		for(unsigned thread=0; thread < THREADS_PER_BLOCK; ++thread) {
 			int line = h_mem[assertion_offset(partition, thread)];
 			if(line != 0) {
-				throw DeviceAssertionFailure(partition, thread, line, cycle);
+				throw nemo::exception(str(format("Device assertion failure for partition %u thread %u in line %u during cycle %u. Only the first assertion failure is reported and the exact file is not known")
+					% partition % thread % line % cycle));
 			}
 		}
 	}
@@ -49,17 +53,5 @@ DeviceAssertions::check(unsigned cycle) throw (DeviceAssertionFailure)
 	return;
 }
 
-
-
-DeviceAssertionFailure::DeviceAssertionFailure(unsigned partition,
-		unsigned thread, unsigned line, unsigned cycle)
-{
-	std::ostringstream msg;
-	msg << "Device assertion failure for partition "
-		<< partition << " thread " << thread << " in line "
-		<< line << " during cycle " << cycle
-		<< ". Only the first assertion failure is reported and the exact file is not known"
-		<< std::endl;
-	m_what = msg.str();
-
-}
+	} // end namespace cuda
+} // end namespace nemo

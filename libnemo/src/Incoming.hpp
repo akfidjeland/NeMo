@@ -15,6 +15,7 @@
 #include "incoming.cu_h"
 
 namespace nemo {
+	namespace cuda {
 
 class Incoming
 {
@@ -60,6 +61,7 @@ class Incoming
 		size_t m_allocated;
 };
 
+	} // end namespace cuda
 } // end namespace nemo
 
 #endif

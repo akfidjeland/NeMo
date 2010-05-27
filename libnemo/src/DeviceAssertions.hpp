@@ -23,29 +23,14 @@
  */
 
 #include <vector>
-#include <stdexcept>
-#include <string>
+
+#include <exception.hpp>
 
 // visual studio warning re non-implementation of throw specifiers
 #pragma warning(disable: 4290)
 
-
-class DeviceAssertionFailure : public std::exception
-{
-	public :
-
-		DeviceAssertionFailure(unsigned partition, unsigned thread, unsigned line, unsigned cycle);
-
-		~DeviceAssertionFailure() throw () {}
-
-		const char* what() const throw() { return m_what.c_str(); }
-
-	private :
-
-		std::string m_what;
-};
-
-
+namespace nemo {
+	namespace cuda {
 
 class DeviceAssertions
 {
@@ -58,7 +43,7 @@ class DeviceAssertions
 		 * assertion failure for each thread will be reported. Checking device
 		 * assertions require reading device memory and can therefore be
 		 * costly. */
-		void check(unsigned cycle) throw(DeviceAssertionFailure);
+		void check(unsigned cycle) throw(nemo::exception);
 
 	private :
 
@@ -66,5 +51,8 @@ class DeviceAssertions
 
 		std::vector<int> mh_mem;
 };
+
+	} // end namespace cuda
+} // end namespace nemo
 
 #endif

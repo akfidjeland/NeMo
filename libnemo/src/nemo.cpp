@@ -11,17 +11,21 @@
 
 /*! C API for libnemo
  *
- * This simply wrapes the API exposed in nemo::Simulation */
+ * This simply wrapes the API exposed in nemo::Simulation
+ */
+
+#include <assert.h>
 
 extern "C" {
 #include <nemo.h>
 }
 
-#include "CudaSimulation.hpp"
-#include "Configuration.hpp"
-#include "Network.hpp"
-#include "DeviceAssertions.hpp"
-#include "except.hpp"
+
+#include <Simulation.hpp>
+#include <Configuration.hpp>
+#include <Network.hpp>
+#include <exception.hpp>
+#include <nemo_error.h>
 #include <nemo_config.h>
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to
@@ -45,12 +49,8 @@ setResult(const char* msg, nemo_status_t status) {
         g_lastCallStatus = NEMO_OK;                                           \
         try {                                                                 \
             call;                                                             \
-        } catch (DeviceAllocationException& e) {                              \
-            setResult(e.what(), NEMO_CUDA_MEMORY_ERROR);                      \
-        } catch (KernelInvocationError& e) {                                  \
-            setResult(e.what(), NEMO_CUDA_INVOCATION_ERROR);                  \
-        } catch (DeviceAssertionFailure& e) {                                 \
-            setResult(e.what(), NEMO_CUDA_ASSERTION_FAILURE);                 \
+        } catch (nemo::exception& e) {                                        \
+            setResult(e.what(), e.errno());                                   \
         } catch (std::exception& e) {                                         \
             setResult(e.what(), NEMO_UNKNOWN_ERROR);                          \
         } catch (...) {                                                       \

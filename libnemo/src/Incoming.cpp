@@ -14,6 +14,7 @@
 #include "except.hpp"
 
 namespace nemo {
+	namespace cuda {
 
 Incoming::Incoming() : m_allocated(0) {}
 
@@ -68,4 +69,5 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	CUDA_SAFE_CALL(setIncomingPitch(wpitch));
 }
 
+	} // end namespace cuda
 } // end namespace nemo
