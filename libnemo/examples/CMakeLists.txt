@@ -1,6 +1,6 @@
 INCLUDE_DIRECTORIES(
-	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_BINARY_DIR}/include # for configuration files
+	${CMAKE_SOURCE_DIR}/base
+	${CMAKE_BINARY_DIR}/base # for configuration files
 	${Boost_INCLUDE_DIR})
 ADD_DEFINITIONS(-DUSING_MAIN)
 LINK_DIRECTORIES("${CMAKE_BINARY_DIR}/src")

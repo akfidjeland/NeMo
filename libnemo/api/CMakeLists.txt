@@ -49,8 +49,8 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 	MEX_LIB_SUFFIX(SUFFIX)
 	SET(MEX_INCLUDES
 		-I${CMAKE_SOURCE_DIR}/src
-		-I${CMAKE_SOURCE_DIR}/include
-		-I${CMAKE_BINARY_DIR}/include # for configured file
+		-I${CMAKE_SOURCE_DIR}/base
+		-I${CMAKE_BINARY_DIR}/base # for configured file
 		-I${Boost_INCLUDE_DIR}
 	)
 	SET(MEX_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matlab/nemo_mex.${SUFFIX})

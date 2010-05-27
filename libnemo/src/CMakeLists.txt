@@ -49,8 +49,8 @@ CUDA_INCLUDE_DIRECTORIES(
 # C++ only includes
 INCLUDE_DIRECTORIES(
 	${CUDA_INCLUDE_DIRS}
-	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_BINARY_DIR}/include # for configuration files
+	${CMAKE_SOURCE_DIR}/base
+	${CMAKE_BINARY_DIR}/base # for configuration files
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${Boost_INCLUDE_DIR}	
   )

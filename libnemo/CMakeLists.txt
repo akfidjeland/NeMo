@@ -53,7 +53,7 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 
-SUBDIRS(src doc api include ${DIRS})
+SUBDIRS(base src doc api ${DIRS})
 
 
 SET(CPACK_SOURCE_GENERATOR "TGZ" "ZIP")

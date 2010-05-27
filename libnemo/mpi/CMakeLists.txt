@@ -9,8 +9,8 @@ IF(MPI_FOUND)
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${CMAKE_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/examples
-		${CMAKE_SOURCE_DIR}/include
-		${CMAKE_BINARY_DIR}/include # for configuration
+		${CMAKE_SOURCE_DIR}/base
+		${CMAKE_BINARY_DIR}/base # for configuration
 		${Boost_INCLUDE_DIR}	
 	)
 
