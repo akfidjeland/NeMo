@@ -1,21 +1,3 @@
-# Note set CUDA_BUILD_EMULATION to OFF to enable Device mode compilation.
-##############################################################################
-
-
-##############################################################################
-# General system configuration
-
-INCLUDE(CheckCXXSourceCompiles)
-INCLUDE(CheckFunctionExists)
-
-# CheckFunctionExists does not seem to work with GCC builtins
-CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clzll(0); }" HAVE_BUILTIN_CLZLL)
-CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clz(0); }" HAVE_BUILTIN_CLZ)
-CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_ctzll(0); }" HAVE_BUILTIN_CTZLL)
-
-# log2 is part of C99 standard, so Microsoft support is patchy
-CHECK_CXX_SOURCE_COMPILES("#include <math.h>\nint main() { log2(double(0)); }" HAVE_LOG2)
-
 ##############################################################################
 # CUDA configuration
 
@@ -53,16 +35,6 @@ INCLUDE_DIRECTORIES(
   )
 
 
-IF(INCLUDE_TIMING_API)
-	IF(NOT Boost_LIBRARY_DIRS)
-		MESSAGE(WARNING "Boost_LIBRARY_DIRS is not set, which may cause linker errors. Either set this variable or set BOOST_ROOT")
-	ELSE(NOT Boost_LIBRARY_DIRS)
-		LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
-	ENDIF(NOT Boost_LIBRARY_DIRS)
-ENDIF(INCLUDE_TIMING_API)
-
-
-
 # We need shared memory atomics
 SET(CUDA_NVCC_FLAGS "-arch=sm_12")
 
@@ -73,19 +45,12 @@ IF(NOT ${FLOAT_SIZE} EQUAL 4)
 	MESSAGE(SEND_ERROR "float does not have expected size (4B)")
 ENDIF(NOT ${FLOAT_SIZE} EQUAL 4)
 
-# Unless we're on a windows/MSVC platform we need stdint.h
-IF(NOT HAVE_STDINT_H AND NOT MSVC)
-	MESSAGE(FATAL_ERROR "No valid stdint.h file found on this platform")
-ENDIF(NOT HAVE_STDINT_H AND NOT MSVC)
-
-
-
-
 
 ##############################################################################
 SET(BUILD_SHARED_LIBS TRUE)
 
 # Statically link against MSVC runtime
+# TODO: factor this out and used for other libraries as well
 IF(MSVC)
 	FOREACH(flag_var
 		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
@@ -116,14 +81,9 @@ CUDA_ADD_LIBRARY(nemo_cuda
 	WarpAddressTable.cpp
   )
 
-SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES
-		DEFINE_SYMBOL NEMO_EXPORTS
-)
-
-
+SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES DEFINE_SYMBOL NEMO_EXPORTS)
 
 # Add a special target to clean nvcc generated files.
 CUDA_BUILD_CLEAN_TARGET()
-
 
 INSTALL(TARGETS nemo_cuda DESTINATION ${INSTALL_LIB_DIR})

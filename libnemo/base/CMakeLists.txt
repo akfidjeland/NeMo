@@ -36,6 +36,34 @@ INSTALL(FILES
 	DESTINATION ${INSTALL_INCLUDE_DIR}
 )
 
+
+##############################################################################
+# General system configuration
+
+INCLUDE(CheckCXXSourceCompiles)
+INCLUDE(CheckFunctionExists)
+
+# CheckFunctionExists does not seem to work with GCC builtins
+CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clzll(0); }" HAVE_BUILTIN_CLZLL)
+CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_clz(0); }" HAVE_BUILTIN_CLZ)
+CHECK_CXX_SOURCE_COMPILES("int main() { __builtin_ctzll(0); }" HAVE_BUILTIN_CTZLL)
+
+# log2 is part of C99 standard, so Microsoft support is patchy
+CHECK_CXX_SOURCE_COMPILES("#include <math.h>\nint main() { log2(double(0)); }" HAVE_LOG2)
+
+IF(INCLUDE_TIMING_API)
+	IF(NOT Boost_LIBRARY_DIRS)
+		MESSAGE(WARNING "Boost_LIBRARY_DIRS is not set, which may cause linker errors. Either set this variable or set BOOST_ROOT")
+	ELSE(NOT Boost_LIBRARY_DIRS)
+		LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
+	ENDIF(NOT Boost_LIBRARY_DIRS)
+ENDIF(INCLUDE_TIMING_API)
+
+# Unless we're on a windows/MSVC platform we need stdint.h
+IF(NOT HAVE_STDINT_H AND NOT MSVC)
+	MESSAGE(FATAL_ERROR "No valid stdint.h file found on this platform")
+ENDIF(NOT HAVE_STDINT_H AND NOT MSVC)
+
 CONFIGURE_FILE(
 	${CMAKE_CURRENT_SOURCE_DIR}/nemo_config.h.in
 	${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h)
