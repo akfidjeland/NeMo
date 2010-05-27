@@ -14,11 +14,14 @@ IF(MPI_FOUND)
 		${Boost_INCLUDE_DIR}	
 	)
 
-
 	ADD_LIBRARY(nemo_mpi SHARED 
 		Master.cpp
 		Worker.cpp
 		Mapper.cpp
+	)
+
+	SET_TARGET_PROPERTIES(nemo_mpi PROPERTIES
+			DEFINE_SYMBOL NEMO_EXPORTS
 	)
 
 	SET(EXAMPLES_DIR ${CMAKE_SOURCE_DIR}/examples)

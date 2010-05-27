@@ -28,9 +28,6 @@ IF(CUDA_BUILD_EMULATION)
 	ADD_DEFINITIONS(-D__DEVICE_EMULATION__)
 ENDIF()
 
-# TODO: use the definition that's automatically used by CMake
-ADD_DEFINITIONS(-DBUILDING_DLL)
-
 
 # FindCUDA sets a number of variables which or not of relevance to our build.
 # Mark these as advanced, so as not to clutter the configuration.
@@ -118,6 +115,11 @@ CUDA_ADD_LIBRARY(nemo_cuda
 	ThalamicInput.cpp
 	WarpAddressTable.cpp
   )
+
+SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES
+		DEFINE_SYMBOL NEMO_EXPORTS
+)
+
 
 
 # Add a special target to clean nvcc generated files.
