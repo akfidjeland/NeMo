@@ -53,7 +53,6 @@ Simulation::getFiringBufferLength() const
 void
 Simulation::step(const std::vector<unsigned>& fstim)
 {
-	stepTimer();
 	m_impl->step(fstim);
 }
 
@@ -101,16 +100,21 @@ Simulation::finishSimulation()
 unsigned long
 Simulation::elapsedWallclock() const
 {
-	CUDA_SAFE_CALL(cudaThreadSynchronize());
-	return nemo::Simulation::elapsedWallclock();
+	return m_impl->elapsedWallclock();
+}
+
+
+unsigned long
+Simulation::elapsedSimulation() const
+{
+	return m_impl->elapsedSimulation();
 }
 
 
 void
 Simulation::resetTimer()
 {
-	CUDA_SAFE_CALL(cudaThreadSynchronize());
-	nemo::Simulation::resetTimer();
+	m_impl->resetTimer();
 }
 
 

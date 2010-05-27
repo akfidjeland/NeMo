@@ -17,15 +17,14 @@
 #include <assert.h>
 
 extern "C" {
-#include <nemo.h>
+#include "nemo.h"
 }
 
-
-#include <Simulation.hpp>
-#include <Configuration.hpp>
-#include <Network.hpp>
-#include <exception.hpp>
-#include <nemo_error.h>
+#include "Simulation.hpp"
+#include "Configuration.hpp"
+#include "Network.hpp"
+#include "exception.hpp"
+#include "nemo_error.h"
 #include <nemo_config.h>
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to
@@ -54,7 +53,7 @@ setResult(const char* msg, nemo_status_t status) {
         } catch (std::exception& e) {                                         \
             setResult(e.what(), NEMO_UNKNOWN_ERROR);                          \
         } catch (...) {                                                       \
-			setResult("unknown exception", NEMO_UNKNOWN_ERROR);               \
+            setResult("unknown exception", NEMO_UNKNOWN_ERROR);               \
         }                                                                     \
     }
 

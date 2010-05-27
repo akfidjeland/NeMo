@@ -22,7 +22,12 @@
 
 /*! A memory allocation failed on the CUDA device. */
 #define NEMO_CUDA_MEMORY_ERROR 3
-#define NEMO_UNKNOWN_ERROR 4
+
+#define NEMO_API_UNSUPPORTED 4
+
+#define NEMO_INVALID_INPUT 5
+
+#define NEMO_UNKNOWN_ERROR 6
 
 
 

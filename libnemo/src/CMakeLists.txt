@@ -101,11 +101,8 @@ ENDIF(MSVC)
 
 
 
-CUDA_ADD_LIBRARY(nemo
+CUDA_ADD_LIBRARY(nemo_cuda
 	kernel.cu
-	nemo.cpp
-	Configuration.cpp
-	ConfigurationImpl.cpp
 	ConnectivityMatrix.cpp
 	CudaSimulation.cpp
 	CudaSimulationImpl.cpp
@@ -115,9 +112,6 @@ CUDA_ADD_LIBRARY(nemo
 	fixedpoint.cpp
 	Incoming.cpp
 	NeuronParameters.cpp
-	Network.cpp
-	NetworkImpl.cpp
-	Simulation.cpp
 	Outgoing.cpp
 	RSMatrix.cpp
 	SynapseAddressTable.cpp
@@ -125,14 +119,9 @@ CUDA_ADD_LIBRARY(nemo
 	WarpAddressTable.cpp
   )
 
-#SET_TARGET_PROPERTIES(nemo PROPERTIES SOVERSION 1)
-
-
-# Generating PTX files. 
-# CUDA_COMPILE_PTX(PTX_FILES CUDA_FILES test_bin.cu)
 
 # Add a special target to clean nvcc generated files.
 CUDA_BUILD_CLEAN_TARGET()
 
 
-INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
+INSTALL(TARGETS nemo_cuda DESTINATION ${INSTALL_LIB_DIR})

@@ -42,7 +42,7 @@ class DLL_PUBLIC Simulation
 		 * 		found. */
 		static Simulation* create(const Network& net, const Configuration&);
 
-		virtual ~Simulation();
+		virtual ~Simulation() = 0;
 
 		/*! \return the number of cycles the firing buffer can hold */
 		virtual unsigned getFiringBufferLength() const = 0;
@@ -133,30 +133,20 @@ class DLL_PUBLIC Simulation
 
 		/*! \return number of milliseconds of wall-clock time elapsed since
 		 * first simulation step (or last timer reset). */
-		virtual unsigned long elapsedWallclock() const;
+		virtual unsigned long elapsedWallclock() const = 0;
 
 		/*! \return number of milliseconds of simulated time elapsed since first
 		 * simulation step (or last timer reset) */
-		virtual unsigned long elapsedSimulation() const;
+		virtual unsigned long elapsedSimulation() const = 0;
 
 		/*! Reset both wall-clock and simulation timer */
-		virtual void resetTimer();
-
-	protected :
-
-		void stepTimer();
+		virtual void resetTimer() = 0;
 
 		/* \} */ // end simulation (timing) section
 
-	private :
-
-#ifdef INCLUDE_TIMING_API
-		class Timer* m_timer;
-#endif
-
 	protected :
 
-		Simulation();
+		Simulation() { };
 
 	private :
 

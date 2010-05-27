@@ -90,6 +90,10 @@ class Simulation : public nemo::Simulation
 		 * simulation step (or last timer reset) */
 		unsigned long elapsedWallclock() const;
 
+		/*! \return number of milliseconds of simulated time elapsed since first
+		 * simulation step (or last timer reset) */
+		unsigned long elapsedSimulation() const;
+
 		/*! Reset both wall-clock and simulation timer */
 		void resetTimer();
 

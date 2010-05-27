@@ -28,7 +28,6 @@ IF(MPI_FOUND)
 	)
 
 	# TODO: extract only mpi and serialisation here.
-	MESSAGE(WARNING ${Boost_LIBRARIES})
 	TARGET_LINK_LIBRARIES(example ${MPI_LIBRARIES} ${Boost_LIBRARIES} nemo_mpi nemo)
 
 	# TODO: add install targets

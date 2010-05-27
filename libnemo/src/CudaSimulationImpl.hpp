@@ -13,14 +13,18 @@
 #include <stddef.h>
 
 #include <nemo_config.h>
+#include <STDP.hpp>
+#ifdef INCLUDE_TIMING_API
+#include <Timer.hpp>
+#endif
+#include <types.h>
+#include <ConfigurationImpl.hpp>
+
 #include "DeviceIdx.hpp"
 #include "NVector.hpp"
-#include "ConfigurationImpl.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "DeviceAssertions.hpp"
 #include "NeuronParameters.hpp"
-#include "STDP.hpp"
-#include "types.h"
 
 namespace nemo {
 
@@ -41,9 +45,10 @@ class SimulationImpl
 		/* CONFIGURATION */
 
 		static int selectDevice();
-
 		static int setDevice(int dev);
 
+		static unsigned defaultPartitionSize();
+		static unsigned defaultFiringBufferLength();
 
 		unsigned getFiringBufferLength() const { return m_conf.cudaFiringBufferLength(); }
 
@@ -65,8 +70,10 @@ class SimulationImpl
 
 		void finishSimulation();
 
-		static unsigned defaultPartitionSize();
-		static unsigned defaultFiringBufferLength();
+		/* TIMING */
+		unsigned long elapsedWallclock() const;
+		unsigned long elapsedSimulation() const;
+		void resetTimer();
 
 	private :
 
@@ -118,6 +125,10 @@ class SimulationImpl
 		bool usingStdp() const;
 
 		static int s_device;
+
+#ifdef INCLUDE_TIMING_API
+		Timer m_timer;
+#endif
 };
 
 	} // end namespace cuda

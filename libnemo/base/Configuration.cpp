@@ -1,4 +1,4 @@
-#include <Configuration.hpp>
+#include "Configuration.hpp"
 #include "ConfigurationImpl.hpp"
 
 namespace nemo {

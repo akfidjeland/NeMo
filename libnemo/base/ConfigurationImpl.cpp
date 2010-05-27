@@ -8,7 +8,7 @@
  */
 
 #include "ConfigurationImpl.hpp"
-#include "CudaSimulation.hpp"
+#include <CudaSimulation.hpp>
 
 namespace nemo {
 

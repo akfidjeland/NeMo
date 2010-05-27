@@ -1,5 +1,5 @@
 #include "Network.hpp"
-#include <NetworkImpl.hpp>
+#include "NetworkImpl.hpp"
 
 namespace nemo {
 

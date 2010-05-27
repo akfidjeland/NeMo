@@ -1,3 +1,24 @@
+INCLUDE_DIRECTORIES(
+	${CMAKE_BINARY_DIR}/base # for configuration files
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+SET(BUILD_SHARED_LIBS TRUE)
+
+ADD_LIBRARY(nemo
+	nemo.cpp
+	Configuration.cpp
+	ConfigurationImpl.cpp
+	Network.cpp
+	NetworkImpl.cpp
+	Simulation.cpp
+)
+
+TARGET_LINK_LIBRARIES(nemo nemo_cuda)
+
+
+INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
 
 INSTALL(FILES 
 		nemo.h

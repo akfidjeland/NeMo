@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "NetworkImpl.hpp"
+#include <NetworkImpl.hpp>
 #include "cuda_types.h"
 #include "util.h"
 

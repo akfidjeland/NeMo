@@ -291,6 +291,9 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 		throw std::overflow_error("Cycle counter overflow");
 	}
 	m_cycle += 1;
+#ifdef INCLUDE_TIMING_API
+	m_timer.step();
+#endif
 
 	uint32_t* d_fstim = setFiringStimulus(fstim);
 	uint32_t* d_fout = m_firingOutput->step();
@@ -386,6 +389,43 @@ SimulationImpl::finishSimulation()
 		//! \todo add time summary
 	}
 }
+
+
+unsigned long
+SimulationImpl::elapsedWallclock() const
+{
+#ifdef INCLUDE_TIMING_API
+	CUDA_SAFE_CALL(cudaThreadSynchronize());
+	return m_timer.elapsedWallclock();
+#else
+	throw nemo::exception(NEMO_API_UNSUPPORTED,
+			"elapsedWallclock is not supported in this version");
+#endif
+}
+
+
+unsigned long
+SimulationImpl::elapsedSimulation() const
+{
+#ifdef INCLUDE_TIMING_API
+	return m_timer.elapsedSimulation();
+#else
+	throw nemo::exception(NEMO_API_UNSUPPORTED,
+			"elapsedSimulation is not supported in this version");
+#endif
+}
+
+
+
+void
+SimulationImpl::resetTimer()
+{
+#ifdef INCLUDE_TIMING_API
+	CUDA_SAFE_CALL(cudaThreadSynchronize());
+	m_timer.reset();
+#endif
+}
+
 
 
 unsigned
