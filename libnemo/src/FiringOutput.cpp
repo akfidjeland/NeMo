@@ -14,7 +14,6 @@
 #include "FiringOutput.hpp"
 #include "except.hpp"
 #include "bitvector.cu_h"
-#include "types.h"
 
 namespace nemo {
 	namespace cuda {

@@ -18,7 +18,7 @@
 #include <boost/tuple/tuple.hpp>
 
 #include "cuda_types.h"
-#include "types.hpp"
+#include <types.hpp>
 #include "NVector.hpp"
 #include "kernel.cu_h"
 #include "DeviceIdx.hpp"

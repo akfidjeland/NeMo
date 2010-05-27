@@ -13,7 +13,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-#include "types.h"
+#include <types.h>
 
 //! \file FiringOutput.hpp
 

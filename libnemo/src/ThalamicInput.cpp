@@ -17,7 +17,7 @@
 #include "thalamicInput.cu_h"
 #include "DeviceIdx.hpp"
 #include "NetworkImpl.hpp"
-#include "types.hpp"
+#include <types.hpp>
 
 
 
