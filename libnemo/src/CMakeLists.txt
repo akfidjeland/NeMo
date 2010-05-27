@@ -108,6 +108,7 @@ CUDA_ADD_LIBRARY(nemo
 	ConfigurationImpl.cpp
 	ConnectivityMatrix.cpp
 	CudaSimulation.cpp
+	CudaSimulationImpl.cpp
 	CycleCounters.cpp
 	DeviceAssertions.cpp
 	FiringOutput.cpp
