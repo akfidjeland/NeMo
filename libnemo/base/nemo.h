@@ -5,13 +5,6 @@
  *
  * \brief C API for the nemo spiking neural network simulator
  */
-//! \todo write a brief overview
-//! \todo mention CUDA
-//! \todo briefly document the izhikevich model
-//! \todo refer to own paper
-//! \todo mention neuron indexing
-//! \todo add reference to main man page
-//! \todo document STDP
 
 #include <stddef.h> // for size_t
 #include <nemo_config.h>

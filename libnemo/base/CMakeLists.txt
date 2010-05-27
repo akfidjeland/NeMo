@@ -28,6 +28,7 @@ INSTALL(TARGETS nemo DESTINATION ${INSTALL_LIB_DIR})
 INSTALL(FILES 
 		nemo.h
 		nemo.hpp
+		nemo_error.h
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp
