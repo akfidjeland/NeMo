@@ -10,8 +10,11 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef INCLUDE_TIMING_API
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include "exception.hpp"
+#endif
 
 namespace nemo {
 
@@ -26,7 +29,8 @@ class Timer
 
 		Timer() { reset(); }
 
-		/*! Update internal counters. Should be called for every simulation step */
+		/*! Update internal counters. Should be called for every simulation
+		 * step. */
 		void step() { m_simCycles++ ; }
 
 		/*! \return elapsed wall-clock time in milliseconds */
@@ -40,8 +44,9 @@ class Timer
 
 	private:
 
+#ifdef INCLUDE_TIMING_API
 		boost::posix_time::ptime m_start;
-
+#endif
 		unsigned long m_simCycles;
 };
 
@@ -51,10 +56,16 @@ inline
 unsigned long
 Timer::elapsedWallclock() const
 {
+#ifdef INCLUDE_TIMING_API
 	using namespace boost::posix_time;
 
 	time_duration elapsed = ptime(microsec_clock::local_time()) - m_start;
 	return boost::numeric_cast<unsigned long, time_duration::tick_type>(elapsed.total_milliseconds());
+#else
+	throw nemo::exception(NEMO_API_UNSUPPORTED,
+			"elapsedWallclock is not supported in this version");
+	return 0;
+#endif
 }
 
 
@@ -72,9 +83,10 @@ inline
 void
 Timer::reset()
 {
+#ifdef INCLUDE_TIMING_API
 	using namespace boost::posix_time;
-
 	m_start = ptime(microsec_clock::local_time());
+#endif
 	m_simCycles = 0;
 }
 

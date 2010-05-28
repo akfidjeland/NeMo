@@ -14,9 +14,7 @@
 
 #include <nemo_config.h>
 #include <STDP.hpp>
-#ifdef INCLUDE_TIMING_API
 #include <Timer.hpp>
-#endif
 #include <types.h>
 #include <ConfigurationImpl.hpp>
 
@@ -96,8 +94,6 @@ class SimulationImpl
 
 		NeuronParameters m_neurons;
 
-		uint32_t m_cycle;
-
 		ConnectivityMatrix m_cm;
 
 		NVector<uint64_t>* m_recentFiring;
@@ -126,9 +122,7 @@ class SimulationImpl
 
 		static int s_device;
 
-#ifdef INCLUDE_TIMING_API
 		Timer m_timer;
-#endif
 };
 
 	} // end namespace cuda
