@@ -13,6 +13,7 @@ ADD_LIBRARY(nemo
 	Network.cpp
 	NetworkImpl.cpp
 	Simulation.cpp
+	ConnectivityMatrix.cpp
 )
 
 SET_TARGET_PROPERTIES(nemo PROPERTIES
