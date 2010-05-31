@@ -1,8 +1,19 @@
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of nemo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //! \file STDP.ipp
 
 #include <algorithm>
 #include <stdexcept>
 #include <assert.h>
+
+#include "exception.hpp"
 
 namespace nemo {
 
@@ -66,7 +77,7 @@ STDP<T>::configure(
 	/*! \todo This constraint is too weak. Also need to consider max delay in
 	 * network here */
 	if(m_preFireWindow + m_postFireWindow > 64) {
-		throw std::runtime_error("size of STDP window too large");
+		throw nemo::exception(NEMO_INVALID_INPUT, "size of STDP window too large");
 	}
 
 	// create combined function

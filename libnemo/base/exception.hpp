@@ -13,6 +13,8 @@
 #include <stdexcept>
 #include <string>
 
+#include "nemo_error.h"
+
 namespace nemo {
 
 /* Minor extension of std::exception which adds return codes (for use in the C

@@ -9,8 +9,6 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 {
 	const unsigned MS_PER_SECOND = 1000;
 
-	//! \todo fix timing code in kernel so that we don't have to force data onto device
-	sim->step();
 #ifdef INCLUDE_TIMING_API
 	sim->resetTimer();
 #endif

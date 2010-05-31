@@ -9,9 +9,11 @@
 
 #include "NetworkImpl.hpp"
 
-#include <stdexcept>
 #include <sstream>
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/format.hpp>
+
+#include "exception.hpp"
 
 namespace nemo {
 
@@ -37,10 +39,10 @@ NetworkImpl::addNeuron(unsigned nidx,
 void
 NetworkImpl::addNeuron(nidx_t nidx, const Neuron<float>& n)
 {
+	using boost::format;
 	if(m_neurons.find(nidx) != m_neurons.end()) {
-		std::ostringstream msg;
-		msg << "Duplicate neuron index for neuron " << nidx;
-		throw std::runtime_error(msg.str());
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Duplicate neuron index for neuron %u") % nidx));
 	}
 	m_maxSourceIdx = std::max(m_maxSourceIdx, int(nidx));
 	m_neurons[nidx] = n;
@@ -84,7 +86,7 @@ NetworkImpl::addSynapses(
 			<< "\tdelays: " << delays.size() << std::endl
 			<< "\tweights: " << weights.size() << std::endl
 			<< "\tplastic: " << plastic.size() << std::endl;
-		throw std::runtime_error(msg.str());
+		throw nemo::exception(NEMO_INVALID_INPUT, msg.str());
 	}
 
     if(length == 0) {

@@ -173,8 +173,10 @@ RSMatrix::addSynapse(
 void
 RSMatrix::clearStdpAccumulator()
 {
+	//! \todo allocate data once in ctor instead, obvioating need for this check.
 	if(!onDevice()) {
-		throw std::logic_error("attempting to clear STDP array before device memory allocated");
+		throw nemo::exception(NEMO_LOGIC_ERROR,
+				"attempting to clear STDP array before device memory allocated");
 	}
 
 	CUDA_SAFE_CALL(cudaMemset2D(d_stdp(), m_pitch*sizeof(uint32_t),

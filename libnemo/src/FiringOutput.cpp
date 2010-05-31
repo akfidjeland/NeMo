@@ -7,12 +7,12 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <assert.h>
 #include <cuda_runtime.h>
+#include <string.h>
 
-#include "FiringOutput.hpp"
+#include <exception.hpp>
 #include "except.hpp"
+#include "FiringOutput.hpp"
 #include "bitvector.cu_h"
 
 namespace nemo {
@@ -56,7 +56,7 @@ FiringOutput::step()
 	if(m_bufferedCycles > m_maxReadPeriod) {
 		m_bufferedCycles = 0;
 		ret = md_buffer.get();
-		throw std::runtime_error("Firing buffer overflow");
+		throw nemo::exception(NEMO_BUFFER_OVERFLOW, "Firing buffer overflow");
 	}
 	return ret;
 }

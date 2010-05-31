@@ -33,7 +33,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 
 	err = cudaMemset(d_count, 0, len);
 	if(cudaSuccess != err) {
-		throw std::runtime_error("failed to set incoming spike queue counts");
+		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, "failed to set incoming spike queue counts");
 	}
 
 	m_allocated = len;
