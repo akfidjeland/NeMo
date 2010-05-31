@@ -59,6 +59,15 @@ IF(INCLUDE_TIMING_API)
 	ENDIF(NOT Boost_LIBRARY_DIRS)
 ENDIF(INCLUDE_TIMING_API)
 
+
+# We rely on 32-bit floats
+INCLUDE(CheckTypeSize)
+CHECK_TYPE_SIZE(float FLOAT_SIZE)
+IF(NOT ${FLOAT_SIZE} EQUAL 4)
+	MESSAGE(SEND_ERROR "float does not have expected size (4B)")
+ENDIF(NOT ${FLOAT_SIZE} EQUAL 4)
+
+
 # Unless we're on a windows/MSVC platform we need stdint.h
 IF(NOT HAVE_STDINT_H AND NOT MSVC)
 	MESSAGE(FATAL_ERROR "No valid stdint.h file found on this platform")
