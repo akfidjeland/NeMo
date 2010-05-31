@@ -19,6 +19,7 @@
 #include "nemo_mpi_common.hpp"
 #include "Mapper.hpp"
 #include <types.hpp>
+#include <mpi_types.hpp>
 
 
 namespace nemo {
@@ -57,23 +58,17 @@ Master::distributeNetwork(nemo::NetworkImpl* net)
 	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator axon = net->m_fcm.begin();
 			axon != net->m_fcm.end(); ++axon) {
 
-		m_ss.clear();
 		nidx_t source = axon->first;
 		int rank = mapper.rankOf(source);
 
 		for(std::map<delay_t, NetworkImpl::bundle_t>::const_iterator bi = axon->second.begin();
 				bi != axon->second.end(); ++bi) {
-
 			delay_t delay = bi->first;
-			NetworkImpl::bundle_t bundle = bi->second;
-
-			for(NetworkImpl::bundle_t::const_iterator si = bundle.begin();
-					si != bundle.end(); ++si) {
-				m_ss.push_back(Synapse<unsigned, unsigned, float>(source, delay, *si));
-			}
+			const NetworkImpl::bundle_t& bundle = bi->second;
+			//! \todo use a predefined output buffer
+			SynapseVector svec(source, delay, bundle);
+			m_world.send(rank, SYNAPSE_VECTOR, svec);
 		}
-
-		m_world.send(rank, SYNAPSE_VECTOR, m_ss);
 	}
 
 	for(int r=0; r < workers; ++r) {

@@ -76,6 +76,7 @@ class NetworkImpl
 
 		typedef AxonTerminal<nidx_t, weight_t> synapse_t;
 		typedef std::vector<synapse_t> bundle_t;
+		//! \todo could keep this in a single map with a tuple index
 		typedef std::map<delay_t, bundle_t> axon_t;
 		typedef std::map<nidx_t, axon_t> fcm_t;
 

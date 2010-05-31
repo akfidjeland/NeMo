@@ -13,8 +13,10 @@
 
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/utility.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include "nemo_mpi_common.hpp"
 #include "Mapper.hpp"
@@ -31,7 +33,8 @@ Worker::Worker(boost::mpi::communicator& world) :
 	m_world(world),
 	m_rank(world.rank()),
 	ml_scount(0),
-	mg_scount(0),
+	mgi_scount(0),
+	mgo_scount(0),
 	m_ncount(0)
 {
 	int workers = m_world.size() - 1;
@@ -64,7 +67,8 @@ Worker::Worker(boost::mpi::communicator& world) :
 
 	std::clog << "Worker " << m_rank << " " << m_ncount << " neurons" << std::endl;
 	std::clog << "Worker " << m_rank << " " << ml_scount << " local synapses" << std::endl;
-	std::clog << "Worker " << m_rank << " " << mg_scount << " global synapses" << std::endl;
+	std::clog << "Worker " << m_rank << " " << mgo_scount << " global synapses (outgoing)" << std::endl;
+	std::clog << "Worker " << m_rank << " " << mgi_scount << " global synapses (incoming)" << std::endl;
 }
 
 
@@ -84,21 +88,34 @@ Worker::addSynapseVector(const Mapper& mapper,
 		nemo::NetworkImpl& net,
 		global_fcm_t& g_ss)
 {
-	m_ss.clear();
-	m_world.recv(MASTER, SYNAPSE_VECTOR, m_ss);
-	for(std::vector<synapse_t>::const_iterator i = m_ss.begin(); i != m_ss.end(); ++i) {
-		const AxonTerminal<unsigned, float>& t = i->terminal;
-		int targetRank = mapper.rankOf(t.target);
+
+	/* Incoming data from master */
+	//! \todo allocate this only once
+	SynapseVector svec;
+	m_world.recv(MASTER, SYNAPSE_VECTOR, svec);
+
+	typedef std::map<rank_t, std::vector<SynapseVector::terminal_t> > acc_t;
+	acc_t ss;
+
+	// now, for each synapse determine where it should go: local or global
+	for(std::vector<SynapseVector::terminal_t>::const_iterator i = svec.terminals.begin();
+			i != svec.terminals.end(); ++i) {
+		int targetRank = mapper.rankOf(i->target);
 		if(targetRank == m_rank) {
 			//! \todo add alternative addSynapse method which uses AxonTerminal directly
-			net.addSynapse(i->source, t.target, i->delay, t.weight, t.plastic);
+			net.addSynapse(svec.source, i->target, svec.delay, i->weight, i->plastic);
 			ml_scount++;
 		} else {
-			m_targets.insert(t.target);
-			m_fcm[i->source].insert(t.target);
-			g_ss[targetRank].push_back(*i);
-			mg_scount++;
+			mg_targets.insert(i->target);
+			mg_fcm[svec.source].insert(i->target);
+			mgo_scount++;
+			ss[targetRank].push_back(*i);
 		}
+	}
+
+	for(acc_t::const_iterator i = ss.begin(); i != ss.end(); ++i) {
+		rank_t targetRank = i->first;
+		g_ss[targetRank].push_back(SynapseVector(svec.source, svec.delay, i->second));
 	}
 }
 
@@ -112,12 +129,21 @@ Worker::exchangeGlobalData(global_fcm_t& g_ss)
 		 * constructed entry if nothing is present */
 		rank_t source = 1 + ((m_rank - 1 + (m_world.size() - 1) - targetOffset) % (m_world.size() - 1));
 		rank_t target = 1 + ((m_rank - 1 + targetOffset) % (m_world.size() - 1));
-		m_world.isend(target, SYNAPSE_VECTOR, g_ss[target]);
+		boost::mpi::request reqs[2];
+		reqs[0] = m_world.isend(target, SYNAPSE_VECTOR, g_ss[target]);
 		g_ss.erase(target);
-		m_ss.clear();
-		m_world.irecv(source, SYNAPSE_VECTOR, m_ss);
-		//! \todo do something with this data
+		//! \todo probably not needed
+		m_ibuf.clear();
+		reqs[1] = m_world.irecv(source, SYNAPSE_VECTOR, m_ibuf);
+		boost::mpi::wait_all(reqs, reqs+2);
+		for(std::vector<SynapseVector>::const_iterator i = m_ibuf.begin();
+				i != m_ibuf.end(); ++i) {
+			ml_fcm.setRow(i->source, i->delay, i->terminals);
+			mgi_scount += i->terminals.size();
+		}
 	}
+
+	ml_fcm.finalize();
 }
 
 	} // end namespace mpi

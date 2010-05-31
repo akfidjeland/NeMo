@@ -36,9 +36,6 @@ class Master
 		boost::mpi::communicator m_world;
 
 		void distributeNetwork(nemo::NetworkImpl* net);
-
-		// output buffer for synapses
-		std::vector<Synapse<unsigned, unsigned, float> > m_ss;
 };
 
 	} // end namespace mpi
