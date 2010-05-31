@@ -33,6 +33,8 @@ class DLL_PUBLIC Configuration
 
 		Configuration();
 
+		~Configuration();
+
 		/*! Switch on logging and send output to stdout */
 		void enableLogging(); 
 
@@ -70,6 +72,9 @@ class DLL_PUBLIC Configuration
 
 		class ConfigurationImpl* m_impl;
 
+		// undefined
+		Configuration(const Configuration&);
+		Configuration& operator=(const Configuration&);
 };
 
 } // end namespace nemo

@@ -10,6 +10,12 @@ Configuration::Configuration() :
 }
 
 
+Configuration::~Configuration()
+{
+	delete m_impl;
+}
+
+
 void
 Configuration::enableLogging()
 {
