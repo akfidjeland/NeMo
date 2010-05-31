@@ -31,11 +31,19 @@ class Master
 				const Network&, 
 				const Configuration&);
 
+		~Master();
+
+		void step(const std::vector<unsigned>& fstim = std::vector<unsigned>());
+
 	private :
 
 		boost::mpi::communicator m_world;
 
 		void distributeNetwork(nemo::NetworkImpl* net);
+
+		unsigned workers() const;
+
+		void terminate();
 };
 
 	} // end namespace mpi

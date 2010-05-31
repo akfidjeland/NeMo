@@ -9,8 +9,9 @@
 
 #include "Master.hpp"
 
-#include <boost/mpi/environment.hpp>
 #include <boost/mpi/collectives.hpp>
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/utility.hpp>
 
 #include <Network.hpp>
@@ -33,20 +34,37 @@ Master::Master(
 {
 	distributeNetwork(net_.m_impl);
 
-	/* The workers now exchange connectivity information. When
-	 * that's done we're ready to start simulation. */
+	/* The workers now exchange connectivity information. */
+
 	m_world.barrier();
+
+	/* We're now ready to run the simulation. The caller does this using class
+	 * methods. */
 }
 
+
+
+Master::~Master()
+{
+	terminate();
+}
+
+
+
+unsigned
+Master::workers() const
+{
+	return m_world.size() - 1;
+}
 
 
 //! \todo implement this in terms of iterators on some base class of //NetworkImpl.
 void
 Master::distributeNetwork(nemo::NetworkImpl* net)
 {
-	int workers = m_world.size() - 1;
 	//! \todo base this on size hint as well
-	Mapper mapper(workers);
+	unsigned wcount = workers();
+	Mapper mapper(wcount);
 
 	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net->m_neurons.begin();
 			i != net->m_neurons.end(); ++i) {
@@ -71,9 +89,38 @@ Master::distributeNetwork(nemo::NetworkImpl* net)
 		}
 	}
 
-	for(int r=0; r < workers; ++r) {
+	for(int r=0; r < wcount; ++r) {
 		m_world.send(r+1, END_CONSTRUCTION, int(0));
 	}
+}
+
+
+
+void
+Master::step(const std::vector<unsigned>& fstim)
+{
+	unsigned wcount = workers();
+	//! \todo split up fstim here and insert into different requests
+	SimulationStep data;
+	std::vector<boost::mpi::request>reqs(wcount);
+	for(int r=0; r < wcount; ++r) {
+		reqs[r] = m_world.isend(r+1, SIM_STEP, data);
+	}
+	boost::mpi::wait_all(reqs.begin(), reqs.end());
+}
+
+
+
+void
+Master::terminate()
+{
+	unsigned wcount = workers();
+	SimulationStep data(true, std::vector<unsigned>());
+	std::vector<boost::mpi::request>reqs(wcount);
+	for(int r=0; r < wcount; ++r) {
+		reqs[r] = m_world.isend(r+1, SIM_STEP, data);
+	}
+	boost::mpi::wait_all(reqs.begin(), reqs.end());
 }
 
 

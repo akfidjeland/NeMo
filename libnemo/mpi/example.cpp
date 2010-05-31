@@ -18,6 +18,9 @@ main(int argc, char* argv[])
 			nemo::Network* net = nemo::random1k::construct(2048, 1024);
 			nemo::Configuration conf;
 			nemo::mpi::Master sim(world, *net, conf);
+			sim.step();
+			sim.step();
+			sim.step();
 			delete net;
 		} else {
 			nemo::mpi::Worker sim(world);

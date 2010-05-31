@@ -11,7 +11,8 @@ enum Ranks {
 enum CommTag {
 	NEURON_SCALAR,
 	SYNAPSE_VECTOR,
-	END_CONSTRUCTION
+	END_CONSTRUCTION,
+	SIM_STEP
 };
 
 	}

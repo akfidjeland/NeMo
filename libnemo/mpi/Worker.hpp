@@ -83,6 +83,8 @@ class Worker
 		unsigned mgi_scount;
 		unsigned mgo_scount;
 		unsigned m_ncount;
+
+		void runSimulation();
 };
 
 	}

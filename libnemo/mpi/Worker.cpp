@@ -65,10 +65,14 @@ Worker::Worker(boost::mpi::communicator& world) :
 
 	m_world.barrier();
 
+#if 0
 	std::clog << "Worker " << m_rank << " " << m_ncount << " neurons" << std::endl;
 	std::clog << "Worker " << m_rank << " " << ml_scount << " local synapses" << std::endl;
 	std::clog << "Worker " << m_rank << " " << mgo_scount << " global synapses (outgoing)" << std::endl;
 	std::clog << "Worker " << m_rank << " " << mgi_scount << " global synapses (incoming)" << std::endl;
+#endif
+
+	runSimulation();
 }
 
 
@@ -145,6 +149,28 @@ Worker::exchangeGlobalData(global_fcm_t& g_ss)
 
 	ml_fcm.finalize();
 }
+
+
+
+void
+Worker::runSimulation()
+{
+	bool terminate = false;
+#define NREQS 1
+	boost::mpi::request reqs[NREQS];
+
+	SimulationStep masterReq;
+
+	reqs[0] = m_world.irecv(MASTER, SIM_STEP, masterReq);
+	boost::mpi::wait_all(reqs, reqs + 1);
+
+	while(!masterReq.terminate) {
+		reqs[0] = m_world.irecv(MASTER, SIM_STEP, masterReq);
+		//! \todo get data from all other workers
+		boost::mpi::wait_all(reqs, reqs + NREQS);
+	}
+}
+
 
 	} // end namespace mpi
 } // end namespace nemo

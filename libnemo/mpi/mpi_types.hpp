@@ -41,6 +41,33 @@ class SynapseVector
 };
 
 
+
+/* Every cycle the master synchronises with each worker. */
+class SimulationStep
+{
+	public :
+
+		SimulationStep() :
+			terminate(false) { }
+
+		SimulationStep(bool terminate, std::vector<unsigned> fstim):
+			terminate(terminate), fstim(fstim) { }
+
+		bool terminate;
+		std::vector<unsigned> fstim;
+
+	private :
+
+		friend class boost::serialization::access;
+
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & terminate;
+			ar & fstim;
+		}
+};
+
+
 	}
 }
 
