@@ -10,6 +10,12 @@ Network::Network() :
 }
 
 
+Network::~Network()
+{
+	delete m_impl;
+}
+
+
 void
 Network::addNeuron(unsigned idx,
 		float a, float b, float c, float d,

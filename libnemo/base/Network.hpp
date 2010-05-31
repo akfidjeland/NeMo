@@ -24,6 +24,8 @@ class DLL_PUBLIC Network
 
 		Network();
 
+		~Network();
+
 		/*! Add a single neuron to the network
 		 *
 		 * The neuron uses the Izhikevich neuron model. See E. M. Izhikevich
@@ -115,6 +117,10 @@ class DLL_PUBLIC Network
 		friend class nemo::mpi::Master;
 
 		class NetworkImpl* m_impl;
+
+		// undefined
+		Network(const Network&);
+		Network& operator=(const Network&);
 };
 
 
