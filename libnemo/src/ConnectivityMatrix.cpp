@@ -60,9 +60,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo remove need for creating intermediary warp address table. Just
 	//construct this directly in m_outgoing.
 	//! \todo should we get maxWarps directly in this function?
-	size_t partitionCount = mapper.deviceIdx(net.maxSourceIdx()).partition + 1;
-	size_t maxWarps = m_outgoing.moveToDevice(partitionCount, wtable);
-	m_incoming.allocate(partitionCount, maxWarps, 0.1);
+	size_t maxWarps = m_outgoing.moveToDevice(mapper.partitionCount(), wtable);
+	m_incoming.allocate(mapper.partitionCount(), maxWarps, 0.1);
 
 	moveRcmToDevice(wtable);
 }

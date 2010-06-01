@@ -10,6 +10,7 @@
 #include "NetworkImpl.hpp"
 
 #include <sstream>
+#include <limits>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/format.hpp>
 
@@ -19,9 +20,10 @@ namespace nemo {
 
 
 NetworkImpl::NetworkImpl() :
-	m_maxSourceIdx(-1),
-	m_maxDelay(0),
+	m_maxIdx(std::numeric_limits<int>::min()),
+	m_minIdx(std::numeric_limits<int>::max()),
 	m_maxWeight(0),
+	m_maxDelay(0),
 	m_minWeight(0)
 { }
 
@@ -44,7 +46,8 @@ NetworkImpl::addNeuron(nidx_t nidx, const Neuron<float>& n)
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Duplicate neuron index for neuron %u") % nidx));
 	}
-	m_maxSourceIdx = std::max(m_maxSourceIdx, int(nidx));
+	m_maxIdx = std::max(m_maxIdx, int(nidx));
+	m_minIdx = std::min(m_minIdx, int(nidx));
 	m_neurons[nidx] = n;
 }
 
@@ -61,7 +64,8 @@ NetworkImpl::addSynapse(
 	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
 
 	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix
-	m_maxSourceIdx = std::max(m_maxSourceIdx, int(source));
+	m_maxIdx = std::max(m_maxIdx, int(std::max(source, target)));
+	m_minIdx = std::min(m_minIdx, int(std::min(source, target)));
 	m_maxDelay = std::max(m_maxDelay, delay);
 	m_maxWeight = std::max(m_maxWeight, weight);
 	m_minWeight = std::min(m_minWeight, weight);

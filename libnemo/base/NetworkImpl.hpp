@@ -61,7 +61,8 @@ class NetworkImpl
 				const B plastic[],
 				size_t len);
 
-		nidx_t maxSourceIdx() const { return m_maxSourceIdx; }
+		nidx_t minNeuronIndex() const { return m_minIdx; }
+		nidx_t maxNeuronIndex() const { return m_maxIdx; }
 		delay_t maxDelay() const { return m_maxDelay; }
 		weight_t maxWeight() const { return m_maxWeight; }
 		weight_t minWeight() const { return m_minWeight; }
@@ -70,7 +71,6 @@ class NetworkImpl
 
 	private :
 
-		//! \todo perhaps store this as double?
 		typedef nemo::Neuron<weight_t> neuron_t;
 		std::map<nidx_t, neuron_t> m_neurons;
 
@@ -82,7 +82,8 @@ class NetworkImpl
 
 		fcm_t m_fcm;
 
-		int m_maxSourceIdx;
+		int m_minIdx;
+		int m_maxIdx;
 		delay_t m_maxDelay;
 		weight_t m_maxWeight;
 		weight_t m_minWeight;

@@ -72,8 +72,7 @@ applySTDP_(
 
 				size_t gr_offset = target * r_pitch + r_sidx;
 				size_t gf_offset = gr_faddress[gr_offset];
-#if __DEVICE_EMULATION__
-				//! \todo remove loading of rsynapse
+#if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
 				unsigned rsynapse = gr_address[gr_offset];
 #endif
 

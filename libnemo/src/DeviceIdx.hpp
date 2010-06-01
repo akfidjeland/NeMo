@@ -39,21 +39,29 @@ class Mapper {
 	public :
 
 		Mapper(const nemo::NetworkImpl& net, unsigned partitionSize) :
-			m_partitionSize(partitionSize) {
-			nidx_t maxIdx = net.maxSourceIdx();
-			m_partitionCount = (-1 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);
+			m_partitionSize(partitionSize),
+			m_partitionCount(0),
+			m_offset(0)
+		{
+			if(net.neuronCount() > 0) {
+				unsigned ncount = net.maxNeuronIndex() - net.minNeuronIndex() + 1;
+				m_partitionCount = DIV_CEIL(ncount, partitionSize);
+				m_offset = net.minNeuronIndex();
+			}
 		}
 
 		DeviceIdx deviceIdx(nidx_t global) const {
-			return DeviceIdx(global / m_partitionSize, global % m_partitionSize);
+			nidx_t local = global - m_offset;
+			assert(global >= m_offset);
+			return DeviceIdx(local / m_partitionSize, local % m_partitionSize);
 		}
 
 		nidx_t hostIdx(DeviceIdx d) const {
-			return d.partition * m_partitionSize + d.neuron;
+			return m_offset + d.partition * m_partitionSize + d.neuron;
 		}
 
 		nidx_t hostIdx(pidx_t p, nidx_t n) const {
-			return p * m_partitionSize + n;
+			return m_offset + p * m_partitionSize + n;
 		}
 
 		unsigned partitionSize() const { return m_partitionSize; }
@@ -65,6 +73,8 @@ class Mapper {
 		unsigned m_partitionSize;
 
 		unsigned m_partitionCount;
+
+		unsigned m_offset;
 };
 
 	} // end namespace cuda
