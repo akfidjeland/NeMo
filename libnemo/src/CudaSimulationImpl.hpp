@@ -22,6 +22,7 @@
 #include "NVector.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "DeviceAssertions.hpp"
+#include "FiringOutput.hpp"
 #include "NeuronParameters.hpp"
 
 namespace nemo {
@@ -105,7 +106,7 @@ class SimulationImpl
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
-		class FiringOutput* m_firingOutput;
+		FiringOutput m_firingOutput;
 
 		class CycleCounters* m_cycleCounters;
 

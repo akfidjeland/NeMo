@@ -20,7 +20,6 @@
 
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
-#include "FiringOutput.hpp"
 #include "ThalamicInput.hpp"
 #include "fixedpoint.hpp"
 #include "bitvector.hpp"
@@ -49,7 +48,7 @@ SimulationImpl::SimulationImpl(
 	m_recentFiring(NULL),
 	m_thalamicInput(NULL),
 	m_firingStimulus(NULL),
-	m_firingOutput(NULL),
+	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
 	m_cycleCounters(NULL),
 	m_deviceAssertions(NULL),
 	m_pitch32(0),
@@ -61,7 +60,6 @@ SimulationImpl::SimulationImpl(
 	//! \todo remove m_partitionCount member variable
 	m_partitionCount = m_mapper.partitionCount();
 	m_deviceAssertions = new DeviceAssertions(m_partitionCount);
-	m_firingOutput = new FiringOutput(m_partitionCount, m_maxPartitionSize, conf.cudaFiringBufferLength());
 	m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
 	//! \todo seed properly from configuration
 	m_thalamicInput = new ThalamicInput(net, m_mapper, m_partitionCount, m_maxPartitionSize);
@@ -79,7 +77,6 @@ SimulationImpl::~SimulationImpl()
 	finishSimulation();
 	//! \todo used shared_ptr instead to deal with this
 	if(m_deviceAssertions) delete m_deviceAssertions;
-	if(m_firingOutput) delete m_firingOutput;
 	if(m_recentFiring) delete m_recentFiring;
 	if(m_firingStimulus) delete m_firingStimulus;
 	if(m_thalamicInput) delete m_thalamicInput;
@@ -244,7 +241,7 @@ SimulationImpl::d_allocated() const
 	total += m_firingStimulus ? m_firingStimulus->d_allocated()   : 0;
 	total += m_recentFiring   ? m_recentFiring->d_allocated()     : 0;
 	total += m_neurons.d_allocated();
-	total += m_firingOutput   ? m_firingOutput->d_allocated()     : 0;
+	total += m_firingOutput.d_allocated();
 	total += m_thalamicInput  ? m_thalamicInput->d_allocated()    : 0;
 	total += m_cm.d_allocated();
 	return total;
@@ -261,7 +258,7 @@ SimulationImpl::setPitch()
 	m_pitch64 = m_recentFiring->wordPitch();
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, m_thalamicInput->wordPitch());
-	checkPitch(pitch1, m_firingOutput->wordPitch());
+	checkPitch(pitch1, m_firingOutput.wordPitch());
 	CUDA_SAFE_CALL(bv_setPitch(pitch1));
 }
 
@@ -287,7 +284,7 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 	m_timer.step();
 
 	uint32_t* d_fstim = setFiringStimulus(fstim);
-	uint32_t* d_fout = m_firingOutput->step();
+	uint32_t* d_fout = m_firingOutput.step();
 	::stepSimulation(
 			m_partitionCount,
 			usingStdp(),
@@ -360,14 +357,14 @@ SimulationImpl::readFiring(
 		const std::vector<unsigned>** cycles,
 		const std::vector<unsigned>** nidx)
 {
-	return m_firingOutput->readFiring(cycles, nidx);
+	return m_firingOutput.readFiring(cycles, nidx);
 }
 
 
 void
 SimulationImpl::flushFiringBuffer()
 {
-	m_firingOutput->flushBuffer();
+	m_firingOutput.flushBuffer();
 }
 
 

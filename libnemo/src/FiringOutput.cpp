@@ -19,18 +19,16 @@ namespace nemo {
 	namespace cuda {
 
 FiringOutput::FiringOutput(
-		size_t partitionCount,
-		size_t partitionSize,
+		const Mapper& mapper,
 		unsigned maxReadPeriod):
 	m_pitch(0),
-	m_partitionCount(partitionCount),
 	m_bufferedCycles(0),
 	m_maxReadPeriod(maxReadPeriod),
 	md_allocated(0),
-	m_partitionSize(partitionSize)
+	m_mapper(mapper)
 {
 	size_t width = BV_BYTE_PITCH;
-	size_t height = partitionCount * maxReadPeriod;
+	size_t height = m_mapper.partitionCount() * maxReadPeriod;
 
 	size_t bytePitch;
 	uint32_t* d_buffer;
@@ -51,7 +49,7 @@ FiringOutput::FiringOutput(
 uint32_t*
 FiringOutput::step()
 {
-	uint32_t* ret = md_buffer.get() + m_bufferedCycles * m_partitionCount * m_pitch;
+	uint32_t* ret = md_buffer.get() + m_bufferedCycles * m_mapper.partitionCount() * m_pitch;
 	m_bufferedCycles += 1;
 	if(m_bufferedCycles > m_maxReadPeriod) {
 		m_bufferedCycles = 0;
@@ -73,7 +71,7 @@ FiringOutput::readFiring(
 
 	CUDA_SAFE_CALL(cudaMemcpy(mh_buffer.get(),
 				md_buffer.get(),
-				m_bufferedCycles * m_partitionCount * m_pitch * sizeof(uint32_t),
+				m_bufferedCycles * m_mapper.partitionCount() * m_pitch * sizeof(uint32_t),
 				cudaMemcpyDeviceToHost));
 	populateSparse(m_bufferedCycles, mh_buffer.get(), m_cycles, m_neuronIdx);
 
@@ -93,10 +91,11 @@ FiringOutput::populateSparse(
 		std::vector<unsigned>& firingCycle,
 		std::vector<unsigned>& neuronIdx)
 {
+	unsigned pcount = m_mapper.partitionCount();
 	for(unsigned cycle=0; cycle < bufferedCycles; ++cycle) {
-		size_t cycleOffset = cycle * m_partitionCount * m_pitch;
+		size_t cycleOffset = cycle * pcount * m_pitch;
 
-		for(size_t partition=0; partition < m_partitionCount; ++partition) {
+		for(size_t partition=0; partition < pcount; ++partition) {
 			size_t partitionOffset = cycleOffset + partition * m_pitch;
 
 			for(size_t nword=0; nword < m_pitch; ++nword) {
@@ -108,12 +107,10 @@ FiringOutput::populateSparse(
 
 				//! \todo skip loop if nothing is set
 				for(size_t nbit=0; nbit < 32; ++nbit) {
-
 					bool fired = (word & (1 << nbit)) != 0;
 					if(fired) {
-						nidx_t nidx = partition * m_partitionSize + nword*32 + nbit;
 						firingCycle.push_back(cycle);	
-						neuronIdx.push_back(nidx);
+						neuronIdx.push_back(m_mapper.hostIdx(partition, nword*32 + nbit));
 					}
 				}
 			}

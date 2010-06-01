@@ -13,6 +13,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
+#include "DeviceIdx.hpp"
 #include <types.h>
 
 //! \file FiringOutput.hpp
@@ -31,14 +32,12 @@ class FiringOutput {
 
 		/*! Set up data on both host and device for probing firing
 		 *
-		 * \param partitionSize
-		 *		This is the maximum number of neurons in a partition.
 		 * \param maxReadPeriod
 		 *		The maximum period (in cycles) between reads issued from the host. If this
 		 *		period is exceeded, a buffer overflow will occur.
 		 */
-		FiringOutput(size_t partitionCount,
-				size_t partitionSize,
+		FiringOutput(
+				const Mapper& mapper,
 				unsigned maxReadPeriod=defaultBufferLength());
 
 		/*!  Read all firing data buffered on the device since the previous
@@ -94,8 +93,6 @@ class FiringOutput {
 		boost::shared_ptr<uint32_t> mh_buffer; // pinned, same size as device buffer
 		size_t m_pitch; // in words
 
-		size_t m_partitionCount;
-
 		/* While the firing is stored in a dense format on the device, the
 		 * external interface uses sparse firing. Pointers into the sparse
 		 * storage is valid from one call to \a readFiring to the next */
@@ -114,7 +111,7 @@ class FiringOutput {
 				std::vector<unsigned>& firingCycle,
 				std::vector<unsigned>& neuronIdx);
 
-		size_t m_partitionSize;
+		Mapper m_mapper;
 };
 
 	} // end namespace cuda
