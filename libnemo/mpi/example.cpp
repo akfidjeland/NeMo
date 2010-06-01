@@ -2,6 +2,7 @@
 #include <boost/mpi/communicator.hpp>
 
 #include <nemo.hpp>
+#include <exception.hpp>
 #include <examples.hpp>
 #include "nemo_mpi.hpp"
 
@@ -25,9 +26,12 @@ main(int argc, char* argv[])
 		} else {
 			nemo::mpi::Worker sim(world);
 		}
-	} catch(boost::mpi::exception& e) {
+	} catch (nemo::exception& e) {
 		std::cerr << e.what() << std::endl;
-		return -1;
+		env.abort(e.errno());
+	} catch (boost::mpi::exception& e) {
+		std::cerr << e.what() << std::endl;
+		env.abort(-1);
 	}
 
 	return 0;

@@ -10,7 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdexcept>
 #include <sstream>
 
 #include <cuda_runtime.h>
@@ -57,7 +56,7 @@ class KernelInvocationError : public nemo::exception
         std::ostringstream msg;                                            \
         msg << "Cuda error in file " << __FILE__ << " in line "            \
             << __LINE__ << ": " << cudaGetErrorString(err);                \
-        throw std::runtime_error(msg.str().c_str());                       \
+        throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR, msg.str().c_str());\
     } }
 
 #endif
