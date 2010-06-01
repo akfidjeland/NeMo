@@ -104,7 +104,7 @@ Master::step(const std::vector<unsigned>& fstim)
 	SimulationStep data;
 	std::vector<boost::mpi::request>reqs(wcount);
 	for(int r=0; r < wcount; ++r) {
-		reqs[r] = m_world.isend(r+1, SIM_STEP, data);
+		reqs[r] = m_world.isend(r+1, MASTER_STEP, data);
 	}
 	boost::mpi::wait_all(reqs.begin(), reqs.end());
 }
@@ -118,7 +118,7 @@ Master::terminate()
 	SimulationStep data(true, std::vector<unsigned>());
 	std::vector<boost::mpi::request>reqs(wcount);
 	for(int r=0; r < wcount; ++r) {
-		reqs[r] = m_world.isend(r+1, SIM_STEP, data);
+		reqs[r] = m_world.isend(r+1, MASTER_STEP, data);
 	}
 	boost::mpi::wait_all(reqs.begin(), reqs.end());
 }

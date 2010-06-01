@@ -51,8 +51,9 @@ class Worker
 		 * We could potentially interleave this with the other construction */
 		typedef std::map<rank_t, std::vector<SynapseVector> > global_fcm_t;
 
-		/* Buffer for incoming data */
+		/* Buffer for incoming/outgoing data */
 		std::vector<SynapseVector> m_ibuf;
+		std::vector<SynapseVector> m_obuf;
 		
 		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net, global_fcm_t&);
 		void addNeuron(nemo::NetworkImpl& net);
@@ -63,8 +64,13 @@ class Worker
 
 		rank_t m_rank;
 
-		/* All the ranks with which this worker should synchronise every simulation cycle */
+		/* All the peers to which this worker should send firing data every
+		 * simulation cycle */
 		std::set<rank_t> mg_targets;
+
+		/* All the peers from which this worker should receive firing data
+		 * every simulation cycle */
+		std::set<rank_t> mg_sources;
 
 		/* The specific source firings we should send */
 		std::map<nidx_t, std::set<rank_t> > mg_fcm;
@@ -85,6 +91,13 @@ class Worker
 		unsigned m_ncount;
 
 		void runSimulation();
+		void initSendFiring();
+		void initReceiveFiring();
+
+		boost::mpi::request m_mreq;               // incoming master request
+		std::vector<boost::mpi::request> m_ireqs; // incoming peer requests
+		std::vector<boost::mpi::request> m_oreqs; // outgoing peer requests
+
 };
 
 	}

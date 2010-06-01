@@ -110,7 +110,6 @@ Worker::addSynapseVector(const Mapper& mapper,
 			net.addSynapse(svec.source, i->target, svec.delay, i->weight, i->plastic);
 			ml_scount++;
 		} else {
-			mg_targets.insert(i->target);
 			mg_fcm[svec.source].insert(i->target);
 			mgo_scount++;
 			ss[targetRank].push_back(*i);
@@ -134,12 +133,22 @@ Worker::exchangeGlobalData(global_fcm_t& g_ss)
 		rank_t source = 1 + ((m_rank - 1 + (m_world.size() - 1) - targetOffset) % (m_world.size() - 1));
 		rank_t target = 1 + ((m_rank - 1 + targetOffset) % (m_world.size() - 1));
 		boost::mpi::request reqs[2];
-		reqs[0] = m_world.isend(target, SYNAPSE_VECTOR, g_ss[target]);
+
+		m_obuf = g_ss[target];
+		if(m_obuf.size() != 0) {
+			mg_targets.insert(target);
+		}
+		reqs[0] = m_world.isend(target, SYNAPSE_VECTOR, m_obuf);
 		g_ss.erase(target);
+
 		//! \todo probably not needed
 		m_ibuf.clear();
 		reqs[1] = m_world.irecv(source, SYNAPSE_VECTOR, m_ibuf);
 		boost::mpi::wait_all(reqs, reqs+2);
+		if(m_ibuf.size() != 0) {
+			mg_sources.insert(source);
+		}
+
 		for(std::vector<SynapseVector>::const_iterator i = m_ibuf.begin();
 				i != m_ibuf.end(); ++i) {
 			ml_fcm.setRow(i->source, i->delay, i->terminals);
@@ -156,20 +165,62 @@ void
 Worker::runSimulation()
 {
 	bool terminate = false;
-#define NREQS 1
-	boost::mpi::request reqs[NREQS];
+
+	m_ireqs.resize(mg_sources.size());
+	m_oreqs.resize(mg_targets.size());
 
 	SimulationStep masterReq;
 
-	reqs[0] = m_world.irecv(MASTER, SIM_STEP, masterReq);
-	boost::mpi::wait_all(reqs, reqs + 1);
+	initSendFiring();
 
 	while(!masterReq.terminate) {
-		reqs[0] = m_world.irecv(MASTER, SIM_STEP, masterReq);
-		//! \todo get data from all other workers
-		boost::mpi::wait_all(reqs, reqs + NREQS);
+		m_mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq);
+
+		initReceiveFiring();
+		//! \todo local gather
+		boost::mpi::wait_all(m_oreqs.begin(), m_oreqs.end());
+		/*! \todo Use wait any here instead, and accumulate input current as we get requests */
+		boost::mpi::wait_all(m_ireqs.begin(), m_ireqs.end());
+		m_mreq.wait();
+		//! \todo local update
+		initSendFiring();
+		//! \todo local scatter
+		/*! \todo Copy data back from simulation */
+		std::clog << "Worker " << m_rank << " stepping\n";
+	}
+	std::clog << "Worker " << m_rank << " terminating\n";
+}
+
+
+
+void
+Worker::initReceiveFiring()
+{
+	// dummy input
+	std::vector<int> ibuf(mg_sources.size());
+	unsigned sid = 0;
+	for(std::set<rank_t>::const_iterator source = mg_sources.begin();
+			source != mg_sources.end(); ++source, ++sid) {
+		//std::clog << "Worker " << m_rank << " receiving sync from " << *source << std::endl;;
+		//! \todo send actual data here
+		m_ireqs[sid] = m_world.irecv(*source, WORKER_STEP, ibuf[sid]);
 	}
 }
+
+
+
+void
+Worker::initSendFiring()
+{
+	int obuf = 0;
+	unsigned tid = 0;
+	for(std::set<rank_t>::const_iterator target = mg_targets.begin();
+			target != mg_targets.end(); ++target, ++tid) {
+		//std::clog << "Worker " << m_rank << " sending sync to " << *target << std::endl;;
+		m_oreqs[tid] = m_world.isend(*target, WORKER_STEP, obuf);
+	}
+}
+
 
 
 	} // end namespace mpi
