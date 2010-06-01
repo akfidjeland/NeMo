@@ -100,7 +100,6 @@ class Worker
 				std::vector< std::vector<unsigned> >& peers,
 				std::vector<unsigned>& master);
 
-		boost::mpi::request m_mreq;               // incoming master request
 		std::vector<boost::mpi::request> m_ireqs; // incoming peer requests
 		std::vector<boost::mpi::request> m_oreqs; // outgoing peer requests
 };

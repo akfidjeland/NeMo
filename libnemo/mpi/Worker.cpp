@@ -10,7 +10,6 @@
 #include "Worker.hpp"
 
 #include <stdexcept>
-#include <iterator>
 #include <algorithm>
 
 #include <boost/scoped_ptr.hpp>
@@ -175,6 +174,9 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 
 	bool terminate = false;
 
+	boost::mpi::request mreq; // incoming master request
+
+	//! \todo make these local variables
 	m_ireqs.resize(mg_sources.size());
 	m_oreqs.resize(mg_targets.size());
 
@@ -194,20 +196,21 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	std::vector<unsigned> go_firedMaster;
 
 	while(!masterReq.terminate) {
-		m_mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq);
+		mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq);
 
 		initReceiveFiring();
 		//! \todo local gather
 		boost::mpi::wait_all(m_oreqs.begin(), m_oreqs.end());
 		/*! \todo Use wait any here instead, and accumulate input current as we get requests */
 		boost::mpi::wait_all(m_ireqs.begin(), m_ireqs.end());
-		m_mreq.wait();
+		mreq.wait();
 		//! \todo split up step and only do neuron update here
 		sim->step();
 		sim->readFiring(&l_firedCycles, &l_fired);
 		distributeOutgoing(*l_fired, go_fired, go_firedMaster);
 		initSendFiring();
-		//! \todo send firing back to master
+		//! \todo async send here?
+		m_world.send(MASTER, MASTER_STEP, go_firedMaster);
 		//! \todo local scatter
 	}
 }

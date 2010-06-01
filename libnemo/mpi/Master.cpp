@@ -9,6 +9,8 @@
 
 #include "Master.hpp"
 
+#include <iterator>
+
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/nonblocking.hpp>
@@ -102,11 +104,25 @@ Master::step(const std::vector<unsigned>& fstim)
 	unsigned wcount = workers();
 	//! \todo split up fstim here and insert into different requests
 	SimulationStep data;
-	std::vector<boost::mpi::request>reqs(wcount);
+	std::vector<boost::mpi::request> oreqs(wcount);
+
 	for(int r=0; r < wcount; ++r) {
-		reqs[r] = m_world.isend(r+1, MASTER_STEP, data);
+		oreqs[r] = m_world.isend(r+1, MASTER_STEP, data);
 	}
-	boost::mpi::wait_all(reqs.begin(), reqs.end());
+
+	boost::mpi::wait_all(oreqs.begin(), oreqs.end());
+
+	/* Ideally we'd get the results back in order. Just insert in rank order to
+	 * avoid having to sort later */
+	std::vector<unsigned> ibuf;
+	//! \todo keep a local firing buffer here.
+
+	for(int r=0; r < wcount; ++r) {
+		m_world.recv(r+1, MASTER_STEP, ibuf);
+		std::copy(ibuf.begin(), ibuf.end(),
+				std::ostream_iterator<unsigned>(std::cout, " "));
+	}
+	std::cout << std::endl;
 }
 
 
