@@ -41,6 +41,7 @@ class DLL_PUBLIC Simulation
 		 * 		new Simulation object, or NULL if no suitable CUDA device was
 		 * 		found. */
 		static Simulation* create(const Network& net, const Configuration&);
+		static Simulation* create(const class NetworkImpl& net, const Configuration& conf);
 
 		virtual ~Simulation() = 0;
 

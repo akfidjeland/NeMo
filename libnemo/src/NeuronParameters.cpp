@@ -10,7 +10,6 @@
 #include "NeuronParameters.hpp"
 
 #include <sstream>
-#include <stdexcept>
 #include <vector>
 
 #include "DeviceIdx.hpp"

@@ -10,7 +10,10 @@
 #include "Worker.hpp"
 
 #include <stdexcept>
+#include <iterator>
+#include <algorithm>
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 #include <boost/mpi/nonblocking.hpp>
@@ -20,13 +23,12 @@
 
 #include "nemo_mpi_common.hpp"
 #include "Mapper.hpp"
+#include <nemo.hpp>
 #include <NetworkImpl.hpp>
 
 
 namespace nemo {
 	namespace mpi {
-
-void addNeuron(boost::mpi::communicator& world, nemo::NetworkImpl& net);
 
 
 Worker::Worker(boost::mpi::communicator& world) :
@@ -56,6 +58,7 @@ Worker::Worker(boost::mpi::communicator& world) :
 				constructionDone = true;
 				break;
 			default:
+				//! \todo throw mpi error here instead. Remove stdexcept header when doing so
 				//! \todo deal with errors properly
 				throw std::runtime_error("unknown tag");
 		}
@@ -72,7 +75,10 @@ Worker::Worker(boost::mpi::communicator& world) :
 	std::clog << "Worker " << m_rank << " " << mgi_scount << " global synapses (incoming)" << std::endl;
 #endif
 
-	runSimulation();
+	//! \todo get configuration from the master
+	nemo::Configuration conf;
+	conf.disableLogging();
+	runSimulation(net, conf);
 }
 
 
@@ -110,7 +116,7 @@ Worker::addSynapseVector(const Mapper& mapper,
 			net.addSynapse(svec.source, i->target, svec.delay, i->weight, i->plastic);
 			ml_scount++;
 		} else {
-			mg_fcm[svec.source].insert(i->target);
+			mg_fcm[svec.source].insert(targetRank);
 			mgo_scount++;
 			ss[targetRank].push_back(*i);
 		}
@@ -162,8 +168,11 @@ Worker::exchangeGlobalData(global_fcm_t& g_ss)
 
 
 void
-Worker::runSimulation()
+Worker::runSimulation(const nemo::NetworkImpl& net,
+		const nemo::Configuration& conf)
 {
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::Simulation::create(net, conf));
+
 	bool terminate = false;
 
 	m_ireqs.resize(mg_sources.size());
@@ -172,6 +181,17 @@ Worker::runSimulation()
 	SimulationStep masterReq;
 
 	initSendFiring();
+
+	/* Locally generated firing */
+	const std::vector<unsigned>* l_firedCycles; // unused
+	const std::vector<unsigned>* l_fired;       // neurons
+
+	/* Outgoing firing packets to peers. */
+	rank_t maxTargetRank = *std::max_element(mg_targets.begin(), mg_targets.end());
+	std::vector< std::vector<unsigned> > go_fired(1 + maxTargetRank);
+
+	/* Outgoing firing packet to master. */
+	std::vector<unsigned> go_firedMaster;
 
 	while(!masterReq.terminate) {
 		m_mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq);
@@ -182,13 +202,14 @@ Worker::runSimulation()
 		/*! \todo Use wait any here instead, and accumulate input current as we get requests */
 		boost::mpi::wait_all(m_ireqs.begin(), m_ireqs.end());
 		m_mreq.wait();
-		//! \todo local update
+		//! \todo split up step and only do neuron update here
+		sim->step();
+		sim->readFiring(&l_firedCycles, &l_fired);
+		distributeOutgoing(*l_fired, go_fired, go_firedMaster);
 		initSendFiring();
+		//! \todo send firing back to master
 		//! \todo local scatter
-		/*! \todo Copy data back from simulation */
-		std::clog << "Worker " << m_rank << " stepping\n";
 	}
-	std::clog << "Worker " << m_rank << " terminating\n";
 }
 
 
@@ -201,8 +222,7 @@ Worker::initReceiveFiring()
 	unsigned sid = 0;
 	for(std::set<rank_t>::const_iterator source = mg_sources.begin();
 			source != mg_sources.end(); ++source, ++sid) {
-		//std::clog << "Worker " << m_rank << " receiving sync from " << *source << std::endl;;
-		//! \todo send actual data here
+		//! \todo receive actual data here
 		m_ireqs[sid] = m_world.irecv(*source, WORKER_STEP, ibuf[sid]);
 	}
 }
@@ -216,10 +236,47 @@ Worker::initSendFiring()
 	unsigned tid = 0;
 	for(std::set<rank_t>::const_iterator target = mg_targets.begin();
 			target != mg_targets.end(); ++target, ++tid) {
-		//std::clog << "Worker " << m_rank << " sending sync to " << *target << std::endl;;
 		m_oreqs[tid] = m_world.isend(*target, WORKER_STEP, obuf);
 	}
 }
+
+
+
+/* \param local
+ * 		Firing generated this cycle in the local simulation
+ * \param peers
+ * 		Output buffer for firing to be sent to each peer
+ * \param master
+ * 		Output buffer for firing to be sent back to master
+ */
+void
+Worker::distributeOutgoing(
+		const std::vector<unsigned>& local,
+		std::vector< std::vector<unsigned> >& peers,
+		std::vector<unsigned>& master)
+{
+	for(std::vector< std::vector<unsigned> >::iterator i = peers.begin();
+			i != peers.end(); ++i) {
+		i->clear();
+	}
+
+	/* Each local firing may be sent to zero or more peers */
+	for(std::vector<unsigned>::const_iterator source = local.begin();
+			source != local.end(); ++source) {
+		const std::set<rank_t>& targets = mg_fcm[*source];
+		for(std::set<rank_t>::const_iterator target = targets.begin();
+				target != targets.end(); ++target) {
+			assert(*target < peers.size());
+			peers.at(*target).push_back(*source);
+		}
+	}
+
+	/* Send all data back to master */
+	master.clear();
+	std::copy(local.begin(), local.end(), std::back_inserter(master));
+}
+
+
 
 
 

@@ -21,6 +21,7 @@
 namespace nemo {
 
 	class NetworkImpl;
+	class Configuration;
 
 	namespace mpi {
 
@@ -72,7 +73,7 @@ class Worker
 		 * every simulation cycle */
 		std::set<rank_t> mg_sources;
 
-		/* The specific source firings we should send */
+		/* The specific source firings we should send. */
 		std::map<nidx_t, std::set<rank_t> > mg_fcm;
 
 		/* At simulation-time the synapse data is stored on the host-side at
@@ -90,14 +91,18 @@ class Worker
 		unsigned mgo_scount;
 		unsigned m_ncount;
 
-		void runSimulation();
+		void runSimulation(const nemo::NetworkImpl& net,
+				const nemo::Configuration& conf);
 		void initSendFiring();
 		void initReceiveFiring();
+		void distributeOutgoing(
+				const std::vector<unsigned>& local,
+				std::vector< std::vector<unsigned> >& peers,
+				std::vector<unsigned>& master);
 
 		boost::mpi::request m_mreq;               // incoming master request
 		std::vector<boost::mpi::request> m_ireqs; // incoming peer requests
 		std::vector<boost::mpi::request> m_oreqs; // outgoing peer requests
-
 };
 
 	}

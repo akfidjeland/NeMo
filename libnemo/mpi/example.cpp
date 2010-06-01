@@ -16,12 +16,12 @@ main(int argc, char* argv[])
 	try {
 		if(world.rank() == nemo::mpi::MASTER) {
 			//! \todo get neuron count from command-line
-			nemo::Network* net = nemo::random1k::construct(2048, 1024);
+			nemo::Network* net = nemo::random1k::construct(1024, 100);
 			nemo::Configuration conf;
 			nemo::mpi::Master sim(world, *net, conf);
-			sim.step();
-			sim.step();
-			sim.step();
+			for(unsigned ms=0; ms < 10; ++ms) {
+				sim.step();
+			}
 			delete net;
 		} else {
 			nemo::mpi::Worker sim(world);
