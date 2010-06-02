@@ -1,6 +1,10 @@
 #ifndef NEMO_H
 #define NEMO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \file nemo.h
  *
  * \brief C API for the nemo spiking neural network simulator
@@ -359,5 +363,8 @@ void nemo_delete_simulation(nemo_simulation_t);
 
 /* \} */ // end finalize section
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
