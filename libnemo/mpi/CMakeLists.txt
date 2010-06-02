@@ -17,6 +17,7 @@ IF(MPI_FOUND)
 		Master.cpp
 		Worker.cpp
 		Mapper.cpp
+		SpikeQueue.cpp
 	)
 
 	SET_TARGET_PROPERTIES(nemo_mpi PROPERTIES

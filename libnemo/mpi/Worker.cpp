@@ -20,9 +20,11 @@
 #include <boost/serialization/utility.hpp>
 
 #include "nemo_mpi_common.hpp"
-#include "Mapper.hpp"
 #include <nemo.hpp>
 #include <NetworkImpl.hpp>
+
+#include "Mapper.hpp"
+#include "SpikeQueue.hpp"
 
 
 namespace nemo {
@@ -76,7 +78,7 @@ Worker::Worker(boost::mpi::communicator& world) :
 	//! \todo get configuration from the master
 	nemo::Configuration conf;
 	conf.disableLogging();
-	runSimulation(net, conf);
+	runSimulation(net, conf, mapper.localCount());
 }
 
 
@@ -172,12 +174,15 @@ Worker::exchangeGlobalData(const Mapper& mapper, global_fcm_t& g_ss)
 
 void
 Worker::runSimulation(const nemo::NetworkImpl& net,
-		const nemo::Configuration& conf)
+		const nemo::Configuration& conf,
+		size_t localCount)
 {
 	/* Local simulation data */
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::Simulation::create(net, conf));
-	const std::vector<unsigned>* l_firedCycles; // unused
-	const std::vector<unsigned>* l_fired;       // neurons
+	const std::vector<unsigned>* l_firedCycles;         // unused
+	const std::vector<unsigned>* l_fired;               // neurons
+	std::vector<weight_t> current(localCount, 0);       // input from global spikes
+	SpikeQueue queue(net.maxDelay());
 
 	/* Incoming master request */
 	boost::mpi::request mreq;
@@ -205,13 +210,16 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 		initGlobalGather(ireqs, ibufs);
 		//! \todo local gather
 		waitGlobalScatter(oreqs);
-		waitGlobalGather(ireqs, ibufs);
+		waitGlobalGather(ireqs, ibufs, queue);
 		mreq.wait();
+		//! \todo accumulate current here
+		// gather(queue, ml_fcm, current);
 		//! \todo split up step and only do neuron update here
 		sim->step();
 		sim->readFiring(&l_firedCycles, &l_fired);
 		initGlobalScatter(*l_fired, oreqs, obufs);
 		sendMaster(*l_fired);
+		queue.step();
 		//! \todo local scatter
 	}
 
@@ -233,8 +241,32 @@ Worker::initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs)
 
 
 
+/* Incoming spike/delay pairs to spike queue */
 void
-Worker::waitGlobalGather(req_vector& ireqs, const fbuf_vector& ibufs)
+enqueueIncoming(
+		const Worker::fbuf& fired,
+		const nemo::ConnectivityMatrix& cm,
+		SpikeQueue& queue)
+{
+	for(Worker::fbuf::const_iterator i_source = fired.begin();
+			i_source != fired.end(); ++i_source) {
+		nidx_t source = *i_source;
+		typedef nemo::ConnectivityMatrix::delay_iterator it;
+		it end = cm.delay_end(source);
+		for(it delay = cm.delay_begin(source); delay != end; ++delay) {
+			// -1 since spike has already been in flight for a cycle
+			queue.enqueue(source, *delay - 1);
+		}
+	}
+}
+
+
+
+void
+Worker::waitGlobalGather(
+		req_vector& ireqs,
+		const fbuf_vector& ibufs,
+		SpikeQueue& queue)
 {
 	using namespace boost::mpi;
 
@@ -251,7 +283,7 @@ Worker::waitGlobalGather(req_vector& ireqs, const fbuf_vector& ibufs)
 			<< " receiving " << ibufs.at(r).size() << " firings from "
 			<< source << std::endl;
 #endif
-		//! \todo accumulate current into vector
+		enqueueIncoming(ibufs.at(r), ml_fcm, queue);
 	}
 }
 

@@ -62,6 +62,7 @@ ConnectivityMatrix::setRow(nidx_t source,
 	if(!insertion.second) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Double insertion into connectivity matrix");
 	}
+	m_delays[source].insert(delay);
 	m_maxSourceIdx = std::max(m_maxSourceIdx, source);
 	m_maxDelay = std::max(m_maxDelay, delay);
 	return insertion.first->second;
@@ -95,6 +96,30 @@ const Row&
 ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 {
 	return m_cm.at(addressOf(source, delay));
+}
+
+
+
+ConnectivityMatrix::delay_iterator
+ConnectivityMatrix::delay_begin(nidx_t source) const
+{
+	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_delays.find(source);
+	if(found == m_delays.end()) {
+		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
+	}
+	return found->second.begin();
+}
+
+
+
+ConnectivityMatrix::delay_iterator
+ConnectivityMatrix::delay_end(nidx_t source) const
+{
+	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_delays.find(source);
+	if(found == m_delays.end()) {
+		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
+	}
+	return found->second.end();
 }
 
 

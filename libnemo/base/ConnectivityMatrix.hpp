@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
@@ -67,6 +68,11 @@ class ConnectivityMatrix
 
 		void finalize() { finalizeForward(); }
 
+		typedef std::set<delay_t>::const_iterator delay_iterator;
+
+		delay_iterator delay_begin(nidx_t source) const;
+		delay_iterator delay_end(nidx_t source) const;
+
 	private:
 
 		/* During network construction we accumulate data in a map. This way we
@@ -82,6 +88,9 @@ class ConnectivityMatrix
 		//! \todo use two different classes for this in order to ensure ordering
 		std::vector<Row> m_cm;
 		void finalizeForward();
+
+		std::map<nidx_t, std::set<delay_t> > m_delays;
+		//! \todo could add a fast lookup here as well
 
 		delay_t m_maxDelay;
 		nidx_t m_maxSourceIdx;

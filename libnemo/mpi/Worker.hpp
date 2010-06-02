@@ -25,6 +25,7 @@ namespace nemo {
 	namespace mpi {
 
 	class Mapper;
+	class SpikeQueue;
 
 /*
  * prefixes:
@@ -36,6 +37,8 @@ class Worker
 	public:
 
 		Worker(boost::mpi::communicator& world);
+
+		typedef std::vector<unsigned> fbuf;
 
 	private:
 
@@ -79,7 +82,8 @@ class Worker
 		 * the target node */
 
 		/* We keep a local FCM which is used to accumulate current from all
-		 * incoming firings. All source indices are global */
+		 * incoming firings. All source indices are global, while target
+		 * indices are local */
 		nemo::ConnectivityMatrix ml_fcm;
 
 		unsigned ml_scount;
@@ -87,18 +91,18 @@ class Worker
 		unsigned mgo_scount;
 		unsigned m_ncount;
 
-		typedef std::vector<unsigned> fbuf;
 		typedef std::vector<fbuf> fbuf_vector;
 		typedef std::vector<boost::mpi::request> req_vector;
 
 		void runSimulation(const nemo::NetworkImpl& net,
-				const nemo::Configuration& conf);
+				const nemo::Configuration& conf,
+				size_t localCount);
 
 		void initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obufs);
 		void waitGlobalScatter(req_vector&);
 
 		void initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs);
-		void waitGlobalGather(req_vector&, const fbuf_vector& ibufs);
+		void waitGlobalGather(req_vector& ireqs, const fbuf_vector& ibufs, SpikeQueue& queue);
 
 		void sendMaster(const fbuf& fired);
 };

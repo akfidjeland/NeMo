@@ -30,5 +30,14 @@ Mapper::localIndex(nidx_t global) const
 	global - m_startIdx;
 }
 
+
+
+unsigned
+Mapper::localCount() const
+{
+	return m_nodeSize;
+}
+
+
 	} // end namespace mpi
 } // end namespace nemo

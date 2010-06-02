@@ -23,6 +23,9 @@ class Mapper
 
 		nidx_t localIndex(nidx_t global) const;
 
+		/*! \return number of neurons handled locally */
+		unsigned localCount() const;
+
 	private:
 
 		/* Number of neurons processed on each node */
