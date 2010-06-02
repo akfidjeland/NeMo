@@ -13,7 +13,6 @@
 #include <vector>
 #include <set>
 #include <boost/mpi/communicator.hpp>
-#include <boost/tuple/tuple.hpp>
 
 #include <ConnectivityMatrix.hpp>
 #include "mpi_types.hpp"
@@ -59,7 +58,7 @@ class Worker
 		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net, global_fcm_t&);
 		void addNeuron(nemo::NetworkImpl& net);
 
-		void exchangeGlobalData(global_fcm_t& g_ss);
+		void exchangeGlobalData(const Mapper&, global_fcm_t& g_ss);
 
 		boost::mpi::communicator m_world;
 
@@ -81,30 +80,30 @@ class Worker
 
 		/* We keep a local FCM which is used to accumulate current from all
 		 * incoming firings. All source indices are global */
-		//! \todo make the target indices local
 		nemo::ConnectivityMatrix ml_fcm;
-
-		typedef boost::tuple<nidx_t, delay_t> fidx;
 
 		unsigned ml_scount;
 		unsigned mgi_scount;
 		unsigned mgo_scount;
 		unsigned m_ncount;
 
+		typedef std::vector<unsigned> fbuf;
+		typedef std::vector<fbuf> fbuf_vector;
+		typedef std::vector<boost::mpi::request> req_vector;
+
 		void runSimulation(const nemo::NetworkImpl& net,
 				const nemo::Configuration& conf);
-		void initSendFiring();
-		void initReceiveFiring();
-		void distributeOutgoing(
-				const std::vector<unsigned>& local,
-				std::vector< std::vector<unsigned> >& peers,
-				std::vector<unsigned>& master);
 
-		std::vector<boost::mpi::request> m_ireqs; // incoming peer requests
-		std::vector<boost::mpi::request> m_oreqs; // outgoing peer requests
+		void initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obufs);
+		void waitGlobalScatter(req_vector&);
+
+		void initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs);
+		void waitGlobalGather(req_vector&, const fbuf_vector& ibufs);
+
+		void sendMaster(const fbuf& fired);
 };
 
-	}
-}
+
+}	}
 
 #endif

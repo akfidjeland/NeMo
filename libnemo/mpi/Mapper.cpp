@@ -4,8 +4,13 @@ namespace nemo {
 	namespace mpi {
 
 
-Mapper::Mapper(int workers) :
-	m_workers(workers)
+Mapper::Mapper(int workers, int rank) :
+	//! \todo do something sensible here. Use a size hint.
+	//! \todo support heterogenous clusters
+	m_nodeSize(512),
+	m_workers(workers),
+	m_rank(rank),
+	m_startIdx(m_rank * m_nodeSize)
 {
 	;
 }
@@ -14,9 +19,15 @@ Mapper::Mapper(int workers) :
 int
 Mapper::rankOf(nidx_t n) const
 {
-	//! \todo do something sensible here. Use a size hint.
 	//! \todo make sure we're not using more nodes than we have available
-	return 1 + n / 1024;
+	return 1 + n / m_nodeSize;
+}
+
+
+nidx_t
+Mapper::localIndex(nidx_t global) const
+{
+	global - m_startIdx;
 }
 
 	} // end namespace mpi

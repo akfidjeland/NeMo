@@ -66,7 +66,7 @@ Master::distributeNetwork(nemo::NetworkImpl* net)
 {
 	//! \todo base this on size hint as well
 	unsigned wcount = workers();
-	Mapper mapper(wcount);
+	Mapper mapper(wcount, m_world.rank());
 
 	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net->m_neurons.begin();
 			i != net->m_neurons.end(); ++i) {
@@ -119,10 +119,16 @@ Master::step(const std::vector<unsigned>& fstim)
 
 	for(int r=0; r < wcount; ++r) {
 		m_world.recv(r+1, MASTER_STEP, ibuf);
+#ifdef MPI_LOGGING
 		std::copy(ibuf.begin(), ibuf.end(),
 				std::ostream_iterator<unsigned>(std::cout, " "));
+#endif
 	}
-	std::cout << std::endl;
+#ifdef MPI_LOGGING
+	if(ibuf.size() > 0) {
+		std::cout << std::endl;
+	}
+#endif
 }
 
 

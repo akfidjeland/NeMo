@@ -30,7 +30,7 @@ Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss)
 		throw nemo::exception(NEMO_ALLOCATION_ERROR, "Failed to allocate CM row");
 	}
 
-	data = boost::shared_ptr<FAxonTerminal>(ptr, free);
+	data = boost::shared_array<FAxonTerminal>(ptr, free);
 
 	//! \todo just use std::copy here?
 	/* static/plastic flag is not needed in forward matrix */
@@ -52,7 +52,7 @@ ConnectivityMatrix::ConnectivityMatrix() :
 
 
 
-void
+Row&
 ConnectivityMatrix::setRow(nidx_t source,
 		delay_t delay,
 		const std::vector<AxonTerminal<nidx_t, weight_t> >& ss)
@@ -64,6 +64,7 @@ ConnectivityMatrix::setRow(nidx_t source,
 	}
 	m_maxSourceIdx = std::max(m_maxSourceIdx, source);
 	m_maxDelay = std::max(m_maxDelay, delay);
+	return insertion.first->second;
 }
 
 

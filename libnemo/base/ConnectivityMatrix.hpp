@@ -14,7 +14,7 @@
 #include <map>
 
 #include <boost/tuple/tuple.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/shared_array.hpp>
 
 #include "types.hpp"
 
@@ -43,7 +43,7 @@ struct Row
 	Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& );
 
 	size_t len;
-	boost::shared_ptr<FAxonTerminal> data;
+	boost::shared_array<FAxonTerminal> data;
 };
 
 
@@ -57,8 +57,9 @@ class ConnectivityMatrix
 
 		ConnectivityMatrix();
 
-		/*! Add a number of synapses with the same source and delay */
-		void setRow(nidx_t, delay_t,
+		/*! Add a number of synapses with the same source and delay. Return
+		 * reference to the newly inserted row. */
+		Row& setRow(nidx_t, delay_t,
 				const std::vector<AxonTerminal<nidx_t, weight_t> >&);
 
 		/*! \return all synapses for a given source and delay */
