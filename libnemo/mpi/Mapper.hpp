@@ -1,10 +1,10 @@
 #ifndef NEMO_MPI_MAPPER_HPP
 #define NEMO_MPI_MAPPER_HPP
 
+#include <types.h>
+
 namespace nemo {
 	namespace mpi {
-
-#include <types.h>
 
 /* Translate between global and rank/local indices
  *

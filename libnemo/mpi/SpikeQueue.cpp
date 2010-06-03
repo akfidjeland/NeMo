@@ -25,9 +25,9 @@ SpikeQueue::slot(unsigned delay) const
 
 
 void
-SpikeQueue::enqueue(nidx_t source, delay_t delay)
+SpikeQueue::enqueue(nidx_t source, delay_t delay, delay_t elapsed)
 {
-	m_queue.at(slot(delay)).push_back(arrival(source, delay));
+	m_queue.at(slot(delay-elapsed)).push_back(arrival(source, delay));
 }
 
 

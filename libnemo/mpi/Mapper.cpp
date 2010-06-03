@@ -1,5 +1,8 @@
 #include "Mapper.hpp"
 
+#include <assert.h>
+
+
 namespace nemo {
 	namespace mpi {
 
@@ -10,7 +13,7 @@ Mapper::Mapper(int workers, int rank) :
 	m_nodeSize(512),
 	m_workers(workers),
 	m_rank(rank),
-	m_startIdx(m_rank * m_nodeSize)
+	m_startIdx((m_rank - 1) * m_nodeSize)
 {
 	;
 }
@@ -27,7 +30,10 @@ Mapper::rankOf(nidx_t n) const
 nidx_t
 Mapper::localIndex(nidx_t global) const
 {
-	global - m_startIdx;
+	assert(rankOf(global) == m_rank);
+	assert(global >= m_startIdx);
+	assert(global < m_startIdx + m_nodeSize);
+	return global - m_startIdx;
 }
 
 

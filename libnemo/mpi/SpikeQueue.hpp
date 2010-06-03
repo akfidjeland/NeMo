@@ -38,7 +38,13 @@ class SpikeQueue
 
 		SpikeQueue(delay_t maxDelay);
 
-		void enqueue(nidx_t source, delay_t delay);
+		/*! Enqueue an arrival entry for a spike from the given source neuron
+		 * with the given conductance delay.
+		 *
+		 * \param elapsedDelay
+		 * 		Length of time which this spike has allready been in flight.
+		 */
+		void enqueue(nidx_t source, delay_t delay, delay_t elapsedDelay=0);
 
 		/* Rotate queue one slot, discarding current cycles' arrivals. Any
 		 * existing iterators returned by current_begin/current_end will be

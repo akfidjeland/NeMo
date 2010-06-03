@@ -158,6 +158,7 @@ Worker::exchangeGlobalData(const Mapper& mapper, global_fcm_t& g_ss)
 		for(std::vector<SynapseVector>::const_iterator i = m_ibuf.begin();
 				i != m_ibuf.end(); ++i) {
 			Row& row = ml_fcm.setRow(i->source, i->delay, i->terminals);
+
 			/* The source sends synapses with global target indices. At
 			 * run-time we need local addresses instead */
 			for(size_t s=0; s < row.len; ++s) {
@@ -170,6 +171,25 @@ Worker::exchangeGlobalData(const Mapper& mapper, global_fcm_t& g_ss)
 	ml_fcm.finalize();
 }
 
+
+void
+gather(const SpikeQueue& queue,
+		const ConnectivityMatrix& fcm,
+		std::vector<weight_t>& current)
+{
+	std::fill(current.begin(), current.end(), 0.0);
+
+	SpikeQueue::const_iterator arrival_end = queue.current_end();
+	for(SpikeQueue::const_iterator arrival = queue.current_begin();
+			arrival != arrival_end; ++arrival) {
+		const Row& row = fcm.getRow(arrival->source(), arrival->delay());
+		for(unsigned s=0; s < row.len; ++s) {
+			const FAxonTerminal& terminal = row.data[s];
+			assert(terminal.target < current.size());
+			current.at(terminal.target) += terminal.weight;
+		}
+	}
+}
 
 
 void
@@ -198,7 +218,7 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	 * frequent) is faster */
 	req_vector oreqs(mg_targets.size());
 	rank_t maxTargetRank = *std::max_element(mg_targets.begin(), mg_targets.end());
-	assert(1 + maxTargetRank >= mg_targets.size());
+	assert(1 + maxTargetRank >= rank_t(mg_targets.size()));
 	fbuf_vector obufs(1 + maxTargetRank);
 
 	/* Scatter empty firing packages to start with */
@@ -212,8 +232,8 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 		waitGlobalScatter(oreqs);
 		waitGlobalGather(ireqs, ibufs, queue);
 		mreq.wait();
-		//! \todo accumulate current here
-		// gather(queue, ml_fcm, current);
+		//! \todo improve naming
+		gather(queue, ml_fcm, current);
 		//! \todo split up step and only do neuron update here
 		sim->step();
 		sim->readFiring(&l_firedCycles, &l_fired);
@@ -255,7 +275,7 @@ enqueueIncoming(
 		it end = cm.delay_end(source);
 		for(it delay = cm.delay_begin(source); delay != end; ++delay) {
 			// -1 since spike has already been in flight for a cycle
-			queue.enqueue(source, *delay - 1);
+			queue.enqueue(source, *delay, 1);
 		}
 	}
 }
@@ -276,12 +296,11 @@ Worker::waitGlobalGather(
 
 	for(unsigned r=0; r < nreqs; ++r) {
 		result = wait_any(ireqs.begin(), ireqs.end());
-		const status& incoming = result.first;
-		rank_t source = result.first.source();
 #ifdef MPI_LOGGING
+		const status& incoming = result.first;
 		std::cerr << "Worker " << m_rank
 			<< " receiving " << ibufs.at(r).size() << " firings from "
-			<< source << std::endl;
+			<< incoming.source() << std::endl;
 #endif
 		enqueueIncoming(ibufs.at(r), ml_fcm, queue);
 	}
@@ -313,7 +332,7 @@ Worker::initGlobalScatter(
 		for(std::set<rank_t>::const_iterator target = targets.begin();
 				target != targets.end(); ++target) {
 			rank_t targetRank = *target;
-			assert(targetRank < obufs.size());
+			assert(targetRank < rank_t(obufs.size()));
 			assert(mg_targets.count(targetRank) == 1);
 			obufs.at(targetRank).push_back(*source);
 		}
