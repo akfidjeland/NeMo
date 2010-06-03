@@ -21,9 +21,11 @@
 #include "DeviceIdx.hpp"
 #include "NVector.hpp"
 #include "ConnectivityMatrix.hpp"
+#include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
 #include "FiringOutput.hpp"
 #include "NeuronParameters.hpp"
+#include "ThalamicInput.hpp"
 
 namespace nemo {
 
@@ -91,7 +93,6 @@ class SimulationImpl
 		size_t d_allocated() const;
 
 		size_t m_partitionCount;
-		size_t m_maxPartitionSize;
 
 		NeuronParameters m_neurons;
 
@@ -99,7 +100,7 @@ class SimulationImpl
 
 		NVector<uint64_t> m_recentFiring;
 
-		class ThalamicInput* m_thalamicInput;
+		ThalamicInput m_thalamicInput;
 
 		/* Densely packed, one bit per neuron */
 		NVector<uint32_t> m_firingStimulus;
@@ -108,9 +109,9 @@ class SimulationImpl
 		 * required per neuron (regardless of whether or not it's firing */
 		FiringOutput m_firingOutput;
 
-		class CycleCounters* m_cycleCounters;
+		CycleCounters m_cycleCounters;
 
-		class DeviceAssertions* m_deviceAssertions;
+		DeviceAssertions m_deviceAssertions;
 
 		void setPitch();
 

@@ -40,29 +40,25 @@ SimulationImpl::SimulationImpl(
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net, conf.cudaPartitionSize()),
 	m_conf(conf),
-	m_partitionCount(0),
 	//! \todo get rid of member variable
-	m_maxPartitionSize(conf.cudaPartitionSize()),
+	m_partitionCount(0),
 	m_neurons(net, m_mapper),
 	m_cm(net, m_mapper, conf.cudaPartitionSize(), conf.loggingEnabled()),
 	m_recentFiring(m_mapper.partitionCount(), conf.cudaPartitionSize(), false, 2),
-	m_thalamicInput(NULL),
+	//! \todo remove redundant argument
+	//! \todo seed properly from configuration
+	m_thalamicInput(net, m_mapper, m_mapper.partitionCount(), conf.cudaPartitionSize()),
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
 	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
-	m_cycleCounters(NULL),
-	m_deviceAssertions(NULL),
+	m_cycleCounters(m_mapper.partitionCount(), usingStdp()),
+	m_deviceAssertions(m_mapper.partitionCount()),
 	m_pitch32(0),
 	m_pitch64(0)
 {
 	configureStdp(conf.stdpFunction());
 
-	//! \todo merge with init list
 	//! \todo remove m_partitionCount member variable
 	m_partitionCount = m_mapper.partitionCount();
-	m_deviceAssertions = new DeviceAssertions(m_partitionCount);
-	//! \todo seed properly from configuration
-	m_thalamicInput = new ThalamicInput(net, m_mapper, m_partitionCount, m_maxPartitionSize);
-	m_cycleCounters = new CycleCounters(m_partitionCount, usingStdp());
 
 	setPitch();
 	//! \todo do this configuration as part of CM setup
@@ -70,13 +66,10 @@ SimulationImpl::SimulationImpl(
 }
 
 
+
 SimulationImpl::~SimulationImpl()
 {
 	finishSimulation();
-	//! \todo used shared_ptr instead to deal with this
-	if(m_deviceAssertions) delete m_deviceAssertions;
-	if(m_thalamicInput) delete m_thalamicInput;
-	if(m_cycleCounters) delete m_cycleCounters;
 }
 
 
@@ -233,14 +226,12 @@ checkPitch(size_t expected, size_t found)
 size_t
 SimulationImpl::d_allocated() const
 {
-	size_t total = 0;
-	total += m_firingStimulus.d_allocated();
-	total += m_recentFiring.d_allocated();
-	total += m_neurons.d_allocated();
-	total += m_firingOutput.d_allocated();
-	total += m_thalamicInput  ? m_thalamicInput->d_allocated()    : 0;
-	total += m_cm.d_allocated();
-	return total;
+	return m_firingStimulus.d_allocated()
+		+ m_recentFiring.d_allocated()
+		+ m_neurons.d_allocated()
+		+ m_firingOutput.d_allocated()
+		+ m_thalamicInput.d_allocated()
+		+ m_cm.d_allocated();
 }
 
 
@@ -253,7 +244,7 @@ SimulationImpl::setPitch()
 	m_pitch32 = m_neurons.wordPitch();
 	m_pitch64 = m_recentFiring.wordPitch();
 	//! \todo fold thalamic input into neuron parameters
-	checkPitch(m_pitch32, m_thalamicInput->wordPitch());
+	checkPitch(m_pitch32, m_thalamicInput.wordPitch());
 	checkPitch(pitch1, m_firingOutput.wordPitch());
 	CUDA_SAFE_CALL(bv_setPitch(pitch1));
 }
@@ -287,8 +278,8 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 			m_timer.elapsedSimulation(),
 			m_recentFiring.deviceData(),
 			m_neurons.deviceData(),
-			m_thalamicInput->deviceRngState(),
-			m_thalamicInput->deviceSigma(),
+			m_thalamicInput.deviceRngState(),
+			m_thalamicInput.deviceSigma(),
 			d_fstim, 
 			d_fout,
 			m_cm.d_fcm(),
@@ -296,8 +287,8 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 			m_cm.outgoing(),
 			m_cm.incomingHeads(),
 			m_cm.incoming(),
-			m_cycleCounters->data(),
-			m_cycleCounters->pitch());
+			m_cycleCounters.data(),
+			m_cycleCounters.pitch());
 
 	cudaError_t status = cudaGetLastError();
 	if(status != cudaSuccess) {
@@ -305,7 +296,7 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 		throw KernelInvocationError(status);
 	}
 
-	m_deviceAssertions->check(m_timer.elapsedSimulation());
+	m_deviceAssertions.check(m_timer.elapsedSimulation());
 }
 
 
@@ -321,8 +312,8 @@ SimulationImpl::applyStdp(float reward)
 		m_cm.clearStdpAccumulator();
 	} else  {
 		::applyStdp(
-				m_cycleCounters->dataApplySTDP(),
-				m_cycleCounters->pitchApplySTDP(),
+				m_cycleCounters.dataApplySTDP(),
+				m_cycleCounters.pitchApplySTDP(),
 				m_partitionCount,
 				m_cm.fractionalBits(),
 				m_cm.d_fcm(),
@@ -331,7 +322,7 @@ SimulationImpl::applyStdp(float reward)
 				reward);
 	}
 
-	m_deviceAssertions->check(m_timer.elapsedSimulation());
+	m_deviceAssertions.check(m_timer.elapsedSimulation());
 }
 
 
@@ -369,7 +360,7 @@ SimulationImpl::finishSimulation()
 {
 	//! \todo perhaps clear device data here instead of in dtor
 	if(m_conf.loggingEnabled()) {
-		m_cycleCounters->printCounters(std::cout);
+		m_cycleCounters.printCounters(std::cout);
 		//! \todo add time summary
 	}
 }
