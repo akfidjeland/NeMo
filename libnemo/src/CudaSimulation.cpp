@@ -51,9 +51,11 @@ Simulation::getFiringBufferLength() const
 
 
 void
-Simulation::step(const std::vector<unsigned>& fstim)
+Simulation::step(
+		const std::vector<unsigned>& fstim,
+		const std::vector<float>& istim)
 {
-	m_impl->step(fstim);
+	m_impl->step(fstim, istim);
 }
 
 

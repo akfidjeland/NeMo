@@ -67,6 +67,7 @@ stepSimulation(
 		unsigned* d_rngState,
 		float* d_rngSigma,
 		uint32_t* d_fstim,
+		float* d_istim,
 		uint32_t* d_fout,
 		synapse_t* d_fcm,
 		unsigned* d_outgoingCount,
@@ -90,8 +91,9 @@ stepSimulation(
 			d_fcm,
 			d_outgoingCount, d_outgoing,
 			d_incomingHeads, d_incoming,
-			// firing stimulus
-			d_fstim,
+			// stimulus
+			d_fstim, // firing
+			d_istim, // current
 			// cycle counting
 #ifdef KERNEL_TIMING
 			d_cc, ccPitch,

@@ -45,7 +45,10 @@ SimulationImpl::SimulationImpl(
 	m_recentFiring(m_mapper.partitionCount(), conf.cudaPartitionSize(), false, 2),
 	//! \todo seed properly from configuration
 	m_thalamicInput(net, m_mapper),
+	//! \todo use pinned host memory here
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
+	//! \todo allow external users to directly use the host buffer
+	m_currentStimulus(m_mapper.partitionCount(), conf.cudaPartitionSize(), true),
 	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
 	m_cycleCounters(m_mapper.partitionCount(), usingStdp()),
 	m_deviceAssertions(m_mapper.partitionCount()),
@@ -204,6 +207,32 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 
 
 
+/*! Set per-neuron input current on the device and return the relevant device pointer
+ *
+ * \return
+ * 		Device pointer to neuron vector with current. If there is no input return NULL.
+ *
+ */
+float*
+SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
+{
+	/* The indices into 'current' are 0-based local indices. We need to
+	 * translate this into the appropriately mapped device indices. In
+	 * practice, the mapping currently is such that we should be able to copy
+	 * all the weights for a single partition (or even whole network) at the
+	 * same time, rather than having to do this on a per-neuron basis. If the
+	 * current copying scheme turns out to be a bottleneck, modify this. */
+	for(std::vector<float>::const_iterator i = current.begin();
+			i != current.end(); ++i) {
+		DeviceIdx dev = m_mapper.deviceIdx(*i);
+		m_currentStimulus.setNeuron(dev.partition, dev.neuron, *i);
+	}
+	m_currentStimulus.copyToDevice();
+	return m_currentStimulus.deviceData();
+}
+
+
+
 void
 checkPitch(size_t expected, size_t found)
 {
@@ -220,6 +249,7 @@ size_t
 SimulationImpl::d_allocated() const
 {
 	return m_firingStimulus.d_allocated()
+		+ m_currentStimulus.d_allocated()
 		+ m_recentFiring.d_allocated()
 		+ m_neurons.d_allocated()
 		+ m_firingOutput.d_allocated()
@@ -238,6 +268,7 @@ SimulationImpl::setPitch()
 	m_pitch64 = m_recentFiring.wordPitch();
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, m_thalamicInput.wordPitch());
+	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
 	checkPitch(pitch1, m_firingOutput.wordPitch());
 	CUDA_SAFE_CALL(bv_setPitch(pitch1));
 }
@@ -259,11 +290,14 @@ SimulationImpl::usingStdp() const
 
 
 void
-SimulationImpl::step(const std::vector<unsigned>& fstim)
+SimulationImpl::step(
+		const std::vector<unsigned>& fstim,
+		const std::vector<float>& istim)
 {
 	m_timer.step();
 
 	uint32_t* d_fstim = setFiringStimulus(fstim);
+	float* d_istim = setCurrentStimulus(istim);
 	uint32_t* d_fout = m_firingOutput.step();
 	::stepSimulation(
 			m_mapper.partitionCount(),
@@ -274,6 +308,7 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 			m_thalamicInput.deviceRngState(),
 			m_thalamicInput.deviceSigma(),
 			d_fstim, 
+			d_istim,
 			d_fout,
 			m_cm.d_fcm(),
 			m_cm.outgoingCount(),

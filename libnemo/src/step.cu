@@ -67,6 +67,22 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
 
 __device__
 void
+addCurrentStimulus(unsigned psize, size_t pitch, const float* g_current, float* s_current)
+{
+	if(g_current != NULL) {
+		for(unsigned nbase=0; nbase < psize; nbase += THREADS_PER_BLOCK) {
+			unsigned neuron = nbase + threadIdx.x;
+			size_t pstart = CURRENT_PARTITION * pitch;
+			s_current[neuron] += g_current[pstart + neuron];
+		}
+		__syncthreads();
+	}
+}
+
+
+
+__device__
+void
 fire(
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
@@ -374,6 +390,7 @@ step (
 		incoming_t* g_incoming,
 		// firing stimulus
 		uint32_t* g_fstim,
+		float* g_istim,
 #ifdef KERNEL_TIMING
 		// cycle counting
 		//! \todo change to uint64_t
@@ -441,6 +458,7 @@ step (
 
 	uint32_t* s_fstim = s_N1A;
 	loadFiringInput(g_fstim, s_fstim);
+	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, s_current);
 
 	fire( s_partitionSize,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,

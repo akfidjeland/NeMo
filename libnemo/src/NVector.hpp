@@ -30,9 +30,12 @@ class NVector
 		 * partitions. 
 		 *
 		 * The data is organised in a 2D data struture such that one row
-		 * contains all the 1D data for a single cluster. 
+		 * contains all the 1D data for a single cluster. This ensures correct
+		 * coalescing for 64b data and for 32b data on 1.0 and 1.1 devices. For
+		 * >=1.2 devices accesses will be coalesced regardless of whether we
+		 * use the additional padding a 2D allocation gives.
 		 *
-		 * Crashes application on errors 
+		 * The host memory is *not* pinned.
 		 *
 		 * \param maxPartitionSize 
 		 * 		max size of all partitions in part of network simulated on

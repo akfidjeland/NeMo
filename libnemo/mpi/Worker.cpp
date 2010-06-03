@@ -201,7 +201,8 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::Simulation::create(net, conf));
 	const std::vector<unsigned>* l_firedCycles;         // unused
 	const std::vector<unsigned>* l_fired;               // neurons
-	std::vector<weight_t> current(localCount, 0);       // input from global spikes
+	std::vector<weight_t> istim(localCount, 0);         // input from global spikes
+	std::vector<unsigned> fstim;                        // dummy data until we get firing stimulus support
 	SpikeQueue queue(net.maxDelay());
 
 	/* Incoming master request */
@@ -233,9 +234,10 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 		waitGlobalGather(ireqs, ibufs, queue);
 		mreq.wait();
 		//! \todo improve naming
-		gather(queue, ml_fcm, current);
+		gather(queue, ml_fcm, istim);
 		//! \todo split up step and only do neuron update here
-		sim->step();
+		//! \todo add support for firing stimulus (from master) as well
+		sim->step(fstim, istim);
 		sim->readFiring(&l_firedCycles, &l_fired);
 		initGlobalScatter(*l_fired, oreqs, obufs);
 		sendMaster(*l_fired);

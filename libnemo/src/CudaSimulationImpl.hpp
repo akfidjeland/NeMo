@@ -55,7 +55,9 @@ class SimulationImpl
 
 		/* NETWORK SIMULATION */
 
-		void step(const std::vector<unsigned>& fstim = std::vector<unsigned>());
+		void step(
+				const std::vector<unsigned>& fstim,
+				const std::vector<float>& current);
 
 		void applyStdp(float reward);
 
@@ -82,8 +84,6 @@ class SimulationImpl
 
 		nemo::ConfigurationImpl m_conf;
 
-		uint32_t* setFiringStimulus(const std::vector<unsigned>& nidx);
-
 		//! \todo add this to logging output
 		/*! \return
 		 * 		number of bytes allocated on the device
@@ -102,6 +102,10 @@ class SimulationImpl
 
 		/* Densely packed, one bit per neuron */
 		NVector<uint32_t> m_firingStimulus;
+		uint32_t* setFiringStimulus(const std::vector<unsigned>& nidx);
+
+		NVector<float> m_currentStimulus;
+		float* setCurrentStimulus(const std::vector<float>& current);
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */

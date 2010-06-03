@@ -56,7 +56,9 @@ class Simulation : public nemo::Simulation
 		 * NETWORK SIMULATION
 		 */
 
-		void step(const std::vector<unsigned>& fstim = std::vector<unsigned>());
+		void step(
+				const std::vector<unsigned>& fstim = std::vector<unsigned>(),
+				const std::vector<float>& istim = std::vector<float>());
 
 		void applyStdp(float reward);
 
