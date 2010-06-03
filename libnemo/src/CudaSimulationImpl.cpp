@@ -45,9 +45,9 @@ SimulationImpl::SimulationImpl(
 	m_maxPartitionSize(conf.cudaPartitionSize()),
 	m_neurons(net, m_mapper),
 	m_cm(net, m_mapper, conf.cudaPartitionSize(), conf.loggingEnabled()),
-	m_recentFiring(NULL),
+	m_recentFiring(m_mapper.partitionCount(), conf.cudaPartitionSize(), false, 2),
 	m_thalamicInput(NULL),
-	m_firingStimulus(NULL),
+	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
 	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
 	m_cycleCounters(NULL),
 	m_deviceAssertions(NULL),
@@ -60,11 +60,9 @@ SimulationImpl::SimulationImpl(
 	//! \todo remove m_partitionCount member variable
 	m_partitionCount = m_mapper.partitionCount();
 	m_deviceAssertions = new DeviceAssertions(m_partitionCount);
-	m_recentFiring = new NVector<uint64_t>(m_partitionCount, m_maxPartitionSize, false, 2);
 	//! \todo seed properly from configuration
 	m_thalamicInput = new ThalamicInput(net, m_mapper, m_partitionCount, m_maxPartitionSize);
 	m_cycleCounters = new CycleCounters(m_partitionCount, usingStdp());
-	m_firingStimulus = new NVector<uint32_t>(m_partitionCount, BV_WORD_PITCH, false);
 
 	setPitch();
 	//! \todo do this configuration as part of CM setup
@@ -77,8 +75,6 @@ SimulationImpl::~SimulationImpl()
 	finishSimulation();
 	//! \todo used shared_ptr instead to deal with this
 	if(m_deviceAssertions) delete m_deviceAssertions;
-	if(m_recentFiring) delete m_recentFiring;
-	if(m_firingStimulus) delete m_firingStimulus;
 	if(m_thalamicInput) delete m_thalamicInput;
 	if(m_cycleCounters) delete m_cycleCounters;
 }
@@ -199,8 +195,8 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 		return NULL;
 
 	//! \todo use internal host buffer with pinned memory instead
-	size_t pitch = m_firingStimulus->wordPitch();
-	std::vector<uint32_t> hostArray(m_firingStimulus->size(), 0);
+	size_t pitch = m_firingStimulus.wordPitch();
+	std::vector<uint32_t> hostArray(m_firingStimulus.size(), 0);
 
 	for(std::vector<unsigned>::const_iterator i = nidx.begin();
 			i != nidx.end(); ++i) {
@@ -212,12 +208,12 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 	}
 
 	CUDA_SAFE_CALL(cudaMemcpy(
-				m_firingStimulus->deviceData(),
+				m_firingStimulus.deviceData(),
 				&hostArray[0],
-				m_partitionCount * m_firingStimulus->bytePitch(),
+				m_partitionCount * m_firingStimulus.bytePitch(),
 				cudaMemcpyHostToDevice));
 
-	return m_firingStimulus->deviceData();
+	return m_firingStimulus.deviceData();
 }
 
 
@@ -238,8 +234,8 @@ size_t
 SimulationImpl::d_allocated() const
 {
 	size_t total = 0;
-	total += m_firingStimulus ? m_firingStimulus->d_allocated()   : 0;
-	total += m_recentFiring   ? m_recentFiring->d_allocated()     : 0;
+	total += m_firingStimulus.d_allocated();
+	total += m_recentFiring.d_allocated();
 	total += m_neurons.d_allocated();
 	total += m_firingOutput.d_allocated();
 	total += m_thalamicInput  ? m_thalamicInput->d_allocated()    : 0;
@@ -253,9 +249,9 @@ SimulationImpl::d_allocated() const
 void
 SimulationImpl::setPitch()
 {
-	size_t pitch1 = m_firingStimulus->wordPitch();
+	size_t pitch1 = m_firingStimulus.wordPitch();
 	m_pitch32 = m_neurons.wordPitch();
-	m_pitch64 = m_recentFiring->wordPitch();
+	m_pitch64 = m_recentFiring.wordPitch();
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, m_thalamicInput->wordPitch());
 	checkPitch(pitch1, m_firingOutput.wordPitch());
@@ -289,7 +285,7 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 			m_partitionCount,
 			usingStdp(),
 			m_timer.elapsedSimulation(),
-			m_recentFiring->deviceData(),
+			m_recentFiring.deviceData(),
 			m_neurons.deviceData(),
 			m_thalamicInput->deviceRngState(),
 			m_thalamicInput->deviceSigma(),

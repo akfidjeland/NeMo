@@ -97,12 +97,12 @@ class SimulationImpl
 
 		ConnectivityMatrix m_cm;
 
-		NVector<uint64_t>* m_recentFiring;
+		NVector<uint64_t> m_recentFiring;
 
 		class ThalamicInput* m_thalamicInput;
 
 		/* Densely packed, one bit per neuron */
-		NVector<uint32_t>* m_firingStimulus;
+		NVector<uint32_t> m_firingStimulus;
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
