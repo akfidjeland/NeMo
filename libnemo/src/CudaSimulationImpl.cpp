@@ -40,14 +40,11 @@ SimulationImpl::SimulationImpl(
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net, conf.cudaPartitionSize()),
 	m_conf(conf),
-	//! \todo get rid of member variable
-	m_partitionCount(0),
 	m_neurons(net, m_mapper),
 	m_cm(net, m_mapper, conf.cudaPartitionSize(), conf.loggingEnabled()),
 	m_recentFiring(m_mapper.partitionCount(), conf.cudaPartitionSize(), false, 2),
-	//! \todo remove redundant argument
 	//! \todo seed properly from configuration
-	m_thalamicInput(net, m_mapper, m_mapper.partitionCount(), conf.cudaPartitionSize()),
+	m_thalamicInput(net, m_mapper),
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
 	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
 	m_cycleCounters(m_mapper.partitionCount(), usingStdp()),
@@ -56,10 +53,6 @@ SimulationImpl::SimulationImpl(
 	m_pitch64(0)
 {
 	configureStdp(conf.stdpFunction());
-
-	//! \todo remove m_partitionCount member variable
-	m_partitionCount = m_mapper.partitionCount();
-
 	setPitch();
 	//! \todo do this configuration as part of CM setup
 	CUDA_SAFE_CALL(configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64));
@@ -203,7 +196,7 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 	CUDA_SAFE_CALL(cudaMemcpy(
 				m_firingStimulus.deviceData(),
 				&hostArray[0],
-				m_partitionCount * m_firingStimulus.bytePitch(),
+				m_mapper.partitionCount() * m_firingStimulus.bytePitch(),
 				cudaMemcpyHostToDevice));
 
 	return m_firingStimulus.deviceData();
@@ -273,7 +266,7 @@ SimulationImpl::step(const std::vector<unsigned>& fstim)
 	uint32_t* d_fstim = setFiringStimulus(fstim);
 	uint32_t* d_fout = m_firingOutput.step();
 	::stepSimulation(
-			m_partitionCount,
+			m_mapper.partitionCount(),
 			usingStdp(),
 			m_timer.elapsedSimulation(),
 			m_recentFiring.deviceData(),
@@ -304,7 +297,7 @@ void
 SimulationImpl::applyStdp(float reward)
 {
 	if(!usingStdp()) {
-		//! \todo issue a warning here?
+		throw exception(NEMO_LOGIC_ERROR, "applyStdp called when STDP not in use");
 		return;
 	}
 
@@ -314,7 +307,7 @@ SimulationImpl::applyStdp(float reward)
 		::applyStdp(
 				m_cycleCounters.dataApplySTDP(),
 				m_cycleCounters.pitchApplySTDP(),
-				m_partitionCount,
+				m_mapper.partitionCount(),
 				m_cm.fractionalBits(),
 				m_cm.d_fcm(),
 				m_stdpFn.maxWeight(),

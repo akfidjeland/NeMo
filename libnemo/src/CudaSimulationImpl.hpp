@@ -88,11 +88,9 @@ class SimulationImpl
 		/*! \return
 		 * 		number of bytes allocated on the device
 		 *
-		 * It seems that cudaMalloc*** does not fail properly when running out of
-		 * memory, so this value could be useful for diagnostic purposes */
+		 * It seems that cudaMalloc*** does not fail properly when running out
+		 * of memory, so this value could be useful for diagnostic purposes */
 		size_t d_allocated() const;
-
-		size_t m_partitionCount;
 
 		NeuronParameters m_neurons;
 

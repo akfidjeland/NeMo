@@ -25,12 +25,11 @@ namespace nemo {
 	namespace cuda {
 
 
-ThalamicInput::ThalamicInput(const nemo::NetworkImpl& net,
-		const Mapper& mapper,
-		size_t partitionCount,
-		size_t partitionSize) :
-	m_rngState(partitionCount, partitionSize, true, 4),
-	m_sigma(partitionCount, partitionSize, true, 1),
+ThalamicInput::ThalamicInput(
+		const nemo::NetworkImpl& net,
+		const Mapper& mapper) :
+	m_rngState(mapper.partitionCount(), mapper.partitionSize(), true, 4),
+	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true, 1),
 	m_inUse(false)
 {
 	//! \todo allow users to seed this RNG
