@@ -144,7 +144,7 @@ targetNeuron(
 	int targetX = globalX % PATCH_WIDTH;
 
 	/* Don't connect to self unless we wrap around torus */
-	assert(!(targetX == sourceX && targetY == sourceY && dist < PATCH_HEIGHT-1));
+	assert(!(targetX == int(sourceX) && targetY == int(sourceY) && dist < PATCH_HEIGHT-1));
 
 	return std::make_pair<unsigned, double>(neuronIndex(targetPatch, targetX, targetY), dist);
 }

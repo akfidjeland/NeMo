@@ -85,8 +85,8 @@ class NetworkImpl
 		int m_minIdx;
 		int m_maxIdx;
 		delay_t m_maxDelay;
-		weight_t m_maxWeight;
 		weight_t m_minWeight;
+		weight_t m_maxWeight;
 
 		friend class cuda::ConnectivityMatrix;
 		friend class cuda::NeuronParameters;

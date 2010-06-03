@@ -20,11 +20,11 @@ namespace nemo {
 
 
 NetworkImpl::NetworkImpl() :
-	m_maxIdx(std::numeric_limits<int>::min()),
 	m_minIdx(std::numeric_limits<int>::max()),
-	m_maxWeight(0),
+	m_maxIdx(std::numeric_limits<int>::min()),
 	m_maxDelay(0),
-	m_minWeight(0)
+	m_minWeight(0),
+	m_maxWeight(0)
 { }
 
 

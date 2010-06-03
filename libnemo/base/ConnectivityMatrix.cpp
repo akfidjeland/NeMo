@@ -32,7 +32,6 @@ Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss)
 
 	data = boost::shared_array<FAxonTerminal>(ptr, free);
 
-	//! \todo just use std::copy here?
 	/* static/plastic flag is not needed in forward matrix */
 	for(std::vector<nemo::AxonTerminal<nidx_t, weight_t> >::const_iterator si = ss.begin();
 			si != ss.end(); ++si) {
@@ -95,7 +94,8 @@ ConnectivityMatrix::finalizeForward()
 const Row&
 ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 {
-	return m_cm.at(addressOf(source, delay));
+	return m_acc.find(fidx(source, delay))->second;
+	//return m_cm.at(addressOf(source, delay));
 }
 
 

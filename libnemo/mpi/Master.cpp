@@ -91,7 +91,7 @@ Master::distributeNetwork(nemo::NetworkImpl* net)
 		}
 	}
 
-	for(int r=0; r < wcount; ++r) {
+	for(unsigned r=0; r < wcount; ++r) {
 		m_world.send(r+1, END_CONSTRUCTION, int(0));
 	}
 }
@@ -106,7 +106,7 @@ Master::step(const std::vector<unsigned>& fstim)
 	SimulationStep data;
 	std::vector<boost::mpi::request> oreqs(wcount);
 
-	for(int r=0; r < wcount; ++r) {
+	for(unsigned r=0; r < wcount; ++r) {
 		oreqs[r] = m_world.isend(r+1, MASTER_STEP, data);
 	}
 
@@ -117,7 +117,7 @@ Master::step(const std::vector<unsigned>& fstim)
 	std::vector<unsigned> ibuf;
 	//! \todo keep a local firing buffer here.
 
-	for(int r=0; r < wcount; ++r) {
+	for(unsigned r=0; r < wcount; ++r) {
 		m_world.recv(r+1, MASTER_STEP, ibuf);
 #ifdef MPI_LOGGING
 		std::copy(ibuf.begin(), ibuf.end(),
@@ -139,7 +139,7 @@ Master::terminate()
 	unsigned wcount = workers();
 	SimulationStep data(true, std::vector<unsigned>());
 	std::vector<boost::mpi::request>reqs(wcount);
-	for(int r=0; r < wcount; ++r) {
+	for(unsigned r=0; r < wcount; ++r) {
 		reqs[r] = m_world.isend(r+1, MASTER_STEP, data);
 	}
 	boost::mpi::wait_all(reqs.begin(), reqs.end());

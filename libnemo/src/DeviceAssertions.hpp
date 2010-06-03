@@ -26,8 +26,10 @@
 
 #include <exception.hpp>
 
+#ifdef _MSC_VER
 // visual studio warning re non-implementation of throw specifiers
 #pragma warning(disable: 4290)
+#endif
 
 namespace nemo {
 	namespace cuda {

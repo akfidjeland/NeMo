@@ -96,7 +96,6 @@ simulateToFile(nemo::Simulation* sim, unsigned time_ms, const char* firingFile)
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* fired;
 
-	unsigned nfired = 0;
 	for(unsigned ms=0; ms<time_ms; ++ms) {
 		sim->step();
 	}
