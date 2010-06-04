@@ -20,7 +20,7 @@
 #include "cuda_types.h"
 #include <types.hpp>
 #include "kernel.cu_h"
-#include "DeviceIdx.hpp"
+#include "Mapper.hpp"
 #include "NetworkImpl.hpp"
 #include "Outgoing.hpp"
 #include "Incoming.hpp"

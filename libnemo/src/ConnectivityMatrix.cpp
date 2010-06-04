@@ -17,11 +17,11 @@
 
 #include "RSMatrix.hpp"
 #include "except.hpp"
-#include "DeviceIdx.hpp"
 #include "WarpAddressTable.hpp"
 #include "connectivityMatrix.cu_h"
 #include "fixedpoint.hpp"
 #include "bitops.h"
+#include "util.h"
 
 
 namespace nemo {

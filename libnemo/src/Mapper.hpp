@@ -11,8 +11,8 @@
  */
 
 #include <NetworkImpl.hpp>
+
 #include "cuda_types.h"
-#include "util.h"
 
 namespace nemo {
 	namespace cuda {
@@ -38,23 +38,9 @@ class Mapper {
 
 	public :
 
-		Mapper(const nemo::NetworkImpl& net, unsigned partitionSize) :
-			m_partitionSize(partitionSize),
-			m_partitionCount(0),
-			m_offset(0)
-		{
-			if(net.neuronCount() > 0) {
-				unsigned ncount = net.maxNeuronIndex() - net.minNeuronIndex() + 1;
-				m_partitionCount = DIV_CEIL(ncount, partitionSize);
-				m_offset = net.minNeuronIndex();
-			}
-		}
+		Mapper(const nemo::NetworkImpl& net, unsigned partitionSize);
 
-		DeviceIdx deviceIdx(nidx_t global) const {
-			nidx_t local = global - m_offset;
-			assert(global >= m_offset);
-			return DeviceIdx(local / m_partitionSize, local % m_partitionSize);
-		}
+		DeviceIdx deviceIdx(nidx_t global) const;
 
 		nidx_t hostIdx(DeviceIdx d) const {
 			return m_offset + d.partition * m_partitionSize + d.neuron;

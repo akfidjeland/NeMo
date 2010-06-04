@@ -18,7 +18,7 @@
 #include <types.h>
 #include <ConfigurationImpl.hpp>
 
-#include "DeviceIdx.hpp"
+#include "Mapper.hpp"
 #include "NVector.hpp"
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"

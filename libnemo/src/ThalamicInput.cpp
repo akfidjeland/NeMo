@@ -15,8 +15,8 @@
 #include <boost/random.hpp>
 
 #include "thalamicInput.cu_h"
-#include "DeviceIdx.hpp"
 #include "NetworkImpl.hpp"
+#include "Mapper.hpp"
 #include <types.hpp>
 
 

@@ -13,7 +13,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-#include "DeviceIdx.hpp"
+#include "Mapper.hpp"
 #include <types.h>
 
 //! \file FiringOutput.hpp

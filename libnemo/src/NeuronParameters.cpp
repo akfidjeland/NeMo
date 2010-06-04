@@ -12,7 +12,7 @@
 #include <sstream>
 #include <vector>
 
-#include "DeviceIdx.hpp"
+#include "Mapper.hpp"
 #include "kernel.cu_h"
 #include "except.hpp"
 #include "NetworkImpl.hpp"
