@@ -1,8 +1,8 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE nemo test
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <boost/test/unit_test.hpp>
 
 #include <nemo.hpp>
@@ -104,10 +104,7 @@ configuration(bool stdp, unsigned partitionSize)
 void
 runComparisions(nemo::Network* net)
 {
-	bool stdp = false;
-	const bool logging = false;
 	unsigned duration = 2;
-	nemo::Configuration conf = configuration(stdp, logging);
 
 	/* network should produce repeatable results both with the same partition
 	 * size and with different ones. */
@@ -122,7 +119,7 @@ runComparisions(nemo::Network* net)
 			nemo::Configuration conf2 = configuration(stdp_conf[si], psize_conf[pi2]);
 			//! \note tests with different partition sizes may fail due to
 			//randomised input working differently.
-			compareSimulations(net, conf1, net, conf2, 2);
+			compareSimulations(net, conf1, net, conf2, duration);
 		}
 	}
 
@@ -142,11 +139,62 @@ BOOST_AUTO_TEST_CASE(simulation_without_synapses)
 }
 
 
+
+/* Simple ring network.
+ *
+ * This is useful for basic testing as the exact firing pattern is known in
+ * advance. Every cycle a single neuron fires. Each neuron connected to only
+ * the next neuron (in global index space) with an abnormally strong synapse,
+ * so the result is the firing propagating around the ring.
+ */
+void
+runRing(unsigned ncount)
+{
+	/* Make sure we go around the ring at least a couple of times */
+	const unsigned duration = ncount * 5 / 2;
+
+	nemo::Network net;
+	for(unsigned source=0; source < ncount; ++source) {
+		float v = -65.0f;
+		float b = 0.2f;
+		float r = 0.5f;
+		float r2 = r * r;
+		net.addNeuron(source, 0.02f, b, v+15.0f*r2, 8.0f-6.0f*r2, b*v, v, 0.0f);
+		net.addSynapse(source, (source + 1) % ncount, 1, 1000.0f, false);
+	}
+	nemo::Configuration conf = configuration(false, 1024);
+
+	nemo::Simulation* sim = nemo::Simulation::create(net, conf);
+
+	const std::vector<unsigned>* cycles;
+	const std::vector<unsigned>* fired;
+
+	/* Simulate a single neuron to get the ring going */
+	sim->step(std::vector<unsigned>(1,0));
+	sim->flushFiringBuffer();
+
+	for(unsigned ms=1; ms < duration; ++ms) {
+		sim->step();
+		sim->readFiring(&cycles, &fired);
+		BOOST_CHECK_EQUAL(cycles->size(), fired->size());
+		BOOST_CHECK_EQUAL(fired->size(), 1);
+		BOOST_REQUIRE_EQUAL(fired->front(), ms % ncount);
+	}
+}
+
+
+
+BOOST_AUTO_TEST_CASE(ring_tests)
+{
+	runRing(1000); // less than a single partition on CUDA backend
+	runRing(1024); // exactly one partition on CUDA backend
+	runRing(2000); // multiple partitions on CUDA backend
+	runRing(4000); // ditto
+}
+
+
 BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
 {
-	unsigned m = 1000;
-	unsigned sigma = 16;
-
 	// only need to create the network once
 	nemo::Network* net = nemo::random1k::construct(1000, 1000);
 	runComparisions(net);

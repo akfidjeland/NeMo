@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <string.h>
+
 #include <nemo.hpp>
 #include <examples.hpp>
 
