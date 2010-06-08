@@ -16,6 +16,8 @@
 #include "util.h"
 #include "fixedpoint.cu"
 
+#include <nemo_config.h>
+
 
 /*! Apply STDP 
  * 
@@ -72,7 +74,7 @@ applySTDP_(
 
 				size_t gr_offset = target * r_pitch + r_sidx;
 				size_t gf_offset = gr_faddress[gr_offset];
-#if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
+#if defined(NEMO_VERBOSE) && defined(__DEVICE_EMULATION__)
 				unsigned rsynapse = gr_address[gr_offset];
 #endif
 

@@ -39,6 +39,9 @@ IF(INCLUDE_TESTS)
 ENDIF(INCLUDE_TESTS)
 
 
+OPTION(NEMO_VERBOSE "Produce verbose simulation output (mainly userful for testing)" OFF)
+
+
 SET(Boost_USE_MULTITHREAD OFF)
 FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 

@@ -177,7 +177,7 @@ closestPostFire(uint64_t spikes)
 
 
 
-#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
+#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
 
 __device__
 void
@@ -213,7 +213,7 @@ updateRegion(
 	unsigned dt_post = closestPostFire(spikes);
 
 	/* For logging. Positive values: post-fire, negative values: pre-fire */
-#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
+#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
 	int dt_log;
 #endif
 
@@ -221,18 +221,18 @@ updateRegion(
 	if(spikes) {
 		if(dt_pre < dt_post) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow - 1 - dt_pre];
-#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
+#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
 			dt_log = -int(dt_pre);
 #endif
 		} else if(dt_post < dt_pre) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow+dt_post];
-#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
+#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
 			dt_log = int(dt_post);
 #endif
 		}
 		// if neither is applicable dt_post == dt_pre
 	}
-#if defined(__DEVICE_EMULATION__) && defined(VERBOSE)
+#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
 	logStdp(dt_log, w_diff, targetNeuron, r_synapse);
 #endif
 	return w_diff;

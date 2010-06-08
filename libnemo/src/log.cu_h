@@ -12,12 +12,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#define VERBOSE
+#include <nemo_config.h>
 
 /* Device logging in emulation mode */
 
-#if defined(VERBOSE) && defined(__DEVICE_EMULATION__)
+#if defined(NEMO_VERBOSE) && defined(__DEVICE_EMULATION__)
 
 /* Log message in device emulation regardless of thread */
 #define DEBUG_MSG(...) fprintf(stderr, __VA_ARGS__)

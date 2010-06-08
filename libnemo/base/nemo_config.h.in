@@ -7,6 +7,7 @@
 #cmakedefine HAVE_LOG2
 #cmakedefine INCLUDE_TIMING_API
 #cmakedefine INCLUDE_MPI
+#cmakedefine NEMO_VERBOSE
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef NEMO_EXPORTS
