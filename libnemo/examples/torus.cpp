@@ -353,10 +353,6 @@ main(int argc, char* argv[])
 	nemo::Network* net = nemo::torus::construct(pcount, m, stdp, sigma);
 	nemo::Configuration conf = nemo::torus::configure(stdp, logging);
 	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
-	if(sim == NULL) {
-		std::cerr << "failed to create simulation" << std::endl;
-		return -1;
-	}
 	simulate(sim, pcount*PATCH_SIZE, m);
 	//simulateToFile(sim, 1000, "firing.dat");
 	delete net;

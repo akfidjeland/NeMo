@@ -37,7 +37,10 @@ Simulation::create(const NetworkImpl& net, const Configuration& conf)
 		return NULL;
 	}
 	int dev = cuda::Simulation::selectDevice();
-	return dev == -1 ? NULL : new cuda::Simulation(net, *conf.m_impl);
+	if(dev == -1) {
+		throw nemo::exception(NEMO_CUDA_ERROR, "Failed to create simulation");
+	}
+	return new cuda::Simulation(net, *conf.m_impl);
 }
 
 

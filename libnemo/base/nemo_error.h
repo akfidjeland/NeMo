@@ -23,15 +23,16 @@
 /*! A memory allocation failed on the CUDA device. */
 #define NEMO_CUDA_MEMORY_ERROR 3
 
-#define NEMO_API_UNSUPPORTED 4
+/*! Catch-all CUDA error */
+#define NEMO_CUDA_ERROR 4
 
-#define NEMO_INVALID_INPUT 5
-#define NEMO_BUFFER_OVERFLOW 6
-#define NEMO_LOGIC_ERROR 7
-#define NEMO_ALLOCATION_ERROR 8
+#define NEMO_API_UNSUPPORTED 5
 
-#define NEMO_UNKNOWN_ERROR 9
+#define NEMO_INVALID_INPUT 6
+#define NEMO_BUFFER_OVERFLOW 7
+#define NEMO_LOGIC_ERROR 8
+#define NEMO_ALLOCATION_ERROR 9
 
-
+#define NEMO_UNKNOWN_ERROR 10
 
 #endif

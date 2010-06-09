@@ -113,6 +113,9 @@ nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 	nemo::Configuration* conf = static_cast<nemo::Configuration*>(conf_ptr);
 	try {
 		return static_cast<nemo_simulation_t>(nemo::Simulation::create(*net, *conf));
+	} catch(nemo::exception& e) {
+		setResult(e.what(), e.errno());
+		return NULL;
 	} catch(std::exception& e) {
 		setResult(e.what(), NEMO_UNKNOWN_ERROR);
 		return NULL;
