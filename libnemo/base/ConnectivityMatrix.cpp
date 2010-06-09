@@ -20,7 +20,8 @@
 namespace nemo {
 
 
-Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss)
+Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss) :
+	len(ss.size())
 {
 	FAxonTerminal* ptr;
 	int error = posix_memalign((void**)&ptr,
