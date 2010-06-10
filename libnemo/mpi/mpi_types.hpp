@@ -4,6 +4,8 @@
 #include <boost/serialization/vector.hpp>
 #include <types.hpp>
 
+//#define MPI_LOGGING
+
 namespace nemo {
 	namespace mpi {
 
@@ -52,6 +54,12 @@ class SimulationStep
 
 		SimulationStep(bool terminate, std::vector<unsigned> fstim):
 			terminate(terminate), fstim(fstim) { }
+
+		/* Add neuron to list of neurons which should be
+		 * forced to fire */
+		void forceFiring(nidx_t neuron) {
+			fstim.push_back(neuron);
+		}
 
 		bool terminate;
 		std::vector<unsigned> fstim;

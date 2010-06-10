@@ -11,8 +11,11 @@
  */
 
 #include <vector>
+#include <deque>
 #include <boost/mpi/communicator.hpp>
 #include <types.hpp>
+
+#include "Mapper.hpp"
 
 namespace nemo {
 
@@ -35,15 +38,24 @@ class Master
 
 		void step(const std::vector<unsigned>& fstim = std::vector<unsigned>());
 
+		/* Return reference to first buffered cycle's worth of firing. The
+		 * reference is invalidated by any further calls to readFiring, or to
+		 * step. */
+		const std::vector<unsigned>& readFiring();
+
 	private :
 
 		boost::mpi::communicator m_world;
 
-		void distributeNetwork(nemo::NetworkImpl* net);
+		Mapper m_mapper;
+
+		void distributeNetwork(const Mapper&, const nemo::NetworkImpl* net);
 
 		unsigned workers() const;
 
 		void terminate();
+
+		std::deque< std::vector<unsigned> > m_firing;
 };
 
 	} // end namespace mpi

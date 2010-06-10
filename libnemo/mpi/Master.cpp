@@ -16,11 +16,11 @@
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/utility.hpp>
 
+#include <nemo_config.h>
 #include <Network.hpp>
 #include <NetworkImpl.hpp>
 #include <ConfigurationImpl.hpp>
 #include "nemo_mpi_common.hpp"
-#include "Mapper.hpp"
 #include <types.hpp>
 #include <mpi_types.hpp>
 
@@ -32,9 +32,14 @@ Master::Master(
 		boost::mpi::communicator& world,
 		const Network& net_,
 		const Configuration& conf_) :
-	m_world(world)
+	m_world(world),
+	//! \todo base this on size hint as well
+	m_mapper(m_world.size() - 1, m_world.rank())
 {
-	distributeNetwork(net_.m_impl);
+	/* Need a dummy entry, to pop on first call to readFiring */
+	m_firing.push_back(std::vector<unsigned>());
+
+	distributeNetwork(m_mapper, net_.m_impl);
 
 	/* The workers now exchange connectivity information. */
 
@@ -62,12 +67,10 @@ Master::workers() const
 
 //! \todo implement this in terms of iterators on some base class of //NetworkImpl.
 void
-Master::distributeNetwork(nemo::NetworkImpl* net)
+Master::distributeNetwork(
+		const Mapper& mapper,
+		const nemo::NetworkImpl* net)
 {
-	//! \todo base this on size hint as well
-	unsigned wcount = workers();
-	Mapper mapper(wcount, m_world.rank());
-
 	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net->m_neurons.begin();
 			i != net->m_neurons.end(); ++i) {
 		nidx_t source = i->first;
@@ -91,8 +94,24 @@ Master::distributeNetwork(nemo::NetworkImpl* net)
 		}
 	}
 
+	unsigned wcount = workers();
 	for(unsigned r=0; r < wcount; ++r) {
 		m_world.send(r+1, END_CONSTRUCTION, int(0));
+	}
+}
+
+
+void
+distributeFiringStimulus(
+		const Mapper& mapper,
+		const std::vector<unsigned>& fstim,
+		std::vector<SimulationStep>& reqs)
+{
+	for(std::vector<unsigned>::const_iterator i = fstim.begin();
+			i != fstim.end(); ++i) {
+		nidx_t neuron = nidx_t(*i);
+		assert(unsigned(mapper.rankOf(neuron) - 1) < reqs.size());
+		reqs.at(mapper.rankOf(neuron) - 1).forceFiring(neuron);
 	}
 }
 
@@ -102,12 +121,14 @@ void
 Master::step(const std::vector<unsigned>& fstim)
 {
 	unsigned wcount = workers();
-	//! \todo split up fstim here and insert into different requests
-	SimulationStep data;
+
+	std::vector<SimulationStep> oreqData(wcount);
 	std::vector<boost::mpi::request> oreqs(wcount);
 
+	distributeFiringStimulus(m_mapper, fstim, oreqData);
+
 	for(unsigned r=0; r < wcount; ++r) {
-		oreqs[r] = m_world.isend(r+1, MASTER_STEP, data);
+		oreqs.at(r) = m_world.isend(r+1, MASTER_STEP, oreqData.at(r));
 	}
 
 	boost::mpi::wait_all(oreqs.begin(), oreqs.end());
@@ -115,10 +136,11 @@ Master::step(const std::vector<unsigned>& fstim)
 	/* Ideally we'd get the results back in order. Just insert in rank order to
 	 * avoid having to sort later */
 	std::vector<unsigned> ibuf;
-	//! \todo keep a local firing buffer here.
+	m_firing.push_back(std::vector<unsigned>());
 
 	for(unsigned r=0; r < wcount; ++r) {
 		m_world.recv(r+1, MASTER_STEP, ibuf);
+		std::copy(ibuf.begin(), ibuf.end(), std::back_inserter(m_firing.back()));
 #ifdef MPI_LOGGING
 		std::copy(ibuf.begin(), ibuf.end(),
 				std::ostream_iterator<unsigned>(std::cout, " "));
@@ -143,6 +165,16 @@ Master::terminate()
 		reqs[r] = m_world.isend(r+1, MASTER_STEP, data);
 	}
 	boost::mpi::wait_all(reqs.begin(), reqs.end());
+}
+
+
+
+const std::vector<unsigned>&
+Master::readFiring()
+{
+	//! \todo deal with underflow here
+	m_firing.pop_front();
+	return m_firing.front();
 }
 
 
