@@ -176,3 +176,14 @@ NVector<T>::getNeuron(size_t partitionIdx, size_t neuronIdx, size_t subvector) c
 {
     return m_hostData[offset(subvector, partitionIdx, neuronIdx)];
 }
+
+
+
+template<typename T>
+void
+NVector<T>::fill(const T& val, size_t subvector)
+{
+	std::fill(m_hostData.begin() + subvector * m_pitch,
+			m_hostData.begin() + (subvector+1) * m_pitch, val);
+}
+

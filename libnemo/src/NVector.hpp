@@ -24,7 +24,7 @@
 template<typename T>
 class NVector
 {
-    public :
+	public :
 
 		/*! Initialise a 1D parameter vector, potentially for several
 		 * partitions. 
@@ -43,12 +43,12 @@ class NVector
 		 * \param partitionCount
 		 * 		total number of partitionCount simulated on device 
 		 */
-        NVector(size_t partitionCount,
+		NVector(size_t partitionCount,
 				size_t maxPartitionSize,
 				bool allocHostData,
 				size_t subvectorCount=1);
         
-        ~NVector();
+		~NVector();
 
 		/*! \return pointer to device data */
 		T* deviceData() const;
@@ -81,13 +81,16 @@ class NVector
 		//! \todo change parameter order, with vector first
 		void setPartition(size_t partitionIdx, const T* arr, size_t length, size_t subvector=0);
 
-        /*! Set value (in host buffer) for a single neuron */
+		/*! Set value (in host buffer) for a single neuron */
 		//! \todo change parameter order, with vector first
-        void setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector=0);
+		void setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector=0);
 
-        T getNeuron(size_t partitionIdx, size_t neuronIdx, size_t subvector=0) const;
+		T getNeuron(size_t partitionIdx, size_t neuronIdx, size_t subvector=0) const;
 
-    private :
+		/*! Fill all entries in a single plane with the same value */
+		void fill(const T& val, size_t subvector=0);
+
+	private :
 
 		T* m_deviceData;
 		std::vector<T> m_hostData;

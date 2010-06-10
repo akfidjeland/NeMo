@@ -216,15 +216,19 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 float*
 SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
 {
+	m_currentStimulus.fill(0.0f);
+
 	/* The indices into 'current' are 0-based local indices. We need to
 	 * translate this into the appropriately mapped device indices. In
 	 * practice, the mapping currently is such that we should be able to copy
 	 * all the weights for a single partition (or even whole network) at the
 	 * same time, rather than having to do this on a per-neuron basis. If the
 	 * current copying scheme turns out to be a bottleneck, modify this. */
+	//! \todo in public API get vector of neuron/current pairs instead.
+	nidx_t neuron = m_mapper.minHostIdx();
 	for(std::vector<float>::const_iterator i = current.begin();
-			i != current.end(); ++i) {
-		DeviceIdx dev = m_mapper.deviceIdx(*i);
+			i != current.end(); ++i, ++neuron) {
+		DeviceIdx dev = m_mapper.deviceIdx(neuron);
 		m_currentStimulus.setNeuron(dev.partition, dev.neuron, *i);
 	}
 	m_currentStimulus.copyToDevice();
