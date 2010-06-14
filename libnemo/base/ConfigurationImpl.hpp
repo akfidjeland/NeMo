@@ -13,7 +13,21 @@
  */
 
 #include <ostream>
+
+#include <nemo_config.h>
 #include "STDP.hpp"
+
+#ifdef INCLUDE_MPI
+
+#include <boost/serialization/serialization.hpp>
+
+namespace boost {
+	namespace serialization {
+		class access;
+	}
+}
+
+#endif
 
 namespace nemo {
 
@@ -64,7 +78,19 @@ class ConfigurationImpl
 		unsigned m_cudaPartitionSize;
 		unsigned m_cudaFiringBufferLength; // in cycles
 
+#ifdef INCLUDE_MPI
+		friend class boost::serialization::access;
+
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & m_logging;
+			ar & m_stdpFn;
+			ar & m_cudaPartitionSize;
+			ar & m_cudaFiringBufferLength;
+		}
+#endif
 };
+
 
 }
 

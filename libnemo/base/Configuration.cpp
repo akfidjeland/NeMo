@@ -10,6 +10,15 @@ Configuration::Configuration() :
 }
 
 
+
+Configuration::Configuration(const Configuration& other) :
+	m_impl(new ConfigurationImpl(*other.m_impl))
+{
+	;
+}
+
+
+
 Configuration::~Configuration()
 {
 	delete m_impl;

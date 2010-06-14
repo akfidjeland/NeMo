@@ -13,8 +13,9 @@
 #include <algorithm>
 
 #include <boost/scoped_ptr.hpp>
-#include <boost/mpi/environment.hpp>
+#include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/mpi/environment.hpp>
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/utility.hpp>
@@ -22,6 +23,7 @@
 #include "nemo_mpi_common.hpp"
 #include <nemo.hpp>
 #include <NetworkImpl.hpp>
+#include <ConfigurationImpl.hpp>
 
 #include "Mapper.hpp"
 #include "SpikeQueue.hpp"
@@ -39,6 +41,10 @@ Worker::Worker(boost::mpi::communicator& world) :
 	mgo_scount(0),
 	m_ncount(0)
 {
+	nemo::Configuration conf;
+	boost::mpi::broadcast(m_world, *conf.m_impl, MASTER);
+	conf.disableLogging();
+
 	int workers = m_world.size() - 1;
 	Mapper mapper(workers, m_rank);
 
@@ -75,9 +81,6 @@ Worker::Worker(boost::mpi::communicator& world) :
 	std::clog << "Worker " << m_rank << " " << mgi_scount << " global synapses (incoming)" << std::endl;
 #endif
 
-	//! \todo get configuration from the master
-	nemo::Configuration conf;
-	conf.disableLogging();
 	runSimulation(net, conf, mapper.localCount());
 }
 

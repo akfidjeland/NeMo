@@ -19,6 +19,7 @@
 #include <nemo_config.h>
 #include <Network.hpp>
 #include <NetworkImpl.hpp>
+#include <Configuration.hpp>
 #include <ConfigurationImpl.hpp>
 #include "nemo_mpi_common.hpp"
 #include <types.hpp>
@@ -31,13 +32,16 @@ namespace nemo {
 Master::Master(
 		boost::mpi::communicator& world,
 		const Network& net_,
-		const Configuration& conf_) :
+		const Configuration& conf) :
 	m_world(world),
 	//! \todo base this on size hint as well
 	m_mapper(m_world.size() - 1, m_world.rank())
 {
 	/* Need a dummy entry, to pop on first call to readFiring */
 	m_firing.push_back(std::vector<unsigned>());
+
+	// send configuration from master to all configurations
+	boost::mpi::broadcast(world, *conf.m_impl, MASTER);
 
 	distributeNetwork(m_mapper, net_.m_impl);
 

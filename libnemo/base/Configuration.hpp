@@ -23,15 +23,23 @@ namespace nemo {
 
 std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf);
 
+
 namespace nemo {
 
-class Simulation;
+	class Simulation;
+
+	namespace mpi {
+		class Master;
+		class Worker;
+	}
 
 class DLL_PUBLIC Configuration
 {
 	public:
 
 		Configuration();
+
+		Configuration(const Configuration&);
 
 		~Configuration();
 
@@ -68,12 +76,14 @@ class DLL_PUBLIC Configuration
 	private:
 
 		friend class nemo::Simulation;
+		friend class nemo::mpi::Master;
+		friend class nemo::mpi::Worker;
+
 		friend std::ostream& ::operator<<(std::ostream& o, Configuration const&);
 
 		class ConfigurationImpl* m_impl;
 
 		// undefined
-		Configuration(const Configuration&);
 		Configuration& operator=(const Configuration&);
 };
 

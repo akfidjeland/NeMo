@@ -14,7 +14,20 @@
 
 #include <vector>
 
+#include <nemo_config.h>
 #include "types.h"
+
+#ifdef INCLUDE_MPI
+
+#include <boost/serialization/serialization.hpp>
+
+namespace boost {
+	namespace serialization {
+		class access;
+	}
+}
+
+#endif
 
 namespace nemo {
 
@@ -101,6 +114,25 @@ class STDP
 
 		T m_maxWeight;
 		T m_minWeight;
+
+#ifdef INCLUDE_MPI
+		friend class boost::serialization::access;
+
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & m_function;
+			ar & m_fnPre;
+			ar & m_fnPost;
+			ar & m_preFireWindow;
+			ar & m_postFireWindow;
+			ar & m_potentiationBits;
+			ar & m_depressionBits;
+			ar & m_preFireBits;
+			ar & m_postFireBits;
+			ar & m_maxWeight;
+			ar & m_minWeight;
+		}
+#endif
 };
 
 } // namespace nemo
