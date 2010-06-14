@@ -20,6 +20,7 @@
 #ifdef INCLUDE_MPI
 
 #include <boost/serialization/serialization.hpp>
+#include <boost/serialization/vector.hpp>
 
 namespace boost {
 	namespace serialization {
@@ -30,6 +31,10 @@ namespace boost {
 #endif
 
 namespace nemo {
+
+template<typename T> class STDP;
+template<typename T> void check_close(const STDP<T>&, const STDP<T>&);
+
 
 /*! \brief User-configurable STDP function */
 template<typename T>
@@ -94,6 +99,8 @@ class STDP
 
 	private:
 
+		 friend void check_close<>(const nemo::STDP<T>&, const nemo::STDP<T>&);
+
 		//! \todo compute the full function only on demand?
 		std::vector<T> m_function;
 
@@ -136,6 +143,7 @@ class STDP
 };
 
 } // namespace nemo
+
 
 #include "STDP.ipp"
 

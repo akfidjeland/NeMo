@@ -78,6 +78,8 @@ class ConfigurationImpl
 		unsigned m_cudaPartitionSize;
 		unsigned m_cudaFiringBufferLength; // in cycles
 
+		friend void check_close(const ConfigurationImpl& lhs, const ConfigurationImpl& rhs);
+
 #ifdef INCLUDE_MPI
 		friend class boost::serialization::access;
 
