@@ -26,11 +26,12 @@ MACRO(MEX_LIB_SUFFIX VAR)
 	ENDIF(WIN32)
 
 	IF(UNIX)
-		IF(CMAKE_SIZE_VOID_P EQUAL 8)
-			SET(${VAR} "mexi64")
+		IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+			# Note: this will fail on itanium
+			SET(${VAR} "mexa64")
 		ELSE()
 			SET(${VAR} "mexglx")
-		ENDIF(CMAKE_SIZE_VOID_P EQUAL 8)
+		ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	ENDIF(UNIX)
 
 	IF(APPLE) # overrides UNIX
