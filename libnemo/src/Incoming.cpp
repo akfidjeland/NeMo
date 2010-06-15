@@ -9,7 +9,8 @@
 
 #include "Incoming.hpp"
 
-#include "util.h"
+#include <util.h>
+
 #include "kernel.cu_h"
 #include "except.hpp"
 

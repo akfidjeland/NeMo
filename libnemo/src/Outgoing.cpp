@@ -14,9 +14,10 @@
 #include <cuda_runtime.h>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <util.h>
+
 #include "WarpAddressTable.hpp"
 #include "kernel.cu_h"
-#include "util.h"
 #include "except.hpp"
 
 namespace nemo {

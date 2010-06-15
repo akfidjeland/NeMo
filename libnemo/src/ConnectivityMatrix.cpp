@@ -15,13 +15,14 @@
 #include <cmath>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <util.h>
+
 #include "RSMatrix.hpp"
 #include "except.hpp"
 #include "WarpAddressTable.hpp"
 #include "connectivityMatrix.cu_h"
 #include "fixedpoint.hpp"
 #include "bitops.h"
-#include "util.h"
 
 
 namespace nemo {

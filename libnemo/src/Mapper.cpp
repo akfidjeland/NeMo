@@ -4,9 +4,9 @@
 #include <assert.h>
 
 #include <exception.hpp>
+#include <util.h>
 
 #include "kernel.cu_h"
-#include "util.h"
 
 
 namespace nemo {

@@ -12,9 +12,10 @@
 
 #include <assert.h>
 
+#include <util.h>
+
 #include "kernel.cu_h"
 #include "connectivityMatrix.cu_h"
-#include "util.h"
 
 #define NEURON_MASK MASK(NEURON_BITS)
 #define PARTITION_MASK MASK(PARTITION_BITS)

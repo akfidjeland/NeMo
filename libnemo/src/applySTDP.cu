@@ -11,12 +11,13 @@
  */
 
 #include <cuda.h>
+
+#include <util.h>
+#include <nemo_config.h>
+
 #include "cycleCounting.cu"
 #include "connectivityMatrix.cu"
-#include "util.h"
 #include "fixedpoint.cu"
-
-#include <nemo_config.h>
 
 
 /*! Apply STDP 
