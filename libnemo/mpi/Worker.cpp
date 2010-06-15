@@ -14,26 +14,27 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/mpi/collectives.hpp>
-#include <boost/mpi/communicator.hpp>
-#include <boost/mpi/environment.hpp>
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/utility.hpp>
 
-#include "nemo_mpi_common.hpp"
 #include <nemo.hpp>
 #include <NetworkImpl.hpp>
 #include <ConfigurationImpl.hpp>
 
 #include "Mapper.hpp"
 #include "SpikeQueue.hpp"
+#include "nemo_mpi_common.hpp"
+#include "log.hpp"
 
 
 namespace nemo {
 	namespace mpi {
 
 
-Worker::Worker(boost::mpi::communicator& world) :
+Worker::Worker(
+		boost::mpi::environment& env,
+		boost::mpi::communicator& world) :
 	m_world(world),
 	m_rank(world.rank()),
 	ml_scount(0),
@@ -41,12 +42,18 @@ Worker::Worker(boost::mpi::communicator& world) :
 	mgo_scount(0),
 	m_ncount(0)
 {
+	MPI_LOG("Starting worker %u on %s\n", world.rank(),
+			env.processor_name().c_str());
+
 	nemo::Configuration conf;
 	boost::mpi::broadcast(m_world, *conf.m_impl, MASTER);
 	conf.disableLogging();
 
+	unsigned neurons;
+	boost::mpi::broadcast(m_world, neurons, MASTER);
+
 	int workers = m_world.size() - 1;
-	Mapper mapper(workers, m_rank);
+	Mapper mapper(neurons, workers, m_rank);
 
 	bool constructionDone = false;
 	nemo::NetworkImpl net;
@@ -74,12 +81,10 @@ Worker::Worker(boost::mpi::communicator& world) :
 
 	m_world.barrier();
 
-#if 0
-	std::clog << "Worker " << m_rank << " " << m_ncount << " neurons" << std::endl;
-	std::clog << "Worker " << m_rank << " " << ml_scount << " local synapses" << std::endl;
-	std::clog << "Worker " << m_rank << " " << mgo_scount << " global synapses (outgoing)" << std::endl;
-	std::clog << "Worker " << m_rank << " " << mgi_scount << " global synapses (incoming)" << std::endl;
-#endif
+	MPI_LOG("Worker %u: %u neurons\n", m_rank, m_ncount);
+	MPI_LOG("Worker %u: %u local synapses\n", m_rank, ml_scount);
+	MPI_LOG("Worker %u: %u global synapses (out)\n", m_rank,  mgo_scount);
+	MPI_LOG("Worker %u: %u global synapses (int)\n", m_rank, mgi_scount);
 
 	runSimulation(net, conf, mapper.localCount());
 }

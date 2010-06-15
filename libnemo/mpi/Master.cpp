@@ -25,25 +25,33 @@
 #include <types.hpp>
 #include <mpi_types.hpp>
 
+#include "log.hpp"
+
 
 namespace nemo {
 	namespace mpi {
 
 Master::Master(
+		boost::mpi::environment& env,
 		boost::mpi::communicator& world,
-		const Network& net_,
+		const Network& net,
 		const Configuration& conf) :
 	m_world(world),
-	//! \todo base this on size hint as well
-	m_mapper(m_world.size() - 1, m_world.rank())
+	m_mapper(net.neuronCount(), m_world.size() - 1, m_world.rank())
 {
+	MPI_LOG("Master starting on %s\n", env.processor_name().c_str());
+
 	/* Need a dummy entry, to pop on first call to readFiring */
 	m_firing.push_back(std::vector<unsigned>());
 
-	// send configuration from master to all configurations
+	/* send configuration from master to all configurations */
 	boost::mpi::broadcast(world, *conf.m_impl, MASTER);
 
-	distributeNetwork(m_mapper, net_.m_impl);
+	/* send (approximate?) network size to all nodes */
+	unsigned neurons = net.neuronCount();
+	boost::mpi::broadcast(world, neurons, MASTER);
+
+	distributeNetwork(m_mapper, net.m_impl);
 
 	/* The workers now exchange connectivity information. */
 

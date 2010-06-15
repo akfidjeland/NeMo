@@ -16,7 +16,7 @@ class Mapper
 {
 	public:
 
-		Mapper(int workers, int rank);
+		Mapper(unsigned neurons, unsigned workers, int rank);
 
 		/*! \return the rank of the process which should process a particular neuron */ 
 		int rankOf(nidx_t) const;

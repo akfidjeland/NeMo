@@ -12,7 +12,9 @@
 
 #include <vector>
 #include <set>
+
 #include <boost/mpi/communicator.hpp>
+#include <boost/mpi/environment.hpp>
 
 #include <ConnectivityMatrix.hpp>
 #include "mpi_types.hpp"
@@ -36,7 +38,8 @@ class Worker
 {
 	public:
 
-		Worker(boost::mpi::communicator& world);
+		Worker(boost::mpi::environment& env,
+				boost::mpi::communicator& world);
 
 		typedef std::vector<unsigned> fbuf;
 

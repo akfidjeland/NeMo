@@ -12,7 +12,10 @@
 
 #include <vector>
 #include <deque>
+
+#include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
+
 #include <types.hpp>
 
 #include "Mapper.hpp"
@@ -30,7 +33,8 @@ class Master
 {
 	public :
 
-		Master(boost::mpi::communicator& world,
+		Master( boost::mpi::environment& env,
+				boost::mpi::communicator& world,
 				const Network&, 
 				const Configuration&);
 

@@ -2,15 +2,17 @@
 
 #include <assert.h>
 
+#include <util.h>
+
 
 namespace nemo {
 	namespace mpi {
 
 
-Mapper::Mapper(int workers, int rank) :
-	//! \todo do something sensible here. Use a size hint.
+Mapper::Mapper(unsigned neurons, unsigned workers, int rank) :
 	//! \todo support heterogenous clusters
-	m_nodeSize(512),
+	//! \todo leave nodes unused instead here, if nodes are not at capacity
+	m_nodeSize(DIV_CEIL(neurons, workers)),
 	m_workers(workers),
 	m_rank(rank),
 	m_startIdx((m_rank - 1) * m_nodeSize)

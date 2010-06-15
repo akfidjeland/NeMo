@@ -4,6 +4,7 @@
 #include <nemo.hpp>
 #include <exception.hpp>
 #include <examples.hpp>
+
 #include "nemo_mpi.hpp"
 
 
@@ -18,13 +19,13 @@ main(int argc, char* argv[])
 			//! \todo get neuron count from command-line
 			nemo::Network* net = nemo::random1k::construct(1024, 100);
 			nemo::Configuration conf;
-			nemo::mpi::Master sim(world, *net, conf);
+			nemo::mpi::Master sim(env, world, *net, conf);
 			for(unsigned ms=0; ms < 10; ++ms) {
 				sim.step();
 			}
 			delete net;
 		} else {
-			nemo::mpi::Worker sim(world);
+			nemo::mpi::Worker sim(env, world);
 		}
 	} catch (nemo::exception& e) {
 		std::cerr << e.what() << std::endl;
