@@ -14,7 +14,7 @@
  * This simply wrapes the API exposed in nemo::Simulation */
 
 extern "C" {
-#include "nemo.h"
+#include <nemo.h>
 }
 
 #include "CudaSimulation.hpp"

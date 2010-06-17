@@ -31,7 +31,7 @@ namespace nemo {
 
 
 ConnectivityMatrix::ConnectivityMatrix(
-		const nemo::Network& net,
+		const nemo::NetworkImpl& net,
 		const Mapper& mapper,
 		size_t partitionSize,
 		bool logging) :
@@ -72,7 +72,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 size_t
 ConnectivityMatrix::createFcm(
-		const nemo::Network& net,
+		const nemo::NetworkImpl& net,
 		const Mapper& mapper,
 		unsigned fbits,
 		size_t partitionSize,
@@ -82,18 +82,18 @@ ConnectivityMatrix::createFcm(
 {
 	size_t currentWarp = 1; // leave space for null warp at beginning
 
-	for(std::map<nidx_t, Network::axon_t>::const_iterator axon = net.m_fcm.begin();
+	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator axon = net.m_fcm.begin();
 			axon != net.m_fcm.end(); ++axon) {
 
 		nidx_t h_sourceIdx = axon->first;
 		DeviceIdx d_sourceIdx = mapper.deviceIdx(h_sourceIdx);
 		size_t neuronStartWarp = currentWarp;
 
-		for(std::map<delay_t, Network::bundle_t>::const_iterator bi = axon->second.begin();
+		for(std::map<delay_t, NetworkImpl::bundle_t>::const_iterator bi = axon->second.begin();
 				bi != axon->second.end(); ++bi) {
 
 			delay_t delay = bi->first;
-			Network::bundle_t bundle = bi->second;
+			NetworkImpl::bundle_t bundle = bi->second;
 
 			/* A bundle contains a number of synapses with the same source
 			 * neuron and delay. On the device we need to further subdivide
@@ -103,7 +103,7 @@ ConnectivityMatrix::createFcm(
 			/* Populate the partition groups. We only need to store the target
 			 * neuron and weight. We store these as a pair so that we can
 			 * reorganise these later. */
-			for(Network::bundle_t::const_iterator si = bundle.begin();
+			for(NetworkImpl::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
 				nidx_t h_targetIdx = si->target;
 				DeviceIdx d_targetIdx = mapper.deviceIdx(h_targetIdx);
@@ -173,7 +173,7 @@ ConnectivityMatrix::createFcm(
 
 				currentWarp += warps;
 			}
-			/*! \todo optionally clear nemo::Network data structure as we
+			/*! \todo optionally clear nemo::NetworkImpl data structure as we
 			 * iterate over it, so we can work in constant space */
 		}
 

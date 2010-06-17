@@ -1,23 +1,14 @@
-#ifndef NEMO_CONNECTIVITY_HPP
-#define NEMO_CONNECTIVITY_HPP
+#ifndef NEMO_NETWORK_HPP
+#define NEMO_NETWORK_HPP
 
 //! \file Network.hpp
 
-#include <map>
 #include <vector>
-
 #include "nemo_config.h"
-#include "types.hpp"
 
 namespace nemo {
 
-	namespace cuda {
-		// needed for 'friend' declarations
-		class ConnectivityMatrix;
-		class NeuronParameters;
-		class ThalamicInput;
-	}
-
+class Simulation;
 
 /*! Networks are constructed by adding individual neurons, and single or groups
  * of synapses to the network. Neurons are given indices (from 0) which should
@@ -108,35 +99,20 @@ class DLL_PUBLIC Network
 				const B plastic[],
 				size_t len);
 
-		nidx_t maxSourceIdx() const { return m_maxSourceIdx; }
-		delay_t maxDelay() const { return m_maxDelay; }
-		weight_t maxWeight() const { return m_maxWeight; }
-		weight_t minWeight() const { return m_minWeight; }
+		unsigned maxDelay() const;
+
+		float maxWeight() const;
+		float minWeight() const;
 
 		unsigned neuronCount() const;
 
 	private :
 
-		//! \todo perhaps store this as double?
-		typedef nemo::Neuron<weight_t> neuron_t;
-		std::map<nidx_t, neuron_t> m_neurons;
+		friend class nemo::Simulation;
 
-		typedef Synapse<nidx_t, weight_t> synapse_t;
-		typedef std::vector<synapse_t> bundle_t;
-		typedef std::map<delay_t, bundle_t> axon_t;
-		typedef std::map<nidx_t, axon_t> fcm_t;
-
-		fcm_t m_fcm;
-
-		int m_maxSourceIdx;
-		delay_t m_maxDelay;
-		weight_t m_maxWeight;
-		weight_t m_minWeight;
-
-		friend class cuda::ConnectivityMatrix;
-		friend class cuda::NeuronParameters;
-		friend class cuda::ThalamicInput;
+		class NetworkImpl* m_impl;
 };
+
 
 
 } // end namespace nemo

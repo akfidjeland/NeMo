@@ -16,7 +16,7 @@
 
 #include "thalamicInput.cu_h"
 #include "DeviceIdx.hpp"
-#include "Network.hpp"
+#include "NetworkImpl.hpp"
 #include "types.hpp"
 
 
@@ -25,7 +25,7 @@ namespace nemo {
 	namespace cuda {
 
 
-ThalamicInput::ThalamicInput(const nemo::Network& net,
+ThalamicInput::ThalamicInput(const nemo::NetworkImpl& net,
 		const Mapper& mapper,
 		size_t partitionCount,
 		size_t partitionSize) :

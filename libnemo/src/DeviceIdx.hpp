@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Network.hpp"
+#include "NetworkImpl.hpp"
 #include "cuda_types.h"
 #include "util.h"
 
@@ -38,7 +38,7 @@ class Mapper {
 
 	public :
 
-		Mapper(const nemo::Network& net, unsigned partitionSize) :
+		Mapper(const nemo::NetworkImpl& net, unsigned partitionSize) :
 			m_partitionSize(partitionSize) {
 			nidx_t maxIdx = net.maxSourceIdx();
 			m_partitionCount = (-1 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);

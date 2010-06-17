@@ -11,6 +11,8 @@
  */
 
 #include <vector>
+#include <boost/shared_ptr.hpp>
+
 #include "types.h"
 
 //! \file FiringOutput.hpp
@@ -39,8 +41,6 @@ class FiringOutput {
 				size_t partitionSize,
 				unsigned maxReadPeriod=defaultBufferLength());
 
-		~FiringOutput();
-
 		/*!  Read all firing data buffered on the device since the previous
 		 * call to this function (or the start of simulation if this is the
 		 * first call). The return vectors are valid until the next call to
@@ -60,7 +60,7 @@ class FiringOutput {
 		 * so there's no significant cost to doing this. */
 		void flushBuffer();
 
-		uint32_t* deviceData() const { return md_buffer; }
+		uint32_t* deviceData() const { return md_buffer.get(); }
 
 		/*! The user is in control of when to read the buffer. This opens up
 		 * the possibility of overflowing the buffers through negligence on the
@@ -90,8 +90,8 @@ class FiringOutput {
 	private:
 
 		/* Dense firing buffers on device and host */
-		uint32_t* md_buffer;
-		uint32_t* mh_buffer; // pinned, same size as device buffer
+		boost::shared_ptr<uint32_t> md_buffer;
+		boost::shared_ptr<uint32_t> mh_buffer; // pinned, same size as device buffer
 		size_t m_pitch; // in words
 
 		size_t m_partitionCount;

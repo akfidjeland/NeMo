@@ -1,50 +1,86 @@
-/* Copyright 2010 Imperial College London
- *
- * This file is part of nemo.
- *
- * This software is licenced for non-commercial academic use under the GNU
- * General Public Licence (GPL). You should have received a copy of this
- * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#include "Configuration.hpp"
-#include "CudaSimulation.hpp"
+#include <Configuration.hpp>
+#include "ConfigurationImpl.hpp"
 
 namespace nemo {
 
 Configuration::Configuration() :
-	m_logging(false),
-	m_cudaPartitionSize(cuda::Simulation::defaultPartitionSize()),
-	m_cudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength())
+	m_impl(new ConfigurationImpl())
 {
 	;
 }
 
+
 void
-Configuration::setStdpFunction(
-		const std::vector<float>& prefire,
-		const std::vector<float>& postfire,
-		float minWeight,
-		float maxWeight)
+Configuration::enableLogging()
 {
-	m_stdpFn = STDP<float>(prefire, postfire, minWeight, maxWeight);
+	m_impl->enableLogging();
 }
 
+
+void
+Configuration::disableLogging()
+{
+	m_impl->disableLogging();
+}
+
+
+bool
+Configuration::loggingEnabled() const
+{
+	return m_impl->loggingEnabled();
+}
+
+
+void
+Configuration::setCudaPartitionSize(unsigned ps)
+{
+	m_impl->setCudaPartitionSize(ps);
+}
+
+
+unsigned
+Configuration::cudaPartitionSize() const
+{
+	return m_impl->cudaPartitionSize();
+}
+
+
+void
+Configuration::setCudaFiringBufferLength(unsigned cycles)
+{
+	m_impl->setCudaFiringBufferLength(cycles);
+}
+
+
+unsigned
+Configuration::cudaFiringBufferLength() const
+{
+	return m_impl->cudaFiringBufferLength();
+}
 
 
 int
 Configuration::setCudaDevice(int dev)
 {
-	return cuda::Simulation::setDevice(dev);
+	return m_impl->setCudaDevice(dev);
 }
 
-} // namespace nemo
+
+void
+Configuration::setStdpFunction(
+				const std::vector<float>& prefire,
+				const std::vector<float>& postfire,
+				float minWeight,
+				float maxWeight)
+{
+	m_impl->setStdpFunction(prefire, postfire, minWeight, maxWeight);
+}
+
+} // end namespace nemo
+
 
 
 std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf)
 {
-	return o
-		<< "STDP=" << conf.stdpFunction().enabled() << " "
-		<< "cuda_ps=" << conf.cudaPartitionSize();
-	//! \todo print more infor about STDP
+	return o << *conf.m_impl;
 }

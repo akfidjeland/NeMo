@@ -27,7 +27,7 @@
 
 namespace nemo {
 
-	class Network;
+	class NetworkImpl;
 
 	namespace cuda {
 
@@ -36,7 +36,7 @@ class ThalamicInput
 	public :
 
 		//! \todo add seed input
-		ThalamicInput(const nemo::Network& net,
+		ThalamicInput(const nemo::NetworkImpl& net,
 				const class Mapper&,
 				size_t partitionCount,
 				size_t partitionSize);

@@ -1,7 +1,7 @@
-#ifndef NEMO_CONFIGURATION_HPP
-#define NEMO_CONFIGURATION_HPP
+#ifndef NEMO_CONFIGURATION_IMPL_HPP
+#define NEMO_CONFIGURATION_IMPL_HPP
 
-//! \file Configuration.hpp
+//! \file ConfigurationImpl.hpp
 
 /* Copyright 2010 Imperial College London
  *
@@ -13,16 +13,15 @@
  */
 
 #include <ostream>
-#include <nemo_config.h>
 #include "STDP.hpp"
 
 namespace nemo {
 
-class DLL_PUBLIC Configuration
+class ConfigurationImpl
 {
 	public:
 
-		Configuration();
+		ConfigurationImpl();
 
 		/*! Switch on logging and send output to stdout */
 		void enableLogging() { m_logging = true; }
@@ -59,7 +58,7 @@ class DLL_PUBLIC Configuration
 	private:
 
 		bool m_logging;
-		class STDP<float> m_stdpFn;
+		STDP<float> m_stdpFn;
 
 		/* CUDA-specific */
 		unsigned m_cudaPartitionSize;
@@ -69,6 +68,6 @@ class DLL_PUBLIC Configuration
 
 }
 
-std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf);
+std::ostream& operator<<(std::ostream& o, nemo::ConfigurationImpl const& conf);
 
 #endif
