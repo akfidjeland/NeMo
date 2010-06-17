@@ -24,6 +24,8 @@ OPTION(INCLUDE_MPI "Create MPI-enabled simulation" ON)
 IF(INCLUDE_MPI)
 	LIST(APPEND BOOST_COMPONENTS mpi serialization)
 	LIST(APPEND DIRS "mpi")
+
+	OPTION(INCLUDE_MPI_LOGGING "Enable logging (for debugging) in MPI applications" OFF)
 ENDIF(INCLUDE_MPI)
 
 
