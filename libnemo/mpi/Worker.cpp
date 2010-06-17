@@ -243,18 +243,32 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	initGlobalScatter(fbuf(), oreqs, obufs);
 
 	while(!masterReq.terminate) {
+		unsigned cycle = sim->elapsedSimulation();
+		MPI_LOG("c%u: worker %u waiting for master req\n", cycle, m_rank);
 		mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq);
 
+		/*! \note could use globalGather instead of initGlobalGather/waitGlobalGather */
+		// globalGather(queue);
+		
+		MPI_LOG("c%u: worker %u init global gather\n", cycle, m_rank);
 		initGlobalGather(ireqs, ibufs);
+
+		MPI_LOG("c%u: worker %u wait global scatter\n", cycle, m_rank);
 		//! \todo local gather
 		waitGlobalScatter(oreqs);
+
+		MPI_LOG("c%u: worker %u wait global gather\n", cycle, m_rank);
 		waitGlobalGather(ireqs, ibufs, queue);
+
+		MPI_LOG("c%u: worker %u master req wait\n", cycle, m_rank);
 		mreq.wait();
 		//! \todo improve naming
+		MPI_LOG("c%u: worker %u gather\n", cycle, m_rank);
 		gather(queue, ml_fcm, istim);
 		//! \todo split up step and only do neuron update here
 		sim->step(masterReq.fstim, istim);
 		sim->readFiring(&l_firedCycles, &l_fired);
+		MPI_LOG("c%u: worker %u init global scatter\n", cycle, m_rank);
 		initGlobalScatter(*l_fired, oreqs, obufs);
 		sendMaster(*l_fired);
 		queue.step();
@@ -319,6 +333,7 @@ Worker::waitGlobalGather(
 	unsigned nreqs = ireqs.size();
 	MPI_LOG("Worker %u waiting for messages from %u peers\n", m_rank, nreqs);
 
+#if 0 // see note below
 	for(unsigned r=0; r < nreqs; ++r) {
 		std::pair<status, req_vector::iterator> result = wait_any(ireqs.begin(), ireqs.end());
 		rank_t sourceRank = result.first.source();
@@ -326,7 +341,42 @@ Worker::waitGlobalGather(
 		const fbuf& incoming = ibufs.find(sourceRank)->second;
 		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
 		enqueueIncoming(incoming, ml_fcm, queue);
+
 	}
+#endif
+
+	/*! \note It should not be necessary to process these requests in order.
+	 * However, the above commented-out code results in run-time errors, as it
+	 * seems that some sources are received twice and others not at all. We
+	 * should come back to this issue later.  */
+	for(req_vector::iterator i = ireqs.begin(); i != ireqs.end(); ++i) {
+		status result = i->wait();
+		rank_t sourceRank = result.source();
+		assert(ibufs.find(sourceRank) != ibufs.end());
+		const fbuf& incoming = ibufs.find(sourceRank)->second;
+		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
+		enqueueIncoming(incoming, ml_fcm, queue);
+	}
+}
+
+
+
+
+/*! \note this function is not currently in use, but can be used in place of
+ * the initGlobalGather/waitGlobalGather pair. However, if using a single
+ * in-order globalGather we have less opportunities for overlapping
+ * communication and computation.  */
+void
+Worker::globalGather(SpikeQueue& queue)
+{
+	for(std::set<rank_t>::const_iterator source = mg_sources.begin();
+			source != mg_sources.end(); ++source) {
+		fbuf incoming;
+		m_world.irecv(*source, WORKER_STEP, incoming);
+		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), *source);
+		enqueueIncoming(incoming, ml_fcm, queue);
+	}
+
 }
 
 

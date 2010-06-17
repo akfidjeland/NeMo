@@ -59,6 +59,7 @@ class Worker
 		typedef std::map<rank_t, std::vector<SynapseVector> > global_fcm_t;
 
 		/* Buffer for incoming/outgoing data */
+		//! \todo make this a non-member
 		std::vector<SynapseVector> m_ibuf;
 		std::vector<SynapseVector> m_obuf;
 		
@@ -107,6 +108,7 @@ class Worker
 
 		void initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs);
 		void waitGlobalGather(req_vector& ireqs, const fbuf_vector& ibufs, SpikeQueue& queue);
+		void globalGather(SpikeQueue& queue);
 
 		void sendMaster(const fbuf& fired);
 };
