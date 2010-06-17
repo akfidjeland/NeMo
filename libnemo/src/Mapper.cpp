@@ -42,4 +42,12 @@ Mapper::deviceIdx(nidx_t global) const
 }
 
 
+
+unsigned
+Mapper::maxHostIdx() const
+{
+	return m_offset + m_partitionCount * m_partitionSize - 1;
+}
+
+
 }	}

@@ -56,6 +56,8 @@ class Mapper {
 
 		unsigned minHostIdx() const { return m_offset; }
 
+		unsigned maxHostIdx() const;
+
 	private :
 
 		unsigned m_partitionSize;
