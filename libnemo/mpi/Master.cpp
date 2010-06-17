@@ -57,6 +57,11 @@ Master::Master(
 
 	m_world.barrier();
 
+	/* The workers now set up the local simulations. This
+	 * could take some time */
+
+	m_world.barrier();
+
 	/* We're now ready to run the simulation. The caller does this using class
 	 * methods. */
 }

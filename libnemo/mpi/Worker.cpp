@@ -12,9 +12,9 @@
 #include <stdexcept>
 #include <algorithm>
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/nonblocking.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/utility.hpp>
 
@@ -217,17 +217,27 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	SimulationStep masterReq;
 
 	/* Incoming peer requests */
+	//! \todo can just fill this in as we go
+	fbuf_vector ibufs;
 	req_vector ireqs(mg_sources.size());
-	fbuf_vector ibufs(mg_sources.size());
+	for(std::set<rank_t>::const_iterator i = mg_sources.begin();
+			i != mg_sources.end(); ++i) {
+		ibufs[*i] = fbuf();
+	}
 
 	/* Outgoing peer requests. Not all peers are necessarily potential targets
 	 * for local neurons, so the output buffer could in principle be smaller.
 	 * Allocated it with potentially unused entries so that insertion (which is
 	 * frequent) is faster */
+	fbuf_vector obufs;
 	req_vector oreqs(mg_targets.size());
-	rank_t maxTargetRank = *std::max_element(mg_targets.begin(), mg_targets.end());
-	assert(1 + maxTargetRank >= rank_t(mg_targets.size()));
-	fbuf_vector obufs(1 + maxTargetRank);
+	for(std::set<rank_t>::const_iterator i = mg_targets.begin();
+			i != mg_targets.end(); ++i) {
+		obufs[*i] = fbuf();
+	}
+
+	/* Everyone should have set up the local simulation now */
+	m_world.barrier();
 
 	/* Scatter empty firing packages to start with */
 	initGlobalScatter(fbuf(), oreqs, obufs);
@@ -259,11 +269,16 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 void
 Worker::initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs)
 {
+	assert(mg_sources.size() == ibufs.size());
+	assert(mg_sources.size() == ireqs.size());
 	unsigned sid = 0;
 	for(std::set<rank_t>::const_iterator source = mg_sources.begin();
 			source != mg_sources.end(); ++source, ++sid) {
-		//! \todo need to make sure that every entry here is set.
-		ireqs.at(sid) = m_world.irecv(*source, WORKER_STEP, ibufs.at(sid));
+		MPI_LOG("Worker %u init gather from %u\n", m_rank, *source);
+		assert(ibufs.find(*source) != ibufs.end());
+		fbuf& incoming = ibufs[*source];
+		incoming.clear();
+		ireqs.at(sid) = m_world.irecv(*source, WORKER_STEP, incoming);
 	}
 }
 
@@ -290,6 +305,9 @@ enqueueIncoming(
 
 
 
+
+/* Wait for all incoming firings sent during the previous cycle. Add these
+ * firings to the queue */
 void
 Worker::waitGlobalGather(
 		req_vector& ireqs,
@@ -298,19 +316,16 @@ Worker::waitGlobalGather(
 {
 	using namespace boost::mpi;
 
-	std::pair<status, std::vector<request>::iterator> result;
-
 	unsigned nreqs = ireqs.size();
+	MPI_LOG("Worker %u waiting for messages from %u peers\n", m_rank, nreqs);
 
 	for(unsigned r=0; r < nreqs; ++r) {
-		result = wait_any(ireqs.begin(), ireqs.end());
-#ifdef MPI_LOGGING
-		const status& incoming = result.first;
-		std::cerr << "Worker " << m_rank
-			<< " receiving " << ibufs.at(r).size() << " firings from "
-			<< incoming.source() << std::endl;
-#endif
-		enqueueIncoming(ibufs.at(r), ml_fcm, queue);
+		std::pair<status, req_vector::iterator> result = wait_any(ireqs.begin(), ireqs.end());
+		rank_t sourceRank = result.first.source();
+		assert(ibufs.find(sourceRank) != ibufs.end());
+		const fbuf& incoming = ibufs.find(sourceRank)->second;
+		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
+		enqueueIncoming(incoming, ml_fcm, queue);
 	}
 }
 
@@ -323,16 +338,16 @@ Worker::waitGlobalGather(
  * 		Per-/target/ rank buffer of send requests
  * \param obuf
  * 		Per-rank buffer of firing.
- *
- * \pre obufs are all empty
- * \post obufs are all empty
  */
 void
-Worker::initGlobalScatter(
-		const fbuf& fired,
-		req_vector& oreqs,
-		fbuf_vector& obufs)
+Worker::initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obufs)
 {
+	MPI_LOG("Worker %u sending firing to %lu peers\n", m_rank, oreqs.size());
+
+	for(fbuf_vector::iterator i = obufs.begin(); i != obufs.end(); ++i) {
+		i->second.clear();
+	}
+
 	/* Each local firing may be sent to zero or more peers */
 	for(std::vector<unsigned>::const_iterator source = fired.begin();
 			source != fired.end(); ++source) {
@@ -340,9 +355,8 @@ Worker::initGlobalScatter(
 		for(std::set<rank_t>::const_iterator target = targets.begin();
 				target != targets.end(); ++target) {
 			rank_t targetRank = *target;
-			assert(targetRank < rank_t(obufs.size()));
 			assert(mg_targets.count(targetRank) == 1);
-			obufs.at(targetRank).push_back(*source);
+			obufs[targetRank].push_back(*source);
 		}
 	}
 
@@ -350,12 +364,8 @@ Worker::initGlobalScatter(
 	for(std::set<rank_t>::const_iterator target = mg_targets.begin();
 			target != mg_targets.end(); ++target, ++tid) {
 		rank_t targetRank = *target;
-#ifdef MPI_LOGGING
-		std::cerr << "Worker " << m_rank << " sending " << obufs.at(targetRank).size()
-			<< " firings to " << *target << std::endl;
-#endif
-		oreqs.at(tid) = m_world.isend(targetRank, WORKER_STEP, obufs.at(targetRank));
-		obufs.at(targetRank).clear();
+		MPI_LOG("Worker %u sending %lu firings to %u\n", m_rank, obufs[targetRank].size(), targetRank);
+		oreqs.at(tid) = m_world.isend(targetRank, WORKER_STEP, obufs[targetRank]);
 	}
 }
 

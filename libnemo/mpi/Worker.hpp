@@ -45,6 +45,7 @@ class Worker
 
 	private:
 
+		//! \todo move this to common types
 		typedef int rank_t;
 
 		typedef Synapse<unsigned, unsigned, float> synapse_t;
@@ -94,8 +95,8 @@ class Worker
 		unsigned mgo_scount;
 		unsigned m_ncount;
 
-		typedef std::vector<fbuf> fbuf_vector;
 		typedef std::vector<boost::mpi::request> req_vector;
+		typedef std::map<rank_t, fbuf> fbuf_vector;
 
 		void runSimulation(const nemo::NetworkImpl& net,
 				const nemo::Configuration& conf,
