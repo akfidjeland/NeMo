@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MPI_LOG(...) fprintf(stderr, __VA_ARGS__);
+#define MPI_LOG(...) fprintf(stdout, __VA_ARGS__);
 
 #else
 
