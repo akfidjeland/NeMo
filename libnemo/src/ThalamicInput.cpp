@@ -46,7 +46,7 @@ ThalamicInput::ThalamicInput(
 			i != net.m_neurons.end(); ++i) {
 		DeviceIdx didx = mapper.deviceIdx(i->first);
 		float val = i->second.sigma;
-		m_inUse = val != 0.0f;
+		m_inUse |= val != 0.0f;
 		m_sigma.setNeuron(didx.partition, didx.neuron, val);
 		for(size_t plane=0; plane < 4; ++plane) {
 			m_rngState.setNeuron(didx.partition, didx.neuron, seed(), plane);
