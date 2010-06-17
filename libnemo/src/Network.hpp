@@ -128,7 +128,7 @@ class DLL_PUBLIC Network
 
 		fcm_t m_fcm;
 
-		nidx_t m_maxSourceIdx;
+		int m_maxSourceIdx;
 		delay_t m_maxDelay;
 		weight_t m_maxWeight;
 		weight_t m_minWeight;

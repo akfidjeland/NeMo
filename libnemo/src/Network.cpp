@@ -17,7 +17,7 @@ namespace nemo {
 
 
 Network::Network() :
-	m_maxSourceIdx(0),
+	m_maxSourceIdx(-1),
 	m_maxDelay(0),
 	m_maxWeight(0),
 	m_minWeight(0)
@@ -29,6 +29,7 @@ Network::addNeuron(unsigned nidx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
+	m_maxSourceIdx = std::max(m_maxSourceIdx, int(nidx));
 	if(m_neurons.find(nidx) != m_neurons.end()) {
 		std::ostringstream msg;
 		msg << "Duplicate neuron index for neuron " << nidx;
@@ -50,7 +51,7 @@ Network::addSynapse(
 	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
 
 	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix
-	m_maxSourceIdx = std::max(m_maxSourceIdx, source);
+	m_maxSourceIdx = std::max(m_maxSourceIdx, int(source));
 	m_maxDelay = std::max(m_maxDelay, delay);
 	m_maxWeight = std::max(m_maxWeight, weight);
 	m_minWeight = std::min(m_minWeight, weight);

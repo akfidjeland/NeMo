@@ -129,6 +129,18 @@ runComparisions(nemo::Network* net)
 }
 
 
+/* It should be possible to create a network without any synapses */
+BOOST_AUTO_TEST_CASE(simulation_without_synapses)
+{
+	nemo::Network net;
+	net.addNeuron(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7);
+	nemo::Configuration conf;
+	nemo::Simulation* sim = NULL;
+	BOOST_REQUIRE_NO_THROW(sim = nemo::Simulation::create(net, conf));
+	BOOST_REQUIRE_NO_THROW(sim->step());
+	delete sim;
+}
+
 
 BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
 {

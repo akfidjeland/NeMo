@@ -41,7 +41,7 @@ class Mapper {
 		Mapper(const nemo::Network& net, unsigned partitionSize) :
 			m_partitionSize(partitionSize) {
 			nidx_t maxIdx = net.maxSourceIdx();
-			m_partitionCount = (0 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);
+			m_partitionCount = (-1 == maxIdx) ? 0 : DIV_CEIL(maxIdx+1, partitionSize);
 		}
 
 		DeviceIdx deviceIdx(nidx_t global) const {
