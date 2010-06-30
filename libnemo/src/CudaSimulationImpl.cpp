@@ -41,7 +41,7 @@ SimulationImpl::SimulationImpl(
 	m_mapper(net, conf.cudaPartitionSize()),
 	m_conf(conf),
 	m_neurons(net, m_mapper),
-	m_cm(net, m_mapper, conf.cudaPartitionSize(), conf.loggingEnabled()),
+	m_cm(net, conf, m_mapper),
 	m_recentFiring(m_mapper.partitionCount(), conf.cudaPartitionSize(), false, 2),
 	//! \todo seed properly from configuration
 	m_thalamicInput(net, m_mapper),

@@ -28,6 +28,9 @@
 #include "WarpAddressTable.hpp"
 
 namespace nemo {
+
+	class ConfigurationImpl;
+
 	namespace cuda {
 
 /*! \brief Connectivity matrix
@@ -57,10 +60,9 @@ class ConnectivityMatrix
 	public:
 
 		ConnectivityMatrix(
-				const nemo::NetworkImpl& net,
-				const Mapper&,
-				size_t partitionSize=MAX_PARTITION_SIZE,
-				bool logging=false);
+				const nemo::NetworkImpl&,
+				const nemo::ConfigurationImpl&,
+				const Mapper&);
 
 		delay_t maxDelay() const { return m_maxDelay; }
 

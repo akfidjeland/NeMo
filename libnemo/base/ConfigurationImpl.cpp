@@ -8,12 +8,18 @@
  */
 
 #include "ConfigurationImpl.hpp"
+
+#include <boost/format.hpp>
+
 #include <CudaSimulation.hpp>
+#include "exception.hpp"
+
 
 namespace nemo {
 
 ConfigurationImpl::ConfigurationImpl() :
 	m_logging(false),
+	m_fractionalBits(s_defaultFractionalBits),
 	m_cudaPartitionSize(cuda::Simulation::defaultPartitionSize()),
 	m_cudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength())
 {
@@ -36,6 +42,42 @@ int
 ConfigurationImpl::setCudaDevice(int dev)
 {
 	return cuda::Simulation::setDevice(dev);
+}
+
+
+
+void
+ConfigurationImpl::setFractionalBits(unsigned bits)
+{
+	using boost::format;
+
+	const unsigned max_bits = 32;
+	if(bits > max_bits) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid number of fractional bits (%u) specified. Max is %u")
+					% bits % max_bits));
+	}
+
+	m_fractionalBits = static_cast<int>(bits);
+}
+
+
+
+unsigned
+ConfigurationImpl::fractionalBits() const
+{
+	if(!fractionalBitsSet()) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Fractional bits requested but never set");
+	}
+	return static_cast<unsigned>(m_fractionalBits);
+}
+
+
+
+bool
+ConfigurationImpl::fractionalBitsSet() const
+{
+	return m_fractionalBits != s_defaultFractionalBits;
 }
 
 

@@ -546,9 +546,23 @@ setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
+void
+setFractionalBits(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus( 
+            nemo_set_fractional_bits( 
+                    getConfiguration(prhs, 1), 
+                    scalar<unsigned,uint32_t>(prhs[2]) 
+            ) 
+    );
+}
+
+
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
-#define FN_COUNT 22
+#define FN_COUNT 23
 
 fn_ptr fn_arr[FN_COUNT] = {
 	newNetwork,
@@ -572,7 +586,8 @@ fn_ptr fn_arr[FN_COUNT] = {
 	setCudaFiringBufferLength,
 	cudaFiringBufferLength,
 	setCudaDevice,
-	setStdpFunction};
+	setStdpFunction,
+	setFractionalBits};
 
 /* AUTO-GENERATED CODE END */
 

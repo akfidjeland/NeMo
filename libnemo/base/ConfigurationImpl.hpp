@@ -69,10 +69,22 @@ class ConfigurationImpl
 
 		const STDP<float>& stdpFunction() const { return m_stdpFn; }
 
+		void setFractionalBits(unsigned bits);
+
+		/*! \return the number of fractional bits. If the user has not
+		 * specified this (\see fractionalBitsSet) the return value is
+		 * undefined */
+		unsigned fractionalBits() const;
+
+		bool fractionalBitsSet() const;
+
 	private:
 
 		bool m_logging;
 		STDP<float> m_stdpFn;
+
+		int m_fractionalBits;
+		static const int s_defaultFractionalBits = -1;
 
 		/* CUDA-specific */
 		unsigned m_cudaPartitionSize;
@@ -87,6 +99,7 @@ class ConfigurationImpl
 		void serialize(Archive & ar, const unsigned int version) {
 			ar & m_logging;
 			ar & m_stdpFn;
+			ar & m_fractionalBits;
 			ar & m_cudaPartitionSize;
 			ar & m_cudaFiringBufferLength;
 		}

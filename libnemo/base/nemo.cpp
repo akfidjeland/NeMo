@@ -341,6 +341,15 @@ nemo_set_cuda_device(nemo_configuration_t conf, int dev)
 }
 
 
+
+nemo_status_t
+nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits)
+{
+	CATCH_(Configuration, conf, setFractionalBits(bits));
+}
+
+
+
 const char*
 nemo_strerror()
 {

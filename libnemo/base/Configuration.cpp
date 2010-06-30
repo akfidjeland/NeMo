@@ -91,6 +91,14 @@ Configuration::setStdpFunction(
 	m_impl->setStdpFunction(prefire, postfire, minWeight, maxWeight);
 }
 
+
+void
+Configuration::setFractionalBits(unsigned bits)
+{
+	m_impl->setFractionalBits(bits);
+}
+
+
 } // end namespace nemo
 
 

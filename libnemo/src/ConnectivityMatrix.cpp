@@ -16,6 +16,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include <util.h>
+#include <ConfigurationImpl.hpp>
 
 #include "RSMatrix.hpp"
 #include "except.hpp"
@@ -33,9 +34,8 @@ namespace nemo {
 
 ConnectivityMatrix::ConnectivityMatrix(
 		const nemo::NetworkImpl& net,
-		const Mapper& mapper,
-		size_t partitionSize,
-		bool logging) :
+		const nemo::ConfigurationImpl& conf,
+		const Mapper& mapper) :
 	m_maxDelay(net.maxDelay()),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
@@ -46,13 +46,19 @@ ConnectivityMatrix::ConnectivityMatrix(
 	std::vector<weight_dt> h_weights(WARP_SIZE, 0);
 	WarpAddressTable wtable;
 
-	unsigned fbits = setFractionalBits(net.minWeight(), net.maxWeight(), logging);
+	bool logging = conf.loggingEnabled();
+
+	if(conf.fractionalBitsSet()) {
+		m_fractionalBits = conf.fractionalBits();
+	} else {
+		m_fractionalBits = setFractionalBits(net.minWeight(), net.maxWeight(), logging);
+	}
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(net, mapper, fbits, partitionSize, wtable, h_targets, h_weights);
+	size_t totalWarps = createFcm(net, mapper, m_fractionalBits, conf.cudaPartitionSize(), wtable, h_targets, h_weights);
 
 	moveFcmToDevice(totalWarps, h_targets, h_weights, logging);
 	h_targets.clear();
@@ -283,7 +289,6 @@ ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging
 		std::cout << "Using fixed point format Q"
 			<< 31-fbits << "." << fbits << " for weights\n";
 	}
-	m_fractionalBits = fbits;
 	CUDA_SAFE_CALL(fx_setFormat(fbits));
 	return fbits;
 }
