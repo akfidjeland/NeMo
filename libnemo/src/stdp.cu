@@ -10,7 +10,6 @@
 #include "log.cu_h"
 #include "device_assert.cu"
 #include "cycle.cu"
-#include "fixedpoint.hpp"
 
 
 /* STDP parameters

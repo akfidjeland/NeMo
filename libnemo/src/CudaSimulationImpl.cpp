@@ -17,11 +17,11 @@
 
 #include <exception.hpp>
 #include <NetworkImpl.hpp>
+#include <fixedpoint.hpp>
 
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
 #include "ThalamicInput.hpp"
-#include "fixedpoint.hpp"
 #include "bitvector.hpp"
 #include "except.hpp"
 

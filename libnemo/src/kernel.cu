@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <fixedpoint.hpp>
+
 #include "log.cu_h"
 
 #include "device_assert.cu"

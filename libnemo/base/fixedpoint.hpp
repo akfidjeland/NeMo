@@ -10,15 +10,12 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cuda_runtime.h>
-#include "cuda_types.h"
+#include <types.h>
 
 /* Convert floating point to fixed-point */
 fix_t fx_toFix(float f, unsigned fractionalBits);
 
 /* Convert fixed-point to floating point */
 float fx_toFloat(fix_t f, unsigned fractionalBits);
-
-cudaError fx_setFormat(unsigned fractionalBits);
 
 #endif

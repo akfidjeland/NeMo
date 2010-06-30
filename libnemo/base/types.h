@@ -21,6 +21,7 @@
 #include <stdint.h>
 #endif
 
+typedef int32_t fix_t;
 typedef unsigned nidx_t; // neuron index
 typedef unsigned sidx_t; // synapse index
 typedef unsigned delay_t;

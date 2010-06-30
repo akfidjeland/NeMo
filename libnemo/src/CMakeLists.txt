@@ -22,6 +22,7 @@ MARK_AS_ADVANCED(FORCE
 
 CUDA_INCLUDE_DIRECTORIES(
 	${CMAKE_CURRENT_SOURCE_DIR}
+	# TODO: can probably remove this
 	${CMAKE_CURRENT_BINARY_DIR} # for configuration files
   )
 
@@ -64,7 +65,6 @@ CUDA_ADD_LIBRARY(nemo_cuda
 	CycleCounters.cpp
 	DeviceAssertions.cpp
 	FiringOutput.cpp
-	fixedpoint.cpp
 	Incoming.cpp
 	NeuronParameters.cpp
 	Mapper.cpp
