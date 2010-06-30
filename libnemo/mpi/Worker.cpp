@@ -77,7 +77,15 @@ Worker::Worker(
 		}
 	}
 
-	exchangeGlobalData(mapper, g_ss);
+	/* At simulation-time the synapse data is stored on the host-side at
+	 * the target node */
+
+	/* We keep a local FCM which is used to accumulate current from all
+	 * incoming firings. All source indices are global, while target
+	 * indices are local */
+	nemo::ConnectivityMatrix l_fcm;
+
+	exchangeGlobalData(mapper, g_ss, l_fcm);
 
 	m_world.barrier();
 
@@ -86,7 +94,7 @@ Worker::Worker(
 	MPI_LOG("Worker %u: %u global synapses (out)\n", m_rank,  mgo_scount);
 	MPI_LOG("Worker %u: %u global synapses (int)\n", m_rank, mgi_scount);
 
-	runSimulation(net, conf, mapper.localCount());
+	runSimulation(net, conf, l_fcm, mapper.localCount());
 }
 
 
@@ -139,7 +147,10 @@ Worker::addSynapseVector(const Mapper& mapper,
 
 
 void
-Worker::exchangeGlobalData(const Mapper& mapper, global_fcm_t& g_ss)
+Worker::exchangeGlobalData(
+		const Mapper& mapper,
+		global_fcm_t& g_ss,
+		nemo::ConnectivityMatrix& l_fcm)
 {
 	for(rank_t targetOffset = 1; targetOffset < m_world.size() - 1; ++targetOffset) {
 		/* We need to send something to all targets, so just use default-
@@ -165,7 +176,7 @@ Worker::exchangeGlobalData(const Mapper& mapper, global_fcm_t& g_ss)
 
 		for(std::vector<SynapseVector>::const_iterator i = m_ibuf.begin();
 				i != m_ibuf.end(); ++i) {
-			Row& row = ml_fcm.setRow(i->source, i->delay, i->terminals);
+			Row& row = l_fcm.setRow(i->source, i->delay, i->terminals);
 
 			/* The source sends synapses with global target indices. At
 			 * run-time we need local addresses instead */
@@ -176,13 +187,13 @@ Worker::exchangeGlobalData(const Mapper& mapper, global_fcm_t& g_ss)
 		}
 	}
 
-	ml_fcm.finalize();
+	l_fcm.finalize();
 }
 
 
 void
 gather(const SpikeQueue& queue,
-		const ConnectivityMatrix& fcm,
+		const nemo::ConnectivityMatrix& fcm,
 		std::vector<weight_t>& current)
 {
 	std::fill(current.begin(), current.end(), 0.0);
@@ -203,6 +214,7 @@ gather(const SpikeQueue& queue,
 void
 Worker::runSimulation(const nemo::NetworkImpl& net,
 		const nemo::Configuration& conf,
+		const nemo::ConnectivityMatrix& l_fcm,
 		size_t localCount)
 {
 	/* Local simulation data */
@@ -248,7 +260,7 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 		mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq);
 
 		/*! \note could use globalGather instead of initGlobalGather/waitGlobalGather */
-		// globalGather(queue);
+		// globalGather(l_fcm, queue);
 		
 		MPI_LOG("c%u: worker %u init global gather\n", cycle, m_rank);
 		initGlobalGather(ireqs, ibufs);
@@ -258,13 +270,13 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 		waitGlobalScatter(oreqs);
 
 		MPI_LOG("c%u: worker %u wait global gather\n", cycle, m_rank);
-		waitGlobalGather(ireqs, ibufs, queue);
+		waitGlobalGather(ireqs, ibufs, l_fcm, queue);
 
 		MPI_LOG("c%u: worker %u master req wait\n", cycle, m_rank);
 		mreq.wait();
 		//! \todo improve naming
 		MPI_LOG("c%u: worker %u gather\n", cycle, m_rank);
-		gather(queue, ml_fcm, istim);
+		gather(queue, l_fcm, istim);
 		//! \todo split up step and only do neuron update here
 		sim->step(masterReq.fstim, istim);
 		sim->readFiring(&l_firedCycles, &l_fired);
@@ -326,6 +338,7 @@ void
 Worker::waitGlobalGather(
 		req_vector& ireqs,
 		const fbuf_vector& ibufs,
+		const nemo::ConnectivityMatrix& l_fcm,
 		SpikeQueue& queue)
 {
 	using namespace boost::mpi;
@@ -340,7 +353,7 @@ Worker::waitGlobalGather(
 		assert(ibufs.find(sourceRank) != ibufs.end());
 		const fbuf& incoming = ibufs.find(sourceRank)->second;
 		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
-		enqueueIncoming(incoming, ml_fcm, queue);
+		enqueueIncoming(incoming, l_fcm, queue);
 
 	}
 #endif
@@ -355,7 +368,7 @@ Worker::waitGlobalGather(
 		assert(ibufs.find(sourceRank) != ibufs.end());
 		const fbuf& incoming = ibufs.find(sourceRank)->second;
 		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
-		enqueueIncoming(incoming, ml_fcm, queue);
+		enqueueIncoming(incoming, l_fcm, queue);
 	}
 }
 
@@ -367,14 +380,16 @@ Worker::waitGlobalGather(
  * in-order globalGather we have less opportunities for overlapping
  * communication and computation.  */
 void
-Worker::globalGather(SpikeQueue& queue)
+Worker::globalGather(
+		const nemo::ConnectivityMatrix& l_fcm,
+		SpikeQueue& queue)
 {
 	for(std::set<rank_t>::const_iterator source = mg_sources.begin();
 			source != mg_sources.end(); ++source) {
 		fbuf incoming;
 		m_world.irecv(*source, WORKER_STEP, incoming);
 		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), *source);
-		enqueueIncoming(incoming, ml_fcm, queue);
+		enqueueIncoming(incoming, l_fcm, queue);
 	}
 
 }

@@ -37,7 +37,7 @@ namespace nemo {
  *
  * The connectivity matrix (CM) specifies how neurons are connected. The CM has
  * both a forward version (connections from presynaptic to postsynaptic) and a
- * reverse version (connetions from postsynaptic to presynaptic). The reverse
+ * reverse version (connections from postsynaptic to presynaptic). The reverse
  * version may be required if synapses are modified at run time.
  *
  * The CM can have multiple planes of data, e.g. one for addressing and one for

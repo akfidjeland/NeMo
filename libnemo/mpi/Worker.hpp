@@ -66,7 +66,7 @@ class Worker
 		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net, global_fcm_t&);
 		void addNeuron(nemo::NetworkImpl& net);
 
-		void exchangeGlobalData(const Mapper&, global_fcm_t& g_ss);
+		void exchangeGlobalData(const Mapper&, global_fcm_t& g_ss, nemo::ConnectivityMatrix& l_fcm);
 
 		boost::mpi::communicator m_world;
 
@@ -83,14 +83,6 @@ class Worker
 		/* The specific source firings we should send. */
 		std::map<nidx_t, std::set<rank_t> > mg_fcm;
 
-		/* At simulation-time the synapse data is stored on the host-side at
-		 * the target node */
-
-		/* We keep a local FCM which is used to accumulate current from all
-		 * incoming firings. All source indices are global, while target
-		 * indices are local */
-		nemo::ConnectivityMatrix ml_fcm;
-
 		unsigned ml_scount;
 		unsigned mgi_scount;
 		unsigned mgo_scount;
@@ -101,14 +93,20 @@ class Worker
 
 		void runSimulation(const nemo::NetworkImpl& net,
 				const nemo::Configuration& conf,
+				const nemo::ConnectivityMatrix& l_fcm,
 				size_t localCount);
 
 		void initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obufs);
 		void waitGlobalScatter(req_vector&);
 
 		void initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs);
-		void waitGlobalGather(req_vector& ireqs, const fbuf_vector& ibufs, SpikeQueue& queue);
-		void globalGather(SpikeQueue& queue);
+
+		void waitGlobalGather(req_vector& ireqs,
+				const fbuf_vector& ibufs,
+				const nemo::ConnectivityMatrix& l_fcm,
+				SpikeQueue& queue);
+
+		void globalGather(const nemo::ConnectivityMatrix& l_fcm, SpikeQueue& queue);
 
 		void sendMaster(const fbuf& fired);
 };
