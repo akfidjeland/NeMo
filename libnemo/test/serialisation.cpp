@@ -1,4 +1,3 @@
-#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE nemo test
 
 #include <boost/archive/text_oarchive.hpp>
