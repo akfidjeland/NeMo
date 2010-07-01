@@ -93,5 +93,44 @@ fx_isNegative(fix_t v)
 }
 
 
+/* Convert shared-memory array from fixed-point to floating point format and
+ * perform fixed-point saturation. The conversion can be done in-place, i.e.
+ * the fixed-point input and floating-point outputs arrays can be the same. */
+__device__
+void
+fx_arrSaturatedToFloat(
+		uint32_t* s_overflow, // bit-vector
+		uint32_t* s_negative, // bit-vector
+		fix_t* s_fix,
+		float* s_float)
+{
+	/* If any accumulators overflow, clamp to max positive or minimum value */
+#ifdef FIXPOINT_SATURATION
+	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
+		unsigned nidx = nbase + threadIdx.x;
+		bool overflow = bv_isSet(nidx, s_overflow);
+		if(overflow) {
+			bool negative = bv_isSet(nidx, s_negative);
+			s_fix[nidx] = fx_saturate(negative);
+			DEBUG_MSG("c%u p%un%u input current overflow. Saturated to %+f (%08x)\n",
+					s_cycle, CURRENT_PARTITION, nidx,
+					fx_tofloat(s_fix[nidx]), s_fix[nidx]);
+		}
+	}
+#endif
+
+	/* Convert all fixed-point currents back to floating point */
+#if 1
+	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
+		unsigned nidx = nbase + threadIdx.x;
+		s_float[nidx] = fx_tofloat(s_fix[nidx]);
+	}
+#endif
+	__syncthreads();
+}
+
+
+
+
 
 #endif

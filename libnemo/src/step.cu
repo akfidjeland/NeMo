@@ -315,6 +315,7 @@ gather( unsigned cycle,
 			}
 
 			if(weight != 0) {
+				//! \todo combine this into a single operation
 				bool overflow = fx_atomicAdd(s_fx_current + postsynaptic, weight);
 				bv_atomicSetPredicated(overflow, postsynaptic, s_overflow);
 				bv_atomicSetPredicated(overflow && fx_isNegative(weight),
@@ -329,29 +330,9 @@ gather( unsigned cycle,
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
 	}
-
-	/* If any accumulators overflow, clamp to max positive or minimum value */
-#ifdef FIXPOINT_SATURATION
-	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
-		unsigned nidx = nbase + threadIdx.x;
-		bool overflow = bv_isSet(nidx, s_overflow);
-		if(overflow) {
-			bool negative = bv_isSet(nidx, s_negative);
-			s_fx_current[nidx] = fx_saturate(negative);
-			DEBUG_MSG("c%u p%un%u input current overflow. Saturated to %+f (%08x)\n",
-					s_cycle, CURRENT_PARTITION, nidx,
-					fx_tofloat(s_fx_current[nidx]), s_fx_current[nidx]);
-		}
-	}
-#endif
-
-	/* Convert all fixed-point currents back to floating point */
-	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
-		size_t idx = i*THREADS_PER_BLOCK + threadIdx.x;
-		s_current[idx] = fx_tofloat(s_fx_current[idx]);
-	}
-	__syncthreads();
 }
+
+
 
 
 
@@ -446,7 +427,11 @@ step (
 	}
 	SET_COUNTER(s_ccMain, 1);
 
-	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current, s_N1A, s_N1B);
+	uint32_t* s_overflow = s_N1A;
+	uint32_t* s_negative = s_N1B;
+
+	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current, s_overflow, s_negative);
+	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
 	SET_COUNTER(s_ccMain, 2);
 
