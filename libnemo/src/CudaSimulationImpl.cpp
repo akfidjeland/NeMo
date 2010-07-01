@@ -216,6 +216,9 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 float*
 SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
 {
+	if(current.empty())
+		return NULL;
+
 	m_currentStimulus.fill(0.0f);
 
 	/* The indices into 'current' are 0-based local indices. We need to
