@@ -314,14 +314,8 @@ SimulationImpl::usingStdp() const
 
 
 void
-SimulationImpl::step(
-		const std::vector<unsigned>& fstim,
-		const std::vector<float>& istim)
+SimulationImpl::step()
 {
-
-	setFiringStimulus(fstim);  // set md_fstim
-	setCurrentStimulus(istim); // set md_istim
-
 	m_timer.step();
 	uint32_t* d_fout = m_firingOutput.step();
 	::stepSimulation(
@@ -356,6 +350,7 @@ SimulationImpl::step(
 
 	m_deviceAssertions.check(m_timer.elapsedSimulation());
 }
+
 
 
 void

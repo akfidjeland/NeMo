@@ -51,11 +51,23 @@ Simulation::getFiringBufferLength() const
 
 
 void
-Simulation::step(
-		const std::vector<unsigned>& fstim,
-		const std::vector<float>& istim)
+Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
-	m_impl->step(fstim, istim);
+	m_impl->setFiringStimulus(nidx);
+}
+
+
+void
+Simulation::setCurrentStimulus(const std::vector<float>& current)
+{
+	m_impl->setCurrentStimulus(current);
+}
+
+
+void
+Simulation::step()
+{
+	m_impl->step();
 }
 
 

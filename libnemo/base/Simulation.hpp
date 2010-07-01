@@ -53,10 +53,19 @@ class DLL_PUBLIC Simulation
 		 * \param fstim
 		 * 		An optional list of neurons, which will be forced to fire this
 		 * 		cycle.
+		 * \param istim
+		 * 		Optional per-neuron vector specifying externally provided input
+		 * 		current for this cycle.
 		 */
 		virtual void step(
-				const std::vector<unsigned>& fstim = std::vector<unsigned>(),
-				const std::vector<float>& istim = std::vector<float>()) = 0;
+				// fstim is optional due to low-level overloaded step()
+				const std::vector<unsigned>& fstim,
+				const std::vector<float>& istim = std::vector<float>());
+
+		/* Low-level simulation interface */
+		virtual void setFiringStimulus(const std::vector<unsigned>& nidx) = 0;
+		virtual void setCurrentStimulus(const std::vector<float>& current) = 0;
+		virtual void step() = 0;
 
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *

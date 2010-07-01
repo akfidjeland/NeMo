@@ -50,4 +50,18 @@ Simulation::~Simulation()
 }
 
 
+
+void
+Simulation::step(const std::vector<unsigned>& fstim, const std::vector<float>& istim)
+{
+
+	setFiringStimulus(fstim);
+	setCurrentStimulus(istim);
+	step();
+}
+
+
+
+
+
 } // end namespace nemo

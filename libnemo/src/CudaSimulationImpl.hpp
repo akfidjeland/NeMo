@@ -55,9 +55,9 @@ class SimulationImpl
 
 		/* NETWORK SIMULATION */
 
-		void step(
-				const std::vector<unsigned>& fstim,
-				const std::vector<float>& current);
+		void setFiringStimulus(const std::vector<unsigned>& nidx);
+		void setCurrentStimulus(const std::vector<float>& current);
+		void step();
 
 		void applyStdp(float reward);
 
@@ -102,11 +102,9 @@ class SimulationImpl
 
 		/* Densely packed, one bit per neuron */
 		NVector<uint32_t> m_firingStimulus;
-		void setFiringStimulus(const std::vector<unsigned>& nidx);
 		void clearFiringStimulus();
 
 		NVector<float> m_currentStimulus;
-		void setCurrentStimulus(const std::vector<float>& current);
 		void clearCurrentStimulus();
 
 		/* The firing buffer keeps data for a certain duration. One bit is
