@@ -153,7 +153,7 @@ class ConnectivityMatrix
 		size_t d_allocatedRCM() const;
 
 		unsigned m_fractionalBits;
-		unsigned setFractionalBits(weight_t wmin, weight_t wmax, bool logging);;
+		unsigned setFractionalBits(weight_t wmin, weight_t wmax);
 
 		/* Per-partition addressing of RCM */
 		void moveRcmToDevice(const WarpAddressTable& wtable);

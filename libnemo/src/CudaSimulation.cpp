@@ -50,6 +50,13 @@ Simulation::getFiringBufferLength() const
 }
 
 
+unsigned
+Simulation::getFractionalBits() const
+{
+	return m_impl->getFractionalBits();
+}
+
+
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
@@ -58,7 +65,7 @@ Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 
 
 void
-Simulation::setCurrentStimulus(const std::vector<float>& current)
+Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 {
 	m_impl->setCurrentStimulus(current);
 }

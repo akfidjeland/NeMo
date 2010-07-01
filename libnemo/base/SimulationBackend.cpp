@@ -13,6 +13,8 @@
 #include "Configuration.hpp"
 #include "exception.hpp"
 #include "nemo_error.h"
+#include "fixedpoint.hpp"
+
 #include <CudaSimulation.hpp>
 
 namespace nemo {
@@ -58,6 +60,23 @@ SimulationBackend::step(const std::vector<unsigned>& fstim, const std::vector<fl
 	setCurrentStimulus(istim);
 	step();
 }
+
+
+
+void
+SimulationBackend::setCurrentStimulus(const std::vector<float>& current)
+{
+	unsigned fbits = getFractionalBits();
+	size_t len = current.size();
+	/*! \todo allocate this only once */
+	std::vector<fix_t> fx_current(len);
+	for(size_t i = 0; i < len; ++i) {
+		fx_current.at(i) = fx_toFix(current.at(i), fbits);
+	}
+	setCurrentStimulus(fx_current);
+}
+
+
 
 
 }

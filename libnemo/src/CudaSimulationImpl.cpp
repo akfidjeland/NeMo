@@ -209,26 +209,6 @@ SimulationImpl::clearFiringStimulus()
 
 
 void
-SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
-{
-	if(current.empty()) {
-		md_istim = NULL;
-		return;
-	}
-
-	unsigned fbits = m_cm.fractionalBits();
-	size_t len = current.size();
-	/*! \todo allocate this only once */
-	std::vector<fix_t> fx_current(len);
-	for(size_t i = 0; i < len; ++i) {
-		fx_current.at(i) = fx_toFix(current.at(i), fbits);
-	}
-	setCurrentStimulus(fx_current);
-}
-
-
-
-void
 SimulationImpl::setCurrentStimulus(const std::vector<fix_t>& current)
 {
 	if(current.empty()) {
@@ -464,6 +444,13 @@ unsigned
 SimulationImpl::defaultFiringBufferLength()
 {
 	return FiringOutput::defaultBufferLength();
+}
+
+
+unsigned
+SimulationImpl::getFractionalBits() const
+{
+	return m_cm.fractionalBits();
 }
 
 	} // end namespace cuda

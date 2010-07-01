@@ -18,9 +18,10 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/utility.hpp>
 
-#include <nemo.hpp>
-#include <NetworkImpl.hpp>
+#include <Configuration.hpp>
 #include <ConfigurationImpl.hpp>
+#include <SimulationBackend.hpp>
+#include <NetworkImpl.hpp>
 
 #include "Mapper.hpp"
 #include "SpikeQueue.hpp"
@@ -48,6 +49,10 @@ Worker::Worker(
 	nemo::Configuration conf;
 	boost::mpi::broadcast(m_world, *conf.m_impl, MASTER);
 	conf.disableLogging();
+
+	if(!conf.m_impl->fractionalBitsSet()) {
+		throw nemo::exception(NEMO_UNKNOWN_ERROR, "Fractional bits not set when using MPI backend");
+	}
 
 	unsigned neurons;
 	boost::mpi::broadcast(m_world, neurons, MASTER);
@@ -83,7 +88,7 @@ Worker::Worker(
 	/* We keep a local FCM which is used to accumulate current from all
 	 * incoming firings. All source indices are global, while target
 	 * indices are local */
-	nemo::ConnectivityMatrix l_fcm;
+	nemo::ConnectivityMatrix l_fcm(conf.m_impl->fractionalBits());
 
 	exchangeGlobalData(mapper, g_ss, l_fcm);
 
@@ -194,7 +199,7 @@ Worker::exchangeGlobalData(
 void
 gather(const SpikeQueue& queue,
 		const nemo::ConnectivityMatrix& fcm,
-		std::vector<weight_t>& current)
+		std::vector<fix_t>& current)
 {
 	std::fill(current.begin(), current.end(), 0.0);
 
@@ -203,7 +208,7 @@ gather(const SpikeQueue& queue,
 			arrival != arrival_end; ++arrival) {
 		const Row& row = fcm.getRow(arrival->source(), arrival->delay());
 		for(unsigned s=0; s < row.len; ++s) {
-			const FAxonTerminal& terminal = row.data[s];
+			const FAxonTerminal<fix_t>& terminal = row.data[s];
 			assert(terminal.target < current.size());
 			current.at(terminal.target) += terminal.weight;
 		}
@@ -217,11 +222,16 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 		const nemo::ConnectivityMatrix& l_fcm,
 		size_t localCount)
 {
+	MPI_LOG("Worker %u starting simulation\n", m_rank);
+
 	/* Local simulation data */
-	boost::scoped_ptr<nemo::Simulation> sim(nemo::Simulation::create(net, conf));
+	boost::scoped_ptr<nemo::SimulationBackend> sim(nemo::SimulationBackend::create(net, conf));
+
+	MPI_LOG("Worker %u starting simulation\n", m_rank);
+
 	const std::vector<unsigned>* l_firedCycles;         // unused
 	const std::vector<unsigned>* l_fired;               // neurons
-	std::vector<weight_t> istim(localCount, 0);         // input from global spikes
+	std::vector<fix_t> istim(localCount, 0);         // input from global spikes
 	SpikeQueue queue(net.maxDelay());
 
 	/* Incoming master request */
@@ -277,11 +287,14 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 		//! \todo improve naming
 		MPI_LOG("c%u: worker %u gather\n", cycle, m_rank);
 		gather(queue, l_fcm, istim);
+		sim->setFiringStimulus(masterReq.fstim);
+		sim->setCurrentStimulus(istim);
 		//! \todo split up step and only do neuron update here
-		sim->step(masterReq.fstim, istim);
+		sim->step();
 		sim->readFiring(&l_firedCycles, &l_fired);
 		MPI_LOG("c%u: worker %u init global scatter\n", cycle, m_rank);
 		initGlobalScatter(*l_fired, oreqs, obufs);
+		MPI_LOG("c%u: worker %u send master\n", cycle, m_rank);
 		sendMaster(*l_fired);
 		queue.step();
 		//! \todo local scatter
@@ -343,10 +356,10 @@ Worker::waitGlobalGather(
 {
 	using namespace boost::mpi;
 
-	unsigned nreqs = ireqs.size();
-	MPI_LOG("Worker %u waiting for messages from %u peers\n", m_rank, nreqs);
+	MPI_LOG("Worker %u waiting for messages from %u peers\n", m_rank, ireqs.size());
 
 #if 0 // see note below
+	unsigned nreqs = ireqs.size();
 	for(unsigned r=0; r < nreqs; ++r) {
 		std::pair<status, req_vector::iterator> result = wait_any(ireqs.begin(), ireqs.end());
 		rank_t sourceRank = result.first.source();

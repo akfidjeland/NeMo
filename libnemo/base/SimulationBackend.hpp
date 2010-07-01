@@ -40,6 +40,8 @@ class DLL_PUBLIC SimulationBackend : public Simulation
 		/*! \copydoc nemo::Simulation::getFiringBufferLength */
 		virtual unsigned getFiringBufferLength() const = 0;
 
+		virtual unsigned getFractionalBits() const = 0;
+
 		/*! Copy firing stimulus from host to device, setting the (member
 		 * variable) devce pointer containing firing stimulus. If there is no
 		 * input data the pointer is NULL. Array indices only tested in
@@ -55,7 +57,7 @@ class DLL_PUBLIC SimulationBackend : public Simulation
 		 * the device pointer is NULL.
 		 *
 		 * This function should only be called once per cycle. */
-		virtual void setCurrentStimulus(const std::vector<float>& current) = 0;
+		void setCurrentStimulus(const std::vector<float>& current);
 
 		/*! Set per-neuron input current on the device and set the relevant
 		 * member variable containing the device pointer. If there is no input
@@ -64,7 +66,7 @@ class DLL_PUBLIC SimulationBackend : public Simulation
 		 * This function should only be called once per cycle.
 		 *
 		 * Pre: the input vector uses the same fixed-point format as the backend */
-		//virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
+		virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
 
 		/*! Perform a single simulation step, using the any stimuli (firing and
 		 * current) provided by the caller after the previous call to step */

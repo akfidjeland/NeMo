@@ -50,36 +50,38 @@ class Simulation : public nemo::SimulationBackend
 		 * CONFIGURATION
 		 */
 
+		/*! \copydoc nemo::SimulationBackend::getFiringBufferLength */
 		unsigned getFiringBufferLength() const; 
+
+		unsigned getFractionalBits() const;
 
 		/*
 		 * NETWORK SIMULATION
 		 */
 
+		/*! \copydoc nemo::SimulationBackend::setFiringStimulus */
 		void setFiringStimulus(const std::vector<unsigned>& nidx);
-		void setCurrentStimulus(const std::vector<float>& current);
+
+		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
+		void setCurrentStimulus(const std::vector<fix_t>& current);
+
+		/*! \copydoc nemo::SimulationBackend::step */
 		void step();
 
+		/*! \copydoc nemo::SimulationBackend::applyStdp */
 		void applyStdp(float reward);
 
+		/*! \copydoc nemo::SimulationBackend::getSynapses */
 		void getSynapses(unsigned sourceNeuron,
 				const std::vector<unsigned>** targetNeuron,
 				const std::vector<unsigned>** delays,
 				const std::vector<float>** weights,
 				const std::vector<unsigned char>** plastic);
 
-		/*! Read all firing data buffered on the device since the previous
-		 * call to this function (or the start of simulation if this is the
-		 * first call). The return vectors are valid until the next call to
-		 * this function.
-		 *
-		 * \return
-		 * 		Total number of cycles for which we return firing. The caller
-		 * 		would most likely already know what this should be, so can use
-		 * 		this for sanity checking.
-		 */
+		/*! \copydoc nemo::SimulationBackend::readFiring */
 		unsigned readFiring(const std::vector<unsigned>** cycles, const std::vector<unsigned>** nidx);
 
+		/*! \copydoc nemo::SimulationBackend::flushFiringBuffer */
 		void flushFiringBuffer();
 
 		void finishSimulation();
@@ -88,15 +90,13 @@ class Simulation : public nemo::SimulationBackend
 		 * TIMING
 		 */
 
-		/*! \return number of milliseconds of wall-clock time elapsed since first
-		 * simulation step (or last timer reset) */
+		/*! \copydoc nemo::SimulationBackend::elapsedWallclock */
 		unsigned long elapsedWallclock() const;
 
-		/*! \return number of milliseconds of simulated time elapsed since first
-		 * simulation step (or last timer reset) */
+		/*! \copydoc nemo::SimulationBackend::elapsedSimulation */
 		unsigned long elapsedSimulation() const;
 
-		/*! Reset both wall-clock and simulation timer */
+		/*! \copydoc nemo::SimulationBackend::resetTimer */
 		void resetTimer();
 
 		static unsigned defaultPartitionSize();

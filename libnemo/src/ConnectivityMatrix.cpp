@@ -52,8 +52,15 @@ ConnectivityMatrix::ConnectivityMatrix(
 	if(conf.fractionalBitsSet()) {
 		m_fractionalBits = conf.fractionalBits();
 	} else {
-		m_fractionalBits = setFractionalBits(net.minWeight(), net.maxWeight(), logging);
+		m_fractionalBits = setFractionalBits(net.minWeight(), net.maxWeight());
 	}
+
+	if(logging) {
+		//! \todo log to correct output stream
+		std::cout << "Using fixed point format Q"
+			<< 31-m_fractionalBits << "." << m_fractionalBits << " for weights\n";
+	}
+	CUDA_SAFE_CALL(fx_setFormat(m_fractionalBits));
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
@@ -265,7 +272,7 @@ ConnectivityMatrix::moveRcmToDevice(const WarpAddressTable& wtable)
 /* Determine the number of fractional bits to use when storing weights in
  * fixed-point format on the device. */
 unsigned
-ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging)
+ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax)
 {
 	/* In the worst case we may have all presynaptic neurons for some neuron
 	 * firing, and having all the relevant synapses have the maximum weight we
@@ -284,13 +291,6 @@ ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax, bool logging
 	weight_t maxAbsWeight = std::max(abs(wmin), abs(wmax));
 	unsigned log2Ceil = ceilf(log2(maxAbsWeight));
 	unsigned fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
-
-	if(logging) {
-		//! \todo log to correct output stream
-		std::cout << "Using fixed point format Q"
-			<< 31-fbits << "." << fbits << " for weights\n";
-	}
-	CUDA_SAFE_CALL(fx_setFormat(fbits));
 	return fbits;
 }
 

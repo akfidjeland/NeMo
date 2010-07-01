@@ -15,35 +15,37 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include "exception.hpp"
+#include "fixedpoint.hpp"
 
 
 namespace nemo {
 
 
-Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss) :
+Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss, unsigned fbits) :
 	len(ss.size())
 {
-	FAxonTerminal* ptr;
+	FAxonTerminal<fix_t>* ptr;
 	int error = posix_memalign((void**)&ptr,
 			ASSUMED_CACHE_LINE_SIZE,
-			ss.size()*sizeof(FAxonTerminal));
+			ss.size()*sizeof(FAxonTerminal<fix_t>));
 	if(error) {
 		throw nemo::exception(NEMO_ALLOCATION_ERROR, "Failed to allocate CM row");
 	}
 
-	data = boost::shared_array<FAxonTerminal>(ptr, free);
+	data = boost::shared_array< FAxonTerminal<fix_t> >(ptr, free);
 
 	/* static/plastic flag is not needed in forward matrix */
 	for(std::vector<nemo::AxonTerminal<nidx_t, weight_t> >::const_iterator si = ss.begin();
 			si != ss.end(); ++si) {
 		size_t i = si - ss.begin();
-		ptr[i] = FAxonTerminal(si->weight, si->target);
+		ptr[i] = FAxonTerminal<fix_t>(fx_toFix(si->weight, fbits), si->target);
 	}
 }
 
 
 
-ConnectivityMatrix::ConnectivityMatrix() :
+ConnectivityMatrix::ConnectivityMatrix(unsigned fractionalBits) :
+	m_fractionalBits(fractionalBits),
 	m_maxDelay(0),
 	m_maxSourceIdx(0)
 {
@@ -58,7 +60,7 @@ ConnectivityMatrix::setRow(nidx_t source,
 		const std::vector<AxonTerminal<nidx_t, weight_t> >& ss)
 {
 	std::pair<std::map<fidx, Row>::iterator, bool> insertion =
-		m_acc.insert(std::make_pair<fidx, Row>(fidx(source, delay), Row(ss)));
+		m_acc.insert(std::make_pair<fidx, Row>(fidx(source, delay), Row(ss, m_fractionalBits)));
 	if(!insertion.second) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Double insertion into connectivity matrix");
 	}

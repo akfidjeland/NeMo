@@ -26,37 +26,41 @@ namespace nemo {
 
 /* The AxonTerminal in types.hpp includes 'plastic' specification. It's not
  * needed here. */
+template<typename W>
 struct FAxonTerminal
 {
-	FAxonTerminal(weight_t w, nidx_t t) : weight(w), target(t) {}
+	FAxonTerminal(W w, nidx_t t) : weight(w), target(t) {}
 
-	weight_t weight; 
+	W weight;
 	nidx_t target; 
 };
 
 
 
-/* A row contains a number of synapses with a fixed source and delay */
+/* A row contains a number of synapses with a fixed source and delay. A
+ * fixed-point format is used internally. The caller needs to specify the
+ * format.  */
 struct Row
 {
 	Row() : len(0) {}
 
-	Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& );
+	Row(const std::vector<AxonTerminal<nidx_t, weight_t> >&, unsigned fbits);
 
 	size_t len;
-	boost::shared_array<FAxonTerminal> data;
+	boost::shared_array< FAxonTerminal<fix_t> > data;
 };
 
 
 /* Generic connectivity matrix
  *
- * Data in this class is organised for optimal cache performance
+ * Data in this class is organised for optimal cache performance. A
+ * user-defined fixed-point format is used.
  */
 class ConnectivityMatrix
 {
 	public:
 
-		ConnectivityMatrix();
+		ConnectivityMatrix(unsigned fractionalBits);
 
 		/*! Add a number of synapses with the same source and delay. Return
 		 * reference to the newly inserted row. */
@@ -74,6 +78,8 @@ class ConnectivityMatrix
 		delay_iterator delay_end(nidx_t source) const;
 
 	private:
+
+		unsigned m_fractionalBits;
 
 		/* During network construction we accumulate data in a map. This way we
 		 * don't need to know the number of neurons or the number of delays in
