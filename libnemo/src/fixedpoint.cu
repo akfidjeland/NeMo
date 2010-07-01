@@ -47,6 +47,25 @@ fx_tofloat(fix_t v)
 
 
 
+/*! \return saturated value with the given sign (bit 0 in 'sign') */
+__device__
+fix_t
+fx_saturate(bool negative)
+{
+	return fix_t(~0) & (fix_t(negative) << 31);
+}
+
+
+__device__
+float
+fx_saturatedTofloat(fix_t v, bool overflow, bool negative)
+{
+	//! \todo any way to avoid division here. Perhaps precompute the fraction here?
+	//! \todo check if it makes any difference to use 1<<c here instead
+	return float(overflow ? fx_saturate(negative) : v) / c_fixedPointScale;
+}
+
+
 /*! Add atomically to shared memory fixed-point value, returning true if an
  * overflow occurred */
 __device__
@@ -76,21 +95,13 @@ fx_mul(fix_t a, fix_t b)
 }
 
 
-/*! \return saturated value with the given sign (bit 0 in 'sign') */
-__device__
-fix_t
-fx_saturate(bool negative)
-{
-	return fix_t(~0) & (fix_t(negative) << 31);
-}
-
-
 __device__
 fix_t
 fx_isNegative(fix_t v)
 {
 	return v & FX_SIGN_BIT;
 }
+
 
 
 /* Convert shared-memory array from fixed-point to floating point format and
@@ -105,27 +116,21 @@ fx_arrSaturatedToFloat(
 		float* s_float)
 {
 	/* If any accumulators overflow, clamp to max positive or minimum value */
-#ifdef FIXPOINT_SATURATION
 	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
 		unsigned nidx = nbase + threadIdx.x;
+#ifndef FIXPOINT_SATURATION
+		s_float[nidx] = fx_tofloat(s_fix[nidx]);
+#else
 		bool overflow = bv_isSet(nidx, s_overflow);
+		bool negative = bv_isSet(nidx, s_negative);
+		s_float[nidx] = fx_saturatedTofloat(s_fix[nidx], overflow, negative);
 		if(overflow) {
-			bool negative = bv_isSet(nidx, s_negative);
-			s_fix[nidx] = fx_saturate(negative);
 			DEBUG_MSG("c%u p%un%u input current overflow. Saturated to %+f (%08x)\n",
 					s_cycle, CURRENT_PARTITION, nidx,
 					fx_tofloat(s_fix[nidx]), s_fix[nidx]);
 		}
-	}
 #endif
-
-	/* Convert all fixed-point currents back to floating point */
-#if 1
-	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
-		unsigned nidx = nbase + threadIdx.x;
-		s_float[nidx] = fx_tofloat(s_fix[nidx]);
 	}
-#endif
 	__syncthreads();
 }
 
