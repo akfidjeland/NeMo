@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf);
 
 namespace nemo {
 
-	class Simulation;
+	class SimulationBackend;
 
 	namespace mpi {
 		class Master;
@@ -82,7 +82,7 @@ class DLL_PUBLIC Configuration
 
 	private:
 
-		friend class nemo::Simulation;
+		friend class nemo::SimulationBackend;
 		friend class nemo::mpi::Master;
 		friend class nemo::mpi::Worker;
 

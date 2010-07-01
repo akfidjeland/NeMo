@@ -13,6 +13,7 @@ ADD_LIBRARY(nemo
 	Network.cpp
 	NetworkImpl.cpp
 	Simulation.cpp
+	SimulationBackend.cpp
 	ConnectivityMatrix.cpp
 	fixedpoint.cpp
 )

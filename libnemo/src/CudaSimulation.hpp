@@ -11,7 +11,7 @@
  */
 
 #include <vector>
-#include <Simulation.hpp>
+#include <SimulationBackend.hpp>
 
 namespace nemo {
 
@@ -20,7 +20,7 @@ namespace nemo {
 
 	namespace cuda {
 
-class Simulation : public nemo::Simulation
+class Simulation : public nemo::SimulationBackend
 {
 	public :
 

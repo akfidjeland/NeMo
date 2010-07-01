@@ -8,60 +8,21 @@
  */
 
 #include "Simulation.hpp"
-#include "Network.hpp"
-#include "NetworkImpl.hpp"
-#include "Configuration.hpp"
-#include "exception.hpp"
-#include "nemo_error.h"
-#include <CudaSimulation.hpp>
+#include "SimulationBackend.hpp"
 
 namespace nemo {
 
 Simulation*
 Simulation::create(const Network& net, const Configuration& conf)
 {
-	return create(*net.m_impl, conf);
+	return dynamic_cast<Simulation*>(SimulationBackend::create(net, conf));
 }
 
-
-
-/* Sometimes using the slightly lower-level interface provided by NetworkImpl
- * makes sense (see e.g. nemo::mpi::Worker), so provide an overload of 'create'
- * that takes such an object directly. */
-Simulation*
-Simulation::create(const NetworkImpl& net, const Configuration& conf)
-{
-	if(net.neuronCount() == 0) {
-		throw nemo::exception(NEMO_INVALID_INPUT,
-				"Cannot create simulation from empty network");
-		return NULL;
-	}
-	int dev = cuda::Simulation::selectDevice();
-	if(dev == -1) {
-		throw nemo::exception(NEMO_CUDA_ERROR, "Failed to create simulation");
-	}
-	return new cuda::Simulation(net, *conf.m_impl);
-}
 
 
 Simulation::~Simulation()
 {
 	;
 }
-
-
-
-void
-Simulation::step(const std::vector<unsigned>& fstim, const std::vector<float>& istim)
-{
-
-	setFiringStimulus(fstim);
-	setCurrentStimulus(istim);
-	step();
-}
-
-
-
-
 
 } // end namespace nemo

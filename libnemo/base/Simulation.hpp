@@ -40,10 +40,9 @@ class DLL_PUBLIC Simulation
 		 * \return
 		 * 		new Simulation object, or NULL if no suitable CUDA device was
 		 * 		found. */
-		static Simulation* create(const Network& net, const Configuration&);
-		static Simulation* create(const class NetworkImpl& net, const Configuration& conf);
+		static Simulation* create(const Network&, const Configuration&);
 
-		virtual ~Simulation() = 0;
+		virtual ~Simulation();
 
 		/*! \return the number of cycles the firing buffer can hold */
 		virtual unsigned getFiringBufferLength() const = 0;
@@ -59,13 +58,8 @@ class DLL_PUBLIC Simulation
 		 */
 		virtual void step(
 				// fstim is optional due to low-level overloaded step()
-				const std::vector<unsigned>& fstim,
-				const std::vector<float>& istim = std::vector<float>());
-
-		/* Low-level simulation interface */
-		virtual void setFiringStimulus(const std::vector<unsigned>& nidx) = 0;
-		virtual void setCurrentStimulus(const std::vector<float>& current) = 0;
-		virtual void step() = 0;
+				const std::vector<unsigned>& fstim = std::vector<unsigned>(),
+				const std::vector<float>& istim = std::vector<float>()) = 0;
 
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *
