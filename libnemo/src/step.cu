@@ -435,15 +435,22 @@ step (
 
 	SET_COUNTER(s_ccMain, 2);
 
+	uint32_t* s_fstim = s_N1A;
+	loadFiringInput(g_fstim, s_fstim);
+	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, s_current);
+
+	SET_COUNTER(s_ccMain, 3);
+
+	/* Generating random input current really ought to be done /before/
+	 * providing the input current (for better performance in MPI backend).
+	 * However, we need to either provide fixed-point random input or do an
+	 * additional conversion inside the thalamic input code in order for this
+	 * to work. */
 	if(g_rngState != NULL && g_rngSigma != NULL) {
 		thalamicInput(s_partitionSize, s_pitch32, g_rngState, g_rngSigma, s_current);
 	}
 
-	SET_COUNTER(s_ccMain, 3);
-
-	uint32_t* s_fstim = s_N1A;
-	loadFiringInput(g_fstim, s_fstim);
-	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, s_current);
+	SET_COUNTER(s_ccMain, 4);
 
 	fire( s_partitionSize,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
@@ -457,7 +464,7 @@ step (
 	uint32_t* s_dfired = s_N1A;
 	storeFiringOutput(s_firingCount, s_fired, s_dfired, firingOutput);
 
-	SET_COUNTER(s_ccMain, 4);
+	SET_COUNTER(s_ccMain, 5);
 
 	scatter(
 			cycle,
@@ -468,7 +475,7 @@ step (
 			g_incomingHeads,
 			g_incoming);
 
-	SET_COUNTER(s_ccMain, 5);
+	SET_COUNTER(s_ccMain, 6);
 
 	if(stdpEnabled) {
 		loadStdpParameters_();
@@ -482,7 +489,7 @@ step (
 				s_fired);
 	}
 
-	SET_COUNTER(s_ccMain, 6);
+	SET_COUNTER(s_ccMain, 7);
 
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

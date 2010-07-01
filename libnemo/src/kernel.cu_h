@@ -75,7 +75,7 @@
  * different kernels, and furthermore that the counters used there match what's
  * used when reading back. */
 
-#define CC_MAIN_COUNT 7
+#define CC_MAIN_COUNT 8
 #define CC_STDP_APPLY_COUNT 2
 
 #endif

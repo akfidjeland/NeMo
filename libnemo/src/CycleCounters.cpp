@@ -32,6 +32,7 @@ CycleCounters::CycleCounters(size_t partitionCount, bool stdpEnabled) :
 const char* durationNames[] = {
 	"init",
 	"spike gather",
+	"current/firing input",
 	"random input",
 	"fire",
 	"spike scatter",
