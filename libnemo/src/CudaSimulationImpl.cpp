@@ -168,15 +168,6 @@ SimulationImpl::configureStdp(const STDP<float>& stdp)
 
 
 
-/*! Copy firing stimulus from host to device, setting the (member variable)
- * devce pointer contaiing firing stimulus. If there is no input data the
- * pointer is NULL. Array indices only tested in debugging mode.
- * 
- * \param count
- *		Number of neurons whose firing should be forced
- * \param nidx
- * 		Neuron indices of neurons whose firing should be forced
- */
 void
 SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
@@ -217,9 +208,6 @@ SimulationImpl::clearFiringStimulus()
 
 
 
-/*! Set per-neuron input current on the device and set the relevant member
- * variable containing the device pointer. If there is no input the device
- * pointer is NULL. */
 void
 SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
 {
@@ -228,7 +216,27 @@ SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
 		return;
 	}
 
-	m_currentStimulus.fill(0.0f);
+	unsigned fbits = m_cm.fractionalBits();
+	size_t len = current.size();
+	/*! \todo allocate this only once */
+	std::vector<fix_t> fx_current(len);
+	for(size_t i = 0; i < len; ++i) {
+		fx_current.at(i) = fx_toFix(current.at(i), fbits);
+	}
+	setCurrentStimulus(fx_current);
+}
+
+
+
+void
+SimulationImpl::setCurrentStimulus(const std::vector<fix_t>& current)
+{
+	if(current.empty()) {
+		md_istim = NULL;
+		return;
+	}
+
+	m_currentStimulus.fill(0);
 
 	/* The indices into 'current' are 0-based local indices. We need to
 	 * translate this into the appropriately mapped device indices. In
@@ -238,7 +246,7 @@ SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
 	 * current copying scheme turns out to be a bottleneck, modify this. */
 	//! \todo in public API get vector of neuron/current pairs instead.
 	nidx_t neuron = m_mapper.minHostIdx();
-	for(std::vector<float>::const_iterator i = current.begin();
+	for(std::vector<fix_t>::const_iterator i = current.begin();
 			i != current.end(); ++i, ++neuron) {
 		DeviceIdx dev = m_mapper.deviceIdx(neuron);
 		m_currentStimulus.setNeuron(dev.partition, dev.neuron, *i);

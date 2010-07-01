@@ -36,7 +36,7 @@ stepSimulation(
 		unsigned* d_rngState,
 		float* d_rngSigma,
 		uint32_t* d_fstim,
-		float* d_istim,
+		fix_t* d_istim,
 		uint32_t* d_fout,
 		synapse_t* d_fcm,
 		unsigned* d_outgoingCount,

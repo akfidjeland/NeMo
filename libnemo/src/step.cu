@@ -67,7 +67,7 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
 
 __device__
 void
-addCurrentStimulus(unsigned psize, size_t pitch, const float* g_current, float* s_current)
+addCurrentStimulus(unsigned psize, size_t pitch, const fix_t* g_current, fix_t* s_current)
 {
 	if(g_current != NULL) {
 		for(unsigned nbase=0; nbase < psize; nbase += THREADS_PER_BLOCK) {
@@ -371,7 +371,7 @@ step (
 		incoming_t* g_incoming,
 		// firing stimulus
 		uint32_t* g_fstim,
-		float* g_istim,
+		fix_t* g_istim,
 #ifdef KERNEL_TIMING
 		// cycle counting
 		//! \todo change to uint64_t
@@ -431,13 +431,13 @@ step (
 	uint32_t* s_negative = s_N1B;
 
 	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current, s_overflow, s_negative);
-	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
 	SET_COUNTER(s_ccMain, 2);
 
 	uint32_t* s_fstim = s_N1A;
 	loadFiringInput(g_fstim, s_fstim);
-	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, s_current);
+	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, (fix_t*) s_current);
+	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
 	SET_COUNTER(s_ccMain, 3);
 

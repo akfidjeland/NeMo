@@ -55,8 +55,34 @@ class SimulationImpl
 
 		/* NETWORK SIMULATION */
 
+		/*! Copy firing stimulus from host to device, setting the (member
+		 * variable) devce pointer containing firing stimulus. If there is no
+		 * input data the pointer is NULL. Array indices only tested in
+		 * debugging mode.
+		 *
+		 * \param nidx
+		 * 		Neuron indices of neurons whose firing should be forced
+		 */
 		void setFiringStimulus(const std::vector<unsigned>& nidx);
+
+		/*! Set per-neuron input current on the device and set the relevant
+		 * member variable containing the device pointer. If there is no input
+		 * the device pointer is NULL.
+		 *
+		 * This function should only be called once per cycle. */
 		void setCurrentStimulus(const std::vector<float>& current);
+
+		/*! Set per-neuron input current on the device and set the relevant
+		 * member variable containing the device pointer. If there is no input
+		 * the device pointer is NULL.
+		 *
+		 * This function should only be called once per cycle.
+		 *
+		 * Pre: the input vector uses the same fixed-point format as the device */
+		void setCurrentStimulus(const std::vector<fix_t>& current);
+
+		/*! Perform a single simulation step, using the any stimuli (firing and
+		 * current) provided by the caller after the previous call to step */
 		void step();
 
 		void applyStdp(float reward);
@@ -104,7 +130,7 @@ class SimulationImpl
 		NVector<uint32_t> m_firingStimulus;
 		void clearFiringStimulus();
 
-		NVector<float> m_currentStimulus;
+		NVector<fix_t> m_currentStimulus;
 		void clearCurrentStimulus();
 
 		/* The firing buffer keeps data for a certain duration. One bit is
@@ -131,7 +157,7 @@ class SimulationImpl
 		/* Device pointers to simulation stimulus. The stimulus may be set
 		 * separately from the step, hence member variables */
 		uint32_t* md_fstim;
-		float* md_istim;
+		fix_t* md_istim;
 };
 
 	} // end namespace cuda
