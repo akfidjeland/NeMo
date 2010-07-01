@@ -53,7 +53,9 @@ SimulationImpl::SimulationImpl(
 	m_cycleCounters(m_mapper.partitionCount(), usingStdp()),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_pitch32(0),
-	m_pitch64(0)
+	m_pitch64(0),
+	md_fstim(NULL),
+	md_istim(NULL)
 {
 	configureStdp(conf.stdpFunction());
 	setPitch();
@@ -166,22 +168,22 @@ SimulationImpl::configureStdp(const STDP<float>& stdp)
 
 
 
-/*! Copy firing stimulus from host to device. Array indices only tested in
- * debugging mode.
+/*! Copy firing stimulus from host to device, setting the (member variable)
+ * devce pointer contaiing firing stimulus. If there is no input data the
+ * pointer is NULL. Array indices only tested in debugging mode.
  * 
  * \param count
  *		Number of neurons whose firing should be forced
  * \param nidx
  * 		Neuron indices of neurons whose firing should be forced
- *
- * \return 
- *		Pointer to pass to kernel (which is NULL if there's no firing data).
  */
-uint32_t*
+void
 SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
-	if(nidx.empty())
-		return NULL;
+	if(nidx.empty()) {
+		md_fstim = NULL;
+		return;
+	}
 
 	//! \todo use internal host buffer with pinned memory instead
 	size_t pitch = m_firingStimulus.wordPitch();
@@ -202,22 +204,29 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 				m_mapper.partitionCount() * m_firingStimulus.bytePitch(),
 				cudaMemcpyHostToDevice));
 
-	return m_firingStimulus.deviceData();
+	md_fstim = m_firingStimulus.deviceData();
 }
 
 
 
-/*! Set per-neuron input current on the device and return the relevant device pointer
- *
- * \return
- * 		Device pointer to neuron vector with current. If there is no input return NULL.
- *
- */
-float*
+void
+SimulationImpl::clearFiringStimulus()
+{
+	md_fstim = NULL;
+}
+
+
+
+/*! Set per-neuron input current on the device and set the relevant member
+ * variable containing the device pointer. If there is no input the device
+ * pointer is NULL. */
+void
 SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
 {
-	if(current.empty())
-		return NULL;
+	if(current.empty()) {
+		md_istim = NULL;
+		return;
+	}
 
 	m_currentStimulus.fill(0.0f);
 
@@ -235,7 +244,15 @@ SimulationImpl::setCurrentStimulus(const std::vector<float>& current)
 		m_currentStimulus.setNeuron(dev.partition, dev.neuron, *i);
 	}
 	m_currentStimulus.copyToDevice();
-	return m_currentStimulus.deviceData();
+	md_istim = m_currentStimulus.deviceData();
+}
+
+
+
+void
+SimulationImpl::clearCurrentStimulus()
+{
+	md_istim = NULL;
 }
 
 
@@ -301,10 +318,11 @@ SimulationImpl::step(
 		const std::vector<unsigned>& fstim,
 		const std::vector<float>& istim)
 {
-	m_timer.step();
 
-	uint32_t* d_fstim = setFiringStimulus(fstim);
-	float* d_istim = setCurrentStimulus(istim);
+	setFiringStimulus(fstim);  // set md_fstim
+	setCurrentStimulus(istim); // set md_istim
+
+	m_timer.step();
 	uint32_t* d_fout = m_firingOutput.step();
 	::stepSimulation(
 			m_mapper.partitionCount(),
@@ -314,8 +332,8 @@ SimulationImpl::step(
 			m_neurons.deviceData(),
 			m_thalamicInput.deviceRngState(),
 			m_thalamicInput.deviceSigma(),
-			d_fstim, 
-			d_istim,
+			md_fstim,
+			md_istim,
 			d_fout,
 			m_cm.d_fcm(),
 			m_cm.outgoingCount(),
@@ -324,6 +342,11 @@ SimulationImpl::step(
 			m_cm.incoming(),
 			m_cycleCounters.data(),
 			m_cycleCounters.pitch());
+
+	/* Must clear stimulus pointers in case the low-level interface is used and
+	 * the user does not provide any fresh stimulus */
+	clearFiringStimulus();
+	clearCurrentStimulus();
 
 	cudaError_t status = cudaGetLastError();
 	if(status != cudaSuccess) {

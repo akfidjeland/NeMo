@@ -102,10 +102,12 @@ class SimulationImpl
 
 		/* Densely packed, one bit per neuron */
 		NVector<uint32_t> m_firingStimulus;
-		uint32_t* setFiringStimulus(const std::vector<unsigned>& nidx);
+		void setFiringStimulus(const std::vector<unsigned>& nidx);
+		void clearFiringStimulus();
 
 		NVector<float> m_currentStimulus;
-		float* setCurrentStimulus(const std::vector<float>& current);
+		void setCurrentStimulus(const std::vector<float>& current);
+		void clearCurrentStimulus();
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
@@ -127,6 +129,11 @@ class SimulationImpl
 		static int s_device;
 
 		Timer m_timer;
+
+		/* Device pointers to simulation stimulus. The stimulus may be set
+		 * separately from the step, hence member variables */
+		uint32_t* md_fstim;
+		float* md_istim;
 };
 
 	} // end namespace cuda
