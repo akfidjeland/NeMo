@@ -18,26 +18,27 @@ main(int argc, char* argv[])
 	boost::mpi::environment env(argc, argv);
 	boost::mpi::communicator world;
 
-	if(argc < 3) {
-		std::cerr << "usage: example <ncount> <outfile>\n";
+	if(argc < 4) {
+		std::cerr << "usage: example <ncount> <duration> <outfile>\n";
 		return -1;
 	}
 
 	unsigned ncount = atoi(argv[1]);
+	unsigned duration = atoi(argv[2]);
 	unsigned scount = 1000;
-	char* filename = argv[2];
+	char* filename = argv[3];
 
 	try {
 		if(world.rank() == nemo::mpi::MASTER) {
 
 			nemo::Network* net = nemo::random1k::construct(ncount, scount);
 			nemo::Configuration conf;
+			conf.setFractionalBits(22);
 			nemo::mpi::Master sim(env, world, *net, conf);
 
 			std::ofstream file(filename);
 
-			//! \todo run this for longer
-			for(unsigned ms=0; ms < 100; ++ms) {
+			for(unsigned ms=0; ms < duration; ++ms) {
 				sim.step();
 				const std::vector<unsigned>& firing = sim.readFiring();
 				file << ms << ": ";
