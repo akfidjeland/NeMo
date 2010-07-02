@@ -8,6 +8,7 @@ LINK_DIRECTORIES("${CMAKE_BINARY_DIR}/src")
 
 ADD_EXECUTABLE(test
 	test.cpp
+	utils.cpp
 	${EXAMPLES_DIR}/torus.cpp
 	${EXAMPLES_DIR}/random1k.cpp)
 TARGET_LINK_LIBRARIES(test nemo ${Boost_LIBRARIES})
@@ -20,3 +21,7 @@ TARGET_LINK_LIBRARIES(rtest nemo)
 
 ADD_EXECUTABLE(stest serialisation.cpp)
 TARGET_LINK_LIBRARIES(stest nemo ${Boost_LIBRARIES})
+
+ADD_EXECUTABLE(api_test test_c_api.cpp utils.cpp)
+TARGET_LINK_LIBRARIES(api_test nemo ${Boost_LIBRARIES})
+
