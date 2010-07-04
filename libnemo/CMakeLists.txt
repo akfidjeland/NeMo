@@ -45,6 +45,7 @@ OPTION(NEMO_VERBOSE "Produce verbose simulation output (mainly userful for testi
 
 
 SET(Boost_USE_MULTITHREAD OFF)
+SET(Boost_USE_STATIC_LIBS ON)
 FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 
