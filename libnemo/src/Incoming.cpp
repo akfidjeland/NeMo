@@ -50,7 +50,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	 * space when using a large number of partitions */
 	assert(sizeMultiplier > 0.0);
 	double mult = std::min(1.0, sizeMultiplier);
-	size_t width = mult * maxIncomingWarps * sizeof(incoming_t);
+	size_t width = size_t(mult * maxIncomingWarps * sizeof(incoming_t));
 
 	incoming_t* d_buffer;
 	size_t bpitch;

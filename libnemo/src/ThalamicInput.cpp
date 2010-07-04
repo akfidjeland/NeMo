@@ -45,7 +45,7 @@ ThalamicInput::ThalamicInput(
 	 * initial values provides a straightforward method to achieve this. For
 	 * very large networks other methods (e.g. splitting RNGs) might be more
 	 * appropriate. */
-	for(uint gidx=0; gidx < 4 * mapper.minHostIdx(); ++gidx) {
+	for(unsigned gidx=0; gidx < 4 * mapper.minHostIdx(); ++gidx) {
 		seed();
 	}
 
