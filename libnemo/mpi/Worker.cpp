@@ -18,10 +18,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/utility.hpp>
 
-#include <Configuration.hpp>
-#include <ConfigurationImpl.hpp>
-#include <SimulationBackend.hpp>
-#include <NetworkImpl.hpp>
+#include <nemo_internal.hpp>
 
 #include "Mapper.hpp"
 #include "SpikeQueue.hpp"
@@ -46,11 +43,12 @@ Worker::Worker(
 	MPI_LOG("Starting worker %u on %s\n", world.rank(),
 			env.processor_name().c_str());
 
-	nemo::Configuration conf;
-	boost::mpi::broadcast(m_world, *conf.m_impl, MASTER);
+	nemo::Configuration conf_;
+	boost::mpi::broadcast(m_world, *conf_.m_impl, MASTER);
+	ConfigurationImpl& conf = *conf_.m_impl;
 	conf.disableLogging();
 
-	if(!conf.m_impl->fractionalBitsSet()) {
+	if(!conf.fractionalBitsSet()) {
 		throw nemo::exception(NEMO_UNKNOWN_ERROR, "Fractional bits not set when using MPI backend");
 	}
 
@@ -88,7 +86,7 @@ Worker::Worker(
 	/* We keep a local FCM which is used to accumulate current from all
 	 * incoming firings. All source indices are global, while target
 	 * indices are local */
-	nemo::ConnectivityMatrix l_fcm(conf.m_impl->fractionalBits());
+	nemo::ConnectivityMatrix l_fcm(conf.fractionalBits());
 
 	exchangeGlobalData(mapper, g_ss, l_fcm);
 
@@ -218,14 +216,14 @@ gather(const SpikeQueue& queue,
 
 void
 Worker::runSimulation(const nemo::NetworkImpl& net,
-		const nemo::Configuration& conf,
+		const nemo::ConfigurationImpl& conf,
 		const nemo::ConnectivityMatrix& l_fcm,
 		size_t localCount)
 {
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
 
 	/* Local simulation data */
-	boost::scoped_ptr<nemo::SimulationBackend> sim(nemo::SimulationBackend::create(net, conf));
+	boost::scoped_ptr<nemo::SimulationBackend> sim(nemo::simulationBackend(net, conf));
 
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
 

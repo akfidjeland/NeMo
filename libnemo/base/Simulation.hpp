@@ -36,12 +36,6 @@ class DLL_PUBLIC Simulation
 {
 	public :
 
-		/*!
-		 * \return
-		 * 		new Simulation object, or NULL if no suitable CUDA device was
-		 * 		found. */
-		static Simulation* create(const Network&, const Configuration&);
-
 		virtual ~Simulation();
 
 		/*! \return the number of cycles the firing buffer can hold */

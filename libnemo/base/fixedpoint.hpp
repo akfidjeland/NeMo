@@ -11,11 +11,18 @@
  */
 
 #include <types.h>
+#include <nemo_config.h>
+
 
 /* Convert floating point to fixed-point */
-fix_t fx_toFix(float f, unsigned fractionalBits);
+DLL_PUBLIC
+fix_t
+fx_toFix(float f, unsigned fractionalBits);
+
 
 /* Convert fixed-point to floating point */
-float fx_toFloat(fix_t f, unsigned fractionalBits);
+DLL_PUBLIC
+float
+fx_toFloat(fix_t v, unsigned fractionalBits);
 
 #endif

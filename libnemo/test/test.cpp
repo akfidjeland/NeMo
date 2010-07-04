@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(simulation_without_synapses)
 	net.addNeuron(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7);
 	nemo::Configuration conf;
 	nemo::Simulation* sim = NULL;
-	BOOST_REQUIRE_NO_THROW(sim = nemo::Simulation::create(net, conf));
+	BOOST_REQUIRE_NO_THROW(sim = nemo::simulation(net, conf));
 	BOOST_REQUIRE_NO_THROW(sim->step());
 	delete sim;
 }
@@ -115,7 +115,7 @@ runRing(unsigned ncount)
 	}
 	nemo::Configuration conf = configuration(false, 1024);
 
-	nemo::Simulation* sim = nemo::Simulation::create(net, conf);
+	nemo::Simulation* sim = nemo::simulation(net, conf);
 
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* fired;

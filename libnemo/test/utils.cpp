@@ -10,7 +10,7 @@ runSimulation(
 		std::vector<unsigned>* fcycles,
 		std::vector<unsigned>* fnidx)
 {
-	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
+	nemo::Simulation* sim = nemo::simulation(*net, conf);
 
 	fcycles->clear();
 	fnidx->clear();

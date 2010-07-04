@@ -31,7 +31,7 @@ namespace boost {
 
 namespace nemo {
 
-class ConfigurationImpl
+class DLL_PUBLIC ConfigurationImpl
 {
 	public:
 

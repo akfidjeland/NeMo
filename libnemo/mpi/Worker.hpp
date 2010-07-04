@@ -22,7 +22,7 @@
 namespace nemo {
 
 	class NetworkImpl;
-	class Configuration;
+	class ConfigurationImpl;
 
 	namespace mpi {
 
@@ -92,7 +92,7 @@ class Worker
 		typedef std::map<rank_t, fbuf> fbuf_vector;
 
 		void runSimulation(const nemo::NetworkImpl& net,
-				const nemo::Configuration& conf,
+				const nemo::ConfigurationImpl& conf,
 				const nemo::ConnectivityMatrix& l_fcm,
 				size_t localCount);
 

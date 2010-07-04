@@ -26,6 +26,10 @@ SET_TARGET_PROPERTIES(nemo_mpi PROPERTIES
 		DEFINE_SYMBOL NEMO_EXPORTS
 )
 
+
+# TODO: should probably link against boost libraries here.
+TARGET_LINK_LIBRARIES(nemo_mpi nemo ${MPI_LIBRARIES})
+
 SET(EXAMPLES_DIR ${CMAKE_SOURCE_DIR}/examples)
 ADD_EXECUTABLE(example
 	example.cpp

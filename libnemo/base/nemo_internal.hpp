@@ -1,5 +1,5 @@
-#ifndef NEMO_HPP
-#define NEMO_HPP
+#ifndef NEMO_INTERNAL_HPP
+#define NEMO_INTERNAL_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -10,15 +10,16 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Configuration.hpp"
-#include "Network.hpp"
-#include "Simulation.hpp"
+#include <nemo.hpp>
+
+#include <ConfigurationImpl.hpp>
+#include <SimulationBackend.hpp>
+#include <NetworkImpl.hpp>
 
 namespace nemo {
 
-/*! Create a simulation using one of the available backends. Returns NULL if
- * unable to create simulation */
-Simulation* simulation(const Network& net, const Configuration& conf);
+SimulationBackend*
+simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf);
 
 }
 

@@ -8,17 +8,8 @@
  */
 
 #include "Simulation.hpp"
-#include "SimulationBackend.hpp"
 
 namespace nemo {
-
-Simulation*
-Simulation::create(const Network& net, const Configuration& conf)
-{
-	return dynamic_cast<Simulation*>(SimulationBackend::create(net, conf));
-}
-
-
 
 Simulation::~Simulation()
 {

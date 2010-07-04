@@ -139,7 +139,7 @@ main(int argc, char* argv[])
 	nemo::Network* net = nemo::random1k::construct(ncount, scount);
 	nemo::Configuration conf;
 	conf.setCudaPartitionSize(psize);
-	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);
+	nemo::Simulation* sim = nemo::simulation(*net, conf);
 	simulate(sim, ncount, ncount);
 	//simulateToFile(sim, 1000, "firing.dat");
 	delete net;

@@ -29,7 +29,7 @@ run(nemo::Network* net,
 		return 1;
 	}
 
-	nemo::Simulation* sim = nemo::Simulation::create(*net, conf);	
+	nemo::Simulation* sim = nemo::simulation(*net, conf);
 
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* nidx;

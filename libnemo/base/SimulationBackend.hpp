@@ -32,9 +32,6 @@ class DLL_PUBLIC SimulationBackend : public Simulation
 {
 	public :
 
-		static SimulationBackend* create(const Network& net, const Configuration&);
-		static SimulationBackend* create(const class NetworkImpl& net, const Configuration& conf);
-
 		virtual ~SimulationBackend();
 
 		/*! \copydoc nemo::Simulation::getFiringBufferLength */
@@ -68,8 +65,9 @@ class DLL_PUBLIC SimulationBackend : public Simulation
 		 * Pre: the input vector uses the same fixed-point format as the backend */
 		virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
 
-		/*! Perform a single simulation step, using the any stimuli (firing and
-		 * current) provided by the caller after the previous call to step */
+		/*! Perform a single simulation step, using any stimuli (firing
+		 * and current) provided by the caller after the previous call
+		 * to step */
 		virtual void step() = 0;
 
 		/*! \copydoc nemo::Simulation::step */
