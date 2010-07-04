@@ -7,7 +7,6 @@ INCLUDE_DIRECTORIES(
 SET(BUILD_SHARED_LIBS TRUE)
 
 ADD_LIBRARY(nemo_base
-	nemo_c.cpp
 	Configuration.cpp
 	ConfigurationImpl.cpp
 	Network.cpp
@@ -21,7 +20,10 @@ ADD_LIBRARY(nemo_base
 SET_TARGET_PROPERTIES(nemo_base PROPERTIES DEFINE_SYMBOL NEMO_EXPORTS)
 
 
-ADD_LIBRARY(nemo nemo.cpp)
+ADD_LIBRARY(nemo
+	nemo.cpp
+	nemo_c.cpp
+)
 SET_TARGET_PROPERTIES(nemo PROPERTIES DEFINE_SYMBOL NEMO_EXPORTS)
 TARGET_LINK_LIBRARIES(nemo nemo_base nemo_cuda)
 
