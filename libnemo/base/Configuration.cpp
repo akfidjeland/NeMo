@@ -1,12 +1,15 @@
 #include "Configuration.hpp"
 #include "ConfigurationImpl.hpp"
 
+#include <CudaSimulation.hpp>
+
 namespace nemo {
 
 Configuration::Configuration() :
 	m_impl(new ConfigurationImpl())
 {
-	;
+	m_impl->setCudaPartitionSize(cuda::Simulation::defaultPartitionSize());
+	m_impl->setCudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength());
 }
 
 
@@ -77,7 +80,7 @@ Configuration::cudaFiringBufferLength() const
 int
 Configuration::setCudaDevice(int dev)
 {
-	return m_impl->setCudaDevice(dev);
+	return cuda::Simulation::setDevice(dev);
 }
 
 

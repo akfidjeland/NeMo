@@ -11,7 +11,6 @@
 
 #include <boost/format.hpp>
 
-#include <CudaSimulation.hpp>
 #include "exception.hpp"
 
 
@@ -20,8 +19,8 @@ namespace nemo {
 ConfigurationImpl::ConfigurationImpl() :
 	m_logging(false),
 	m_fractionalBits(s_defaultFractionalBits),
-	m_cudaPartitionSize(cuda::Simulation::defaultPartitionSize()),
-	m_cudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength())
+	m_cudaPartitionSize(0),     // set by interface class
+	m_cudaFiringBufferLength(0) // ditto
 {
 	;
 }
@@ -34,14 +33,6 @@ ConfigurationImpl::setStdpFunction(
 		float maxWeight)
 {
 	m_stdpFn = STDP<float>(prefire, postfire, minWeight, maxWeight);
-}
-
-
-
-int
-ConfigurationImpl::setCudaDevice(int dev)
-{
-	return cuda::Simulation::setDevice(dev);
 }
 
 
