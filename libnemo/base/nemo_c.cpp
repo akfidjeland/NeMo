@@ -43,7 +43,7 @@ setResult(const char* msg, nemo_status_t status) {
         try {                                                                 \
             call;                                                             \
         } catch (nemo::exception& e) {                                        \
-            setResult(e.what(), e.errno());                                   \
+            setResult(e.what(), e.errorNumber());                             \
         } catch (std::exception& e) {                                         \
             setResult(e.what(), NEMO_UNKNOWN_ERROR);                          \
         } catch (...) {                                                       \
@@ -109,7 +109,7 @@ nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 		return static_cast<nemo_simulation_t>(nemo::simulation(*net, *conf));
 		//return static_cast<nemo_simulation_t>(nemo::Simulation::create(*net, *conf));
 	} catch(nemo::exception& e) {
-		setResult(e.what(), e.errno());
+		setResult(e.what(), e.errorNumber());
 		return NULL;
 	} catch(std::exception& e) {
 		setResult(e.what(), NEMO_UNKNOWN_ERROR);

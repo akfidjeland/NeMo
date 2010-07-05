@@ -24,13 +24,13 @@ class exception : public std::runtime_error
 {
 	public :
 
-		explicit exception(int errno, const std::string& msg) : 
+		exception(int errorNumber, const std::string& msg) :
 			std::runtime_error(msg),
-			m_errno(errno) {}
+			m_errno(errorNumber) {}
 
 		~exception() throw () {}
 
-		int errno() const { return m_errno; }
+		int errorNumber() const { return m_errno; }
 
 	private :
 
