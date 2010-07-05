@@ -98,13 +98,12 @@ class NEMO_BASE_DLL_PUBLIC Network
 		/* lower-level interface using raw C arrays. This is mainly intended
 		 * for use in foreign language interfaces such as C and Mex, where
 		 * constructing std::vectors would be redundant. */
-		template<typename N, typename D, typename W, typename B>
 		void addSynapses(
-				N source,
-				const N targets[],
-				const D delays[],
-				const W weights[],
-				const B plastic[],
+				unsigned source,
+				const unsigned targets[],
+				const unsigned delays[],
+				const float weights[],
+				const unsigned char plastic[],
 				size_t len);
 
 		unsigned maxDelay() const;

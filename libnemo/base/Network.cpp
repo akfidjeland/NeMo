@@ -51,24 +51,16 @@ Network::addSynapses(
 
 
 
-template
-void
-Network::addSynapses<unsigned, unsigned, float, unsigned char>(unsigned,
-		const unsigned[], const unsigned[], const float[],
-		const unsigned char[], size_t);
-
-
-template<typename N, typename D, typename W, typename B>
 void
 Network::addSynapses(
-		N source,
-		const N targets[],
-		const D delays[],
-		const W weights[],
-		const B plastic[],
+		unsigned source,
+		const unsigned targets[],
+		const unsigned delays[],
+		const float weights[],
+		const unsigned char plastic[],
 		size_t length)
 {
-	m_impl->addSynapses<N, D, W, B>(source,
+	m_impl->addSynapses<unsigned, unsigned, float, unsigned char>(source,
 			targets, delays, weights, plastic, length);
 }
 
