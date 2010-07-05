@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(simulation_without_synapses)
  * so the result is the firing propagating around the ring.
  */
 void
-runRing(unsigned ncount)
+runRing(unsigned ncount, const nemo::Configuration& conf)
 {
 	/* Make sure we go around the ring at least a couple of times */
 	const unsigned duration = ncount * 5 / 2;
@@ -113,8 +113,6 @@ runRing(unsigned ncount)
 		net.addNeuron(source, 0.02f, b, v+15.0f*r2, 8.0f-6.0f*r2, b*v, v, 0.0f);
 		net.addSynapse(source, (source + 1) % ncount, 1, 1000.0f, false);
 	}
-	nemo::Configuration conf = configuration(false, 1024);
-
 	nemo::Simulation* sim = nemo::simulation(net, conf);
 
 	const std::vector<unsigned>* cycles;
@@ -134,14 +132,15 @@ runRing(unsigned ncount)
 }
 
 
-
 BOOST_AUTO_TEST_CASE(ring_tests)
 {
-	runRing(1000); // less than a single partition on CUDA backend
-	runRing(1024); // exactly one partition on CUDA backend
-	runRing(2000); // multiple partitions on CUDA backend
-	runRing(4000); // ditto
+	nemo::Configuration conf = configuration(false, 1024);
+	runRing(1000, conf); // less than a single partition on CUDA backend
+	runRing(1024, conf); // exactly one partition on CUDA backend
+	runRing(2000, conf); // multiple partitions on CUDA backend
+	runRing(4000, conf); // ditto
 }
+
 
 
 BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
@@ -166,4 +165,25 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 
 	runComparisions(net);
 	delete net;
+}
+
+
+
+BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
+{
+	nemo::Network* net = nemo::random1k::construct(1000, 1000);
+	nemo::Configuration conf;
+
+	conf.setFractionalBits(26);
+	conf.enableLogging();
+	std::vector<unsigned> cycles, nidx, cycles2, nidx2;
+	unsigned duration = 2;
+	runSimulation(net, conf, duration, &cycles, &nidx);
+
+	BOOST_REQUIRE(nidx.size() > 0);
+
+	nemo::Configuration conf2;
+	conf2.enableLogging();
+	runSimulation(net, conf2, duration, &cycles2, &nidx2);
+	compareSimulationResults(cycles, nidx, cycles2, nidx2);
 }

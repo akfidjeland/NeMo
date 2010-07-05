@@ -42,6 +42,7 @@ run(nemo::Network* net,
 			unsigned c = cycles->at(i);
 			unsigned n = nidx->at(i);
 			if(creating) {
+				//! \todo should write cycle number s*1000+ms here. Otherwise they will be all zero
 				file << cycles->at(i) << "\t" << nidx->at(i) << "\n";
 			} else {
 				unsigned ce, ne;

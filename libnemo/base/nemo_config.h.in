@@ -70,6 +70,7 @@
   #endif
 #else
   #define NEMO_CUDA_DLL_PUBLIC
+  #define NEMO_CUDA_DLL_LOCAL
 #endif
 
 #endif

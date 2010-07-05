@@ -32,6 +32,8 @@ runSimulation(
 		std::copy(nidx_tmp->begin(), nidx_tmp->end(), back_inserter(*fnidx));
 	}
 
+	BOOST_CHECK_EQUAL(fcycles->size(), fnidx->size());
+
 	delete sim;
 }
 
@@ -44,8 +46,7 @@ compareSimulationResults(
 		const std::vector<unsigned>& cycles2,
 		const std::vector<unsigned>& nidx2)
 {
-	BOOST_CHECK_EQUAL(cycles1.size(), nidx1.size());
-	BOOST_CHECK_EQUAL(cycles2.size(), nidx2.size());
+	BOOST_CHECK_EQUAL(nidx1.size(), nidx2.size());
 	BOOST_CHECK_EQUAL(cycles1.size(), cycles2.size());
 
 	for(size_t i = 0; i < cycles1.size(); ++i) {
