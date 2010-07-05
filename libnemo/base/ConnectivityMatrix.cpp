@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <nemo_config.h>
 #include "exception.hpp"
 #include "fixedpoint.hpp"
 
@@ -25,12 +26,17 @@ Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss, unsigned fbits)
 	len(ss.size())
 {
 	FAxonTerminal<fix_t>* ptr;
+#ifdef HAVE_POSIX_MEMALIGN
+	//! \todo factor out the memory aligned allocation
 	int error = posix_memalign((void**)&ptr,
 			ASSUMED_CACHE_LINE_SIZE,
 			ss.size()*sizeof(FAxonTerminal<fix_t>));
 	if(error) {
 		throw nemo::exception(NEMO_ALLOCATION_ERROR, "Failed to allocate CM row");
 	}
+#else
+	ptr = (FAxonTerminal<fix_t>*) malloc(ss.size()*sizeof(FAxonTerminal<fix_t>));
+#endif
 
 	data = boost::shared_array< FAxonTerminal<fix_t> >(ptr, free);
 
