@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <cmath>
-#include <boost/tuple/tuple_comparison.hpp>
 
 #include <util.h>
 #include <ConfigurationImpl.hpp>

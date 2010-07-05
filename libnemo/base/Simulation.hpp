@@ -32,7 +32,7 @@ class Configuration;
  *
  * \ingroup cpp-api
  */
-class DLL_PUBLIC Simulation
+class NEMO_BASE_DLL_PUBLIC Simulation
 {
 	public :
 

@@ -14,7 +14,6 @@ namespace nemo {
 /* Sometimes using the slightly lower-level interface provided by NetworkImpl
  * makes sense (see e.g. nemo::mpi::Worker), so provide an overload of 'create'
  * that takes such an object directly. */
-DLL_PUBLIC
 SimulationBackend*
 simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf)
 {
@@ -31,7 +30,6 @@ simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf)
 }
 
 
-DLL_PUBLIC
 Simulation*
 simulation(const Network& net, const Configuration& conf)
 {	

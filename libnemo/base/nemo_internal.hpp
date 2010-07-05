@@ -18,6 +18,7 @@
 
 namespace nemo {
 
+NEMO_DLL_PUBLIC
 SimulationBackend*
 simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf);
 

@@ -30,11 +30,11 @@ typedef int nemo_status_t;
 /*! \name Configuration */
 /* \{ */ // begin configuration
 
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_configuration_t nemo_new_configuration();
 
 /*! \copydoc nemo::Network::logToStdout */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t nemo_log_stdout(nemo_configuration_t);
 
 /*! Enable spike-timing dependent plasticity in the simulation.
@@ -56,7 +56,7 @@ nemo_status_t nemo_log_stdout(nemo_configuration_t);
  * \param min_weight
  * 		Weight beyond which inhibitory synapses are not allowed to move
  */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_stdp_function(nemo_configuration_t,
 		float prefire_fn[], size_t prefire_len,
@@ -68,30 +68,30 @@ nemo_set_stdp_function(nemo_configuration_t,
 
 
 /*! \copydoc nemo::Configuration::setCudaFiringBufferLength */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_cuda_firing_buffer_length(nemo_configuration_t, unsigned cycles);
 
 
 /*! \copydoc nemo::Configuration::cudaFiringBufferLength */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_cuda_firing_buffer_length(nemo_configuration_t, unsigned* cycles);
 
 
 /*! \copydoc nemo::Configuration::setCudaPartitionSize */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_cuda_partition_size(nemo_configuration_t conf, unsigned size);
 
 
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_cuda_device(nemo_configuration_t conf, int dev);
 
 
 /*! \copydoc nemo::Configuration::setFractionalBits */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits);
 
@@ -116,13 +116,13 @@ nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits);
 
 
 /*! Create an empty network object */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_network_t nemo_new_network();
 
 //! \todo make sure we handle the issue of non-unique indices
 //! \todo add description of neuron indices
 /*! \copydoc nemo::Network::addNeuron */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_add_neuron(nemo_network_t,
 		unsigned idx,
@@ -135,7 +135,7 @@ nemo_add_neuron(nemo_network_t,
 
 
 /* Add a single synapse to network */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_add_synapse(nemo_network_t,
 		unsigned source,
@@ -164,7 +164,7 @@ nemo_add_synapse(nemo_network_t,
  * 		Each of \a targets, \a delays, \a weights, and \a is_plastic contains
  * 		\a length elements.
  */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_add_synapses(nemo_network_t,
 		unsigned source,
@@ -175,7 +175,7 @@ nemo_add_synapses(nemo_network_t,
 		size_t length);
 
 
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_neuron_count(nemo_network_t net, unsigned* ncount);
 
@@ -191,7 +191,7 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount);
 /*! \name Simulation
  * \{ */
 
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_simulation_t);
 
 /*! \copydoc nemo::Network::initSimulation */
@@ -207,13 +207,13 @@ nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_simulation_t);
  * \param fstimCount
  * 		Length of fstimIdx
  */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_step(nemo_simulation_t, unsigned fstimIdx[], size_t fstimCount);
 
 
 /*! \copydoc nemo::Simulation::applyStdp */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_apply_stdp(nemo_simulation_t, float reward);
 
@@ -243,7 +243,7 @@ nemo_apply_stdp(nemo_simulation_t, float reward);
  * \param[out] ncycles
  * 		Number of cycles for which firing data is returned
  */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_read_firing(nemo_simulation_t,
 		unsigned* cycles[],
@@ -253,7 +253,7 @@ nemo_read_firing(nemo_simulation_t,
 
 
 /*! \copydoc nemo::Network::flushFiringBuffer */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_flush_firing_buffer(nemo_simulation_t);
 
@@ -279,7 +279,7 @@ nemo_flush_firing_buffer(nemo_simulation_t);
  * 		Output vectors \a targetNeuron, \a weights, \a delays,
  * 		and \a is_plastic all have length \a len
  */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_get_synapses(nemo_simulation_t,
 		unsigned sourceNeuron,
@@ -310,15 +310,15 @@ nemo_get_synapses(nemo_simulation_t,
 //! \todo change to using output arguments and return status instead.
 
 /*! \copydoc nemo::Network::elapsedWallclock */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t nemo_elapsed_wallclock(nemo_simulation_t, unsigned long*);
 
 /*! \copydoc nemo::Network::elapsedSimulation */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t nemo_elapsed_simulation(nemo_simulation_t, unsigned long*);
 
 /*! \copydoc nemo::Network::resetTimer */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 nemo_status_t nemo_reset_timer(nemo_simulation_t);
 
 /* \} */ // end timing section
@@ -343,7 +343,7 @@ nemo_status_t nemo_reset_timer(nemo_simulation_t);
 /*! \return
  * 		string describing the most recent error (if any)
  */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 const char* nemo_strerror();
 
 /*! \} */  //end error group
@@ -355,16 +355,16 @@ const char* nemo_strerror();
 
 
 /*! Delete network object, freeing up all its associated resources */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 void nemo_delete_network(nemo_network_t);
 
 
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 void nemo_delete_configuration(nemo_configuration_t);
 
 
 /*! Delete simulation object, freeing up all its associated resources */
-DLL_PUBLIC
+NEMO_DLL_PUBLIC
 void nemo_delete_simulation(nemo_simulation_t);
 
 /* \} */ // end finalize section

@@ -10,23 +10,65 @@
 #cmakedefine INCLUDE_MPI_LOGGING
 #cmakedefine NEMO_VERBOSE
 
+
+/* The import/export macros are deliberately *not* guarded by NEMO_CONFIG_H, as
+ * we may need to redefine these to work around MS Windows import/export
+ * madness when a library both imports and exports symbols. */
+
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef NEMO_EXPORTS
     #ifdef __GNUC__
-      #define DLL_PUBLIC __attribute__((dllexport))
+      #define NEMO_DLL_PUBLIC __attribute__((dllexport))
     #else
-      #define DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+      #define NEMO_DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
     #endif
   #else
     #ifdef __GNUC__
-      #define DLL_PUBLIC __attribute__((dllimport))
+      #define NEMO_DLL_PUBLIC __attribute__((dllimport))
     #else
-      #define DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+      #define NEMO_DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
     #endif
   #endif
 #else
-  #define DLL_PUBLIC
-  #define DLL_LOCAL
+  #define NEMO_DLL_PUBLIC
+  #define NEMO_DLL_LOCAL
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef NEMO_BASE_EXPORTS
+    #ifdef __GNUC__
+      #define NEMO_BASE_DLL_PUBLIC __attribute__((dllexport))
+    #else
+      #define NEMO_BASE_DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #else
+    #ifdef __GNUC__
+      #define NEMO_BASE_DLL_PUBLIC __attribute__((dllimport))
+    #else
+      #define NEMO_BASE_DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #endif
+#else
+  #define NEMO_BASE_DLL_PUBLIC
+  #define NEMO_BASE_DLL_LOCAL
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef NEMO_CUDA_EXPORTS
+    #ifdef __GNUC__
+      #define NEMO_CUDA_DLL_PUBLIC __attribute__((dllexport))
+    #else
+      #define NEMO_CUDA_DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #else
+    #ifdef __GNUC__
+      #define NEMO_CUDA_DLL_PUBLIC __attribute__((dllimport))
+    #else
+      #define NEMO_CUDA_DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #endif
+#else
+  #define NEMO_CUDA_DLL_PUBLIC
 #endif
 
 #endif

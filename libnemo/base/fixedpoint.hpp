@@ -15,13 +15,13 @@
 
 
 /* Convert floating point to fixed-point */
-DLL_PUBLIC
+NEMO_BASE_DLL_PUBLIC
 fix_t
 fx_toFix(float f, unsigned fractionalBits);
 
 
 /* Convert fixed-point to floating point */
-DLL_PUBLIC
+NEMO_BASE_DLL_PUBLIC
 float
 fx_toFloat(fix_t v, unsigned fractionalBits);
 

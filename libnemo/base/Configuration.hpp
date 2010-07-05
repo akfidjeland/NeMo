@@ -21,6 +21,8 @@ namespace nemo {
 	class Configuration;
 }
 
+
+NEMO_DLL_PUBLIC
 std::ostream& operator<<(std::ostream& o, nemo::Configuration const& conf);
 
 
@@ -34,7 +36,7 @@ namespace nemo {
 		class Worker;
 	}
 
-class DLL_PUBLIC Configuration
+class NEMO_DLL_PUBLIC Configuration
 {
 	public:
 
@@ -83,7 +85,7 @@ class DLL_PUBLIC Configuration
 
 	private:
 
-		friend Simulation* simulation(const Network& net, const Configuration& conf);
+		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, const Configuration& conf);
 		friend class nemo::mpi::Master;
 		friend class nemo::mpi::Worker;
 

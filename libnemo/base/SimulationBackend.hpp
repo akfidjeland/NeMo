@@ -26,9 +26,8 @@ class Configuration;
  * This is the lower-level interface that backends should implement. This
  * interface is not exposed in the public API, which instead uses the
  * Simulation base class interface.
- *
  */
-class DLL_PUBLIC SimulationBackend : public Simulation
+class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 {
 	public :
 

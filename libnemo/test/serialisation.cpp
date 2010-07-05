@@ -17,7 +17,7 @@
  * is not preserved. The best we can do is therefore to make sure we are very
  * close */
 
-float tolerance = 0.0001; // percent
+float tolerance = 0.0001f; // percent
 
 template<typename T>
 void
@@ -86,7 +86,7 @@ randomConfiguration()
 
 	std::vector<float> prefire;
 	std::vector<float> postfire;
-	for(uint i=0; i<20; ++i) {
+	for(unsigned i=0; i<20; ++i) {
 		prefire.push_back(randf());
 		postfire.push_back(randf());
 	}

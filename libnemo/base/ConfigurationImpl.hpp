@@ -31,7 +31,7 @@ namespace boost {
 
 namespace nemo {
 
-class DLL_PUBLIC ConfigurationImpl
+class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 {
 	public:
 
@@ -99,6 +99,8 @@ class DLL_PUBLIC ConfigurationImpl
 
 }
 
+
+NEMO_BASE_DLL_PUBLIC
 std::ostream& operator<<(std::ostream& o, nemo::ConfigurationImpl const& conf);
 
 #endif

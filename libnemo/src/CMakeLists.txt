@@ -24,6 +24,9 @@ CUDA_INCLUDE_DIRECTORIES(
 	${CMAKE_CURRENT_SOURCE_DIR}
 	# TODO: can probably remove this
 	${CMAKE_CURRENT_BINARY_DIR} # for configuration files
+	${CMAKE_SOURCE_DIR}/base
+	${CMAKE_BINARY_DIR}/base # for configuration files
+	${Boost_INCLUDE_DIR}
   )
 
 # C++ only includes
@@ -32,7 +35,7 @@ INCLUDE_DIRECTORIES(
 	${CMAKE_SOURCE_DIR}/base
 	${CMAKE_BINARY_DIR}/base # for configuration files
 	${CMAKE_CURRENT_SOURCE_DIR}
-	${Boost_INCLUDE_DIR}	
+	${Boost_INCLUDE_DIR}
   )
 
 
@@ -75,7 +78,8 @@ CUDA_ADD_LIBRARY(nemo_cuda
 	WarpAddressTable.cpp
   )
 
-SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES DEFINE_SYMBOL NEMO_EXPORTS)
+SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES DEFINE_SYMBOL NEMO_CUDA_EXPORTS)
+TARGET_LINK_LIBRARIES(nemo_cuda nemo_base)
 
 # Add a special target to clean nvcc generated files.
 CUDA_BUILD_CLEAN_TARGET()

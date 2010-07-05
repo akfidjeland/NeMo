@@ -6,7 +6,7 @@
 #include <map>
 #include <vector>
 
-#include "nemo_config.h"
+#include <nemo_config.h>
 #include "types.hpp"
 
 namespace nemo {
@@ -23,7 +23,7 @@ namespace nemo {
 	}
 
 
-class NetworkImpl
+class NEMO_BASE_DLL_PUBLIC NetworkImpl
 {
 	public :
 
