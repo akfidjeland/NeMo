@@ -17,6 +17,7 @@
 #include <boost/mpi/communicator.hpp>
 
 #include <nemo/types.hpp>
+#include <nemo/Timer.hpp>
 
 #include "Mapper.hpp"
 
@@ -47,6 +48,15 @@ class Master
 		 * step. */
 		const std::vector<unsigned>& readFiring();
 
+		/*! \copydoc nemo::Simulation::elapsedWallclock */
+		unsigned long elapsedWallclock() const;
+
+		/*! \copydoc nemo::Simulation::elapsedSimulation */
+		unsigned long elapsedSimulation() const;
+
+		/*! \copydoc nemo::Simulation::resetTimer */
+		void resetTimer();
+
 	private :
 
 		boost::mpi::communicator m_world;
@@ -60,6 +70,8 @@ class Master
 		void terminate();
 
 		std::deque< std::vector<unsigned> > m_firing;
+
+		Timer m_timer;
 };
 
 	} // end namespace mpi

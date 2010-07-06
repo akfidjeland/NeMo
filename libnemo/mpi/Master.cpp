@@ -65,6 +65,8 @@ Master::Master(
 
 	/* We're now ready to run the simulation. The caller does this using class
 	 * methods. */
+
+	m_timer.reset();
 }
 
 
@@ -138,6 +140,8 @@ distributeFiringStimulus(
 void
 Master::step(const std::vector<unsigned>& fstim)
 {
+	m_timer.step();
+
 	unsigned wcount = workers();
 
 	std::vector<SimulationStep> oreqData(wcount);
@@ -195,6 +199,28 @@ Master::readFiring()
 	return m_firing.front();
 }
 
+
+
+unsigned long
+Master::elapsedWallclock() const
+{
+	return m_timer.elapsedWallclock();
+}
+
+
+
+unsigned long
+Master::elapsedSimulation() const
+{
+	return m_timer.elapsedSimulation();
+}
+
+
+void
+Master::resetTimer()
+{
+	m_timer.reset();
+}
 
 
 	} // end namespace mpi

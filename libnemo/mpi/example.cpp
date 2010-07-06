@@ -30,6 +30,7 @@ run(int argc, char* argv[],
 
 			std::ofstream file(filename);
 
+			sim.resetTimer();
 			for(unsigned ms=0; ms < duration; ++ms) {
 				sim.step();
 				const std::vector<unsigned>& firing = sim.readFiring();
@@ -37,6 +38,10 @@ run(int argc, char* argv[],
 				std::copy(firing.begin(), firing.end(), std::ostream_iterator<unsigned>(file, " "));
 				file << std::endl;
 			}
+
+			std::cout << "Simulated " << sim.elapsedSimulation() << "ms "
+				<< "in " << sim.elapsedWallclock() << "ms\n";
+
 			delete net;
 		} else {
 			nemo::mpi::Worker sim(env, world);
@@ -66,6 +71,7 @@ runNoMPI(unsigned ncount, unsigned scount, unsigned duration, const char* filena
 
 	std::ofstream file(filename);
 
+	sim->resetTimer();
 	for(unsigned ms=0; ms < duration; ++ms) {
 		sim->step();
 		//! \todo make nemo::Simulation::readFiring use the same interface as in MPI::Master.
@@ -78,6 +84,8 @@ runNoMPI(unsigned ncount, unsigned scount, unsigned duration, const char* filena
 		std::copy(firing->begin(), firing->end(), std::ostream_iterator<unsigned>(file, " "));
 		file << std::endl;
 	}
+	std::cout << "Simulated " << sim->elapsedSimulation() << "ms "
+		<< "in " << sim->elapsedWallclock() << "ms\n";
 	delete net;
 
 	return 0;
