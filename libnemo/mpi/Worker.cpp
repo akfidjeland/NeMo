@@ -315,6 +315,7 @@ Worker::initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs)
 		assert(ibufs.find(*source) != ibufs.end());
 		fbuf& incoming = ibufs[*source];
 		incoming.clear();
+		//! \todo do we do an incorrect copy operation here?
 		ireqs.at(sid) = m_world.irecv(*source, WORKER_STEP, incoming);
 	}
 }
@@ -354,7 +355,7 @@ Worker::waitGlobalGather(
 {
 	using namespace boost::mpi;
 
-	MPI_LOG("Worker %u waiting for messages from %u peers\n", m_rank, ireqs.size());
+	MPI_LOG("Worker %u waiting for messages from %lu peers\n", m_rank, ireqs.size());
 
 #if 0 // see note below
 	unsigned nreqs = ireqs.size();

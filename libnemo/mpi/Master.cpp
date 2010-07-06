@@ -158,12 +158,12 @@ Master::step(const std::vector<unsigned>& fstim)
 	for(unsigned r=0; r < wcount; ++r) {
 		m_world.recv(r+1, MASTER_STEP, ibuf);
 		std::copy(ibuf.begin(), ibuf.end(), std::back_inserter(m_firing.back()));
-#ifdef MPI_LOGGING
+#ifdef INCLUDE_MPI_LOGGING
 		std::copy(ibuf.begin(), ibuf.end(),
 				std::ostream_iterator<unsigned>(std::cout, " "));
 #endif
 	}
-#ifdef MPI_LOGGING
+#ifdef INCLUDE_MPI_LOGGING
 	if(ibuf.size() > 0) {
 		std::cout << std::endl;
 	}
