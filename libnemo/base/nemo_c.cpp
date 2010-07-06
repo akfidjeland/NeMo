@@ -229,8 +229,8 @@ nemo_read_firing(nemo_simulation_t ptr,
 	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
 	CALL(sim->readFiring(&cycles, &nidx));
 	if(NEMO_OK == g_lastCallStatus) {
-		*cycles_ = const_cast<unsigned*>(&(*cycles)[0]);
-		*nidx_ = const_cast<unsigned*>(&(*nidx)[0]);
+		*cycles_ = cycles->empty() ? NULL : const_cast<unsigned*>(&(*cycles)[0]);
+		*nidx_ = nidx->empty() ? NULL : const_cast<unsigned*>(&(*nidx)[0]);
 		*nfired = cycles->size();
 		//! \todo remove assertion here
 		assert(cycles->size() == nidx->size());
