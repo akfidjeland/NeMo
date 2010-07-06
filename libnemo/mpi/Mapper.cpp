@@ -3,16 +3,28 @@
 #include <assert.h>
 
 #include <util.h>
+#include <exception.hpp>
 
 
 namespace nemo {
 	namespace mpi {
 
 
+int
+nodeSize(unsigned neurons, unsigned workers)
+{
+	if(workers == 0) {
+		throw nemo::exception(NEMO_MPI_ERROR, "No worker nodes");
+	}
+	return DIV_CEIL(neurons, workers);
+}
+
+
+
 Mapper::Mapper(unsigned neurons, unsigned workers, int rank) :
 	//! \todo support heterogenous clusters
 	//! \todo leave nodes unused instead here, if nodes are not at capacity
-	m_nodeSize(DIV_CEIL(neurons, workers)),
+	m_nodeSize(nodeSize(neurons, workers)),
 	m_workers(workers),
 	m_rank(rank),
 	m_startIdx((m_rank - 1) * m_nodeSize)

@@ -33,6 +33,8 @@
 #define NEMO_LOGIC_ERROR 8
 #define NEMO_ALLOCATION_ERROR 9
 
-#define NEMO_UNKNOWN_ERROR 10
+#define NEMO_MPI_ERROR 10
+
+#define NEMO_UNKNOWN_ERROR 11
 
 #endif

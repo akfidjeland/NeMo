@@ -11,11 +11,6 @@
 #cmakedefine INCLUDE_MPI_LOGGING
 #cmakedefine NEMO_VERBOSE
 
-
-/* The import/export macros are deliberately *not* guarded by NEMO_CONFIG_H, as
- * we may need to redefine these to work around MS Windows import/export
- * madness when a library both imports and exports symbols. */
-
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef NEMO_EXPORTS
     #ifdef __GNUC__
