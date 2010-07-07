@@ -1,7 +1,7 @@
 #include "Configuration.hpp"
 #include "ConfigurationImpl.hpp"
 
-#include <CudaSimulation.hpp>
+#include <nemo/cuda/CudaSimulation.hpp>
 
 namespace nemo {
 

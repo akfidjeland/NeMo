@@ -7,7 +7,7 @@
 #include "nemo_internal.hpp"
 #include "exception.hpp"
 
-#include <CudaSimulation.hpp>
+#include <nemo/cuda/CudaSimulation.hpp>
 
 namespace nemo {
 
