@@ -78,7 +78,7 @@ NeuronParameters::allocateDeviceData(size_t pcount, size_t psize)
 
 	/* Set all space including padding to fixed value. This is important as
 	 * some warps may read beyond the end of these arrays. */
-	CUDA_SAFE_CALL(cudaMemset2D(d_arr, bpitch, 0x0, bpitch, height));
+	d_memset2D(d_arr, bpitch, 0x0, height);
 
 	return height;
 }

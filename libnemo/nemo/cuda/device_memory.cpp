@@ -78,6 +78,13 @@ memcpyFromDevice(void* dst, const void* src, size_t count)
 
 
 void
+d_memset2D(void* d_ptr, size_t pitch, int value, size_t height)
+{
+	safeCall(cudaMemset2D(d_ptr, pitch, value, pitch, height));
+}
+
+
+void
 mallocPinned(void** h_ptr, size_t sz)
 {
 	safeCall(cudaMallocHost(h_ptr, sz));

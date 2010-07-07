@@ -7,7 +7,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cuda_runtime.h>
 #include <stdexcept>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -44,8 +43,7 @@ RSMatrix::allocateDeviceMemory()
 	m_pitch = bytePitch / sizeof(uint32_t);
 	m_allocated = bytePitch * height;
 
-	CUDA_SAFE_CALL(cudaMemset2D((void*) deviceData,
-				bytePitch, 0, bytePitch, height));
+	d_memset2D((void*) deviceData, bytePitch, 0, height);
 
 	m_deviceData = boost::shared_ptr<uint32_t>(deviceData , d_free);
 	return m_deviceData;
@@ -162,8 +160,7 @@ RSMatrix::clearStdpAccumulator()
 				"attempting to clear STDP array before device memory allocated");
 	}
 
-	CUDA_SAFE_CALL(cudaMemset2D(d_stdp(), m_pitch*sizeof(uint32_t),
-				0, m_pitch*sizeof(uint32_t), m_partitionSize));
+	d_memset2D(d_stdp(), m_pitch*sizeof(uint32_t), 0, m_partitionSize);
 }
 
 

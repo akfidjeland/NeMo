@@ -7,7 +7,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cuda_runtime.h>
 #include <string.h>
 
 #include "exception.hpp"
@@ -34,7 +33,7 @@ FiringOutput::FiringOutput(
 	uint32_t* d_buffer;
 	d_mallocPitch((void**)(&d_buffer), &bytePitch, width, height, "firing output");
 	md_buffer = boost::shared_ptr<uint32_t>(d_buffer, d_free);
-	CUDA_SAFE_CALL(cudaMemset2D(d_buffer, bytePitch, 0, bytePitch, height));
+	d_memset2D(d_buffer, bytePitch, 0, height);
 	m_pitch = bytePitch / sizeof(uint32_t);
 
 	size_t md_allocated = bytePitch * height;

@@ -92,6 +92,11 @@ memcpyFromDevice(std::vector<T>& vec, const void* src, size_t count)
 	memcpyFromDevice(&vec[0], src, count * sizeof(T));
 }
 
+
+void
+d_memset2D(void* d_ptr, size_t bytePitch, int value, size_t height);
+
+
 void
 mallocPinned(void** h_ptr, size_t sz);
 

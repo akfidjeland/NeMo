@@ -1,4 +1,3 @@
-#include <cuda_runtime.h>
 #include <algorithm>
 #include <assert.h>
 
@@ -24,7 +23,8 @@ NVector<T>::NVector(
 
 	/* Set all space including padding to fixed value. This is important as
 	 * some warps may read beyond the end of these arrays. */
-	CUDA_SAFE_CALL(cudaMemset2D(m_deviceData, bytePitch, 0x0, bytePitch, height));
+
+	nemo::cuda::d_memset2D(m_deviceData, bytePitch, 0x0, height);
 
 	//! \todo may need a default value here
 	if(allocHostData) {
@@ -93,17 +93,7 @@ template<typename T>
 const std::vector<T>& 
 NVector<T>::copyFromDevice()
 {
-#if 0
-	//! \todo allocate on-demand here
-	if(m_deviceData->size() > size()) {
-		throw std::logic_error("Attempt to read device data into too small host buffer");
-	}
-#endif
-	CUDA_SAFE_CALL(cudaMemcpy(
-				&m_hostData[0],
-				m_deviceData,
-				bytes(),
-				cudaMemcpyDeviceToHost));
+	nemo::cuda::memcpyFromDevice(m_hostData, m_deviceData, m_subvectorCount * size());
 	return m_hostData;
 }
 
@@ -121,18 +111,7 @@ template<typename T>
 void
 NVector<T>::copyToDevice()
 {
-#if 0
-	if(size() > m_hostData.size()) {
-		throw std::logic_error("Attempt to copy Insuffient host data to device");
-	}
-#endif
-
-	CUDA_SAFE_CALL(
-			cudaMemcpy(
-				m_deviceData,
-				&m_hostData[0],
-				bytes(),
-				cudaMemcpyHostToDevice));
+	nemo::cuda::memcpyToDevice(m_deviceData, m_hostData, m_subvectorCount * size());
 }
 
 
