@@ -16,7 +16,7 @@
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 
-#include <types.hpp>
+#include <nemo/types.hpp>
 
 #include "Mapper.hpp"
 

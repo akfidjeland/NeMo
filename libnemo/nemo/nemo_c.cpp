@@ -19,7 +19,7 @@
 #include "nemo.h"
 #include "nemo.hpp"
 #include "exception.hpp"
-#include <nemo_config.h>
+#include <nemo/nemo_config.h>
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to
  * error codes instead. Error descriptions are stored on a per-process basis. */

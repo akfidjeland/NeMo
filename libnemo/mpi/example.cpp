@@ -6,7 +6,7 @@
 #include <boost/mpi/communicator.hpp>
 
 #include <nemo.hpp>
-#include <exception.hpp>
+#include <nemo/exception.hpp>
 #include <examples.hpp>
 
 #include "nemo_mpi.hpp"

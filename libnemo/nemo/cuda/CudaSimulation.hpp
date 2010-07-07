@@ -11,7 +11,7 @@
  */
 
 #include <vector>
-#include <SimulationBackend.hpp>
+#include <nemo/SimulationBackend.hpp>
 
 namespace nemo {
 

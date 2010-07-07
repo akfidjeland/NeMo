@@ -4,7 +4,7 @@
 //! \file Network.hpp
 
 #include <vector>
-#include "nemo_config.h"
+#include <nemo/nemo_config.h>
 
 namespace nemo {
 

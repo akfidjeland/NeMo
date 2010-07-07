@@ -15,9 +15,9 @@
 #include <fstream>
 #include <assert.h>
 
-#include <exception.hpp>
-#include <NetworkImpl.hpp>
-#include <fixedpoint.hpp>
+#include <nemo/exception.hpp>
+#include <nemo/NetworkImpl.hpp>
+#include <nemo/fixedpoint.hpp>
 
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"

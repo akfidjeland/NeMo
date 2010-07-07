@@ -18,7 +18,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/utility.hpp>
 
-#include <nemo_internal.hpp>
+#include <nemo/nemo_internal.hpp>
 
 #include "Mapper.hpp"
 #include "SpikeQueue.hpp"

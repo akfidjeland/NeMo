@@ -9,7 +9,7 @@
 
 #include "Incoming.hpp"
 
-#include <util.h>
+#include <nemo/util.h>
 
 #include "kernel.cu_h"
 #include "except.hpp"

@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <sstream>
 
-#include <exception.hpp>
+#include <nemo/exception.hpp>
 
 namespace nemo {
 

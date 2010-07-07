@@ -1,7 +1,7 @@
 #ifndef NEMO_MPI_MAPPER_HPP
 #define NEMO_MPI_MAPPER_HPP
 
-#include <types.h>
+#include <nemo/types.h>
 
 namespace nemo {
 	namespace mpi {

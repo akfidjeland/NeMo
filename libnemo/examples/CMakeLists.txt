@@ -1,7 +1,8 @@
 INCLUDE_DIRECTORIES(
-	${CMAKE_SOURCE_DIR}/base
-	${CMAKE_BINARY_DIR}/base # for configuration files
-	${Boost_INCLUDE_DIR})
+	${CMAKE_SOURCE_DIR}
+	${CMAKE_BINARY_DIR}
+	${Boost_INCLUDE_DIR}
+)
 ADD_DEFINITIONS(-DUSING_MAIN)
 LINK_DIRECTORIES("${CMAKE_BINARY_DIR}/src")
 ADD_EXECUTABLE(torus torus.cpp sim_runner.cpp)

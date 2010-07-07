@@ -14,7 +14,7 @@
 
 #include <vector>
 
-#include <nemo_config.h>
+#include <nemo/nemo_config.h>
 #include "types.h"
 
 #ifdef INCLUDE_MPI

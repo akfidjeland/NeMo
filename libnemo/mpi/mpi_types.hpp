@@ -2,7 +2,7 @@
 #define NEMO_MPI_TYPES_HPP
 
 #include <boost/serialization/vector.hpp>
-#include <types.hpp>
+#include <nemo/types.hpp>
 
 //#define MPI_LOGGING
 

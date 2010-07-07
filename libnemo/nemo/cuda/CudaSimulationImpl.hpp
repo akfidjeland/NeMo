@@ -12,11 +12,11 @@
 
 #include <stddef.h>
 
-#include <nemo_config.h>
-#include <STDP.hpp>
-#include <Timer.hpp>
-#include <types.h>
-#include <ConfigurationImpl.hpp>
+#include <nemo/nemo_config.h>
+#include <nemo/STDP.hpp>
+#include <nemo/Timer.hpp>
+#include <nemo/types.h>
+#include <nemo/ConfigurationImpl.hpp>
 
 #include "Mapper.hpp"
 #include "NVector.hpp"

@@ -21,20 +21,19 @@ MARK_AS_ADVANCED(FORCE
 	CUDA_HOST_COMPILATION_CPP)
 
 CUDA_INCLUDE_DIRECTORIES(
-	${CMAKE_CURRENT_SOURCE_DIR}
+	#${CMAKE_CURRENT_SOURCE_DIR}
 	# TODO: can probably remove this
-	${CMAKE_CURRENT_BINARY_DIR} # for configuration files
-	${CMAKE_SOURCE_DIR}/base
-	${CMAKE_BINARY_DIR}/base # for configuration files
+	#${CMAKE_CURRENT_BINARY_DIR} # for configuration files
+	${CMAKE_SOURCE_DIR}
+	${CMAKE_BINARY_DIR} # for configuration files
 	${Boost_INCLUDE_DIR}
   )
 
 # C++ only includes
 INCLUDE_DIRECTORIES(
+	${CMAKE_SOURCE_DIR}
+	${CMAKE_BINARY_DIR} # for configuration files
 	${CUDA_INCLUDE_DIRS}
-	${CMAKE_SOURCE_DIR}/base
-	${CMAKE_BINARY_DIR}/base # for configuration files
-	${CMAKE_CURRENT_SOURCE_DIR}
 	${Boost_INCLUDE_DIR}
   )
 

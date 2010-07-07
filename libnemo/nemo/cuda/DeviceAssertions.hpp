@@ -24,7 +24,7 @@
 
 #include <vector>
 
-#include <exception.hpp>
+#include <nemo/exception.hpp>
 
 #ifdef _MSC_VER
 // visual studio warning re non-implementation of throw specifiers

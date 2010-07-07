@@ -10,8 +10,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <types.h>
-#include <nemo_config.h>
+#include <nemo/types.h>
+#include <nemo/nemo_config.h>
 
 
 /* Convert floating point to fixed-point */

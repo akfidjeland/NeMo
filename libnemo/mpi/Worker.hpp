@@ -16,7 +16,7 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/mpi/environment.hpp>
 
-#include <ConnectivityMatrix.hpp>
+#include <nemo/ConnectivityMatrix.hpp>
 #include "mpi_types.hpp"
 
 namespace nemo {

@@ -12,7 +12,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "nemo_config.h"
+#include <nemo/nemo_config.h>
 #include <ostream>
 #include <vector>
 

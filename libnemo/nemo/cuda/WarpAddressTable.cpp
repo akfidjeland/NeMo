@@ -9,7 +9,7 @@
 
 #include "WarpAddressTable.hpp"
 #include <boost/tuple/tuple_comparison.hpp>
-#include "exception.hpp"
+#include <nemo/exception.hpp>
 
 namespace nemo {
 	namespace cuda {

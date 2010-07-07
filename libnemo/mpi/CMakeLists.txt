@@ -10,8 +10,8 @@ INCLUDE_DIRECTORIES(
 	${MPI_INCLUDE_PATH}
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_SOURCE_DIR}/examples
-	${CMAKE_SOURCE_DIR}/base
-	${CMAKE_BINARY_DIR}/base # for configuration
+	${CMAKE_SOURCE_DIR}
+	${CMAKE_BINARY_DIR} # for configuration
 	${Boost_INCLUDE_DIR}
 )
 

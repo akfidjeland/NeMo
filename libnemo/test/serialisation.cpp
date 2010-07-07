@@ -10,7 +10,7 @@
 #include <vector>
 #include <ctime>
 
-#include <ConfigurationImpl.hpp>
+#include <nemo/ConfigurationImpl.hpp>
 
 
 /* When serialising to file the binary representation of floating-point values

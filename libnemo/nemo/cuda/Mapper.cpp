@@ -3,8 +3,8 @@
 #include <boost/format.hpp>
 #include <assert.h>
 
-#include <exception.hpp>
-#include <util.h>
+#include <nemo/exception.hpp>
+#include <nemo/util.h>
 
 #include "kernel.cu_h"
 

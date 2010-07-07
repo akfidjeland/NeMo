@@ -16,11 +16,12 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 
+#include <nemo/types.hpp>
+#include <nemo/NetworkImpl.hpp>
+
 #include "cuda_types.h"
-#include <types.hpp>
 #include "kernel.cu_h"
 #include "Mapper.hpp"
-#include "NetworkImpl.hpp"
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
 #include "SynapseAddressTable.hpp"

@@ -1,9 +1,9 @@
 #include "Mapper.hpp"
 
-#include <assert.h>
+#include <cassert>
 
-#include <util.h>
-#include <exception.hpp>
+#include <nemo/util.h>
+#include <nemo/exception.hpp>
 
 
 namespace nemo {

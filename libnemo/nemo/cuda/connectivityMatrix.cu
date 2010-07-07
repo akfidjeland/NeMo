@@ -12,7 +12,7 @@
 
 #include <assert.h>
 
-#include <util.h>
+#include <nemo/util.h>
 
 #include "kernel.cu_h"
 #include "connectivityMatrix.cu_h"

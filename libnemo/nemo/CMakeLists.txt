@@ -1,7 +1,8 @@
+SUBDIRS(cuda)
+
 INCLUDE_DIRECTORIES(
-	${CMAKE_BINARY_DIR}/base # for configuration files
+	${CMAKE_BINARY_DIR}  # for configuration files
 	${CMAKE_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}
 	${Boost_INCLUDE_DIR}
 )
 
@@ -31,15 +32,20 @@ TARGET_LINK_LIBRARIES(nemo nemo_base nemo_cuda)
 
 INSTALL(TARGETS nemo nemo_base DESTINATION ${INSTALL_LIB_DIR})
 
-INSTALL(FILES 
+INSTALL(FILES
 		nemo.h
 		nemo.hpp
+	DESTINATION ${INSTALL_INCLUDE_DIR}
+)
+
+
+INSTALL(FILES
 		nemo_error.h
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h
-	DESTINATION ${INSTALL_INCLUDE_DIR}
+	DESTINATION ${INSTALL_INCLUDE_DIR}/nemo
 )
 
 

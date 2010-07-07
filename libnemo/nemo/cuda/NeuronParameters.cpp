@@ -12,10 +12,11 @@
 #include <sstream>
 #include <vector>
 
+#include <nemo/NetworkImpl.hpp>
+
 #include "Mapper.hpp"
 #include "kernel.cu_h"
 #include "except.hpp"
-#include "NetworkImpl.hpp"
 #include "cuda_types.h"
 #include "kernel.hpp"
 

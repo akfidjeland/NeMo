@@ -2,7 +2,7 @@
 #define NEMO_MPI_SPIKE_QUEUE
 
 #include <vector>
-#include <types.hpp>
+#include <nemo/types.hpp>
 
 namespace nemo {
 	namespace mpi {

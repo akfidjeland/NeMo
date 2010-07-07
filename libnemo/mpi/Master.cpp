@@ -16,14 +16,15 @@
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/utility.hpp>
 
-#include <nemo_config.h>
-#include <Network.hpp>
-#include <NetworkImpl.hpp>
-#include <Configuration.hpp>
-#include <ConfigurationImpl.hpp>
+#include <nemo/nemo_config.h>
+
+#include <nemo/Network.hpp>
+#include <nemo/NetworkImpl.hpp>
+#include <nemo/Configuration.hpp>
+#include <nemo/ConfigurationImpl.hpp>
 #include "nemo_mpi_common.hpp"
-#include <types.hpp>
-#include <mpi_types.hpp>
+#include <nemo/types.hpp>
+#include "mpi_types.hpp"
 
 #include "log.hpp"
 

@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <fixedpoint.hpp>
+#include <nemo/fixedpoint.hpp>
 
 #include "log.cu_h"
 

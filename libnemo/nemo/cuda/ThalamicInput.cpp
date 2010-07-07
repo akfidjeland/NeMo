@@ -14,10 +14,11 @@
 #include <map>
 #include <boost/random.hpp>
 
+#include <nemo/NetworkImpl.hpp>
+#include <nemo/types.hpp>
+
 #include "thalamicInput.cu_h"
-#include "NetworkImpl.hpp"
 #include "Mapper.hpp"
-#include <types.hpp>
 
 
 

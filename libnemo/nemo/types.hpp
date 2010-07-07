@@ -13,7 +13,7 @@
 
 /* The basic types in nemo_types are also used without an enclosing namespace
  * inside the kernel (which is pure C). */
-#include <nemo_config.h>
+#include <nemo/nemo_config.h>
 #include "types.h"
 
 #ifdef INCLUDE_MPI

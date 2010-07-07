@@ -1,7 +1,7 @@
 #ifndef NEMO_CUDA_TYPES_HPP
 #define NEMO_CUDA_TYPES_HPP
 
-#include <types.h>
+#include <nemo/types.h>
 
 typedef fix_t weight_dt; // on the device
 typedef unsigned int pidx_t; // partition index 
