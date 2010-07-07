@@ -33,13 +33,6 @@ TARGET_LINK_LIBRARIES(nemo nemo_base nemo_cuda)
 INSTALL(TARGETS nemo nemo_base DESTINATION ${INSTALL_LIB_DIR})
 
 INSTALL(FILES
-		nemo.h
-		nemo.hpp
-	DESTINATION ${INSTALL_INCLUDE_DIR}
-)
-
-
-INSTALL(FILES
 		errors.h
 		Configuration.hpp
 		Network.hpp
