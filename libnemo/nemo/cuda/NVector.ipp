@@ -4,6 +4,9 @@
 #include "exception.hpp"
 #include "device_memory.hpp"
 
+namespace nemo {
+	namespace cuda {
+
 
 template<typename T>
 NVector<T>::NVector(
@@ -17,14 +20,14 @@ NVector<T>::NVector(
 {
 	size_t height = subvectorCount * partitionCount;
 	size_t bytePitch = 0;
-	nemo::cuda::d_mallocPitch((void**)&m_deviceData, &bytePitch,
+	d_mallocPitch((void**)&m_deviceData, &bytePitch,
 				maxPartitionSize * sizeof(T), height, "NVector");
 	m_pitch = bytePitch / sizeof(T);
 
 	/* Set all space including padding to fixed value. This is important as
 	 * some warps may read beyond the end of these arrays. */
 
-	nemo::cuda::d_memset2D(m_deviceData, bytePitch, 0x0, height);
+	d_memset2D(m_deviceData, bytePitch, 0x0, height);
 
 	//! \todo may need a default value here
 	if(allocHostData) {
@@ -36,7 +39,7 @@ NVector<T>::NVector(
 template<typename T>
 NVector<T>::~NVector()
 {
-	nemo::cuda::d_free(m_deviceData);
+	d_free(m_deviceData);
 }
 
 
@@ -93,7 +96,7 @@ template<typename T>
 const std::vector<T>& 
 NVector<T>::copyFromDevice()
 {
-	nemo::cuda::memcpyFromDevice(m_hostData, m_deviceData, m_subvectorCount * size());
+	memcpyFromDevice(m_hostData, m_deviceData, m_subvectorCount * size());
 	return m_hostData;
 }
 
@@ -111,7 +114,7 @@ template<typename T>
 void
 NVector<T>::copyToDevice()
 {
-	nemo::cuda::memcpyToDevice(m_deviceData, m_hostData, m_subvectorCount * size());
+	memcpyToDevice(m_deviceData, m_hostData, m_subvectorCount * size());
 }
 
 
@@ -162,3 +165,4 @@ NVector<T>::fill(const T& val, size_t subvector)
 			m_hostData.begin() + (subvector+1) * m_pitch, val);
 }
 
+}	} // end namespace

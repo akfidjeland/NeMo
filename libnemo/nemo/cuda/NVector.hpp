@@ -14,6 +14,8 @@
 
 #include <vector>
 
+namespace nemo {
+	namespace cuda {
 
 /*! \brief Per-neuron data array 
  *
@@ -104,6 +106,9 @@ class NVector
 		size_t offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const;
 };
 
+}	} // end namespace
+
 #include "NVector.ipp"
+
 
 #endif
