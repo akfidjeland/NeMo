@@ -17,22 +17,6 @@
 #include <nemo/exception.hpp>
 #include <nemo/errors.h>
 
-namespace nemo {
-	namespace cuda {
-
-class KernelInvocationError : public nemo::exception
-{
-	public :
-		KernelInvocationError(cudaError_t status) :
-			nemo::exception(
-					NEMO_CUDA_INVOCATION_ERROR,
-					cudaGetErrorString(status)) {}
-};
-
-	} // end namespace cuda
-} // end namespace nemo
-
-
 #define CUDA_SAFE_CALL(call) {                                             \
     cudaError err = call;                                                  \
     if(cudaSuccess != err) {                                               \

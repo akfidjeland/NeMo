@@ -328,7 +328,7 @@ SimulationImpl::step()
 	cudaError_t status = cudaGetLastError();
 	if(status != cudaSuccess) {
 		//! \todo add cycle number?
-		throw KernelInvocationError(status);
+		throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR, cudaGetErrorString(status));
 	}
 
 	m_deviceAssertions.check(m_timer.elapsedSimulation());
