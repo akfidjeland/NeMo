@@ -1,6 +1,6 @@
 #include "SpikeQueue.hpp"
 
-#include "assert.h"
+#include <cassert>
 
 namespace nemo {
 	namespace mpi {
@@ -18,6 +18,7 @@ unsigned
 SpikeQueue::slot(unsigned delay) const
 {
 	unsigned sz = m_queue.size();
+	//! \todo throw here instead
 	assert(delay < sz);
 	unsigned entry = m_current + delay;
 	return entry >= sz ? entry - sz : entry;

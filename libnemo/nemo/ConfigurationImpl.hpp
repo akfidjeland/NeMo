@@ -14,7 +14,7 @@
 
 #include <ostream>
 
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 #include "STDP.hpp"
 
 #ifdef INCLUDE_MPI

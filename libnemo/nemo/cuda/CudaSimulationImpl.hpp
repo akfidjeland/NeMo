@@ -12,7 +12,7 @@
 
 #include <stddef.h>
 
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 #include <nemo/STDP.hpp>
 #include <nemo/Timer.hpp>
 #include <nemo/types.h>

@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <boost/tuple/tuple_comparison.hpp>
 
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 #include "exception.hpp"
 #include "fixedpoint.hpp"
 

@@ -16,7 +16,7 @@
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/utility.hpp>
 
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 
 #include <nemo/Network.hpp>
 #include <nemo/NetworkImpl.hpp>

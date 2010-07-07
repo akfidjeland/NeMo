@@ -11,7 +11,7 @@ extern "C" {
  */
 
 #include <stddef.h> // for size_t
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 #include <nemo/nemo_error.h>
 
 /*! Only opaque pointers are exposed in the C API */

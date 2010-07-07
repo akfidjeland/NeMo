@@ -11,7 +11,7 @@
  */
 
 #include <nemo/types.h>
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 
 
 /* Convert floating point to fixed-point */

@@ -44,7 +44,7 @@ INSTALL(FILES
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp
-		${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h
+		${CMAKE_CURRENT_BINARY_DIR}/config.h
 	DESTINATION ${INSTALL_INCLUDE_DIR}/nemo
 )
 
@@ -87,5 +87,5 @@ IF(NOT HAVE_STDINT_H AND NOT MSVC)
 ENDIF(NOT HAVE_STDINT_H AND NOT MSVC)
 
 CONFIGURE_FILE(
-	${CMAKE_CURRENT_SOURCE_DIR}/nemo_config.h.in
-	${CMAKE_CURRENT_BINARY_DIR}/nemo_config.h)
+	${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/config.h)

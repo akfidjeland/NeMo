@@ -2,7 +2,7 @@
  * internal API. Most functionality is found in the respective C++ classes and
  * in the C API wrapper file nemo_c.cpp */
 
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 #include <nemo/nemo_internal.hpp>
 #include <nemo/exception.hpp>
 

@@ -13,7 +13,7 @@
 #include <cuda.h>
 
 #include <nemo/util.h>
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 
 #include "cycleCounting.cu"
 #include "connectivityMatrix.cu"

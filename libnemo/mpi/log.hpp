@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <nemo/nemo_config.h>
+#include <nemo/config.h>
 
 #ifdef INCLUDE_MPI_LOGGING
 
