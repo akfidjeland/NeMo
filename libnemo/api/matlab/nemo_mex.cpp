@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <string>
 #ifdef _MSC_VER
-#include <win_stdint.h> // in own local build directory
+#include <nemo/win_stdint.h> // in own local build directory
 #else
 #include <stdint.h>
 #endif
