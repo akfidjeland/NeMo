@@ -18,6 +18,15 @@ namespace nemo {
 
 
 void
+safeCall(cudaError_t err, unsigned error = NEMO_CUDA_MEMORY_ERROR)
+{
+	if(cudaSuccess != err) {
+		throw nemo::exception(error, cudaGetErrorString(err));
+	}
+}
+
+
+void
 d_malloc(void** d_ptr, size_t sz, const char* name)
 {
 	cudaError_t err = cudaMalloc(d_ptr, sz);
@@ -31,10 +40,7 @@ d_malloc(void** d_ptr, size_t sz, const char* name)
 void
 d_free(void* arr)
 {
-	cudaError_t err = cudaFree(arr);
-	if(cudaSuccess != err) {
-		throw nemo::exception(NEMO_CUDA_ERROR, cudaGetErrorString(err));
-	}
+	safeCall(cudaFree(arr));
 }
 
 
@@ -60,37 +66,28 @@ d_mallocPitch(void** d_ptr, size_t* bpitch, size_t width, size_t height, const c
 void
 memcpyToDevice(void* dst, const void* src, size_t count)
 {
-	cudaError_t err = cudaMemcpy(dst, src, count, cudaMemcpyHostToDevice);
-	if(cudaSuccess != err) {
-		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, cudaGetErrorString(err));
-	}
+	safeCall(cudaMemcpy(dst, src, count, cudaMemcpyHostToDevice));
 }
 
 
 void
 memcpyFromDevice(void* dst, const void* src, size_t count)
 {
-	cudaError_t err = cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost);
-	if(cudaSuccess != err) {
-		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, cudaGetErrorString(err));
-	}
+	safeCall(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost));
 }
 
 
 void
 mallocPinned(void** h_ptr, size_t sz)
 {
-	cudaError_t err = cudaMallocHost(h_ptr, sz);
-	if(cudaSuccess != err) {
-		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, cudaGetErrorString(err));
-	}
+	safeCall(cudaMallocHost(h_ptr, sz));
 }
 
 
 void
 freePinned(void* arr)
 {
-	cudaFreeHost(arr);
+	safeCall(cudaFreeHost(arr));
 }
 
 
