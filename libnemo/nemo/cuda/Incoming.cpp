@@ -13,6 +13,7 @@
 
 #include "kernel.cu_h"
 #include "exception.hpp"
+#include "device_memory.hpp"
 
 namespace nemo {
 	namespace cuda {
@@ -55,10 +56,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	incoming_t* d_buffer;
 	size_t bpitch;
 
-	err = cudaMallocPitch((void**)&d_buffer, &bpitch, width, height);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("incoming spike queue", width * height, err);
-	}
+	d_mallocPitch((void**)&d_buffer, &bpitch, width, height, "incoming spike queue");
 	m_allocated += bpitch * height;
 
 	m_buffer = boost::shared_ptr<incoming_t>(d_buffer, cudaFree);

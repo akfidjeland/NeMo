@@ -14,11 +14,12 @@
 
 #include <nemo/NetworkImpl.hpp>
 
-#include "Mapper.hpp"
-#include "kernel.cu_h"
-#include "exception.hpp"
 #include "types.h"
+#include "kernel.cu_h"
+#include "device_memory.hpp"
+#include "exception.hpp"
 #include "kernel.hpp"
+#include "Mapper.hpp"
 
 
 namespace nemo {
@@ -72,10 +73,7 @@ NeuronParameters::allocateDeviceData(size_t pcount, size_t psize)
 	size_t bpitch = 0;
 
 	float* d_arr;
-	cudaError err = cudaMallocPitch((void**)&d_arr, &bpitch, width, height);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("neuron parameters", width * height, err);
-	}
+	d_mallocPitch((void**)&d_arr, &bpitch, width, height, "neuron parameters");
 	m_wpitch = bpitch / sizeof(float);
 	md_arr = boost::shared_ptr<float>(d_arr, cudaFree);
 	m_allocated = height * bpitch;

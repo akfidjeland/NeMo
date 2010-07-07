@@ -24,6 +24,7 @@
 #include "connectivityMatrix.cu_h"
 #include "bitops.h"
 #include "kernel.hpp"
+#include "device_memory.hpp"
 
 
 namespace nemo {
@@ -212,11 +213,7 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	size_t bpitch;
 	synapse_t* d_data;
 	//! \todo wrap this in try/catch block and log memory usage if catching
-	cudaError err = cudaMallocPitch((void**) &d_data, &bpitch, desiredBytePitch, height);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("forward connectivity matrix",
-				height * desiredBytePitch, err);
-	}
+	d_mallocPitch((void**) &d_data, &bpitch, desiredBytePitch, height, "fcm");
 	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
 	size_t wpitch = bpitch / sizeof(synapse_t);
 	md_fcmPlaneSize = totalWarps * wpitch;

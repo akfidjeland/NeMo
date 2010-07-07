@@ -16,8 +16,9 @@
 #include <nemo/util.h>
 
 #include "WarpAddressTable.hpp"
-#include "kernel.cu_h"
+#include "device_memory.hpp"
 #include "exception.hpp"
+#include "kernel.cu_h"
 
 namespace nemo {
 	namespace cuda {
@@ -124,12 +125,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 
 	// allocate device memory for table
 	outgoing_t* d_arr = NULL;
-	if(width != 0) {
-		cudaError err = cudaMallocPitch((void**)&d_arr, &m_pitch, width, height);
-		if(cudaSuccess != err) {
-			throw DeviceAllocationException("outgoing spikes", width * height, err);
-		}
-	}
+	d_mallocPitch((void**)&d_arr, &m_pitch, width, height, "outgoing spikes");
 	md_arr = boost::shared_ptr<outgoing_t>(d_arr, cudaFree);
 
 	m_allocated = m_pitch * height;

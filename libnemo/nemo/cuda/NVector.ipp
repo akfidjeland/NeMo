@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "exception.hpp"
+#include "device_memory.hpp"
 
 
 template<typename T>
@@ -17,13 +18,8 @@ NVector<T>::NVector(
 {
 	size_t height = subvectorCount * partitionCount;
 	size_t bytePitch = 0;
-	CUDA_SAFE_CALL(
-			cudaMallocPitch(
-				(void**)&m_deviceData,
-				&bytePitch,
-				maxPartitionSize * sizeof(T),
-				height)
-	); 
+	nemo::cuda::d_mallocPitch((void**)&m_deviceData, &bytePitch,
+				maxPartitionSize * sizeof(T), height, "NVector");
 	m_pitch = bytePitch / sizeof(T);
 
 	/* Set all space including padding to fixed value. This is important as

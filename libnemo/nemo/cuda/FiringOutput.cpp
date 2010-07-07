@@ -13,6 +13,7 @@
 #include "exception.hpp"
 #include "FiringOutput.hpp"
 #include "bitvector.cu_h"
+#include "device_memory.hpp"
 
 namespace nemo {
 	namespace cuda {
@@ -31,7 +32,7 @@ FiringOutput::FiringOutput(
 
 	size_t bytePitch;
 	uint32_t* d_buffer;
-	CUDA_SAFE_CALL(cudaMallocPitch((void**)(&d_buffer), &bytePitch, width, height));
+	d_mallocPitch((void**)(&d_buffer), &bytePitch, width, height, "firing output");
 	md_buffer = boost::shared_ptr<uint32_t>(d_buffer, cudaFree);
 	CUDA_SAFE_CALL(cudaMemset2D(d_buffer, bytePitch, 0, bytePitch, height));
 	m_pitch = bytePitch / sizeof(uint32_t);

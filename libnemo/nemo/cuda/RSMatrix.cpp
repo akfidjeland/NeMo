@@ -13,6 +13,7 @@
 
 #include "RSMatrix.hpp"
 #include "connectivityMatrix.cu_h"
+#include "device_memory.hpp"
 #include "exception.hpp"
 #include "WarpAddressTable.hpp"
 
@@ -39,14 +40,7 @@ RSMatrix::allocateDeviceMemory()
 	size_t bytePitch = 0;
 
 	uint32_t* deviceData = NULL;
-	cudaError err = cudaMallocPitch((void**) &deviceData,
-				&bytePitch,
-				desiredPitch,
-				height);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("rcm synapse group",
-				height * desiredPitch, err);
-	}
+	d_mallocPitch((void**) &deviceData, &bytePitch, desiredPitch, height, "rcm synapse group");
 	m_pitch = bytePitch / sizeof(uint32_t);
 	m_allocated = bytePitch * height;
 
