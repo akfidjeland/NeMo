@@ -188,10 +188,10 @@ nemo_get_synapses(nemo_simulation_t ptr,
 	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
 	CALL(sim->getSynapses(source, &targets, &delays, &weights, &plastic));
 	if(NEMO_OK == g_lastCallStatus) {
-		*targets_ = const_cast<unsigned*>(&(*targets)[0]);
-		*delays_ = const_cast<unsigned*>(&(*delays)[0]);
-		*weights_ = const_cast<float*>(&(*weights)[0]);
-		*plastic_ = const_cast<unsigned char*>(&(*plastic)[0]);
+		*targets_ = targets->empty() ? NULL : const_cast<unsigned*>(&(*targets)[0]);
+		*delays_ = delays->empty() ? NULL : const_cast<unsigned*>(&(*delays)[0]);
+		*weights_ = weights->empty() ? NULL : const_cast<float*>(&(*weights)[0]);
+		*plastic_ = plastic->empty() ? NULL : const_cast<unsigned char*>(&(*plastic)[0]);
 		*len = targets->size();
 	}
 	return g_lastCallStatus;
