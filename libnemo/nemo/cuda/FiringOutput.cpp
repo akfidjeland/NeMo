@@ -33,7 +33,7 @@ FiringOutput::FiringOutput(
 	size_t bytePitch;
 	uint32_t* d_buffer;
 	d_mallocPitch((void**)(&d_buffer), &bytePitch, width, height, "firing output");
-	md_buffer = boost::shared_ptr<uint32_t>(d_buffer, cudaFree);
+	md_buffer = boost::shared_ptr<uint32_t>(d_buffer, d_free);
 	CUDA_SAFE_CALL(cudaMemset2D(d_buffer, bytePitch, 0, bytePitch, height));
 	m_pitch = bytePitch / sizeof(uint32_t);
 

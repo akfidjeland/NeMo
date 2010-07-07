@@ -47,7 +47,7 @@ RSMatrix::allocateDeviceMemory()
 	CUDA_SAFE_CALL(cudaMemset2D((void*) deviceData,
 				bytePitch, 0, bytePitch, height));
 
-	m_deviceData = boost::shared_ptr<uint32_t>(deviceData , cudaFree);
+	m_deviceData = boost::shared_ptr<uint32_t>(deviceData , d_free);
 	return m_deviceData;
 }
 

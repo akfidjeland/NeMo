@@ -27,13 +27,10 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	// allocate space for the incoming count
 	unsigned* d_count;
 	size_t len = ALIGN(partitionCount * MAX_DELAY, 32) * sizeof(unsigned);
-	cudaError err = cudaMalloc((void**)&d_count, len);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("incoming spike queue counts", len, err);
-	}
-	m_count = boost::shared_ptr<unsigned>(d_count, cudaFree);
+	d_malloc((void**)&d_count, len, "incoming spike queue counts");
+	m_count = boost::shared_ptr<unsigned>(d_count, d_free);
 
-	err = cudaMemset(d_count, 0, len);
+	cudaError_t err = cudaMemset(d_count, 0, len);
 	if(cudaSuccess != err) {
 		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, "failed to set incoming spike queue counts");
 	}
@@ -59,7 +56,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	d_mallocPitch((void**)&d_buffer, &bpitch, width, height, "incoming spike queue");
 	m_allocated += bpitch * height;
 
-	m_buffer = boost::shared_ptr<incoming_t>(d_buffer, cudaFree);
+	m_buffer = boost::shared_ptr<incoming_t>(d_buffer, d_free);
 
 	/* We don't need to clear the queue. It will generally be full of garbage
 	 * anyway. The queue heads must be used to determine what's valid data */

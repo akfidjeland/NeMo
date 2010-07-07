@@ -75,7 +75,7 @@ NeuronParameters::allocateDeviceData(size_t pcount, size_t psize)
 	float* d_arr;
 	d_mallocPitch((void**)&d_arr, &bpitch, width, height, "neuron parameters");
 	m_wpitch = bpitch / sizeof(float);
-	md_arr = boost::shared_ptr<float>(d_arr, cudaFree);
+	md_arr = boost::shared_ptr<float>(d_arr, d_free);
 	m_allocated = height * bpitch;
 
 	/* Set all space including padding to fixed value. This is important as

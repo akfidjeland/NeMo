@@ -126,7 +126,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	// allocate device memory for table
 	outgoing_t* d_arr = NULL;
 	d_mallocPitch((void**)&d_arr, &m_pitch, width, height, "outgoing spikes");
-	md_arr = boost::shared_ptr<outgoing_t>(d_arr, cudaFree);
+	md_arr = boost::shared_ptr<outgoing_t>(d_arr, d_free);
 
 	m_allocated = m_pitch * height;
 
@@ -189,14 +189,8 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 
 	// allocate device memory for row lengths
 	unsigned* d_rowLength = NULL;
-	{
-		cudaError_t err = cudaMalloc((void**)&d_rowLength, height * sizeof(unsigned));
-		if(cudaSuccess != err) {
-			throw DeviceAllocationException("outgoing spikes (row lengths)",
-					height * sizeof(unsigned), err);
-		}
-	}
-	md_rowLength = boost::shared_ptr<unsigned>(d_rowLength, cudaFree);
+	d_malloc((void**)&d_rowLength, height * sizeof(unsigned), "outgoing spikes (row lengths)");
+	md_rowLength = boost::shared_ptr<unsigned>(d_rowLength, d_free);
 	m_allocated += height * sizeof(unsigned);
 
 	// copy row lengths from host to device

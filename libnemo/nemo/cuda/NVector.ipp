@@ -36,7 +36,7 @@ NVector<T>::NVector(
 template<typename T>
 NVector<T>::~NVector()
 {
-    CUDA_SAFE_CALL(cudaFree(m_deviceData));
+	nemo::cuda::d_free(m_deviceData);
 }
 
 

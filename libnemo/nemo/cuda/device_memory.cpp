@@ -16,6 +16,29 @@
 namespace nemo {
 	namespace cuda {
 
+
+void
+d_malloc(void** d_ptr, size_t sz, const char* name)
+{
+	cudaError_t err = cudaMalloc(d_ptr, sz);
+	if(cudaSuccess != err) {
+		throw DeviceAllocationException(name, sz, err);
+	}
+}
+
+
+
+void
+d_free(void* arr)
+{
+	cudaError_t err = cudaFree(arr);
+	if(cudaSuccess != err) {
+		throw nemo::exception(NEMO_CUDA_ERROR, cudaGetErrorString(err));
+	}
+}
+
+
+
 void
 d_mallocPitch(void** d_ptr, size_t* bpitch, size_t width, size_t height, const char* name)
 {
