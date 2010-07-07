@@ -31,7 +31,7 @@ simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf)
 
 Simulation*
 simulation(const Network& net, const Configuration& conf)
-{	
+{
 	return dynamic_cast<Simulation*>(simulationBackend(*net.m_impl, *conf.m_impl));
 }
 
