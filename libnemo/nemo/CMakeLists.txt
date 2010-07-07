@@ -8,6 +8,8 @@ INCLUDE_DIRECTORIES(
 
 SET(BUILD_SHARED_LIBS TRUE)
 
+LINK_STATIC_MSVCR()
+
 ADD_LIBRARY(nemo_base
 	ConfigurationImpl.cpp
 	Network.cpp

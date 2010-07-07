@@ -136,10 +136,13 @@ main(int argc, char* argv[])
 	unsigned ncount = 1000;
 	unsigned scount = 1000;
 
+	std::cerr << "constructing network\n";
 	nemo::Network* net = nemo::random1k::construct(ncount, scount);
 	nemo::Configuration conf;
 	conf.setCudaPartitionSize(psize);
+	std::cerr << "creating simulation\n";
 	nemo::Simulation* sim = nemo::simulation(*net, conf);
+	std::cerr << "running simulation\n";
 	simulate(sim, ncount, ncount);
 	//simulateToFile(sim, 1000, "firing.dat");
 	delete net;

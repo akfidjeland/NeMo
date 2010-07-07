@@ -45,20 +45,6 @@ SET(CUDA_NVCC_FLAGS "-arch=sm_12")
 ##############################################################################
 SET(BUILD_SHARED_LIBS TRUE)
 
-# Statically link against MSVC runtime
-# TODO: factor this out and used for other libraries as well
-IF(MSVC)
-	FOREACH(flag_var
-		CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-		CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-		IF(${flag_var} MATCHES "/MD")
-			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-		ENDIF(${flag_var} MATCHES "/MD")
-	ENDFOREACH(flag_var)
-ENDIF(MSVC)
-
-
-
 CUDA_ADD_LIBRARY(nemo_cuda
 	kernel.cu
 	ConnectivityMatrix.cpp
