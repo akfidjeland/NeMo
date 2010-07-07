@@ -9,7 +9,6 @@
 
 #include "Outgoing.hpp"
 
-#include <iostream>
 #include <vector>
 #include <cuda_runtime.h>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -23,7 +22,7 @@
 namespace nemo {
 	namespace cuda {
 
-Outgoing::Outgoing() : m_allocated(0) {}
+Outgoing::Outgoing() : m_pitch(0), m_allocated(0) {}
 
 
 
@@ -124,10 +123,12 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	size_t width = maxPitch() * sizeof(outgoing_t);
 
 	// allocate device memory for table
-	outgoing_t* d_arr;
-	cudaError err = cudaMallocPitch((void**)&d_arr, &m_pitch, width, height);
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("outgoing spikes", width * height, err);
+	outgoing_t* d_arr = NULL;
+	if(width != 0) {
+		cudaError err = cudaMallocPitch((void**)&d_arr, &m_pitch, width, height);
+		if(cudaSuccess != err) {
+			throw DeviceAllocationException("outgoing spikes", width * height, err);
+		}
 	}
 	md_arr = boost::shared_ptr<outgoing_t>(d_arr, cudaFree);
 
@@ -185,15 +186,19 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	m_acc.clear();
 
 	// copy table from host to device
-	CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * m_pitch, cudaMemcpyHostToDevice));
+	if(d_arr != NULL && !h_arr.empty()) {
+		CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * m_pitch, cudaMemcpyHostToDevice));
+	}
 	CUDA_SAFE_CALL(setOutgoingPitch(wpitch));
 
 	// allocate device memory for row lengths
-	unsigned* d_rowLength;
-	err = cudaMalloc((void**)&d_rowLength, height * sizeof(unsigned));
-	if(cudaSuccess != err) {
-		throw DeviceAllocationException("outgoing spikes (row lengths)",
-				height * sizeof(unsigned), err);
+	unsigned* d_rowLength = NULL;
+	{
+		cudaError_t err = cudaMalloc((void**)&d_rowLength, height * sizeof(unsigned));
+		if(cudaSuccess != err) {
+			throw DeviceAllocationException("outgoing spikes (row lengths)",
+					height * sizeof(unsigned), err);
+		}
 	}
 	md_rowLength = boost::shared_ptr<unsigned>(d_rowLength, cudaFree);
 	m_allocated += height * sizeof(unsigned);

@@ -1,5 +1,5 @@
-#ifndef TARGET_PARTITIONS_CU
-#define TARGET_PARTITIONS_CU
+#ifndef NEMO_CUDA_OUTGOING_CU
+#define NEMO_CUDA_OUTGOING_CU
 
 /* Copyright 2010 Imperial College London
  *
@@ -30,7 +30,6 @@ make_outgoing(pidx_t partition, delay_t delay, unsigned warpOffset)
 
 	return make_uint2(targetData, (unsigned) warpOffset);
 }
-
 
 
 
