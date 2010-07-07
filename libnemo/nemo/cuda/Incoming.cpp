@@ -29,12 +29,7 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	size_t len = ALIGN(partitionCount * MAX_DELAY, 32) * sizeof(unsigned);
 	d_malloc((void**)&d_count, len, "incoming spike queue counts");
 	m_count = boost::shared_ptr<unsigned>(d_count, d_free);
-
-	cudaError_t err = cudaMemset(d_count, 0, len);
-	if(cudaSuccess != err) {
-		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, "failed to set incoming spike queue counts");
-	}
-
+	d_memset(d_count, 0, len);
 	m_allocated = len;
 
 	/* The queue has one entry for incoming spikes for each partition */

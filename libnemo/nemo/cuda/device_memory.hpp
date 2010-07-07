@@ -93,8 +93,9 @@ memcpyFromDevice(std::vector<T>& vec, const void* src, size_t count)
 }
 
 
-void
-d_memset2D(void* d_ptr, size_t bytePitch, int value, size_t height);
+void d_memset(void* d_ptr, int value, size_t count);
+
+void d_memset2D(void* d_ptr, size_t bytePitch, int value, size_t height);
 
 
 void
