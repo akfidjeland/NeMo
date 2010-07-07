@@ -39,8 +39,9 @@ FiringOutput::FiringOutput(
 
 	size_t md_allocated = bytePitch * height;
 	uint32_t* h_buffer;
-	CUDA_SAFE_CALL(cudaMallocHost((void**) &h_buffer, md_allocated));
-	mh_buffer = boost::shared_ptr<uint32_t>(h_buffer, cudaFreeHost);
+
+	mallocPinned((void**) &h_buffer, md_allocated);
+	mh_buffer = boost::shared_ptr<uint32_t>(h_buffer, freePinned);
 	memset(h_buffer, 0, md_allocated);
 }
 

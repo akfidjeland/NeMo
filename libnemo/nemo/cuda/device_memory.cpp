@@ -33,4 +33,21 @@ d_mallocPitch(void** d_ptr, size_t* bpitch, size_t width, size_t height, const c
 }
 
 
+void
+mallocPinned(void** h_ptr, size_t sz)
+{
+	cudaError_t err = cudaMallocHost(h_ptr, sz);
+	if(cudaSuccess != err) {
+		throw nemo::exception(NEMO_ALLOCATION_ERROR, "failed to allocate pinned host memory");
+	}
+}
+
+
+void
+freePinned(void* arr)
+{
+	cudaFreeHost(arr);
+}
+
+
 } 	} // end namespaces

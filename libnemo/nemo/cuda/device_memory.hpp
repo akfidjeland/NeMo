@@ -16,8 +16,21 @@
 namespace nemo {
 	namespace cuda {
 
+/*! Allocate 2D memory on the device
+ *
+ * \param bytePitch actual byte pitch after allignment
+ * \param width desired width in bytes
+ * \param name for debugging purposes
+ */
 void
 d_mallocPitch(void** d_ptr, size_t* bytePitch, size_t width, size_t height, const char* name);
+
+
+void
+mallocPinned(void** h_ptr, size_t sz);
+
+void
+freePinned(void* arr);
 
 } 	} // end namespaces
 
