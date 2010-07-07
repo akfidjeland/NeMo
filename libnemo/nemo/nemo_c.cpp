@@ -16,8 +16,8 @@
 
 #include <cassert>
 
-#include "nemo.h"
-#include "nemo.hpp"
+#include <nemo.h>
+#include <nemo.hpp>
 #include "exception.hpp"
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to

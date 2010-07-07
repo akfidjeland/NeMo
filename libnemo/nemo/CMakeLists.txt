@@ -40,7 +40,7 @@ INSTALL(FILES
 
 
 INSTALL(FILES
-		nemo_error.h
+		errors.h
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp

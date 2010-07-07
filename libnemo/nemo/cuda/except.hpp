@@ -16,7 +16,7 @@
 #include <boost/format.hpp>
 
 #include <nemo/exception.hpp>
-#include <nemo/nemo_error.h>
+#include <nemo/errors.h>
 
 namespace nemo {
 	namespace cuda {

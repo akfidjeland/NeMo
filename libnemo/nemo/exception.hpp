@@ -13,12 +13,12 @@
 #include <stdexcept>
 #include <string>
 
-#include "nemo_error.h"
+#include "errors.h"
 
 namespace nemo {
 
 /* Minor extension of std::exception which adds return codes (for use in the C
- * API). The error codes are listed in nemo_error.h. */
+ * API). The error codes are listed in errors.h. */
 //! \todo should probably inherit virtually here
 class exception : public std::runtime_error
 {

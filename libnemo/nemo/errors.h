@@ -1,5 +1,5 @@
-#ifndef NEMO_ERROR_H
-#define NEMO_ERROR_H
+#ifndef NEMO_ERRORS_H
+#define NEMO_ERRORS_H
 
 /* Copyright 2010 Imperial College London
  *
