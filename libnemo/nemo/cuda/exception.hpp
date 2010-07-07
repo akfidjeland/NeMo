@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_EXCEPT_HPP
-#define NEMO_CUDA_EXCEPT_HPP
+#ifndef NEMO_CUDA_EXCEPTION_HPP
+#define NEMO_CUDA_EXCEPTION_HPP
 
 /* Copyright 2010 Imperial College London
  *

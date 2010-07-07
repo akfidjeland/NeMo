@@ -23,7 +23,7 @@
 #include "DeviceAssertions.hpp"
 #include "ThalamicInput.hpp"
 #include "bitvector.hpp"
-#include "except.hpp"
+#include "exception.hpp"
 
 #include "device_assert.cu_h"
 #include "kernel.cu_h"

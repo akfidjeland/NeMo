@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <assert.h>
 
-#include "except.hpp"
+#include "exception.hpp"
 
 
 template<typename T>

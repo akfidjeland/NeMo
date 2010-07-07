@@ -12,7 +12,7 @@
 #include <nemo/util.h>
 
 #include "kernel.cu_h"
-#include "except.hpp"
+#include "exception.hpp"
 
 namespace nemo {
 	namespace cuda {

@@ -16,7 +16,7 @@
 
 #include "Mapper.hpp"
 #include "kernel.cu_h"
-#include "except.hpp"
+#include "exception.hpp"
 #include "types.h"
 #include "kernel.hpp"
 
