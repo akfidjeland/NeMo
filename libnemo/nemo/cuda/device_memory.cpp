@@ -8,13 +8,23 @@
  */
 
 #include <cuda_runtime.h>
+#include <boost/format.hpp>
 
 #include "device_memory.hpp"
-//! \todo merge exception into this class
-#include "exception.hpp"
 
 namespace nemo {
 	namespace cuda {
+
+
+void
+throw_allocation_error(const char* structname, size_t bytes, cudaError err)
+{
+	using boost::format;
+	throw nemo::exception(NEMO_CUDA_MEMORY_ERROR,
+			str(format("Failed to allocate %uB for %s.\nCuda error: %s\n")
+				% bytes % structname % cudaGetErrorString(err)));
+}
+
 
 
 void
@@ -31,7 +41,7 @@ d_malloc(void** d_ptr, size_t sz, const char* name)
 {
 	cudaError_t err = cudaMalloc(d_ptr, sz);
 	if(cudaSuccess != err) {
-		throw DeviceAllocationException(name, sz, err);
+		throw_allocation_error(name, sz, err);
 	}
 }
 
@@ -55,9 +65,7 @@ d_mallocPitch(void** d_ptr, size_t* bpitch, size_t width, size_t height, const c
 	}
 	cudaError_t err = cudaMallocPitch(d_ptr, bpitch, width, height);
 	if(cudaSuccess != err) {
-		/* We throw a special exception here, as we catch these internally to
-		 * report on current memory usage */
-		throw DeviceAllocationException(name, height * width, err);
+		throw_allocation_error(name, height * width, err);
 	}
 }
 

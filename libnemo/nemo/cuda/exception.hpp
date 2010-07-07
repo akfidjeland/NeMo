@@ -13,29 +13,12 @@
 #include <sstream>
 
 #include <cuda_runtime.h>
-#include <boost/format.hpp>
 
 #include <nemo/exception.hpp>
 #include <nemo/errors.h>
 
 namespace nemo {
 	namespace cuda {
-
-using boost::format;
-
-class DeviceAllocationException : public nemo::exception
-{
-	public :
-
-		DeviceAllocationException(const char* structname,
-				size_t bytes,
-				cudaError err) :
-			nemo::exception(NEMO_CUDA_MEMORY_ERROR,
-					str(format("Failed to allocate %uB for %s.\nCuda error: %s\n")
-						% bytes % structname % cudaGetErrorString(err)))
-		{}
-};
-
 
 class KernelInvocationError : public nemo::exception
 {
