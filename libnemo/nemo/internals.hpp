@@ -1,5 +1,5 @@
-#ifndef NEMO_INTERNAL_HPP
-#define NEMO_INTERNAL_HPP
+#ifndef NEMO_INTERNALS_HPP
+#define NEMO_INTERNALS_HPP
 
 /* Copyright 2010 Imperial College London
  *

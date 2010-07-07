@@ -3,7 +3,7 @@
  * in the C API wrapper file nemo_c.cpp */
 
 #include <nemo/config.h>
-#include <nemo/nemo_internal.hpp>
+#include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
 
 #include <nemo/cuda/CudaSimulation.hpp>
