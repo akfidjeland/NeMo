@@ -77,17 +77,44 @@ runComparisions(nemo::Network* net)
 }
 
 
-/* It should be possible to create a network without any synapses */
-BOOST_AUTO_TEST_CASE(simulation_without_synapses)
+
+void
+runSimple(unsigned startNeuron, unsigned neuronCount)
 {
 	nemo::Network net;
-	net.addNeuron(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7);
+	for(int nidx = 0; nidx < 4; ++nidx) {
+		net.addNeuron(nidx, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7);
+	}
 	nemo::Configuration conf;
 	nemo::Simulation* sim = NULL;
 	BOOST_REQUIRE_NO_THROW(sim = nemo::simulation(net, conf));
 	BOOST_REQUIRE_NO_THROW(sim->step());
 	delete sim;
 }
+
+
+
+BOOST_AUTO_TEST_CASE(simulation_unary_network)
+{
+	runSimple(0, 1);
+}
+
+
+
+/* It should be possible to create a network without any synapses */
+BOOST_AUTO_TEST_CASE(simulation_without_synapses)
+{
+	runSimple(0, 4);
+}
+
+
+/* We should be able to deal with networs with neuron indices not starting at
+ * zero */
+BOOST_AUTO_TEST_CASE(simulation_one_based_indices)
+{
+	runSimple(1, 4);
+}
+
 
 
 
@@ -150,6 +177,7 @@ BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
 	runComparisions(net);
 	delete net;
 }
+
 
 
 BOOST_AUTO_TEST_CASE(mapping_tests_torus)
