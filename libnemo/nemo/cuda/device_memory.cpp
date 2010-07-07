@@ -56,12 +56,33 @@ d_mallocPitch(void** d_ptr, size_t* bpitch, size_t width, size_t height, const c
 }
 
 
+
+void
+memcpyToDevice(void* dst, const void* src, size_t count)
+{
+	cudaError_t err = cudaMemcpy(dst, src, count, cudaMemcpyHostToDevice);
+	if(cudaSuccess != err) {
+		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, cudaGetErrorString(err));
+	}
+}
+
+
+void
+memcpyFromDevice(void* dst, const void* src, size_t count)
+{
+	cudaError_t err = cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost);
+	if(cudaSuccess != err) {
+		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, cudaGetErrorString(err));
+	}
+}
+
+
 void
 mallocPinned(void** h_ptr, size_t sz)
 {
 	cudaError_t err = cudaMallocHost(h_ptr, sz);
 	if(cudaSuccess != err) {
-		throw nemo::exception(NEMO_ALLOCATION_ERROR, "failed to allocate pinned host memory");
+		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, cudaGetErrorString(err));
 	}
 }
 

@@ -70,10 +70,8 @@ FiringOutput::readFiring(
 	m_cycles.clear();
 	m_neuronIdx.clear();
 
-	CUDA_SAFE_CALL(cudaMemcpy(mh_buffer.get(),
-				md_buffer.get(),
-				m_bufferedCycles * m_mapper.partitionCount() * m_pitch * sizeof(uint32_t),
-				cudaMemcpyDeviceToHost));
+	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
+				m_bufferedCycles * m_mapper.partitionCount() * m_pitch * sizeof(uint32_t));
 	populateSparse(m_bufferedCycles, mh_buffer.get(), m_cycles, m_neuronIdx);
 
 	*cycles = &m_cycles;

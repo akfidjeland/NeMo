@@ -57,9 +57,7 @@ NeuronParameters::NeuronParameters(const nemo::NetworkImpl& net, const Mapper& m
 			std::max(maxPartitionNeuron[dev.partition], dev.neuron);
 	}
 
-	// copy data to device
-	size_t bpitch = m_wpitch * sizeof(float);
-	CUDA_SAFE_CALL(cudaMemcpy(md_arr.get(), &h_arr[0], height * bpitch, cudaMemcpyHostToDevice));
+	memcpyToDevice(md_arr.get(), h_arr, height * m_wpitch);
 	configurePartitionSizes(maxPartitionNeuron);
 }
 

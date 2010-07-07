@@ -214,7 +214,7 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	synapse_t* d_data;
 	//! \todo wrap this in try/catch block and log memory usage if catching
 	d_mallocPitch((void**) &d_data, &bpitch, desiredBytePitch, height, "fcm");
-	md_fcm = boost::shared_ptr<synapse_t>(d_data, cudaFree);
+	md_fcm = boost::shared_ptr<synapse_t>(d_data, d_free);
 	size_t wpitch = bpitch / sizeof(synapse_t);
 	md_fcmPlaneSize = totalWarps * wpitch;
 	CUDA_SAFE_CALL(setFcmPlaneSize(md_fcmPlaneSize));
@@ -231,12 +231,8 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	}
 
 	md_fcmAllocated = height * bpitch;
-	CUDA_SAFE_CALL(cudaMemcpy(d_data + md_fcmPlaneSize * FCM_ADDRESS,
-				&h_targets[0], md_fcmPlaneSize*sizeof(synapse_t),
-				cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(d_data + md_fcmPlaneSize * FCM_WEIGHT,
-				&h_weights[0], md_fcmPlaneSize*sizeof(synapse_t),
-				cudaMemcpyHostToDevice));
+	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
+	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_WEIGHT, h_weights, md_fcmPlaneSize);
 }
 
 
@@ -318,10 +314,9 @@ ConnectivityMatrix::getSynapses(
 	size_t words = warps.size() * WARP_SIZE;
 
 	mh_weightBuffer.resize(words);
-	CUDA_SAFE_CALL(cudaMemcpy(&mh_weightBuffer[0],
+	memcpyFromDevice(mh_weightBuffer,
 				md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize + warps.start * WARP_SIZE,
-				words * sizeof(synapse_t),
-				cudaMemcpyDeviceToHost));
+				words);
 	/*! \todo read back data for more than one neuron. Keep
 	 * track of what cycle we last accessed each neuron and
 	 * what device data is currently cached here. */

@@ -183,7 +183,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 
 	// copy table from host to device
 	if(d_arr != NULL && !h_arr.empty()) {
-		CUDA_SAFE_CALL(cudaMemcpy(d_arr, &h_arr[0], height * m_pitch, cudaMemcpyHostToDevice));
+		memcpyToDevice(d_arr, h_arr, height * wpitch);
 	}
 	CUDA_SAFE_CALL(setOutgoingPitch(wpitch));
 
@@ -193,9 +193,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	md_rowLength = boost::shared_ptr<unsigned>(d_rowLength, d_free);
 	m_allocated += height * sizeof(unsigned);
 
-	// copy row lengths from host to device
-	CUDA_SAFE_CALL(cudaMemcpy(d_rowLength, &h_rowLength[0], h_rowLength.size() * sizeof(unsigned),
-				cudaMemcpyHostToDevice));
+	memcpyToDevice(d_rowLength, h_rowLength);
 
 	// return maximum number of incoming groups for any one partition
 	return incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;

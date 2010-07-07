@@ -189,12 +189,7 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 		hostArray[word] |= 1 << bit;
 	}
 
-	CUDA_SAFE_CALL(cudaMemcpy(
-				m_firingStimulus.deviceData(),
-				&hostArray[0],
-				m_mapper.partitionCount() * m_firingStimulus.bytePitch(),
-				cudaMemcpyHostToDevice));
-
+	memcpyToDevice(m_firingStimulus.deviceData(), hostArray, m_mapper.partitionCount() * pitch);
 	md_fstim = m_firingStimulus.deviceData();
 }
 

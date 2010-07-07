@@ -95,12 +95,7 @@ RSMatrix::copyToDevice(
 		std::copy(n->begin(), n->end(), buf.begin() + offset);
 	}
 
-	CUDA_SAFE_CALL(
-			cudaMemcpy(
-				d_mem + RCM_ADDRESS * planeSize(),
-				&buf[0],
-				planeSize() * sizeof(uint32_t),
-				cudaMemcpyHostToDevice));
+	memcpyToDevice(d_mem + RCM_ADDRESS * planeSize(), buf, planeSize());
 
 	/* Now fill in forward addresses for the STDP application step */
 	std::fill(buf.begin(), buf.end(), 0); // points to the null FCM warp
@@ -124,13 +119,7 @@ RSMatrix::copyToDevice(
 		}
 	}
 
-	CUDA_SAFE_CALL(
-			cudaMemcpy(
-				d_mem + RCM_FADDRESS * planeSize(),
-				&buf[0],
-				planeSize() * sizeof(uint32_t),
-				cudaMemcpyHostToDevice));
-
+	memcpyToDevice(d_mem + RCM_FADDRESS * planeSize(), buf, planeSize());
 }
 
 
