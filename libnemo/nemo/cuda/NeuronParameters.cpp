@@ -17,7 +17,7 @@
 #include "Mapper.hpp"
 #include "kernel.cu_h"
 #include "except.hpp"
-#include "cuda_types.h"
+#include "types.h"
 #include "kernel.hpp"
 
 

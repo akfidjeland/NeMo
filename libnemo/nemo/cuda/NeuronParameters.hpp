@@ -15,8 +15,7 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 
-#include <nemo/types.hpp>
-#include "cuda_types.h"
+#include "types.h"
 
 namespace nemo {
 

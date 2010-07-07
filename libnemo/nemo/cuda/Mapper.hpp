@@ -12,7 +12,7 @@
 
 #include <nemo/NetworkImpl.hpp>
 
-#include "cuda_types.h"
+#include "types.h"
 
 namespace nemo {
 	namespace cuda {

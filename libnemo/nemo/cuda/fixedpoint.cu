@@ -11,7 +11,7 @@
  */
 
 #include "device_assert.cu"
-#include "cuda_types.h"
+#include "types.h"
 #include "cycle.cu"
 
 #define FX_SIGN_BIT 0x80000000

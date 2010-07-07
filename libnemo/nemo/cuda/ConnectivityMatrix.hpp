@@ -19,7 +19,7 @@
 #include <nemo/types.hpp>
 #include <nemo/NetworkImpl.hpp>
 
-#include "cuda_types.h"
+#include "types.h"
 #include "kernel.cu_h"
 #include "Mapper.hpp"
 #include "Outgoing.hpp"

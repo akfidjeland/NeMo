@@ -12,7 +12,7 @@
 
 #include "outgoing.cu_h"
 #include "incoming.cu_h"
-#include "cuda_types.h"
+#include "types.h"
 
 void
 applyStdp(
