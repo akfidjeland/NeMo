@@ -13,12 +13,15 @@
 /*! \return 0 on success, 1 on failure */
 int
 run(nemo::Network* net, 
-	const nemo::Configuration& conf,
+	nemo::Configuration conf,
+	backend_t backend,
 	unsigned seconds,
 	const std::string& filename,
 	bool creating) // are we comparing against
 {
 	using namespace std;
+
+	conf.setBackend(backend);
 
 	unsigned status = 0;
 	fstream file;
@@ -73,11 +76,11 @@ main(int argc, char* argv[])
 	bool stdp = false;
 	nemo::Network* torus = nemo::torus::construct(4, 1000, stdp, 64, false);
 	nemo::Configuration conf;
-	std::string filename("test.dat");
 
 	bool creating = argc == 2 && strcmp(argv[1], "create") == 0;
-	int status = run(torus, conf, 4, filename, creating);
+
+	run(torus, conf, NEMO_BACKEND_CUDA, 4, "test-cuda.dat", creating);
+	run(torus, conf, NEMO_BACKEND_CPU, 4, "test-cpu.dat", creating);
 
 	delete torus;
-	return status;
 }
