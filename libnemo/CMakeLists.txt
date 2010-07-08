@@ -35,6 +35,9 @@ IF(INCLUDE_MPI)
 ENDIF(INCLUDE_MPI)
 
 
+OPTION(NEMO_LOG_CPU_BACKEND "Enable logging (for debugging purposes) of CPU backend" OFF)
+
+
 OPTION(INCLUDE_EXAMPLES "Build binaries for example networks" ON)
 IF(INCLUDE_EXAMPLES)
 	LIST(APPEND DIRS examples)

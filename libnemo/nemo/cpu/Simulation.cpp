@@ -17,6 +17,19 @@
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
 
+#ifdef NEMO_LOG_CPU_BACKEND
+
+#include <cstdio>
+#include <cstdlib>
+
+#define LOG(...) fprintf(stdout, __VA_ARGS__);
+
+#else
+
+#define LOG(...)
+
+#endif
+
 
 namespace nemo {
 	namespace cpu {
@@ -260,10 +273,7 @@ Simulation::updateRange(int start, int end, const unsigned int fstim[])
 		if(m_fired[n]) {
 			m_v[n] = m_c[n];
 			m_u[n] += m_d[n];
-			//! \todo share tracing code with CPU kernel
-#ifdef DEBUG_TRACE
-			fprintf(stderr, "c%u: n%u fired\n", elapsedSimulation(), n);
-#endif
+			LOG("c%u: n%u fired\n", elapsedSimulation(), n);
 		}
 
 	}
@@ -398,10 +408,8 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 		const FAxonTerminal<fix_t>& terminal = row.data[s];
 		assert(terminal.target < m_current.size());
 		m_current.at(terminal.target) += terminal.weight;
-#ifdef DEBUG_TRACE
-		fprintf(stderr, "c%u: n%u -> n%u: %+f (delay %u)\n",
-				elapsedSimulation(), source, terminal.target, terminal.weight, delay);
-#endif
+		LOG("c%u: n%u -> n%u: %+f (delay %u)\n", elapsedSimulation(), source,
+				terminal.target, terminal.weight, delay);
 	}
 }
 
@@ -447,16 +455,12 @@ Simulation::updateRegion(
 
 		if(dt_pre < dt_post) {
 			w_diff = m_stdp.lookupPre(dt_pre);
-#ifdef DEBUG_TRACE
-			fprintf(stderr, "c%u %s: %u -> %u %+f (dt=%d)\n",
+			LOG("c%u %s: %u -> %u %+f (dt=%d)\n",
 					elapsedSimulation(), "ltp", source, target, w_diff, dt_pre);
-#endif
 		} else if(dt_post < dt_pre) {
 			w_diff = m_stdp.lookupPost(dt_post);
-#ifdef DEBUG_TRACE
-			fprintf(stderr, "c%u %s: %u -> %u %+f (dt=%d)\n",
+			LOG("c%u %s: %u -> %u %+f (dt=%d)\n",
 					elapsedSimulation(), "ltd", source, target, w_diff, dt_post);
-#endif
 		}
 		// if neither is applicable dt_post == dt_pre == STDP_NO_APPLICATION
 	}
@@ -538,9 +542,6 @@ Simulation::resetTimer()
 {
 	m_timer.reset();
 }
-
-
-
 
 
 	} // namespace cpu
