@@ -9,6 +9,12 @@ SET(CPACK_PACKAGE_VERSION_PATCH 6)
 SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
 
 
+OPTION(INCLUDE_MATLAB_API "Create the Matlab API" ON)
+IF(INCLUDE_MATLAB_API)
+	LIST(APPEND DIRS api)
+ENDIF(INCLUDE_MATLAB_API)
+
+
 OPTION(
 	INCLUDE_TIMING_API
 	"Include API functions for timing (requires boost_date_time library)"
@@ -65,7 +71,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC)
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
 INCLUDE(LinkStaticMSVCR)
 
-SUBDIRS(nemo doc api ${DIRS})
+SUBDIRS(nemo doc ${DIRS})
 
 INSTALL(FILES nemo.h nemo.hpp DESTINATION ${INSTALL_INCLUDE_DIR})
 
