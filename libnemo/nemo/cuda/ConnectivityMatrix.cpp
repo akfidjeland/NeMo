@@ -17,12 +17,12 @@
 #include <nemo/util.h>
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/fixedpoint.hpp>
+#include <nemo/bitops.h>
 
 #include "RSMatrix.hpp"
 #include "exception.hpp"
 #include "WarpAddressTable.hpp"
 #include "connectivityMatrix.cu_h"
-#include "bitops.h"
 #include "kernel.hpp"
 #include "device_memory.hpp"
 
