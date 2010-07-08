@@ -7,7 +7,6 @@
 #include <cassert>
 #include <cmath>
 #include <algorithm>
-#include <boost/random.hpp>
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -56,7 +55,8 @@ Simulation::Simulation(
 	m_rng(m_neuronCount),
 	m_stdp(conf.stdpFunction())
 {
-	initialiseRng(net);
+	//! \todo add handling of non-contigous memory here. Need a mapper of some sort for this.
+	nemo::initialiseRng(net.minNeuronIndex(), net.maxNeuronIndex(), m_rng);
 	setNeuronParameters(net);
 	// Determine fixedpoint format based on input network
 	setConnectivityMatrix(net);
@@ -64,46 +64,6 @@ Simulation::Simulation(
 	initThreads(m_neuronCount);
 #endif
 	resetTimer();
-}
-
-
-
-//! \todo share this code with nemo::cuda::ThalamicInput
-void
-Simulation::initialiseRng(const nemo::NetworkImpl& net)
-{
-	//! \todo allow users to seed this RNG
-	typedef boost::mt19937 rng_t;
-	rng_t rng;
-
-	boost::variate_generator<rng_t, boost::uniform_int<unsigned long> >
-		seed(rng, boost::uniform_int<unsigned long>(0, 0x7fffffff));
-
-	typedef std::map<nidx_t, nemo::Neuron<float> >::const_iterator it;
-	it neurons_end = net.m_neurons.end();
-
-	/* To ensure consistent results in a parallel/concurrent setting (e.g.
-	 * MPI), we need maintain a fixed mapping from global neuron indices to RNG
-	 * seeds. Using the same basis seed on each node and just skipping the
-	 * initial values provides a straightforward method to achieve this. For
-	 * very large networks other methods (e.g. splitting RNGs) might be more
-	 * appropriate. */
-	for(unsigned gidx=0; gidx < 4 * net.minNeuronIndex(); ++gidx) {
-		seed();
-	}
-
-	//! \todo add handling of non-contigous memory here
-	for(unsigned gidx = net.minNeuronIndex(), gidx_end = net.maxNeuronIndex();
-			gidx <= gidx_end; ++gidx) {
-		/* ensure consistent seeding. See above comment */
-		unsigned seeds[4];
-		for(unsigned plane=0; plane < 4; ++plane) {
-			seeds[plane] = seed();
-		}
-		if(net.m_neurons.find(gidx) != neurons_end) {
-			m_rng[gidx] = RNG(seeds);
-		}
-	}
 }
 
 

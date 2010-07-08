@@ -17,6 +17,7 @@ ADD_LIBRARY(nemo_base
 	Simulation.cpp
 	SimulationBackend.cpp
 	ConnectivityMatrix.cpp
+	RNG.cpp
 	fixedpoint.cpp
 )
 

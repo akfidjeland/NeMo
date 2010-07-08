@@ -12,10 +12,10 @@
 #include "ThalamicInput.hpp"
 
 #include <map>
-#include <boost/random.hpp>
 
 #include <nemo/NetworkImpl.hpp>
 #include <nemo/types.hpp>
+#include <nemo/RNG.hpp>
 
 #include "thalamicInput.cu_h"
 #include "Mapper.hpp"
@@ -33,45 +33,18 @@ ThalamicInput::ThalamicInput(
 	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true, 1),
 	m_inUse(false)
 {
-	//! \todo allow users to seed this RNG
-	typedef boost::mt19937 rng_t;
-	rng_t rng;
+	std::vector<nemo::RNG> rngs(mapper.maxHostIdx() - mapper.minHostIdx() + 1);
+	initialiseRng(mapper.minHostIdx(), mapper.maxHostIdx(), rngs);
 
-	boost::variate_generator<rng_t, boost::uniform_int<unsigned long> >
-		seed(rng, boost::uniform_int<unsigned long>(0, 0x7fffffff));
-
-	/* To ensure consistent results in a parallel/concurrent setting (e.g.
-	 * MPI), we need maintain a fixed mapping from global neuron indices to RNG
-	 * seeds. Using the same basis seed on each node and just skipping the
-	 * initial values provides a straightforward method to achieve this. For
-	 * very large networks other methods (e.g. splitting RNGs) might be more
-	 * appropriate. */
-	for(unsigned gidx=0; gidx < 4 * mapper.minHostIdx(); ++gidx) {
-		seed();
-	}
-
-	//! \todo store sigma with NeuronParameters and make ThalamicInput purely RNG state
-	/* The RNG state vector needs to be filled with initialisation data. Each
-	 * RNG needs 4 32-bit words of seed data, with each thread having a
-	 * diferent seed. */
-
-	typedef std::map<nidx_t, nemo::Neuron<float> >::const_iterator it;
-	it neurons_end = net.m_neurons.end();
-
-	for(unsigned gidx = mapper.minHostIdx(), gidx_end = mapper.maxHostIdx();
-			gidx <= gidx_end; ++gidx) {
-		it neuron = net.m_neurons.find(gidx);
-		if(neuron == neurons_end) {
-			/* ensure consistent seeding. See above comment */
-			seed(); seed(); seed(); seed();
-		} else {
-			float sigma = neuron->second.sigma;
-			m_inUse |= sigma != 0.0f;
-			DeviceIdx didx = mapper.deviceIdx(gidx);
-			m_sigma.setNeuron(didx.partition, didx.neuron, sigma);
-			for(size_t plane=0; plane < 4; ++plane) {
-				m_rngState.setNeuron(didx.partition, didx.neuron, seed(), plane);
-			}
+	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
+			i != net.m_neurons.end(); ++i) {
+		DeviceIdx didx = mapper.deviceIdx(i->first);
+		float sigma = i->second.sigma;
+		m_inUse |= sigma != 0.0f;
+		m_sigma.setNeuron(didx.partition, didx.neuron, sigma);
+		for(unsigned plane = 0; plane < 4; ++plane) {
+			nidx_t lidx = mapper.hostIdx(didx); // local index
+			m_rngState.setNeuron(didx.partition, didx.neuron, rngs[lidx][plane], plane);
 		}
 	}
 

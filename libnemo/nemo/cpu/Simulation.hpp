@@ -21,8 +21,7 @@
 #include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/STDP.hpp>
 #include <nemo/Timer.hpp>
-
-#include "RNG.hpp"
+#include <nemo/RNG.hpp>
 
 
 namespace nemo {
@@ -154,9 +153,7 @@ class Simulation : public nemo::SimulationBackend
 		stimulus_vector_t m_fstim;
 
 		//! \todo may want to have one rng per neuron or at least per thread
-		std::vector<RNG> m_rng;
-
-		void initialiseRng(const nemo::NetworkImpl& net);
+		std::vector<nemo::RNG> m_rng;
 
 		/* Accumulated firing history since last flush */
 		std::vector<unsigned int> m_firedCycle;
