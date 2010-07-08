@@ -99,12 +99,10 @@ ConnectivityMatrix::finalizeForward()
 
 
 
-//! \todo have a different way to communicate non-present data
 const Row&
 ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 {
-	return m_acc.find(fidx(source, delay))->second;
-	//return m_cm.at(addressOf(source, delay));
+	return m_cm.at(addressOf(source, delay));
 }
 
 
