@@ -53,6 +53,7 @@ Simulation::Simulation(
 	m_current(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0),
 	m_rng(m_neuronCount),
+	m_lastFlush(0),
 	m_stdp(conf.stdpFunction())
 {
 	//! \todo add handling of non-contigous memory here. Need a mapper of some sort for this.
@@ -283,7 +284,7 @@ Simulation::update(
 void
 Simulation::setFiring()
 {
-	unsigned t = elapsedSimulation();
+	unsigned t = elapsedSimulation() - m_lastFlush;
 	for(unsigned n=0; n < m_neuronCount; ++n) { 
 		if(m_fired[n]) {
 			m_firedCycle.push_back(t);
@@ -299,16 +300,15 @@ Simulation::readFiring(
 		const std::vector<unsigned>** cycles,
 		const std::vector<unsigned>** nidx)
 {		
+	unsigned ret = m_timer.elapsedSimulation() - m_lastFlush;
+	m_lastFlush = m_timer.elapsedSimulation();
 	m_firedCycleExt = m_firedCycle;
 	m_firedNeuronExt = m_firedNeuron;
 	m_firedCycle.clear();
 	m_firedNeuron.clear();
 	*cycles = &m_firedCycleExt;
 	*nidx = &m_firedNeuronExt;
-//#warning "readFiring not correctly implemented"
-	//! \todo need to keep track of the number of buffered cycles here
-	return 0;
-	//return m_firedCycleExt.back() - m_firedCycleExt.front();
+	return ret;
 }
 
 

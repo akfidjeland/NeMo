@@ -156,6 +156,7 @@ class Simulation : public nemo::SimulationBackend
 		std::vector<nemo::RNG> m_rng;
 
 		/* Accumulated firing history since last flush */
+		unsigned m_lastFlush;
 		std::vector<unsigned int> m_firedCycle;
 		std::vector<unsigned int> m_firedNeuron;
 		/* externally exposed copy of the same data */
