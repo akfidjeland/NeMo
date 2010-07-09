@@ -225,7 +225,6 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 
 
 
-
 //! \todo test this for cpu backend as well
 BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 {
@@ -243,5 +242,6 @@ BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 	nemo::Configuration conf2;
 	conf2.enableLogging();
 	runSimulation(net, conf2, duration, &cycles2, &nidx2);
+	BOOST_REQUIRE(nidx2.size() > 0);
 	compareSimulationResults(cycles, nidx, cycles2, nidx2);
 }

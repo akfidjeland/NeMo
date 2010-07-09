@@ -19,7 +19,7 @@ ADD_EXECUTABLE(rtest
 	rtest.cpp
 	${EXAMPLES_DIR}/torus.cpp
 	${EXAMPLES_DIR}/random1k.cpp)
-TARGET_LINK_LIBRARIES(rtest nemo)
+TARGET_LINK_LIBRARIES(rtest nemo ${Boost_LIBRARIES})
 
 IF(INCLUDE_MPI)
 	ADD_EXECUTABLE(stest serialisation.cpp)
