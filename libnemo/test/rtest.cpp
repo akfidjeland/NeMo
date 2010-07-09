@@ -44,12 +44,10 @@ run(nemo::Network* net,
 	for(unsigned ms = 0; ms < 1000; ++ms) {
 		sim->step();
 		sim->readFiring(&cycles, &nidx);
-		// BOOST_REQUIRE(cycles->size() > 0);
 		for(size_t i = 0; i < cycles->size(); ++i) {
 			unsigned c = cycles->at(i);
 			unsigned n = nidx->at(i);
 			if(creating) {
-				//! \todo should write cycle number s*1000+ms here. Otherwise they will be all zero
 				file << cycles->at(i) << "\t" << nidx->at(i) << "\n";
 			} else {
 				BOOST_REQUIRE(!file.eof());
@@ -61,9 +59,9 @@ run(nemo::Network* net,
 	}
 
 	if(!creating) {
-		/* Read one more word to read off the end of the file. We need to make sure
-		 * that we're at the end of the file, as otherwise the test will pass if
-		 * the simulation produces no firing */
+		/* Read one more word to read off the end of the file. We need to make
+		 * sure that we're at the end of the file, as otherwise the test will
+		 * pass if the simulation produces no firing */
 		file >> ce >> ne;
 		BOOST_REQUIRE(file.eof());
 	}
