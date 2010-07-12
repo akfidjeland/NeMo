@@ -12,9 +12,8 @@
 
 #include <map>
 #include <vector>
-#ifdef PTHREADS_ENABLED
-#include <pthread.h>
-#endif
+
+#define NEMO_CPU_MULTITHREADED
 
 #include <nemo/types.h>
 #include <nemo/internals.hpp>
@@ -23,35 +22,11 @@
 #include <nemo/Timer.hpp>
 #include <nemo/RNG.hpp>
 
+#include "Worker.hpp"
+
 
 namespace nemo {
-
-	class Network;
-
 	namespace cpu {
-
-#ifdef PTHREADS_ENABLED
-
-struct Job {
-
-	Job(): start(0), end(0), fstim(NULL), sim(NULL) {}
-
-	Job(size_t start, size_t end, size_t ncount, struct Simulation* sim) :
-		start(start), end(end), fstim(NULL), sim(sim) {
-	}
-
-	size_t start;
-	size_t end;
-
-	// input - full vector
-	unsigned int* fstim;
-
-	struct Simulation* sim;
-
-} __attribute((aligned(ASSUMED_CACHE_LINE_SIZE)));
-
-#endif
-
 
 class Simulation : public nemo::SimulationBackend
 {
@@ -59,15 +34,11 @@ class Simulation : public nemo::SimulationBackend
 
 		Simulation(const nemo::NetworkImpl& net, const nemo::ConfigurationImpl& conf);
 
-		~Simulation();
-
 		unsigned getFractionalBits() const;
 
 		// there's no real limit here, but return something anyway
 		/*! \copydoc nemo::Simulation::getFiringBufferLength */
 		unsigned getFiringBufferLength() const { return 10000; }
-
-		//! \todo implement getFractionalBits
 
 		/*! \copydoc nemo::SimulationBackend::setFiringStimulus */
 		void setFiringStimulus(const std::vector<unsigned>& fstim);
@@ -76,8 +47,6 @@ class Simulation : public nemo::SimulationBackend
 		void setCurrentStimulus(const std::vector<fix_t>& current);
 
 		/*! \copydoc nemo::SimulationBackend::step */
-		//! \todo tidy!
-		//void step(const std::vector<unsigned>& fstim = std::vector<unsigned>());
 		void step();
 
 		/*! \copydoc nemo::SimulationBackend::applyStdp */
@@ -164,20 +133,19 @@ class Simulation : public nemo::SimulationBackend
 		std::vector<unsigned int> m_firedNeuronExt;
 		void setFiring();
 
-#ifdef PTHREADS_ENABLED
-		//! \todo allow user to determine number of threads
+#ifdef NEMO_CPU_MULTITHREADED
+
+		//! \todo allow user to determine number of threads.
 		static const int m_nthreads = 4;
-		pthread_t m_thread[m_nthreads];
-		pthread_attr_t m_thread_attr[m_nthreads];
-		Job* m_job[m_nthreads];
+		//! \todo use a std vector here
+		Worker* m_workers[m_nthreads];
 
 		void initThreads(size_t ncount);
 
-		friend void* start_thread(void*);
+		friend class Worker;
 #endif
-		uint m_cycle;
 
-		void updateRange(int begin, int end, const unsigned int fstim[]);
+		void updateRange(int begin, int end);
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 

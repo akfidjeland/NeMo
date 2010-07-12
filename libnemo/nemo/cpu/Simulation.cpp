@@ -1,12 +1,12 @@
 #include "Simulation.hpp"
 
-#ifdef PTHREADS_ENABLED
-#include <sched.h> // for setting thread affinity
-#endif
-
 #include <cassert>
 #include <cmath>
 #include <algorithm>
+
+#ifdef NEMO_CPU_MULTITHREADED
+#include <boost/thread.hpp>
+#endif
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -32,6 +32,10 @@
 
 namespace nemo {
 	namespace cpu {
+
+
+
+
 
 
 Simulation::Simulation(
@@ -61,11 +65,12 @@ Simulation::Simulation(
 	setNeuronParameters(net);
 	// Determine fixedpoint format based on input network
 	setConnectivityMatrix(net);
-#ifdef PTHREADS_ENABLED
+#ifdef NEMO_CPU_MULTITHREADED
 	initThreads(m_neuronCount);
 #endif
 	resetTimer();
 }
+
 
 
 
@@ -114,39 +119,21 @@ Simulation::setConnectivityMatrix(const nemo::NetworkImpl& net)
 
 
 
-Simulation::~Simulation()
-{
-#ifdef PTHREADS_ENABLED
-	for(int i=0; i<m_nthreads; ++i) {
-		pthread_attr_destroy(&m_thread_attr[i]);
-	}
-#endif
-}
 
+#ifdef NEMO_CPU_MULTITHREADED
 
-
-
-#ifdef PTHREADS_ENABLED
-
-/* Initialise threads, but do not start them. Set the attributes, esp. thread
- * affinity, and pre-allocate work */
+/* Allocate work to each thread */
 void
 Simulation::initThreads(size_t ncount)
 {
 	int nthreads = m_nthreads;
 	for(int i=0; i<nthreads; ++i) {
-		pthread_attr_init(&m_thread_attr[i]);
-		pthread_attr_setdetachstate(&m_thread_attr[i], PTHREAD_CREATE_JOINABLE);
-		cpu_set_t cpuset;
-		CPU_ZERO(&cpuset);
-		CPU_SET(i, &cpuset);
-		pthread_attr_setaffinity_np(&m_thread_attr[i], sizeof(cpu_set_t), &cpuset);
-
+		//! \todo move this into Worker ctor
 		size_t jobSize = ncount/nthreads;
 		size_t start = i * jobSize;
 		//! \todo deal with special cases for small number of neurons
 		size_t end = std::min((i+1) * jobSize, ncount);
-		m_job[i] = new Job(start, end, ncount, this);
+		m_workers[i] = new Worker(i, start, end, this);
 	}
 }
 
@@ -204,7 +191,7 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 
 
 void
-Simulation::updateRange(int start, int end, const unsigned int fstim[])
+Simulation::updateRange(int start, int end)
 {
 	unsigned fbits = getFractionalBits();
 
@@ -228,7 +215,7 @@ Simulation::updateRange(int start, int end, const unsigned int fstim[])
 			}
 		}
 
-		m_fired[n] |= fstim[n];
+		m_fired[n] |= m_fstim[n];
 		m_recentFiring[n] = (m_recentFiring[n] << 1) | (uint64_t) m_fired[n];
 
 		if(m_fired[n]) {
@@ -242,35 +229,25 @@ Simulation::updateRange(int start, int end, const unsigned int fstim[])
 
 
 
-#ifdef PTHREADS_ENABLED
-
-void*
-start_thread(void* job_in)
-{
-	Job* job = static_cast<Job*>(job_in);
-	(job->sim)->updateRange(job->start, job->end, job->fstim);
-	pthread_exit(NULL);
-}
-
-#endif
-
-
-
 void
 Simulation::update(
 		const stimulus_vector_t& fstim,
 		const current_vector_t& current)
 {
-#ifdef PTHREADS_ENABLED
+#ifdef NEMO_CPU_MULTITHREADED
+	/* It's possible to reduce thread creation overheads here by creating
+	 * threads in the nemo::Simulation ctor and send signals to activate the
+	 * threads. However, this was found to not produce any measurable speedup
+	 * over this simpler implementation */
+	boost::thread_group threads;
 	for(int i=0; i<m_nthreads; ++i) {
-		m_job[i]->fstim = &fstim[0];
-		pthread_create(&m_thread[i], &m_thread_attr[i], start_thread, (void*) m_job[i]);
+		threads.create_thread(*m_workers[i]);
 	}
-	for(int i=0; i<m_nthreads; ++i) {
-		pthread_join(m_thread[i], NULL);
-	}
+	/* All threads work here, filling in different part of the simulation data */
+	threads.join_all();
+	// m_barrier.wait(); // this will allow all threads to propagate one step
 #else
-	updateRange(0, m_neuronCount, &fstim[0]);
+	updateRange(0, m_neuronCount);
 #endif
 
 	if(m_stdp.enabled()) {
