@@ -13,8 +13,7 @@
 #include <map>
 #include <vector>
 
-#define NEMO_CPU_MULTITHREADED
-
+#include <nemo/config.h>
 #include <nemo/types.h>
 #include <nemo/internals.hpp>
 #include <nemo/ConnectivityMatrix.hpp>
