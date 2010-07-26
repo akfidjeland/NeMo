@@ -35,9 +35,6 @@ namespace nemo {
 
 
 
-
-
-
 Simulation::Simulation(
 		const nemo::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf) :
@@ -124,16 +121,19 @@ Simulation::setConnectivityMatrix(const nemo::NetworkImpl& net)
 
 /* Allocate work to each thread */
 void
-Simulation::initThreads(size_t ncount)
+Simulation::initThreads(size_t neurons)
 {
-	int nthreads = m_nthreads;
-	for(int i=0; i<nthreads; ++i) {
+	//! \todo warn if hardware concurrency is not known (=0)
+	//! \todo allow user to specify number of threads to use
+	//! \todo log level of hardware concurrency
+	// int threads = std::max(1U, boost::thread::hardware_concurrency());
+	int threads = 4;
+	size_t jobSize = neurons / threads;
+	for(int t=0; t < threads; ++t) {
 		//! \todo move this into Worker ctor
-		size_t jobSize = ncount/nthreads;
-		size_t start = i * jobSize;
-		//! \todo deal with special cases for small number of neurons
-		size_t end = std::min((i+1) * jobSize, ncount);
-		m_workers[i] = new Worker(i, start, end, this);
+		size_t start = t * jobSize;
+		size_t end = std::min((t+1) * jobSize, neurons);
+		m_workers.push_back(Worker(t, start, end, this));
 	}
 }
 
@@ -240,12 +240,12 @@ Simulation::update(
 	 * threads. However, this was found to not produce any measurable speedup
 	 * over this simpler implementation */
 	boost::thread_group threads;
-	for(int i=0; i<m_nthreads; ++i) {
-		threads.create_thread(*m_workers[i]);
+	for(std::vector<Worker>::const_iterator i = m_workers.begin();
+			i != m_workers.end(); ++i) {
+		threads.create_thread(*i);
 	}
 	/* All threads work here, filling in different part of the simulation data */
 	threads.join_all();
-	// m_barrier.wait(); // this will allow all threads to propagate one step
 #else
 	updateRange(0, m_neuronCount);
 #endif

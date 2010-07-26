@@ -136,8 +136,7 @@ class Simulation : public nemo::SimulationBackend
 
 		//! \todo allow user to determine number of threads.
 		static const int m_nthreads = 4;
-		//! \todo use a std vector here
-		Worker* m_workers[m_nthreads];
+		std::vector<Worker> m_workers;
 
 		void initThreads(size_t ncount);
 
