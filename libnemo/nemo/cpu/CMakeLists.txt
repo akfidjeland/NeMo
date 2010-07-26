@@ -2,10 +2,17 @@ OPTION(NEMO_CPU_MULTITHREADED "Use multithreaded CPU backend" OFF)
 
 SET(SOURCES Simulation.cpp)
 
+
 IF(NEMO_CPU_MULTITHREADED)
 	FIND_PACKAGE(Boost REQUIRED COMPONENTS thread)
 	LIST(APPEND SOURCES "Worker.cpp")
+	IF(CAN_SET_THREAD_AFFINITY)
+		LIST(APPEND SOURCES "thread_affinity.c")
+	ELSE(CAN_SET_THREAD_AFFINITY)
+		MESSAGE(WARNING "Cannot set thread affinity on this platform. Multi-threaded code may not perform well")
+	ENDIF(CAN_SET_THREAD_AFFINITY)
 ENDIF(NEMO_CPU_MULTITHREADED)
+
 
 INCLUDE_DIRECTORIES(
 	${CMAKE_BINARY_DIR}  # for configuration files

@@ -6,6 +6,7 @@
 #cmakedefine HAVE_BUILTIN_CTZLL
 #cmakedefine HAVE_LOG2
 #cmakedefine HAVE_POSIX_MEMALIGN
+#cmakedefine CAN_SET_THREAD_AFFINITY
 #cmakedefine INCLUDE_TIMING_API
 #cmakedefine INCLUDE_MPI
 #cmakedefine INCLUDE_MPI_LOGGING

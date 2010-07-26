@@ -7,15 +7,15 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \todo add configuration for this
-#include <sched.h> // for setting thread affinity
-#include <sys/types.h>
-#include <sys/syscall.h>
-
 #include <boost/thread.hpp>
+
+#include <nemo/config.h>
 
 #include "Worker.hpp"
 #include "Simulation.hpp"
+#ifdef CAN_SET_THREAD_AFFINITY
+#include "thread_affinity.h"
+#endif
 
 namespace nemo {
 	namespace cpu {
@@ -34,13 +34,10 @@ Worker::Worker(unsigned id, size_t jobSize, size_t neuronCount, Simulation* sim)
 void
 Worker::operator()()
 {
-	//! \todo add cmake configuration for setting thread affinity
+#ifdef CAN_SET_THREAD_AFFINITY
 	/* The affinity can only be set once the thread has started */
-	cpu_set_t cpuset;
-	CPU_ZERO(&cpuset);
-	CPU_SET(m_id % m_cores, &cpuset);
-	pid_t tid = syscall(__NR_gettid);
-	sched_setaffinity(tid, sizeof(cpu_set_t), &cpuset);
+	setThreadAffinity(m_id % m_cores);
+#endif
 	m_sim->updateRange(m_start, m_end);
 }
 
