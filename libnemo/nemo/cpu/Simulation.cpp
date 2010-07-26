@@ -124,7 +124,6 @@ void
 Simulation::initWorkers(size_t neurons, unsigned threads)
 {
 	//! \todo log level of hardware concurrency
-	//! \todo move this into Worker as well
 	size_t jobSize = neurons / threads;
 	for(unsigned t=0; t < threads; ++t) {
 		m_workers.push_back(Worker(t, jobSize, neurons, this));
@@ -241,19 +240,21 @@ Simulation::update(
 		const current_vector_t& current)
 {
 #ifdef NEMO_CPU_MULTITHREADED
-	/* It's possible to reduce thread creation overheads here by creating
-	 * threads in the nemo::Simulation ctor and send signals to activate the
-	 * threads. However, this was found to not produce any measurable speedup
-	 * over this simpler implementation */
-	boost::thread_group threads;
-	for(std::vector<Worker>::const_iterator i = m_workers.begin();
-			i != m_workers.end(); ++i) {
-		threads.create_thread(*i);
-	}
-	/* All threads work here, filling in different part of the simulation data */
-	threads.join_all();
+	if(m_workers.size() > 1) {
+		/* It's possible to reduce thread creation overheads here by creating
+		 * threads in the nemo::Simulation ctor and send signals to activate the
+		 * threads. However, this was found to not produce any measurable speedup
+		 * over this simpler implementation */
+		boost::thread_group threads;
+		for(std::vector<Worker>::const_iterator i = m_workers.begin();
+				i != m_workers.end(); ++i) {
+			threads.create_thread(*i);
+		}
+		/* All threads work here, filling in different part of the simulation data */
+		threads.join_all();
+	} else
 #else
-	updateRange(0, m_neuronCount);
+		updateRange(0, m_neuronCount);
 #endif
 
 	if(m_stdp.enabled()) {
