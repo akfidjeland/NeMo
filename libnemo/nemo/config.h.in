@@ -70,4 +70,23 @@
   #define NEMO_CUDA_DLL_LOCAL
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef NEMO_CPU_EXPORTS
+    #ifdef __GNUC__
+      #define NEMO_CPU_DLL_PUBLIC __attribute__((dllexport))
+    #else
+      #define NEMO_CPU_DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #else
+    #ifdef __GNUC__
+      #define NEMO_CPU_DLL_PUBLIC __attribute__((dllimport))
+    #else
+      #define NEMO_ CPU_DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #endif
+#else
+  #define NEMO_CPU_DLL_PUBLIC
+  #define NEMO_CPU_DLL_LOCAL
+#endif
+
 #endif

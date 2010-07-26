@@ -27,7 +27,7 @@
 namespace nemo {
 	namespace cpu {
 
-class Simulation : public nemo::SimulationBackend
+class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 {
 	public:
 
