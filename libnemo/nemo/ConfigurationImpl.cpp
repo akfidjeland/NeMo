@@ -26,6 +26,19 @@ ConfigurationImpl::ConfigurationImpl() :
 	;
 }
 
+
+
+void
+ConfigurationImpl::setCpuThreadCount(unsigned threadCount)
+{
+	if(threadCount < 1) {
+		throw nemo::exception(NEMO_INVALID_INPUT, "Attempt to set number of threads < 1");
+	}
+	m_threadCount = threadCount;
+}
+
+
+
 void
 ConfigurationImpl::setStdpFunction(
 		const std::vector<float>& prefire,

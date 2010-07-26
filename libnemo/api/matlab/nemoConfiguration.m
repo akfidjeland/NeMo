@@ -3,6 +3,7 @@
 %  
 % Methods:
 %     nemoConfiguration (constructor)
+%     setCpuThreadCount
 %     setCudaFiringBufferLength
 %     cudaFiringBufferLength
 %     setCudaDevice
@@ -26,6 +27,21 @@ classdef nemoConfiguration < handle
 			nemo_mex(uint32(17), obj.id);
 		end
 
+        function setCpuThreadCount(obj, tcount)
+        % setCpuThreadCount - Set number of threads for CPU backend
+        %  
+        % Synopsis:
+        %   setCpuThreadCount(tcount)
+        %  
+        % Inputs:
+        %   tcount  - number of threads
+        %    
+        % Set the number of threads (>= 1) to use for the CPU backend. If
+        % nothing is specified a default value based on the available
+        % hardware concurrency (cores, hyperthreading etc.) is used. 
+            nemo_mex(uint32(18), obj.id, uint32(tcount));
+		end
+
         function setCudaFiringBufferLength(obj, milliseconds)
         % setCudaFiringBufferLength - 
         %  
@@ -37,7 +53,7 @@ classdef nemoConfiguration < handle
         %    
         % Set the size of the firing buffer such that it can contain a fixed
         % number of cycles worth of firing before overflowing 
-            nemo_mex(uint32(18), obj.id, uint32(milliseconds));
+            nemo_mex(uint32(19), obj.id, uint32(milliseconds));
 		end
 
         function milliseconds = cudaFiringBufferLength(obj)
@@ -51,7 +67,7 @@ classdef nemoConfiguration < handle
         %             Number of milliseconds the simulation is guaranteed to be able to
         %             run before overflowing firing buffer
         %     
-            milliseconds = nemo_mex(uint32(19), obj.id);
+            milliseconds = nemo_mex(uint32(20), obj.id);
 		end
 
         function setCudaDevice(obj, deviceNumber)
@@ -65,7 +81,7 @@ classdef nemoConfiguration < handle
         %    
         % The backend will choose a suitable device by default, but this
         % function can be used to override that choice 
-            nemo_mex(uint32(20), obj.id, int32(deviceNumber));
+            nemo_mex(uint32(21), obj.id, int32(deviceNumber));
 		end
 
         function setStdpFunction(obj, prefire, postfire, minWeight, maxWeight)
@@ -90,7 +106,7 @@ classdef nemoConfiguration < handle
         % The STDP function is specified by providing the values sampled at
         % integer cycles within the STDP window. 
             nemo_mex(...
-                    uint32(21),...
+                    uint32(22),...
                     obj.id,...
                     double(prefire),...
                     double(postfire),...
@@ -114,7 +130,7 @@ classdef nemoConfiguration < handle
         % user can call this function the force a specific number of
         % fractional bits to be used. The number of fractional bits should be
         % less than 32. 
-            nemo_mex(uint32(22), obj.id, uint32(bits));
+            nemo_mex(uint32(23), obj.id, uint32(bits));
 		end
 	end
 end

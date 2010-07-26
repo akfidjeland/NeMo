@@ -54,6 +54,9 @@ class NEMO_DLL_PUBLIC Configuration
 		void disableLogging();
 		bool loggingEnabled() const;
 
+		/*! Specify the number of threads (>= 1) to use for the CPU backend. */
+		void setCpuThreadCount(unsigned threads);
+
 		void setCudaPartitionSize(unsigned ps); 
 		unsigned cudaPartitionSize() const;
 

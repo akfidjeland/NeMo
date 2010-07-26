@@ -2,6 +2,7 @@
 #include "ConfigurationImpl.hpp"
 
 #include <nemo/cuda/CudaSimulation.hpp>
+#include <nemo/cpu/Simulation.hpp>
 
 namespace nemo {
 
@@ -10,6 +11,7 @@ Configuration::Configuration() :
 {
 	m_impl->setCudaPartitionSize(cuda::Simulation::defaultPartitionSize());
 	m_impl->setCudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength());
+	m_impl->setCpuThreadCount(cpu::Simulation::defaultThreadCount());
 }
 
 
@@ -46,6 +48,13 @@ bool
 Configuration::loggingEnabled() const
 {
 	return m_impl->loggingEnabled();
+}
+
+
+void
+Configuration::setCpuThreadCount(unsigned threads)
+{
+	m_impl->setCpuThreadCount(threads);
 }
 
 

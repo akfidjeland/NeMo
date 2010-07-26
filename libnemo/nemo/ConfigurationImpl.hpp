@@ -44,6 +44,9 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		void disableLogging() { m_logging = false; }
 		bool loggingEnabled() const { return m_logging; }
 
+		void setCpuThreadCount(unsigned threads);
+		unsigned cpuThreadCount() const { return m_threadCount; }
+
 		void setCudaPartitionSize(unsigned ps) { m_cudaPartitionSize = ps; }
 		unsigned cudaPartitionSize() const { return m_cudaPartitionSize; }
 
@@ -79,6 +82,9 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		int m_fractionalBits;
 		static const int s_defaultFractionalBits = -1;
+
+		/* CPU-specific */
+		unsigned m_threadCount;
 
 		/* CUDA-specific */
 		unsigned m_cudaPartitionSize;

@@ -32,13 +32,6 @@ namespace boost {
 namespace nemo {
 
 
-enum backend_t {
-	BACKEND_CUDA,
-	BACKEND_CPU,
-	BACKEND_UNSPECIFIED // Simulation class determines
-};
-
-
 template<typename FP>
 class Neuron
 {

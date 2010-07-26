@@ -490,6 +490,20 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+setCpuThreadCount(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus( 
+            nemo_set_cpu_thread_count( 
+                    getConfiguration(prhs, 1), 
+                    scalar<unsigned,uint32_t>(prhs[2]) 
+            ) 
+    );
+}
+
+
+void
 setCudaFiringBufferLength(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
@@ -562,7 +576,7 @@ setFractionalBits(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
-#define FN_COUNT 23
+#define FN_COUNT 24
 
 fn_ptr fn_arr[FN_COUNT] = {
 	newNetwork,
@@ -583,6 +597,7 @@ fn_ptr fn_arr[FN_COUNT] = {
 	resetTimer,
 	newConfiguration,
 	deleteConfiguration,
+	setCpuThreadCount,
 	setCudaFiringBufferLength,
 	cudaFiringBufferLength,
 	setCudaDevice,

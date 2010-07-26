@@ -286,7 +286,7 @@ nemo_reset_timer(nemo_simulation_t sim)
 
 
 //-----------------------------------------------------------------------------
-// STDP
+// CONFIGURATION
 //-----------------------------------------------------------------------------
 
 
@@ -303,6 +303,12 @@ nemo_set_stdp_function(nemo_configuration_t conf,
 				w_min, w_max));
 }
 
+
+nemo_status_t
+nemo_set_cpu_thread_count(nemo_configuration_t conf, unsigned thread_count)
+{
+	CATCH_(Configuration, conf, setCpuThreadCount(thread_count));
+}
 
 
 nemo_status_t

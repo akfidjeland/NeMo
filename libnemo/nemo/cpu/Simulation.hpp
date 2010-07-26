@@ -75,6 +75,7 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::resetTimer */
 		void resetTimer();
 
+		static unsigned defaultThreadCount();
 
 	private:
 
@@ -136,7 +137,7 @@ class Simulation : public nemo::SimulationBackend
 
 		std::vector<Worker> m_workers;
 
-		void initWorkers(size_t ncount);
+		void initWorkers(size_t neurons, unsigned threads);
 
 		friend class Worker;
 #endif

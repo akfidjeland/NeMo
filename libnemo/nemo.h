@@ -65,6 +65,10 @@ nemo_set_stdp_function(nemo_configuration_t,
 		float max_weight);
 
 
+/*! \copydoc nemo::Configuration::setCpuThreadCount */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_cpu_thread_count(nemo_configuration_t, unsigned thread_count);
 
 
 /*! \copydoc nemo::Configuration::setCudaFiringBufferLength */
