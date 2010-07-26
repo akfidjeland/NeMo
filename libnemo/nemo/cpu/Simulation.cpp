@@ -63,7 +63,7 @@ Simulation::Simulation(
 	// Determine fixedpoint format based on input network
 	setConnectivityMatrix(net);
 #ifdef NEMO_CPU_MULTITHREADED
-	initThreads(m_neuronCount);
+	initWorkers(m_neuronCount);
 #endif
 	resetTimer();
 }
@@ -121,19 +121,15 @@ Simulation::setConnectivityMatrix(const nemo::NetworkImpl& net)
 
 /* Allocate work to each thread */
 void
-Simulation::initThreads(size_t neurons)
+Simulation::initWorkers(size_t neurons)
 {
 	//! \todo warn if hardware concurrency is not known (=0)
 	//! \todo allow user to specify number of threads to use
 	//! \todo log level of hardware concurrency
-	// int threads = std::max(1U, boost::thread::hardware_concurrency());
-	int threads = 4;
+	unsigned threads = std::max(1U, boost::thread::hardware_concurrency());
 	size_t jobSize = neurons / threads;
-	for(int t=0; t < threads; ++t) {
-		//! \todo move this into Worker ctor
-		size_t start = t * jobSize;
-		size_t end = std::min((t+1) * jobSize, neurons);
-		m_workers.push_back(Worker(t, start, end, this));
+	for(unsigned t=0; t < threads; ++t) {
+		m_workers.push_back(Worker(t, jobSize, neurons, this));
 	}
 }
 

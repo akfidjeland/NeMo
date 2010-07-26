@@ -13,11 +13,13 @@
 namespace nemo {
 	namespace  cpu {
 
+class Simulation;
+
 class Worker
 {
 	public :
 
-		Worker(int id, size_t start, size_t end, class Simulation* sim);
+		Worker(unsigned id, size_t jobSize, size_t neuronCount, Simulation* sim);
 
 		void operator()();
 
@@ -25,8 +27,9 @@ class Worker
 
 		size_t m_start;
 		size_t m_end;
-		int m_id;
-		class Simulation* m_sim;
+		unsigned m_id;
+		unsigned m_cores;
+		Simulation* m_sim;
 };
 
 

@@ -134,11 +134,9 @@ class Simulation : public nemo::SimulationBackend
 
 #ifdef NEMO_CPU_MULTITHREADED
 
-		//! \todo allow user to determine number of threads.
-		static const int m_nthreads = 4;
 		std::vector<Worker> m_workers;
 
-		void initThreads(size_t ncount);
+		void initWorkers(size_t ncount);
 
 		friend class Worker;
 #endif

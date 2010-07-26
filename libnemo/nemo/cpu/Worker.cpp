@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/syscall.h>
 
+#include <boost/thread.hpp>
 
 #include "Worker.hpp"
 #include "Simulation.hpp"
@@ -19,10 +20,11 @@
 namespace nemo {
 	namespace cpu {
 
-Worker::Worker(int id, size_t start, size_t end, Simulation* sim) :
-	m_start(start),
-	m_end(end),
+Worker::Worker(unsigned id, size_t jobSize, size_t neuronCount, Simulation* sim) :
+	m_start(id * jobSize),
+	m_end(std::min((id+1) * jobSize, neuronCount)),
 	m_id(id), // ! \todo just use a static for this
+	m_cores(boost::thread::hardware_concurrency()),
 	m_sim(sim)
 {
 	;
@@ -36,7 +38,7 @@ Worker::operator()()
 	/* The affinity can only be set once the thread has started */
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
-	CPU_SET(m_id, &cpuset);
+	CPU_SET(m_id % m_cores, &cpuset);
 	pid_t tid = syscall(__NR_gettid);
 	sched_setaffinity(tid, sizeof(cpu_set_t), &cpuset);
 	m_sim->updateRange(m_start, m_end);
