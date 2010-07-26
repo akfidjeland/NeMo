@@ -88,18 +88,25 @@ checkData()
 
 
 
-boost::unit_test::test_suite*
-init_unit_test_suite(int argc, char* argv[])
+bool
+init_unit_test_suite()
+{
+	boost::unit_test::test_suite* ts = BOOST_TEST_SUITE("rtest");
+	ts->add(BOOST_TEST_CASE(&checkData));
+	boost::unit_test::framework::master_test_suite().add(ts);
+	return true;
+}
+
+
+int
+main(int argc, char* argv[])
 {
 	bool creating = argc == 2 && strcmp(argv[1], "create") == 0;
 	if(creating) {
 		runTorus(true);
 		std::cerr << "re-generated data";
+		return 0;
 	} else {
-		boost::unit_test::test_suite* ts = BOOST_TEST_SUITE("rtest");
-		ts->add(BOOST_TEST_CASE(&checkData));
-		boost::unit_test::framework::master_test_suite().add(ts);
-		std::cerr << "initialised test suite\n";
+		return ::boost::unit_test::unit_test_main(&init_unit_test_suite, argc, argv);
 	}
-	return 0;
 }
