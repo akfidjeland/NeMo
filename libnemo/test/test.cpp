@@ -93,7 +93,9 @@ runBackendComparisions(nemo::Network* net)
 
 		for(unsigned si=0; si < 1; ++si) {
 			nemo::Configuration conf1 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CPU);
+			conf1.setFractionalBits(26);
 			nemo::Configuration conf2 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CUDA);
+			conf2.setFractionalBits(26);
 			compareSimulations(net, conf1, net, conf2, duration);
 		}
 	}
