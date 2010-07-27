@@ -70,6 +70,14 @@ class ConnectivityMatrix
 		/*! \return all synapses for a given source and delay */
 		const Row& getRow(nidx_t source, delay_t) const;
 
+		/*! \return all synapses for a given source */
+		void getSynapses(
+				unsigned source,
+				std::vector<unsigned>& targets,
+				std::vector<unsigned>& delays,
+				std::vector<float>& weights,
+				std::vector<unsigned char>& plastic) const;
+
 		void finalize() { finalizeForward(); }
 
 		typedef std::set<delay_t>::const_iterator delay_iterator;

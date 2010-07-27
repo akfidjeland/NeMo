@@ -450,16 +450,19 @@ Simulation::accumulateStdp()
 
 
 
-//! \todo implement this
 void
 Simulation::getSynapses(
 		unsigned sourceNeuron,
-		const std::vector<unsigned>** targetNeuron,
+		const std::vector<unsigned>** targets,
 		const std::vector<unsigned>** delays,
 		const std::vector<float>** weights,
 		const std::vector<unsigned char>** plastic)
 {
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "nemo::cpu::Simulation::getSynapses not implemented");
+	m_cm.getSynapses(sourceNeuron, m_targetsOut, m_delaysOut, m_weightsOut, m_plasticOut);
+	*targets = &m_targetsOut;
+	*delays = &m_delaysOut;
+	*weights = &m_weightsOut;
+	*plastic = &m_plasticOut;
 }
 
 

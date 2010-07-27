@@ -268,13 +268,15 @@ sortAndCompare(std::vector<T> a, std::vector<T> b)
 
 
 void
-testGetSynapses(const nemo::Network& net, backend_t backend)
+testGetSynapses(backend_t backend)
 {
+	boost::scoped_ptr<nemo::Network> net(nemo::random1k::construct(4000, 1000));
+
 	nemo::Configuration conf;
 	conf.setBackend(backend);
 	unsigned fbits = 22;
 	conf.setFractionalBits(fbits);
-	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
 	std::vector<unsigned> ntargets;
 	std::vector<unsigned> ndelays;
@@ -285,8 +287,8 @@ testGetSynapses(const nemo::Network& net, backend_t backend)
 	const std::vector<float> *sweights;
 	const std::vector<unsigned char> *splastic;
 
-	for(unsigned src = 0, src_end = net.neuronCount(); src < src_end; ++src) {
-		net.getSynapses(src, ntargets, ndelays, nweights, nplastic);
+	for(unsigned src = 0, src_end = net->neuronCount(); src < src_end; ++src) {
+		net->getSynapses(src, ntargets, ndelays, nweights, nplastic);
 		sim->getSynapses(src, &stargets, &sdelays, &sweights, &splastic);
 		sortAndCompare(ntargets, *const_cast<std::vector<unsigned>*>(stargets));
 		for(std::vector<float>::iterator i = nweights.begin(); i != nweights.end(); ++i) {
@@ -298,11 +300,18 @@ testGetSynapses(const nemo::Network& net, backend_t backend)
 	}
 }
 
+
+
 /* The network should contain the same synapses before and after setting up the
  * simulation. The order of the synapses may differ, though. */
-BOOST_AUTO_TEST_CASE(get_synapses)
-{
-	boost::scoped_ptr<nemo::Network> net(nemo::random1k::construct(4000, 1000));
-	testGetSynapses(*net, NEMO_BACKEND_CUDA);
-	testGetSynapses(*net, NEMO_BACKEND_CPU);
-}
+BOOST_AUTO_TEST_SUITE(get_synapses);
+
+	BOOST_AUTO_TEST_CASE(cuda) {
+		testGetSynapses(NEMO_BACKEND_CUDA);
+	}
+
+	BOOST_AUTO_TEST_CASE(cpu) {
+		testGetSynapses(NEMO_BACKEND_CPU);
+	}
+
+BOOST_AUTO_TEST_SUITE_END();

@@ -153,6 +153,13 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		weight_t updateRegion(uint64_t spikes, nidx_t source, nidx_t target);
 
 		Timer m_timer;
+
+		/* Local buffers for reading of synapse data */
+		//! \todo modify interface for getSynapses and get rid of these
+		std::vector<unsigned> m_targetsOut;
+		std::vector<unsigned> m_delaysOut;
+		std::vector<float> m_weightsOut;
+		std::vector<unsigned char> m_plasticOut;
 };
 
 

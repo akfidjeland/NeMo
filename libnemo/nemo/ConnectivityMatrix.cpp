@@ -113,6 +113,37 @@ ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 }
 
 
+void
+ConnectivityMatrix::getSynapses(
+		unsigned source,
+		std::vector<unsigned>& targets,
+		std::vector<unsigned>& delays,
+		std::vector<float>& weights,
+		std::vector<unsigned char>& plastic) const
+{
+	targets.clear();
+	delays.clear();
+	weights.clear();
+	plastic.clear();
+
+	unsigned fbits = fractionalBits();
+
+	for(delay_iterator d = delay_begin(source), d_end = delay_end(source);
+			d != d_end; ++d) {
+		const Row& ss = getRow(source, *d);
+		for(unsigned i = 0; i < ss.len; ++i) {
+			FAxonTerminal<fix_t> s = ss.data[i];
+			targets.push_back(s.target);
+			weights.push_back(fx_toFloat(s.weight, fbits));
+			delays.push_back(*d);
+			plastic.push_back(0);
+		}
+		//! \todo set plastic correctly as well
+	}
+
+}
+
+
 
 ConnectivityMatrix::delay_iterator
 ConnectivityMatrix::delay_begin(nidx_t source) const
