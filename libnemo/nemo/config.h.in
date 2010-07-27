@@ -10,6 +10,7 @@
 #cmakedefine INCLUDE_TIMING_API
 #cmakedefine INCLUDE_MPI
 #cmakedefine INCLUDE_MPI_LOGGING
+#cmakedefine NEMO_CUDA_ENABLED
 #cmakedefine NEMO_VERBOSE
 #cmakedefine NEMO_LOG_CPU_BACKEND
 #cmakedefine NEMO_CPU_MULTITHREADED

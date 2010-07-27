@@ -1,7 +1,9 @@
 #include "Configuration.hpp"
 #include "ConfigurationImpl.hpp"
 
+#ifdef NEMO_CUDA_ENABLED
 #include <nemo/cuda/CudaSimulation.hpp>
+#endif
 #include <nemo/cpu/Simulation.hpp>
 
 namespace nemo {
@@ -9,8 +11,10 @@ namespace nemo {
 Configuration::Configuration() :
 	m_impl(new ConfigurationImpl())
 {
+#ifdef NEMO_CUDA_ENABLED
 	m_impl->setCudaPartitionSize(cuda::Simulation::defaultPartitionSize());
 	m_impl->setCudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength());
+#endif
 	m_impl->setCpuThreadCount(cpu::Simulation::defaultThreadCount());
 }
 
@@ -89,7 +93,11 @@ Configuration::cudaFiringBufferLength() const
 int
 Configuration::setCudaDevice(int dev)
 {
+#ifdef NEMO_CUDA_ENABLED
 	return cuda::Simulation::setDevice(dev);
+#else
+	return -1;
+#endif
 }
 
 

@@ -3,13 +3,32 @@
  * in the C API wrapper file nemo_c.cpp */
 
 #include <nemo/config.h>
+
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
 
+#ifdef NEMO_CUDA_ENABLED
 #include <nemo/cuda/CudaSimulation.hpp>
+#endif
 #include <nemo/cpu/Simulation.hpp>
 
 namespace nemo {
+
+
+
+#ifdef NEMO_CUDA_ENABLED
+SimulationBackend*
+cudaSimulation(const NetworkImpl& net, const ConfigurationImpl& conf)
+{
+	int dev = cuda::Simulation::selectDevice();
+	if(dev == -1) {
+		throw nemo::exception(NEMO_CUDA_ERROR, "Failed to create simulation");
+	}
+	return new cuda::Simulation(net, conf);
+}
+#endif
+
+
 
 /* Sometimes using the slightly lower-level interface provided by NetworkImpl
  * makes sense (see e.g. nemo::mpi::Worker), so provide an overload of 'create'
@@ -23,15 +42,17 @@ simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf)
 		return NULL;
 	}
 
-	int dev;
 	switch(conf.backend()) {
+#ifdef NEMO_CUDA_ENABLED
 		case NEMO_BACKEND_UNSPECIFIED:
 		case NEMO_BACKEND_CUDA:
-			dev = cuda::Simulation::selectDevice();
-			if(dev == -1) {
-				throw nemo::exception(NEMO_CUDA_ERROR, "Failed to create simulation");
-			}
-			return new cuda::Simulation(net, conf);
+			return cudaSimulation(net, conf);
+#else
+		case NEMO_BACKEND_CUDA:
+			throw nemo::exception(NEMO_API_UNSUPPORTED,
+					"nemo was compiled without Cuda support. Cannot create simulation");
+		case NEMO_BACKEND_UNSPECIFIED:
+#endif
 		case NEMO_BACKEND_CPU:
 			return new cpu::Simulation(net, conf);
 		default :

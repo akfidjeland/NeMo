@@ -8,6 +8,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR 5)
 SET(CPACK_PACKAGE_VERSION_PATCH 6)
 SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
 
+OPTION(NEMO_CUDA_ENABLED "Enabled simulation on CUDA devices" ON)
 
 OPTION(INCLUDE_MATLAB_API "Create the Matlab API" ON)
 IF(INCLUDE_MATLAB_API)
@@ -50,7 +51,7 @@ IF(INCLUDE_TESTS)
 ENDIF(INCLUDE_TESTS)
 
 
-OPTION(NEMO_VERBOSE "Produce verbose simulation output (mainly userful for testing)" OFF)
+OPTION(NEMO_VERBOSE "Produce verbose simulation output (mainly useful for testing)" OFF)
 
 SET(Boost_USE_MULTITHREAD OFF)
 IF(WIN32)
