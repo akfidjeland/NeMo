@@ -3,9 +3,11 @@
 #include <cmath>
 #include <iostream>
 #include <boost/test/unit_test.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <nemo.hpp>
 #include <nemo/constants.h>
+#include <nemo/fixedpoint.hpp>
 #include <examples.hpp>
 
 #include "utils.hpp"
@@ -97,6 +99,8 @@ runBackendComparisions(nemo::Network* net)
 	}
 
 }
+
+
 
 void
 runSimple(unsigned startNeuron, unsigned neuronCount)
@@ -244,4 +248,61 @@ BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 	runSimulation(net, conf2, duration, &cycles2, &nidx2);
 	BOOST_REQUIRE(nidx2.size() > 0);
 	compareSimulationResults(cycles, nidx, cycles2, nidx2);
+}
+
+
+
+template<typename T>
+void
+// pass by value here since the simulation data cannot be modified
+sortAndCompare(std::vector<T> a, std::vector<T> b)
+{
+	std::sort(a.begin(), a.end());
+	std::sort(b.begin(), b.end());
+	BOOST_REQUIRE(a.size() == b.size());
+	for(size_t i = 0; i < a.size(); ++i) {
+		BOOST_REQUIRE(a[i] == b[i]);
+	}
+}
+
+
+
+void
+testGetSynapses(const nemo::Network& net, backend_t backend)
+{
+	nemo::Configuration conf;
+	conf.setBackend(backend);
+	unsigned fbits = 22;
+	conf.setFractionalBits(fbits);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
+
+	std::vector<unsigned> ntargets;
+	std::vector<unsigned> ndelays;
+	std::vector<float> nweights;
+	std::vector<unsigned char> nplastic;
+	const std::vector<unsigned> *stargets;
+	const std::vector<unsigned> *sdelays;
+	const std::vector<float> *sweights;
+	const std::vector<unsigned char> *splastic;
+
+	for(unsigned src = 0, src_end = net.neuronCount(); src < src_end; ++src) {
+		net.getSynapses(src, ntargets, ndelays, nweights, nplastic);
+		sim->getSynapses(src, &stargets, &sdelays, &sweights, &splastic);
+		sortAndCompare(ntargets, *const_cast<std::vector<unsigned>*>(stargets));
+		for(std::vector<float>::iterator i = nweights.begin(); i != nweights.end(); ++i) {
+			*i = fx_toFloat(fx_toFix(*i, fbits), fbits);
+		}
+		sortAndCompare(nweights, *const_cast<std::vector<float>*>(sweights));
+		sortAndCompare(ndelays, *const_cast<std::vector<unsigned>*>(sdelays));
+		sortAndCompare(nplastic, *const_cast<std::vector<unsigned char>*>(splastic));
+	}
+}
+
+/* The network should contain the same synapses before and after setting up the
+ * simulation. The order of the synapses may differ, though. */
+BOOST_AUTO_TEST_CASE(get_synapses)
+{
+	boost::scoped_ptr<nemo::Network> net(nemo::random1k::construct(4000, 1000));
+	testGetSynapses(*net, NEMO_BACKEND_CUDA);
+	testGetSynapses(*net, NEMO_BACKEND_CPU);
 }
