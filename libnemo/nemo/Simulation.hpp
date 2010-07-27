@@ -110,8 +110,8 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		/*! Return synapse data for a specific source neuron. If STDP is
 		 * enabled the weights may change at run-time. The order of synapses in
 		 * each returned vector is guaranteed to be the same on subsequent
-		 * calls to this function. The output vectors are
-		 * valid until the next call to this function.
+		 * calls to this function. The output vectors are valid until the next
+		 * call to this function.
 		 *
 		 * \post The output vectors all have the same length */
 		virtual void getSynapses(unsigned sourceNeuron,

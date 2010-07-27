@@ -66,6 +66,19 @@ Network::addSynapses(
 
 
 
+void
+Network::getSynapses(
+		unsigned source,
+		std::vector<unsigned>& targets,
+		std::vector<unsigned>& delays,
+		std::vector<float>& weights,
+		std::vector<unsigned char>& plastic) const
+{
+	m_impl->getSynapses(source, targets, delays, weights, plastic);
+}
+
+
+
 unsigned
 Network::maxDelay() const 
 {

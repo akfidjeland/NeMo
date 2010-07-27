@@ -106,6 +106,13 @@ class NEMO_BASE_DLL_PUBLIC Network
 				const unsigned char plastic[],
 				size_t len);
 
+		void getSynapses(
+				unsigned source,
+				std::vector<unsigned>& targets,
+				std::vector<unsigned>& delays,
+				std::vector<float>& weights,
+				std::vector<unsigned char>& plastic) const;
+
 		unsigned maxDelay() const;
 
 		float maxWeight() const;
@@ -125,7 +132,6 @@ class NEMO_BASE_DLL_PUBLIC Network
 		Network& operator=(const Network&);
 };
 
-
-
 } // end namespace nemo
+
 #endif

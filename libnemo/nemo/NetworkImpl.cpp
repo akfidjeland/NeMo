@@ -140,6 +140,39 @@ NetworkImpl::addSynapses(
 
 
 
+void
+NetworkImpl::getSynapses(
+		unsigned source,
+		std::vector<unsigned>& targets,
+		std::vector<unsigned>& delays,
+		std::vector<float>& weights,
+		std::vector<unsigned char>& plastic) const
+{
+	fcm_t::const_iterator i_src = m_fcm.find(source);
+	if(i_src == m_fcm.end()) {
+		throw nemo::exception(NEMO_INVALID_INPUT, "synapses of non-existing neuron requested");
+	}
+
+	targets.clear();
+	delays.clear();
+	weights.clear();
+	plastic.clear();
+
+	const axon_t& axon = i_src->second;
+	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
+		unsigned delay = i_axon->first;
+		const bundle_t& bundle = i_axon->second;
+		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
+			targets.push_back(s->target);
+			delays.push_back(delay);
+			weights.push_back(s->weight);
+			plastic.push_back(s->plastic);
+		}
+	}
+}
+
+
+
 unsigned
 NetworkImpl::neuronCount() const
 {

@@ -65,6 +65,13 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 				const B plastic[],
 				size_t len);
 
+		void getSynapses(
+				unsigned source,
+				std::vector<unsigned>& targets,
+				std::vector<unsigned>& delays,
+				std::vector<float>& weights,
+				std::vector<unsigned char>& plastic) const;
+
 		nidx_t minNeuronIndex() const { return m_minIdx; }
 		nidx_t maxNeuronIndex() const { return m_maxIdx; }
 		delay_t maxDelay() const { return m_maxDelay; }
