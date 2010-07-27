@@ -60,7 +60,7 @@ class ConnectivityMatrix
 {
 	public:
 
-		ConnectivityMatrix(unsigned fractionalBits);
+		ConnectivityMatrix(const class ConfigurationImpl& conf);
 
 		/*! Add a number of synapses with the same source and delay. Return
 		 * reference to the newly inserted row. */

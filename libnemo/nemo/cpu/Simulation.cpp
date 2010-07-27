@@ -49,8 +49,7 @@ Simulation::Simulation(
 	m_sigma(m_neuronCount, 0),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
-	//! \todo remove hard-coding here
-	m_cm(26),
+	m_cm(conf),
 	m_current(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0),
 	m_rng(m_neuronCount),

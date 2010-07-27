@@ -74,6 +74,7 @@ void runTorus(bool creating)
 	bool stdp = false;
 	boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
 	nemo::Configuration conf;
+	conf.setFractionalBits(26);
 
 	run(torus.get(), conf, NEMO_BACKEND_CUDA, 4, "test-cuda.dat", creating);
 	run(torus.get(), conf, NEMO_BACKEND_CPU, 4, "test-cpu.dat", creating);

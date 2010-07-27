@@ -86,7 +86,7 @@ Worker::Worker(
 	/* We keep a local FCM which is used to accumulate current from all
 	 * incoming firings. All source indices are global, while target
 	 * indices are local */
-	nemo::ConnectivityMatrix l_fcm(conf.fractionalBits());
+	nemo::ConnectivityMatrix l_fcm(conf);
 
 	exchangeGlobalData(mapper, g_ss, l_fcm);
 

@@ -15,6 +15,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include <nemo/config.h>
+#include "ConfigurationImpl.hpp"
 #include "exception.hpp"
 #include "fixedpoint.hpp"
 
@@ -50,12 +51,18 @@ Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss, unsigned fbits)
 
 
 
-ConnectivityMatrix::ConnectivityMatrix(unsigned fractionalBits) :
-	m_fractionalBits(fractionalBits),
+ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
+	m_fractionalBits(0),
 	m_maxDelay(0),
 	m_maxSourceIdx(0)
 {
-	;
+	//! \todo implement auto-configuration of fixed-point format
+	if(!conf.fractionalBitsSet()) {
+		throw nemo::exception(NEMO_LOGIC_ERROR,
+				"connectivity matrix class does not currently support auto-configuration of fixed-point format. Please call Configuration::setFractionalBits before creating simulation");
+	}
+
+	m_fractionalBits = conf.fractionalBits();
 }
 
 
