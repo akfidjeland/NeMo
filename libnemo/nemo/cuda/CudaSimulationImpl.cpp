@@ -98,14 +98,12 @@ SimulationImpl::selectDevice()
 	 * library was built specifically for emulation mode, this should be
 	 * considered an error. */
 	if(prop.major == 9999 || prop.minor == 9999) {
-		//! \todo perhaps throw exception instead?
-		std::cerr << "No physical devices available" << std::endl;
-		return -1;
+		throw nemo::exception(NEMO_CUDA_ERROR, "No CUDA-enabled devices present");
 	}
 
 	// 1.2 required for shared memory atomics
 	if(prop.major <= 1 && prop.minor < 2) {
-		std::cerr << "No device with compute capability 1.2 available" << std::endl;
+		throw nemo::exception(NEMO_CUDA_ERROR,  "No device with compute capability 1.2 available");
 		return -1;
 	}
 

@@ -11,8 +11,19 @@
 #include "CudaSimulationImpl.hpp"
 
 
+
 namespace nemo {
 	namespace cuda {
+
+
+SimulationBackend*
+simulation(const NetworkImpl& net, const ConfigurationImpl& conf)
+{
+	Simulation::selectDevice();
+	return new cuda::Simulation(net, conf);
+}
+
+
 
 Simulation::Simulation(
 		const nemo::NetworkImpl& net,

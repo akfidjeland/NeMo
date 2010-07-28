@@ -15,21 +15,6 @@
 namespace nemo {
 
 
-
-#ifdef NEMO_CUDA_ENABLED
-SimulationBackend*
-cudaSimulation(const NetworkImpl& net, const ConfigurationImpl& conf)
-{
-	int dev = cuda::Simulation::selectDevice();
-	if(dev == -1) {
-		throw nemo::exception(NEMO_CUDA_ERROR, "Failed to create simulation");
-	}
-	return new cuda::Simulation(net, conf);
-}
-#endif
-
-
-
 /* Sometimes using the slightly lower-level interface provided by NetworkImpl
  * makes sense (see e.g. nemo::mpi::Worker), so provide an overload of 'create'
  * that takes such an object directly. */
@@ -46,7 +31,7 @@ simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf)
 #ifdef NEMO_CUDA_ENABLED
 		case NEMO_BACKEND_UNSPECIFIED:
 		case NEMO_BACKEND_CUDA:
-			return cudaSimulation(net, conf);
+			return cuda::simulation(net, conf);
 #else
 		case NEMO_BACKEND_CUDA:
 			throw nemo::exception(NEMO_API_UNSUPPORTED,
