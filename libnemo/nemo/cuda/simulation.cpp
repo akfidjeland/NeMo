@@ -1,7 +1,13 @@
 #include "simulation.hpp"
 #include "Simulation.hpp"
 
-#include <nemo/SimulationBackend.hpp>
+
+nemo::SimulationBackend*
+nemo_cuda_simulation(const nemo::NetworkImpl* net, const nemo::ConfigurationImpl* conf)
+{
+	return nemo::cuda::simulation(*net, *conf);
+}
+
 
 namespace nemo {
 	namespace cuda {

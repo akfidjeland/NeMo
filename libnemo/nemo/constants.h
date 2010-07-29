@@ -35,7 +35,10 @@
 
 #define NEMO_MPI_ERROR 10
 
-#define NEMO_UNKNOWN_ERROR 11
+/*! Dynamic library loading error */
+#define NEMO_DL_ERROR 11
+
+#define NEMO_UNKNOWN_ERROR 12
 
 
 enum {

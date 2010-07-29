@@ -35,7 +35,7 @@ namespace nemo {
 	namespace cuda {
 
 
-class NEMO_CUDA_DLL_PUBLIC Simulation : public nemo::SimulationBackend
+class Simulation : public nemo::SimulationBackend
 {
 	public :
 

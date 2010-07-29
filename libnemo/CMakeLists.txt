@@ -10,6 +10,15 @@ SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>"
 
 OPTION(NEMO_CUDA_ENABLED "Enabled simulation on CUDA devices" ON)
 
+IF(NEMO_CUDA_ENABLED)
+	IF(WIN32)
+		# TODO: add dynamic loading using Windows primitives
+		SET(NEMO_CUDA_DYNAMIC_LOADING OFF)
+	ELSE(WIN32)
+		OPTION(NEMO_CUDA_DYNAMIC_LOADING "Load the CUDA backend dynamically" ON)
+	ENDIF(WIN32)
+ENDIF(NEMO_CUDA_ENABLED)
+
 OPTION(INCLUDE_MATLAB_API "Create the Matlab API" ON)
 IF(INCLUDE_MATLAB_API)
 	LIST(APPEND DIRS api)
