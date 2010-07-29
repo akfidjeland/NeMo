@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_SIMULATION_IMPL_HPP
-#define NEMO_CUDA_SIMULATION_IMPL_HPP
+#ifndef NEMO_CUDA_SIMULATION_HPP
+#define NEMO_CUDA_SIMULATION_HPP
 
 /* Copyright 2010 Imperial College London
  *
