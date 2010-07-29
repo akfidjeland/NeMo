@@ -15,19 +15,19 @@ namespace nemo {
 using boost::format;
 
 Mapper::Mapper(const nemo::NetworkImpl& net, unsigned partitionSize) :
-	m_partitionSize(partitionSize),
+	m_partitionSize(partitionSize != 0 ? partitionSize : MAX_PARTITION_SIZE),
 	m_partitionCount(0),
 	m_offset(0)
 {
-	if(partitionSize > MAX_PARTITION_SIZE || partitionSize == 0) {
+	if(m_partitionSize > MAX_PARTITION_SIZE || m_partitionSize < THREADS_PER_BLOCK) {
 		throw nemo::exception(NEMO_INVALID_INPUT, 
 				str(format("Requested partition size for cuda backend (%u) not in valid range: [%u, %u]")
-						% partitionSize % THREADS_PER_BLOCK % MAX_PARTITION_SIZE));
+						% m_partitionSize % THREADS_PER_BLOCK % MAX_PARTITION_SIZE));
 	}
 
 	if(net.neuronCount() > 0) {
 		unsigned ncount = net.maxNeuronIndex() - net.minNeuronIndex() + 1;
-		m_partitionCount = DIV_CEIL(ncount, partitionSize);
+		m_partitionCount = DIV_CEIL(ncount, m_partitionSize);
 		m_offset = net.minNeuronIndex();
 	}
 }

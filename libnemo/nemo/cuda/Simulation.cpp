@@ -42,13 +42,13 @@ Simulation::Simulation(
 	m_conf(conf),
 	m_neurons(net, m_mapper),
 	m_cm(net, conf, m_mapper),
-	m_recentFiring(m_mapper.partitionCount(), conf.cudaPartitionSize(), false, 2),
+	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false, 2),
 	//! \todo seed properly from configuration
 	m_thalamicInput(net, m_mapper),
 	//! \todo use pinned host memory here
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
 	//! \todo allow external users to directly use the host buffer
-	m_currentStimulus(m_mapper.partitionCount(), conf.cudaPartitionSize(), true),
+	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true),
 	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
 	m_cycleCounters(m_mapper.partitionCount(), usingStdp()),
 	m_deviceAssertions(m_mapper.partitionCount()),
@@ -406,15 +406,6 @@ Simulation::resetTimer()
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	m_timer.reset();
 }
-
-
-
-unsigned
-Simulation::defaultPartitionSize()
-{
-	return MAX_PARTITION_SIZE;
-}
-
 
 
 unsigned
