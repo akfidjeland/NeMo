@@ -65,15 +65,14 @@ class NEMO_DLL_PUBLIC Configuration
 		void setCudaFiringBufferLength(unsigned cycles); 
 		unsigned cudaFiringBufferLength() const;
 
-		/*! Set the cuda device to \a dev. The CUDA library allows the device
-		 * to be set only once per thread, so this function may fail if called
-		 * multiple times.
-		 *
-		 * \return
-		 * 		-1 if not suitable device found;
-		 * 		number of device that will be used, otherwise
-		 */
-		int setCudaDevice(int dev);
+		/*! Specify the device which should be used by the CUDA backend when
+		 * creating the simulation. The chosen device is not tested here, but
+		 * an error may be generated later (when constructing the simulation)
+		 * if the chosen device is invalid. There's no need to call this
+		 * function; if the device is not specified and the CUDA backend is
+		 * used, a suitable device will be chosen */
+		void setCudaDevice(int dev);
+		int cudaDevice() const;
 
 		void setStdpFunction(
 				const std::vector<float>& prefire,

@@ -90,14 +90,17 @@ Configuration::cudaFiringBufferLength() const
 }
 
 
-int
+void
 Configuration::setCudaDevice(int dev)
 {
-#ifdef NEMO_CUDA_ENABLED
-	return cuda::Simulation::setDevice(dev);
-#else
-	return -1;
-#endif
+	m_impl->setCudaDevice(dev);
+}
+
+
+int
+Configuration::cudaDevice() const
+{
+	return m_impl->cudaDevice();
 }
 
 

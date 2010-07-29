@@ -45,8 +45,12 @@ class SimulationImpl
 
 		/* CONFIGURATION */
 
-		static int selectDevice();
-		static int setDevice(int dev);
+		/*! Select device (for this thread) if a device with the minimum
+		 * required characteristics is present on the host system.
+		 *
+		 * Throws an exception if no suitable device is found.
+		 */
+		static void selectDevice(int userDev);
 
 		static unsigned defaultPartitionSize();
 		static unsigned defaultFiringBufferLength();
@@ -127,8 +131,6 @@ class SimulationImpl
 		STDP<float> m_stdpFn;
 		void configureStdp(const STDP<float>& stdp);
 		bool usingStdp() const;
-
-		static int s_device;
 
 		Timer m_timer;
 

@@ -55,6 +55,9 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		void setCudaFiringBufferLength(unsigned cycles) { m_cudaFiringBufferLength = cycles; }
 		unsigned cudaFiringBufferLength() const { return m_cudaFiringBufferLength; }
 
+		void setCudaDevice(int device) { m_cudaDevice = device; }
+		int cudaDevice() const { return m_cudaDevice; }
+
 		void setStdpFunction(
 				const std::vector<float>& prefire,
 				const std::vector<float>& postfire,
@@ -89,6 +92,8 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		/* CUDA-specific */
 		unsigned m_cudaPartitionSize;
 		unsigned m_cudaFiringBufferLength; // in cycles
+
+		int m_cudaDevice;
 
 		friend void check_close(const ConfigurationImpl& lhs, const ConfigurationImpl& rhs);
 

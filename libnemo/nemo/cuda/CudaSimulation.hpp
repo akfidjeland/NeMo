@@ -37,22 +37,6 @@ class NEMO_CUDA_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		~Simulation();
 
-		/*! Select device (for this thread) if a device with the minimum
-		 * required characteristics is present on the host system.
-		 *
-		 * \return device number or -1 if no suitable device found */
-		//! \todo move this to configuration
-		static int selectDevice();
-
-		/*! Set the device (for this thread) if the chosen device exists and
-		 * meets the minimum required capabilities.
-		 *
-		 * \return
-		 * 		-1 if the chosen device is not suitable
-		 * 		\a dev otherwise
-		 */
-		static int setDevice(int dev);
-
 		/*
 		 * CONFIGURATION
 		 */

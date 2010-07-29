@@ -19,8 +19,9 @@ namespace nemo {
 ConfigurationImpl::ConfigurationImpl() :
 	m_logging(false),
 	m_fractionalBits(s_defaultFractionalBits),
-	m_cudaPartitionSize(0),      // set by interface class
-	m_cudaFiringBufferLength(0), // ditto
+	m_cudaPartitionSize(0),
+	m_cudaFiringBufferLength(0),
+	m_cudaDevice(-1),
 	m_backend(NEMO_BACKEND_UNSPECIFIED)
 {
 	;

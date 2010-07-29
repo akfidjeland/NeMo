@@ -11,7 +11,6 @@
 #include "CudaSimulationImpl.hpp"
 
 
-
 namespace nemo {
 	namespace cuda {
 
@@ -19,7 +18,11 @@ namespace nemo {
 SimulationBackend*
 simulation(const NetworkImpl& net, const ConfigurationImpl& conf)
 {
-	Simulation::selectDevice();
+	/* We need to select the device before calling the constructor. The
+	 * constructor sends data to the device, so we need to know in advance what
+	 * device to use. If we call the constructor directly a default device will
+	 * be used.  */
+	SimulationImpl::selectDevice(conf.cudaDevice());
 	return new cuda::Simulation(net, conf);
 }
 
@@ -37,20 +40,6 @@ Simulation::Simulation(
 Simulation::~Simulation()
 {
 	delete m_impl;
-}
-
-
-int
-Simulation::selectDevice()
-{
-	return SimulationImpl::selectDevice();
-}
-
-
-int
-Simulation::setDevice(int dev)
-{
-	return SimulationImpl::setDevice(dev);
 }
 
 

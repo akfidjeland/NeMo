@@ -71,73 +71,56 @@ SimulationImpl::~SimulationImpl()
 }
 
 
+
+void
+SimulationImpl::selectDevice(int userDev)
+{
 #ifdef __DEVICE_EMULATION__
-int SimulationImpl::s_device = 0;
+	/* Just ignore user choice. No need to select device. */
 #else
-int SimulationImpl::s_device = -1;
-#endif
-
-int
-SimulationImpl::selectDevice()
-{
-	/*! \todo might want to use thread-local, rather than process-local storage
-	 * for s_device in order to support multiple threads */
-	if(s_device != -1) {
-		return s_device;
-	}
-
 	int dev;
-	cudaDeviceProp prop;
-	prop.major = 1;
-	prop.minor = 2;
+	if(userDev != -1) {
+		/* The user has specifically chosen a device. Go along with this and
+		 * just throw an exception if the choice wasn't very good */
+		dev = userDev;
+	} else {
 
-	CUDA_SAFE_CALL(cudaChooseDevice(&dev, &prop));
-	CUDA_SAFE_CALL(cudaGetDeviceProperties(&prop, dev));
+		/* Otherwise, choose the first device which matches our criteria */
 
-	/* 9999.9999 is the 'emulation device' which is always present. Unless the
-	 * library was built specifically for emulation mode, this should be
-	 * considered an error. */
-	if(prop.major == 9999 || prop.minor == 9999) {
-		throw nemo::exception(NEMO_CUDA_ERROR, "No CUDA-enabled devices present");
+		cudaDeviceProp prop;
+		prop.major = 1;
+		prop.minor = 2;
+
+		CUDA_SAFE_CALL(cudaChooseDevice(&dev, &prop));
+		CUDA_SAFE_CALL(cudaGetDeviceProperties(&prop, dev));
+
+		/* 9999.9999 is the 'emulation device' which is always present. Unless the
+		 * library was built specifically for emulation mode, this should be
+		 * considered an error. */
+		if(prop.major == 9999 || prop.minor == 9999) {
+			throw nemo::exception(NEMO_CUDA_ERROR, "No CUDA-enabled devices present");
+		}
+
+		/* 1.2 required for shared memory atomics */
+		if(prop.major <= 1 && prop.minor < 2) {
+			throw nemo::exception(NEMO_CUDA_ERROR,  "No device with compute capability 1.2 available");
+		}
 	}
 
-	// 1.2 required for shared memory atomics
-	if(prop.major <= 1 && prop.minor < 2) {
-		throw nemo::exception(NEMO_CUDA_ERROR,  "No device with compute capability 1.2 available");
-		return -1;
+	/* It's an error to change the device for a thread. If we're already
+	 * running on the requested device, there's no need to set it again. */
+	int existingDev;
+	CUDA_SAFE_CALL(cudaGetDevice(&existingDev));
+	if(existingDev != dev) {
+		/* If the device has already been set, we'll get an error here */
+		cudaError_t err = cudaSetDevice(dev);
+		if(err != cudaSuccess) {
+			throw nemo::exception(NEMO_CUDA_ERROR, cudaGetErrorString(err));
+		}
 	}
-
-	CUDA_SAFE_CALL(cudaSetDevice(dev));
-	s_device = dev;
-	return dev;
+#endif
 }
 
-
-
-int
-SimulationImpl::setDevice(int dev)
-{
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, dev);
-
-	//! \todo throw exceptions instead here?
-	// 9999.9999 is the 'emulation device' which is always present
-	if(prop.major == 9999 || prop.minor == 9999) {
-		std::cerr << "No physical devices available" << std::endl;
-		return -1;
-	}
-
-	// 1.2 required for shared memory atomics
-	if(prop.major <= 1 && prop.minor < 2) {
-		std::cerr << "Device has compute capability less than 1.2" << std::endl;
-		return -1;
-	}
-
-	CUDA_SAFE_CALL(cudaSetDevice(dev));
-	s_device = dev;
-	return dev;
-
-}
 
 
 
