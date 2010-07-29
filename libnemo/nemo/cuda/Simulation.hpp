@@ -34,9 +34,6 @@ namespace nemo {
 
 	namespace cuda {
 
-NEMO_CUDA_DLL_PUBLIC
-SimulationBackend*
-simulation(const NetworkImpl& net, const ConfigurationImpl& conf);
 
 class NEMO_CUDA_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 {

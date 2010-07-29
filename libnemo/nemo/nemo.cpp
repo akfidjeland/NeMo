@@ -8,7 +8,7 @@
 #include <nemo/exception.hpp>
 
 #ifdef NEMO_CUDA_ENABLED
-#include <nemo/cuda/CudaSimulation.hpp>
+#include <nemo/cuda/simulation.hpp>
 #endif
 #include <nemo/cpu/Simulation.hpp>
 

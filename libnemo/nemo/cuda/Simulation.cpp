@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CudaSimulationImpl.hpp"
+#include "Simulation.hpp"
 
 #include <vector>
 #include <sstream>
@@ -33,19 +33,6 @@
 
 namespace nemo {
 	namespace cuda {
-
-
-SimulationBackend*
-simulation(const NetworkImpl& net, const ConfigurationImpl& conf)
-{
-	/* We need to select the device before calling the constructor. The
-	 * constructor sends data to the device, so we need to know in advance what
-	 * device to use. If we call the constructor directly a default device will
-	 * be used.  */
-	Simulation::selectDevice(conf.cudaDevice());
-	return new cuda::Simulation(net, conf);
-}
-
 
 
 Simulation::Simulation(
