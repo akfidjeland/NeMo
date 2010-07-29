@@ -10,13 +10,14 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stddef.h>
+#include <vector>
 
 #include <nemo/config.h>
 #include <nemo/STDP.hpp>
 #include <nemo/Timer.hpp>
 #include <nemo/types.h>
 #include <nemo/ConfigurationImpl.hpp>
+#include <nemo/SimulationBackend.hpp>
 
 #include "Mapper.hpp"
 #include "NVector.hpp"
@@ -33,15 +34,19 @@ namespace nemo {
 
 	namespace cuda {
 
-class SimulationImpl
+NEMO_CUDA_DLL_PUBLIC
+SimulationBackend*
+simulation(const NetworkImpl& net, const ConfigurationImpl& conf);
+
+class NEMO_CUDA_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 {
 	public :
 
-		SimulationImpl(
+		Simulation(
 				const nemo::NetworkImpl& net,
 				const nemo::ConfigurationImpl& conf);
 
-		~SimulationImpl();
+		~Simulation();
 
 		/* CONFIGURATION */
 

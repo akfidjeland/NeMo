@@ -35,7 +35,20 @@ namespace nemo {
 	namespace cuda {
 
 
-SimulationImpl::SimulationImpl(
+SimulationBackend*
+simulation(const NetworkImpl& net, const ConfigurationImpl& conf)
+{
+	/* We need to select the device before calling the constructor. The
+	 * constructor sends data to the device, so we need to know in advance what
+	 * device to use. If we call the constructor directly a default device will
+	 * be used.  */
+	Simulation::selectDevice(conf.cudaDevice());
+	return new cuda::Simulation(net, conf);
+}
+
+
+
+Simulation::Simulation(
 		const nemo::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net, conf.cudaPartitionSize()),
@@ -61,11 +74,12 @@ SimulationImpl::SimulationImpl(
 	setPitch();
 	//! \todo do this configuration as part of CM setup
 	CUDA_SAFE_CALL(configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64));
+	resetTimer();
 }
 
 
 
-SimulationImpl::~SimulationImpl()
+Simulation::~Simulation()
 {
 	finishSimulation();
 }
@@ -73,7 +87,7 @@ SimulationImpl::~SimulationImpl()
 
 
 void
-SimulationImpl::selectDevice(int userDev)
+Simulation::selectDevice(int userDev)
 {
 #ifdef __DEVICE_EMULATION__
 	/* Just ignore user choice. No need to select device. */
@@ -125,7 +139,7 @@ SimulationImpl::selectDevice(int userDev)
 
 
 void
-SimulationImpl::configureStdp(const STDP<float>& stdp)
+Simulation::configureStdp(const STDP<float>& stdp)
 {
 	if(!stdp.enabled()) {
 		return;
@@ -150,7 +164,7 @@ SimulationImpl::configureStdp(const STDP<float>& stdp)
 
 
 void
-SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
+Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
 	if(nidx.empty()) {
 		md_fstim = NULL;
@@ -177,7 +191,7 @@ SimulationImpl::setFiringStimulus(const std::vector<unsigned>& nidx)
 
 
 void
-SimulationImpl::clearFiringStimulus()
+Simulation::clearFiringStimulus()
 {
 	md_fstim = NULL;
 }
@@ -185,7 +199,7 @@ SimulationImpl::clearFiringStimulus()
 
 
 void
-SimulationImpl::setCurrentStimulus(const std::vector<fix_t>& current)
+Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 {
 	if(current.empty()) {
 		md_istim = NULL;
@@ -214,7 +228,7 @@ SimulationImpl::setCurrentStimulus(const std::vector<fix_t>& current)
 
 
 void
-SimulationImpl::clearCurrentStimulus()
+Simulation::clearCurrentStimulus()
 {
 	md_istim = NULL;
 }
@@ -234,7 +248,7 @@ checkPitch(size_t expected, size_t found)
 
 
 size_t
-SimulationImpl::d_allocated() const
+Simulation::d_allocated() const
 {
 	return m_firingStimulus.d_allocated()
 		+ m_currentStimulus.d_allocated()
@@ -249,7 +263,7 @@ SimulationImpl::d_allocated() const
 /* Set common pitch and check that all relevant arrays have the same pitch. The
  * kernel uses a single pitch for all 32-bit data */ 
 void
-SimulationImpl::setPitch()
+Simulation::setPitch()
 {
 	size_t pitch1 = m_firingStimulus.wordPitch();
 	m_pitch32 = m_neurons.wordPitch();
@@ -269,7 +283,7 @@ SimulationImpl::setPitch()
 
 
 bool
-SimulationImpl::usingStdp() const
+Simulation::usingStdp() const
 {
 	return m_stdpFn.enabled();
 }
@@ -278,7 +292,7 @@ SimulationImpl::usingStdp() const
 
 
 void
-SimulationImpl::step()
+Simulation::step()
 {
 	m_timer.step();
 	uint32_t* d_fout = m_firingOutput.step();
@@ -318,7 +332,7 @@ SimulationImpl::step()
 
 
 void
-SimulationImpl::applyStdp(float reward)
+Simulation::applyStdp(float reward)
 {
 	if(!usingStdp()) {
 		throw exception(NEMO_LOGIC_ERROR, "applyStdp called when STDP not in use");
@@ -345,7 +359,7 @@ SimulationImpl::applyStdp(float reward)
 
 
 void
-SimulationImpl::getSynapses(unsigned sn,
+Simulation::getSynapses(unsigned sn,
 		const std::vector<unsigned>** tn,
 		const std::vector<unsigned>** d,
 		const std::vector<float>** w,
@@ -357,7 +371,7 @@ SimulationImpl::getSynapses(unsigned sn,
 
 
 unsigned
-SimulationImpl::readFiring(
+Simulation::readFiring(
 		const std::vector<unsigned>** cycles,
 		const std::vector<unsigned>** nidx)
 {
@@ -366,14 +380,14 @@ SimulationImpl::readFiring(
 
 
 void
-SimulationImpl::flushFiringBuffer()
+Simulation::flushFiringBuffer()
 {
 	m_firingOutput.flushBuffer();
 }
 
 
 void
-SimulationImpl::finishSimulation()
+Simulation::finishSimulation()
 {
 	//! \todo perhaps clear device data here instead of in dtor
 	if(m_conf.loggingEnabled()) {
@@ -384,7 +398,7 @@ SimulationImpl::finishSimulation()
 
 
 unsigned long
-SimulationImpl::elapsedWallclock() const
+Simulation::elapsedWallclock() const
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	return m_timer.elapsedWallclock();
@@ -392,7 +406,7 @@ SimulationImpl::elapsedWallclock() const
 
 
 unsigned long
-SimulationImpl::elapsedSimulation() const
+Simulation::elapsedSimulation() const
 {
 	return m_timer.elapsedSimulation();
 }
@@ -400,7 +414,7 @@ SimulationImpl::elapsedSimulation() const
 
 
 void
-SimulationImpl::resetTimer()
+Simulation::resetTimer()
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	m_timer.reset();
@@ -409,7 +423,7 @@ SimulationImpl::resetTimer()
 
 
 unsigned
-SimulationImpl::defaultPartitionSize()
+Simulation::defaultPartitionSize()
 {
 	return MAX_PARTITION_SIZE;
 }
@@ -417,14 +431,14 @@ SimulationImpl::defaultPartitionSize()
 
 
 unsigned
-SimulationImpl::defaultFiringBufferLength()
+Simulation::defaultFiringBufferLength()
 {
 	return FiringOutput::defaultBufferLength();
 }
 
 
 unsigned
-SimulationImpl::getFractionalBits() const
+Simulation::getFractionalBits() const
 {
 	return m_cm.fractionalBits();
 }
