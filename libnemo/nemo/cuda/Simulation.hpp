@@ -54,9 +54,7 @@ class NEMO_CUDA_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		 */
 		static void selectDevice(int userDev);
 
-		static unsigned defaultFiringBufferLength();
-
-		unsigned getFiringBufferLength() const { return m_conf.cudaFiringBufferLength(); }
+		unsigned getFiringBufferLength() const { return m_firingOutput.bufferLength(); }
 
 		unsigned getFractionalBits() const;
 

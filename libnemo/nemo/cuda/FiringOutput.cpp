@@ -22,12 +22,12 @@ FiringOutput::FiringOutput(
 		unsigned maxReadPeriod):
 	m_pitch(0),
 	m_bufferedCycles(0),
-	m_maxReadPeriod(maxReadPeriod),
+	m_maxReadPeriod(maxReadPeriod != 0 ? maxReadPeriod : defaultBufferLength()),
 	md_allocated(0),
 	m_mapper(mapper)
 {
 	size_t width = BV_BYTE_PITCH;
-	size_t height = m_mapper.partitionCount() * maxReadPeriod;
+	size_t height = m_mapper.partitionCount() * m_maxReadPeriod;
 
 	size_t bytePitch;
 	uint32_t* d_buffer;

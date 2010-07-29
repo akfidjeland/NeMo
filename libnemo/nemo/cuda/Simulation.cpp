@@ -409,13 +409,6 @@ Simulation::resetTimer()
 
 
 unsigned
-Simulation::defaultFiringBufferLength()
-{
-	return FiringOutput::defaultBufferLength();
-}
-
-
-unsigned
 Simulation::getFractionalBits() const
 {
 	return m_cm.fractionalBits();

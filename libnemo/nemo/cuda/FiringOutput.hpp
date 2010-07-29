@@ -84,9 +84,11 @@ class FiringOutput {
 
 		size_t wordPitch() const { return m_pitch; }
 
-		static unsigned defaultBufferLength() { return 1000; } // cycles
+		unsigned bufferLength() const { return m_maxReadPeriod; }
 
 	private:
+
+		static unsigned defaultBufferLength() { return 1000; } // cycles
 
 		/* Dense firing buffers on device and host */
 		boost::shared_ptr<uint32_t> md_buffer;

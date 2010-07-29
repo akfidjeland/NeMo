@@ -8,9 +8,6 @@ namespace nemo {
 Configuration::Configuration() :
 	m_impl(new ConfigurationImpl())
 {
-#ifdef NEMO_CUDA_ENABLED
-	//m_impl->setCudaFiringBufferLength(cuda::Simulation::defaultFiringBufferLength());
-#endif
 	m_impl->setCpuThreadCount(cpu::Simulation::defaultThreadCount());
 }
 
