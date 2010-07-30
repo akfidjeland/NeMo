@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(simulation_one_based_indices)
  * so the result is the firing propagating around the ring.
  */
 void
-runRing(unsigned ncount, const nemo::Configuration& conf)
+runRing(unsigned ncount, nemo::Configuration conf)
 {
 	/* Make sure we go around the ring at least a couple of times */
 	const unsigned duration = ncount * 5 / 2;

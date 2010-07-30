@@ -80,17 +80,26 @@ class NEMO_DLL_PUBLIC Configuration
 				float minWeight,
 				float maxWeight);
 
-		/*! The simulation uses a fixed-point format internally for synaptics
+		/*! The simulation uses a fixed-point format internally for synaptic
 		 * weights. Call this method to specify how many fractional bits to
 		 * use. If nothing is specified the backend chooses a sensible value
-		 * based on the range of weights. */
+		 * based on the range of weights in the input network. */
 		void setFractionalBits(unsigned bits);
 
 		void setBackend(backend_t backend);
 
+		/*! Test whether the configuration is valid, i.e. whether it's possible
+		 * to create a simulation based on it. A configuration can be invalid
+		 * for a number of reasons including. Use \a descr to check reason for
+		 * configuration being invalid. Returns true/ok if the test passes. */
+		bool test();
+
+		/*! \return description of the backend used or any error */
+		const std::string& backendDescription() const;
+
 	private:
 
-		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, const Configuration& conf);
+		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, Configuration& conf);
 		friend class nemo::mpi::Master;
 		friend class nemo::mpi::Worker;
 

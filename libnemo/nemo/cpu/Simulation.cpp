@@ -7,6 +7,7 @@
 #ifdef NEMO_CPU_MULTITHREADED
 #include <boost/thread.hpp>
 #endif
+#include <boost/format.hpp>
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -37,7 +38,7 @@ namespace nemo {
 
 Simulation::Simulation(
 		const nemo::NetworkImpl& net,
-		const nemo::ConfigurationImpl& conf) :
+		nemo::ConfigurationImpl& conf) :
 	//! \todo remove redundant member?
 	m_neuronCount(net.neuronCount()),
 	m_a(m_neuronCount, 0),
@@ -56,6 +57,8 @@ Simulation::Simulation(
 	m_lastFlush(0),
 	m_stdp(conf.stdpFunction())
 {
+	Simulation::test(conf);
+
 	//! \todo add handling of non-contigous memory here. Need a mapper of some sort for this.
 	nemo::initialiseRng(net.minNeuronIndex(), net.maxNeuronIndex(), m_rng);
 	setNeuronParameters(net);
@@ -487,6 +490,25 @@ void
 Simulation::resetTimer()
 {
 	m_timer.reset();
+}
+
+
+
+void
+Simulation::test(nemo::ConfigurationImpl& conf)
+{
+	using boost::format;
+
+	/* No need to check the number of threads. Just go with whatever the user requested */
+	conf.setBackend(NEMO_BACKEND_CPU);
+	/*! \todo get processor name */
+	unsigned tcount = conf.cpuThreadCount();
+	assert(tcount > 0);
+	if(tcount == 1) {
+		conf.setBackendDescription("CPU backend (single-threaded)");
+	} else {
+		conf.setBackendDescription(str(format("CPU backend (%u threads)") % tcount));
+	}
 }
 
 

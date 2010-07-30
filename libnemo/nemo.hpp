@@ -17,9 +17,11 @@
 namespace nemo {
 
 /*! Create a simulation using one of the available backends. Returns NULL if
- * unable to create simulation */
+ * unable to create simulation.
+ *
+ * Any missing/unspecified fields in the configuration are filled in */
 NEMO_DLL_PUBLIC
-Simulation* simulation(const Network& net, const Configuration& conf);
+Simulation* simulation(const Network& net, Configuration& conf);
 
 }
 

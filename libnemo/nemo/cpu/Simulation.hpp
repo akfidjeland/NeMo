@@ -31,7 +31,9 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 {
 	public:
 
-		Simulation(const nemo::NetworkImpl& net, const nemo::ConfigurationImpl& conf);
+		Simulation(const nemo::NetworkImpl& net, nemo::ConfigurationImpl& conf);
+
+		static void test(nemo::ConfigurationImpl&);
 
 		unsigned getFractionalBits() const;
 

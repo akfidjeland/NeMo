@@ -22,7 +22,8 @@ ConfigurationImpl::ConfigurationImpl() :
 	m_cudaPartitionSize(0),
 	m_cudaFiringBufferLength(0),
 	m_cudaDevice(-1),
-	m_backend(NEMO_BACKEND_UNSPECIFIED)
+	m_backend(NEMO_BACKEND_UNSPECIFIED),
+	m_backendDescription("No backend specified")
 {
 	;
 }

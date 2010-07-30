@@ -39,20 +39,15 @@ class Simulation : public nemo::SimulationBackend
 {
 	public :
 
-		Simulation(
-				const nemo::NetworkImpl& net,
-				const nemo::ConfigurationImpl& conf);
-
 		~Simulation();
 
 		/* CONFIGURATION */
 
-		/*! Select device (for this thread) if a device with the minimum
-		 * required characteristics is present on the host system.
-		 *
-		 * Throws an exception if no suitable device is found.
-		 */
-		static void selectDevice(int userDev);
+		/* Verify that we can create a simulation based on the configuration.
+		 * Any missing fields in the configuration are filled in (including the
+		 * description of the backend). Any errors are communicated via
+		 * exceptions */
+		static void test(nemo::ConfigurationImpl&);
 
 		unsigned getFiringBufferLength() const { return m_firingOutput.bufferLength(); }
 
@@ -86,6 +81,10 @@ class Simulation : public nemo::SimulationBackend
 		void resetTimer();
 
 	private :
+
+		/* Use factory method for generating objects */
+		Simulation(const nemo::NetworkImpl&, const nemo::ConfigurationImpl&);
+		friend SimulationBackend* simulation(const NetworkImpl& net, ConfigurationImpl& conf);
 
 		Mapper m_mapper;
 

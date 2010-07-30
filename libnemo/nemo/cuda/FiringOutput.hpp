@@ -36,9 +36,7 @@ class FiringOutput {
 		 *		The maximum period (in cycles) between reads issued from the host. If this
 		 *		period is exceeded, a buffer overflow will occur.
 		 */
-		FiringOutput(
-				const Mapper& mapper,
-				unsigned maxReadPeriod=defaultBufferLength());
+		FiringOutput(const Mapper& mapper, unsigned maxReadPeriod);
 
 		/*!  Read all firing data buffered on the device since the previous
 		 * call to this function (or the start of simulation if this is the
@@ -85,10 +83,9 @@ class FiringOutput {
 		size_t wordPitch() const { return m_pitch; }
 
 		unsigned bufferLength() const { return m_maxReadPeriod; }
+		static unsigned defaultBufferLength() { return 1000; } // cycles
 
 	private:
-
-		static unsigned defaultBufferLength() { return 1000; } // cycles
 
 		/* Dense firing buffers on device and host */
 		boost::shared_ptr<uint32_t> md_buffer;

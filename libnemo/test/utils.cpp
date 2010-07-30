@@ -5,7 +5,7 @@
 void
 runSimulation(
 		const nemo::Network* net,
-		const nemo::Configuration& conf,
+		nemo::Configuration conf,
 		unsigned seconds,
 		std::vector<unsigned>* fcycles,
 		std::vector<unsigned>* fnidx)

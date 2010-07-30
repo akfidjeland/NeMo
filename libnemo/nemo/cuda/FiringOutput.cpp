@@ -22,7 +22,7 @@ FiringOutput::FiringOutput(
 		unsigned maxReadPeriod):
 	m_pitch(0),
 	m_bufferedCycles(0),
-	m_maxReadPeriod(maxReadPeriod != 0 ? maxReadPeriod : defaultBufferLength()),
+	m_maxReadPeriod(maxReadPeriod),
 	md_allocated(0),
 	m_mapper(mapper)
 {

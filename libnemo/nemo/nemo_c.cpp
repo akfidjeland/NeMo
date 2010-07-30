@@ -350,6 +350,19 @@ nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits)
 }
 
 
+unsigned char
+nemo_test(nemo_configuration_t conf)
+{
+	return static_cast<unsigned char>(static_cast<nemo::Configuration*>(conf)->test());
+}
+
+
+const char*
+nemo_get_backend_description(nemo_configuration_t conf)
+{
+	return static_cast<nemo::Configuration*>(conf)->backendDescription().c_str();
+}
+
 
 const char*
 nemo_strerror()

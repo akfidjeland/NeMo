@@ -100,6 +100,19 @@ nemo_status_t
 nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits);
 
 
+/*! \copydoc nemo::Configuration::test */
+NEMO_DLL_PUBLIC
+unsigned char
+nemo_test(nemo_configuration_t conf);
+
+
+/*! \copydoc nemo::Configuration::backendDescription */
+NEMO_DLL_PUBLIC
+const char*
+nemo_get_backend_description(nemo_configuration_t conf);
+
+
+
 /* \} */ // end configuration
 
 

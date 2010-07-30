@@ -107,7 +107,7 @@ addInhibitorySynapses(
 void
 c_runSimulation(
 		const nemo_network_t net,
-		const nemo_configuration_t conf,
+		nemo_configuration_t conf,
 		unsigned seconds,
 		std::vector<unsigned>* fcycles,
 		std::vector<unsigned>* fnidx)
@@ -176,6 +176,10 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 	std::cerr << "Running network (C++ API)\n";
 	runSimulation(net, conf, duration, &cycles1, &nidx1);
 	nemo_configuration_t c_conf = nemo_new_configuration();
+	if(!nemo_test(c_conf)) {
+		std::cerr << "Configuration failure " << nemo_get_backend_description(c_conf) << std::endl;
+	}
+	std::cerr << nemo_get_backend_description(c_conf) << std::endl;
 	std::cerr << "Running network (C API)\n";
 	c_runSimulation(c_net, c_conf, duration, &cycles2, &nidx2);
 	std::cerr << "Checking results\n";

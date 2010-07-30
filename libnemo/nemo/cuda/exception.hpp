@@ -17,13 +17,19 @@
 #include <nemo/exception.hpp>
 #include <nemo/constants.h>
 
+#ifdef NDEBUG
+#define LINE_INFO ""
+#else
+#define LINE_INFO "Cuda error in file " << __FILE__ << " in line " << __LINE__ << ": "
+#endif
+
 #define CUDA_SAFE_CALL(call) {                                             \
     cudaError err = call;                                                  \
     if(cudaSuccess != err) {                                               \
         std::ostringstream msg;                                            \
-        msg << "Cuda error in file " << __FILE__ << " in line "            \
-            << __LINE__ << ": " << cudaGetErrorString(err);                \
-        throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR, msg.str().c_str());\
+        msg << LINE_INFO << cudaGetErrorString(err);                       \
+        throw nemo::exception(NEMO_CUDA_ERROR, msg.str().c_str());         \
     } }
+
 
 #endif

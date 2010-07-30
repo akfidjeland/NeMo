@@ -1,7 +1,7 @@
 #include "Mapper.hpp"
 
+#include <cassert>
 #include <boost/format.hpp>
-#include <assert.h>
 
 #include <nemo/exception.hpp>
 #include <nemo/util.h>
@@ -15,15 +15,12 @@ namespace nemo {
 using boost::format;
 
 Mapper::Mapper(const nemo::NetworkImpl& net, unsigned partitionSize) :
-	m_partitionSize(partitionSize != 0 ? partitionSize : MAX_PARTITION_SIZE),
+	m_partitionSize(partitionSize),
 	m_partitionCount(0),
 	m_offset(0)
 {
-	if(m_partitionSize > MAX_PARTITION_SIZE || m_partitionSize < THREADS_PER_BLOCK) {
-		throw nemo::exception(NEMO_INVALID_INPUT, 
-				str(format("Requested partition size for cuda backend (%u) not in valid range: [%u, %u]")
-						% m_partitionSize % THREADS_PER_BLOCK % MAX_PARTITION_SIZE));
-	}
+	/* The partition size validity will already have been tested. */
+	assert(m_partitionSize <= MAX_PARTITION_SIZE && m_partitionSize >= THREADS_PER_BLOCK);
 
 	if(net.neuronCount() > 0) {
 		unsigned ncount = net.maxNeuronIndex() - net.minNeuronIndex() + 1;

@@ -122,6 +122,22 @@ Configuration::setBackend(backend_t backend)
 }
 
 
+bool testBackend(ConfigurationImpl& conf);
+
+bool
+Configuration::test()
+{
+	return testBackend(*m_impl);
+}
+
+
+const std::string&
+Configuration::backendDescription() const
+{
+	return m_impl->backendDescription();
+}
+
+
 } // end namespace nemo
 
 

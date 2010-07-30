@@ -78,6 +78,9 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		void setBackend(backend_t backend);
 		backend_t backend() const { return m_backend; }
 
+		void setBackendDescription(const std::string& descr) { m_backendDescription = descr; }
+		const std::string& backendDescription() const { return m_backendDescription; }
+
 	private:
 
 		bool m_logging;
@@ -99,6 +102,8 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		backend_t m_backend;
 
+		std::string m_backendDescription;
+
 #ifdef INCLUDE_MPI
 		friend class boost::serialization::access;
 
@@ -107,9 +112,11 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 			ar & m_logging;
 			ar & m_stdpFn;
 			ar & m_fractionalBits;
+			ar & m_threadCount;
 			ar & m_cudaPartitionSize;
 			ar & m_cudaFiringBufferLength;
 			ar & m_backend;
+			ar & m_backendDescription;
 		}
 #endif
 };
