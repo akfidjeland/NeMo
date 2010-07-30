@@ -31,7 +31,6 @@
 #include "kernel.hpp"
 
 
-
 namespace nemo {
 	namespace cuda {
 

@@ -502,13 +502,14 @@ Simulation::test(nemo::ConfigurationImpl& conf)
 	/* No need to check the number of threads. Just go with whatever the user requested */
 	conf.setBackend(NEMO_BACKEND_CPU);
 	/*! \todo get processor name */
+#ifdef NEMO_CPU_MULTITHREADED
 	unsigned tcount = conf.cpuThreadCount();
 	assert(tcount > 0);
-	if(tcount == 1) {
-		conf.setBackendDescription("CPU backend (single-threaded)");
-	} else {
+	if(tcount > 1) {
 		conf.setBackendDescription(str(format("CPU backend (%u threads)") % tcount));
-	}
+	} else
+#endif
+		conf.setBackendDescription("CPU backend (single-threaded)");
 }
 
 

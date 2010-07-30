@@ -19,6 +19,7 @@ namespace nemo {
 ConfigurationImpl::ConfigurationImpl() :
 	m_logging(false),
 	m_fractionalBits(s_defaultFractionalBits),
+	m_cpuThreadCount(0), // set properly by interface class ctor
 	m_cudaPartitionSize(0),
 	m_cudaFiringBufferLength(0),
 	m_cudaDevice(-1),
@@ -36,7 +37,7 @@ ConfigurationImpl::setCpuThreadCount(unsigned threadCount)
 	if(threadCount < 1) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Attempt to set number of threads < 1");
 	}
-	m_threadCount = threadCount;
+	m_cpuThreadCount = threadCount;
 }
 
 
