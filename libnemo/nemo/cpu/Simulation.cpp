@@ -17,7 +17,7 @@
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
 
-#ifdef NEMO_LOG_CPU_BACKEND
+#ifdef NEMO_CPU_DEBUG_TRACE
 
 #include <cstdio>
 #include <cstdlib>

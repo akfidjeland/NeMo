@@ -80,13 +80,13 @@ CHECK_FUNCTION_EXISTS(posix_memalign HAVE_POSIX_MEMALIGN)
 # log2 is part of C99 standard, so Microsoft support is patchy
 CHECK_CXX_SOURCE_COMPILES("#include <math.h>\nint main() { log2(double(0)); }" HAVE_LOG2)
 
-IF(INCLUDE_TIMING_API)
+IF(NEMO_TIMING_ENABLED)
 	IF(NOT Boost_LIBRARY_DIRS)
 		MESSAGE(WARNING "Boost_LIBRARY_DIRS is not set, which may cause linker errors. Either set this variable or set BOOST_ROOT")
 	ELSE(NOT Boost_LIBRARY_DIRS)
 		LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 	ENDIF(NOT Boost_LIBRARY_DIRS)
-ENDIF(INCLUDE_TIMING_API)
+ENDIF(NEMO_TIMING_ENABLED)
 
 
 # We rely on 32-bit floats

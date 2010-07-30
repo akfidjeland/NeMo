@@ -7,13 +7,13 @@
 #cmakedefine HAVE_LOG2
 #cmakedefine HAVE_POSIX_MEMALIGN
 #cmakedefine CAN_SET_THREAD_AFFINITY
-#cmakedefine INCLUDE_TIMING_API
+#cmakedefine NEMO_TIMING_ENABLED
 #cmakedefine INCLUDE_MPI
 #cmakedefine INCLUDE_MPI_LOGGING
 #cmakedefine NEMO_CUDA_ENABLED
 #cmakedefine NEMO_CUDA_DYNAMIC_LOADING
 #cmakedefine NEMO_VERBOSE
-#cmakedefine NEMO_LOG_CPU_BACKEND
+#cmakedefine NEMO_CPU_DEBUG_TRACE
 #cmakedefine NEMO_CPU_MULTITHREADED
 
 #if defined _WIN32 || defined __CYGWIN__

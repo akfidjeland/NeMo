@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include "exception.hpp"
@@ -44,7 +44,7 @@ class Timer
 
 	private:
 
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 		boost::posix_time::ptime m_start;
 #endif
 		unsigned long m_simCycles;
@@ -56,7 +56,7 @@ inline
 unsigned long
 Timer::elapsedWallclock() const
 {
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	using namespace boost::posix_time;
 
 	time_duration elapsed = ptime(microsec_clock::local_time()) - m_start;
@@ -83,7 +83,7 @@ inline
 void
 Timer::reset()
 {
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	using namespace boost::posix_time;
 	m_start = ptime(microsec_clock::local_time());
 #endif

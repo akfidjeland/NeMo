@@ -1,7 +1,7 @@
 
-OPTION(DOC_REBUILD_PDF_MANUAL "Rebuild API documentation (PDF manual)" OFF)
+OPTION(NEMO_DOC_PDF_REBUILD "Rebuild API documentation (PDF manual)" OFF)
 
-IF(DOC_REBUILD_PDF_MANUAL)
+IF(NEMO_DOC_PDF_REBUILD)
 
 	FIND_PACKAGE(LATEX REQUIRED)
 
@@ -29,7 +29,7 @@ IF(DOC_REBUILD_PDF_MANUAL)
 		COMMAND ${CMAKE_COMMAND} -E copy manual.pdf ${CMAKE_CURRENT_SOURCE_DIR}
 	)
 
-ELSE(DOC_REBUILD_PDF_MANUAL)
+ELSE(NEMO_DOC_PDF_REBUILD)
 
 	# The generated documentation should already be present in the source tree.
 	# Copy it into the build tree.
@@ -43,7 +43,7 @@ ELSE(DOC_REBUILD_PDF_MANUAL)
 		COMMENT "Using existing manual"
 		VERBATIM
 	)
-ENDIF(DOC_REBUILD_PDF_MANUAL)
+ENDIF(NEMO_DOC_PDF_REBUILD)
 
 # Always create API documentation
 ADD_DEPENDENCIES(nemo api-doc-latex)
