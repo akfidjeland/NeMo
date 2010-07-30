@@ -145,17 +145,19 @@ testBackend(ConfigurationImpl& conf)
 	using boost::format;
 	bool valid = true;
 
+	try {
+
 	if(conf.backend() == NEMO_BACKEND_CUDA) {
 		try {
 			testCuda(conf);
-		} catch (nemo::exception& e) {
+		} catch (std::exception& e) {
 			conf.setBackendDescription(str(format("Cannot simulate on CUDA device: %s") % e.what()));
 			valid = false;
 		}
 	} else if(conf.backend() == NEMO_BACKEND_UNSPECIFIED) {
 		try {
 			testCuda(conf);
-		} catch(nemo::exception&) {
+		} catch(std::exception&) {
 			/* The CUDA backend does not work for some reason. However, the
 			 * user did not specify what backend to use, so just go ahead and
 			 * use the CPU backend instead. */
@@ -164,7 +166,13 @@ testBackend(ConfigurationImpl& conf)
 	} else if(conf.backend() == NEMO_BACKEND_CPU) {
 			cpu::Simulation::test(conf);
 	} else {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "unknown backend in configuration");
+		conf.setBackendDescription("Unknown backend specified in configuration");
+		valid = false;
+	}
+
+	} catch(...) {
+		conf.setBackendDescription("An unkown exception was raised when testing the backend");
+		valid = false;
 	}
 	return true;
 }
