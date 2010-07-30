@@ -45,7 +45,7 @@ applyStdp(
 	dim3 dimGrid(partitionCount);
 
 	applySTDP_<<<dimGrid, dimBlock>>>(
-#ifdef KERNEL_TIMING
+#ifdef NEMO_CUDA_KERNEL_TIMING
 			d_cc, ccPitch,
 #endif
 			d_fcm,
@@ -97,7 +97,7 @@ stepSimulation(
 			d_fstim, // firing
 			d_istim, // current
 			// cycle counting
-#ifdef KERNEL_TIMING
+#ifdef NEMO_CUDA_KERNEL_TIMING
 			d_cc, ccPitch,
 #endif
 			d_fout);

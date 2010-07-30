@@ -12,6 +12,7 @@
 #cmakedefine INCLUDE_MPI_LOGGING
 #cmakedefine NEMO_CUDA_ENABLED
 #cmakedefine NEMO_CUDA_DYNAMIC_LOADING
+#cmakedefine NEMO_CUDA_KERNEL_TIMING
 #cmakedefine NEMO_VERBOSE
 #cmakedefine NEMO_CPU_DEBUG_TRACE
 #cmakedefine NEMO_CPU_MULTITHREADED

@@ -13,7 +13,7 @@
 #include "kernel.cu_h"
 
 /* Each kernel has a separate cycle counter */
-#ifdef KERNEL_TIMING
+#ifdef NEMO_CUDA_KERNEL_TIMING
 __shared__ clock_t s_ccMain[CC_MAIN_COUNT];
 //! \todo don't allocate this memory if STDP not enabled
 __shared__ clock_t s_ccApplySTDP[CC_STDP_APPLY_COUNT];
@@ -57,7 +57,7 @@ writeCycleCounters(clock_t* s_cc, unsigned long long* g_cc, size_t pitch, size_t
 }
 
 
-#ifdef KERNEL_TIMING
+#ifdef NEMO_CUDA_KERNEL_TIMING
 //! \todo add separate methods for start and end counters?
 #define SET_COUNTER(s_cc, counter) setCycleCounter(s_cc, counter)
 #define WRITE_COUNTERS(s_cc, g_cc, ccPitch, ccCount) writeCycleCounters(s_cc, g_cc, ccPitch, ccCount)

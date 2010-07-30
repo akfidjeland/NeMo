@@ -372,7 +372,7 @@ step (
 		// firing stimulus
 		uint32_t* g_fstim,
 		fix_t* g_istim,
-#ifdef KERNEL_TIMING
+#ifdef NEMO_CUDA_KERNEL_TIMING
 		// cycle counting
 		//! \todo change to uint64_t
 		unsigned long long* g_cycleCounters,
