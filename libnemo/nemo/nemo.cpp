@@ -15,7 +15,7 @@
 #include <nemo/exception.hpp>
 
 #ifdef NEMO_CUDA_ENABLED
-#include <nemo/cuda/simulation.hpp>
+#include <nemo/cuda/create_simulation.hpp>
 #endif
 #include <nemo/cpu/Simulation.hpp>
 

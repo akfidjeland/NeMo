@@ -48,7 +48,7 @@ SET(BUILD_SHARED_LIBS TRUE)
 CUDA_ADD_LIBRARY(nemo_cuda
 	kernel.cu
 	ConnectivityMatrix.cpp
-	simulation.cpp
+	create_simulation.cpp
 	Simulation.cpp
 	CycleCounters.cpp
 	DeviceAssertions.cpp
