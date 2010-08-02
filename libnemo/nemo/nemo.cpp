@@ -5,7 +5,7 @@
 #include <nemo/config.h>
 
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-#include <ltdl.h>
+#include "dyn_load.hpp"
 #endif
 
 #include <boost/format.hpp>
@@ -23,35 +23,36 @@ namespace nemo {
 
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 
-lt_dlhandle libcuda = NULL;
+dl_handle libcuda = NULL;
 
 void
 unloadCudaLibrary()
 {
 	if(libcuda != NULL) {
-		lt_dlclose(libcuda);
-		lt_dlexit(); // since the cuda backend is the only dynamically opened library
+		dl_unload(libcuda);
+		dl_exit(); // since the cuda backend is the only dynamically opened library
 	}
 }
 
 
-lt_dlhandle
+dl_handle
 loadCudaLibrary()
 {
 	using boost::format;
 
 	if(libcuda == NULL) {
-		if(lt_dlinit() != 0) {
-			throw nemo::exception(NEMO_DL_ERROR, lt_dlerror());
+		if(!dl_init()) {
+			throw nemo::exception(NEMO_DL_ERROR, dl_error());
 		}
-		libcuda = lt_dlopenext("libnemo_cuda");
+		libcuda = dl_load("libnemo_cuda");
 		if(libcuda == NULL) {
-			throw nemo::exception(NEMO_DL_ERROR, str(format("failed to open nemo_cuda library: %s") % lt_dlerror()));
+			throw nemo::exception(NEMO_DL_ERROR, str(format("failed to open nemo_cuda library: %s") % dl_error()));
 		}
 		atexit(unloadCudaLibrary);
 	}
 	return libcuda;
 }
+
 
 #endif
 
@@ -60,10 +61,10 @@ SimulationBackend*
 cudaSimulation(const NetworkImpl& net, ConfigurationImpl& conf)
 {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-	lt_dlhandle hdl = loadCudaLibrary();
-	nemo_cuda_simulation_t* ctor = (nemo_cuda_simulation_t*) lt_dlsym(hdl, "nemo_cuda_simulation");
+	dl_handle hdl = loadCudaLibrary();
+	nemo_cuda_simulation_t* ctor = (nemo_cuda_simulation_t*) dl_sym(hdl, "nemo_cuda_simulation");
 	if(ctor == NULL) {
-		throw nemo::exception(NEMO_DL_ERROR, lt_dlerror());
+		throw nemo::exception(NEMO_DL_ERROR, dl_error());
 	}
 	return ctor(&net, &conf);
 #else
@@ -126,10 +127,10 @@ void
 testCuda(ConfigurationImpl& conf)
 {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-	lt_dlhandle hdl = loadCudaLibrary();
-	nemo_cuda_test_simulation_t* test = (nemo_cuda_test_simulation_t*) lt_dlsym(hdl, "nemo_cuda_test_simulation");
+	dl_handle hdl = loadCudaLibrary();
+	nemo_cuda_test_simulation_t* test = (nemo_cuda_test_simulation_t*) dl_sym(hdl, "nemo_cuda_test_simulation");
 	if(test == NULL) {
-		throw nemo::exception(NEMO_DL_ERROR, lt_dlerror());
+		throw nemo::exception(NEMO_DL_ERROR, dl_error());
 	}
 	test(&conf);
 #else
