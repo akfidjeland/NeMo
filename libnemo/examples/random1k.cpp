@@ -140,9 +140,18 @@ main(int argc, char* argv[])
 	nemo::Network* net = nemo::random1k::construct(ncount, scount);
 	nemo::Configuration conf;
 	conf.setCudaPartitionSize(psize);
+	conf.setFractionalBits(24);
+	conf.test();
+	std::cerr << "simulation will run on " << conf.backendDescription() << std::endl;
 	std::cerr << "creating simulation\n";
-	nemo::Simulation* sim = nemo::simulation(*net, conf);
+	nemo::Simulation* sim = NULL;
+	try {
+		sim = nemo::simulation(*net, conf);
+	} catch(std::runtime_error& e) {
+		std::cerr << e.what() << std::endl;
+	}
 	std::cerr << "running simulation\n";
+
 	simulate(sim, ncount, ncount);
 	//simulateToFile(sim, 1000, "firing.dat");
 	delete net;

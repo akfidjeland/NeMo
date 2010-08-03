@@ -355,6 +355,12 @@ main(int argc, char* argv[])
 	
 	nemo::Network* net = nemo::torus::construct(pcount, m, stdp, sigma);
 	nemo::Configuration conf = nemo::torus::configure(stdp, logging);
+	conf.setFractionalBits(24);
+	if(!conf.test()) {
+		std::cerr << "Invalid configuration: " << conf.backendDescription() << std::endl;
+		return -1;
+	}
+	std::cerr << "simulation will run on " << conf.backendDescription() << std::endl;
 	nemo::Simulation* sim = nemo::simulation(*net, conf);
 	simulate(sim, pcount*PATCH_SIZE, m);
 	//simulateToFile(sim, 1000, "firing.dat");

@@ -89,6 +89,11 @@ simulationBackend(const NetworkImpl& net, ConfigurationImpl& conf)
 	switch(conf.backend()) {
 #ifdef NEMO_CUDA_ENABLED
 		case NEMO_BACKEND_UNSPECIFIED:
+			try {
+				return cudaSimulation(net, conf);
+			} catch(...) {
+				return new cpu::Simulation(net, conf);
+			}
 		case NEMO_BACKEND_CUDA:
 			return cudaSimulation(net, conf);
 #else
@@ -175,7 +180,7 @@ testBackend(ConfigurationImpl& conf)
 		conf.setBackendDescription("An unkown exception was raised when testing the backend");
 		valid = false;
 	}
-	return true;
+	return valid;
 }
 
 }
