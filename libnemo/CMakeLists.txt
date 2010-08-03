@@ -11,13 +11,7 @@ SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>"
 OPTION(NEMO_CUDA_ENABLED "Enabled simulation on CUDA devices" ON)
 
 IF(NEMO_CUDA_ENABLED)
-	IF(WIN32)
-		# TODO: add dynamic loading using Windows primitives
-		SET(NEMO_CUDA_DYNAMIC_LOADING OFF)
-	ELSE(WIN32)
-		OPTION(NEMO_CUDA_DYNAMIC_LOADING "Load the CUDA backend dynamically" ON)
-	ENDIF(WIN32)
-
+	OPTION(NEMO_CUDA_DYNAMIC_LOADING "Load the CUDA backend dynamically" ON)
 	OPTION(NEMO_CUDA_KERNEL_TIMING "Count and report cycles spent by the device in different kernel stages" OFF)
 ENDIF(NEMO_CUDA_ENABLED)
 

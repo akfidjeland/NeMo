@@ -6,12 +6,17 @@
 #ifdef _MSC_VER
 
 #include <windows.h>
-typedef HWMODULE dl_handle;
+typedef HMODULE dl_handle;
+
+#define LIB_NAME(base) base ".dll"
 
 #else
 
 #include <ltdl.h>
 typedef lt_dlhandle dl_handle;
+
+// leave ltdl to work out the extension
+#define LIB_NAME(base) "lib" base
 
 #endif
 

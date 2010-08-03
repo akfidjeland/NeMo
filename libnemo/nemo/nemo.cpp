@@ -44,7 +44,7 @@ loadCudaLibrary()
 		if(!dl_init()) {
 			throw nemo::exception(NEMO_DL_ERROR, dl_error());
 		}
-		libcuda = dl_load("libnemo_cuda");
+		libcuda = dl_load(LIB_NAME("nemo_cuda"));
 		if(libcuda == NULL) {
 			throw nemo::exception(NEMO_DL_ERROR, str(format("failed to open nemo_cuda library: %s") % dl_error()));
 		}
