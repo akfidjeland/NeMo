@@ -85,12 +85,16 @@
     #ifdef __GNUC__
       #define NEMO_CPU_DLL_PUBLIC __attribute__((dllimport))
     #else
-      #define NEMO_ CPU_DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+      #define NEMO_CPU_DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
     #endif
   #endif
 #else
   #define NEMO_CPU_DLL_PUBLIC
   #define NEMO_CPU_DLL_LOCAL
+#endif
+
+#if defined(_WIN32) && defined(NEMO_BASE_EXPORTS)
+#pragma warning(disable: 4251)
 #endif
 
 #endif

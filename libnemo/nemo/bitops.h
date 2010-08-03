@@ -21,8 +21,7 @@ clzN(T v)
 
 
 
-
-/* Count leading/trailing zeros in 64-bit word. Unfortunately the gcc builtin
+/* Count leading/trailing zeros in 64-bit word. Unfortunately the gcc builtins
  * to deal with this are not explicitly 64 bit. Instead it is defined for long
  * long. In C99 this is required to be /at least/ 64 bits. However, we require
  * it to be /exactly/ 64 bits. */

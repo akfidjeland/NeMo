@@ -329,11 +329,9 @@ Simulation::deliverSpikes()
 		//! \todo make use of delay bits here to avoid looping
 		uint64_t f = m_recentFiring[source] & validSpikes;
 
-		//! \todo add sanity check to make sure that ffsll takes 64-bit
 		int delay = 0;
 		while(f) {
-			//! \todo do this in a way that's 64-bit safe.
-			int shift = ffsll(f);
+			int shift = 1 + ctz64(f);
 			delay += shift;
 			f = f >> shift;
 			deliverSpikesOne(source, delay);

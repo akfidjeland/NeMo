@@ -17,6 +17,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
 
+#include <nemo/config.h>
 #include "types.hpp"
 
 #define ASSUMED_CACHE_LINE_SIZE 64
@@ -56,7 +57,7 @@ struct Row
  * Data in this class is organised for optimal cache performance. A
  * user-defined fixed-point format is used.
  */
-class ConnectivityMatrix
+class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 {
 	public:
 
