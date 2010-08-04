@@ -156,7 +156,7 @@ MACRO(CUDA_FIND_HELPER_FILE _name _extension)
       IF(NOT CUDA_FIND_QUIETLY)
         MESSAGE(STATUS "${error_message}")
       ENDIF(NOT CUDA_FIND_QUIETLY)
-    ENDIF(NOT CUDA_FIND_REQUIRED)
+    ENDIF(CUDA_FIND_REQUIRED)
   ENDIF(NOT CUDA_${_name})
   # Set this variable as internal, so the user isn't bugged with it.
   SET(CUDA_${_name} ${CUDA_${_name}} CACHE INTERNAL "Location of ${_full_name}" FORCE)
