@@ -1,0 +1,78 @@
+.TH nemo-cpp 3 "Mar 2010" "" "Nemo Reference Manual"
+.ad l
+.nh
+.SH NAME
+nemo-cpp \- 
+.SH SYNOPSIS
+.br
+.PP
+.SS "Public Member Functions"
+
+.in +1c
+.ti -1c
+.RI "void \fBaddNeuron\fP (unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.br
+.ti -1c
+.RI "void \fBaddSynapses\fP (unsigned source, const std::vector< unsigned > &targets, const std::vector< unsigned > &delays, const std::vector< float > &weights, const std::vector< unsigned char > &plastic)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Networks are constructed by adding individual neurons, and single or groups of synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised. 
+.SH "Member Function Documentation"
+.PP 
+.SS "void nemo::Network::addNeuron (unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.PP
+Add a single neuron to the network
+.PP
+The neuron uses the Izhikevich neuron model. See E. M. Izhikevich 'Simple model of spiking neurons', \fIIEEE\fP \fITrans\fP. \fINeural\fP \fINetworks\fP, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIidx\fP Neuron index. This should be unique 
+.br
+\fIa\fP Time scale of the recovery variable \fIu\fP 
+.br
+\fIb\fP Sensitivity to sub-threshold fluctutations in the membrane potential \fIv\fP 
+.br
+\fIc\fP After-spike reset value of the membrane potential \fIv\fP 
+.br
+\fId\fP After-spike reset of the recovery variable \fIu\fP 
+.br
+\fIu\fP Initial value for the membrane recovery variable 
+.br
+\fIv\fP Initial value for the membrane potential 
+.br
+\fIsigma\fP Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0,\fIsigma\fP) distribution. If set to zero no random input current will be generated. 
+.RE
+.PP
+
+.SS "void nemo::Network::addSynapses (unsigned source, const std::vector< unsigned > & targets, const std::vector< unsigned > & delays, const std::vector< float > & weights, const std::vector< unsigned char > & plastic)"
+.PP
+Add to the network a group of synapses with the same presynaptic neuron
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsource\fP Index of source neuron 
+.br
+\fItargets\fP Indices of target neurons 
+.br
+\fIdelays\fP Synapse conductance delays in milliseconds 
+.br
+\fIweights\fP Synapse weights 
+.br
+\fIplastic\fP Specifies for each synapse whether or not it is plastic. See section on STDP.
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+\fItargets\fP, \fIdelays\fP, \fIweights\fP, and \fIplastic\fP have the same length 
+.RE
+.PP
+
+
+.SH SEE ALSO
+nemo(3) for library overview
+.SH AUTHOR
+.PP 
+Andreas Fidjeland (using Doxygen)

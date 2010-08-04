@@ -1,0 +1,381 @@
+.TH nemo-c 3 "Mar 2010" "" "Nemo Reference Manual"
+.ad l
+.nh
+.SH NAME
+nemo-c \- C API for the nemo spiking neural network simulator. 
+.SH SYNOPSIS
+.br
+.PP
+.SS "Defines"
+
+.in +1c
+.ti -1c
+.RI "#define \fBNEMO_OK\fP   0"
+.br
+.ti -1c
+.RI "#define \fBNEMO_CUDA_INVOCATION_ERROR\fP   1"
+.br
+.ti -1c
+.RI "#define \fBNEMO_CUDA_ASSERTION_FAILURE\fP   2"
+.br
+.ti -1c
+.RI "#define \fBNEMO_CUDA_MEMORY_ERROR\fP   3"
+.br
+.in -1c
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef void * \fBnemo_network_t\fP"
+.br
+.ti -1c
+.RI "typedef int \fBnemo_status_t\fP"
+.br
+.in -1c
+.SS "Functions"
+
+.PP
+.RI "\fBConfiguration\fP"
+.br
+
+.PP
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC nemo_configuration_t \fBnemo_new_configuration\fP ()"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_log_stdout\fP (nemo_configuration_t)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_stdp_function\fP (nemo_configuration_t, float prefire_fn[], size_t prefire_len, float postfire_fn[], size_t postfire_len, float min_weight, float max_weight)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_cuda_firing_buffer_length\fP (nemo_configuration_t, unsigned cycles)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_cuda_firing_buffer_length\fP (nemo_configuration_t, unsigned *cycles)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_cuda_partition_size\fP (nemo_configuration_t conf, unsigned size)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_cuda_device\fP (nemo_configuration_t conf, int dev)"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBConstruction\fP"
+.br
+Networks are constructed by adding individual neurons, and single or groups of synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised. 
+.PP
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_network_t\fP \fBnemo_new_network\fP ()"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_add_neuron\fP (\fBnemo_network_t\fP, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_add_synapse\fP (\fBnemo_network_t\fP, unsigned source, unsigned target, unsigned delay, float weight, unsigned char is_plastic)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_add_synapses\fP (\fBnemo_network_t\fP, unsigned source, unsigned targets[], unsigned delays[], float weights[], unsigned char is_plastic[], size_t length)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_neuron_count\fP (\fBnemo_network_t\fP net, unsigned *ncount)"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBSimulation\fP"
+.br
+
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC nemo_simulation_t \fBnemo_new_simulation\fP (\fBnemo_network_t\fP, nemo_simulation_t)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_step\fP (nemo_simulation_t, unsigned fstimIdx[], size_t fstimCount)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_apply_stdp\fP (nemo_simulation_t, float reward)"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBSimulation (firing)\fP"
+.br
+The indices of the fired neurons are buffered on the device, and can be read back at run-time. The desired size of the buffer is specified when constructing the network. Each read empties the buffer. To avoid overflow if the firing data is not needed, call \fBnemo_flush_firing_buffer\fP periodically. 
+.PP
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_read_firing\fP (nemo_simulation_t, unsigned *cycles[], unsigned *nidx[], unsigned *nfired, unsigned *ncycles)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_flush_firing_buffer\fP (nemo_simulation_t)"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBSimulation (queries)\fP"
+.br
+If STDP is enabled, the synaptic weights may change at run-time. The user can read these back on a per-(source) neuron basis. 
+.PP
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_get_synapses\fP (nemo_simulation_t, unsigned sourceNeuron, unsigned *targetNeuron[], unsigned *delays[], float *weights[], unsigned char *is_plastic[], size_t *len)"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBSimulation (timing)\fP"
+.br
+The simulation has two internal timers which keep track of the elapsed \fIsimulated\fP time and \fIwallclock\fP time. Both timers measure from the first simulation step, or from the last timer reset, whichever comes last. 
+.PP
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_elapsed_wallclock\fP (nemo_simulation_t, unsigned long *)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_elapsed_simulation\fP (nemo_simulation_t, unsigned long *)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_reset_timer\fP (nemo_simulation_t)"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBError handling\fP"
+.br
+The API functions generally return an error status of type \fBnemo_status_t\fP. A non-zero value indicates an error. An error string describing this error is stored internally and can be queried by the user. 
+.PP
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC const char * \fBnemo_strerror\fP ()"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBFinalization\fP"
+.br
+
+.in +1c
+.in +1c
+.ti -1c
+.RI "DLL_PUBLIC void \fBnemo_delete_network\fP (\fBnemo_network_t\fP)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC void \fBnemo_delete_configuration\fP (nemo_configuration_t)"
+.br
+.ti -1c
+.RI "DLL_PUBLIC void \fBnemo_delete_simulation\fP (nemo_simulation_t)"
+.br
+.in -1c
+.in -1c
+.SH "Detailed Description"
+.PP 
+C API for the nemo spiking neural network simulator. 
+
+
+.SH "Define Documentation"
+.PP 
+.SS "#define NEMO_OK   0"
+.PP
+The call resulted in no errors 
+.SS "#define NEMO_CUDA_INVOCATION_ERROR   1"
+.PP
+The CUDA driver reported an error 
+.SS "#define NEMO_CUDA_ASSERTION_FAILURE   2"
+.PP
+An assertion failed on the CUDA backend. Note that these assertions are not enabled by default. Build library with -DDEVICE_ASSERTIONS to enable these 
+.SS "#define NEMO_CUDA_MEMORY_ERROR   3"
+.PP
+A memory allocation failed on the CUDA device. 
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef void* \fBnemo_network_t\fP"
+.PP
+Only opaque pointers are exposed in the C API 
+.SS "typedef int \fBnemo_status_t\fP"
+.PP
+Status of API calls which can fail. 
+.SH "Function Documentation"
+.PP 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_log_stdout (nemo_configuration_t)"
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_set_stdp_function (nemo_configuration_t, float prefire_fn[], size_t prefire_len, float postfire_fn[], size_t postfire_len, float min_weight, float max_weight)"
+.PP
+Enable spike-timing dependent plasticity in the simulation.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIprefire_fn\fP STDP function sampled at integer cycle intervals in the prefire part of the STDP window 
+.br
+\fIprefire_len\fP Length, in cycles, of the part of the STDP window that precedes the postsynaptic firing. 
+.br
+\fIpostfire_fn\fP STDP function sampled at integer cycle intervals in the postfire part of the STDP window 
+.br
+\fIpostfire_len\fP Length, in cycles, of the part of the STDP window that comes after the postsynaptic firing. 
+.br
+\fImax_weight\fP Weight beyond which excitatory synapses are not allowed to move 
+.br
+\fImin_weight\fP Weight beyond which inhibitory synapses are not allowed to move 
+.RE
+.PP
+
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_set_cuda_firing_buffer_length (nemo_configuration_t, unsigned cycles)"
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_cuda_firing_buffer_length (nemo_configuration_t, unsigned * cycles)"
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_set_cuda_partition_size (nemo_configuration_t conf, unsigned size)"
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_network_t\fP nemo_new_network ()"
+.PP
+Create an empty network object 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_add_neuron (\fBnemo_network_t\fP, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.PP
+Add a single neuron to the network
+.PP
+The neuron uses the Izhikevich neuron model. See E. M. Izhikevich 'Simple model of spiking neurons', \fIIEEE\fP \fITrans\fP. \fINeural\fP \fINetworks\fP, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIidx\fP Neuron index. This should be unique 
+.br
+\fIa\fP Time scale of the recovery variable \fIu\fP 
+.br
+\fIb\fP Sensitivity to sub-threshold fluctutations in the membrane potential \fIv\fP 
+.br
+\fIc\fP After-spike reset value of the membrane potential \fIv\fP 
+.br
+\fId\fP After-spike reset of the recovery variable \fIu\fP 
+.br
+\fIu\fP Initial value for the membrane recovery variable 
+.br
+\fIv\fP Initial value for the membrane potential 
+.br
+\fIsigma\fP Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0,\fIsigma\fP) distribution. If set to zero no random input current will be generated. 
+.RE
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_add_synapse (\fBnemo_network_t\fP, unsigned source, unsigned target, unsigned delay, float weight, unsigned char is_plastic)"
+.PP
+
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_add_synapses (\fBnemo_network_t\fP, unsigned source, unsigned targets[], unsigned delays[], float weights[], unsigned char is_plastic[], size_t length)"
+.PP
+Add to the network a group of synapses with the same presynaptic neuron
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsource\fP Index of source neuron 
+.br
+\fItargets\fP Indices of target neurons 
+.br
+\fIdelays\fP Synapse conductance delays in milliseconds 
+.br
+\fIweights\fP Synapse weights 
+.br
+\fIis_plastic\fP Specifies for each synapse whether or not it is plastic. See section on STDP. 
+.br
+\fIlength\fP Number of synapses.
+.RE
+.PP
+\fBPrecondition:\fP
+.RS 4
+Each of \fItargets\fP, \fIdelays\fP, \fIweights\fP, and \fIis_plastic\fP contains \fIlength\fP elements. 
+.RE
+.PP
+
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_step (nemo_simulation_t, unsigned fstimIdx[], size_t fstimCount)"
+.PP
+.PP
+Run simulation for a single cycle (1ms)
+.PP
+Neurons can be optionally be forced to fire using the two arguments
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfstimIdx\fP Indices of the neurons which should be forced to fire this cycle. 
+.br
+\fIfstimCount\fP Length of fstimIdx 
+.RE
+.PP
+
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_apply_stdp (nemo_simulation_t, float reward)"
+.PP
+Update synapse weights using the accumulated STDP statistics
+.PP
+\fBParameters:\fP
+.RS 4
+\fIreward\fP Multiplier for the accumulated weight change 
+.RE
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_read_firing (nemo_simulation_t, unsigned * cycles[], unsigned * nidx[], unsigned * nfired, unsigned * ncycles)"
+.PP
+Return contents of firing buffer in the output parameters.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcycles\fP Cycle numbers (relative to start of buffer) at which neurons fired 
+.br
+\fInidx\fP Neuron indices of fired neurons 
+.br
+\fInfired\fP Number of neurons which fired since the previous call to \fBnemo_read_firing\fP 
+.br
+\fIncycles\fP Number of cycles for which firing data is returned 
+.RE
+.PP
+
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_flush_firing_buffer (nemo_simulation_t)"
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_get_synapses (nemo_simulation_t, unsigned sourceNeuron, unsigned * targetNeuron[], unsigned * delays[], float * weights[], unsigned char * is_plastic[], size_t * len)"
+.PP
+Read connectivity matrix back from device for a single neuron and delay. Every call to this function will return synapses in the same order. The output vectors are valid until the next call to this function.
+.PP
+\fBPostcondition:\fP
+.RS 4
+Output vectors \fItargetNeuron\fP, \fIweights\fP, \fIdelays\fP, and \fIis_plastic\fP all have length \fIlen\fP 
+.RE
+.PP
+
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_elapsed_wallclock (nemo_simulation_t, unsigned long *)"
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_elapsed_simulation (nemo_simulation_t, unsigned long *)"
+.PP
+ 
+.SS "DLL_PUBLIC \fBnemo_status_t\fP nemo_reset_timer (nemo_simulation_t)"
+.PP
+ 
+.SS "DLL_PUBLIC const char* nemo_strerror ()"
+.PP
+\fBReturns:\fP
+.RS 4
+string describing the most recent error (if any) 
+.RE
+.PP
+
+.SS "DLL_PUBLIC void nemo_delete_network (\fBnemo_network_t\fP)"
+.PP
+Delete network object, freeing up all its associated resources 
+.SS "DLL_PUBLIC void nemo_delete_simulation (nemo_simulation_t)"
+.PP
+Delete simulation object, freeing up all its associated resources 
+.SH SEE ALSO
+nemo(3) for library overview
+.SH AUTHOR
+.PP 
+Andreas Fidjeland (using Doxygen)
