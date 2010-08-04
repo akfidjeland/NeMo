@@ -22,9 +22,10 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 		sim->flushFiringBuffer();
 	}
 #ifdef INCLUDE_TIMING_API
-	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]" << std::endl;
+	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
 	sim->resetTimer();
 #endif
+	std::cout << std::endl;
 
 	unsigned seconds = 10;
 
@@ -40,8 +41,9 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 #ifdef INCLUDE_TIMING_API
 	long int elapsedTiming = sim->elapsedWallclock();
 	sim->resetTimer();
-	std::cout << "[" << elapsedTiming << "ms elapsed]" << std::endl;
+	std::cout << "[" << elapsedTiming << "ms elapsed]";
 #endif
+	std::cout << std::endl;
 
 	/* Dummy buffers for firing data */
 	const std::vector<unsigned>* cycles;
@@ -59,8 +61,9 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 	}
 #ifdef INCLUDE_TIMING_API
 	long int elapsedData = sim->elapsedWallclock();
-	std::cout << "[" << elapsedData << "ms elapsed]" << std::endl;
+	std::cout << "[" << elapsedData << "ms elapsed]";
 #endif
+	std::cout << std::endl;
 
 	unsigned long narrivals = nfired * m;
 	double f = (double(nfired) / n) / double(seconds);

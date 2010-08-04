@@ -143,20 +143,19 @@ main(int argc, char* argv[])
 		std::cerr << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
 	}
 
-	std::cerr << "constructing network\n";
+	std::cerr << "Constructing network\n";
 	nemo::Network* net = nemo::random1k::construct(ncount, scount);
 	nemo::Configuration conf;
 	conf.setCudaPartitionSize(psize);
 	conf.setFractionalBits(24);
-	std::cerr << "simulation will run on " << conf.backendDescription() << std::endl;
-	std::cerr << "creating simulation\n";
+	std::cerr << "Simulation will run on " << conf.backendDescription() << std::endl;
+	std::cerr << "Creating simulation\n";
 	nemo::Simulation* sim = NULL;
 	try {
 		sim = nemo::simulation(*net, conf);
 	} catch(std::runtime_error& e) {
 		std::cerr << e.what() << std::endl;
 	}
-	std::cerr << "running simulation\n";
 
 	simulate(sim, ncount, ncount);
 	//simulateToFile(sim, 1000, "firing.dat");
