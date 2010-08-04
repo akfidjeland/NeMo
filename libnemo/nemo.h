@@ -22,6 +22,26 @@ typedef void* nemo_configuration_t;
 /*! Status of API calls which can fail. */
 typedef int nemo_status_t;
 
+//-----------------------------------------------------------------------------
+// HARDWARE CONFIGURATION
+//-----------------------------------------------------------------------------
+
+
+/*! \return number of CUDA devices on this system.
+ *
+ * In case of error sets device count to 0 and return an error code. The
+ * associated error message can read using nemo_strerror. Errors can be the
+ * result of missing CUDA libraries, which from the users point of view may or
+ * may not be considered an error */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_cuda_device_count(unsigned* count);
+
+
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_cuda_device_description(unsigned device, const char**);
+
 
 //-----------------------------------------------------------------------------
 // CONFIGURATION
@@ -65,10 +85,16 @@ nemo_set_stdp_function(nemo_configuration_t,
 		float max_weight);
 
 
-/*! \copydoc nemo::Configuration::setCpuThreadCount */
+/*! \copydoc nemo::Configuration::setCpuBackend */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_cpu_thread_count(nemo_configuration_t, unsigned thread_count);
+nemo_set_cpu_backend(nemo_configuration_t, int thread_count);
+
+
+/*! \copydoc nemo::Configuration::cpuThreadCount */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_cpu_thread_count(nemo_configuration_t conf, int* thread_count);
 
 
 /*! \copydoc nemo::Configuration::setCudaFiringBufferLength */
@@ -80,18 +106,19 @@ nemo_set_cuda_firing_buffer_length(nemo_configuration_t, unsigned cycles);
 /*! \copydoc nemo::Configuration::cudaFiringBufferLength */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_cuda_firing_buffer_length(nemo_configuration_t, unsigned* cycles);
+nemo_get_cuda_firing_buffer_length(nemo_configuration_t, unsigned* cycles);
 
 
-/*! \copydoc nemo::Configuration::setCudaPartitionSize */
+
+/*! \copydoc nemo::Configuration::setCudaBackend */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_cuda_partition_size(nemo_configuration_t conf, unsigned size);
+nemo_set_cuda_backend(nemo_configuration_t conf, int dev);
 
 
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_cuda_device(nemo_configuration_t conf, int dev);
+nemo_get_cuda_device(nemo_configuration_t conf, int* dev);
 
 
 /*! \copydoc nemo::Configuration::setFractionalBits */
@@ -100,16 +127,16 @@ nemo_status_t
 nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits);
 
 
-/*! \copydoc nemo::Configuration::test */
+/*! \copydoc nemo::Configuration::backend */
 NEMO_DLL_PUBLIC
-unsigned char
-nemo_test(nemo_configuration_t conf);
+nemo_status_t
+nemo_get_backend(nemo_configuration_t conf, backend_t* backend);
 
 
 /*! \copydoc nemo::Configuration::backendDescription */
 NEMO_DLL_PUBLIC
-const char*
-nemo_get_backend_description(nemo_configuration_t conf);
+nemo_status_t
+nemo_get_backend_description(nemo_configuration_t conf, const char** descr);
 
 
 
@@ -209,7 +236,7 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount);
  * \{ */
 
 NEMO_DLL_PUBLIC
-nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_simulation_t);
+nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_configuration_t);
 
 /*! \copydoc nemo::Network::initSimulation */
 //nemo_status_t

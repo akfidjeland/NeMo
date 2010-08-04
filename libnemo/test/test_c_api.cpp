@@ -141,6 +141,17 @@ c_runSimulation(
 }
 
 
+
+void
+c_safeCall(nemo_status_t err)
+{
+	if(err != NEMO_OK) {
+		std::cerr << nemo_strerror() << std::endl;
+		exit(-1);
+	}
+}
+
+
 BOOST_AUTO_TEST_CASE(test_c_api)
 {
 	unsigned ncount = 1000;
@@ -175,11 +186,22 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 
 	std::cerr << "Running network (C++ API)\n";
 	runSimulation(net, conf, duration, &cycles1, &nidx1);
-	nemo_configuration_t c_conf = nemo_new_configuration();
-	if(!nemo_test(c_conf)) {
-		std::cerr << "Configuration failure " << nemo_get_backend_description(c_conf) << std::endl;
+
+	unsigned cuda_dcount;
+	c_safeCall(nemo_get_cuda_device_count(&cuda_dcount));
+	std::cerr << cuda_dcount << " CUDA devices available\n";
+
+	for(unsigned i=0; i < cuda_dcount; ++i) {
+		const char* cuda_descr;
+		c_safeCall(nemo_get_cuda_device_description(i, &cuda_descr));
+		std::cerr << "\tDevice " << i << ": " << cuda_descr << "\n";
 	}
-	std::cerr << nemo_get_backend_description(c_conf) << std::endl;
+
+
+	nemo_configuration_t c_conf = nemo_new_configuration();
+	const char* descr;
+	c_safeCall(nemo_get_backend_description(c_conf, &descr));
+	std::cerr << descr << std::endl;
 	std::cerr << "Running network (C API)\n";
 	c_runSimulation(c_net, c_conf, duration, &cycles2, &nidx2);
 	std::cerr << "Checking results\n";

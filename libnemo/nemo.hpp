@@ -21,7 +21,19 @@ namespace nemo {
  *
  * Any missing/unspecified fields in the configuration are filled in */
 NEMO_DLL_PUBLIC
-Simulation* simulation(const Network& net, Configuration& conf);
+Simulation* simulation(const Network& net, const Configuration& conf);
+
+
+/*! \return Number of CUDA devices on this system */
+NEMO_DLL_PUBLIC
+unsigned
+cudaDeviceCount();
+
+
+NEMO_DLL_PUBLIC
+const char*
+cudaDeviceDescription(unsigned device);
+
 
 }
 

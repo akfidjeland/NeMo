@@ -31,9 +31,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 {
 	public:
 
-		Simulation(const nemo::NetworkImpl& net, nemo::ConfigurationImpl& conf);
-
-		static void test(nemo::ConfigurationImpl&);
+		Simulation(const nemo::NetworkImpl& net, const nemo::ConfigurationImpl&);
 
 		unsigned getFractionalBits() const;
 
@@ -76,8 +74,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		/*! \copydoc nemo::SimulationBackend::resetTimer */
 		void resetTimer();
-
-		static unsigned defaultThreadCount();
 
 	private:
 
@@ -164,6 +160,10 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		std::vector<unsigned char> m_plasticOut;
 };
 
+
+
+/* If threadCount is -1, use default values */
+void chooseHardwareConfiguration(nemo::ConfigurationImpl&, int threadCount = -1);
 
 	} // namespace cpu
 } // namespace nemo

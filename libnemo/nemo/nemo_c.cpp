@@ -66,6 +66,21 @@ setResult(const char* msg, nemo_status_t status) {
 
 #define NOCATCH(T, ptr, call) static_cast<nemo::T*>(ptr)->call
 
+nemo_status_t
+nemo_get_cuda_device_count(unsigned* count)
+{
+	*count = 0;
+	CALL(*count = nemo::cudaDeviceCount());
+	return g_lastCallStatus;
+}
+
+
+nemo_status_t
+nemo_get_cuda_device_description(unsigned device, const char** descr)
+{
+	CALL(*descr = nemo::cudaDeviceDescription(device));
+	return g_lastCallStatus;
+}
 
 
 nemo_network_t
@@ -305,9 +320,16 @@ nemo_set_stdp_function(nemo_configuration_t conf,
 
 
 nemo_status_t
-nemo_set_cpu_thread_count(nemo_configuration_t conf, unsigned thread_count)
+nemo_set_cpu_backend(nemo_configuration_t conf, int threadCount)
 {
-	CATCH_(Configuration, conf, setCpuThreadCount(thread_count));
+	CATCH_(Configuration, conf, setCpuBackend(threadCount));
+}
+
+
+nemo_status_t
+nemo_get_cpu_thread_count(nemo_configuration_t conf, int* threadCount)
+{
+	CATCH(Configuration, conf, cpuThreadCount(), *threadCount);
 }
 
 
@@ -320,7 +342,7 @@ nemo_set_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned cycles)
 
 
 nemo_status_t
-nemo_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
+nemo_get_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
 {
 	CATCH(Configuration, conf, cudaFiringBufferLength(), *cycles);
 }
@@ -328,17 +350,17 @@ nemo_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
 
 
 nemo_status_t
-nemo_set_cuda_partition_size(nemo_configuration_t conf, unsigned size)
+nemo_set_cuda_backend(nemo_configuration_t conf, int dev)
 {
-	CATCH_(Configuration, conf, setCudaPartitionSize(size));
+	CATCH_(Configuration, conf, setCudaBackend(dev));
 }
 
 
 
 nemo_status_t
-nemo_set_cuda_device(nemo_configuration_t conf, int dev)
+nemo_get_cuda_device(nemo_configuration_t conf, int* dev)
 {
-	CATCH_(Configuration, conf, setCudaDevice(dev));
+	CATCH(Configuration, conf, cudaDevice(), *dev);
 }
 
 
@@ -350,17 +372,19 @@ nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits)
 }
 
 
-unsigned char
-nemo_test(nemo_configuration_t conf)
+
+nemo_status_t
+nemo_get_backend(nemo_configuration_t conf, backend_t* backend)
 {
-	return static_cast<unsigned char>(static_cast<nemo::Configuration*>(conf)->test());
+	CATCH(Configuration, conf, backend(), *backend);
 }
 
 
-const char*
-nemo_get_backend_description(nemo_configuration_t conf)
+
+nemo_status_t
+nemo_get_backend_description(nemo_configuration_t conf, const char** descr)
 {
-	return static_cast<nemo::Configuration*>(conf)->backendDescription().c_str();
+	CATCH(Configuration, conf, backendDescription().c_str(), *descr);
 }
 
 

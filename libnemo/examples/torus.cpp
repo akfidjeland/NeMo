@@ -244,11 +244,11 @@ configure(bool stdp, bool logging=true)
 			pre.at(i) = 1.0f * expf(-dt / 20.0f);
 			pre.at(i) = -0.8f * expf(-dt / 20.0f);
 		}
-		conf.setStdpFunction(pre, post, 10.0, -10.0);
+		conf.setStdpFunction(pre, post, -10.0, 10.0);
 	}
 
 	//! \todo control this from command line
-	conf.setBackend(NEMO_BACKEND_CUDA);
+	conf.setCudaBackend();
 
 	return conf;
 }
@@ -356,10 +356,6 @@ main(int argc, char* argv[])
 	nemo::Network* net = nemo::torus::construct(pcount, m, stdp, sigma);
 	nemo::Configuration conf = nemo::torus::configure(stdp, logging);
 	conf.setFractionalBits(24);
-	if(!conf.test()) {
-		std::cerr << "Invalid configuration: " << conf.backendDescription() << std::endl;
-		return -1;
-	}
 	std::cerr << "simulation will run on " << conf.backendDescription() << std::endl;
 	nemo::Simulation* sim = nemo::simulation(*net, conf);
 	simulate(sim, pcount*PATCH_SIZE, m);

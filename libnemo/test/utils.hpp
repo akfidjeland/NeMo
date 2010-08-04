@@ -17,4 +17,8 @@ compareSimulationResults(
 		const std::vector<unsigned>& cycles2,
 		const std::vector<unsigned>& nidx2);
 
+
+void
+setBackend(backend_t, nemo::Configuration& conf);
+
 #endif

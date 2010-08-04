@@ -50,7 +50,8 @@ configuration(bool stdp, unsigned partitionSize,
 	}
 
 	conf.setCudaPartitionSize(partitionSize);
-	conf.setBackend(backend);
+
+	setBackend(backend, conf);
 
 	return conf;
 }
@@ -275,7 +276,7 @@ testGetSynapses(backend_t backend)
 	boost::scoped_ptr<nemo::Network> net(nemo::random1k::construct(4000, 1000));
 
 	nemo::Configuration conf;
-	conf.setBackend(backend);
+	setBackend(backend, conf);
 	unsigned fbits = 22;
 	conf.setFractionalBits(fbits);
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));

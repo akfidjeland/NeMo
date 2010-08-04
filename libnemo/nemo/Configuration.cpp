@@ -1,6 +1,8 @@
 #include "Configuration.hpp"
 #include "ConfigurationImpl.hpp"
 
+#include <boost/format.hpp>
+#include <nemo/internals.hpp>
 #include <nemo/cpu/Simulation.hpp>
 
 namespace nemo {
@@ -8,7 +10,7 @@ namespace nemo {
 Configuration::Configuration() :
 	m_impl(new ConfigurationImpl())
 {
-	m_impl->setCpuThreadCount(cpu::Simulation::defaultThreadCount());
+	setDefaultHardware(*m_impl);
 }
 
 
@@ -48,12 +50,6 @@ Configuration::loggingEnabled() const
 }
 
 
-void
-Configuration::setCpuThreadCount(unsigned threads)
-{
-	m_impl->setCpuThreadCount(threads);
-}
-
 
 void
 Configuration::setCudaPartitionSize(unsigned ps)
@@ -84,20 +80,6 @@ Configuration::cudaFiringBufferLength() const
 
 
 void
-Configuration::setCudaDevice(int dev)
-{
-	m_impl->setCudaDevice(dev);
-}
-
-
-int
-Configuration::cudaDevice() const
-{
-	return m_impl->cudaDevice();
-}
-
-
-void
 Configuration::setStdpFunction(
 				const std::vector<float>& prefire,
 				const std::vector<float>& postfire,
@@ -115,25 +97,78 @@ Configuration::setFractionalBits(unsigned bits)
 }
 
 
+
 void
-Configuration::setBackend(backend_t backend)
+Configuration::setCpuBackend(int threadCount)
 {
-	m_impl->setBackend(backend);
+	// try setting the CUDA backend
+	cpu::chooseHardwareConfiguration(*m_impl, threadCount);
 }
 
 
-bool testBackend(ConfigurationImpl& conf);
-
-bool
-Configuration::test()
+void
+Configuration::setCudaBackend(int device)
 {
-	return testBackend(*m_impl);
+	setCudaDeviceConfiguration(*m_impl, device);
 }
+
+
+
+backend_t
+Configuration::backend() const
+{
+	return m_impl->backend();
+}
+
+
+
+int
+Configuration::cudaDevice() const
+{
+	if(m_impl->backend() == NEMO_BACKEND_CUDA) {
+		return m_impl->cudaDevice();
+	} else {
+		return -1;
+	}
+}
+
+
+int
+Configuration::cpuThreadCount() const
+{
+	if(m_impl->backend() == NEMO_BACKEND_CPU) {
+		return m_impl->cpuThreadCount();
+	} else {
+		return -1;
+	}
+}
+
+
+
 
 
 const std::string&
-Configuration::backendDescription() const
+Configuration::backendDescription()
 {
+	using boost::format;
+
+	unsigned tcount;
+	switch(m_impl->backend()) {
+		case NEMO_BACKEND_CUDA :
+			m_impl->setBackendDescription(cudaDeviceDescription(m_impl->cudaDevice()));
+			break;
+		case NEMO_BACKEND_CPU :
+			//! \todo throw from cpuThreadCount. Set post condition
+			tcount = m_impl->cpuThreadCount();
+			if(tcount == 1) {
+				m_impl->setBackendDescription("CPU backend (single-threaded)");
+			} else {
+				m_impl->setBackendDescription(str(format("CPU backend (%u threads)") % tcount));
+			}
+			break;
+		default :
+			throw std::runtime_error("Invalid backend selected");
+	}
 	return m_impl->backendDescription();
 }
 

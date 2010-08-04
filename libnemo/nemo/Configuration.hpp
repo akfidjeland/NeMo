@@ -32,6 +32,7 @@ namespace nemo {
 
 	class Simulation;
 	class Network;
+	class HardwareConfiguration;
 
 	namespace mpi {
 		class Master;
@@ -54,9 +55,6 @@ class NEMO_DLL_PUBLIC Configuration
 		void disableLogging();
 		bool loggingEnabled() const;
 
-		/*! Specify the number of threads (>= 1) to use for the CPU backend. */
-		void setCpuThreadCount(unsigned threads);
-
 		void setCudaPartitionSize(unsigned ps); 
 		unsigned cudaPartitionSize() const;
 
@@ -64,15 +62,6 @@ class NEMO_DLL_PUBLIC Configuration
 		 * number of \a cycles worth of firing data before overflowing. */
 		void setCudaFiringBufferLength(unsigned cycles); 
 		unsigned cudaFiringBufferLength() const;
-
-		/*! Specify the device which should be used by the CUDA backend when
-		 * creating the simulation. The chosen device is not tested here, but
-		 * an error may be generated later (when constructing the simulation)
-		 * if the chosen device is invalid. There's no need to call this
-		 * function; if the device is not specified and the CUDA backend is
-		 * used, a suitable device will be chosen */
-		void setCudaDevice(int dev);
-		int cudaDevice() const;
 
 		void setStdpFunction(
 				const std::vector<float>& prefire,
@@ -86,20 +75,41 @@ class NEMO_DLL_PUBLIC Configuration
 		 * based on the range of weights in the input network. */
 		void setFractionalBits(unsigned bits);
 
-		void setBackend(backend_t backend);
+		/*! Specify that the CUDA backend should be used and optionally specify
+		 * a desired device. If the (default) device value of -1 is used the
+		 * backend will choose the best available device.
+		 *
+		 * If the cuda backend (and the chosen device) cannot be used for
+		 * whatever reason, an exception is raised.
+		 *
+		 * The device numbering is the numbering used internally by nemo (\see
+		 * \a cudaDeviceCount and \a cudaDeviceDescription). This device
+		 * numbering may differ from the one provided by the CUDA driver
+		 * directly, since nemo ignores any devices it cannot use. */
+		void setCudaBackend(int device = -1);
 
-		/*! Test whether the configuration is valid, i.e. whether it's possible
-		 * to create a simulation based on it. A configuration can be invalid
-		 * for a number of reasons including. Use \a descr to check reason for
-		 * configuration being invalid. Returns true/ok if the test passes. */
-		bool test();
+		/*! Specify that the CPU backend should be used and optionally specify
+		 * the number of threads to use. If the default thread count of -1 is
+		 * used, the backend will choose a sensible value */
+		void setCpuBackend(int threadCount = -1);
 
-		/*! \return description of the backend used or any error */
-		const std::string& backendDescription() const;
+		backend_t backend() const;
+
+		/*! \return the chosen CUDA device or -1 if CUDA is not the selected
+		 * backend. */
+		int cudaDevice() const;
+
+		/*! \return the number of threads used by the CPU backend or -1 if CPU
+		 * is not the selected backend. */
+		int cpuThreadCount() const;
+
+
+		/*! \return description of the chosen backend */
+		const std::string& backendDescription();
 
 	private:
 
-		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, Configuration& conf);
+		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, const Configuration&);
 		friend class nemo::mpi::Master;
 		friend class nemo::mpi::Worker;
 

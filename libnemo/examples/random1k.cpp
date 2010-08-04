@@ -136,12 +136,18 @@ main(int argc, char* argv[])
 	unsigned ncount = 1000;
 	unsigned scount = 1000;
 
+	unsigned dcount  = nemo::cudaDeviceCount();
+	std::cerr << "CUDA devices: " << nemo::cudaDeviceCount() << std::endl;
+
+	for(unsigned d = 0; d < dcount; ++d) {
+		std::cerr << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
+	}
+
 	std::cerr << "constructing network\n";
 	nemo::Network* net = nemo::random1k::construct(ncount, scount);
 	nemo::Configuration conf;
 	conf.setCudaPartitionSize(psize);
 	conf.setFractionalBits(24);
-	conf.test();
 	std::cerr << "simulation will run on " << conf.backendDescription() << std::endl;
 	std::cerr << "creating simulation\n";
 	nemo::Simulation* sim = NULL;

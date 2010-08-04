@@ -43,8 +43,7 @@
 
 enum {
 	NEMO_BACKEND_CUDA,
-	NEMO_BACKEND_CPU,
-	NEMO_BACKEND_UNSPECIFIED
+	NEMO_BACKEND_CPU
 };
 
 typedef unsigned backend_t;

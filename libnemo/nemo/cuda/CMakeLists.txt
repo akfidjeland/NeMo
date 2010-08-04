@@ -59,6 +59,7 @@ CUDA_ADD_LIBRARY(nemo_cuda
 	ThalamicInput.cpp
 	WarpAddressTable.cpp
 	device_memory.cpp
+	devices.cpp
   )
 
 SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES DEFINE_SYMBOL NEMO_CUDA_EXPORTS)

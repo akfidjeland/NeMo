@@ -16,6 +16,7 @@
 
 #ifdef NEMO_CUDA_ENABLED
 #include <nemo/cuda/create_simulation.hpp>
+#include <nemo/cuda/devices.hpp>
 #endif
 #include <nemo/cpu/Simulation.hpp>
 
@@ -57,8 +58,50 @@ loadCudaLibrary()
 #endif
 
 
+
+#ifdef NEMO_CUDA_ENABLED
+
+unsigned
+cudaDeviceCount()
+{
+#ifdef NEMO_CUDA_DYNAMIC_LOADING
+	dl_handle hdl  = loadCudaLibrary();
+	nemo_cuda_device_count_t* fn = (nemo_cuda_device_count_t*) dl_sym(hdl, "nemo_cuda_device_count");
+	if(fn == NULL) {
+		throw nemo::exception(NEMO_DL_ERROR, dl_error());
+	}
+	return fn();
+#else
+	return nemo_cuda_device_count();
+#endif
+}
+
+
+
+/* Throws on error */
+const char*
+cudaDeviceDescription(unsigned device)
+{
+#ifdef NEMO_CUDA_DYNAMIC_LOADING
+	dl_handle hdl  = loadCudaLibrary();
+	nemo_cuda_device_description_t* fn =
+		(nemo_cuda_device_description_t*) dl_sym(hdl, "nemo_cuda_device_description");
+	if(fn == NULL) {
+		throw nemo::exception(NEMO_DL_ERROR, dl_error());
+	}
+	return fn(device);
+#else
+	return cuda_device_description(device);
+#endif
+}
+
+
+#endif
+
+
+
 SimulationBackend*
-cudaSimulation(const NetworkImpl& net, ConfigurationImpl& conf)
+cudaSimulation(const NetworkImpl& net, const ConfigurationImpl& conf)
 {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl = loadCudaLibrary();
@@ -78,7 +121,7 @@ cudaSimulation(const NetworkImpl& net, ConfigurationImpl& conf)
  * makes sense (see e.g. nemo::mpi::Worker), so provide an overload of 'create'
  * that takes such an object directly. */
 SimulationBackend*
-simulationBackend(const NetworkImpl& net, ConfigurationImpl& conf)
+simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf)
 {
 	if(net.neuronCount() == 0) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
@@ -88,19 +131,12 @@ simulationBackend(const NetworkImpl& net, ConfigurationImpl& conf)
 
 	switch(conf.backend()) {
 #ifdef NEMO_CUDA_ENABLED
-		case NEMO_BACKEND_UNSPECIFIED:
-			try {
-				return cudaSimulation(net, conf);
-			} catch(...) {
-				return new cpu::Simulation(net, conf);
-			}
 		case NEMO_BACKEND_CUDA:
 			return cudaSimulation(net, conf);
 #else
 		case NEMO_BACKEND_CUDA:
 			throw nemo::exception(NEMO_API_UNSUPPORTED,
 					"nemo was compiled without Cuda support. Cannot create simulation");
-		case NEMO_BACKEND_UNSPECIFIED:
 #endif
 		case NEMO_BACKEND_CPU:
 			return new cpu::Simulation(net, conf);
@@ -110,77 +146,42 @@ simulationBackend(const NetworkImpl& net, ConfigurationImpl& conf)
 }
 
 
+
 Simulation*
-simulation(const Network& net, Configuration& conf)
+simulation(const Network& net, const Configuration& conf)
 {
 	return dynamic_cast<Simulation*>(simulationBackend(*net.m_impl, *conf.m_impl));
 }
 
 
 
-/* Check that
- *
- * 1. we can load the CUDA library
- * 2. that the simulation parameters check out
- *
- * As a side effect, fill in missing relevant fields in conf and add a backend
- * description string.
- *
- * Errors are signaled via exceptions.
- */
+
+/* Set the default CUDA device if possible. Throws if anything goes wrong or if
+ * there are no suitable devices. If device is -1, have the backend choose a
+ * device. Otherwise, try to use the device provided by the user.  */
 void
-testCuda(ConfigurationImpl& conf)
+setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device)
 {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl = loadCudaLibrary();
-	nemo_cuda_test_simulation_t* test = (nemo_cuda_test_simulation_t*) dl_sym(hdl, "nemo_cuda_test_simulation");
-	if(test == NULL) {
-		throw nemo::exception(NEMO_DL_ERROR, dl_error());
-	}
-	test(&conf);
+	nemo_cuda_choose_device_t* fn =
+		(nemo_cuda_choose_device_t*) dl_sym(hdl, "nemo_cuda_choose_device");
+	fn(&conf, device);
 #else
-	cuda::testSimulation(conf);
+	nemo_cuda_choose_device(&conf, device);
 #endif
 }
 
 
 
-bool
-testBackend(ConfigurationImpl& conf)
+void
+setDefaultHardware(nemo::ConfigurationImpl& conf)
 {
-	using boost::format;
-	bool valid = true;
-
 	try {
-
-	if(conf.backend() == NEMO_BACKEND_CUDA) {
-		try {
-			testCuda(conf);
-		} catch (std::exception& e) {
-			conf.setBackendDescription(str(format("Cannot simulate on CUDA device: %s") % e.what()));
-			valid = false;
-		}
-	} else if(conf.backend() == NEMO_BACKEND_UNSPECIFIED) {
-		try {
-			testCuda(conf);
-		} catch(std::exception&) {
-			/* The CUDA backend does not work for some reason. However, the
-			 * user did not specify what backend to use, so just go ahead and
-			 * use the CPU backend instead. */
-			cpu::Simulation::test(conf);
-		}
-	} else if(conf.backend() == NEMO_BACKEND_CPU) {
-			cpu::Simulation::test(conf);
-	} else {
-		conf.setBackendDescription("Unknown backend specified in configuration");
-		valid = false;
-	}
-
+		setCudaDeviceConfiguration(conf, -1);
 	} catch(...) {
-		conf.setBackendDescription("An unkown exception was raised when testing the backend");
-		valid = false;
+		cpu::chooseHardwareConfiguration(conf);
 	}
-	return valid;
 }
 
 }

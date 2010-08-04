@@ -15,6 +15,7 @@ namespace mpi {
 class Simulation;
 class SimulationBackend;
 class Configuration;
+class HardwareConfiguration;
 
 /*! Networks are constructed by adding individual neurons, and single or groups
  * of synapses to the network. Neurons are given indices (from 0) which should
@@ -122,7 +123,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 
 	private :
 
-		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, Configuration& conf);
+		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, const Configuration& conf);
 		friend class nemo::mpi::Master;
 
 		class NetworkImpl* m_impl;

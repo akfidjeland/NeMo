@@ -10,6 +10,8 @@
 #include <nemo.hpp>
 #include <examples.hpp>
 
+#include "utils.hpp"
+
 
 
 void
@@ -23,7 +25,7 @@ run(nemo::Network* net,
 	std::cerr << "running test\n";
 	using namespace std;
 
-	conf.setBackend(backend);
+	setBackend(backend, conf);
 
 	fstream file;
 	//! \todo determine canonical filename based on configuration

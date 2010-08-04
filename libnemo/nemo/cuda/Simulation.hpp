@@ -43,12 +43,6 @@ class Simulation : public nemo::SimulationBackend
 
 		/* CONFIGURATION */
 
-		/* Verify that we can create a simulation based on the configuration.
-		 * Any missing fields in the configuration are filled in (including the
-		 * description of the backend). Any errors are communicated via
-		 * exceptions */
-		static void test(nemo::ConfigurationImpl&);
-
 		unsigned getFiringBufferLength() const { return m_firingOutput.bufferLength(); }
 
 		unsigned getFractionalBits() const;
@@ -84,7 +78,8 @@ class Simulation : public nemo::SimulationBackend
 
 		/* Use factory method for generating objects */
 		Simulation(const nemo::NetworkImpl&, const nemo::ConfigurationImpl&);
-		friend SimulationBackend* simulation(const NetworkImpl& net, ConfigurationImpl& conf);
+
+		friend SimulationBackend* simulation(const NetworkImpl& net, const ConfigurationImpl& conf);
 
 		Mapper m_mapper;
 

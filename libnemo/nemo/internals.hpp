@@ -18,9 +18,17 @@
 
 namespace nemo {
 
-NEMO_DLL_PUBLIC
 SimulationBackend*
 simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf);
+
+void
+setDefaultHardware(nemo::ConfigurationImpl& conf);
+
+void
+setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device = -1);
+
+const char*
+cudaDeviceDescription(unsigned device);
 
 }
 

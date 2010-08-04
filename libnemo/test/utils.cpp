@@ -59,3 +59,14 @@ compareSimulationResults(
 		}
 	}
 }
+
+
+void
+setBackend(backend_t backend, nemo::Configuration& conf)
+{
+	switch(backend) {
+		case NEMO_BACKEND_CPU: conf.setCpuBackend(); break;
+		case NEMO_BACKEND_CUDA: conf.setCudaBackend(); break;
+		default: BOOST_REQUIRE(false);
+	}
+}

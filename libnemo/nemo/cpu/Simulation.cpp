@@ -7,7 +7,6 @@
 #ifdef NEMO_CPU_MULTITHREADED
 #include <boost/thread.hpp>
 #endif
-#include <boost/format.hpp>
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -38,7 +37,7 @@ namespace nemo {
 
 Simulation::Simulation(
 		const nemo::NetworkImpl& net,
-		nemo::ConfigurationImpl& conf) :
+		const nemo::ConfigurationImpl& conf) :
 	//! \todo remove redundant member?
 	m_neuronCount(net.neuronCount()),
 	m_a(m_neuronCount, 0),
@@ -57,8 +56,6 @@ Simulation::Simulation(
 	m_lastFlush(0),
 	m_stdp(conf.stdpFunction())
 {
-	Simulation::test(conf);
-
 	//! \todo add handling of non-contigous memory here. Need a mapper of some sort for this.
 	nemo::initialiseRng(net.minNeuronIndex(), net.maxNeuronIndex(), m_rng);
 	setNeuronParameters(net);
@@ -133,18 +130,6 @@ Simulation::initWorkers(size_t neurons, unsigned threads)
 }
 
 #endif
-
-
-unsigned
-Simulation::defaultThreadCount()
-{
-#ifdef NEMO_CPU_MULTITHREADED
-	//! \todo warn here if hardware concurrency is not known (=0)
-	return std::max(1U, boost::thread::hardware_concurrency());
-#else
-	return 1;
-#endif
-}
 
 
 
@@ -493,21 +478,23 @@ Simulation::resetTimer()
 
 
 void
-Simulation::test(nemo::ConfigurationImpl& conf)
+chooseHardwareConfiguration(nemo::ConfigurationImpl& conf, int threadCount)
 {
-	using boost::format;
-
-	/* No need to check the number of threads. Just go with whatever the user requested */
 	conf.setBackend(NEMO_BACKEND_CPU);
 	/*! \todo get processor name */
 #ifdef NEMO_CPU_MULTITHREADED
-	unsigned tcount = conf.cpuThreadCount();
-	assert(tcount > 0);
-	if(tcount > 1) {
-		conf.setBackendDescription(str(format("CPU backend (%u threads)") % tcount));
-	} else
+	if(threadCount < 1) {
+		conf.setCpuThreadCount(std::max(1U, boost::thread::hardware_concurrency()));
+	} else {
+		conf.setCpuThreadCount(threadCount);
+	}
+#else
+	if(threadCount > 1) {
+		throw nemo::exception(NEMO_INVALID_INPUT, "nemo compiled without multithreading support.");
+	} else {
+		conf.setCpuThreadCount(1);
+	}
 #endif
-		conf.setBackendDescription("CPU backend (single-threaded)");
 }
 
 
