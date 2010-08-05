@@ -61,7 +61,6 @@ INSTALL(TARGETS nemo nemo_base DESTINATION ${INSTALL_LIB_DIR})
 INSTALL(FILES
 		constants.h
 		Configuration.hpp
-		HardwareConfiguration.hpp
 		Network.hpp
 		Simulation.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/config.h
