@@ -40,12 +40,12 @@ const char* nemo_version();
  * may not be considered an error */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_cuda_device_count(unsigned* count);
+nemo_cuda_device_count(unsigned* count);
 
 
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_cuda_device_description(unsigned device, const char**);
+nemo_cuda_device_description(unsigned device, const char**);
 
 
 //-----------------------------------------------------------------------------
@@ -99,7 +99,7 @@ nemo_set_cpu_backend(nemo_configuration_t, int thread_count);
 /*! \copydoc nemo::Configuration::cpuThreadCount */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_cpu_thread_count(nemo_configuration_t conf, int* thread_count);
+nemo_cpu_thread_count(nemo_configuration_t conf, int* thread_count);
 
 
 /*! \copydoc nemo::Configuration::setCudaFiringBufferLength */
@@ -111,7 +111,7 @@ nemo_set_cuda_firing_buffer_length(nemo_configuration_t, unsigned cycles);
 /*! \copydoc nemo::Configuration::cudaFiringBufferLength */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_cuda_firing_buffer_length(nemo_configuration_t, unsigned* cycles);
+nemo_cuda_firing_buffer_length(nemo_configuration_t, unsigned* cycles);
 
 
 
@@ -123,7 +123,7 @@ nemo_set_cuda_backend(nemo_configuration_t conf, int dev);
 
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_cuda_device(nemo_configuration_t conf, int* dev);
+nemo_cuda_device(nemo_configuration_t conf, int* dev);
 
 
 /*! \copydoc nemo::Configuration::setFractionalBits */
@@ -135,13 +135,13 @@ nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits);
 /*! \copydoc nemo::Configuration::backend */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_backend(nemo_configuration_t conf, backend_t* backend);
+nemo_backend(nemo_configuration_t conf, backend_t* backend);
 
 
 /*! \copydoc nemo::Configuration::backendDescription */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_backend_description(nemo_configuration_t conf, const char** descr);
+nemo_backend_description(nemo_configuration_t conf, const char** descr);
 
 
 

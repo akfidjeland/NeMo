@@ -75,7 +75,7 @@ nemo_version()
 
 
 nemo_status_t
-nemo_get_cuda_device_count(unsigned* count)
+nemo_cuda_device_count(unsigned* count)
 {
 	*count = 0;
 	CALL(*count = nemo::cudaDeviceCount());
@@ -84,7 +84,7 @@ nemo_get_cuda_device_count(unsigned* count)
 
 
 nemo_status_t
-nemo_get_cuda_device_description(unsigned device, const char** descr)
+nemo_cuda_device_description(unsigned device, const char** descr)
 {
 	CALL(*descr = nemo::cudaDeviceDescription(device));
 	return g_lastCallStatus;
@@ -335,7 +335,7 @@ nemo_set_cpu_backend(nemo_configuration_t conf, int threadCount)
 
 
 nemo_status_t
-nemo_get_cpu_thread_count(nemo_configuration_t conf, int* threadCount)
+nemo_cpu_thread_count(nemo_configuration_t conf, int* threadCount)
 {
 	CATCH(Configuration, conf, cpuThreadCount(), *threadCount);
 }
@@ -350,7 +350,7 @@ nemo_set_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned cycles)
 
 
 nemo_status_t
-nemo_get_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
+nemo_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
 {
 	CATCH(Configuration, conf, cudaFiringBufferLength(), *cycles);
 }
@@ -366,7 +366,7 @@ nemo_set_cuda_backend(nemo_configuration_t conf, int dev)
 
 
 nemo_status_t
-nemo_get_cuda_device(nemo_configuration_t conf, int* dev)
+nemo_cuda_device(nemo_configuration_t conf, int* dev)
 {
 	CATCH(Configuration, conf, cudaDevice(), *dev);
 }
@@ -382,7 +382,7 @@ nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits)
 
 
 nemo_status_t
-nemo_get_backend(nemo_configuration_t conf, backend_t* backend)
+nemo_backend(nemo_configuration_t conf, backend_t* backend)
 {
 	CATCH(Configuration, conf, backend(), *backend);
 }
@@ -390,7 +390,7 @@ nemo_get_backend(nemo_configuration_t conf, backend_t* backend)
 
 
 nemo_status_t
-nemo_get_backend_description(nemo_configuration_t conf, const char** descr)
+nemo_backend_description(nemo_configuration_t conf, const char** descr)
 {
 	CATCH(Configuration, conf, backendDescription().c_str(), *descr);
 }

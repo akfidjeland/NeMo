@@ -190,19 +190,19 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 	runSimulation(net, conf, duration, &cycles1, &nidx1);
 
 	unsigned cuda_dcount;
-	c_safeCall(nemo_get_cuda_device_count(&cuda_dcount));
+	c_safeCall(nemo_cuda_device_count(&cuda_dcount));
 	std::cerr << cuda_dcount << " CUDA devices available\n";
 
 	for(unsigned i=0; i < cuda_dcount; ++i) {
 		const char* cuda_descr;
-		c_safeCall(nemo_get_cuda_device_description(i, &cuda_descr));
+		c_safeCall(nemo_cuda_device_description(i, &cuda_descr));
 		std::cerr << "\tDevice " << i << ": " << cuda_descr << "\n";
 	}
 
 
 	nemo_configuration_t c_conf = nemo_new_configuration();
 	const char* descr;
-	c_safeCall(nemo_get_backend_description(c_conf, &descr));
+	c_safeCall(nemo_backend_description(c_conf, &descr));
 	std::cerr << descr << std::endl;
 	std::cerr << "Running network (C API)\n";
 	c_runSimulation(c_net, c_conf, duration, &cycles2, &nidx2);
