@@ -490,15 +490,23 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
-setCpuThreadCount(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+setCpuBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 0);
     checkNemoStatus( 
-            nemo_set_cpu_thread_count( 
-                    getConfiguration(prhs, 1), 
-                    scalar<unsigned,uint32_t>(prhs[2]) 
-            ) 
+            nemo_set_cpu_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
+    );
+}
+
+
+void
+setCudaBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus( 
+            nemo_set_cuda_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
     );
 }
 
@@ -527,17 +535,6 @@ cudaFiringBufferLength(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[
             nemo_cuda_firing_buffer_length(getConfiguration(prhs, 1), &milliseconds) 
     );
     returnScalar<unsigned, uint32_t>(plhs, 0, milliseconds);
-}
-
-
-void
-setCudaDevice(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 0);
-    checkNemoStatus( 
-            nemo_set_cuda_device(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
-    );
 }
 
 
@@ -597,10 +594,10 @@ fn_ptr fn_arr[FN_COUNT] = {
 	resetTimer,
 	newConfiguration,
 	deleteConfiguration,
-	setCpuThreadCount,
+	setCpuBackend,
+	setCudaBackend,
 	setCudaFiringBufferLength,
 	cudaFiringBufferLength,
-	setCudaDevice,
 	setStdpFunction,
 	setFractionalBits};
 

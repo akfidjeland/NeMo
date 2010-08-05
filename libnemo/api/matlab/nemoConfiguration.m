@@ -3,44 +3,65 @@
 %  
 % Methods:
 %     nemoConfiguration (constructor)
-%     setCpuThreadCount
+%     setCpuBackend
+%     setCudaBackend
 %     setCudaFiringBufferLength
 %     cudaFiringBufferLength
-%     setCudaDevice
 %     setStdpFunction
 %     setFractionalBits
 %   
 classdef nemoConfiguration < handle
 
-	properties
-		% the MEX layer keeps track of the actual pointers;
-		id = -1;
-	end
+    properties
+        % the MEX layer keeps track of the actual pointers;
+        id = -1;
+    end
 
-	methods
+    methods
 
-		function obj = nemoConfiguration()
-			obj.id = nemo_mex(uint32(16));
-		end
+        function obj = nemoConfiguration()
+        	obj.id = nemo_mex(uint32(16));
+        end
 
-		function delete(obj)
-			nemo_mex(uint32(17), obj.id);
-		end
+        function delete(obj)
+            nemo_mex(uint32(17), obj.id);
+        end
 
-        function setCpuThreadCount(obj, tcount)
-        % setCpuThreadCount - Set number of threads for CPU backend
+        function setCpuBackend(obj, tcount)
+        % setCpuBackend - Specify that the CPU backend should be used
         %  
         % Synopsis:
-        %   setCpuThreadCount(tcount)
+        %   setCpuBackend(tcount)
         %  
         % Inputs:
         %   tcount  - number of threads
         %    
-        % Set the number of threads (>= 1) to use for the CPU backend. If
-        % nothing is specified a default value based on the available
-        % hardware concurrency (cores, hyperthreading etc.) is used. 
-            nemo_mex(uint32(18), obj.id, uint32(tcount));
-		end
+        % Specify that the CPU backend should be used and optionally specify
+        % the number of threads to use. If the default thread count of -1 is
+        % used, the backend will choose a sensible value based on the
+        % available hardware concurrency. 
+            nemo_mex(uint32(18), obj.id, int32(tcount));
+        end
+
+        function setCudaBackend(obj, deviceNumber)
+        % setCudaBackend - Specify that the CUDA backend should be used
+        %  
+        % Synopsis:
+        %   setCudaBackend(deviceNumber)
+        %  
+        % Inputs:
+        %   deviceNumber -
+        %    
+        % Specify that the CUDA backend should be used and optionally specify
+        % a desired device. If the (default) device value of -1 is used the
+        % backend will choose the best available device. If the cuda backend
+        % (and the chosen device) cannot be used for whatever reason, an
+        % exception is raised. The device numbering is the numbering used
+        % internally by nemo (see cudaDeviceCount and cudaDeviceDescription).
+        % This device numbering may differ from the one provided by the CUDA
+        % driver directly, since nemo ignores any devices it cannot use. 
+            nemo_mex(uint32(19), obj.id, int32(deviceNumber));
+        end
 
         function setCudaFiringBufferLength(obj, milliseconds)
         % setCudaFiringBufferLength - 
@@ -53,8 +74,8 @@ classdef nemoConfiguration < handle
         %    
         % Set the size of the firing buffer such that it can contain a fixed
         % number of cycles worth of firing before overflowing 
-            nemo_mex(uint32(19), obj.id, uint32(milliseconds));
-		end
+            nemo_mex(uint32(20), obj.id, uint32(milliseconds));
+        end
 
         function milliseconds = cudaFiringBufferLength(obj)
         % cudaFiringBufferLength - 
@@ -67,22 +88,8 @@ classdef nemoConfiguration < handle
         %             Number of milliseconds the simulation is guaranteed to be able to
         %             run before overflowing firing buffer
         %     
-            milliseconds = nemo_mex(uint32(20), obj.id);
-		end
-
-        function setCudaDevice(obj, deviceNumber)
-        % setCudaDevice - Set the CUDA device number to use for simulation
-        %  
-        % Synopsis:
-        %   setCudaDevice(deviceNumber)
-        %  
-        % Inputs:
-        %   deviceNumber -
-        %    
-        % The backend will choose a suitable device by default, but this
-        % function can be used to override that choice 
-            nemo_mex(uint32(21), obj.id, int32(deviceNumber));
-		end
+            milliseconds = nemo_mex(uint32(21), obj.id);
+        end
 
         function setStdpFunction(obj, prefire, postfire, minWeight, maxWeight)
         % setStdpFunction - Enable STDP and set the global STDP function
@@ -113,7 +120,7 @@ classdef nemoConfiguration < handle
                     double(minWeight),...
                     double(maxWeight)...
             );
-		end
+        end
 
         function setFractionalBits(obj, bits)
         % setFractionalBits - Set number of fractional bits used for fixed-point weight format
@@ -131,6 +138,6 @@ classdef nemoConfiguration < handle
         % fractional bits to be used. The number of fractional bits should be
         % less than 32. 
             nemo_mex(uint32(23), obj.id, uint32(bits));
-		end
-	end
+        end
+    end
 end
