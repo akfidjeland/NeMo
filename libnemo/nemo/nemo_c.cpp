@@ -66,6 +66,14 @@ setResult(const char* msg, nemo_status_t status) {
 
 #define NOCATCH(T, ptr, call) static_cast<nemo::T*>(ptr)->call
 
+
+const char*
+nemo_version()
+{
+	return nemo::version();
+}
+
+
 nemo_status_t
 nemo_get_cuda_device_count(unsigned* count)
 {

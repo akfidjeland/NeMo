@@ -22,6 +22,11 @@ typedef void* nemo_configuration_t;
 /*! Status of API calls which can fail. */
 typedef int nemo_status_t;
 
+
+NEMO_DLL_PUBLIC
+const char* nemo_version();
+
+
 //-----------------------------------------------------------------------------
 // HARDWARE CONFIGURATION
 //-----------------------------------------------------------------------------

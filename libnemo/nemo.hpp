@@ -35,6 +35,12 @@ const char*
 cudaDeviceDescription(unsigned device);
 
 
+/*! \return version number of the nemo library */
+NEMO_DLL_PUBLIC
+const char*
+version();
+
+
 }
 
 #endif

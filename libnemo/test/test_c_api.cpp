@@ -162,6 +162,8 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 	urng_t randomParameter(rng, boost::uniform_real<double>(0, 1));
 	uirng_t randomTarget(rng, boost::uniform_int<>(0, ncount-1));
 
+	std::cerr << "Nemo version: " << nemo_version() << std::endl;
+
 	std::cerr << "Creating network (C++ API)\n";
 	nemo::Network* net = new nemo::Network();
 	std::cerr << "Creating network (C API)\n";

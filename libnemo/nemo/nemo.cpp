@@ -184,4 +184,13 @@ setDefaultHardware(nemo::ConfigurationImpl& conf)
 	}
 }
 
+
+
+const char*
+version()
+{
+	return NEMO_VERSION;
+}
+
+
 }
