@@ -242,7 +242,7 @@ configure(bool stdp, bool logging=true)
 		for(unsigned i = 0; i < 20; ++i) {
 			float dt = float(i + 1);
 			pre.at(i) = 1.0f * expf(-dt / 20.0f);
-			pre.at(i) = -0.8f * expf(-dt / 20.0f);
+			post.at(i) = -0.8f * expf(-dt / 20.0f);
 		}
 		conf.setStdpFunction(pre, post, -10.0, 10.0);
 	}
