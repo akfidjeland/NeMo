@@ -8,7 +8,8 @@ runSimulation(
 		nemo::Configuration conf,
 		unsigned seconds,
 		std::vector<unsigned>* fcycles,
-		std::vector<unsigned>* fnidx)
+		std::vector<unsigned>* fnidx,
+		std::vector<unsigned> initFiring)
 {
 	nemo::Simulation* sim = nemo::simulation(*net, conf);
 
@@ -19,7 +20,12 @@ runSimulation(
 	
 	for(unsigned s = 0; s < seconds; ++s)
 	for(unsigned ms = 0; ms < 1000; ++ms) {
-		sim->step();
+
+		if(s == 0 && ms == 0) {
+			sim->step(initFiring);
+		} else {
+			sim->step();
+		}
 
 		//! \todo could modify API here to make this nicer
 		const std::vector<unsigned>* cycles_tmp;

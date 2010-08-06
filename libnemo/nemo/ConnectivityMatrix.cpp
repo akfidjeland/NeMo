@@ -97,6 +97,7 @@ ConnectivityMatrix::finalizeForward()
 			if(row != m_acc.end()) {
 				m_cm.at(addressOf(n,d)) = row->second;
 			} else {
+				/* Insertion into map does not invalidate existing iterators */
 				m_cm.at(addressOf(n,d)) = Row(); // defaults to empty row
 			}
 			//! \todo can delete the map now

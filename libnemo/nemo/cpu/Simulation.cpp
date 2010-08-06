@@ -38,8 +38,9 @@ namespace nemo {
 Simulation::Simulation(
 		const nemo::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf) :
+	m_mapper(net),
 	//! \todo remove redundant member?
-	m_neuronCount(net.neuronCount()),
+	m_neuronCount(m_mapper.neuronCount()),
 	m_a(m_neuronCount, 0),
 	m_b(m_neuronCount, 0),
 	m_c(m_neuronCount, 0),
@@ -47,6 +48,7 @@ Simulation::Simulation(
 	m_u(m_neuronCount, 0),
 	m_v(m_neuronCount, 0),
 	m_sigma(m_neuronCount, 0),
+	m_valid(m_neuronCount, false),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_cm(conf),
@@ -56,10 +58,9 @@ Simulation::Simulation(
 	m_lastFlush(0),
 	m_stdp(conf.stdpFunction())
 {
-	//! \todo add handling of non-contigous memory here. Need a mapper of some sort for this.
-	nemo::initialiseRng(net.minNeuronIndex(), net.maxNeuronIndex(), m_rng);
+	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 	setNeuronParameters(net);
-	// Determine fixedpoint format based on input network
+	//! \todo Determine fixedpoint format based on input network
 	setConnectivityMatrix(net);
 #ifdef NEMO_CPU_MULTITHREADED
 	initWorkers(m_neuronCount, conf.cpuThreadCount());
@@ -73,16 +74,9 @@ Simulation::Simulation(
 void
 Simulation::setNeuronParameters(const nemo::NetworkImpl& net)
 {
-	/* The simulator assumes a contigous range of neuron indices. We ought
-	 * to be able to deal with invalid neurons, but should make sure to set
-	 * the values to some sensible default. For now, just throw an error if
-	 * the range of neuron indices is non-contigous. */
-	if(net.maxNeuronIndex() + 1 != net.neuronCount()) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "neuron indices form a non-contigous range");
-	}
 	for(std::map<nidx_t, NetworkImpl::neuron_t>::const_iterator i = net.m_neurons.begin();
 			i != net.m_neurons.end(); ++i) {
-		nidx_t nidx = i->first; 
+		nidx_t nidx = m_mapper.localIdx(i->first);
 		NetworkImpl::neuron_t n = i->second;
 		m_a.at(nidx) = n.a;	
 		m_b.at(nidx) = n.b;	
@@ -91,6 +85,7 @@ Simulation::setNeuronParameters(const nemo::NetworkImpl& net)
 		m_u.at(nidx) = n.u;	
 		m_v.at(nidx) = n.v;	
 		m_sigma.at(nidx) = n.sigma;	
+		m_valid.at(nidx) = true;
 	}
 }
 
@@ -102,11 +97,17 @@ Simulation::setConnectivityMatrix(const nemo::NetworkImpl& net)
 {
 	for(std::map<nidx_t, nemo::NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
 			ni != net.m_fcm.end(); ++ni) {
-		nidx_t source = ni->first;
+		nidx_t source = m_mapper.localIdx(ni->first);
 		const nemo::NetworkImpl::axon_t& axon = ni->second;
 		for(nemo::NetworkImpl::axon_t::const_iterator ai = axon.begin();
 				ai != axon.end(); ++ai) {
-			m_cm.setRow(source, ai->first, ai->second);
+			//! \todo modify indices *before* setting
+			Row& row = m_cm.setRow(source, ai->first, ai->second);
+
+			/* Convert global indices to local indices */
+			for(size_t s=0; s < row.len; ++s) {
+				row.data[s].target = m_mapper.localIdx(row.data[s].target);
+			}
 		}
 	}
 
@@ -148,7 +149,8 @@ Simulation::step()
 	update(m_fstim, current);
 	setFiring();
 	m_timer.step();
-	//! \todo add separate unset so as to only touch minimal number of words each iteration
+	//! \todo add separate unset so as to only touch minimal number of words
+	//each iteration. Alternatively, just unset after use.
 	std::fill(m_fstim.begin(), m_fstim.end(), 0);
 }
 
@@ -160,7 +162,7 @@ Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 	// m_fstim should already be clear at this point
 	for(std::vector<unsigned>::const_iterator i = fstim.begin();
 			i != fstim.end(); ++i) {
-		m_fstim.at(*i) = true;
+		m_fstim.at(m_mapper.localIdx(*i)) = true;
 	}
 }
 
@@ -173,11 +175,18 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 		//! do we need to clear current?
 		return;
 	}
-
+	/*! \todo We need to deal with the mapping from global to local neuron
+	 * indices. Before doing this, we should probably change the interface
+	 * here. Note that this function is only used internally (see mpi::Worker),
+	 * so we might be able to use the existing interface, and make sure that we
+	 * only use local indices. */
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "setting current stimulus vector not supported for CPU backend");
+#if 0
 	if(current.size() != m_current.size()) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "current stimulus vector not of expected size");
 	}
 	m_current = current;
+#endif
 }
 
 
@@ -188,6 +197,10 @@ Simulation::updateRange(int start, int end)
 	unsigned fbits = getFractionalBits();
 
 	for(int n=start; n < end; n++) {
+
+		if(!m_valid[n]) {
+			continue;
+		}
 
 		float current = fx_toFloat(m_current[n], fbits);
 		m_current[n] = 0;
@@ -213,7 +226,7 @@ Simulation::updateRange(int start, int end)
 		if(m_fired[n]) {
 			m_v[n] = m_c[n];
 			m_u[n] += m_d[n];
-			LOG("c%u: n%u fired\n", elapsedSimulation(), n);
+			LOG("c%lu: n%u fired\n", elapsedSimulation(), m_mapper.globalIdx(n));
 		}
 
 	}
@@ -259,7 +272,7 @@ Simulation::setFiring()
 	for(unsigned n=0; n < m_neuronCount; ++n) { 
 		if(m_fired[n]) {
 			m_firedCycle.push_back(t);
-			m_firedNeuron.push_back(n);
+			m_firedNeuron.push_back(m_mapper.globalIdx(n));
 		}
 	}
 }
@@ -337,8 +350,11 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 		const FAxonTerminal<fix_t>& terminal = row.data[s];
 		assert(terminal.target < m_current.size());
 		m_current.at(terminal.target) += terminal.weight;
-		LOG("c%u: n%u -> n%u: %+f (delay %u)\n", elapsedSimulation(), source,
-				terminal.target, terminal.weight, delay);
+		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",
+				elapsedSimulation(),
+				m_mapper.globalIdx(source),
+				m_mapper.globalIdx(terminal.target),
+				fx_toFloat(terminal.weight, getFractionalBits()), delay);
 	}
 }
 
@@ -445,6 +461,10 @@ Simulation::getSynapses(
 		const std::vector<unsigned char>** plastic)
 {
 	m_cm.getSynapses(sourceNeuron, m_targetsOut, m_delaysOut, m_weightsOut, m_plasticOut);
+	for(std::vector<unsigned>::iterator i = m_targetsOut.begin();
+			i != m_targetsOut.end(); ++i) {
+		*i = m_mapper.globalIdx(*i);
+	}
 	*targets = &m_targetsOut;
 	*delays = &m_delaysOut;
 	*weights = &m_weightsOut;

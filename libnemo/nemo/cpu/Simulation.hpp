@@ -22,6 +22,7 @@
 #include <nemo/RNG.hpp>
 
 #include "Worker.hpp"
+#include "Mapper.hpp"
 
 
 namespace nemo {
@@ -77,6 +78,8 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 	private:
 
+		Mapper m_mapper;
+
 		typedef std::vector<fix_t> current_vector_t;
 		typedef std::vector<unsigned> stimulus_vector_t;
 
@@ -93,6 +96,11 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		std::vector<float> m_u;
 		std::vector<float> m_v;
 		std::vector<float> m_sigma;
+
+		/* Not all neuron indices may correspond to actual neurons. At run-time
+		 * this is read-only. */
+		//! \todo consider *not* using vector<bool> due to the odd optimisations which are done to it
+		std::vector<bool> m_valid;
 
 		/* last cycles firing, one entry per neuron */
 		std::vector<unsigned> m_fired;

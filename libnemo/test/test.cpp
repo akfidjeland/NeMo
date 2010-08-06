@@ -152,22 +152,30 @@ BOOST_AUTO_TEST_CASE(simulation_one_based_indices)
  * the next neuron (in global index space) with an abnormally strong synapse,
  * so the result is the firing propagating around the ring.
  */
+nemo::Network*
+createRing(unsigned ncount, unsigned n0 = 0)
+{
+	nemo::Network* net = new nemo::Network;
+	for(unsigned source=n0; source < n0 + ncount; ++source) {
+		float v = -65.0f;
+		float b = 0.2f;
+		float r = 0.5f;
+		float r2 = r * r;
+		net->addNeuron(source, 0.02f, b, v+15.0f*r2, 8.0f-6.0f*r2, b*v, v, 0.0f);
+		net->addSynapse(source, n0 + ((source - n0 + 1) % ncount), 1, 1000.0f, false);
+	}
+	return net;
+}
+
+
 void
 runRing(unsigned ncount, nemo::Configuration conf)
 {
 	/* Make sure we go around the ring at least a couple of times */
 	const unsigned duration = ncount * 5 / 2;
 
-	nemo::Network net;
-	for(unsigned source=0; source < ncount; ++source) {
-		float v = -65.0f;
-		float b = 0.2f;
-		float r = 0.5f;
-		float r2 = r * r;
-		net.addNeuron(source, 0.02f, b, v+15.0f*r2, 8.0f-6.0f*r2, b*v, v, 0.0f);
-		net.addSynapse(source, (source + 1) % ncount, 1, 1000.0f, false);
-	}
-	nemo::Simulation* sim = nemo::simulation(net, conf);
+	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* fired;
@@ -254,6 +262,53 @@ BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 }
 
 
+void
+testNonContigousNeuronIndices(backend_t backend)
+{
+	unsigned ncount = 1000;
+
+	boost::scoped_ptr<nemo::Network> net0(createRing(ncount, 0));
+	boost::scoped_ptr<nemo::Network> net1(createRing(ncount, 1));
+
+	std::vector<unsigned> cycles0, cycles1;
+	std::vector<unsigned> fired0, fired1;
+
+	unsigned seconds = 2;
+	nemo::Configuration conf = configuration(false, 1024, backend);
+	conf.setFractionalBits(16);
+
+	runSimulation(net0.get(), conf, seconds, &cycles0, &fired0, std::vector<unsigned>(1, 0));
+	runSimulation(net1.get(), conf, seconds, &cycles1, &fired1, std::vector<unsigned>(1, 1));
+
+	/* The results should be the same, except firing indices
+	 * should have the same offset. */
+	BOOST_REQUIRE_EQUAL(cycles0.size(), cycles1.size());
+	BOOST_REQUIRE_EQUAL(fired0.size(), fired1.size());
+
+	for(unsigned i = 0; i < cycles0.size(); ++i) {
+		BOOST_REQUIRE_EQUAL(cycles0.at(i), cycles1.at(i));
+		BOOST_REQUIRE_EQUAL(fired0.at(i), fired1.at(i) - 1);
+	}
+
+	//! \todo also add ring networks with different steps.
+}
+
+
+BOOST_AUTO_TEST_SUITE(non_contigous_indices)
+
+	BOOST_AUTO_TEST_CASE(cpu) {
+		testNonContigousNeuronIndices(NEMO_BACKEND_CPU);
+	}
+
+	BOOST_AUTO_TEST_CASE(cuda) {
+		testNonContigousNeuronIndices(NEMO_BACKEND_CUDA);
+	}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+
+
 
 template<typename T>
 void
@@ -302,7 +357,6 @@ testGetSynapses(backend_t backend)
 		sortAndCompare(nplastic, *const_cast<std::vector<unsigned char>*>(splastic));
 	}
 }
-
 
 
 /* The network should contain the same synapses before and after setting up the
