@@ -68,7 +68,7 @@ initialiseRng(nidx_t minNeuronIdx, nidx_t maxNeuronIdx, std::vector<RNG>& rngs)
 		for(unsigned plane=0; plane < 4; ++plane) {
 			seeds[plane] = seed();
 		}
-		rngs[gidx] = RNG(seeds); // some of these neuron indices may be invalid
+		rngs.at(gidx - minNeuronIdx) = RNG(seeds); // some of these neuron indices may be invalid
 	}
 }
 

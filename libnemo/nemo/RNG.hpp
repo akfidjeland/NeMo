@@ -29,9 +29,10 @@ class NEMO_BASE_DLL_PUBLIC RNG
 
 
 /* Generates RNG seeds for neurons in the range [0, maxIdx], and writes the
- * seeds for [minIdx, maxIdx] to the output vector. Generating and discarding
- * the initial seed values is done in order to always have a fixed mapping from
- * global neuron index to RNG seed values. */
+ * seeds for [minIdx, maxIdx] to the output vector (indices [0, maxIdx -
+ * minIdx). Generating and discarding the initial seed values is done in order
+ * to always have a fixed mapping from global neuron index to RNG seed values.
+ */
 NEMO_BASE_DLL_PUBLIC
 void
 initialiseRng(nidx_t minNeuronIdx, nidx_t maxNeuronIdx, std::vector<RNG>& rngs);
