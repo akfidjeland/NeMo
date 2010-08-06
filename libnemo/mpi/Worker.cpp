@@ -12,6 +12,8 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -117,7 +119,6 @@ Worker::addSynapseVector(const Mapper& mapper,
 		nemo::NetworkImpl& net,
 		global_fcm_t& g_ss)
 {
-
 	/* Incoming data from master */
 	//! \todo allocate this only once
 	SynapseVector svec;
@@ -155,6 +156,10 @@ Worker::exchangeGlobalData(
 		global_fcm_t& g_ss,
 		nemo::ConnectivityMatrix& l_fcm)
 {
+	/* Mapping from global to local indices */
+	boost::function<nidx_t(nidx_t)> targetMap =
+		boost::bind(&Mapper::localIndex, &mapper, _1);
+
 	for(rank_t targetOffset = 1; targetOffset < m_world.size() - 1; ++targetOffset) {
 		/* We need to send something to all targets, so just use default-
 		 * constructed entry if nothing is present */
@@ -179,13 +184,9 @@ Worker::exchangeGlobalData(
 
 		for(std::vector<SynapseVector>::const_iterator i = m_ibuf.begin();
 				i != m_ibuf.end(); ++i) {
-			Row& row = l_fcm.setRow(i->source, i->delay, i->terminals);
-
-			/* The source sends synapses with global target indices. At
-			 * run-time we need local addresses instead */
-			for(size_t s=0; s < row.len; ++s) {
-				row.data[s].target = mapper.localIndex(row.data[s].target);
-			}
+			/* Source indices are in global indices, while targets are mapped
+			 * to local indices */
+			l_fcm.setRow(i->source, i->delay, i->terminals, targetMap);
 			mgi_scount += i->terminals.size();
 		}
 	}
