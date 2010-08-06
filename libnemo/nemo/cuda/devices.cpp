@@ -36,7 +36,7 @@ class DeviceMap
 		/* \post the return value is a valid index in the device list */
 		driver_id driverId(local_id) const;
 
-		void chooseDevice(ConfigurationImpl& conf, int device) const;
+		void setConfiguration(ConfigurationImpl& conf, int device) const;
 
 		const char* description(local_id device) const;
 
@@ -181,7 +181,7 @@ DeviceMap::description(local_id device) const
 
 
 void
-DeviceMap::chooseDevice(ConfigurationImpl& conf, int device) const // local Id
+DeviceMap::setConfiguration(ConfigurationImpl& conf, int device) const // local Id
 {
 	using boost::format;
 
@@ -224,9 +224,9 @@ setDevice(DeviceMap::local_id device)
 
 
 void
-nemo_cuda_choose_device(nemo::ConfigurationImpl* conf, int device)
+nemo_cuda_set_configuration(nemo::ConfigurationImpl* conf, int device)
 {
-	nemo::cuda::DeviceMap::instance()->chooseDevice(*conf, device);
+	nemo::cuda::DeviceMap::instance()->setConfiguration(*conf, device);
 }
 
 

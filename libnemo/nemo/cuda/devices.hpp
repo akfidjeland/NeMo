@@ -9,15 +9,14 @@ namespace nemo {
 
 extern "C" {
 
-typedef void nemo_cuda_choose_device_t(nemo::ConfigurationImpl*, int);
-
+typedef void nemo_cuda_set_configuration_t(nemo::ConfigurationImpl*, int);
 
 /* Choose the CUDA device to use and fill in the relevant field in the
  * configuration object. If dev = -1, have the backend choose a suitable
  * device, otherwise check that the user-selected device is a valid choice */
 NEMO_CUDA_DLL_PUBLIC
 void
-nemo_cuda_choose_device(nemo::ConfigurationImpl*, int dev);
+nemo_cuda_set_configuration(nemo::ConfigurationImpl*, int dev);
 
 
 

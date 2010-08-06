@@ -173,11 +173,11 @@ setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device)
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl = loadCudaLibrary();
-	nemo_cuda_choose_device_t* fn =
-		(nemo_cuda_choose_device_t*) dl_sym(hdl, "nemo_cuda_choose_device");
+	nemo_cuda_set_configuration_t* fn =
+		(nemo_cuda_set_configuration_t) dl_sym(hdl, "nemo_cuda_set_configuration");
 	fn(&conf, device);
 #else
-	nemo_cuda_choose_device(&conf, device);
+	nemo_cuda_set_configuration(&conf, device);
 #endif
 #else // NEMO_CUDA_ENABLED
 	throw nemo::exception(NEMO_API_UNSUPPORTED,
