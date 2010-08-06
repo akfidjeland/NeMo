@@ -59,11 +59,11 @@ loadCudaLibrary()
 
 
 
-#ifdef NEMO_CUDA_ENABLED
 
 unsigned
 cudaDeviceCount()
 {
+#ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl  = loadCudaLibrary();
 	nemo_cuda_device_count_t* fn = (nemo_cuda_device_count_t*) dl_sym(hdl, "nemo_cuda_device_count");
@@ -74,6 +74,10 @@ cudaDeviceCount()
 #else
 	return nemo_cuda_device_count();
 #endif
+#else // NEMO_CUDA_ENABLED
+	throw nemo::exception(NEMO_API_UNSUPPORTED,
+			"libnemo compiled without CUDA support");
+#endif // NEMO_CUDA_ENABLED
 }
 
 
@@ -82,6 +86,7 @@ cudaDeviceCount()
 const char*
 cudaDeviceDescription(unsigned device)
 {
+#ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl  = loadCudaLibrary();
 	nemo_cuda_device_description_t* fn =
@@ -93,12 +98,14 @@ cudaDeviceDescription(unsigned device)
 #else
 	return cuda_device_description(device);
 #endif
+#else // NEMO_CUDA_ENABLED
+	throw nemo::exception(NEMO_API_UNSUPPORTED,
+			"libnemo compiled without CUDA support");
+#endif // NEMO_CUDA_ENABLED
 }
 
 
-#endif
-
-
+#ifdef NEMO_CUDA_ENABLED
 
 SimulationBackend*
 cudaSimulation(const NetworkImpl& net, const ConfigurationImpl& conf)
@@ -115,6 +122,7 @@ cudaSimulation(const NetworkImpl& net, const ConfigurationImpl& conf)
 #endif
 }
 
+#endif
 
 
 /* Sometimes using the slightly lower-level interface provided by NetworkImpl
@@ -162,6 +170,7 @@ simulation(const Network& net, const Configuration& conf)
 void
 setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device)
 {
+#ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl = loadCudaLibrary();
 	nemo_cuda_choose_device_t* fn =
@@ -170,18 +179,27 @@ setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device)
 #else
 	nemo_cuda_choose_device(&conf, device);
 #endif
+#else // NEMO_CUDA_ENABLED
+	throw nemo::exception(NEMO_API_UNSUPPORTED,
+			"libnemo compiled without CUDA support");
+#endif // NEMO_CUDA_ENABLED
 }
+
 
 
 
 void
 setDefaultHardware(nemo::ConfigurationImpl& conf)
 {
+#ifdef NEMO_CUDA_ENABLED
 	try {
 		setCudaDeviceConfiguration(conf, -1);
 	} catch(...) {
 		cpu::chooseHardwareConfiguration(conf);
 	}
+#else
+		cpu::chooseHardwareConfiguration(conf);
+#endif
 }
 
 
