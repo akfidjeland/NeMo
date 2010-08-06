@@ -54,7 +54,8 @@ Simulation::Simulation(
 	m_valid(m_neuronCount, false),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
-	m_cm(conf),
+	//! \todo Determine fixedpoint format based on input network
+	m_cm(net, conf, boost::bind(&Mapper::localIdx, &m_mapper, _1)),
 	m_current(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0),
 	m_rng(m_neuronCount),
@@ -63,8 +64,6 @@ Simulation::Simulation(
 {
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 	setNeuronParameters(net);
-	//! \todo Determine fixedpoint format based on input network
-	setConnectivityMatrix(net);
 #ifdef NEMO_CPU_MULTITHREADED
 	initWorkers(m_neuronCount, conf.cpuThreadCount());
 #endif
@@ -91,29 +90,6 @@ Simulation::setNeuronParameters(const nemo::NetworkImpl& net)
 		m_valid.at(nidx) = true;
 	}
 }
-
-
-
-//! \todo fold this into CM class
-void
-Simulation::setConnectivityMatrix(const nemo::NetworkImpl& net)
-{
-	boost::function<nidx_t(nidx_t)> tmap =
-		boost::bind(&Mapper::localIdx, &m_mapper, _1);
-
-	for(std::map<nidx_t, nemo::NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
-			ni != net.m_fcm.end(); ++ni) {
-		nidx_t source = ni->first;
-		const nemo::NetworkImpl::axon_t& axon = ni->second;
-		for(nemo::NetworkImpl::axon_t::const_iterator ai = axon.begin();
-				ai != axon.end(); ++ai) {
-			m_cm.setRow(source, ai->first, ai->second, tmap);
-		}
-	}
-
-	m_cm.finalize();
-}
-
 
 
 

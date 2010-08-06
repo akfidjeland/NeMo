@@ -114,8 +114,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! Update state of all neurons */
 		void update(const stimulus_vector_t&, const current_vector_t&);
 
-		void setConnectivityMatrix(const nemo::NetworkImpl& net);
-
 		nemo::ConnectivityMatrix m_cm;
 
 		/* accumulated current from incoming spikes for each neuron */

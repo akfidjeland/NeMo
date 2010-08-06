@@ -53,6 +53,10 @@ struct Row
 };
 
 
+class NetworkImpl;
+class ConfigurationImpl;
+
+
 /* Generic connectivity matrix
  *
  * Data in this class is organised for optimal cache performance. A
@@ -62,14 +66,25 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 {
 	public:
 
-		ConnectivityMatrix(const class ConfigurationImpl& conf);
+		//! \todo remove this ctor
+		ConnectivityMatrix(const ConfigurationImpl& conf);
 
-		/*! Add a number of synapses with the same source and delay. Return
-		 * reference to the newly inserted row.
+		/*! Populate runtime CM from existing network.
 		 *
 		 * The function imap is used to map the neuron indices (both source and
 		 * target) from one index space to another. All later accesses to the
 		 * CM data are assumed to be in the translated indices.
+		 */
+		ConnectivityMatrix(
+				const NetworkImpl& net,
+				const ConfigurationImpl& conf,
+				boost::function<nidx_t(nidx_t)> imap);
+
+		/*! Add a number of synapses with the same source and delay. Return
+		 * reference to the newly inserted row.
+		 *
+		 * The function tmap is used to map the target neuron indices (source
+		 * indices are unaffected) from one index space to another.
 		 */
 		Row& setRow(nidx_t, delay_t,
 				const std::vector<AxonTerminal<nidx_t, weight_t> >&,

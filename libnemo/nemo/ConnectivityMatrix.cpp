@@ -16,6 +16,7 @@
 
 #include <nemo/config.h>
 #include "ConfigurationImpl.hpp"
+#include "NetworkImpl.hpp"
 #include "exception.hpp"
 #include "fixedpoint.hpp"
 
@@ -67,14 +68,44 @@ ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
 
 
 
+ConnectivityMatrix::ConnectivityMatrix(
+		const NetworkImpl& net,
+		const ConfigurationImpl& conf,
+		boost::function<nidx_t(nidx_t)> imap) :
+	m_fractionalBits(0),
+	m_maxDelay(0),
+	m_maxSourceIdx(0)
+{
+	//! \todo implement auto-configuration of fixed-point format
+	if(!conf.fractionalBitsSet()) {
+		throw nemo::exception(NEMO_LOGIC_ERROR,
+				"connectivity matrix class does not currently support auto-configuration of fixed-point format. Please call Configuration::setFractionalBits before creating simulation");
+	}
+
+	m_fractionalBits = conf.fractionalBits();
+
+	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
+			ni != net.m_fcm.end(); ++ni) {
+		nidx_t source = imap(ni->first);
+		const NetworkImpl::axon_t& axon = ni->second;
+		for(NetworkImpl::axon_t::const_iterator ai = axon.begin();
+				ai != axon.end(); ++ai) {
+			setRow(source, ai->first, ai->second, imap);
+		}
+	}
+
+	finalize();
+}
+
+
+
 Row&
 ConnectivityMatrix::setRow(
-		nidx_t source_,
+		nidx_t source,
 		delay_t delay,
 		const std::vector<AxonTerminal<nidx_t, weight_t> >& ss,
-		boost::function<nidx_t(nidx_t)>& imap)
+		boost::function<nidx_t(nidx_t)>& tmap)
 {
-	nidx_t source = imap(source_);
 	std::pair<std::map<fidx, Row>::iterator, bool> insertion =
 		m_acc.insert(std::make_pair<fidx, Row>(fidx(source, delay), Row(ss, m_fractionalBits)));
 
@@ -87,7 +118,7 @@ ConnectivityMatrix::setRow(
 
 	Row& row = insertion.first->second;
 	for(size_t s=0; s < row.len; ++s) {
-		row.data[s].target = imap(row.data[s].target);
+		row.data[s].target = tmap(row.data[s].target);
 	}
 
 	return row;

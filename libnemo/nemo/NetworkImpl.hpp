@@ -103,6 +103,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 		friend class cuda::ConnectivityMatrix;
 		friend class cuda::NeuronParameters;
 		friend class cuda::ThalamicInput;
+		friend class ConnectivityMatrix;
 		friend class cpu::Simulation;
 		friend class mpi::Master;
 };
