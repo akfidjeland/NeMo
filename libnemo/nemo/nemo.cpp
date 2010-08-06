@@ -96,7 +96,7 @@ cudaDeviceDescription(unsigned device)
 	}
 	return fn(device);
 #else
-	return cuda_device_description(device);
+	return nemo_cuda_device_description(device);
 #endif
 #else // NEMO_CUDA_ENABLED
 	throw nemo::exception(NEMO_API_UNSUPPORTED,
@@ -118,7 +118,7 @@ cudaSimulation(const NetworkImpl& net, const ConfigurationImpl& conf)
 	}
 	return ctor(&net, &conf);
 #else
-	return cuda::simulation(net, conf);
+	return nemo_cuda_simulation(&net, &conf);
 #endif
 }
 
