@@ -66,13 +66,13 @@ cudaDeviceCount()
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl  = loadCudaLibrary();
-	nemo_cuda_device_count_t* fn = (nemo_cuda_device_count_t*) dl_sym(hdl, "nemo_cuda_device_count");
+	cuda_device_count_t* fn = (cuda_device_count_t*) dl_sym(hdl, "cuda_device_count");
 	if(fn == NULL) {
 		throw nemo::exception(NEMO_DL_ERROR, dl_error());
 	}
 	return fn();
 #else
-	return nemo_cuda_device_count();
+	return cuda_device_count();
 #endif
 #else // NEMO_CUDA_ENABLED
 	throw nemo::exception(NEMO_API_UNSUPPORTED,
@@ -89,14 +89,14 @@ cudaDeviceDescription(unsigned device)
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl  = loadCudaLibrary();
-	nemo_cuda_device_description_t* fn =
-		(nemo_cuda_device_description_t*) dl_sym(hdl, "nemo_cuda_device_description");
+	cuda_device_description_t* fn =
+		(cuda_device_description_t*) dl_sym(hdl, "cuda_device_description");
 	if(fn == NULL) {
 		throw nemo::exception(NEMO_DL_ERROR, dl_error());
 	}
 	return fn(device);
 #else
-	return nemo_cuda_device_description(device);
+	return cuda_device_description(device);
 #endif
 #else // NEMO_CUDA_ENABLED
 	throw nemo::exception(NEMO_API_UNSUPPORTED,
@@ -112,13 +112,13 @@ cudaSimulation(const NetworkImpl& net, const ConfigurationImpl& conf)
 {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl = loadCudaLibrary();
-	nemo_cuda_simulation_t* ctor = (nemo_cuda_simulation_t*) dl_sym(hdl, "nemo_cuda_simulation");
+	cuda_simulation_t* ctor = (cuda_simulation_t*) dl_sym(hdl, "cuda_simulation");
 	if(ctor == NULL) {
 		throw nemo::exception(NEMO_DL_ERROR, dl_error());
 	}
 	return ctor(&net, &conf);
 #else
-	return nemo_cuda_simulation(&net, &conf);
+	return cuda_simulation(&net, &conf);
 #endif
 }
 
@@ -173,11 +173,11 @@ setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device)
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl = loadCudaLibrary();
-	nemo_cuda_set_configuration_t* fn =
-		(nemo_cuda_set_configuration_t) dl_sym(hdl, "nemo_cuda_set_configuration");
+	cuda_set_configuration_t* fn =
+		(cuda_set_configuration_t*) dl_sym(hdl, "cuda_set_configuration");
 	fn(&conf, device);
 #else
-	nemo_cuda_set_configuration(&conf, device);
+	cuda_set_configuration(&conf, device);
 #endif
 #else // NEMO_CUDA_ENABLED
 	throw nemo::exception(NEMO_API_UNSUPPORTED,

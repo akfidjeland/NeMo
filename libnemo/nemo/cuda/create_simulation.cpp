@@ -21,7 +21,7 @@ simulation(const NetworkImpl& net, const ConfigurationImpl& conf)
 }	}
 
 nemo::SimulationBackend*
-nemo_cuda_simulation(const nemo::NetworkImpl* net, const nemo::ConfigurationImpl* conf)
+cuda_simulation(const nemo::NetworkImpl* net, const nemo::ConfigurationImpl* conf)
 {
 	return nemo::cuda::simulation(*net, *conf);
 }

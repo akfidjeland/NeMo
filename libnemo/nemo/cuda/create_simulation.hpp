@@ -11,11 +11,11 @@ namespace nemo {
 
 extern "C" {
 
-typedef nemo::SimulationBackend* nemo_cuda_simulation_t(const nemo::NetworkImpl*, const nemo::ConfigurationImpl*);
+typedef nemo::SimulationBackend* cuda_simulation_t(const nemo::NetworkImpl*, const nemo::ConfigurationImpl*);
 
 NEMO_CUDA_DLL_PUBLIC
 nemo::SimulationBackend*
-nemo_cuda_simulation(const nemo::NetworkImpl* net, const nemo::ConfigurationImpl* conf);
+cuda_simulation(const nemo::NetworkImpl* net, const nemo::ConfigurationImpl* conf);
 
 }
 

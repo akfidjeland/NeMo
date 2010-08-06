@@ -224,7 +224,7 @@ setDevice(DeviceMap::local_id device)
 
 
 void
-nemo_cuda_set_configuration(nemo::ConfigurationImpl* conf, int device)
+cuda_set_configuration(nemo::ConfigurationImpl* conf, int device)
 {
 	nemo::cuda::DeviceMap::instance()->setConfiguration(*conf, device);
 }
@@ -232,7 +232,7 @@ nemo_cuda_set_configuration(nemo::ConfigurationImpl* conf, int device)
 
 
 unsigned
-nemo_cuda_device_count()
+cuda_device_count()
 {
 	return nemo::cuda::DeviceMap::instance()->deviceCount();
 }
@@ -240,7 +240,7 @@ nemo_cuda_device_count()
 
 
 const char*
-nemo_cuda_device_description(unsigned device)
+cuda_device_description(unsigned device)
 {
 	return nemo::cuda::DeviceMap::instance()->description(device);
 }
