@@ -52,7 +52,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	if(conf.fractionalBitsSet()) {
 		m_fractionalBits = conf.fractionalBits();
 	} else {
-		m_fractionalBits = setFractionalBits(net.minWeight(), net.maxWeight());
+		m_fractionalBits = net.fractionalBits();
 	}
 
 	if(logging) {
@@ -257,35 +257,6 @@ ConnectivityMatrix::moveRcmToDevice(const WarpAddressTable& wtable)
 				r_partitionPitch().size());
 	);
 }
-
-
-
-
-/* Determine the number of fractional bits to use when storing weights in
- * fixed-point format on the device. */
-unsigned
-ConnectivityMatrix::setFractionalBits(weight_t wmin, weight_t wmax)
-{
-	/* In the worst case we may have all presynaptic neurons for some neuron
-	 * firing, and having all the relevant synapses have the maximum weight we
-	 * just computed. Based on this, it's possible to set the radix point such
-	 * that we are guaranteed never to overflow. However, if we optimise for
-	 * this pathological case we'll end up throwing away precision for no
-	 * appreciable gain. Instead we rely on overflow detection on the device
-	 * (which will lead to saturation of the input current).
-	 *
-	 * We can make some reasonable assumptions regarding the number of neurons
-	 * expected to fire at any time as well as the distribution of weights.
-	 *
-	 * For now just assume that at most a fixed number of neurons will fire at
-	 * max weight. */
-	//! \todo do this based on both max weight and max number of incoming synapses
-	weight_t maxAbsWeight = std::max(abs(wmin), abs(wmax));
-	unsigned log2Ceil = ceilf(log2(maxAbsWeight));
-	unsigned fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
-	return fbits;
-}
-
 
 
 void

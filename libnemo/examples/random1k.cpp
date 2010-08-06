@@ -147,7 +147,6 @@ main(int argc, char* argv[])
 	nemo::Network* net = nemo::random1k::construct(ncount, scount);
 	nemo::Configuration conf;
 	conf.setCudaPartitionSize(psize);
-	conf.setFractionalBits(24);
 	std::cerr << "Simulation will run on " << conf.backendDescription() << std::endl;
 	std::cerr << "Creating simulation\n";
 	nemo::Simulation* sim = NULL;

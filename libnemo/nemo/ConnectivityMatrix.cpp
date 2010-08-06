@@ -72,18 +72,10 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const NetworkImpl& net,
 		const ConfigurationImpl& conf,
 		boost::function<nidx_t(nidx_t)> imap) :
-	m_fractionalBits(0),
+	m_fractionalBits(conf.fractionalBitsSet() ? conf.fractionalBits() : net.fractionalBits()),
 	m_maxDelay(0),
 	m_maxSourceIdx(0)
 {
-	//! \todo implement auto-configuration of fixed-point format
-	if(!conf.fractionalBitsSet()) {
-		throw nemo::exception(NEMO_LOGIC_ERROR,
-				"connectivity matrix class does not currently support auto-configuration of fixed-point format. Please call Configuration::setFractionalBits before creating simulation");
-	}
-
-	m_fractionalBits = conf.fractionalBits();
-
 	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
 			ni != net.m_fcm.end(); ++ni) {
 		nidx_t source = imap(ni->first);
