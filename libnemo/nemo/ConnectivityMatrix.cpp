@@ -68,19 +68,29 @@ ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
 
 
 Row&
-ConnectivityMatrix::setRow(nidx_t source,
+ConnectivityMatrix::setRow(
+		nidx_t source_,
 		delay_t delay,
-		const std::vector<AxonTerminal<nidx_t, weight_t> >& ss)
+		const std::vector<AxonTerminal<nidx_t, weight_t> >& ss,
+		boost::function<nidx_t(nidx_t)>& imap)
 {
+	nidx_t source = imap(source_);
 	std::pair<std::map<fidx, Row>::iterator, bool> insertion =
 		m_acc.insert(std::make_pair<fidx, Row>(fidx(source, delay), Row(ss, m_fractionalBits)));
+
 	if(!insertion.second) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Double insertion into connectivity matrix");
 	}
 	m_delays[source].insert(delay);
 	m_maxSourceIdx = std::max(m_maxSourceIdx, source);
 	m_maxDelay = std::max(m_maxDelay, delay);
-	return insertion.first->second;
+
+	Row& row = insertion.first->second;
+	for(size_t s=0; s < row.len; ++s) {
+		row.data[s].target = imap(row.data[s].target);
+	}
+
+	return row;
 }
 
 

@@ -4,9 +4,12 @@
 #include <cmath>
 #include <algorithm>
 
+
 #ifdef NEMO_CPU_MULTITHREADED
 #include <boost/thread.hpp>
 #endif
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -95,19 +98,16 @@ Simulation::setNeuronParameters(const nemo::NetworkImpl& net)
 void
 Simulation::setConnectivityMatrix(const nemo::NetworkImpl& net)
 {
+	boost::function<nidx_t(nidx_t)> tmap =
+		boost::bind(&Mapper::localIdx, &m_mapper, _1);
+
 	for(std::map<nidx_t, nemo::NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
 			ni != net.m_fcm.end(); ++ni) {
-		nidx_t source = m_mapper.localIdx(ni->first);
+		nidx_t source = ni->first;
 		const nemo::NetworkImpl::axon_t& axon = ni->second;
 		for(nemo::NetworkImpl::axon_t::const_iterator ai = axon.begin();
 				ai != axon.end(); ++ai) {
-			//! \todo modify indices *before* setting
-			Row& row = m_cm.setRow(source, ai->first, ai->second);
-
-			/* Convert global indices to local indices */
-			for(size_t s=0; s < row.len; ++s) {
-				row.data[s].target = m_mapper.localIdx(row.data[s].target);
-			}
+			m_cm.setRow(source, ai->first, ai->second, tmap);
 		}
 	}
 

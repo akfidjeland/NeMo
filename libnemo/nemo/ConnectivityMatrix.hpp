@@ -16,6 +16,7 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
+#include <boost/function.hpp>
 
 #include <nemo/config.h>
 #include "types.hpp"
@@ -64,9 +65,15 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		ConnectivityMatrix(const class ConfigurationImpl& conf);
 
 		/*! Add a number of synapses with the same source and delay. Return
-		 * reference to the newly inserted row. */
+		 * reference to the newly inserted row.
+		 *
+		 * The function imap is used to map the neuron indices (both source and
+		 * target) from one index space to another. All later accesses to the
+		 * CM data are assumed to be in the translated indices.
+		 */
 		Row& setRow(nidx_t, delay_t,
-				const std::vector<AxonTerminal<nidx_t, weight_t> >&);
+				const std::vector<AxonTerminal<nidx_t, weight_t> >&,
+				boost::function<nidx_t(nidx_t)>& tmap);
 
 		/*! \return all synapses for a given source and delay */
 		const Row& getRow(nidx_t source, delay_t) const;
