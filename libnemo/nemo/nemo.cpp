@@ -64,16 +64,20 @@ unsigned
 cudaDeviceCount()
 {
 #ifdef NEMO_CUDA_ENABLED
+	try {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-	dl_handle hdl  = loadCudaLibrary();
-	cuda_device_count_t* fn = (cuda_device_count_t*) dl_sym(hdl, "cuda_device_count");
-	if(fn == NULL) {
-		throw nemo::exception(NEMO_DL_ERROR, dl_error());
-	}
-	return fn();
+		dl_handle hdl  = loadCudaLibrary();
+		cuda_device_count_t* fn = (cuda_device_count_t*) dl_sym(hdl, "cuda_device_count");
+		if(fn == NULL) {
+			return 0;
+		}
+		return fn();
 #else
-	return cuda_device_count();
+		return cuda_device_count();
 #endif
+	} catch(...) {
+		return 0;
+	}
 #else // NEMO_CUDA_ENABLED
 	throw nemo::exception(NEMO_API_UNSUPPORTED,
 			"libnemo compiled without CUDA support");
