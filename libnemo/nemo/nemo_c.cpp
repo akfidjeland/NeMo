@@ -249,7 +249,7 @@ nemo_read_firing(nemo_simulation_t ptr,
 	const std::vector<unsigned>* cycles;
 	const std::vector<unsigned>* nidx;
 	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
-	CALL(sim->readFiring(&cycles, &nidx));
+	CALL(*ncycles = sim->readFiring(&cycles, &nidx));
 	if(NEMO_OK == g_lastCallStatus) {
 		*cycles_ = cycles->empty() ? NULL : const_cast<unsigned*>(&(*cycles)[0]);
 		*nidx_ = nidx->empty() ? NULL : const_cast<unsigned*>(&(*nidx)[0]);
