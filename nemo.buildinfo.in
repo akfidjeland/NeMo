@@ -1,6 +1,0 @@
-executable: nemo
-cpp-options: -DNEMO_VERSION="@PACKAGE_VERSION@"
-
-@PTHREADS_ENABLED_HS@cc-options: -DPTHREADS_ENABLED @PTHREAD_CFLAGS@
--- TODO: deal with multiple options here!
-@PTHREADS_ENABLED_HS@ghc-options: -optl=@PTHREAD_CFLAGS@ @PTHREAD_LIBS@
