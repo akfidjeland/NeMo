@@ -14,6 +14,7 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/format.hpp>
 
+#include <nemo/bitops.h>
 #include "exception.hpp"
 
 namespace nemo {
@@ -199,7 +200,7 @@ NetworkImpl::fractionalBits() const
 	 * max weight. */
 	//! \todo do this based on both max weight and max number of incoming synapses
 	float maxAbsWeight = std::max(abs(minWeight()), abs(maxWeight()));
-	unsigned log2Ceil = ceilf(log2(maxAbsWeight));
+	unsigned log2Ceil = unsigned(ceilf(log2f(maxAbsWeight)));
 	unsigned fbits = 31 - log2Ceil - 5; // assumes max 2^5 incoming spikes with max weight
 	return fbits;
 }

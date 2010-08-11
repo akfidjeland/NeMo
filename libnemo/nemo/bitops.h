@@ -94,6 +94,7 @@ ceilPowerOfTwo(uint32_t v)
 
 /* log2 is part of the C99 spec, so Microsoft support is patchy */
 inline double log2(double n) { return log(n) / log(double(2)); }
+inline float log2f(float n) { return logf(n) / logf(2.0f); }
 
 #endif
 

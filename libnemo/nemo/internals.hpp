@@ -27,9 +27,6 @@ setDefaultHardware(nemo::ConfigurationImpl& conf);
 void
 setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device = -1);
 
-const char*
-cudaDeviceDescription(unsigned device);
-
 }
 
 #endif

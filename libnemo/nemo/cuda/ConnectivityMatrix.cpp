@@ -17,7 +17,6 @@
 #include <nemo/util.h>
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/fixedpoint.hpp>
-#include <nemo/bitops.h>
 
 #include "RSMatrix.hpp"
 #include "exception.hpp"

@@ -17,6 +17,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <string>
 #include <boost/random.hpp>
 
 #include <nemo.hpp>

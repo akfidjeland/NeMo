@@ -169,6 +169,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 
 /* If threadCount is -1, use default values */
+NEMO_CPU_DLL_PUBLIC
 void chooseHardwareConfiguration(nemo::ConfigurationImpl&, int threadCount = -1);
 
 	} // namespace cpu

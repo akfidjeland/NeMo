@@ -95,7 +95,8 @@
   #define NEMO_CPU_DLL_LOCAL
 #endif
 
-#if defined(_WIN32) && defined(NEMO_BASE_EXPORTS)
+/* Suppress useless warning about DLL exporting of template classes */
+#if defined(_WIN32) && (defined(NEMO_BASE_EXPORTS) || defined(NEMO_CUDA_EXPORTS) || defined(NEMO_CPU_EXPORTS) || defined(NEMO_EXPORTS))
 #pragma warning(disable: 4251)
 #endif
 

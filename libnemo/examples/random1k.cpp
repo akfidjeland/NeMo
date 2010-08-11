@@ -6,6 +6,7 @@
  */
 
 #include <boost/random.hpp>
+#include <string>
 
 #include <nemo.hpp>
 #include "sim_runner.hpp"

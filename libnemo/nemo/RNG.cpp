@@ -9,7 +9,7 @@ namespace nemo {
 
 RNG::RNG()
 {
-	std::fill(m_state, m_state+4, 0.0f);
+	std::fill(m_state, m_state+4, 0U);
 }
 
 
