@@ -1,7 +1,7 @@
 /* Simple network with 1000 neurons with all-to-all connections with random
  * weights.
 
- * Author: Andreas K. Fidjelnad <andreas.fidjeland@imperial.ac.uk>
+ * Author: Andreas K. Fidjeland <andreas.fidjeland@imperial.ac.uk>
  * Date: April 2010
  */
 
@@ -137,30 +137,40 @@ main(int argc, char* argv[])
 	unsigned ncount = 1000;
 	unsigned scount = 1000;
 
-	unsigned dcount  = nemo::cudaDeviceCount();
-	std::cerr << "CUDA devices: " << nemo::cudaDeviceCount() << std::endl;
-
-	for(unsigned d = 0; d < dcount; ++d) {
-		std::cerr << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
-	}
-
-	std::cerr << "Constructing network\n";
-	nemo::Network* net = nemo::random1k::construct(ncount, scount);
-	nemo::Configuration conf;
-	conf.setCudaPartitionSize(psize);
-	std::cerr << "Simulation will run on " << conf.backendDescription() << std::endl;
-	std::cerr << "Creating simulation\n";
-	nemo::Simulation* sim = NULL;
 	try {
+
+		unsigned dcount  = nemo::cudaDeviceCount();
+		std::cerr << "CUDA devices: " << nemo::cudaDeviceCount() << std::endl;
+
+		for(unsigned d = 0; d < dcount; ++d) {
+			std::cerr << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
+		}
+
+		std::cerr << "Constructing network\n";
+		nemo::Network* net = nemo::random1k::construct(ncount, scount);
+		std::cerr << "Creating configuration\n";
+		nemo::Configuration conf;
+		std::cerr << "Setting partition size\n";
+		conf.setCudaPartitionSize(psize);
+		std::cerr << "Simulation will run on " << conf.backendDescription() << std::endl;
+		std::cerr << "Creating simulation\n";
+		nemo::Simulation* sim = NULL;
 		sim = nemo::simulation(*net, conf);
+		std::cerr << "Running simulation\n";
+		simulate(sim, ncount, ncount);
+		//simulateToFile(sim, 1000, "firing.dat");
+		std::cerr << "Simulation complete\n";
+		delete net;
+		return 0;
 	} catch(std::runtime_error& e) {
 		std::cerr << e.what() << std::endl;
+		return -1;
+	} catch(...) {
+		std::cerr << "random1k:n An unknown error occurred\n";
+		return -1;
+
 	}
 
-	simulate(sim, ncount, ncount);
-	//simulateToFile(sim, 1000, "firing.dat");
-	delete net;
-	return 0;
 }
 
 #endif

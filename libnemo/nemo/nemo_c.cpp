@@ -133,9 +133,9 @@ nemo_delete_configuration(nemo_configuration_t conf)
 nemo_simulation_t
 nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 {
-	nemo::Network* net = static_cast<nemo::Network*>(net_ptr);
-	nemo::Configuration* conf = static_cast<nemo::Configuration*>(conf_ptr);
 	try {
+		nemo::Network* net = static_cast<nemo::Network*>(net_ptr);
+		nemo::Configuration* conf = static_cast<nemo::Configuration*>(conf_ptr);
 		return static_cast<nemo_simulation_t>(nemo::simulation(*net, *conf));
 	} catch(nemo::exception& e) {
 		setResult(e.what(), e.errorNumber());
@@ -143,6 +143,10 @@ nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 	} catch(std::exception& e) {
 		setResult(e.what(), NEMO_UNKNOWN_ERROR);
 		return NULL;
+	} catch(...) {
+		setResult("Unknown error", NEMO_UNKNOWN_ERROR);
+		return NULL;
+
 	}
 }
 
