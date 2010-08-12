@@ -45,9 +45,8 @@ memcpyToDevice(void* dst, const void* src, size_t count);
 /*
  * \param count
  * 		Number of elements to copy from vector
- *
  * \pre
- * 		size < vec.size()
+ * 		count =< vec.size()
  */
 template<typename T>
 void
@@ -56,7 +55,7 @@ memcpyToDevice(void* dst, const std::vector<T>& vec, size_t count)
 	if(vec.empty()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "cannot copy empty vector to device");
 	}
-	if(count < vec.size()) {
+	if(count > vec.size()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "cannot copy more than length of vector");
 	}
 	memcpyToDevice(dst, &vec[0], count * sizeof(T));
@@ -69,6 +68,7 @@ memcpyToDevice(void* dst, const std::vector<T>& vec)
 {
 	memcpyToDevice(dst, vec, vec.size());
 }
+
 
 
 void

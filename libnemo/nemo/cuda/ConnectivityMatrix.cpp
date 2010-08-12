@@ -205,31 +205,17 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 		bool logging)
 {
 	//! \todo remove warp count from outgoing data structure. It's no longer needed.
-	size_t height = totalWarps * 2; // *2 as we keep target and weight separately
-	size_t desiredBytePitch = WARP_SIZE * sizeof(synapse_t);
 
-	// allocate device memory
-	size_t bpitch;
+	md_fcmPlaneSize = totalWarps * WARP_SIZE;
+	size_t bytes = md_fcmPlaneSize * 2 * sizeof(synapse_t);
+
 	synapse_t* d_data;
-	//! \todo wrap this in try/catch block and log memory usage if catching
-	d_mallocPitch((void**) &d_data, &bpitch, desiredBytePitch, height, "fcm");
+	d_malloc((void**) &d_data, bytes, "fcm");
 	md_fcm = boost::shared_ptr<synapse_t>(d_data, d_free);
-	size_t wpitch = bpitch / sizeof(synapse_t);
-	md_fcmPlaneSize = totalWarps * wpitch;
+	md_fcmAllocated = bytes;
+
 	CUDA_SAFE_CALL(setFcmPlaneSize(md_fcmPlaneSize));
 
-	if(logging && bpitch != desiredBytePitch) {
-		//! \todo make this an exception.
-		//! \todo write this to the correct logging output stream
-		std::cout << "Returned byte pitch (" << desiredBytePitch
-			<< ") did  not match requested byte pitch (" << bpitch
-			<< ") when allocating forward connectivity matrix" << std::endl;
-		/* This only matters, as we'll waste memory otherwise, and we'd expect the
-		 * desired pitch to always match the returned pitch, since pitch is defined
-		 * in terms of warp size */
-	}
-
-	md_fcmAllocated = height * bpitch;
 	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
 	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_WEIGHT, h_weights, md_fcmPlaneSize);
 }
