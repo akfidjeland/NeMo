@@ -4,6 +4,7 @@
 #include <iostream>
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/random.hpp>
 
 #include <nemo.hpp>
 #include <nemo/constants.h>
@@ -11,6 +12,11 @@
 #include <examples.hpp>
 
 #include "utils.hpp"
+
+
+typedef boost::mt19937 rng_t;
+typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
+typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 
 /* Run one simulation after another and make sure their firing output match
@@ -30,6 +36,22 @@ compareSimulations(
 	runSimulation(net2, conf2, duration, &cycles2, &nidx2);
 	compareSimulationResults(cycles1, nidx1, cycles2, nidx2);
 }
+
+
+
+template<typename T>
+void
+// pass by value here since the simulation data cannot be modified
+sortAndCompare(std::vector<T> a, std::vector<T> b)
+{
+	std::sort(a.begin(), a.end());
+	std::sort(b.begin(), b.end());
+	BOOST_REQUIRE(a.size() == b.size());
+	for(size_t i = 0; i < a.size(); ++i) {
+		BOOST_REQUIRE(a[i] == b[i]);
+	}
+}
+
 
 
 nemo::Configuration
@@ -141,6 +163,61 @@ BOOST_AUTO_TEST_CASE(simulation_one_based_indices)
 {
 	runSimple(1, 4);
 }
+
+
+void
+testFiringStimulus(backend_t backend)
+{
+	unsigned ncount = 1000; // make sure to cross partition boundaries
+	unsigned cycles = 1000;
+	unsigned firing = 10;   // every cycle
+	double p_fire = double(firing) / double(ncount);
+
+	nemo::Network net;
+	for(unsigned nidx = 0; nidx < ncount; ++nidx) {
+		float r = 0.5;
+		float b = 0.25f - 0.05f * r;
+		float v = -65.0;
+		net.addNeuron(nidx, 0.02f + 0.08f * r, b, v, 2.0f, b*v, v, 0.0f);
+	}
+
+	nemo::Configuration conf;
+	setBackend(backend, conf);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
+
+	rng_t rng;
+	urng_t random(rng, boost::uniform_real<double>(0, 1));
+
+	for(unsigned t = 0; t < cycles; ++t) {
+		std::vector<unsigned> fstim;
+		const std::vector<unsigned>* fired;
+		const std::vector<unsigned>* cycles;
+
+		for(unsigned n = 0; n < ncount; ++n) {
+			if(random() < p_fire) {
+				fstim.push_back(n);
+			}
+		}
+		sim->step(fstim);
+		sim->readFiring(&cycles, &fired);
+
+		/* The neurons which just fired should be exactly the ones we just stimulated */
+		sortAndCompare(fstim, *fired);
+	}
+}
+
+
+BOOST_AUTO_TEST_SUITE(fstim)
+
+	BOOST_AUTO_TEST_CASE(cuda) {
+		testFiringStimulus(NEMO_BACKEND_CUDA);
+	}
+
+	BOOST_AUTO_TEST_CASE(cpu) {
+		testFiringStimulus(NEMO_BACKEND_CPU);
+	}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 
 
@@ -305,23 +382,6 @@ BOOST_AUTO_TEST_SUITE(non_contigous_indices)
 	}
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
-
-
-
-template<typename T>
-void
-// pass by value here since the simulation data cannot be modified
-sortAndCompare(std::vector<T> a, std::vector<T> b)
-{
-	std::sort(a.begin(), a.end());
-	std::sort(b.begin(), b.end());
-	BOOST_REQUIRE(a.size() == b.size());
-	for(size_t i = 0; i < a.size(); ++i) {
-		BOOST_REQUIRE(a[i] == b[i]);
-	}
-}
 
 
 
