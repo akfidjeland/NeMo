@@ -40,6 +40,8 @@ class DeviceMap
 
 		const char* description(local_id device) const;
 
+		const cudaDeviceProp& properties(local_id device) const;
+
 	private :
 
 		static DeviceMap* s_instance;
@@ -141,6 +143,10 @@ DeviceMap::setDefaultDevice(const std::vector<int>& driverIds)
 	prop.major = 1;
 	prop.minor = 2;
 
+	/* The warp-size requirement is due to assumptions made in the kernel code.
+	 * It should be possible to lift this constraint */
+	prop.warpSize = WARP_SIZE;
+
 	int dev;
 	CUDA_SAFE_CALL(cudaChooseDevice(&dev, &prop));
 
@@ -180,6 +186,15 @@ DeviceMap::description(local_id device) const
 }
 
 
+
+const cudaDeviceProp&
+DeviceMap::properties(local_id device) const
+{
+	return m_devices.find(m_driverIds.at(device))->second;
+}
+
+
+
 void
 DeviceMap::setConfiguration(ConfigurationImpl& conf, int device) const // local Id
 {
@@ -206,12 +221,21 @@ DeviceMap::setConfiguration(ConfigurationImpl& conf, int device) const // local 
 void
 setDevice(DeviceMap::local_id device)
 {
+	using boost::format;
+
 	int userDev = DeviceMap::instance()->driverId(device);
 	int existingDev;
 	CUDA_SAFE_CALL(cudaGetDevice(&existingDev));
 	if(existingDev != userDev) {
 		/* If the device has already been set, we'll get an error here */
 		CUDA_SAFE_CALL(cudaSetDevice(userDev));
+	}
+
+	/* The kernel relies on hard-coded warp size */
+	//! \todo lift this requirement
+	if(DeviceMap::instance()->properties(device).warpSize != WARP_SIZE) {
+		throw nemo::exception(NEMO_LOGIC_ERROR,
+				str(format( "CUDA device has warp size which is not %u") % WARP_SIZE));
 	}
 }
 
