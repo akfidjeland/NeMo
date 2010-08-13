@@ -404,8 +404,8 @@ step (
 	//__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
-	__shared__ uint32_t s_N1A[MAX_PARTITION_SIZE/32];
-	__shared__ uint32_t s_N1B[MAX_PARTITION_SIZE/32];
+	__shared__ uint32_t s_N1A[S_BV_PITCH];
+	__shared__ uint32_t s_N1B[S_BV_PITCH];
 
 	/* Per-partition parameters */
 	__shared__ unsigned s_partitionSize;

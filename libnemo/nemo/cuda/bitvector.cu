@@ -14,7 +14,12 @@
 #include "types.h"
 
 
+// pitch for global memory bit-vectors
 __constant__ size_t c_bv_pitch;
+
+
+// pitch for shared memory bit-vectors (no padding)
+#define S_BV_PITCH (MAX_PARTITION_SIZE/32)
 
 
 /*! Set common pitch for bitvectors. */
@@ -32,8 +37,8 @@ __device__
 void
 bv_clear(uint32_t* s_vec)
 {
-	ASSERT(THREADS_PER_BLOCK >= c_bv_pitch);
-	if(threadIdx.x < c_bv_pitch) {
+	ASSERT(THREADS_PER_BLOCK >= S_BV_PITCH);
+	if(threadIdx.x < S_BV_PITCH) {
 		s_vec[threadIdx.x] = 0;
 	}
 }
@@ -89,8 +94,8 @@ __device__
 void
 bv_copy(uint32_t* src, uint32_t* dst)
 {
-	ASSERT(THREADS_PER_BLOCK >= c_bv_pitch);
-	if(threadIdx.x < c_bv_pitch) {
+	ASSERT(THREADS_PER_BLOCK >= S_BV_PITCH);
+	if(threadIdx.x < S_BV_PITCH) {
 		dst[threadIdx.x] =  src[threadIdx.x];
 	}
 }
