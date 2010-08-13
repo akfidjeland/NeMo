@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(simulation_one_based_indices)
 void
 testFiringStimulus(backend_t backend)
 {
-	unsigned ncount = 1000; // make sure to cross partition boundaries
+	unsigned ncount = 3000; // make sure to cross partition boundaries
 	unsigned cycles = 1000;
 	unsigned firing = 10;   // every cycle
 	double p_fire = double(firing) / double(ncount);
@@ -198,6 +198,7 @@ testFiringStimulus(backend_t backend)
 				fstim.push_back(n);
 			}
 		}
+
 		sim->step(fstim);
 		sim->readFiring(&cycles, &fired);
 
@@ -340,12 +341,12 @@ BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 
 
 void
-testNonContigousNeuronIndices(backend_t backend)
+testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 {
 	unsigned ncount = 1000;
 
 	boost::scoped_ptr<nemo::Network> net0(createRing(ncount, 0));
-	boost::scoped_ptr<nemo::Network> net1(createRing(ncount, 1));
+	boost::scoped_ptr<nemo::Network> net1(createRing(ncount, n0));
 
 	std::vector<unsigned> cycles0, cycles1;
 	std::vector<unsigned> fired0, fired1;
@@ -355,7 +356,7 @@ testNonContigousNeuronIndices(backend_t backend)
 	conf.setFractionalBits(16);
 
 	runSimulation(net0.get(), conf, seconds, &cycles0, &fired0, std::vector<unsigned>(1, 0));
-	runSimulation(net1.get(), conf, seconds, &cycles1, &fired1, std::vector<unsigned>(1, 1));
+	runSimulation(net1.get(), conf, seconds, &cycles1, &fired1, std::vector<unsigned>(1, n0));
 
 	/* The results should be the same, except firing indices
 	 * should have the same offset. */
@@ -364,7 +365,7 @@ testNonContigousNeuronIndices(backend_t backend)
 
 	for(unsigned i = 0; i < cycles0.size(); ++i) {
 		BOOST_REQUIRE_EQUAL(cycles0.at(i), cycles1.at(i));
-		BOOST_REQUIRE_EQUAL(fired0.at(i), fired1.at(i) - 1);
+		BOOST_REQUIRE_EQUAL(fired0.at(i), fired1.at(i) - n0);
 	}
 
 	//! \todo also add ring networks with different steps.
@@ -374,11 +375,13 @@ testNonContigousNeuronIndices(backend_t backend)
 BOOST_AUTO_TEST_SUITE(non_contigous_indices)
 
 	BOOST_AUTO_TEST_CASE(cpu) {
-		testNonContigousNeuronIndices(NEMO_BACKEND_CPU);
+		testNonContigousNeuronIndices(NEMO_BACKEND_CPU, 1);
+		testNonContigousNeuronIndices(NEMO_BACKEND_CPU, 1000000);
 	}
 
 	BOOST_AUTO_TEST_CASE(cuda) {
-		testNonContigousNeuronIndices(NEMO_BACKEND_CUDA);
+		testNonContigousNeuronIndices(NEMO_BACKEND_CUDA, 1);
+		testNonContigousNeuronIndices(NEMO_BACKEND_CUDA, 1000000);
 	}
 
 BOOST_AUTO_TEST_SUITE_END()
