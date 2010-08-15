@@ -43,8 +43,8 @@ ThalamicInput::ThalamicInput(
 		m_inUse |= sigma != 0.0f;
 		m_sigma.setNeuron(didx.partition, didx.neuron, sigma);
 		for(unsigned plane = 0; plane < 4; ++plane) {
-			nidx_t lidx = mapper.hostIdx(didx); // local index
-			m_rngState.setNeuron(didx.partition, didx.neuron, rngs[lidx][plane], plane);
+			nidx_t localIdx = mapper.hostIdx(didx) - mapper.minHostIdx();
+			m_rngState.setNeuron(didx.partition, didx.neuron, rngs[localIdx][plane], plane);
 		}
 	}
 
