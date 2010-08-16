@@ -68,6 +68,16 @@ STDP<T>::configure(
 			T minWeight,
 			T maxWeight)
 {
+	if(minWeight > 0.0f) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"STDP function should have a negative minimum weight");
+	}
+
+	if(maxWeight < 0.0f) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"STDP function should have a positive maximum weight");
+	}
+
 	m_fnPre = prefire;
 	m_fnPost = postfire;
 
