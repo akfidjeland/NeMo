@@ -12,7 +12,9 @@
 #include <algorithm>
 #include <utility>
 #include <stdlib.h>
+
 #include <boost/tuple/tuple_comparison.hpp>
+#include <boost/format.hpp>
 
 #include <nemo/config.h>
 #include "ConfigurationImpl.hpp"
@@ -98,6 +100,13 @@ ConnectivityMatrix::setRow(
 		const std::vector<AxonTerminal<nidx_t, weight_t> >& ss,
 		boost::function<nidx_t(nidx_t)>& tmap)
 {
+	using boost::format;
+
+	if(delay < 1) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Neuron %u has synapses with delay < 1 (%u)") % source % delay));
+	}
+
 	std::pair<std::map<fidx, Row>::iterator, bool> insertion =
 		m_acc.insert(std::make_pair<fidx, Row>(fidx(source, delay), Row(ss, m_fractionalBits)));
 

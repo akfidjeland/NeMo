@@ -14,6 +14,8 @@
 #include <iostream>
 #include <cmath>
 
+#include <boost/format.hpp>
+
 #include <nemo/util.h>
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/fixedpoint.hpp>
@@ -93,6 +95,8 @@ ConnectivityMatrix::createFcm(
 		std::vector<synapse_t>& h_targets,
 		std::vector<weight_dt>& h_weights)
 {
+	using boost::format;
+
 	size_t currentWarp = 1; // leave space for null warp at beginning
 
 	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator axon = net.m_fcm.begin();
@@ -106,6 +110,13 @@ ConnectivityMatrix::createFcm(
 				bi != axon->second.end(); ++bi) {
 
 			delay_t delay = bi->first;
+
+			if(delay < 1) {
+				throw nemo::exception(NEMO_INVALID_INPUT,
+						str(format("Neuron %u has synapses with delay < 1 (%u)") % h_sourceIdx % delay));
+			}
+
+
 			NetworkImpl::bundle_t bundle = bi->second;
 
 			/* A bundle contains a number of synapses with the same source

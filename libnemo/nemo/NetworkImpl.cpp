@@ -62,6 +62,13 @@ NetworkImpl::addSynapse(
 		float weight,
 		unsigned char plastic)
 {
+	using boost::format;
+
+	if(delay < 1) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid delay (%u) for synapse between %u and %u") % delay % source % target));
+	}
+
 	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
 
 	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix
