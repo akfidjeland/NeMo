@@ -231,12 +231,14 @@ setDevice(DeviceMap::local_id device)
 		CUDA_SAFE_CALL(cudaSetDevice(userDev));
 	}
 
+#ifndef __DEVICE_EMULATION__
 	/* The kernel relies on hard-coded warp size */
 	//! \todo lift this requirement
 	if(DeviceMap::instance()->properties(device).warpSize != WARP_SIZE) {
 		throw nemo::exception(NEMO_LOGIC_ERROR,
 				str(format( "CUDA device has warp size which is not %u") % WARP_SIZE));
 	}
+#endif
 }
 
 
