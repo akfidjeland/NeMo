@@ -76,10 +76,10 @@ nemo_status_t nemo_log_stdout(nemo_configuration_t);
  * \param postfire_len
  * 		Length, in cycles, of the part of the STDP window that comes after the
  * 		postsynaptic firing.
- * \param max_weight
- * 		Weight beyond which excitatory synapses are not allowed to move
  * \param min_weight
  * 		Weight beyond which inhibitory synapses are not allowed to move
+ * \param max_weight
+ * 		Weight beyond which excitatory synapses are not allowed to move
  */
 NEMO_DLL_PUBLIC
 nemo_status_t

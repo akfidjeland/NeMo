@@ -23,6 +23,7 @@ Dependencies
 
 - CUDA toolkit >= 2.1 (SDK not required)
 - Boost
+- CMake (>= 2.8)
 
 Note that the CUDA compiler driver 'nvcc' is not compatible with all versions
 of gcc, especially newer versions of gcc.

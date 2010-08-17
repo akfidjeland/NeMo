@@ -1,7 +1,6 @@
 ##############################################################################
 # CUDA configuration
 
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake/cuda" ${CMAKE_MODULE_PATH})
 SET(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE ON)
 SET(CUDA_HOST_COMPILATION_CPP TRUE)
 FIND_PACKAGE(CUDA REQUIRED)
@@ -36,13 +35,14 @@ INCLUDE_DIRECTORIES(
 
 
 # We need shared memory atomics
-SET(CUDA_NVCC_FLAGS "-arch=sm_12")
+# TODO: we should generate separate version for later devices
+LIST(APPEND CUDA_NVCC_FLAGS "-arch=sm_12")
 
 
 ##############################################################################
 SET(BUILD_SHARED_LIBS TRUE)
 
-CUDA_ADD_LIBRARY(nemo_cuda
+CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	kernel.cu
 	ConnectivityMatrix.cpp
 	create_simulation.cpp
