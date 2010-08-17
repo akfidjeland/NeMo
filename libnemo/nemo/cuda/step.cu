@@ -437,8 +437,7 @@ step (
 
 	SET_COUNTER(s_ccMain, 2);
 
-	uint32_t* s_fstim = s_N1A;
-	loadFiringInput(g_fstim, s_fstim);
+	//! \todo add fixed-point saturation to the current stimulus
 	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, (fix_t*) s_current);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
@@ -454,6 +453,9 @@ step (
 	}
 
 	SET_COUNTER(s_ccMain, 4);
+
+	uint32_t* s_fstim = s_N1A;
+	loadFiringInput(g_fstim, s_fstim);
 
 	fire( s_partitionSize,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
