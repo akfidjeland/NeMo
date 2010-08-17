@@ -53,33 +53,6 @@ sortAndCompare(std::vector<T> a, std::vector<T> b)
 }
 
 
-
-nemo::Configuration
-configuration(bool stdp, unsigned partitionSize,
-		backend_t backend = NEMO_BACKEND_CUDA)
-{
-	nemo::Configuration conf;
-
-	if(stdp) {
-		std::vector<float> pre(20);
-		std::vector<float> post(20);
-		for(unsigned i = 0; i < 20; ++i) {
-			float dt = float(i + 1);
-			pre.at(i) = 1.0 * expf(-dt / 20.0f);
-			pre.at(i) = -0.8 * expf(-dt / 20.0f);
-		}
-		conf.setStdpFunction(pre, post, 10.0, -10.0);
-	}
-
-	conf.setCudaPartitionSize(partitionSize);
-
-	setBackend(backend, conf);
-
-	return conf;
-}
-
-
-
 void
 runComparisions(nemo::Network* net)
 {
@@ -434,4 +407,15 @@ BOOST_AUTO_TEST_SUITE(get_synapses);
 		testGetSynapses(NEMO_BACKEND_CPU);
 	}
 
+BOOST_AUTO_TEST_SUITE_END();
+
+
+void testStdp(backend_t backend, bool noiseConnections);
+
+BOOST_AUTO_TEST_SUITE(stdp);
+	BOOST_AUTO_TEST_CASE(cuda) {
+		//testStdp(NEMO_BACKEND_CUDA, false);
+		testStdp(NEMO_BACKEND_CUDA, true);
+	}
+	//! \todo add test for CPU as well
 BOOST_AUTO_TEST_SUITE_END();

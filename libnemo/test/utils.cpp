@@ -2,6 +2,8 @@
 #include <boost/test/unit_test.hpp>
 #include <nemo.hpp>
 
+#include <cmath>
+
 void
 runSimulation(
 		const nemo::Network* net,
@@ -76,3 +78,29 @@ setBackend(backend_t backend, nemo::Configuration& conf)
 		default: BOOST_REQUIRE(false);
 	}
 }
+
+
+nemo::Configuration
+configuration(bool stdp, unsigned partitionSize,
+		backend_t backend = NEMO_BACKEND_CUDA)
+{
+	nemo::Configuration conf;
+
+	if(stdp) {
+		std::vector<float> pre(20);
+		std::vector<float> post(20);
+		for(unsigned i = 0; i < 20; ++i) {
+			float dt = float(i + 1);
+			pre.at(i) = 1.0 * expf(-dt / 20.0f);
+			post.at(i) = -0.8 * expf(-dt / 20.0f);
+		}
+		conf.setStdpFunction(pre, post, -10.0, 10.0);
+	}
+
+	conf.setCudaPartitionSize(partitionSize);
+
+	setBackend(backend, conf);
+
+	return conf;
+}
+

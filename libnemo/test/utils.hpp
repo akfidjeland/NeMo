@@ -22,4 +22,7 @@ compareSimulationResults(
 void
 setBackend(backend_t, nemo::Configuration& conf);
 
+nemo::Configuration
+configuration(bool stdp, unsigned partitionSize, backend_t backend = NEMO_BACKEND_CUDA);
+
 #endif

@@ -14,6 +14,7 @@ ENDIF(NOT Boost_USE_STATIC_LIBS)
 
 ADD_EXECUTABLE(test
 	test.cpp
+	stdp.cpp
 	utils.cpp
 	${EXAMPLES_DIR}/torus.cpp
 	${EXAMPLES_DIR}/random1k.cpp)
