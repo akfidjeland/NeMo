@@ -53,7 +53,8 @@ __device__
 fix_t
 fx_saturate(bool negative)
 {
-	return fix_t(~0) & (fix_t(negative) << 31);
+	fix_t bits = fix_t(1) << 31;
+	return negative ? bits : ~bits;
 }
 
 
