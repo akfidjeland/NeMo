@@ -64,16 +64,41 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
 }
 
 
+/* Add current to current vector for a particular neuron and update fixed-point
+ * overflow indicators */
+__device__
+void
+addCurrent(nidx_t neuron,
+		fix_t current,
+		fix_t* s_current,
+		uint32_t* s_overflow,
+		uint32_t* s_negative)
+{
+	bool overflow = fx_atomicAdd(s_current + neuron, current);
+	bv_atomicSetPredicated(overflow, neuron, s_overflow);
+	bv_atomicSetPredicated(overflow && fx_isNegative(current), neuron, s_negative);
+#ifndef FIXPOINT_SATURATION
+	ASSERT(!overflow);
+#endif
+}
+
+
 
 __device__
 void
-addCurrentStimulus(unsigned psize, size_t pitch, const fix_t* g_current, fix_t* s_current)
+addCurrentStimulus(unsigned psize,
+		size_t pitch,
+		const fix_t* g_current,
+		fix_t* s_current,
+		uint32_t* s_overflow,
+		uint32_t* s_negative)
 {
 	if(g_current != NULL) {
 		for(unsigned nbase=0; nbase < psize; nbase += THREADS_PER_BLOCK) {
 			unsigned neuron = nbase + threadIdx.x;
-			size_t pstart = CURRENT_PARTITION * pitch;
-			s_current[neuron] += g_current[pstart + neuron];
+			unsigned pstart = CURRENT_PARTITION * pitch;
+			fix_t stimulus = g_current[pstart + neuron];
+			addCurrent(neuron, stimulus, s_current, s_overflow, s_negative);
 			DEBUG_MSG("c%u %u-%u: +%f (external)\n",
 					s_cycle, CURRENT_PARTITION, neuron,
 					fx_tofloat(g_current[pstart + neuron]));
@@ -318,17 +343,9 @@ gather( unsigned cycle,
 			}
 
 			if(weight != 0) {
-				//! \todo combine this into a single operation
-				bool overflow = fx_atomicAdd(s_fx_current + postsynaptic, weight);
-				bv_atomicSetPredicated(overflow, postsynaptic, s_overflow);
-				bv_atomicSetPredicated(overflow && fx_isNegative(weight),
-						postsynaptic, s_negative);
-#ifndef FIXPOINT_SATURATION
-				ASSERT(!overflow);
-#endif
-				DEBUG_MSG("c%u p?n? -> p%un%u %+f (%08x)\n",
-						s_cycle, CURRENT_PARTITION, postsynaptic,
-						fx_tofloat(weight), weight);
+				addCurrent(postsynaptic, weight, s_fx_current, s_overflow, s_negative);
+				DEBUG_MSG("c%u p?n? -> p%un%u %+f\n",
+						s_cycle, CURRENT_PARTITION, postsynaptic, fx_tofloat(weight));
 			}
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
@@ -437,8 +454,7 @@ step (
 
 	SET_COUNTER(s_ccMain, 2);
 
-	//! \todo add fixed-point saturation to the current stimulus
-	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, (fix_t*) s_current);
+	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, (fix_t*) s_current, s_overflow, s_negative);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
 	SET_COUNTER(s_ccMain, 3);
