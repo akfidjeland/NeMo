@@ -74,6 +74,9 @@ addCurrentStimulus(unsigned psize, size_t pitch, const fix_t* g_current, fix_t* 
 			unsigned neuron = nbase + threadIdx.x;
 			size_t pstart = CURRENT_PARTITION * pitch;
 			s_current[neuron] += g_current[pstart + neuron];
+			DEBUG_MSG("c%u %u-%u: +%f (external)\n",
+					s_cycle, CURRENT_PARTITION, neuron,
+					fx_tofloat(g_current[pstart + neuron]));
 		}
 		__syncthreads();
 	}
@@ -229,7 +232,7 @@ scatter(unsigned cycle,
 					size_t base = incomingBufferStart(targetPartition, cycle, delay);
 					g_incoming[base + offset] = make_incoming(outgoingWarpOffset(sout));
 
-					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%u)\n",
+					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%lu)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
 							offset, c_incomingPitch);
 				}

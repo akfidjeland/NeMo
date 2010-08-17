@@ -11,7 +11,6 @@
  */
 
 #include "kernel.cu_h"
-#include "exception.hpp"
 
 
 #ifdef DEVICE_ASSERTIONS

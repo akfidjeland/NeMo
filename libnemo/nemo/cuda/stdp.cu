@@ -180,16 +180,17 @@ closestPostFire(uint64_t spikes)
 
 __device__
 void
-logStdp(int dt, float w_diff, unsigned targetNeuron, uint32_t r_synapse)
+logStdp(int dt, weight_dt w_diff, unsigned targetNeuron, uint32_t r_synapse)
 {
 	const char* type[] = { "ltd", "ltp" };
 
-	if(w_diff != 0.0f) {
+	if(w_diff != 0) {
 		fprintf(stderr, "c%u %s: %u-%u -> %u-%u %+f (dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
-				s_cycle, type[w_diff > 0.0f],
+				s_cycle, type[size_t(w_diff > 0)],
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
-				CURRENT_PARTITION, targetNeuron, dt, r_delay1(r_synapse),
-				w_diff,
+				CURRENT_PARTITION, targetNeuron,
+				fx_tofloat(w_diff),
+				dt, r_delay1(r_synapse),
 				s_cycle - s_stdpPostFireWindow + dt,
 				s_cycle - s_stdpPostFireWindow);
 	}

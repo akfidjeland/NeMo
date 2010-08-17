@@ -128,7 +128,7 @@ fx_arrSaturatedToFloat(
 		if(overflow) {
 			DEBUG_MSG("c%u p%un%u input current overflow. Saturated to %+f (%08x)\n",
 					s_cycle, CURRENT_PARTITION, nidx,
-					fx_tofloat(s_fix[nidx]), s_fix[nidx]);
+					s_float[nidx], s_fix[nidx]);
 		}
 #endif
 	}

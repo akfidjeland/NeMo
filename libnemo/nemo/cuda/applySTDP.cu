@@ -54,7 +54,7 @@ applySTDP_(
 	weight_dt* gr_stdp = (weight_dt*) cr_stdp[CURRENT_PARTITION];
 	unsigned r_pitch = cr_pitch[CURRENT_PARTITION];
 
-#if __DEVICE_EMULATION__
+#if defined(NEMO_VERBOSE) && defined(__DEVICE_EMULATION__)
 	uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
 #endif
 
