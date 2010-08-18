@@ -28,13 +28,14 @@ compareSimulations(
 		const nemo::Configuration& conf1,
 		const nemo::Network* net2,
 		const nemo::Configuration& conf2,
-		unsigned duration)
+		unsigned duration,
+		bool stdp)
 {
 	std::cout << "Comparing " << conf1 << "\n"
 	          << "      and " << conf2 << "\n";
 	std::vector<unsigned> cycles1, cycles2, nidx1, nidx2;
-	runSimulation(net1, conf1, duration, &cycles1, &nidx1);
-	runSimulation(net2, conf2, duration, &cycles2, &nidx2);
+	runSimulation(net1, conf1, duration, &cycles1, &nidx1, stdp);
+	runSimulation(net2, conf2, duration, &cycles2, &nidx2, stdp);
 	compareSimulationResults(cycles1, nidx1, cycles2, nidx2);
 }
 
@@ -70,7 +71,7 @@ runComparisions(nemo::Network* net)
 		for(unsigned pi2=0; pi2 < 3; ++pi2) {
 			nemo::Configuration conf1 = configuration(stdp_conf[si], psize_conf[pi1]);
 			nemo::Configuration conf2 = configuration(stdp_conf[si], psize_conf[pi2]);
-			compareSimulations(net, conf1, net, conf2, duration);
+			compareSimulations(net, conf1, net, conf2, duration, stdp_conf[si]);
 		}
 	}
 
@@ -93,7 +94,7 @@ runBackendComparisions(nemo::Network* net)
 			conf1.setFractionalBits(26);
 			nemo::Configuration conf2 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CUDA);
 			conf2.setFractionalBits(26);
-			compareSimulations(net, conf1, net, conf2, duration);
+			compareSimulations(net, conf1, net, conf2, duration, stdp_conf[si]);
 		}
 	}
 
@@ -327,13 +328,13 @@ BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 	conf.enableLogging();
 	std::vector<unsigned> cycles, nidx, cycles2, nidx2;
 	unsigned duration = 2;
-	runSimulation(net, conf, duration, &cycles, &nidx);
+	runSimulation(net, conf, duration, &cycles, &nidx, false);
 
 	BOOST_REQUIRE(nidx.size() > 0);
 
 	nemo::Configuration conf2;
 	conf2.enableLogging();
-	runSimulation(net, conf2, duration, &cycles2, &nidx2);
+	runSimulation(net, conf2, duration, &cycles2, &nidx2, false);
 	BOOST_REQUIRE(nidx2.size() > 0);
 	compareSimulationResults(cycles, nidx, cycles2, nidx2);
 }
@@ -343,6 +344,7 @@ void
 testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 {
 	unsigned ncount = 1000;
+	bool stdp = false;
 
 	boost::scoped_ptr<nemo::Network> net0(createRing(ncount, 0));
 	boost::scoped_ptr<nemo::Network> net1(createRing(ncount, n0));
@@ -354,8 +356,8 @@ testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 	nemo::Configuration conf = configuration(false, 1024, backend);
 	conf.setFractionalBits(16);
 
-	runSimulation(net0.get(), conf, seconds, &cycles0, &fired0, std::vector<unsigned>(1, 0));
-	runSimulation(net1.get(), conf, seconds, &cycles1, &fired1, std::vector<unsigned>(1, n0));
+	runSimulation(net0.get(), conf, seconds, &cycles0, &fired0, stdp, std::vector<unsigned>(1, 0));
+	runSimulation(net1.get(), conf, seconds, &cycles1, &fired1, stdp, std::vector<unsigned>(1, n0));
 
 	/* The results should be the same, except firing indices
 	 * should have the same offset. */

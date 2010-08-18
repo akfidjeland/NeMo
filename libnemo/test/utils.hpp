@@ -11,6 +11,7 @@ runSimulation(
 		unsigned seconds,
 		std::vector<unsigned>* fcycles,
 		std::vector<unsigned>* fnidx,
+		bool stdp,
 		std::vector<unsigned> initFiring = std::vector<unsigned>());
 
 void

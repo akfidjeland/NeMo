@@ -156,6 +156,8 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 {
 	unsigned ncount = 1000;
 	unsigned scount = 1000;
+	//! \todo run test with stdp enabled as well
+	bool stdp = false;
 
 	rng_t rng;
 	/* Neuron parameters and weights are partially randomised */
@@ -187,7 +189,7 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 	std::vector<unsigned> cycles1, cycles2, nidx1, nidx2;
 
 	std::cerr << "Running network (C++ API)\n";
-	runSimulation(net, conf, duration, &cycles1, &nidx1);
+	runSimulation(net, conf, duration, &cycles1, &nidx1, stdp);
 
 	unsigned cuda_dcount;
 	c_safeCall(nemo_cuda_device_count(&cuda_dcount));
