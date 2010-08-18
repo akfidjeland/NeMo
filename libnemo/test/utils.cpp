@@ -97,9 +97,8 @@ configuration(bool stdp, unsigned partitionSize,
 		conf.setStdpFunction(pre, post, -10.0, 10.0);
 	}
 
-	conf.setCudaPartitionSize(partitionSize);
-
 	setBackend(backend, conf);
+	conf.setCudaPartitionSize(partitionSize);
 
 	return conf;
 }
