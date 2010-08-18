@@ -16,16 +16,17 @@
 
 void
 run(nemo::Network* net, 
-	nemo::Configuration conf,
 	backend_t backend,
 	unsigned seconds,
 	const std::string& filename,
+	bool stdp,
 	bool creating) // are we comparing against existing data or creating fresh data
 {
 	std::cerr << "running test\n";
 	using namespace std;
 
-	setBackend(backend, conf);
+	nemo::Configuration conf = configuration(stdp, 1024, backend);
+	conf.setFractionalBits(26);
 
 	fstream file;
 	//! \todo determine canonical filename based on configuration
@@ -42,21 +43,25 @@ run(nemo::Network* net,
 
 	unsigned ce, ne; // expexted values
 
-	for(unsigned s = 0; s < seconds; ++s)
-	for(unsigned ms = 0; ms < 1000; ++ms) {
-		sim->step();
-		sim->readFiring(&cycles, &nidx);
-		for(size_t i = 0; i < cycles->size(); ++i) {
-			unsigned c = cycles->at(i);
-			unsigned n = nidx->at(i);
-			if(creating) {
-				file << cycles->at(i) << "\t" << nidx->at(i) << "\n";
-			} else {
-				BOOST_REQUIRE(!file.eof());
-				file >> ce >> ne;
-				BOOST_REQUIRE(c == ce);
-				BOOST_REQUIRE(n == ne);
+	for(unsigned s = 0; s < seconds; ++s) {
+		for(unsigned ms = 0; ms < 1000; ++ms) {
+			sim->step();
+			sim->readFiring(&cycles, &nidx);
+			for(size_t i = 0; i < cycles->size(); ++i) {
+				unsigned c = cycles->at(i);
+				unsigned n = nidx->at(i);
+				if(creating) {
+					file << cycles->at(i) << "\t" << nidx->at(i) << "\n";
+				} else {
+					BOOST_REQUIRE(!file.eof());
+					file >> ce >> ne;
+					BOOST_REQUIRE(c == ce);
+					BOOST_REQUIRE(n == ne);
+				}
 			}
+		}
+		if(stdp) {
+			sim->applyStdp(1.0);
 		}
 	}
 
@@ -73,13 +78,20 @@ run(nemo::Network* net,
 
 void runTorus(bool creating)
 {
-	bool stdp = false;
-	boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
-	nemo::Configuration conf;
-	conf.setFractionalBits(26);
+	{
+		bool stdp = false;
+		boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
+		run(torus.get(), NEMO_BACKEND_CUDA, 4, "test-cuda.dat", stdp, creating);
+		run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu.dat", stdp, creating);
+	}
 
-	run(torus.get(), conf, NEMO_BACKEND_CUDA, 4, "test-cuda.dat", creating);
-	run(torus.get(), conf, NEMO_BACKEND_CPU, 4, "test-cpu.dat", creating);
+	{
+		bool stdp = true;
+		boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
+		run(torus.get(), NEMO_BACKEND_CUDA, 4, "test-cuda-stdp.dat", stdp, creating);
+		//! \todo add stdp case for CPU as well
+		//run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu-stdp.dat", stdp, creating);
+	}
 }
 
 
