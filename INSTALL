@@ -3,7 +3,6 @@ Requirements
 
 Common:
 
-- ghc 6.10
 - gcc
 
 Windows:
