@@ -296,6 +296,11 @@ updateSTDP_(
 		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target] =
 				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
+		if(cr_address[CURRENT_PARTITION] == 0) {
+			/* This partition has no incoming connections, so nothing further to do */
+			continue;
+		}
+
 		__shared__ unsigned s_firingCount;
 		if(threadIdx.x == 0) {
 			s_firingCount = 0;

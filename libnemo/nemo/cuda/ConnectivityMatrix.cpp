@@ -159,9 +159,10 @@ ConnectivityMatrix::createFcm(
 				 * to, e.g. optimise for shared memory bank conflicts. */
 				std::vector<synapse_t> targets(words, f_nullSynapse());
 				std::vector<weight_dt> weights(words, 0);
-
+				
 				for(std::vector<synapse_ht>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
+
 					size_t sidx = s - bundle.begin();
 					targets.at(sidx) = s->target;
 					weights.at(sidx) = s->weight;
@@ -398,7 +399,13 @@ template<typename T, class S>
 const std::vector<DEVICE_UINT_PTR_T>
 mapDevicePointer(const std::map<pidx_t, S*>& vec, std::const_mem_fun_t<T, S> fun)
 {
-	std::vector<DEVICE_UINT_PTR_T> ret(vec.size(), 0);
+	if(vec.size() == 0) {
+		return std::vector<DEVICE_UINT_PTR_T>();
+	}
+
+	pidx_t maxPartitionIdx = vec.rbegin()->first;
+
+	std::vector<DEVICE_UINT_PTR_T> ret(maxPartitionIdx+1, 0);
 	for(typename std::map<pidx_t, S*>::const_iterator i = vec.begin();
 			i != vec.end(); ++i) {
 		T ptr = fun(i->second);
