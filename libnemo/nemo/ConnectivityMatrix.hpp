@@ -139,6 +139,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */
 		size_t addressOf(nidx_t, delay_t) const;
+
+		void verifySynapseTerminals(fidx idx, const Row& row, const mapper_t&) const;
 };
 
 

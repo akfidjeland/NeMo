@@ -146,12 +146,37 @@ ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
 		for(delay_t d=1; d <= m_maxDelay; ++d) {
 			std::map<fidx, Row>::const_iterator row = m_acc.find(fidx(n, d));
 			if(row != m_acc.end()) {
+				verifySynapseTerminals(row->first, row->second, mapper);
 				m_cm.at(addressOf(n,d)) = row->second;
 			} else {
 				/* Insertion into map does not invalidate existing iterators */
 				m_cm.at(addressOf(n,d)) = Row(); // defaults to empty row
 			}
 			//! \todo can delete the map now
+		}
+	}
+}
+
+
+
+void
+ConnectivityMatrix::verifySynapseTerminals(fidx idx,
+		const Row& row,
+		const mapper_t& mapper) const
+{
+	using boost::format;
+
+	nidx_t source = idx.get<0>();
+	if(!mapper.validLocal(source)) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+			str(format("Invalid synapse source neuron %u") % source));
+	}
+
+	for(size_t s=0; s < row.len; ++s) {
+		nidx_t target = row.data[s].target;
+		if(!mapper.validLocal(target)) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid synapse target neuron %u (source: %u)") % target % source));
 		}
 	}
 }
