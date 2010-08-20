@@ -108,8 +108,10 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/* last 64 cycles worth of firing, one entry per neuron */
 		std::vector<uint64_t> m_recentFiring;
 
-		/* Set all neuron parameters from input network in local data structures */
-		void setNeuronParameters(const nemo::NetworkImpl& net);
+		/* Set all neuron parameters from input network in
+		 * local data structures. Also add valid neuron
+		 * indices to the mapper as a side effect.  */
+		void setNeuronParameters(const nemo::NetworkImpl& net, Mapper&);
 
 		/*! Update state of all neurons */
 		void update(const stimulus_vector_t&, const current_vector_t&);

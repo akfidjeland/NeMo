@@ -76,6 +76,11 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * The mapper can translate neuron indices (both source and target)
 		 * from one index space to another. All later accesses to the CM data
 		 * are assumed to be in terms of the translated indices.
+		 *
+		 * 'finalize' must be called prior to use. This slightly clumsy
+		 * interface is there so that we can ensure that the mapper will have a
+		 * complete list of valid neuron indices by the time of finalization,
+		 * so that we can report invalid synapse terminals.
 		 */
 		ConnectivityMatrix(
 				const NetworkImpl& net,

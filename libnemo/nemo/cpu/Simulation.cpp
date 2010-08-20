@@ -61,7 +61,8 @@ Simulation::Simulation(
 	m_stdp(conf.stdpFunction())
 {
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
-	setNeuronParameters(net);
+	setNeuronParameters(net, m_mapper);
+	m_cm.finalize(m_mapper); // all valid neuron indices are known. See CM ctor.
 #ifdef NEMO_CPU_MULTITHREADED
 	initWorkers(m_neuronCount, conf.cpuThreadCount());
 #endif
@@ -72,11 +73,13 @@ Simulation::Simulation(
 
 
 void
-Simulation::setNeuronParameters(const nemo::NetworkImpl& net)
+Simulation::setNeuronParameters(
+		const nemo::NetworkImpl& net,
+		Mapper& mapper)
 {
 	for(std::map<nidx_t, NetworkImpl::neuron_t>::const_iterator i = net.m_neurons.begin();
 			i != net.m_neurons.end(); ++i) {
-		nidx_t nidx = m_mapper.addGlobal(i->first);
+		nidx_t nidx = mapper.addGlobal(i->first);
 		NetworkImpl::neuron_t n = i->second;
 		m_a.at(nidx) = n.a;	
 		m_b.at(nidx) = n.b;	

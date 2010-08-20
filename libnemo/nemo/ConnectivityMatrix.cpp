@@ -85,8 +85,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 			setRow(source, ai->first, ai->second, mapper);
 		}
 	}
-
-	finalize(mapper);
 }
 
 
