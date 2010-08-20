@@ -11,6 +11,7 @@
 #include <nemo/fixedpoint.hpp>
 #include <examples.hpp>
 
+#include "test.hpp"
 #include "utils.hpp"
 
 
@@ -100,6 +101,7 @@ runBackendComparisions(nemo::Network* net)
 
 
 
+//! \todo migrate to networks.cpp
 void
 runSimple(unsigned startNeuron, unsigned neuronCount)
 {
@@ -121,6 +123,21 @@ BOOST_AUTO_TEST_CASE(simulation_unary_network)
 	runSimple(0, 1);
 }
 
+BOOST_AUTO_TEST_SUITE(networks)
+
+	BOOST_AUTO_TEST_SUITE(no_outgoing)
+
+		BOOST_AUTO_TEST_CASE(cpu) {
+			no_outgoing::run(NEMO_BACKEND_CPU);
+		}
+
+		BOOST_AUTO_TEST_CASE(cuda) {
+			no_outgoing::run(NEMO_BACKEND_CUDA);
+		}
+
+	BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE_END()
 
 
 /* It should be possible to create a network without any synapses */
@@ -148,10 +165,7 @@ testFiringStimulus(backend_t backend)
 
 	nemo::Network net;
 	for(unsigned nidx = 0; nidx < ncount; ++nidx) {
-		float r = 0.5;
-		float b = 0.25f - 0.05f * r;
-		float v = -65.0;
-		net.addNeuron(nidx, 0.02f + 0.08f * r, b, v, 2.0f, b*v, v, 0.0f);
+		addExcitatoryNeuron(nidx, net);
 	}
 
 	nemo::Configuration conf;

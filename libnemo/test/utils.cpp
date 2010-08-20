@@ -104,3 +104,12 @@ configuration(bool stdp, unsigned partitionSize,
 	return conf;
 }
 
+
+void
+addExcitatoryNeuron(unsigned nidx, nemo::Network& net, float sigma)
+{
+	float r = 0.5;
+	float b = 0.25f - 0.05f * r;
+	float v = -65.0;
+	net.addNeuron(nidx, 0.02f + 0.08f * r, b, v, 2.0f, b*v, v, sigma);
+}
