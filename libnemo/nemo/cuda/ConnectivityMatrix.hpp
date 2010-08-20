@@ -185,6 +185,10 @@ class ConnectivityMatrix
 		 * source neuron at a time, to cut down on PCI traffic
 		 * */
 		std::vector<synapse_t> mh_weightBuffer;
+
+		void verifySynapseTerminals(
+				const std::map<nidx_t, std::vector<nidx_t> >& targets,
+				const Mapper& mapper);
 };
 
 	} // end namespace cuda

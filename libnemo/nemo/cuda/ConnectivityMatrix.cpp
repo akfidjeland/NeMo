@@ -69,6 +69,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	size_t totalWarps = createFcm(net, mapper, m_fractionalBits, conf.cudaPartitionSize(), wtable, h_targets, h_weights);
 
+	verifySynapseTerminals(mh_fcmTargets, mapper);
+
 	moveFcmToDevice(totalWarps, h_targets, h_weights, logging);
 	h_targets.clear();
 	h_weights.clear();
@@ -207,6 +209,35 @@ ConnectivityMatrix::createFcm(
 	return currentWarp;
 }
 
+
+
+void
+ConnectivityMatrix::verifySynapseTerminals(
+		const std::map<nidx_t, std::vector<nidx_t> >& targets,
+		const Mapper& mapper)
+{
+	using boost::format;
+
+	typedef std::vector<nidx_t> vec;
+	typedef std::map<nidx_t, vec>::const_iterator it;
+	for(it src_i = targets.begin(); src_i != targets.end(); ++src_i) {
+
+		nidx_t source = src_i->first;
+		if(!mapper.valid(source)) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid synapse source neuron %u") % source));
+		}
+
+		const vec& row = src_i->second;
+		for(vec::const_iterator tgt_i = row.begin(); tgt_i != row.end(); ++tgt_i) {
+			nidx_t target = *tgt_i;
+			if(!mapper.valid(target)) {
+				throw nemo::exception(NEMO_INVALID_INPUT,
+						str(format("Invalid synapse target neuron %u (source: %u)") % target % source));
+			}
+		}
+	}
+}
 
 
 void
