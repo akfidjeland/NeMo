@@ -26,7 +26,7 @@ namespace nemo {
 	namespace cuda {
 
 
-NeuronParameters::NeuronParameters(const nemo::NetworkImpl& net, const Mapper& mapper) :
+NeuronParameters::NeuronParameters(const nemo::NetworkImpl& net, Mapper& mapper) :
 	m_allocated(0),
 	m_wpitch(0)
 {
@@ -40,7 +40,7 @@ NeuronParameters::NeuronParameters(const nemo::NetworkImpl& net, const Mapper& m
 	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
 			i != net.m_neurons.end(); ++i) {
 
-		DeviceIdx dev = mapper.deviceIdx(i->first);
+		DeviceIdx dev = mapper.addIdx(i->first);
 		// address within a plane
 		size_t addr = dev.partition * m_wpitch + dev.neuron;
 

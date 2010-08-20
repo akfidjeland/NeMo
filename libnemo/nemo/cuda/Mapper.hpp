@@ -10,6 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <set>
 #include <nemo/NetworkImpl.hpp>
 
 #include "types.h"
@@ -40,6 +41,10 @@ class Mapper {
 
 		Mapper(const nemo::NetworkImpl& net, unsigned partitionSize);
 
+		/* Add global neuron index to the set of 'valid' synapses and return
+		 * the correspondong device neuron index */
+		DeviceIdx addIdx(nidx_t global);
+
 		DeviceIdx deviceIdx(nidx_t global) const;
 
 		nidx_t hostIdx(DeviceIdx d) const {
@@ -58,6 +63,8 @@ class Mapper {
 
 		unsigned maxHostIdx() const;
 
+		bool valid(nidx_t global) const { return m_validGlobal.count(global) == 1; }
+
 	private :
 
 		unsigned m_partitionSize;
@@ -65,6 +72,8 @@ class Mapper {
 		unsigned m_partitionCount;
 
 		unsigned m_offset;
+
+		std::set<nidx_t> m_validGlobal;
 };
 
 	} // end namespace cuda

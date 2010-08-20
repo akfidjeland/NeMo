@@ -31,6 +31,14 @@ Mapper::Mapper(const nemo::NetworkImpl& net, unsigned partitionSize) :
 
 
 DeviceIdx
+Mapper::addIdx(nidx_t global)
+{
+	m_validGlobal.insert(global);
+	return deviceIdx(global);
+}
+
+
+DeviceIdx
 Mapper::deviceIdx(nidx_t global) const
 {
 	nidx_t local = global - m_offset;

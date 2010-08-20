@@ -29,7 +29,7 @@ class NeuronParameters
 {
 	public:
 
-		NeuronParameters(const nemo::NetworkImpl& net, const Mapper&);
+		NeuronParameters(const nemo::NetworkImpl& net, Mapper&);
 
 		float* deviceData() { return md_arr.get(); }
 
