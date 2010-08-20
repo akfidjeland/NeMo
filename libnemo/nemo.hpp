@@ -13,6 +13,7 @@
 #include <nemo/Configuration.hpp>
 #include <nemo/Network.hpp>
 #include <nemo/Simulation.hpp>
+#include <nemo/exception.hpp>
 
 namespace nemo {
 

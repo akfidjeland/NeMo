@@ -137,6 +137,18 @@ BOOST_AUTO_TEST_SUITE(networks)
 
 	BOOST_AUTO_TEST_SUITE_END()
 
+	BOOST_AUTO_TEST_SUITE(invalid_targets)
+
+		BOOST_AUTO_TEST_CASE(cpu) {
+			invalid_targets::run(NEMO_BACKEND_CPU);
+		}
+
+		BOOST_AUTO_TEST_CASE(cuda) {
+			invalid_targets::run(NEMO_BACKEND_CUDA);
+		}
+
+	BOOST_AUTO_TEST_SUITE_END()
+
 BOOST_AUTO_TEST_SUITE_END()
 
 

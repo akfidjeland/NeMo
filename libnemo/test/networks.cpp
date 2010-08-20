@@ -69,9 +69,7 @@ runOne( backend_t backend,
 
 	nemo::Configuration conf = configuration(stdp, 1024, backend);
 	boost::scoped_ptr<nemo::Simulation> sim;
-	//boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf))
 	BOOST_REQUIRE_NO_THROW(sim.reset(nemo::simulation(net, conf)));
-			//boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf))
 
 	for(unsigned t=0; t < 20; ++t) {
 		BOOST_REQUIRE_NO_THROW(
@@ -99,5 +97,33 @@ run(backend_t backend)
 	runRange(backend, 100, 90, 100);
 }
 
-	} // end namespace no_outgoing
+} // end namespace no_outgoing
+
+
+namespace invalid_targets {
+
+
+void
+run(backend_t backend)
+{
+	unsigned ncount = 100;
+	bool stdp = false;
+
+	nemo::Network net;
+
+	for(unsigned source=0; source < ncount; ++source) {
+		addExcitatoryNeuron(source, net);
+		net.addSynapse(source, source + ncount, 1, 2.0f, stdp);
+	}
+
+	nemo::Configuration conf = configuration(stdp, 1024, backend);
+
+	boost::scoped_ptr<nemo::Simulation> sim;
+	/* Creating the simulation should fail due to presence of invalid target
+	 * neurons */
+	BOOST_REQUIRE_THROW(sim.reset(nemo::simulation(net, conf)), nemo::exception);
+}
+
+
+	} // end namespace invalid_targets
 } // end namespace networks
