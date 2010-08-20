@@ -56,8 +56,7 @@ Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss, unsigned fbits)
 
 ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
 	m_fractionalBits(0),
-	m_maxDelay(0),
-	m_maxIdx(0)
+	m_maxDelay(0)
 {
 	//! \todo implement auto-configuration of fixed-point format
 	if(!conf.fractionalBitsSet()) {
@@ -73,22 +72,21 @@ ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
 ConnectivityMatrix::ConnectivityMatrix(
 		const NetworkImpl& net,
 		const ConfigurationImpl& conf,
-		boost::function<nidx_t(nidx_t)> imap) :
+		const mapper_t& mapper) :
 	m_fractionalBits(conf.fractionalBitsSet() ? conf.fractionalBits() : net.fractionalBits()),
-	m_maxDelay(0),
-	m_maxIdx(0)
+	m_maxDelay(0)
 {
 	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
 			ni != net.m_fcm.end(); ++ni) {
-		nidx_t source = imap(ni->first);
+		nidx_t source = mapper.localIdx(ni->first);
 		const NetworkImpl::axon_t& axon = ni->second;
 		for(NetworkImpl::axon_t::const_iterator ai = axon.begin();
 				ai != axon.end(); ++ai) {
-			setRow(source, ai->first, ai->second, imap);
+			setRow(source, ai->first, ai->second, mapper);
 		}
 	}
 
-	finalize();
+	finalize(mapper);
 }
 
 
@@ -98,7 +96,7 @@ ConnectivityMatrix::setRow(
 		nidx_t source,
 		delay_t delay,
 		const std::vector<AxonTerminal<nidx_t, weight_t> >& ss,
-		boost::function<nidx_t(nidx_t)>& tmap)
+		const mapper_t& mapper)
 {
 	using boost::format;
 
@@ -114,28 +112,37 @@ ConnectivityMatrix::setRow(
 		throw nemo::exception(NEMO_INVALID_INPUT, "Double insertion into connectivity matrix");
 	}
 	m_delays[source].insert(delay);
-	m_maxIdx = std::max(m_maxIdx, source);
 	m_maxDelay = std::max(m_maxDelay, delay);
 
 	Row& row = insertion.first->second;
 	for(size_t s=0; s < row.len; ++s) {
-		nidx_t target = tmap(row.data[s].target);
+		nidx_t target = mapper.localIdx(row.data[s].target);
 		row.data[s].target = target;
-		m_maxIdx = std::max(m_maxIdx, target);
 	}
 
 	return row;
 }
 
 
+void
+ConnectivityMatrix::finalize(const mapper_t& mapper)
+{
+	finalizeForward(mapper);
+}
+
+
 
 /* The fast lookup is indexed by source and delay. */
 void
-ConnectivityMatrix::finalizeForward()
+ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
 {
-	m_cm.resize((m_maxIdx+1) * m_maxDelay);
+	if(mapper.neuronCount() == 0)
+		return;
 
-	for(nidx_t n=0; n <= m_maxIdx; ++n) {
+	nidx_t maxIdx = mapper.maxLocalIdx();
+	m_cm.resize((maxIdx+1) * m_maxDelay);
+
+	for(nidx_t n=0; n <= maxIdx; ++n) {
 		for(delay_t d=1; d <= m_maxDelay; ++d) {
 			std::map<fidx, Row>::const_iterator row = m_acc.find(fidx(n, d));
 			if(row != m_acc.end()) {

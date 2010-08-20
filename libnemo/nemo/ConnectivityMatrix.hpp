@@ -16,10 +16,10 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
-#include <boost/function.hpp>
 
 #include <nemo/config.h>
 #include "types.hpp"
+#include "Mapper.hpp"
 
 #define ASSUMED_CACHE_LINE_SIZE 64
 
@@ -66,29 +66,31 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 {
 	public:
 
+		typedef Mapper<nidx_t, nidx_t> mapper_t;
+
 		//! \todo remove this ctor
 		ConnectivityMatrix(const ConfigurationImpl& conf);
 
 		/*! Populate runtime CM from existing network.
 		 *
-		 * The function imap is used to map the neuron indices (both source and
-		 * target) from one index space to another. All later accesses to the
-		 * CM data are assumed to be in the translated indices.
+		 * The mapper can translate neuron indices (both source and target)
+		 * from one index space to another. All later accesses to the CM data
+		 * are assumed to be in terms of the translated indices.
 		 */
 		ConnectivityMatrix(
 				const NetworkImpl& net,
 				const ConfigurationImpl& conf,
-				boost::function<nidx_t(nidx_t)> imap);
+				const mapper_t&);
 
 		/*! Add a number of synapses with the same source and delay. Return
 		 * reference to the newly inserted row.
 		 *
-		 * The function tmap is used to map the target neuron indices (source
-		 * indices are unaffected) from one index space to another.
+		 * The mapper is used to map the target neuron indices (source indices
+		 * are unaffected) from one index space to another.
 		 */
-		Row& setRow(nidx_t, delay_t,
+		Row& setRow(nidx_t source, delay_t,
 				const std::vector<AxonTerminal<nidx_t, weight_t> >&,
-				boost::function<nidx_t(nidx_t)>& tmap);
+				const mapper_t&);
 
 		/*! \return all synapses for a given source and delay */
 		const Row& getRow(nidx_t source, delay_t) const;
@@ -101,7 +103,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 				std::vector<float>& weights,
 				std::vector<unsigned char>& plastic) const;
 
-		void finalize() { finalizeForward(); }
+		void finalize(const mapper_t&);
 
 		typedef std::set<delay_t>::const_iterator delay_iterator;
 
@@ -128,13 +130,12 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * finalize which must be called prior to getRow being called */
 		//! \todo use two different classes for this in order to ensure ordering
 		std::vector<Row> m_cm;
-		void finalizeForward();
+		void finalizeForward(const mapper_t&);
 
 		std::map<nidx_t, std::set<delay_t> > m_delays;
 		//! \todo could add a fast lookup here as well
 
 		delay_t m_maxDelay;
-		nidx_t m_maxIdx;
 
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */
 		size_t addressOf(nidx_t, delay_t) const;

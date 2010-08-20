@@ -8,8 +8,6 @@
 #ifdef NEMO_CPU_MULTITHREADED
 #include <boost/thread.hpp>
 #endif
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -55,7 +53,7 @@ Simulation::Simulation(
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	//! \todo Determine fixedpoint format based on input network
-	m_cm(net, conf, boost::bind(&Mapper::localIdx, &m_mapper, _1)),
+	m_cm(net, conf, m_mapper),
 	m_current(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0),
 	m_rng(m_neuronCount),
@@ -78,7 +76,7 @@ Simulation::setNeuronParameters(const nemo::NetworkImpl& net)
 {
 	for(std::map<nidx_t, NetworkImpl::neuron_t>::const_iterator i = net.m_neurons.begin();
 			i != net.m_neurons.end(); ++i) {
-		nidx_t nidx = m_mapper.localIdx(i->first);
+		nidx_t nidx = m_mapper.addGlobal(i->first);
 		NetworkImpl::neuron_t n = i->second;
 		m_a.at(nidx) = n.a;	
 		m_b.at(nidx) = n.b;	
