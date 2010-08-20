@@ -9,7 +9,7 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 {
 	const unsigned MS_PER_SECOND = 1000;
 
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	sim->resetTimer();
 #endif
 
@@ -21,7 +21,7 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 		}
 		sim->flushFiringBuffer();
 	}
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
 	sim->resetTimer();
 #endif
@@ -38,7 +38,7 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 		}
 		sim->flushFiringBuffer();
 	}
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	long int elapsedTiming = sim->elapsedWallclock();
 	sim->resetTimer();
 	std::cout << "[" << elapsedTiming << "ms elapsed]";
@@ -59,7 +59,7 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 		sim->readFiring(&cycles, &fired);
 		nfired += fired->size();
 	}
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	long int elapsedData = sim->elapsedWallclock();
 	std::cout << "[" << elapsedData << "ms elapsed]";
 #endif
@@ -68,7 +68,7 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 	unsigned long narrivals = nfired * m;
 	double f = (double(nfired) / n) / double(seconds);
 
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	/* Throughput is measured in terms of the number of spike arrivals per
 	 * wall-clock second */
 	unsigned long throughputNoPCI = MS_PER_SECOND * narrivals / elapsedTiming;
@@ -81,7 +81,7 @@ simulate(nemo::Simulation* sim, unsigned n, unsigned m)
 	std::cout << "Total firings: " << nfired << std::endl;
 	std::cout << "Avg. firing rate: " << f << "Hz\n";
 	std::cout << "Spike arrivals: " << narrivals << std::endl;
-#ifdef INCLUDE_TIMING_API
+#ifdef NEMO_TIMING_ENABLED
 	std::cout << "Performace both with and without PCI traffic overheads:\n";
 	std::cout << "Approx. throughput: " << throughputPCI/1000000 << "/"
 			<< throughputNoPCI/1000000 << "Ma/s (million spike arrivals per second)\n";
