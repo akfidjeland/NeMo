@@ -57,7 +57,7 @@ Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss, unsigned fbits)
 ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
 	m_fractionalBits(0),
 	m_maxDelay(0),
-	m_maxSourceIdx(0)
+	m_maxIdx(0)
 {
 	//! \todo implement auto-configuration of fixed-point format
 	if(!conf.fractionalBitsSet()) {
@@ -76,7 +76,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		boost::function<nidx_t(nidx_t)> imap) :
 	m_fractionalBits(conf.fractionalBitsSet() ? conf.fractionalBits() : net.fractionalBits()),
 	m_maxDelay(0),
-	m_maxSourceIdx(0)
+	m_maxIdx(0)
 {
 	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
 			ni != net.m_fcm.end(); ++ni) {
@@ -114,12 +114,14 @@ ConnectivityMatrix::setRow(
 		throw nemo::exception(NEMO_INVALID_INPUT, "Double insertion into connectivity matrix");
 	}
 	m_delays[source].insert(delay);
-	m_maxSourceIdx = std::max(m_maxSourceIdx, source);
+	m_maxIdx = std::max(m_maxIdx, source);
 	m_maxDelay = std::max(m_maxDelay, delay);
 
 	Row& row = insertion.first->second;
 	for(size_t s=0; s < row.len; ++s) {
-		row.data[s].target = tmap(row.data[s].target);
+		nidx_t target = tmap(row.data[s].target);
+		row.data[s].target = target;
+		m_maxIdx = std::max(m_maxIdx, target);
 	}
 
 	return row;
@@ -131,9 +133,9 @@ ConnectivityMatrix::setRow(
 void
 ConnectivityMatrix::finalizeForward()
 {
-	m_cm.resize((m_maxSourceIdx+1) * m_maxDelay);
+	m_cm.resize((m_maxIdx+1) * m_maxDelay);
 
-	for(nidx_t n=0; n <= m_maxSourceIdx; ++n) {
+	for(nidx_t n=0; n <= m_maxIdx; ++n) {
 		for(delay_t d=1; d <= m_maxDelay; ++d) {
 			std::map<fidx, Row>::const_iterator row = m_acc.find(fidx(n, d));
 			if(row != m_acc.end()) {

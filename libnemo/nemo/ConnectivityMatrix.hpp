@@ -134,7 +134,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		//! \todo could add a fast lookup here as well
 
 		delay_t m_maxDelay;
-		nidx_t m_maxSourceIdx;
+		nidx_t m_maxIdx;
 
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */
 		size_t addressOf(nidx_t, delay_t) const;
