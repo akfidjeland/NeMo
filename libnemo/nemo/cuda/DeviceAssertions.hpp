@@ -51,7 +51,7 @@ class DeviceAssertions
 
 		unsigned m_partitionCount;
 
-		std::vector<int> mh_mem;
+		std::vector<uint32_t> mh_mem;
 };
 
 	} // end namespace cuda

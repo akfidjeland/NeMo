@@ -13,11 +13,11 @@
 #include "kernel.cu_h"
 
 
-#ifdef DEVICE_ASSERTIONS
+#ifdef NEMO_CUDA_DEVICE_ASSERTIONS
 
 #define DEVICE_ASSERTION_MEMSZ (MAX_PARTITION_COUNT * THREADS_PER_BLOCK)
 
-__device__ int g_assertions[DEVICE_ASSERTION_MEMSZ];
+__device__ uint32_t g_assertions[DEVICE_ASSERTION_MEMSZ];
 
 
 __device__ __host__
@@ -37,30 +37,37 @@ assertion_offset(size_t partition, size_t thread)
 			g_assertions[assertion_offset(CURRENT_PARTITION, threadIdx.x)] = __LINE__;\
         }
 #endif
-#else // DEVICE_ASSERTIONS
+#else // NEMO_CUDA_DEVICE_ASSERTIONS
 #   define ASSERT(cond)
 #endif
 
 
 __host__
-void
-getDeviceAssertions(unsigned partitions, int* h_assertions)
+cudaError_t
+getDeviceAssertions(unsigned partitions, uint32_t* h_assertions)
 {
-#ifdef DEVICE_ASSERTIONS
-	size_t bytes = partitions * THREADS_PER_BLOCK * sizeof(int);
-	CUDA_SAFE_CALL(cudaMemcpyFromSymbol(h_assertions, g_assertions, bytes, cudaMemcpyDeviceToHost));
+#ifdef NEMO_CUDA_DEVICE_ASSERTIONS
+	size_t bytes = partitions * THREADS_PER_BLOCK * sizeof(uint32_t);
+	return cudaMemcpyFromSymbol(h_assertions, g_assertions, bytes, cudaMemcpyDeviceToHost);
+#else
+	return cudaSuccess;
 #endif
 }
 
 
 __host__
-void
+cudaError_t
 clearDeviceAssertions()
 {
-#ifdef DEVICE_ASSERTIONS
+#ifdef NEMO_CUDA_DEVICE_ASSERTIONS
 	void* addr;
-	CUDA_SAFE_CALL(cudaGetSymbolAddress(&addr, g_assertions));
-	CUDA_SAFE_CALL(cudaMemset(addr, 0, DEVICE_ASSERTION_MEMSZ*sizeof(int)));
+	cudaError_t err = cudaGetSymbolAddress(&addr, g_assertions);
+	if(err != cudaSuccess) {
+		return err;
+	}
+	return cudaMemset(addr, 0, DEVICE_ASSERTION_MEMSZ*sizeof(uint32_t));
+#else
+	return cudaSuccess;
 #endif
 }
 
