@@ -1,5 +1,6 @@
 #include <vector>
 #include <boost/test/unit_test.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <nemo.hpp>
 
 #include <cmath>
@@ -14,7 +15,7 @@ runSimulation(
 		bool stdp,
 		std::vector<unsigned> initFiring)
 {
-	nemo::Simulation* sim = nemo::simulation(*net, conf);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
 	fcycles->clear();
 	fnidx->clear();
@@ -46,8 +47,6 @@ runSimulation(
 	}
 
 	BOOST_CHECK_EQUAL(fcycles->size(), fnidx->size());
-
-	delete sim;
 }
 
 

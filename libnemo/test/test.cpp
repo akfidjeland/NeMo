@@ -447,3 +447,38 @@ BOOST_AUTO_TEST_SUITE(stdp);
 	}
 	//! \todo add test for CPU as well
 BOOST_AUTO_TEST_SUITE_END();
+
+
+void
+testHighFiring(backend_t backend, bool stdp)
+{
+	//! \todo run for larger networks as well
+	unsigned pcount = 1;
+	unsigned m = 1000;
+	unsigned sigma = 16;
+	bool logging = false;
+
+
+	boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, stdp, sigma, logging));
+	nemo::Configuration conf = configuration(stdp, 1024, backend);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+
+	std::vector<unsigned> fstim;
+	for(unsigned n = 0; n < net->neuronCount(); ++n) {
+		fstim.push_back(n);
+	}
+
+	for(unsigned ms = 0; ms < 1000; ++ms) {
+		BOOST_REQUIRE_NO_THROW(sim->step(fstim));
+	}
+}
+
+
+/* The firing queue should be able to handle all firing rates. It might be best
+ * to enable device assertions for this test.  */
+BOOST_AUTO_TEST_SUITE(high_firing)
+	BOOST_AUTO_TEST_CASE(cuda) {
+		testHighFiring(NEMO_BACKEND_CUDA, false);
+	}
+BOOST_AUTO_TEST_SUITE_END()
+
