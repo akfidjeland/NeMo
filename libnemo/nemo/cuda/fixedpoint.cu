@@ -12,7 +12,7 @@
 
 #include "device_assert.cu"
 #include "types.h"
-#include "cycle.cu"
+#include "log.cu_h"
 
 #define FX_SIGN_BIT 0x80000000
 

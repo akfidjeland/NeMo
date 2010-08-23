@@ -6,6 +6,7 @@
 #cmakedefine HAVE_BUILTIN_CTZLL
 #cmakedefine HAVE_LOG2
 #cmakedefine HAVE_POSIX_MEMALIGN
+#cmakedefine HAVE_CUPRINTF
 #cmakedefine CAN_SET_THREAD_AFFINITY
 #cmakedefine NEMO_TIMING_ENABLED
 #cmakedefine INCLUDE_MPI
@@ -13,7 +14,7 @@
 #cmakedefine NEMO_CUDA_ENABLED
 #cmakedefine NEMO_CUDA_DYNAMIC_LOADING
 #cmakedefine NEMO_CUDA_KERNEL_TIMING
-#cmakedefine NEMO_VERBOSE
+#cmakedefine NEMO_CUDA_DEBUG_TRACE
 #cmakedefine NEMO_CPU_DEBUG_TRACE
 #cmakedefine NEMO_CPU_MULTITHREADED
 

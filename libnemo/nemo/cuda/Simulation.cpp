@@ -62,6 +62,7 @@ Simulation::Simulation(
 	//! \todo do this configuration as part of CM setup
 	CUDA_SAFE_CALL(configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64));
 	resetTimer();
+	initLog();
 }
 
 
@@ -69,6 +70,7 @@ Simulation::Simulation(
 Simulation::~Simulation()
 {
 	finishSimulation();
+	endLog();
 }
 
 
@@ -262,6 +264,8 @@ Simulation::step()
 	}
 
 	m_deviceAssertions.check(m_timer.elapsedSimulation());
+
+	flushLog();
 }
 
 

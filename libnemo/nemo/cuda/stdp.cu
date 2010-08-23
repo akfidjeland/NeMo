@@ -9,7 +9,6 @@
 
 #include "log.cu_h"
 #include "device_assert.cu"
-#include "cycle.cu"
 
 
 /* STDP parameters
@@ -176,7 +175,7 @@ closestPostFire(uint64_t spikes)
 
 
 
-#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
+#ifdef NEMO_CUDA_DEBUG_TRACE
 
 __device__
 void
@@ -185,11 +184,13 @@ logStdp(int dt, weight_dt w_diff, unsigned targetNeuron, uint32_t r_synapse)
 	const char* type[] = { "ltd", "ltp" };
 
 	if(w_diff != 0) {
-		fprintf(stderr, "c%u %s: %u-%u -> %u-%u %+f (dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
+		// cuPrintf is limited to ten arguments, so split up the printing here
+		DEBUG_MSG("c%u %s: %u-%u -> %u-%u %+f ",
 				s_cycle, type[size_t(w_diff > 0)],
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
 				CURRENT_PARTITION, targetNeuron,
-				fx_tofloat(w_diff),
+				fx_tofloat(w_diff));
+		DEBUG_MSG("(dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
 				dt, r_delay1(r_synapse),
 				s_cycle - s_stdpPostFireWindow + dt,
 				s_cycle - s_stdpPostFireWindow);
@@ -213,7 +214,7 @@ updateRegion(
 	unsigned dt_post = closestPostFire(spikes);
 
 	/* For logging. Positive values: post-fire, negative values: pre-fire */
-#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
+#ifdef NEMO_CUDA_DEBUG_TRACE
 	int dt_log;
 #endif
 
@@ -221,18 +222,18 @@ updateRegion(
 	if(spikes) {
 		if(dt_pre < dt_post) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow - 1 - dt_pre];
-#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
+#ifdef NEMO_CUDA_DEBUG_TRACE
 			dt_log = -int(dt_pre);
 #endif
 		} else if(dt_post < dt_pre) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow+dt_post];
-#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
+#ifdef NEMO_CUDA_DEBUG_TRACE
 			dt_log = int(dt_post);
 #endif
 		}
 		// if neither is applicable dt_post == dt_pre
 	}
-#if defined(__DEVICE_EMULATION__) && defined(NEMO_VERBOSE)
+#ifdef NEMO_CUDA_DEBUG_TRACE
 	logStdp(dt_log, w_diff, targetNeuron, r_synapse);
 #endif
 	return w_diff;

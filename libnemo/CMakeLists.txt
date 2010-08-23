@@ -15,6 +15,7 @@ OPTION(NEMO_CUDA_ENABLED "Enabled simulation on CUDA devices" ON)
 IF(NEMO_CUDA_ENABLED)
 	OPTION(NEMO_CUDA_DYNAMIC_LOADING "Load the CUDA backend dynamically" ON)
 	OPTION(NEMO_CUDA_KERNEL_TIMING "Count and report cycles spent by the device in different kernel stages" OFF)
+	OPTION(NEMO_CUDA_DEBUG_TRACE "Add debugging trace in the CUDA backend (requires either cuPrintf available or emulation mode)" OFF)
 ENDIF(NEMO_CUDA_ENABLED)
 
 OPTION(NEMO_MATLAB_ENABLED "Create the Matlab API" ON)
@@ -57,8 +58,6 @@ IF(NEMO_TESTS_ENABLED)
 	LIST(APPEND DIRS test)
 ENDIF(NEMO_TESTS_ENABLED)
 
-
-OPTION(NEMO_VERBOSE "Produce verbose simulation output (mainly useful for testing)" OFF)
 
 SET(Boost_USE_MULTITHREADED OFF)
 SET(Boost_USE_MULTITHREAD ${Boost_USE_MULTITHREADED}) # for older versions of FindBoost

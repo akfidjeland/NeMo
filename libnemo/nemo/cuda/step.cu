@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cycle.cu"
+#include "log.cu_h"
 #include "fixedpoint.cu"
 #include "bitvector.cu"
 
@@ -432,7 +432,7 @@ step (
 	__shared__ unsigned s_firingCount;
 
 	if(threadIdx.x == 0) {
-#ifdef __DEVICE_EMULATION__
+#ifdef NEMO_CUDA_DEBUG_TRACE
 		s_cycle = cycle;
 #endif
 		s_firingCount = 0;

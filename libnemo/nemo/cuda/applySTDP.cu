@@ -54,7 +54,7 @@ applySTDP_(
 	weight_dt* gr_stdp = (weight_dt*) cr_stdp[CURRENT_PARTITION];
 	unsigned r_pitch = cr_pitch[CURRENT_PARTITION];
 
-#if defined(NEMO_VERBOSE) && defined(__DEVICE_EMULATION__)
+#ifdef NEMO_CUDA_DEBUG_TRACE
 	uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
 #endif
 
@@ -75,7 +75,7 @@ applySTDP_(
 
 				size_t gr_offset = target * r_pitch + r_sidx;
 				size_t gf_offset = gr_faddress[gr_offset];
-#if defined(NEMO_VERBOSE) && defined(__DEVICE_EMULATION__)
+#ifdef NEMO_CUDA_DEBUG_TRACE
 				unsigned rsynapse = gr_address[gr_offset];
 #endif
 

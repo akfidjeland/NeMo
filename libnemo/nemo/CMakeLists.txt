@@ -83,6 +83,25 @@ CHECK_FUNCTION_EXISTS(posix_memalign HAVE_POSIX_MEMALIGN)
 # log2 is part of C99 standard, so Microsoft support is patchy
 CHECK_CXX_SOURCE_COMPILES("#include <math.h>\nint main() { log2(double(0)); }" HAVE_LOG2)
 
+# CUDA-specific configuration
+# TODO: ideally this should be done in the cuda subdirectory
+SET(CUDA_CUPRINTF_DIR "" CACHE PATH "Directory in which to find cuPrintf source and header file")
+
+IF(CUDA_CUPRINTF_DIR)
+	FIND_PATH(CUPRINTF_INCLUDE_DIR cuPrintf.cuh PATHS ${CUDA_CUPRINTF_DIR})
+	FIND_FILE(CUPRINTF_SOURCE cuPrintf.cu ${CUDA_CUPRINTF_DIR})
+ELSE()
+	FIND_PATH(CUPRINTF_INCLUDE_DIR cuPrintf.cuh)
+	FIND_FILE(CUPRINTF_SOURCE cuPrintf.cu)
+ENDIF(CUDA_CUPRINTF_DIR)
+
+SET(HAVE_CUPRINTF FALSE)
+IF(CUPRINTF_INCLUDE_DIR AND CUPRINTF_SOURCE)
+	SET(HAVE_CUPRINTF TRUE)
+ENDIF(CUPRINTF_INCLUDE_DIR AND CUPRINTF_SOURCE)
+
+MARK_AS_ADVANCED(FORCE CUPRINTF_INCLUDE_DIR CUPRINTF_SOURCE)
+
 IF(NEMO_TIMING_ENABLED)
 	IF(NOT Boost_LIBRARY_DIRS)
 		MESSAGE(WARNING "Boost_LIBRARY_DIRS is not set, which may cause linker errors. Either set this variable or set BOOST_ROOT")
@@ -90,6 +109,7 @@ IF(NEMO_TIMING_ENABLED)
 		LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 	ENDIF(NOT Boost_LIBRARY_DIRS)
 ENDIF(NEMO_TIMING_ENABLED)
+
 
 
 # We rely on 32-bit floats

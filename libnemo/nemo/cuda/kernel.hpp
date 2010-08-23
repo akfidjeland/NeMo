@@ -59,4 +59,8 @@ cudaError configureKernel(unsigned maxDelay, unsigned pitch32, unsigned pitch64)
 
 cudaError fx_setFormat(unsigned fractionalBits);
 
+void initLog();
+void flushLog();
+void endLog();
+
 #endif

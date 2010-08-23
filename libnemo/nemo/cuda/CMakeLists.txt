@@ -9,6 +9,19 @@ IF(CUDA_BUILD_EMULATION)
 	ADD_DEFINITIONS(-D__DEVICE_EMULATION__)
 ENDIF()
 
+IF(NEMO_CUDA_DEBUG_TRACE)
+	IF(NOT CUDA_BUILD_EMULATION)
+		IF(HAVE_CUPRINTF)
+			CUDA_INCLUDE_DIRECTORIES(${CUPRINTF_INCLUDE_DIR})
+			INCLUDE_DIRECTORIES(${CUPRINTF_INCLUDE_DIR})
+		ELSE()
+			MESSAGE(WARNING "Cannot provide debugging trace for CUDA backend. Either device emulation must be enabled (CUDA_BUILD_EMULATION) or cuPrintf must be avilable")
+		ENDIF(HAVE_CUPRINTF)
+	ENDIF(NOT CUDA_BUILD_EMULATION)
+ENDIF(NEMO_CUDA_DEBUG_TRACE)
+
+
+
 
 # FindCUDA sets a number of variables which or not of relevance to our build.
 # Mark these as advanced, so as not to clutter the configuration.
@@ -60,6 +73,7 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	WarpAddressTable.cpp
 	device_memory.cpp
 	devices.cpp
+	log.cpp
   )
 
 SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES DEFINE_SYMBOL NEMO_CUDA_EXPORTS)
