@@ -62,7 +62,6 @@ Simulation::Simulation(
 	//! \todo do this configuration as part of CM setup
 	CUDA_SAFE_CALL(configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64));
 	resetTimer();
-	initLog();
 }
 
 
@@ -70,7 +69,6 @@ Simulation::Simulation(
 Simulation::~Simulation()
 {
 	finishSimulation();
-	endLog();
 }
 
 
@@ -234,6 +232,7 @@ Simulation::step()
 {
 	m_timer.step();
 	uint32_t* d_fout = m_firingOutput.step();
+	initLog();
 	::stepSimulation(
 			m_mapper.partitionCount(),
 			usingStdp(),
@@ -266,6 +265,7 @@ Simulation::step()
 	m_deviceAssertions.check(m_timer.elapsedSimulation());
 
 	flushLog();
+	endLog();
 }
 
 
@@ -281,6 +281,7 @@ Simulation::applyStdp(float reward)
 	if(reward == 0.0f) {
 		m_cm.clearStdpAccumulator();
 	} else  {
+		initLog();
 		::applyStdp(
 				m_cycleCounters.dataApplySTDP(),
 				m_cycleCounters.pitchApplySTDP(),
@@ -290,6 +291,8 @@ Simulation::applyStdp(float reward)
 				m_stdpFn.maxWeight(),
 				m_stdpFn.minWeight(),
 				reward);
+		flushLog();
+		endLog();
 	}
 
 	m_deviceAssertions.check(m_timer.elapsedSimulation());
