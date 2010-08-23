@@ -185,12 +185,12 @@ logStdp(int dt, weight_dt w_diff, unsigned targetNeuron, uint32_t r_synapse)
 
 	if(w_diff != 0) {
 		// cuPrintf is limited to ten arguments, so split up the printing here
-		DEBUG_MSG("c%u %s: %u-%u -> %u-%u %+f ",
+		DEBUG_MSG_STDP("c%u %s: %u-%u -> %u-%u %+f ",
 				s_cycle, type[size_t(w_diff > 0)],
 				sourcePartition(r_synapse), sourceNeuron(r_synapse),
 				CURRENT_PARTITION, targetNeuron,
 				fx_tofloat(w_diff));
-		DEBUG_MSG("(dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
+		DEBUG_MSG_STDP("(dt=%d, delay=%u, prefire@%u, postfire@%u)\n",
 				dt, r_delay1(r_synapse),
 				s_cycle - s_stdpPostFireWindow + dt,
 				s_cycle - s_stdpPostFireWindow);

@@ -99,7 +99,7 @@ addCurrentStimulus(unsigned psize,
 			unsigned pstart = CURRENT_PARTITION * pitch;
 			fix_t stimulus = g_current[pstart + neuron];
 			addCurrent(neuron, stimulus, s_current, s_overflow, s_negative);
-			DEBUG_MSG("c%u %u-%u: +%f (external)\n",
+			DEBUG_MSG_SYNAPSE("c%u %u-%u: +%f (external)\n",
 					s_cycle, CURRENT_PARTITION, neuron,
 					fx_tofloat(g_current[pstart + neuron]));
 		}
@@ -167,9 +167,8 @@ fire(
 				v = g_c[neuron];
 				u += g_d[neuron];
 
-				DEBUG_MSG("c%u %u-%u fired (forced: %u) (thread %u)\n",
-						s_cycle, CURRENT_PARTITION, neuron,
-						forceFiring, threadIdx.x);
+				DEBUG_MSG_NEURON("c%u %u-%u fired (forced: %u)\n",
+						s_cycle, CURRENT_PARTITION, neuron, forceFiring);
 
 				//! \todo consider *only* updating this here, and setting u and v separately
 				unsigned i = atomicAdd(s_firingCount, 1);
@@ -257,7 +256,7 @@ scatter(unsigned cycle,
 					size_t base = incomingBufferStart(targetPartition, cycle, delay);
 					g_incoming[base + offset] = make_incoming(outgoingWarpOffset(sout));
 
-					DEBUG_MSG("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%lu)\n",
+					DEBUG_MSG_SYNAPSE("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%lu)\n",
 							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
 							offset, c_incomingPitch);
 				}
@@ -314,14 +313,14 @@ gather( unsigned cycle,
 				(group + GROUP_SIZE) > s_incomingCount
 				? s_incomingCount % GROUP_SIZE
 				: GROUP_SIZE;
-			DEBUG_MSG("c%u: group size=%u, incoming=%u\n", cycle, s_groupSize, s_incomingCount);
+			DEBUG_MSG_SYNAPSE("c%u: group size=%u, incoming=%u\n", cycle, s_groupSize, s_incomingCount);
 		}
 		__syncthreads();
 
 		if(threadIdx.x < s_groupSize) {
 			incoming_t sgin = getIncoming(cycle, group, g_incoming);
 			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
-			DEBUG_MSG("c%u w%u -> p%u\n", cycle, incomingWarpOffset(sgin), CURRENT_PARTITION);
+			DEBUG_MSG_SYNAPSE("c%u w%u -> p%u\n", cycle, incomingWarpOffset(sgin), CURRENT_PARTITION);
 		}
 
 		__syncthreads();
@@ -344,7 +343,7 @@ gather( unsigned cycle,
 
 			if(weight != 0) {
 				addCurrent(postsynaptic, weight, s_fx_current, s_overflow, s_negative);
-				DEBUG_MSG("c%u p?n? -> p%un%u %+f\n",
+				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f\n",
 						s_cycle, CURRENT_PARTITION, postsynaptic, fx_tofloat(weight));
 			}
 		}

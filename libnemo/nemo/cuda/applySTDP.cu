@@ -104,7 +104,7 @@ applySTDP_(
 
 						if(w_old != w_new) {
 							gf_weight[gf_offset] = w_new;
-							DEBUG_MSG("stdp (%u-%u -> %u-%u) %f %+f = %f\n",
+							DEBUG_MSG_STDP("stdp (%u-%u -> %u-%u) %f %+f = %f\n",
 									sourcePartition(rsynapse), sourceNeuron(rsynapse),
 									CURRENT_PARTITION, target,
 									fx_tofloat(w_old), fx_tofloat(w_diff), fx_tofloat(w_new));

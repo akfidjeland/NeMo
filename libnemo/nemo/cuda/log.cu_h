@@ -50,6 +50,7 @@ __shared__ uint32_t s_cycle;
 #else // HAVE_CUPRINTF
 
 #error "cuPrintf not available (and not in emulation mode)"
+
 #endif // HAVE_CUPRINTF
 
 #endif // __DEVICE_EMULATION__
@@ -59,10 +60,33 @@ __shared__ uint32_t s_cycle;
         DEBUG_MSG(__VA_ARGS__);                                               \
     }
 
+
+#if NEMO_CUDA_DEBUG_TRACE & 0x2
+#define DEBUG_MSG_NEURON(...) DEBUG_MSG(__VA_ARGS__)
+#else
+#define DEBUG_MSG_NEURON(...)
+#endif
+
+#if NEMO_CUDA_DEBUG_TRACE & 0x4
+#define DEBUG_MSG_SYNAPSE(...) DEBUG_MSG(__VA_ARGS__)
+#else
+#define DEBUG_MSG_SYNAPSE(...)
+#endif
+
+#if NEMO_CUDA_DEBUG_TRACE >= 0x8
+#define DEBUG_MSG_STDP(...) DEBUG_MSG(__VA_ARGS__)
+#else
+#define DEBUG_MSG_STDP(...)
+#endif
+
 #else // NEMO_CUDA_DEBUG_TRACE
 
 #define DEBUG_MSG(msg, ...)
 #define DEBUG_THREAD_MSG(msg, ...)
+
+#define DEBUG_MSG_NEURON(...)
+#define DEBUG_MSG_SYNAPSE(...)
+#define DEBUG_MSG_STDP(...)
 
 #endif // NEMO_CUDA_DEBUG_TRACE
 

@@ -12,13 +12,14 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <cuPrintf.cuh>
+#include "exception.hpp"
 #endif
 
 void
 initLog()
 {
 #if defined(NEMO_CUDA_DEBUG_TRACE) && defined(HAVE_CUPRINTF)
-	cudaPrintfInit();
+	CUDA_SAFE_CALL(cudaPrintfInit());
 #endif
 }
 
@@ -27,7 +28,7 @@ void
 flushLog()
 {
 #if defined(NEMO_CUDA_DEBUG_TRACE) && defined(HAVE_CUPRINTF)
-	cudaPrintfDisplay(stderr, true);
+	CUDA_SAFE_CALL(cudaPrintfDisplay(stdout, true));
 #endif
 }
 
