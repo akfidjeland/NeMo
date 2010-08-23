@@ -11,7 +11,7 @@
 /* The test network consists of two groups of the same size. Connections
  * between these groups are one-way and are organised in a one-to-one fashion.
  */
-static const unsigned groupSize = 768;
+static const unsigned groupSize = 2 * 768;
 
 /*The initial weight should be too low to induce firing
  * based on just a single spike and still allow a few depressions before
@@ -48,14 +48,15 @@ configuration(backend_t backend)
 	std::vector<float> pre(20);
 	std::vector<float> post(20);
 	for(unsigned i = 0; i < 20; ++i) {
-		//int dt = i + 1;
 		int dt = i;
 		pre.at(i) = dwPre(-dt);
 		post.at(i) = dwPost(dt);
-		//pre.at(i) = 1.0 * expf(-dt / 20.0f);
-		//post.at(i) = -0.8 * expf(-dt / 20.0f);
 	}
-	conf.setStdpFunction(pre, post, -2*initWeight, 2*initWeight);
+	/* don't allow negative synapses to go much more negative.
+	 * This is to avoid having large negative input currents,
+	 * which will result in extra firing (by forcing 'u' to
+	 * go highly negative) */
+	conf.setStdpFunction(pre, post, -0.5, 2*initWeight);
 	setBackend(backend, conf);
 
 	return conf;
@@ -165,7 +166,9 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim)
 		const std::vector<unsigned>* delays;
 		const std::vector<float>* weights;
 		const std::vector<unsigned char>* plastic;
+
 		sim->getSynapses(globalIdx(0, local), &targets, &delays, &weights, &plastic);
+
 		for(unsigned s = 0; s < targets->size(); ++s) {
 
 			if(local != localIdx(targets->at(s)))
@@ -214,6 +217,7 @@ testStdp(backend_t backend, bool noiseConnections)
 		for(unsigned ms = 0; ms < 100; ++ms) {
 			std::vector<unsigned> fstim;
 			sim->step(stimulus(ms, fstim));
+			sim->flushFiringBuffer();
 		}
 		/* During the preceding epoch each synapse should have
 		 * been updated according to the STDP rule exactly
