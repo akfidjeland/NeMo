@@ -59,7 +59,7 @@ ConfigurationImpl::setFractionalBits(unsigned bits)
 {
 	using boost::format;
 
-	const unsigned max_bits = 32;
+	const unsigned max_bits = 31;
 	if(bits > max_bits) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid number of fractional bits (%u) specified. Max is %u")
