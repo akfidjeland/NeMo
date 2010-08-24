@@ -156,9 +156,12 @@ NetworkImpl::getSynapses(
 		std::vector<float>& weights,
 		std::vector<unsigned char>& plastic) const
 {
+	using boost::format;
+
 	fcm_t::const_iterator i_src = m_fcm.find(source);
 	if(i_src == m_fcm.end()) {
-		throw nemo::exception(NEMO_INVALID_INPUT, "synapses of non-existing neuron requested");
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("synapses of non-existing neuron (%u) requested") % source));
 	}
 
 	targets.clear();

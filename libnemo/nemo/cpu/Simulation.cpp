@@ -342,7 +342,7 @@ Simulation::getSynapses(
 		const std::vector<float>** weights,
 		const std::vector<unsigned char>** plastic)
 {
-	m_cm.getSynapses(sourceNeuron, m_targetsOut, m_delaysOut, m_weightsOut, m_plasticOut);
+	m_cm.getSynapses(m_mapper.localIdx(sourceNeuron), m_targetsOut, m_delaysOut, m_weightsOut, m_plasticOut);
 	for(std::vector<unsigned>::iterator i = m_targetsOut.begin();
 			i != m_targetsOut.end(); ++i) {
 		*i = m_mapper.globalIdx(*i);

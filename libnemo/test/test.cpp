@@ -389,15 +389,17 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 
+/* Create simulation and verify that the simulation data contains the same
+ * synapses as the input network. Neurons are assumed to lie in a contigous
+ * range of indices starting at n0. */
 void
-testGetSynapses(backend_t backend, bool stdp)
+testGetSynapses(const nemo::Network& net,
+		nemo::Configuration& conf,
+		unsigned fbits,
+		unsigned n0)
 {
-	boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(4, 1000, stdp, 32, false));
-
-	nemo::Configuration conf = configuration(stdp, 1024, backend);
-	unsigned fbits = 22;
 	conf.setFractionalBits(fbits);
-	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
 
 	std::vector<unsigned> ntargets;
 	std::vector<unsigned> ndelays;
@@ -408,8 +410,8 @@ testGetSynapses(backend_t backend, bool stdp)
 	const std::vector<float> *sweights;
 	const std::vector<unsigned char> *splastic;
 
-	for(unsigned src = 0, src_end = net->neuronCount(); src < src_end; ++src) {
-		net->getSynapses(src, ntargets, ndelays, nweights, nplastic);
+	for(unsigned src = n0, src_end = n0 + net.neuronCount(); src < src_end; ++src) {
+		net.getSynapses(src, ntargets, ndelays, nweights, nplastic);
 		sim->getSynapses(src, &stargets, &sdelays, &sweights, &splastic);
 		sortAndCompare(ntargets, *const_cast<std::vector<unsigned>*>(stargets));
 		for(std::vector<float>::iterator i = nweights.begin(); i != nweights.end(); ++i) {
@@ -419,6 +421,19 @@ testGetSynapses(backend_t backend, bool stdp)
 		sortAndCompare(ndelays, *const_cast<std::vector<unsigned>*>(sdelays));
 		sortAndCompare(nplastic, *const_cast<std::vector<unsigned char>*>(splastic));
 	}
+}
+
+
+void
+testGetSynapses(backend_t backend, bool stdp)
+{
+	boost::scoped_ptr<nemo::Network> net1(nemo::torus::construct(4, 1000, stdp, 32, false));
+	nemo::Configuration conf = configuration(stdp, 1024, backend);
+	testGetSynapses(*net1, conf, 22, 0);
+
+	unsigned n0 = 1000000U;
+	boost::scoped_ptr<nemo::Network> net2(createRing(1500, n0));
+	testGetSynapses(*net2, conf, 16, n0);
 }
 
 

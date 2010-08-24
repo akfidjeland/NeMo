@@ -273,6 +273,8 @@ ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 }
 
 
+
+//! \todo could do mapping internally here instead of in caller
 void
 ConnectivityMatrix::getSynapses(
 		unsigned source,
