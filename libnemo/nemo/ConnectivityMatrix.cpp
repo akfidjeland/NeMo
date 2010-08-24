@@ -58,13 +58,15 @@ ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
 	m_fractionalBits(0),
 	m_maxDelay(0)
 {
-	//! \todo implement auto-configuration of fixed-point format
 	if(!conf.fractionalBitsSet()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR,
-				"connectivity matrix class does not currently support auto-configuration of fixed-point format. Please call Configuration::setFractionalBits before creating simulation");
+				"If constructing runtime connectivity matrix incrementally, the fixed-point format must be specified prior to construction");
 	}
 
 	m_fractionalBits = conf.fractionalBits();
+	if(conf.stdpFunction()) {
+		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
+	}
 }
 
 
@@ -76,6 +78,10 @@ ConnectivityMatrix::ConnectivityMatrix(
 	m_fractionalBits(conf.fractionalBitsSet() ? conf.fractionalBits() : net.fractionalBits()),
 	m_maxDelay(0)
 {
+	if(conf.stdpFunction()) {
+		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
+	}
+
 	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
 			ni != net.m_fcm.end(); ++ni) {
 		nidx_t source = mapper.localIdx(ni->first);
@@ -116,6 +122,13 @@ ConnectivityMatrix::setRow(
 	for(size_t s=0; s < row.len; ++s) {
 		nidx_t target = mapper.localIdx(row.data[s].target);
 		row.data[s].target = target;
+	}
+
+	for(unsigned sidx=0; sidx < ss.size(); ++sidx) {
+		const AxonTerminal<nidx_t, weight_t>& s = ss.at(sidx);
+		if(s.plastic) {
+			m_racc[mapper.localIdx(s.target)].push_back(RSynapse(source, delay, sidx));
+		}
 	}
 
 	return row;
@@ -175,6 +188,75 @@ ConnectivityMatrix::verifySynapseTerminals(fidx idx,
 		if(!mapper.validLocal(target)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid synapse target neuron %u (source: %u)") % target % source));
+		}
+	}
+}
+
+
+
+void
+ConnectivityMatrix::accumulateStdp(const std::vector<uint64_t>& recentFiring)
+{
+	if(!m_stdp)
+		return;
+
+	//! \todo consider walking over a compact vector instead
+	//! \todo could do this in multiple threads
+	for(std::map<nidx_t, Incoming>::iterator i = m_racc.begin();
+			i != m_racc.end(); ++i) {
+
+		nidx_t post = i->first;
+		if(recentFiring[post] & m_stdp->postFireMask()) {
+
+			Incoming& row = i->second;
+
+			for(Incoming::iterator s = row.begin(); s != row.end(); ++s) {
+				nidx_t pre = s->source;
+				uint64_t preFiring = recentFiring[pre] >> s->delay;
+				fix_t w_diff = m_stdp->weightChange(preFiring, pre, post);
+				//! \todo remove conditional?
+				if(w_diff != 0.0) {
+					s->w_diff += w_diff;
+				}
+			}
+		}
+	}
+}
+
+
+
+fix_t*
+ConnectivityMatrix::weight(const RSynapse& r_idx) const
+{
+	const Row& row = m_cm.at(addressOf(r_idx.source, r_idx.delay));
+	assert(r_idx.synapse < row.len);
+	return &row.data[r_idx.synapse].weight;
+}
+
+
+
+void
+ConnectivityMatrix::applyStdp(float reward)
+{
+	for(std::map<nidx_t, Incoming>::iterator row = m_racc.begin(); row != m_racc.end(); ++row) {
+
+		Incoming& incoming = row->second;
+
+		for(Incoming::iterator s = incoming.begin(); s != incoming.end(); ++s) {
+
+			if(reward != 0.0) {
+				fix_t* w_old = weight(*s);
+				fix_t w_new = m_stdp->updatedWeight(*w_old, reward * s->w_diff);
+
+				if(*w_old != w_new) {
+#ifdef DEBUG_TRACE
+					fprintf(stderr, "stdp (%u -> %u) %f %+f = %f\n",
+							s->source, row->first, *w_old, reward * s->w_diff, w_new);
+#endif
+					*w_old = w_new;
+				}
+			}
+			s->w_diff = 0;
 		}
 	}
 }

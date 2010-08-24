@@ -1,5 +1,5 @@
-#ifndef STDP_HPP
-#define STDP_HPP
+#ifndef NEMO_STDP_PROCESS_HPP
+#define NEMO_STDP_PROCESS_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -10,141 +10,74 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \file STDP.hpp
 
 #include <vector>
 
 #include <nemo/config.h>
 #include "types.h"
 
-#ifdef INCLUDE_MPI
-
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/vector.hpp>
-
-namespace boost {
-	namespace serialization {
-		class access;
-	}
-}
-
-#endif
-
 namespace nemo {
 
-template<typename T> class STDP;
-template<typename T> void check_close(const STDP<T>&, const STDP<T>&);
+class StdpFunction;
 
 
-/*! \brief User-configurable STDP function */
-template<typename T>
-class STDP
+class NEMO_BASE_DLL_PUBLIC StdpProcess
 {
 	public:
 
-		STDP() :
-			m_preFireWindow(0),
-			m_postFireWindow(0),
-			m_potentiationBits(0),
-			m_depressionBits(0),
-			m_maxWeight(0.0),
-			m_minWeight(0.0)
-		{}
+		StdpProcess(const StdpFunction&, unsigned fractionalBits);
 
-		STDP(const std::vector<T>& prefire, const std::vector<T>& postfire,
-				T minWeight, T maxWeight);
+		/* Return weight change */
+		fix_t weightChange(uint64_t spikes, nidx_t source, nidx_t target) const;
 
-		void configure(
-				const std::vector<T>& prefire,
-				const std::vector<T>& postfire,
-				T minWeight,
-				T maxWeight);
+		/*! \return updated weight given the weight difference. This might be
+		 * different than w_old + w_diff due saturation and disallowed sign
+		 * change. */
+		fix_t updatedWeight(fix_t w_old, fix_t w_diff) const;
 
-		T maxWeight() const { return m_maxWeight; }
-		T minWeight() const { return m_minWeight; }
+		/* Bitmask indicating the position of the postsynaptic firing within
+		 * the window. This is useful in determining when to compute STDP updates. */
+		uint64_t postFireMask() const { return m_postFireMask; }
+
+	private :
+
+		fix_t updateRegion(uint64_t spikes, nidx_t source, nidx_t target) const;
 
 		/*! \return value of STDP function at the given (negative) value of dt */
-		T lookupPre(int dt) const;
+		fix_t lookupPre(int dt) const;
 
 		/*! \return value of STDP function at the given (positive) value of dt */
-		T lookupPost(int dt) const;
+		fix_t lookupPost(int dt) const;
 
-		/*! \return length of prefire part of STDP window */
-		unsigned int preFireWindow() const { return m_preFireWindow; }
-
-		/*! \return length of postfire part of STDP window */
-		unsigned int postFireWindow() const { return m_postFireWindow; }
-
-		/*! \return bit mask indicating which cycles correspond to
-		 * potentiation.  LSB = end of STDP window */
-		uint64_t potentiationBits() const { return m_potentiationBits; }
-
-		/*! \return bit mask indicating which cycles correspond to depression.  */
-		uint64_t depressionBits() const { return m_depressionBits; }
-
-		/*! \return bit mask indicating which cycles correspond to postfire
-		 * part of STDP window. */
-		uint64_t preFireBits() const { return m_preFireBits; }
-
-		/*! \return bit mask indicating which cycles correspond to prefire
-		 * part of STDP window. */
-		uint64_t postFireBits() const { return m_postFireBits; }
-
-		/*! \return the STDP function lookup-table */
-		const std::vector<T>& function() const { return m_function; }
-
-		bool enabled() const { return m_function.size() > 0; }
+		unsigned closestPreFire(uint64_t arrivals) const;
+		unsigned closestPostFire(uint64_t arrivals) const;
 
 		static const unsigned STDP_NO_APPLICATION = unsigned(~0);
 
 	private:
 
-		 friend void check_close<>(const nemo::STDP<T>&, const nemo::STDP<T>&);
-
-		//! \todo compute the full function only on demand?
-		std::vector<T> m_function;
-
 		/* pre-fire part of STDP function, from dt=-1 and down */
-		std::vector<T> m_fnPre;
+		std::vector<fix_t> m_fnPre;
 
 		/* pre-fire part of STDP function, from dt=+1 and up */
-		std::vector<T> m_fnPost;
+		std::vector<fix_t> m_fnPost;
 
-		unsigned int m_preFireWindow;
-		unsigned int m_postFireWindow;
+		int m_postPreWindow;
 
 		uint64_t m_potentiationBits;
 		uint64_t m_depressionBits; 
 
-		uint64_t m_preFireBits;
-		uint64_t m_postFireBits;
+		/* Bitmasks indicating the pre-post and post-pre regions of the window */
+		uint64_t m_prePostBits;
+		uint64_t m_postPreBits;
 
-		T m_maxWeight;
-		T m_minWeight;
+		uint64_t m_postFireMask;
 
-#ifdef INCLUDE_MPI
-		friend class boost::serialization::access;
-
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
-			ar & m_function;
-			ar & m_fnPre;
-			ar & m_fnPost;
-			ar & m_preFireWindow;
-			ar & m_postFireWindow;
-			ar & m_potentiationBits;
-			ar & m_depressionBits;
-			ar & m_preFireBits;
-			ar & m_postFireBits;
-			ar & m_maxWeight;
-			ar & m_minWeight;
-		}
-#endif
+		fix_t m_minWeight;
+		fix_t m_maxWeight;
 };
 
 } // namespace nemo
 
-
-#include "STDP.ipp"
 
 #endif

@@ -47,8 +47,12 @@ class StdpFunction
 
 		float maxWeight() const { return m_maxWeight; }
 
+		/*! \return bit mask indicating which cycles correspond to
+		 * potentiation.  LSB = end of STDP window. */
 		uint64_t potentiationBits() const;
 
+		/*! \return bit mask indicating which cycles correspond to depression.
+		 * LSB = end of STDP window. */
 		uint64_t depressionBits() const;
 
 	private :

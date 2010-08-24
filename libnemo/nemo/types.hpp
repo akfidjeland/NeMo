@@ -10,7 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 /* The basic types in nemo_types are also used without an enclosing namespace
  * inside the kernel (which is pure C). */
 #include <nemo/config.h>
@@ -121,6 +120,23 @@ class Synapse
 			ar & terminal;
 		}
 #endif
+};
+
+
+class RSynapse
+{
+	public :
+
+		RSynapse() :
+			source(~0), delay(0), synapse(~0), w_diff(0) {}
+
+		RSynapse(nidx_t source, delay_t delay, sidx_t fsynapse) :
+			source(source), delay(delay), synapse(fsynapse), w_diff(0) { }
+
+		nidx_t source;
+		delay_t delay;
+		sidx_t synapse; // index in the forward connectivity matrix
+		fix_t w_diff;
 };
 
 } // end namespace nemo

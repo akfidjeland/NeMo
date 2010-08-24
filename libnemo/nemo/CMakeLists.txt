@@ -39,6 +39,7 @@ ADD_LIBRARY(nemo_base
 	SimulationBackend.cpp
 	ConnectivityMatrix.cpp
 	RNG.cpp
+	STDP.cpp
 	StdpFunction.cpp
 	fixedpoint.cpp
 )

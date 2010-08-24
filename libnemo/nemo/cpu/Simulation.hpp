@@ -151,10 +151,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 
-		void accumulateStdp();
-
-		weight_t updateRegion(uint64_t spikes, nidx_t source, nidx_t target);
-
 		Timer m_timer;
 
 		/* Local buffers for reading of synapse data */

@@ -233,11 +233,7 @@ Simulation::update(
 		updateRange(0, m_neuronCount);
 #endif
 
-#if 0
-	if(m_stdp.enabled()) {
-		accumulateStdp();
-	}
-#endif
+	m_cm.accumulateStdp(m_recentFiring);
 }
 
 
@@ -287,8 +283,7 @@ Simulation::flushFiringBuffer()
 void
 Simulation::applyStdp(float reward)
 {
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "nemo::cpu::Simulation::applyStdp is not implemented");
-	// m_cm.applyStdp(m_stdp.minWeight(), m_stdp.maxWeight(), reward);
+	m_cm.applyStdp(reward);
 }
 
 
@@ -336,99 +331,6 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 	}
 }
 
-
-
-#if 0
-unsigned
-closestPreFire(const STDP<float>& stdp, uint64_t arrivals)
-{
-	uint64_t validArrivals = arrivals & stdp.preFireBits();
-	int dt =  ctz64(validArrivals >> stdp.postFireWindow());
-	return validArrivals ? (unsigned) dt : STDP<float>::STDP_NO_APPLICATION;
-}
-
-
-
-unsigned
-closestPostFire(const STDP<float>& stdp, uint64_t arrivals)
-{
-	uint64_t validArrivals = arrivals & stdp.postFireBits();
-	int dt = clz64(validArrivals << uint64_t(64 - stdp.postFireWindow()));
-	return validArrivals ? (unsigned) dt : STDP<float>::STDP_NO_APPLICATION;
-}
-#endif
-
-
-
-weight_t
-Simulation::updateRegion(
-		uint64_t spikes,
-		nidx_t source,
-		nidx_t target)
-{
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "nemo::cpu::Simulation::updateRegion not implemented");
-#if 0
-	/* The potentiation can happen on either side of the firing. We want to
-	 * find the one closest to the firing. We therefore need to compute the
-	 * prefire and postfire dt's separately. */
-	weight_t w_diff = 0.0;
-
-	if(spikes) {
-
-		uint dt_pre = closestPreFire(m_stdp, spikes);
-		uint dt_post = closestPostFire(m_stdp, spikes);
-
-		if(dt_pre < dt_post) {
-			w_diff = m_stdp.lookupPre(dt_pre);
-			LOG("c%u %s: %u -> %u %+f (dt=%d)\n",
-					elapsedSimulation(), "ltp", source, target, w_diff, dt_pre);
-		} else if(dt_post < dt_pre) {
-			w_diff = m_stdp.lookupPost(dt_post);
-			LOG("c%u %s: %u -> %u %+f (dt=%d)\n",
-					elapsedSimulation(), "ltd", source, target, w_diff, dt_post);
-		}
-		// if neither is applicable dt_post == dt_pre == STDP_NO_APPLICATION
-	}
-	return w_diff;
-#endif
-}
-
-
-
-void
-Simulation::accumulateStdp()
-{
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "nemo::cpu::Simulation::accumulateStdp not implemented");
-#if 0
-	/* Every cycle we process potentiation/depression relating to postsynaptic
-	 * firings in the middle of the STDP window */
-	uint64_t MASK = uint64_t(1) << m_stdp.postFireWindow();
-
-	for(nidx_t post = 0; post < m_neuronCount; ++post) {
-		if(m_recentFiring[post] & MASK) {
-
-			const ConnectivityMatrix::Incoming& addresses = m_cm.getIncoming(post);
-			ConnectivityMatrix::Accumulator& w_diffs = m_cm.getWAcc(post);
-
-			for(size_t s = 0; s < addresses.size(); ++s) {
-
-				nidx_t pre = addresses[s].source;
-				uint64_t preFiring = m_recentFiring[pre] >> addresses[s].delay;
-				uint64_t p_spikes = preFiring & m_stdp.potentiationBits();
-				uint64_t d_spikes = preFiring & m_stdp.depressionBits();
-
-				weight_t w_diff =
-						updateRegion(p_spikes, pre, post) +
-						updateRegion(d_spikes, pre, post);
-				if(w_diff != 0.0) {
-					w_diffs[s] += w_diff;
-				}
-			}
-
-		}
-	}
-#endif
-}
 
 
 

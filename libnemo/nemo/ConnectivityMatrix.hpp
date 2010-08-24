@@ -16,10 +16,12 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
+#include <boost/optional.hpp>
 
 #include <nemo/config.h>
 #include "types.hpp"
 #include "Mapper.hpp"
+#include "STDP.hpp"
 
 #define ASSUMED_CACHE_LINE_SIZE 64
 
@@ -119,6 +121,10 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		delay_t maxDelay() const { return m_maxDelay; }
 
+		void accumulateStdp(const std::vector<uint64_t>& recentFiring);
+
+		void applyStdp(float reward);
+
 	private:
 
 		unsigned m_fractionalBits;
@@ -137,7 +143,14 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::vector<Row> m_cm;
 		void finalizeForward(const mapper_t&);
 
+		/* For the reverse matrix we don't need to group by delay */
+		//! \todo move into std::vector when finalizing
+		typedef std::vector<RSynapse> Incoming;
+		std::map<nidx_t, Incoming> m_racc;
+		boost::optional<StdpProcess> m_stdp;
+
 		std::map<nidx_t, std::set<delay_t> > m_delays;
+
 		//! \todo could add a fast lookup here as well
 
 		delay_t m_maxDelay;
@@ -146,6 +159,10 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		size_t addressOf(nidx_t, delay_t) const;
 
 		void verifySynapseTerminals(fidx idx, const Row& row, const mapper_t&) const;
+
+		/*! \return address of the synapse weight in the forward matrix, given
+		 * a synapse in the reverse matrix */
+		fix_t* weight(const RSynapse&) const;
 };
 
 
