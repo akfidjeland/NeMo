@@ -6,7 +6,6 @@
 
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 #include "dyn_load.hpp"
-#include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #endif
 
@@ -195,17 +194,6 @@ void
 setDefaultHardware(nemo::ConfigurationImpl& conf)
 {
 #ifdef NEMO_CUDA_ENABLED
-#ifdef NEMO_CUDA_DYNAMIC_LOADING
-	using boost::format;
-
-	/* Test for library existence *before* doing dynamic loading. Otherwise the
-	 * issue of  incorrect PATH settings is conflated with other issues such as
-	 * missing CUDA libraries (which is not considered an error). */
-	if(!boost::filesystem::exists(LIB_NAME("nemo_cuda"))) {
-		throw nemo::exception(NEMO_DL_ERROR,
-				str(format("Library file %s not on path") % LIB_NAME("nemo_cuda")));
-	}
-#endif
 	try {
 		setCudaDeviceConfiguration(conf, -1);
 	} catch(...) {
