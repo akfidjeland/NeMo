@@ -390,12 +390,11 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 void
-testGetSynapses(backend_t backend)
+testGetSynapses(backend_t backend, bool stdp)
 {
-	boost::scoped_ptr<nemo::Network> net(nemo::random1k::construct(4000, 1000));
+	boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(4, 1000, stdp, 32, false));
 
-	nemo::Configuration conf;
-	setBackend(backend, conf);
+	nemo::Configuration conf = configuration(stdp, 1024, backend);
 	unsigned fbits = 22;
 	conf.setFractionalBits(fbits);
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
@@ -428,11 +427,13 @@ testGetSynapses(backend_t backend)
 BOOST_AUTO_TEST_SUITE(get_synapses);
 
 	BOOST_AUTO_TEST_CASE(cuda) {
-		testGetSynapses(NEMO_BACKEND_CUDA);
+		testGetSynapses(NEMO_BACKEND_CUDA, false);
+		testGetSynapses(NEMO_BACKEND_CUDA, true);
 	}
 
 	BOOST_AUTO_TEST_CASE(cpu) {
-		testGetSynapses(NEMO_BACKEND_CPU);
+		testGetSynapses(NEMO_BACKEND_CPU, false);
+		testGetSynapses(NEMO_BACKEND_CPU, true);
 	}
 
 BOOST_AUTO_TEST_SUITE_END();
