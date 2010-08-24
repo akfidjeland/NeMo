@@ -49,7 +49,7 @@ ConfigurationImpl::setStdpFunction(
 		float minWeight,
 		float maxWeight)
 {
-	m_stdpFn = STDP<float>(prefire, postfire, minWeight, maxWeight);
+	m_stdpFn = StdpFunction(prefire, postfire, minWeight, maxWeight);
 }
 
 
@@ -110,7 +110,7 @@ ConfigurationImpl::setBackend(backend_t backend)
 std::ostream& operator<<(std::ostream& o, nemo::ConfigurationImpl const& conf)
 {
 	return o
-		<< "STDP=" << conf.stdpFunction().enabled() << " "
+		<< "STDP=" << conf.stdpFunction() << " "
 		<< "cuda_ps=" << conf.cudaPartitionSize();
 	//! \todo print more info about STDP
 }

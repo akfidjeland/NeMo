@@ -13,9 +13,10 @@
  */
 
 #include <ostream>
+#include <boost/optional.hpp>
 
 #include <nemo/config.h>
-#include "STDP.hpp"
+#include "StdpFunction.hpp"
 #include "constants.h"
 
 #ifdef INCLUDE_MPI
@@ -64,7 +65,7 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 				float minWeight,
 				float maxWeight);
 
-		const STDP<float>& stdpFunction() const { return m_stdpFn; }
+		const boost::optional<StdpFunction>& stdpFunction() const { return m_stdpFn; }
 
 		void setFractionalBits(unsigned bits);
 
@@ -84,7 +85,7 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 	private:
 
 		bool m_logging;
-		STDP<float> m_stdpFn;
+		boost::optional<StdpFunction> m_stdpFn;
 
 		int m_fractionalBits;
 		static const int s_defaultFractionalBits = -1;

@@ -50,14 +50,17 @@ Simulation::Simulation(
 	//! \todo allow external users to directly use the host buffer
 	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true),
 	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
-	m_cycleCounters(m_mapper.partitionCount(), usingStdp()),
+	m_cycleCounters(m_mapper.partitionCount(), conf.stdpFunction()),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_pitch32(0),
 	m_pitch64(0),
+	m_stdp(conf.stdpFunction()),
 	md_fstim(NULL),
 	md_istim(NULL)
 {
-	configureStdp(conf.stdpFunction());
+	if(m_stdp) {
+		configureStdp();
+	}
 	setPitch();
 	//! \todo do this configuration as part of CM setup
 	CUDA_SAFE_CALL(configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64));
@@ -75,25 +78,24 @@ Simulation::~Simulation()
 
 
 void
-Simulation::configureStdp(const STDP<float>& stdp)
+Simulation::configureStdp()
 {
-	if(!stdp.enabled()) {
-		return;
-	}
+	std::vector<float> flfn;
 
-	m_stdpFn = stdp;
+	std::copy(m_stdp->prefire().rbegin(), m_stdp->prefire().rend(), std::back_inserter(flfn));
+	std::copy(m_stdp->postfire().begin(), m_stdp->postfire().end(), std::back_inserter(flfn));
 
-	const std::vector<float>& flfn = m_stdpFn.function();
 	std::vector<fix_t> fxfn(flfn.size());
 	unsigned fb = m_cm.fractionalBits();
 	for(unsigned i=0; i < fxfn.size(); ++i) {
 		fxfn.at(i) = fx_toFix(flfn[i], fb);
 	}
 	CUDA_SAFE_CALL(
-		::configureStdp(m_stdpFn.preFireWindow(),
-			m_stdpFn.postFireWindow(),
-			m_stdpFn.potentiationBits(),
-			m_stdpFn.depressionBits(),
+		::configureStdp(
+			m_stdp->prefire().size(),
+			m_stdp->postfire().size(),
+			m_stdp->potentiationBits(),
+			m_stdp->depressionBits(),
 			const_cast<fix_t*>(&fxfn[0])));
 }
 
@@ -218,14 +220,6 @@ Simulation::setPitch()
 //-----------------------------------------------------------------------------
 
 
-bool
-Simulation::usingStdp() const
-{
-	return m_stdpFn.enabled();
-}
-
-
-
 
 void
 Simulation::step()
@@ -235,7 +229,7 @@ Simulation::step()
 	initLog();
 	::stepSimulation(
 			m_mapper.partitionCount(),
-			usingStdp(),
+			m_stdp,
 			m_timer.elapsedSimulation(),
 			m_recentFiring.deviceData(),
 			m_neurons.deviceData(),
@@ -273,7 +267,7 @@ Simulation::step()
 void
 Simulation::applyStdp(float reward)
 {
-	if(!usingStdp()) {
+	if(!m_stdp) {
 		throw exception(NEMO_LOGIC_ERROR, "applyStdp called when STDP not in use");
 		return;
 	}
@@ -288,8 +282,8 @@ Simulation::applyStdp(float reward)
 				m_mapper.partitionCount(),
 				m_cm.fractionalBits(),
 				m_cm.d_fcm(),
-				m_stdpFn.maxWeight(),
-				m_stdpFn.minWeight(),
+				m_stdp->maxWeight(),
+				m_stdp->minWeight(),
 				reward);
 		flushLog();
 		endLog();

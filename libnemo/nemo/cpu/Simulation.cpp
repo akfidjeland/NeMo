@@ -57,8 +57,7 @@ Simulation::Simulation(
 	m_current(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0),
 	m_rng(m_neuronCount),
-	m_lastFlush(0),
-	m_stdp(conf.stdpFunction())
+	m_lastFlush(0)
 {
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 	setNeuronParameters(net, m_mapper);
@@ -234,9 +233,11 @@ Simulation::update(
 		updateRange(0, m_neuronCount);
 #endif
 
+#if 0
 	if(m_stdp.enabled()) {
 		accumulateStdp();
 	}
+#endif
 }
 
 
@@ -337,6 +338,7 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 
+#if 0
 unsigned
 closestPreFire(const STDP<float>& stdp, uint64_t arrivals)
 {
@@ -354,6 +356,7 @@ closestPostFire(const STDP<float>& stdp, uint64_t arrivals)
 	int dt = clz64(validArrivals << uint64_t(64 - stdp.postFireWindow()));
 	return validArrivals ? (unsigned) dt : STDP<float>::STDP_NO_APPLICATION;
 }
+#endif
 
 
 

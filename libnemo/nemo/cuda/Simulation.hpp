@@ -12,6 +12,8 @@
 
 #include <vector>
 
+#include <boost/optional.hpp>
+
 #include <nemo/config.h>
 #include <nemo/STDP.hpp>
 #include <nemo/Timer.hpp>
@@ -121,9 +123,9 @@ class Simulation : public nemo::SimulationBackend
 		size_t m_pitch32;
 		size_t m_pitch64;
 
-		STDP<float> m_stdpFn;
-		void configureStdp(const STDP<float>& stdp);
-		bool usingStdp() const;
+		boost::optional<StdpFunction> m_stdp;
+
+		void configureStdp();
 
 		Timer m_timer;
 

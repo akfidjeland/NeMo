@@ -17,7 +17,6 @@
 #include <nemo/types.h>
 #include <nemo/internals.hpp>
 #include <nemo/ConnectivityMatrix.hpp>
-#include <nemo/STDP.hpp>
 #include <nemo/Timer.hpp>
 #include <nemo/RNG.hpp>
 
@@ -153,8 +152,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 
 		void accumulateStdp();
-
-		STDP<float> m_stdp;
 
 		weight_t updateRegion(uint64_t spikes, nidx_t source, nidx_t target);
 

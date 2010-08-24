@@ -266,7 +266,7 @@ runRing(unsigned ncount, nemo::Configuration conf)
 		sim->step();
 		sim->readFiring(&cycles, &fired);
 		BOOST_CHECK_EQUAL(cycles->size(), fired->size());
-		BOOST_CHECK_EQUAL(fired->size(), 1);
+		BOOST_CHECK_EQUAL(fired->size(), 1U);
 		BOOST_REQUIRE_EQUAL(fired->front(), ms % ncount);
 	}
 }
