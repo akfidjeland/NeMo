@@ -109,8 +109,10 @@ ConnectivityMatrix::setRow(
 				str(format("Neuron %u has synapses with delay < 1 (%u)") % source % delay));
 	}
 
+	fidx forwardIdx(source, delay);
+
 	std::pair<std::map<fidx, Row>::iterator, bool> insertion =
-		m_acc.insert(std::make_pair<fidx, Row>(fidx(source, delay), Row(ss, m_fractionalBits)));
+		m_acc.insert(std::make_pair<fidx, Row>(forwardIdx, Row(ss, m_fractionalBits)));
 
 	if(!insertion.second) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Double insertion into connectivity matrix");
@@ -126,6 +128,7 @@ ConnectivityMatrix::setRow(
 
 	for(unsigned sidx=0; sidx < ss.size(); ++sidx) {
 		const AxonTerminal<nidx_t, weight_t>& s = ss.at(sidx);
+		m_plastic[forwardIdx].push_back(s.plastic);
 		if(s.plastic) {
 			m_racc[mapper.localIdx(s.target)].push_back(RSynapse(source, delay, sidx));
 		}
@@ -293,11 +296,13 @@ ConnectivityMatrix::getSynapses(
 			targets.push_back(s.target);
 			weights.push_back(fx_toFloat(s.weight, fbits));
 			delays.push_back(*d);
-			plastic.push_back(0);
 		}
-		//! \todo set plastic correctly as well
+
+		const std::vector<unsigned char>& p_row = m_plastic.find(fidx(source, *d))->second;
+		std::copy(p_row.begin(), p_row.end(), std::back_inserter(plastic));
 	}
 
+	assert(plastic.size() == targets.size());
 }
 
 

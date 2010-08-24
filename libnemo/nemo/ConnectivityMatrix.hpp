@@ -48,6 +48,7 @@ struct Row
 {
 	Row() : len(0) {}
 
+	/* \post synapse order is the same as in input vector */
 	Row(const std::vector<AxonTerminal<nidx_t, weight_t> >&, unsigned fbits);
 
 	size_t len;
@@ -134,6 +135,11 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * advance */
 		typedef boost::tuple<nidx_t, delay_t> fidx;
 		std::map<fidx, Row> m_acc;
+
+		/* In order to be able to read back synapse data at run-time we record
+		 * some data in a separate map. Weights need to be read from m_cm as
+		 * they can change at run-time. */
+		std::map<fidx, std::vector<unsigned char> > m_plastic;
 
 		/* At run-time, however, we want the fastest possible lookup of the
 		 * rows. We therefore use a vector with linear addressing. This just
