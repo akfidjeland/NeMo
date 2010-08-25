@@ -43,13 +43,6 @@ runOne( backend_t backend,
 		bool contigous,
 		bool stdp)
 {
-	/*! \todo add back tests for STDP with CPU backend once
-	 * this is implemented. */
-	if(backend == NEMO_BACKEND_CPU && stdp) {
-		std::cout << "WARNING: skipped test no_outgoing/cpu + stdp\n";
-		return;
-	}
-
 	assert(0 <= firstUnconnected);
 	assert(firstUnconnected <= lastUnconnected);
 	assert(lastUnconnected <= ncount);

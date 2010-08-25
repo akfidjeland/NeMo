@@ -457,11 +457,17 @@ BOOST_AUTO_TEST_SUITE_END();
 void testStdp(backend_t backend, bool noiseConnections);
 
 BOOST_AUTO_TEST_SUITE(stdp);
+
 	BOOST_AUTO_TEST_CASE(cuda) {
-		//testStdp(NEMO_BACKEND_CUDA, false);
+		testStdp(NEMO_BACKEND_CUDA, false);
 		testStdp(NEMO_BACKEND_CUDA, true);
 	}
-	//! \todo add test for CPU as well
+
+	BOOST_AUTO_TEST_CASE(cpu) {
+		testStdp(NEMO_BACKEND_CPU, false);
+		testStdp(NEMO_BACKEND_CPU, true);
+	}
+
 BOOST_AUTO_TEST_SUITE_END();
 
 

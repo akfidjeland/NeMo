@@ -89,9 +89,7 @@ void runTorus(bool creating)
 		bool stdp = true;
 		boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
 		run(torus.get(), NEMO_BACKEND_CUDA, 4, "test-cuda-stdp.dat", stdp, creating);
-		std::cerr << "Warning: skipping test for CPU+STDP\n";
-		//! \todo add stdp case for CPU as well
-		//run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu-stdp.dat", stdp, creating);
+		run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu-stdp.dat", stdp, creating);
 	}
 }
 
