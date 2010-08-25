@@ -52,10 +52,10 @@ end;
 conf = nemoConfiguration;
 
 % Set up STDP
-prefire = 1.0 * exp(-(0:20)./20);
-postfire = -0.8 * exp(-(0:20)./20);
+prefire = 0.1 * exp(-(0:20)./20);
+postfire = -0.08 * exp(-(0:20)./20);
 
-conf.setStdpFunction(prefire, postfire, 5.0, -5.0);
+conf.setStdpFunction(prefire, postfire, -1.0, 1.0);
 
 
 % Run for 10s with STDP enabled
