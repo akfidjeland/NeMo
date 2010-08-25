@@ -105,7 +105,7 @@ class NEMO_DLL_PUBLIC Configuration
 
 
 		/*! \return description of the chosen backend */
-		const std::string& backendDescription();
+		const std::string& backendDescription() const;
 
 	private:
 
@@ -119,6 +119,8 @@ class NEMO_DLL_PUBLIC Configuration
 
 		// undefined
 		Configuration& operator=(const Configuration&);
+
+		void setBackendDescription();
 };
 
 } // end namespace nemo

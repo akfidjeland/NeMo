@@ -11,6 +11,7 @@ Configuration::Configuration() :
 	m_impl(new ConfigurationImpl())
 {
 	setDefaultHardware(*m_impl);
+	setBackendDescription();
 }
 
 
@@ -103,6 +104,7 @@ Configuration::setCpuBackend(int threadCount)
 {
 	// try setting the CUDA backend
 	cpu::chooseHardwareConfiguration(*m_impl, threadCount);
+	setBackendDescription();
 }
 
 
@@ -110,6 +112,7 @@ void
 Configuration::setCudaBackend(int device)
 {
 	setCudaDeviceConfiguration(*m_impl, device);
+	setBackendDescription();
 }
 
 
@@ -148,7 +151,15 @@ Configuration::cpuThreadCount() const
 
 
 const std::string&
-Configuration::backendDescription()
+Configuration::backendDescription() const
+{
+	return m_impl->backendDescription();
+}
+
+
+
+void
+Configuration::setBackendDescription()
 {
 	using boost::format;
 
@@ -169,7 +180,6 @@ Configuration::backendDescription()
 		default :
 			throw std::runtime_error("Invalid backend selected");
 	}
-	return m_impl->backendDescription();
 }
 
 

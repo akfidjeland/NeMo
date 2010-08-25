@@ -110,7 +110,8 @@ ConfigurationImpl::setBackend(backend_t backend)
 std::ostream& operator<<(std::ostream& o, nemo::ConfigurationImpl const& conf)
 {
 	return o
-		<< "STDP=" << conf.stdpFunction() << " "
-		<< "cuda_ps=" << conf.cudaPartitionSize();
+		<< "STDP: " << conf.stdpFunction() << ", "
+		<< "cuda_ps: " << conf.cudaPartitionSize() << ", "
+		<< "device: " << conf.backendDescription();
 	//! \todo print more info about STDP
 }
