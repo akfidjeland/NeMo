@@ -10,6 +10,20 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+/* It seems that the 2010 version of Visual C++ have caught up to at least
+ * *parts* of the C99 spec, in particular the stdint.h file. Versions prior to
+ * this, however, do not include this file. To be on the safe side we use the
+ * windows-specific fixed-width types regardless of whether we're on a broken
+ * version of VC++ .  */
+typedef signed __int32 int32_t;
+typedef unsigned __int32 uint32_t;
+typedef signed __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#else
+#include <stdint.h>
+#endif
+
 /*! The call resulted in no errors */
 #define NEMO_OK 0
 
