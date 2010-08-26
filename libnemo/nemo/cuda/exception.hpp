@@ -15,7 +15,6 @@
 #include <cuda_runtime.h>
 
 #include <nemo/exception.hpp>
-#include <nemo/constants.h>
 
 #ifdef NDEBUG
 #define LINE_INFO ""

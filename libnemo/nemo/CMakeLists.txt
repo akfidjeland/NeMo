@@ -61,7 +61,7 @@ TARGET_LINK_LIBRARIES(nemo nemo_base ${BACKEND_LIBS} ${LTDL_LIBRARY})
 INSTALL(TARGETS nemo nemo_base DESTINATION ${INSTALL_LIB_DIR})
 
 INSTALL(FILES
-		constants.h
+		types.h
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp

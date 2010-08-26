@@ -17,7 +17,7 @@
 
 #include <nemo/config.h>
 #include "StdpFunction.hpp"
-#include "constants.h"
+#include "types.h"
 
 #ifdef INCLUDE_MPI
 

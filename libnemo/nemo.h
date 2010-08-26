@@ -12,7 +12,7 @@ extern "C" {
 
 #include <stddef.h> // for size_t
 #include <nemo/config.h>
-#include <nemo/constants.h>
+#include <nemo/types.h>
 
 /*! Only opaque pointers are exposed in the C API */
 typedef void* nemo_network_t;

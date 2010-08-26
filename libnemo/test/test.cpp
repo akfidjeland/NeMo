@@ -7,7 +7,6 @@
 #include <boost/random.hpp>
 
 #include <nemo.hpp>
-#include <nemo/constants.h>
 #include <nemo/fixedpoint.hpp>
 #include <examples.hpp>
 

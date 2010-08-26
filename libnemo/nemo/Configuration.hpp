@@ -16,7 +16,7 @@
 #include <vector>
 
 #include <nemo/config.h>
-#include <nemo/constants.h>
+#include <nemo/types.h>
 
 
 namespace nemo {

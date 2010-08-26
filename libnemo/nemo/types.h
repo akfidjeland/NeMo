@@ -1,5 +1,5 @@
-#ifndef NEMO_CONSTANTS_H
-#define NEMO_CONSTANTS_H
+#ifndef NEMO_TYPES_H
+#define NEMO_TYPES_H
 
 /* Copyright 2010 Imperial College London
  *
