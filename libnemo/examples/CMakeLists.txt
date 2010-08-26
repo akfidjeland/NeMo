@@ -5,13 +5,13 @@ INCLUDE_DIRECTORIES(
 )
 ADD_DEFINITIONS(-DUSING_MAIN)
 LINK_DIRECTORIES("${CMAKE_BINARY_DIR}/src")
-ADD_EXECUTABLE(torus torus.cpp sim_runner.cpp)
+ADD_EXECUTABLE(torus torus.cpp common.cpp)
 TARGET_LINK_LIBRARIES(torus nemo)
 
-ADD_EXECUTABLE(random random.cpp sim_runner.cpp)
+ADD_EXECUTABLE(random random.cpp common.cpp)
 TARGET_LINK_LIBRARIES(random nemo)
 
-SET(INSTALL_FILES torus.cpp random.cpp sim_runner.cpp)
+SET(INSTALL_FILES torus.cpp random.cpp common.cpp)
 
 IF(UNIX)
 	SET(INSTALL_EXAMPLE_SRC_DIR "share/nemo/examples")

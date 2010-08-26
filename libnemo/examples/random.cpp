@@ -13,7 +13,7 @@
 #	include <fstream>
 #	include <boost/program_options.hpp>
 #	include <boost/scoped_ptr.hpp>
-#	include "sim_runner.hpp"
+#	include <examples/common.hpp>
 #endif
 
 #include <boost/random.hpp>

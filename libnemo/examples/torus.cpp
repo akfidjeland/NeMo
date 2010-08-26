@@ -13,9 +13,7 @@
  * Date: March 2010
  */ 
 
-//#include <algorithm>
 #include <cmath>
-//#include <iostream>
 #include <vector>
 #include <boost/random.hpp>
 
@@ -23,7 +21,7 @@
 #	include <string>
 #	include <fstream>
 #	include <boost/scoped_ptr.hpp>
-#	include "sim_runner.hpp"
+#	include <examples/common.hpp>
 #endif
 
 #include <nemo.hpp>

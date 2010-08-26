@@ -2,7 +2,7 @@
 #include <fstream>
 #include <cmath>
 
-#include "sim_runner.hpp"
+#include "common.hpp"
 
 
 void
