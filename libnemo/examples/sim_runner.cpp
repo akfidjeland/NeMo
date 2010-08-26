@@ -231,7 +231,7 @@ processOptions(int argc, char* argv[],
 	po::notify(vm);
 
 	if(vm.count("help")) {
-		std::cout << "Usage:\n\trandom1k [OPTIONS] [<output-filename>]\n\n";
+		std::cout << "Usage:\n\t" << argv[0] << " [OPTIONS]\n\n";
 		std::cout << desc << std::endl;
 		exit(1);
 	}

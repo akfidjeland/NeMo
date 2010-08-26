@@ -24,7 +24,7 @@ typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 namespace nemo {
-	namespace random1k {
+	namespace random {
 
 void
 addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
@@ -128,7 +128,7 @@ construct(unsigned ncount, unsigned scount, bool stdp)
 	return net;
 }
 
-	} // namespace random1k
+	} // namespace random
 } // namespace nemo
 
 
@@ -169,7 +169,7 @@ main(int argc, char* argv[])
 
 	try {
 		LOG(verbose, "Constructing network");
-		boost::scoped_ptr<nemo::Network> net(nemo::random1k::construct(ncount, scount, stdp));
+		boost::scoped_ptr<nemo::Network> net(nemo::random::construct(ncount, scount, stdp));
 		LOG(verbose, "Creating configuration");
 		nemo::Configuration conf = configuration(stdp, NEMO_BACKEND_CPU);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription().c_str());
@@ -184,7 +184,7 @@ main(int argc, char* argv[])
 		std::cerr << e.what() << std::endl;
 		return -1;
 	} catch(...) {
-		std::cerr << "random1k: An unknown error occurred\n";
+		std::cerr << "random: An unknown error occurred\n";
 		return -1;
 	}
 

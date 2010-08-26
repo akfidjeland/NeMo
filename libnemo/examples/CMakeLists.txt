@@ -8,10 +8,10 @@ LINK_DIRECTORIES("${CMAKE_BINARY_DIR}/src")
 ADD_EXECUTABLE(torus torus.cpp sim_runner.cpp)
 TARGET_LINK_LIBRARIES(torus nemo)
 
-ADD_EXECUTABLE(random1k random1k.cpp sim_runner.cpp)
-TARGET_LINK_LIBRARIES(random1k nemo)
+ADD_EXECUTABLE(random random.cpp sim_runner.cpp)
+TARGET_LINK_LIBRARIES(random nemo)
 
-SET(INSTALL_FILES torus.cpp random1k.cpp sim_runner.cpp)
+SET(INSTALL_FILES torus.cpp random.cpp sim_runner.cpp)
 
 IF(UNIX)
 	SET(INSTALL_EXAMPLE_SRC_DIR "share/nemo/examples")
@@ -24,4 +24,4 @@ IF(WIN32)
 ENDIF(WIN32)
 
 INSTALL(FILES ${INSTALL_FILES} DESTINATION ${INSTALL_EXAMPLE_SRC_DIR})
-INSTALL(TARGETS random1k torus DESTINATION ${INSTALL_EXAMPLE_BIN_DIR})
+INSTALL(TARGETS random torus DESTINATION ${INSTALL_EXAMPLE_BIN_DIR})

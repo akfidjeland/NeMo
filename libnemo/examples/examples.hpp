@@ -12,7 +12,7 @@ namespace nemo {
 	 * If 'stdp' is true, all excitatory synapses are marked as plastic, while
 	 * inhibitory synapses are marked as static.
 	 */
-	namespace random1k {
+	namespace random {
 		nemo::Network* construct(unsigned ncount, unsigned scount, bool stdp);
 	}
 

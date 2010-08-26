@@ -284,17 +284,17 @@ BOOST_AUTO_TEST_CASE(ring_tests)
 
 BOOST_AUTO_TEST_CASE(compare_backends)
 {
-	nemo::Network* net = nemo::random1k::construct(4000, 1000, false);
+	nemo::Network* net = nemo::random::construct(4000, 1000, false);
 	runBackendComparisions(net);
 	delete net;
 }
 
 
 
-BOOST_AUTO_TEST_CASE(mapping_tests_random1k)
+BOOST_AUTO_TEST_CASE(mapping_tests_random)
 {
 	// only need to create the network once
-	nemo::Network* net = nemo::random1k::construct(1000, 1000, false);
+	nemo::Network* net = nemo::random::construct(1000, 1000, false);
 	runComparisions(net);
 	delete net;
 }
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 //! \todo test this for cpu backend as well
 BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
 {
-	nemo::Network* net = nemo::random1k::construct(1000, 1000, false);
+	nemo::Network* net = nemo::random::construct(1000, 1000, false);
 	nemo::Configuration conf;
 
 	conf.setFractionalBits(26);
