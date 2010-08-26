@@ -7,9 +7,13 @@ namespace nemo {
 	 * synapses. The synapses are given uniformly random targets from the whole
 	 * population. 80% of synapses are excitatory and 20% are inhibitory, with
 	 * weights chosen as in Izhikevich' reference implementation. All delays
-	 * are 1ms.*/
+	 * are 1ms.
+	 *
+	 * If 'stdp' is true, all excitatory synapses are marked as plastic, while
+	 * inhibitory synapses are marked as static.
+	 */
 	namespace random1k {
-		nemo::Network* construct(unsigned ncount, unsigned scount);
+		nemo::Network* construct(unsigned ncount, unsigned scount, bool stdp);
 	}
 
 	namespace torus {

@@ -13,15 +13,20 @@
  * Date: March 2010
  */ 
 
-#include <algorithm>
+//#include <algorithm>
 #include <cmath>
-#include <iostream>
+//#include <iostream>
 #include <vector>
-#include <string>
 #include <boost/random.hpp>
 
+#ifdef USING_MAIN
+#	include <string>
+#	include <fstream>
+#	include <boost/scoped_ptr.hpp>
+#	include "sim_runner.hpp"
+#endif
+
 #include <nemo.hpp>
-#include "sim_runner.hpp"
 
 
 #define PATCH_WIDTH 32
@@ -227,35 +232,6 @@ addInhibitorySynapses(
 
 
 
-
-nemo::Configuration
-configure(bool stdp, bool logging=true)
-{
-	nemo::Configuration conf;
-
-	if(logging) {
-		conf.enableLogging();
-	}
-	//! \todo make network report STDP function
-	if(stdp) {
-		std::vector<float> pre(20);
-		std::vector<float> post(20);
-		for(unsigned i = 0; i < 20; ++i) {
-			float dt = float(i + 1);
-			pre.at(i) = 1.0f * expf(-dt / 20.0f);
-			post.at(i) = -0.8f * expf(-dt / 20.0f);
-		}
-		conf.setStdpFunction(pre, post, -10.0, 10.0);
-	}
-
-	//! \todo control this from command line
-	conf.setCudaBackend();
-
-	return conf;
-}
-
-
-
 nemo::Network*
 construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging=true)
 {
@@ -334,36 +310,66 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging=tru
 
 #ifdef USING_MAIN
 
+#define LOG(cond, ...) if(cond) fprintf(stdout, __VA_ARGS__)
+
 int
 main(int argc, char* argv[])
 {
-	if(argc != 3) {
-		std::cerr << "Usage: run pcount sigma" << std::endl;
-		exit(-1);
+	namespace po = boost::program_options;
+
+	po::options_description desc = commonOptions();
+	desc.add_options()
+		("pcount,n", po::value<unsigned>()->default_value(1), "number of 1024-sized partitions")
+		("synapses,m", po::value<unsigned>()->default_value(1000), "number of synapses per neuron")
+		("sigma,s", po::value<unsigned>()->default_value(32), "standard deviation in connectivity probability");
+	;
+
+	po::variables_map vm = processOptions(argc, argv, desc);
+
+	unsigned pcount = vm["pcount"].as<unsigned>();
+	unsigned sigma = vm["variance"].as<unsigned>();
+	unsigned m = vm["synapses"].as<unsigned>();
+	unsigned stdp = vm["stdp"].as<unsigned>();
+	unsigned duration = vm["duration"].as<unsigned>();
+	unsigned verbose = vm["verbose"].as<unsigned>();
+
+	assert(sigma >= PATCH_WIDTH/2);
+
+	std::ofstream file;
+	std::string filename;
+
+	if(vm.count("output-file")) {
+		filename = vm["output-file"].as<std::string>();
+		file.open(filename.c_str()); // closes on destructor
 	}
 
-	unsigned pcount = atoi(argv[1]);
-	unsigned sigma = atoi(argv[2]);
-	assert(sigma >= PATCH_WIDTH/2);
+	std::ostream& out = filename.empty() ? std::cout : file;
 
 	//! \todo get RNG seed option from command line
 	//! \todo otherwise seed from system time
-
-	//! \todo add stdp command-line option
-	bool stdp = false;
-	unsigned m = 1000; // synapses per neuron
-	bool logging = true;
 	
-	nemo::Network* net = nemo::torus::construct(pcount, m, stdp, sigma);
-	nemo::Configuration conf = nemo::torus::configure(stdp, logging);
-	conf.setFractionalBits(24);
-	std::cerr << "Simulation will run on " << conf.backendDescription() << std::endl;
-	nemo::Simulation* sim = nemo::simulation(*net, conf);
-	simulate(sim, pcount*PATCH_SIZE, m);
-	//simulateToFile(sim, 1000, "firing.dat");
-	delete net;
-	delete sim;
-	return 0;
+	try {
+		LOG(verbose, "Constructing network");
+		boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, stdp, sigma));
+		LOG(verbose, "Creating configuration");
+		nemo::Configuration conf = configuration(stdp);
+		conf.setFractionalBits(24);
+		LOG(verbose, "Simulation will run on %s", conf.backendDescription().c_str());
+		LOG(verbose, "Creating simulation\n");
+		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+		LOG(verbose, "Running simulation");
+		// benchmark(sim, pcount*PATCH_SIZE, m);
+		//simulate(sim, 1000, stdp);
+		simulate(sim.get(), duration, stdp, out);
+		LOG(verbose, "Simulation complete");
+		return 0;
+	} catch(std::runtime_error& e) {
+		std::cerr << e.what() << std::endl;
+		return -1;
+	} catch(...) {
+		std::cerr << "random1k: An unknown error occurred\n";
+		return -1;
+	}
 }
 
 #endif

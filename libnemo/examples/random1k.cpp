@@ -5,11 +5,19 @@
  * Date: April 2010
  */
 
-#include <boost/random.hpp>
-#include <string>
+#include <vector>
 
+#ifdef USING_MAIN
+#	include <string>
+#	include <iostream>
+#	include <fstream>
+#	include <boost/program_options.hpp>
+#	include <boost/scoped_ptr.hpp>
+#	include "sim_runner.hpp"
+#endif
+
+#include <boost/random.hpp>
 #include <nemo.hpp>
-#include "sim_runner.hpp"
 
 typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
@@ -40,12 +48,13 @@ addExcitatorySynapses(nemo::Network* net,
 		unsigned ncount,
 		unsigned scount,
 		uirng_t& rtarget,
-		urng_t& rweight)
+		urng_t& rweight,
+		bool stdp)
 {
 	std::vector<unsigned> targets(scount, 0U);
 	std::vector<unsigned> delays(scount, 1U);
 	std::vector<float> weights(scount, 0.0f);
-	std::vector<unsigned char> isPlastic(scount, 0);
+	std::vector<unsigned char> isPlastic(scount, (unsigned char) stdp);
 
 	for(unsigned s = 0; s < scount; ++s) {
 		targets.at(s) = rtarget();
@@ -98,7 +107,7 @@ addInhibitorySynapses(nemo::Network* net,
 
 
 nemo::Network*
-construct(unsigned ncount, unsigned scount)
+construct(unsigned ncount, unsigned scount, bool stdp)
 {
 	rng_t rng;
 	/* Neuron parameters and weights are partially randomised */
@@ -110,7 +119,7 @@ construct(unsigned ncount, unsigned scount)
 	for(unsigned nidx=0; nidx < ncount; ++nidx) {
 		if(nidx < (ncount * 4) / 5) { // excitatory
 			addExcitatoryNeuron(net, nidx, randomParameter);
-			addExcitatorySynapses(net, nidx, ncount, scount, randomTarget, randomParameter);
+			addExcitatorySynapses(net, nidx, ncount, scount, randomTarget, randomParameter, stdp);
 		} else { // inhibitory
 			addInhibitoryNeuron(net, nidx, randomParameter);
 			addInhibitorySynapses(net, nidx, ncount, scount, randomTarget, randomParameter);
@@ -125,50 +134,58 @@ construct(unsigned ncount, unsigned scount)
 
 #ifdef USING_MAIN
 
+
+#define LOG(cond, ...) if(cond) fprintf(stdout, __VA_ARGS__)
+
+
 int
 main(int argc, char* argv[])
 {
-	//! \todo do command-line processing properly
-	unsigned psize = 1024;
-	if(argc > 1)  {
-		psize = atoi(argv[1]);
+	namespace po = boost::program_options;
+
+	po::options_description desc = commonOptions();
+	desc.add_options()
+		("neurons,n", po::value<unsigned>()->default_value(1000), "number of neurons")
+		("synapses,m", po::value<unsigned>()->default_value(1000), "number of synapses per neuron")
+	;
+
+	po::variables_map vm = processOptions(argc, argv, desc);
+
+	unsigned ncount = vm["neurons"].as<unsigned>();
+	unsigned scount = vm["synapses"].as<unsigned>();
+	unsigned duration = vm["duration"].as<unsigned>();
+	unsigned stdp = vm["stdp"].as<unsigned>();
+	unsigned verbose = vm["verbose"].as<unsigned>();
+
+	std::ofstream file;
+	std::string filename;
+
+	if(vm.count("output-file")) {
+		filename = vm["output-file"].as<std::string>();
+		file.open(filename.c_str()); // closes on destructor
 	}
 
-	unsigned ncount = 1000;
-	unsigned scount = 1000;
+	std::ostream& out = filename.empty() ? std::cout : file;
 
 	try {
-
-		unsigned dcount  = nemo::cudaDeviceCount();
-		std::cerr << "CUDA devices: " << nemo::cudaDeviceCount() << std::endl;
-
-		for(unsigned d = 0; d < dcount; ++d) {
-			std::cerr << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
-		}
-
-		std::cerr << "Constructing network\n";
-		nemo::Network* net = nemo::random1k::construct(ncount, scount);
-		std::cerr << "Creating configuration\n";
-		nemo::Configuration conf;
-		std::cerr << "Setting partition size\n";
-		conf.setCudaPartitionSize(psize);
-		std::cerr << "Simulation will run on " << conf.backendDescription() << std::endl;
-		std::cerr << "Creating simulation\n";
-		nemo::Simulation* sim = NULL;
-		sim = nemo::simulation(*net, conf);
-		std::cerr << "Running simulation\n";
-		simulate(sim, ncount, ncount);
-		//simulateToFile(sim, 1000, "firing.dat");
-		std::cerr << "Simulation complete\n";
-		delete net;
+		LOG(verbose, "Constructing network");
+		boost::scoped_ptr<nemo::Network> net(nemo::random1k::construct(ncount, scount, stdp));
+		LOG(verbose, "Creating configuration");
+		nemo::Configuration conf = configuration(stdp, NEMO_BACKEND_CPU);
+		LOG(verbose, "Simulation will run on %s", conf.backendDescription().c_str());
+		LOG(verbose, "Creating simulation\n");
+		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+		LOG(verbose, "Running simulation");
+		// benchmark(sim, ncount, ncount);
+		simulate(sim.get(), duration, stdp, out);
+		LOG(verbose, "Simulation complete");
 		return 0;
 	} catch(std::runtime_error& e) {
 		std::cerr << e.what() << std::endl;
 		return -1;
 	} catch(...) {
-		std::cerr << "random1k:n An unknown error occurred\n";
+		std::cerr << "random1k: An unknown error occurred\n";
 		return -1;
-
 	}
 
 }
