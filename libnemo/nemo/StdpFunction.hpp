@@ -11,6 +11,7 @@
  */
 
 #include <vector>
+#include <nemo/types.h>
 
 #ifdef INCLUDE_MPI
 
