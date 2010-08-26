@@ -71,26 +71,26 @@ class NEMO_BASE_DLL_PUBLIC Network
 				unsigned char plastic);
 
 		//! \todo change from uchar to bool
-		/*! Add to the network a group of synapses with the same presynaptic neuron
+		/*! Add a group of synapses to the network
 		 *
-		 * \param source
-		 * 		Index of source neuron
+		 * \param sources
+		 * 		Indices of source neuron
 		 * \param targets
 		 * 		Indices of target neurons
 		 * \param delays
-		 * 		Synapse conductance delays in milliseconds
+		 * 		conductance delays in milliseconds
 		 * \param weights
-		 * 		Synapse weights
+		 * 		synapse weights
 		 * \param plastic
 		 * 		Specifies for each synapse whether or not it is plastic.
 		 * 		See section on STDP.
 		 *
 		 * \pre
-		 * 		\a targets, \a delays, \a weights, and \a plastic have the
+		 * 		\sources, \a targets, \a delays, \a weights, and \a plastic have the
 		 * 		same length
 		 */
 		void addSynapses(
-				unsigned source,
+				const std::vector<unsigned>& sources,
 				const std::vector<unsigned>& targets,
 				const std::vector<unsigned>& delays,
 				const std::vector<float>& weights,
@@ -100,7 +100,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 * for use in foreign language interfaces such as C and Mex, where
 		 * constructing std::vectors would be redundant. */
 		void addSynapses(
-				unsigned source,
+				const unsigned source[],
 				const unsigned targets[],
 				const unsigned delays[],
 				const float weights[],

@@ -186,14 +186,14 @@ nemo_add_synapse(nemo_network_t net,
 
 nemo_status_t
 nemo_add_synapses(nemo_network_t net,
-		unsigned source,
+		unsigned sources[],
 		unsigned targets[],
 		unsigned delays[],
 		float weights[],
 		unsigned char is_plastic[],
 		size_t length)
 {
-	CATCH_(Network, net, addSynapses(source, targets, delays, weights, is_plastic, length));
+	CATCH_(Network, net, addSynapses(sources, targets, delays, weights, is_plastic, length));
 }
 
 

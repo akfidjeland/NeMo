@@ -42,6 +42,7 @@ addExcitatorySynapses(
 		uirng_t& rtarget,
 		urng_t& rweight)
 {
+	std::vector<unsigned> sources(scount, source);
 	std::vector<unsigned> targets(scount, 0U);
 	std::vector<unsigned> delays(scount, 1U);
 	std::vector<float> weights(scount, 0.0f);
@@ -52,8 +53,8 @@ addExcitatorySynapses(
 		weights.at(s) = 0.5f * float(rweight());
 	}
 
-	net->addSynapses(source, targets, delays, weights, isPlastic);
-	nemo_add_synapses(c_net, source, &targets[0], &delays[0], &weights[0], &isPlastic[0], targets.size());
+	net->addSynapses(sources, targets, delays, weights, isPlastic);
+	nemo_add_synapses(c_net, &sources[0], &targets[0], &delays[0], &weights[0], &isPlastic[0], targets.size());
 }
 
 
@@ -89,6 +90,7 @@ addInhibitorySynapses(
 		uirng_t& rtarget,
 		urng_t& rweight)
 {
+	std::vector<unsigned> sources(scount, source);
 	std::vector<unsigned> targets(scount, 0);
 	std::vector<unsigned> delays(scount, 1U);
 	std::vector<float> weights(scount, 0.0f);
@@ -99,8 +101,8 @@ addInhibitorySynapses(
 		weights.at(s) = float(-rweight());
 	}
 
-	net->addSynapses(source, targets, delays, weights, isPlastic);
-	nemo_add_synapses(c_net, source, &targets[0], &delays[0], &weights[0], &isPlastic[0], targets.size());
+	net->addSynapses(sources, targets, delays, weights, isPlastic);
+	nemo_add_synapses(c_net, &sources[0], &targets[0], &delays[0], &weights[0], &isPlastic[0], targets.size());
 }
 
 

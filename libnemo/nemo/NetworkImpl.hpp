@@ -47,7 +47,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 				unsigned char plastic);
 
 		void addSynapses(
-				unsigned source,
+				const std::vector<unsigned>& sources,
 				const std::vector<unsigned>& targets,
 				const std::vector<unsigned>& delays,
 				const std::vector<float>& weights,
@@ -58,7 +58,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 		 * constructing std::vectors would be redundant. */
 		template<typename N, typename D, typename W, typename B>
 		void addSynapses(
-				N source,
+				const N source[],
 				const N targets[],
 				const D delays[],
 				const W weights[],

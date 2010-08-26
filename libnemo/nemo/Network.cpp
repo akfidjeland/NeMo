@@ -40,27 +40,27 @@ Network::addSynapse(
 
 void
 Network::addSynapses(
-		unsigned source,
+		const std::vector<unsigned>& sources,
 		const std::vector<unsigned>& targets,
 		const std::vector<unsigned>& delays,
 		const std::vector<float>& weights,
 		const std::vector<unsigned char>& plastic)
 {
-	m_impl->addSynapses(source, targets, delays, weights, plastic);	
+	m_impl->addSynapses(sources, targets, delays, weights, plastic);	
 }
 
 
 
 void
 Network::addSynapses(
-		unsigned source,
+		const unsigned sources[],
 		const unsigned targets[],
 		const unsigned delays[],
 		const float weights[],
 		const unsigned char plastic[],
 		size_t length)
 {
-	m_impl->addSynapses<unsigned, unsigned, float, unsigned char>(source,
+	m_impl->addSynapses<unsigned, unsigned, float, unsigned char>(sources,
 			targets, delays, weights, plastic, length);
 }
 

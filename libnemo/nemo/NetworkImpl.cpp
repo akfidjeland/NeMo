@@ -83,17 +83,21 @@ NetworkImpl::addSynapse(
 
 void
 NetworkImpl::addSynapses(
-		unsigned source,
+		const std::vector<unsigned>& sources,
 		const std::vector<unsigned>& targets,
 		const std::vector<unsigned>& delays,
 		const std::vector<float>& weights,
 		const std::vector<unsigned char>& plastic)
 {
-	size_t length = targets.size();
+	size_t length = sources.size();
 
-	if(length != delays.size() || length != weights.size() || length != plastic.size()) {
+	if(length != targets.size() 
+			|| length != delays.size() 
+			|| length != weights.size() 
+			|| length != plastic.size()) {
 		std::ostringstream msg;
-		msg << "The input vectors to addSynapses (for neuron " << source << ") have different lengths\n"
+		msg << "Input vectors to addSynapses have different lengths\n"
+			<< "\tsources: " << sources.size() << std::endl
 			<< "\ttargets: " << targets.size() << std::endl
 			<< "\tdelays: " << delays.size() << std::endl
 			<< "\tweights: " << weights.size() << std::endl
@@ -106,15 +110,15 @@ NetworkImpl::addSynapses(
 	}
 
 	for(size_t i=0; i < length; ++i) {
-		addSynapse(source, targets[i], delays[i], weights[i], plastic[i]);
+		addSynapse(sources[i], targets[i], delays[i], weights[i], plastic[i]);
 	}
 }
 
 
 template
 void
-NetworkImpl::addSynapses<unsigned, unsigned, float, unsigned char>(unsigned,
-		const unsigned[], const unsigned[], const float[],
+NetworkImpl::addSynapses<unsigned, unsigned, float, unsigned char>(
+		const unsigned[], const unsigned[], const unsigned[], const float[],
 		const unsigned char[], size_t);
 
 
@@ -123,7 +127,7 @@ NetworkImpl::addSynapses<unsigned, unsigned, float, unsigned char>(unsigned,
 template<typename N, typename D, typename W, typename B>
 void
 NetworkImpl::addSynapses(
-		N source,
+		const N sources[],
 		const N targets[],
 		const D delays[],
 		const W weights[],
@@ -138,7 +142,7 @@ NetworkImpl::addSynapses(
 
 	for(size_t i=0; i < length; ++i) {
 		addSynapse(
-				numeric_cast<unsigned, N>(source),
+				numeric_cast<unsigned, N>(sources[i]),
 				numeric_cast<unsigned, N>(targets[i]),
 				numeric_cast<unsigned, D>(delays[i]),
 				numeric_cast<float, W>(weights[i]),

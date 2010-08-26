@@ -180,6 +180,7 @@ addExcitatorySynapses(
 		urng_t& angle,
 		urng_t& rweight)
 {
+	std::vector<unsigned> sources(m, neuronIndex(patch, x, y));
 	std::vector<unsigned> targets(m, 0U);
 	std::vector<unsigned> delays(m, 0U);
 	std::vector<float> weights(m, 0.0f);
@@ -192,11 +193,9 @@ addExcitatorySynapses(
 		targets.at(sidx) = target.first;
 		weights.at(sidx) = 0.5f * float(rweight());
 		delays.at(sidx) = delay(unsigned(target.second));
-		//std::cout << neuronIndex(patch, x, y) << " -> " << target.first << " d=" << target.second << "\n";
 	}
 
-	net->addSynapses(neuronIndex(patch, x, y),
-			targets, delays, weights, isPlastic);
+	net->addSynapses(sources, targets, delays, weights, isPlastic);
 }
 
 
@@ -210,6 +209,7 @@ addInhibitorySynapses(
 		urng_t& angle,
 		urng_t& rweight)
 {
+	std::vector<unsigned> sources(m, neuronIndex(patch, x, y));
 	std::vector<unsigned> targets(m, 0);
 	std::vector<unsigned> delays(m, 0);
 	std::vector<float> weights(m, 0.0f);
@@ -221,11 +221,9 @@ addInhibitorySynapses(
 		targets.at(sidx) = target.first;
 		weights.at(sidx) = float(-rweight());
 		delays.at(sidx) = delay(unsigned(target.second));
-		//std::cout << neuronIndex(patch, x, y) << " -> " << target.first << " d=" << target.second << "\n";
 	}
 
-	net->addSynapses(neuronIndex(patch, x, y),
-			targets, delays, weights, isPlastic);
+	net->addSynapses(sources, targets, delays, weights, isPlastic);
 }
 
 

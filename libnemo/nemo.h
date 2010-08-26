@@ -188,10 +188,10 @@ nemo_add_synapse(nemo_network_t,
 		unsigned char is_plastic);
 
 
-/*! Add to the network a group of synapses with the same presynaptic neuron
+/*! Add to the network a group of synapses
  *
- * \param source
- * 		Index of source neuron
+ * \param sources
+ * 		Indices of source neurons
  * \param targets
  * 		Indices of target neurons
  * \param delays
@@ -204,13 +204,13 @@ nemo_add_synapse(nemo_network_t,
  * 		Number of synapses.
  *
  * \pre
- * 		Each of \a targets, \a delays, \a weights, and \a is_plastic contains
+ * 		Each of \a sources, \a targets, \a delays, \a weights, and \a is_plastic contains
  * 		\a length elements.
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_add_synapses(nemo_network_t,
-		unsigned source,
+		unsigned sources[],
 		unsigned targets[],
 		unsigned delays[],
 		float weights[],

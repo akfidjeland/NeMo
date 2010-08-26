@@ -51,6 +51,7 @@ addExcitatorySynapses(nemo::Network* net,
 		urng_t& rweight,
 		bool stdp)
 {
+	std::vector<unsigned> sources(scount, source);
 	std::vector<unsigned> targets(scount, 0U);
 	std::vector<unsigned> delays(scount, 1U);
 	std::vector<float> weights(scount, 0.0f);
@@ -61,7 +62,7 @@ addExcitatorySynapses(nemo::Network* net,
 		weights.at(s) = 0.5f * float(rweight());
 	}
 
-	net->addSynapses(source, targets, delays, weights, isPlastic);
+	net->addSynapses(sources, targets, delays, weights, isPlastic);
 }
 
 
@@ -90,6 +91,7 @@ addInhibitorySynapses(nemo::Network* net,
 		uirng_t& rtarget,
 		urng_t& rweight)
 {
+	std::vector<unsigned> sources(scount, source);
 	std::vector<unsigned> targets(scount, 0);
 	std::vector<unsigned> delays(scount, 1U);
 	std::vector<float> weights(scount, 0.0f);
@@ -100,7 +102,7 @@ addInhibitorySynapses(nemo::Network* net,
 		weights.at(s) = float(-rweight());
 	}
 
-	net->addSynapses(source, targets, delays, weights, isPlastic);
+	net->addSynapses(sources, targets, delays, weights, isPlastic);
 }
 
 

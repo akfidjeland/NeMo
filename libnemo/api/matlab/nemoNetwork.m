@@ -69,7 +69,7 @@ classdef nemoNetwork < handle
         end
 
         function addSynapse(obj, source, target, delay, weight, plastic)
-        % addSynapse - add a single synapse to given neuron
+        % addSynapse - add a single synapse to the network
         %  
         % Synopsis:
         %   addSynapse(source, target, delay, weight, plastic)
@@ -92,14 +92,14 @@ classdef nemoNetwork < handle
             );
         end
 
-        function addSynapses(obj, source, targets, delays, weights, plastic)
-        % addSynapses - add multiple synapses with the same source and delay
+        function addSynapses(obj, sources, targets, delays, weights, plastic)
+        % addSynapses - add multiple synapses to the network
         %  
         % Synopsis:
-        %   addSynapses(source, targets, delays, weights, plastic)
+        %   addSynapses(sources, targets, delays, weights, plastic)
         %  
         % Inputs:
-        %   source  - Source neuron index
+        %   sources - Source neuron indices
         %   targets - Vector of target indices
         %   delays  - Vector of delays (in milliseconds)
         %   weights - Vector of weights
@@ -110,7 +110,7 @@ classdef nemoNetwork < handle
             nemo_mex(...
                     uint32(4),...
                     obj.id,...
-                    uint32(source),...
+                    uint32(sources),...
                     uint32(targets),...
                     uint32(delays),...
                     double(weights),...
