@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <nemo/types.h>
+#include <nemo/internal_types.h>
 #include <nemo/config.h>
 
 #define FIXPOINT_SATURATION

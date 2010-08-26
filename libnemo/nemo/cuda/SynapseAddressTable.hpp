@@ -15,7 +15,7 @@
 #include <map>
 #include <vector>
 
-#include <nemo/types.h>
+#include <nemo/internal_types.h>
 
 namespace nemo {
 

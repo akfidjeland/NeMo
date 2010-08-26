@@ -13,7 +13,7 @@
 /* The basic types in nemo_types are also used without an enclosing namespace
  * inside the kernel (which is pure C). */
 #include <nemo/config.h>
-#include "types.h"
+#include "internal_types.h"
 
 #ifdef INCLUDE_MPI
 #include <boost/serialization/serialization.hpp>

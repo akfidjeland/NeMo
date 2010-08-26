@@ -13,7 +13,7 @@
 //! \file SimulationBackend.hpp
 
 #include "Simulation.hpp"
-#include "types.h"
+#include "internal_types.h"
 
 namespace nemo {
 

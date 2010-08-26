@@ -2,7 +2,7 @@
 #define NEMO_RNG_HPP
 
 #include <vector>
-#include <nemo/types.h>
+#include <nemo/internal_types.h>
 #include <nemo/config.h>
 
 namespace nemo {

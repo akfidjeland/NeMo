@@ -14,7 +14,7 @@
 #include <vector>
 
 #include <nemo/config.h>
-#include <nemo/types.h>
+#include <nemo/internal_types.h>
 #include <nemo/internals.hpp>
 #include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/Timer.hpp>

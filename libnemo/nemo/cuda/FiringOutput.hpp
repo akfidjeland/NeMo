@@ -13,7 +13,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-#include <nemo/types.h>
+#include <nemo/internal_types.h>
 #include "Mapper.hpp"
 
 //! \file FiringOutput.hpp
