@@ -351,7 +351,6 @@ main(int argc, char* argv[])
 		boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, stdp, sigma));
 		LOG(verbose, "Creating configuration");
 		nemo::Configuration conf = configuration(stdp);
-		conf.setFractionalBits(24);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription().c_str());
 		LOG(verbose, "Creating simulation\n");
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));

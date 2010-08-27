@@ -80,10 +80,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 
 		unsigned neuronCount() const;
 
-		/*! \return a suitable number of fractional bits to use in a
-		 * fixed-point format for the synapse weights */
-		unsigned fractionalBits() const;
-
 	private :
 
 		typedef nemo::Neuron<weight_t> neuron_t;

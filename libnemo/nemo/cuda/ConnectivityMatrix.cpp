@@ -50,11 +50,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	bool logging = conf.loggingEnabled();
 
-	if(conf.fractionalBitsSet()) {
-		m_fractionalBits = conf.fractionalBits();
-	} else {
-		m_fractionalBits = net.fractionalBits();
-	}
+	m_fractionalBits = conf.fractionalBits();
 
 	if(logging) {
 		//! \todo log to correct output stream

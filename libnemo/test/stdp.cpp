@@ -191,7 +191,7 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim)
 			float expectedWeight = initWeight + epoch * dw_expected;
 			float actualWeight = weights->at(s);
 
-			const float tolerance = 0.0001f; // percent
+			const float tolerance = 0.001f; // percent
 			BOOST_REQUIRE_CLOSE(expectedWeight, actualWeight, tolerance);
 
 			checked += 1;

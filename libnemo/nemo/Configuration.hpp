@@ -69,12 +69,6 @@ class NEMO_DLL_PUBLIC Configuration
 				float minWeight,
 				float maxWeight);
 
-		/*! The simulation uses a fixed-point format internally for synaptic
-		 * weights. Call this method to specify how many fractional bits to
-		 * use. If nothing is specified the backend chooses a sensible value
-		 * based on the range of weights in the input network. */
-		void setFractionalBits(unsigned bits);
-
 		/*! Specify that the CUDA backend should be used and optionally specify
 		 * a desired device. If the (default) device value of -1 is used the
 		 * backend will choose the best available device.

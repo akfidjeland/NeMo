@@ -8,7 +8,6 @@
 %     setCudaFiringBufferLength
 %     cudaFiringBufferLength
 %     setStdpFunction
-%     setFractionalBits
 %   
 classdef nemoConfiguration < handle
 
@@ -120,24 +119,6 @@ classdef nemoConfiguration < handle
                     double(minWeight),...
                     double(maxWeight)...
             );
-        end
-
-        function setFractionalBits(obj, bits)
-        % setFractionalBits - Set number of fractional bits used for fixed-point weight format
-        %  
-        % Synopsis:
-        %   setFractionalBits(bits)
-        %  
-        % Inputs:
-        %   bits    - Number of fractional bits
-        %    
-        % The backend uses a fixed-point number representation for weights.
-        % By default the backend chooses an appropriate number of fractional
-        % bits (based on the range of weights present in the network). The
-        % user can call this function the force a specific number of
-        % fractional bits to be used. The number of fractional bits should be
-        % less than 32. 
-            nemo_mex(uint32(23), obj.id, uint32(bits));
         end
     end
 end

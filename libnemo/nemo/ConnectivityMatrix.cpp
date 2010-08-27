@@ -55,15 +55,9 @@ Row::Row(const std::vector<AxonTerminal<nidx_t, weight_t> >& ss, unsigned fbits)
 
 
 ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
-	m_fractionalBits(0),
+	m_fractionalBits(conf.fractionalBits()),
 	m_maxDelay(0)
 {
-	if(!conf.fractionalBitsSet()) {
-		throw nemo::exception(NEMO_LOGIC_ERROR,
-				"If constructing runtime connectivity matrix incrementally, the fixed-point format must be specified prior to construction");
-	}
-
-	m_fractionalBits = conf.fractionalBits();
 	if(conf.stdpFunction()) {
 		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
 	}
@@ -75,7 +69,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const NetworkImpl& net,
 		const ConfigurationImpl& conf,
 		const mapper_t& mapper) :
-	m_fractionalBits(conf.fractionalBitsSet() ? conf.fractionalBits() : net.fractionalBits()),
+	m_fractionalBits(conf.fractionalBits()),
 	m_maxDelay(0)
 {
 	if(conf.stdpFunction()) {

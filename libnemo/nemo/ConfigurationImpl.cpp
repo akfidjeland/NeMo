@@ -18,7 +18,7 @@ namespace nemo {
 
 ConfigurationImpl::ConfigurationImpl() :
 	m_logging(false),
-	m_fractionalBits(s_defaultFractionalBits),
+	m_fractionalBits(20),
 	// m_cpuThreadCount(0), // set properly by interface class ctor
 	m_cudaPartitionSize(0),
 	m_cudaFiringBufferLength(0),
@@ -54,6 +54,10 @@ ConfigurationImpl::setStdpFunction(
 
 
 
+/*! \note this code is partially dead, in that this functionality is not
+ * exposed in the API. Rather we have fixed the fixed-point format. Left the
+ * code in anticipation of adding the functionality back (along with a more
+ * complex auto-configuration). */
 void
 ConfigurationImpl::setFractionalBits(unsigned bits)
 {

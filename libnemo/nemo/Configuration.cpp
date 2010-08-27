@@ -92,14 +92,6 @@ Configuration::setStdpFunction(
 
 
 void
-Configuration::setFractionalBits(unsigned bits)
-{
-	m_impl->setFractionalBits(bits);
-}
-
-
-
-void
 Configuration::setCpuBackend(int threadCount)
 {
 	// try setting the CUDA backend

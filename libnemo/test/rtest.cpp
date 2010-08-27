@@ -26,7 +26,6 @@ run(nemo::Network* net,
 	using namespace std;
 
 	nemo::Configuration conf = configuration(stdp, 1024, backend);
-	conf.setFractionalBits(18);
 
 	fstream file;
 	//! \todo determine canonical filename based on configuration

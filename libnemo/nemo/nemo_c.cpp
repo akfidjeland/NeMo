@@ -385,14 +385,6 @@ nemo_cuda_device(nemo_configuration_t conf, int* dev)
 
 
 nemo_status_t
-nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits)
-{
-	CATCH_(Configuration, conf, setFractionalBits(bits));
-}
-
-
-
-nemo_status_t
 nemo_backend(nemo_configuration_t conf, backend_t* backend)
 {
 	CATCH(Configuration, conf, backend(), *backend);

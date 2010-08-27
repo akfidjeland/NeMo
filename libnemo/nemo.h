@@ -126,12 +126,6 @@ nemo_status_t
 nemo_cuda_device(nemo_configuration_t conf, int* dev);
 
 
-/*! \copydoc nemo::Configuration::setFractionalBits */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_set_fractional_bits(nemo_configuration_t conf, unsigned bits);
-
-
 /*! \copydoc nemo::Configuration::backend */
 NEMO_DLL_PUBLIC
 nemo_status_t

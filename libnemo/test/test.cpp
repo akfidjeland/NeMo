@@ -91,9 +91,7 @@ runBackendComparisions(nemo::Network* net)
 
 		for(unsigned si=0; si < 1; ++si) {
 			nemo::Configuration conf1 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CPU);
-			conf1.setFractionalBits(26);
 			nemo::Configuration conf2 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CUDA);
-			conf2.setFractionalBits(26);
 			compareSimulations(net, conf1, net, conf2, duration, stdp_conf[si]);
 		}
 	}
@@ -318,28 +316,6 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 
 
 
-//! \todo test this for cpu backend as well
-BOOST_AUTO_TEST_CASE(fixpoint_precision_specification)
-{
-	nemo::Network* net = nemo::random::construct(1000, 1000, false);
-	nemo::Configuration conf;
-
-	conf.setFractionalBits(26);
-	conf.enableLogging();
-	std::vector<unsigned> cycles, nidx, cycles2, nidx2;
-	unsigned duration = 2;
-	runSimulation(net, conf, duration, &cycles, &nidx, false);
-
-	BOOST_REQUIRE(nidx.size() > 0);
-
-	nemo::Configuration conf2;
-	conf2.enableLogging();
-	runSimulation(net, conf2, duration, &cycles2, &nidx2, false);
-	BOOST_REQUIRE(nidx2.size() > 0);
-	compareSimulationResults(cycles, nidx, cycles2, nidx2);
-}
-
-
 void
 testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 {
@@ -354,7 +330,6 @@ testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 
 	unsigned seconds = 2;
 	nemo::Configuration conf = configuration(false, 1024, backend);
-	conf.setFractionalBits(16);
 
 	runSimulation(net0.get(), conf, seconds, &cycles0, &fired0, stdp, std::vector<unsigned>(1, 0));
 	runSimulation(net1.get(), conf, seconds, &cycles1, &fired1, stdp, std::vector<unsigned>(1, n0));
@@ -395,10 +370,9 @@ BOOST_AUTO_TEST_SUITE_END()
 void
 testGetSynapses(const nemo::Network& net,
 		nemo::Configuration& conf,
-		unsigned fbits,
 		unsigned n0)
 {
-	conf.setFractionalBits(fbits);
+	unsigned fbits = 20;
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
 
 	std::vector<unsigned> ntargets;
@@ -429,11 +403,11 @@ testGetSynapses(backend_t backend, bool stdp)
 {
 	boost::scoped_ptr<nemo::Network> net1(nemo::torus::construct(4, 1000, stdp, 32, false));
 	nemo::Configuration conf = configuration(stdp, 1024, backend);
-	testGetSynapses(*net1, conf, 22, 0);
+	testGetSynapses(*net1, conf, 0);
 
 	unsigned n0 = 1000000U;
 	boost::scoped_ptr<nemo::Network> net2(createRing(1500, n0));
-	testGetSynapses(*net2, conf, 16, n0);
+	testGetSynapses(*net2, conf, n0);
 }
 
 
