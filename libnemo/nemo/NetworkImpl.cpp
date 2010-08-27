@@ -69,7 +69,9 @@ NetworkImpl::addSynapse(
 				str(format("Invalid delay (%u) for synapse between %u and %u") % delay % source % target));
 	}
 
-	m_fcm[source][delay].push_back(synapse_t(target, weight, plastic));
+	id32_t& count = m_synapseCount[source];
+	m_fcm[source][delay].push_back(synapse_t(count, target, weight, plastic));
+	count += 1;
 
 	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix
 	m_maxIdx = std::max(m_maxIdx, int(std::max(source, target)));
@@ -135,6 +137,8 @@ NetworkImpl::addSynapses(
 		size_t length)
 {
 	using namespace boost;
+
+	//! \todo do a length check here as well
 
 	if(length == 0) {
 		return;

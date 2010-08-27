@@ -46,7 +46,7 @@ Network::addSynapses(
 		const std::vector<float>& weights,
 		const std::vector<unsigned char>& plastic)
 {
-	m_impl->addSynapses(sources, targets, delays, weights, plastic);	
+	m_impl->addSynapses(sources, targets, delays, weights, plastic);
 }
 
 

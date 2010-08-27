@@ -49,7 +49,7 @@ struct Row
 	Row() : len(0) {}
 
 	/* \post synapse order is the same as in input vector */
-	Row(const std::vector<AxonTerminal<nidx_t, weight_t> >&, unsigned fbits);
+	Row(const std::vector<IdAxonTerminal>&, unsigned fbits);
 
 	size_t len;
 	boost::shared_array< FAxonTerminal<fix_t> > data;
@@ -97,7 +97,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * are unaffected) from one index space to another.
 		 */
 		Row& setRow(nidx_t source, delay_t,
-				const std::vector<AxonTerminal<nidx_t, weight_t> >&,
+				const std::vector<IdAxonTerminal>&,
 				const mapper_t&);
 
 		/*! \return all synapses for a given source and delay */

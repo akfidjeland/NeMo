@@ -64,4 +64,7 @@ enum {
 typedef unsigned backend_t;
 typedef unsigned long long cycle_t;
 
+/* Synapse index */
+typedef uint64_t nemo_synapse_id_t;
+
 #endif

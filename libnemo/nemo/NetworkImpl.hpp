@@ -27,6 +27,7 @@ namespace nemo {
 	}
 
 
+
 class NEMO_BASE_DLL_PUBLIC NetworkImpl
 {
 	public :
@@ -89,7 +90,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 		typedef nemo::Neuron<weight_t> neuron_t;
 		std::map<nidx_t, neuron_t> m_neurons;
 
-		typedef AxonTerminal<nidx_t, weight_t> synapse_t;
+		typedef IdAxonTerminal synapse_t;
 		typedef std::vector<synapse_t> bundle_t;
 		//! \todo could keep this in a single map with a tuple index
 		typedef std::map<delay_t, bundle_t> axon_t;
@@ -102,6 +103,10 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 		delay_t m_maxDelay;
 		weight_t m_minWeight;
 		weight_t m_maxWeight;
+
+		/* Keep track of the number of synapses per neuron in order to generate
+		 * a dense list of synapse ids */
+		std::map<nidx_t, id32_t> m_synapseCount;
 
 		//! \todo modify public interface to avoid friendship here
 		friend class cuda::ConnectivityMatrix;

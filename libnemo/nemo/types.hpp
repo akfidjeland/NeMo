@@ -31,6 +31,9 @@ namespace boost {
 namespace nemo {
 
 
+typedef nemo_synapse_id_t synapse_id;
+
+
 template<typename FP>
 class Neuron
 {
@@ -63,6 +66,21 @@ class Neuron
 };
 
 
+
+//! \todo sort out naming here. Move AxonTerminal to CUDA namespace
+
+struct IdAxonTerminal
+{
+	public :
+
+		id32_t id;
+		nidx_t target;
+		float weight;
+		bool plastic;
+
+		IdAxonTerminal(synapse_id id, nidx_t t, float w, bool p):
+			id(id), target(t), weight(w), plastic(p) { }
+};
 
 
 template<typename I, typename W>
