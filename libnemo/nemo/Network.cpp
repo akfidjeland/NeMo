@@ -4,7 +4,7 @@
 namespace nemo {
 
 Network::Network() :
-	m_impl(new NetworkImpl())
+	m_impl(new network::NetworkImpl())
 {
 	;
 }

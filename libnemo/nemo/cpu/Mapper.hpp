@@ -22,7 +22,7 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 {
 	public :
 
-		Mapper(const nemo::NetworkImpl& net) :
+		Mapper(const nemo::network::NetworkImpl& net) :
 			m_offset(0),
 			m_ncount(0)
 		{

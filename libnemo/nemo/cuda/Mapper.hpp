@@ -39,7 +39,7 @@ class Mapper {
 
 	public :
 
-		Mapper(const nemo::NetworkImpl& net, unsigned partitionSize);
+		Mapper(const nemo::network::NetworkImpl& net, unsigned partitionSize);
 
 		/* Add global neuron index to the set of 'valid' synapses and return
 		 * the correspondong device neuron index */

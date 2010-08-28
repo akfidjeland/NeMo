@@ -20,7 +20,7 @@
 namespace nemo {
 
 SimulationBackend*
-simulationBackend(const NetworkImpl& net, const ConfigurationImpl& conf);
+simulationBackend(const network::NetworkImpl& net, const ConfigurationImpl& conf);
 
 void
 setDefaultHardware(nemo::ConfigurationImpl& conf);

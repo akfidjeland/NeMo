@@ -59,7 +59,7 @@ class ConnectivityMatrix
 	public:
 
 		ConnectivityMatrix(
-				const nemo::NetworkImpl&,
+				const nemo::network::NetworkImpl&,
 				const nemo::ConfigurationImpl&,
 				const Mapper&);
 
@@ -138,7 +138,7 @@ class ConnectivityMatrix
 
 		/*! \return total number of warps */
 		size_t createFcm(
-				const nemo::NetworkImpl& net,
+				const nemo::network::NetworkImpl& net,
 				const Mapper&,
 				unsigned fbits,
 				size_t partitionSize,

@@ -56,8 +56,10 @@ struct Row
 };
 
 
+namespace network {
+	class NetworkImpl;
+}
 
-class NetworkImpl;
 class ConfigurationImpl;
 struct AxonTerminalAux;
 
@@ -87,7 +89,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * so that we can report invalid synapse terminals.
 		 */
 		ConnectivityMatrix(
-				const NetworkImpl& net,
+				const network::NetworkImpl& net,
 				const ConfigurationImpl& conf,
 				const mapper_t&);
 

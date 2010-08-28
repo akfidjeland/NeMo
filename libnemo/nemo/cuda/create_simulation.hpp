@@ -4,18 +4,20 @@
 #include <nemo/config.h>
 
 namespace nemo {
-	class NetworkImpl;
+	namespace network {
+		class NetworkImpl;
+	}
 	class ConfigurationImpl;
 	class SimulationBackend;
 }
 
 extern "C" {
 
-typedef nemo::SimulationBackend* cuda_simulation_t(const nemo::NetworkImpl*, const nemo::ConfigurationImpl*);
+typedef nemo::SimulationBackend* cuda_simulation_t(const nemo::network::NetworkImpl*, const nemo::ConfigurationImpl*);
 
 NEMO_CUDA_DLL_PUBLIC
 nemo::SimulationBackend*
-cuda_simulation(const nemo::NetworkImpl* net, const nemo::ConfigurationImpl* conf);
+cuda_simulation(const nemo::network::NetworkImpl* net, const nemo::ConfigurationImpl* conf);
 
 }
 

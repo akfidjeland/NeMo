@@ -71,7 +71,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 
 ConnectivityMatrix::ConnectivityMatrix(
-		const NetworkImpl& net,
+		const network::NetworkImpl& net,
 		const ConfigurationImpl& conf,
 		const mapper_t& mapper) :
 	m_mapper(mapper),
@@ -82,11 +82,11 @@ ConnectivityMatrix::ConnectivityMatrix(
 		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
 	}
 
-	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
+	for(std::map<nidx_t, network::NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
 			ni != net.m_fcm.end(); ++ni) {
 		nidx_t source = mapper.localIdx(ni->first);
-		const NetworkImpl::axon_t& axon = ni->second;
-		for(NetworkImpl::axon_t::const_iterator ai = axon.begin();
+		const network::NetworkImpl::axon_t& axon = ni->second;
+		for(network::NetworkImpl::axon_t::const_iterator ai = axon.begin();
 				ai != axon.end(); ++ai) {
 			setRow(source, ai->first, ai->second, mapper);
 		}

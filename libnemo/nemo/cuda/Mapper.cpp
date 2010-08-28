@@ -14,7 +14,7 @@ namespace nemo {
 
 using boost::format;
 
-Mapper::Mapper(const nemo::NetworkImpl& net, unsigned partitionSize) :
+Mapper::Mapper(const nemo::network::NetworkImpl& net, unsigned partitionSize) :
 	m_partitionSize(partitionSize),
 	m_partitionCount(0),
 	m_offset(0)

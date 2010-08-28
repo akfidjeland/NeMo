@@ -36,7 +36,7 @@ namespace nemo {
 
 
 Simulation::Simulation(
-		const nemo::NetworkImpl& net,
+		const nemo::network::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net, conf.cudaPartitionSize()),
 	m_conf(conf),

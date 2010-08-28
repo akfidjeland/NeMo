@@ -37,7 +37,7 @@ namespace nemo {
 
 
 Simulation::Simulation(
-		const nemo::NetworkImpl& net,
+		const nemo::network::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net),
 	//! \todo remove redundant member?
@@ -72,13 +72,13 @@ Simulation::Simulation(
 
 void
 Simulation::setNeuronParameters(
-		const nemo::NetworkImpl& net,
+		const nemo::network::NetworkImpl& net,
 		Mapper& mapper)
 {
-	for(std::map<nidx_t, NetworkImpl::neuron_t>::const_iterator i = net.m_neurons.begin();
+	for(std::map<nidx_t, network::NetworkImpl::neuron_t>::const_iterator i = net.m_neurons.begin();
 			i != net.m_neurons.end(); ++i) {
 		nidx_t nidx = mapper.addGlobal(i->first);
-		NetworkImpl::neuron_t n = i->second;
+		network::NetworkImpl::neuron_t n = i->second;
 		m_a.at(nidx) = n.a;	
 		m_b.at(nidx) = n.b;	
 		m_c.at(nidx) = n.c;	

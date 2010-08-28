@@ -26,7 +26,7 @@ namespace nemo {
 	namespace cuda {
 
 
-NeuronParameters::NeuronParameters(const nemo::NetworkImpl& net, Mapper& mapper) :
+NeuronParameters::NeuronParameters(const network::NetworkImpl& net, Mapper& mapper) :
 	m_allocated(0),
 	m_wpitch(0)
 {

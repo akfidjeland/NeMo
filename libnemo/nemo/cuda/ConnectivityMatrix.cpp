@@ -36,7 +36,7 @@ namespace nemo {
 
 
 ConnectivityMatrix::ConnectivityMatrix(
-		const nemo::NetworkImpl& net,
+		const nemo::network::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf,
 		const Mapper& mapper) :
 	m_maxDelay(net.maxDelay()),
@@ -96,7 +96,7 @@ insert(size_t idx, const T& val, std::vector<T>& vec)
 
 size_t
 ConnectivityMatrix::createFcm(
-		const nemo::NetworkImpl& net,
+		const nemo::network::NetworkImpl& net,
 		const Mapper& mapper,
 		unsigned fbits,
 		size_t partitionSize,
@@ -108,7 +108,7 @@ ConnectivityMatrix::createFcm(
 
 	size_t currentWarp = 1; // leave space for null warp at beginning
 
-	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator axon = net.m_fcm.begin();
+	for(std::map<nidx_t, network::NetworkImpl::axon_t>::const_iterator axon = net.m_fcm.begin();
 			axon != net.m_fcm.end(); ++axon) {
 
 		nidx_t h_sourceIdx = axon->first;
@@ -131,7 +131,7 @@ ConnectivityMatrix::createFcm(
 		 * structures are the same */
 		unsigned synapseCount = 0;
 
-		for(std::map<delay_t, NetworkImpl::bundle_t>::const_iterator bi = axon->second.begin();
+		for(std::map<delay_t, network::NetworkImpl::bundle_t>::const_iterator bi = axon->second.begin();
 				bi != axon->second.end(); ++bi) {
 
 			delay_t delay = bi->first;
@@ -141,7 +141,7 @@ ConnectivityMatrix::createFcm(
 						str(format("Neuron %u has synapses with delay < 1 (%u)") % h_sourceIdx % delay));
 			}
 
-			NetworkImpl::bundle_t bundle = bi->second;
+			network::NetworkImpl::bundle_t bundle = bi->second;
 
 			/* A bundle contains a number of synapses with the same source
 			 * neuron and delay. On the device we need to further subdivide
@@ -151,7 +151,7 @@ ConnectivityMatrix::createFcm(
 			/* Populate the partition groups. We only need to store the target
 			 * neuron and weight. We store these as a pair so that we can
 			 * reorganise these later. */
-			for(NetworkImpl::bundle_t::const_iterator si = bundle.begin();
+			for(network::NetworkImpl::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
 				nidx_t h_targetIdx = si->target;
 				DeviceIdx d_targetIdx = mapper.deviceIdx(h_targetIdx);

@@ -19,7 +19,9 @@
 
 namespace nemo {
 
-	class NetworkImpl;
+	namespace network {
+		class NetworkImpl;
+	}
 
 	namespace cuda {
 
@@ -29,7 +31,7 @@ class NeuronParameters
 {
 	public:
 
-		NeuronParameters(const nemo::NetworkImpl& net, Mapper&);
+		NeuronParameters(const network::NetworkImpl& net, Mapper&);
 
 		float* deviceData() { return md_arr.get(); }
 

@@ -92,9 +92,9 @@ class Simulation : public nemo::SimulationBackend
 	private :
 
 		/* Use factory method for generating objects */
-		Simulation(const nemo::NetworkImpl&, const nemo::ConfigurationImpl&);
+		Simulation(const network::NetworkImpl&, const nemo::ConfigurationImpl&);
 
-		friend SimulationBackend* simulation(const NetworkImpl& net, const ConfigurationImpl& conf);
+		friend SimulationBackend* simulation(const network::NetworkImpl& net, const ConfigurationImpl& conf);
 
 		Mapper m_mapper;
 

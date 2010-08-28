@@ -19,6 +19,7 @@
 #include "synapse_indices.hpp"
 
 namespace nemo {
+	namespace network {
 
 
 NetworkImpl::NetworkImpl() :
@@ -225,4 +226,22 @@ NetworkImpl::maxNeuronIndex() const
 }
 
 
+/* Neuron iterators */
+
+
+
+neuron_iterator
+NetworkImpl::neuron_begin() const
+{
+	return neuron_iterator(new programmatic::neuron_iterator(m_neurons.begin()));
 }
+
+
+neuron_iterator
+NetworkImpl::neuron_end() const
+{
+	return neuron_iterator(new programmatic::neuron_iterator(m_neurons.end()));
+}
+
+
+}	}

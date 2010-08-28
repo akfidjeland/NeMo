@@ -27,7 +27,7 @@ namespace nemo {
 
 
 ThalamicInput::ThalamicInput(
-		const nemo::NetworkImpl& net,
+		const nemo::network::NetworkImpl& net,
 		const Mapper& mapper) :
 	m_rngState(mapper.partitionCount(), mapper.partitionSize(), true, 4),
 	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true, 1),

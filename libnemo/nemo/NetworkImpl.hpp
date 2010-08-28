@@ -7,7 +7,8 @@
 #include <vector>
 
 #include <nemo/config.h>
-#include "types.hpp"
+#include <nemo/network/programmatic/neuron_iterator.hpp>
+#include <nemo/network/Generator.hpp>
 
 namespace nemo {
 
@@ -22,13 +23,16 @@ namespace nemo {
 		class Simulation;
 	}
 
+	class ConnectivityMatrix;
+
 	namespace mpi {
 		class Master;
 	}
 
+	namespace network {
 
 
-class NEMO_BASE_DLL_PUBLIC NetworkImpl
+class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 {
 	public :
 
@@ -85,6 +89,9 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 
 		unsigned neuronCount() const;
 
+		neuron_iterator neuron_begin() const;
+		neuron_iterator neuron_end() const;
+
 	private :
 
 		typedef nemo::Neuron<weight_t> neuron_t;
@@ -109,14 +116,14 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 		std::map<nidx_t, id32_t> m_synapseCount;
 
 		//! \todo modify public interface to avoid friendship here
-		friend class cuda::ConnectivityMatrix;
-		friend class cuda::NeuronParameters;
-		friend class cuda::ThalamicInput;
-		friend class ConnectivityMatrix;
-		friend class cpu::Simulation;
-		friend class mpi::Master;
+		friend class nemo::cuda::ConnectivityMatrix;
+		friend class nemo::cuda::NeuronParameters;
+		friend class nemo::cuda::ThalamicInput;
+		friend class nemo::ConnectivityMatrix;
+		friend class nemo::cpu::Simulation;
+		friend class nemo::mpi::Master;
 };
 
-
+	} // end namespace network
 } // end namespace nemo
 #endif
