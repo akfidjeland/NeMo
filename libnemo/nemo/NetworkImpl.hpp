@@ -7,10 +7,10 @@
 #include <vector>
 
 #include <nemo/config.h>
-#include <nemo/network/programmatic/neuron_iterator.hpp>
 #include <nemo/network/Generator.hpp>
 
 namespace nemo {
+
 
 	namespace cuda {
 		// needed for 'friend' declarations
@@ -31,6 +31,9 @@ namespace nemo {
 
 	namespace network {
 
+		namespace programmatic {
+			class synapse_iterator;
+		}
 
 class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 {
@@ -92,6 +95,9 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		neuron_iterator neuron_begin() const;
 		neuron_iterator neuron_end() const;
 
+		synapse_iterator synapse_begin() const;
+		synapse_iterator synapse_end() const;
+
 	private :
 
 		typedef nemo::Neuron<weight_t> neuron_t;
@@ -122,6 +128,8 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		friend class nemo::ConnectivityMatrix;
 		friend class nemo::cpu::Simulation;
 		friend class nemo::mpi::Master;
+
+		friend class programmatic::synapse_iterator;
 };
 
 	} // end namespace network

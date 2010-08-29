@@ -18,9 +18,8 @@ class Generator
 		virtual neuron_iterator neuron_begin() const = 0;
 		virtual neuron_iterator neuron_end() const = 0;
 
-		//! \todo add synapse iterators as well
-		//virtual iterator<synapse> synapse_begin() const = 0;
-		//virtual iterator<synapse> synapse_end() const = 0;
+		virtual synapse_iterator synapse_begin() const = 0;
+		virtual synapse_iterator synapse_end() const = 0;
 };
 
 

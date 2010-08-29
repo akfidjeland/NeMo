@@ -1,5 +1,5 @@
-#ifndef NEMO_NEURON_NETWORK_PROGRAMMATIC_NEURON_ITERATOR_HPP
-#define NEMO_NEURON_NETWORK_PROGRAMMATIC_NEURON_ITERATOR_HPP
+#ifndef NEMO_NETWORK_PROGRAMMATIC_NEURON_ITERATOR_HPP
+#define NEMO_NETWORK_PROGRAMMATIC_NEURON_ITERATOR_HPP
 
 #include <typeinfo>
 #include <nemo/network/iterator.hpp>
@@ -9,7 +9,7 @@ namespace nemo {
 		namespace programmatic {
 
 //! \todo could probably use a boost iterator here
-class neuron_iterator : public nemo::network::abstract_neuron_iterator
+class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 {
 	public :
 

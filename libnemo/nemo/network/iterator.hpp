@@ -40,6 +40,7 @@ class abstract_iterator
 
 
 typedef abstract_iterator< std::pair<unsigned, nemo::Neuron<float> > > abstract_neuron_iterator;
+typedef abstract_iterator<Synapse> abstract_synapse_iterator;
 
 
 template<class T>
@@ -95,6 +96,7 @@ class iterator
 
 
 typedef iterator<abstract_neuron_iterator::value_type> neuron_iterator;
+typedef iterator<abstract_synapse_iterator::value_type> synapse_iterator;
 
 
 }	}

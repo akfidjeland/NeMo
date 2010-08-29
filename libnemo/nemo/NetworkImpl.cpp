@@ -15,6 +15,8 @@
 #include <boost/format.hpp>
 
 #include <nemo/bitops.h>
+#include <nemo/network/programmatic/neuron_iterator.hpp>
+#include <nemo/network/programmatic/synapse_iterator.hpp>
 #include "exception.hpp"
 #include "synapse_indices.hpp"
 
@@ -241,6 +243,30 @@ neuron_iterator
 NetworkImpl::neuron_end() const
 {
 	return neuron_iterator(new programmatic::neuron_iterator(m_neurons.end()));
+}
+
+
+synapse_iterator
+NetworkImpl::synapse_begin() const
+{
+	fcm_t::const_iterator ni = m_fcm.begin();
+	axon_t::const_iterator bi = ni->second.begin();
+	return synapse_iterator(
+			new programmatic::synapse_iterator(
+					ni, m_fcm.end(),
+					bi, ni->second.end(),
+					bi->second.begin(), bi->second.end()));
+}
+
+
+synapse_iterator
+NetworkImpl::synapse_end() const
+{
+	fcm_t::const_iterator ni = m_fcm.end();
+	axon_t::const_iterator bi = m_fcm.rbegin()->second.end();
+	bundle_t::const_iterator si = m_fcm.rbegin()->second.rbegin()->second.end();
+	return synapse_iterator(
+			new programmatic::synapse_iterator(ni, ni, bi, bi, si, si));
 }
 
 
