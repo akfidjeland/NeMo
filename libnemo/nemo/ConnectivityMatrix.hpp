@@ -57,7 +57,7 @@ struct Row
 
 
 namespace network {
-	class NetworkImpl;
+	class Generator;
 }
 
 class ConfigurationImpl;
@@ -89,19 +89,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * so that we can report invalid synapse terminals.
 		 */
 		ConnectivityMatrix(
-				const network::NetworkImpl& net,
+				const network::Generator& net,
 				const ConfigurationImpl& conf,
-				const mapper_t&);
-
-		/*! Add a number of synapses with the same source and delay. Return
-		 * reference to the newly inserted row.
-		 *
-		 * The mapper is used to map the target neuron indices (source indices
-		 * are unaffected) from one index space to another.
-		 */
-		//! \todo remove mapper argument. Mapper is already a member so no need to pass it in.
-		Row& setRow(nidx_t source, delay_t,
-				const std::vector<AxonTerminal>&,
 				const mapper_t&);
 
 		/*! \return all synapses for a given source and delay */
@@ -143,8 +132,9 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/* During network construction we accumulate data in a map. This way we
 		 * don't need to know the number of neurons or the number of delays in
 		 * advance */
-		typedef boost::tuple<nidx_t, delay_t> fidx;
-		std::map<fidx, Row> m_acc;
+		typedef boost::tuple<nidx_t, delay_t> fidx_t;
+		typedef std::vector<AxonTerminal> row_t;
+		std::map<fidx_t, row_t> m_acc;
 
 		/* At run-time, however, we want the fastest possible lookup of the
 		 * rows. We therefore use a vector with linear addressing. This just
@@ -169,7 +159,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */
 		size_t addressOf(nidx_t, delay_t) const;
 
-		void verifySynapseTerminals(fidx idx, const Row& row, const mapper_t&) const;
+		void verifySynapseTerminals(fidx_t idx, const row_t& row, const mapper_t&) const;
 
 		/*! \return address of the synapse weight in the forward matrix, given
 		 * a synapse in the reverse matrix */

@@ -108,6 +108,14 @@ class Synapse
 		delay_t delay;
 		AxonTerminal terminal;
 
+		id32_t id() const { return terminal.id; }
+
+		nidx_t target() const { return terminal.target; }
+
+		unsigned char plastic() const { return terminal.plastic; }
+
+		float weight() const { return terminal.weight; }
+
 	private :
 
 #ifdef INCLUDE_MPI

@@ -17,8 +17,8 @@
 #include <boost/format.hpp>
 
 #include <nemo/config.h>
+#include <nemo/network/Generator.hpp>
 #include "ConfigurationImpl.hpp"
-#include "NetworkImpl.hpp"
 #include "exception.hpp"
 #include "fixedpoint.hpp"
 #include "synapse_indices.hpp"
@@ -69,32 +69,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 }
 
 
-
-ConnectivityMatrix::ConnectivityMatrix(
-		const network::NetworkImpl& net,
-		const ConfigurationImpl& conf,
-		const mapper_t& mapper) :
-	m_mapper(mapper),
-	m_fractionalBits(conf.fractionalBits()),
-	m_maxDelay(0)
-{
-	if(conf.stdpFunction()) {
-		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
-	}
-
-	for(std::map<nidx_t, network::NetworkImpl::axon_t>::const_iterator ni = net.m_fcm.begin();
-			ni != net.m_fcm.end(); ++ni) {
-		nidx_t source = mapper.localIdx(ni->first);
-		const network::NetworkImpl::axon_t& axon = ni->second;
-		for(network::NetworkImpl::axon_t::const_iterator ai = axon.begin();
-				ai != axon.end(); ++ai) {
-			setRow(source, ai->first, ai->second, mapper);
-		}
-	}
-}
-
-
-
 /* Insert into vector, resizing if appropriate */
 template<typename T>
 void
@@ -107,45 +81,46 @@ insert(size_t idx, const T& val, std::vector<T>& vec)
 }
 
 
-Row&
-ConnectivityMatrix::setRow(
-		nidx_t source,
-		delay_t delay,
-		const std::vector<AxonTerminal>& ss,
-		const mapper_t& mapper)
+
+ConnectivityMatrix::ConnectivityMatrix(
+		const network::Generator& net,
+		const ConfigurationImpl& conf,
+		const mapper_t& mapper) :
+	m_mapper(mapper),
+	m_fractionalBits(conf.fractionalBits()),
+	m_maxDelay(0)
 {
-	using boost::format;
-
-	if(delay < 1) {
-		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Neuron %u has synapses with delay < 1 (%u)") % source % delay));
+	if(conf.stdpFunction()) {
+		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
 	}
 
-	fidx forwardIdx(source, delay);
+	network::synapse_iterator i = net.synapse_begin();
+	network::synapse_iterator i_end = net.synapse_end();
 
-	std::pair<std::map<fidx, Row>::iterator, bool> insertion =
-		m_acc.insert(std::make_pair<fidx, Row>(forwardIdx, Row(ss, m_fractionalBits)));
+	for( ; i != i_end; ++i) {
 
-	if(!insertion.second) {
-		throw nemo::exception(NEMO_INVALID_INPUT, "Double insertion into connectivity matrix");
-	}
-	m_delays[source].insert(delay);
-	m_maxDelay = std::max(m_maxDelay, delay);
+		nidx_t source = mapper.localIdx(i->source);
+		nidx_t target = mapper.localIdx(i->target());
+		delay_t delay = i->delay;
+		unsigned char plastic = i->plastic();
 
-	Row& row = insertion.first->second;
-	aux_row& auxRow = m_cmAux[source];
+		//! \todo could also do fixed-point conversion here
+		fidx_t fidx(source, delay);
+		row_t& row = m_acc[fidx];
+		sidx_t sidx = row.size();
+		row.push_back(AxonTerminal(i->id(), target, i->weight(), plastic));
 
-	for(size_t sidx=0; sidx < row.len; ++sidx) {
-		nidx_t target = mapper.localIdx(row.data[sidx].target);
-		row.data[sidx].target = target;
-		const AxonTerminal& s = ss.at(sidx);
-		if(s.plastic) {
-			m_racc[mapper.localIdx(s.target)].push_back(RSynapse(source, delay, sidx));
+		//! \todo could do this on finalize pass, since there are fewer steps there
+		m_delays[source].insert(delay);
+		m_maxDelay = std::max(m_maxDelay, delay);
+
+		if(plastic) {
+			m_racc[target].push_back(RSynapse(source, delay, sidx));
 		}
-		insert(s.id, AxonTerminalAux(sidx, delay, s.plastic), auxRow);
-	}
 
-	return row;
+		aux_row& auxRow = m_cmAux[source];
+		insert(i->id(), AxonTerminalAux(sidx, delay, plastic), auxRow);
+	}
 }
 
 
@@ -167,12 +142,23 @@ ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
 	nidx_t maxIdx = mapper.maxLocalIdx();
 	m_cm.resize((maxIdx+1) * m_maxDelay);
 
+	//! \todo change order here: default to Row() in all location, and then just iterate over map
 	for(nidx_t n=0; n <= maxIdx; ++n) {
 		for(delay_t d=1; d <= m_maxDelay; ++d) {
-			std::map<fidx, Row>::const_iterator row = m_acc.find(fidx(n, d));
+
+#if 0
+			if(d < 1) {
+				//! \todo make sure to report global index again here
+				throw nemo::exception(NEMO_INVALID_INPUT,
+						str(format("Neuron %u has synapses with delay < 1 (%u)") % source % delay));
+			}
+#endif
+
+			std::map<fidx_t, row_t>::const_iterator row = m_acc.find(fidx_t(n, d));
 			if(row != m_acc.end()) {
 				verifySynapseTerminals(row->first, row->second, mapper);
-				m_cm.at(addressOf(n,d)) = row->second;
+				//! \todo make input a row in the correct format.
+				m_cm.at(addressOf(n,d)) = Row(row->second, m_fractionalBits);
 			} else {
 				/* Insertion into map does not invalidate existing iterators */
 				m_cm.at(addressOf(n,d)) = Row(); // defaults to empty row
@@ -185,8 +171,8 @@ ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
 
 
 void
-ConnectivityMatrix::verifySynapseTerminals(fidx idx,
-		const Row& row,
+ConnectivityMatrix::verifySynapseTerminals(fidx_t idx,
+		const row_t& row,
 		const mapper_t& mapper) const
 {
 	using boost::format;
@@ -197,8 +183,8 @@ ConnectivityMatrix::verifySynapseTerminals(fidx idx,
 			str(format("Invalid synapse source neuron %u") % source));
 	}
 
-	for(size_t s=0; s < row.len; ++s) {
-		nidx_t target = row.data[s].target;
+	for(size_t s=0; s < row.size(); ++s) {
+		nidx_t target = row.at(s).target;
 		if(!mapper.validLocal(target)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid synapse target neuron %u (source: %u)") % target % source));
