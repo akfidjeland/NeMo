@@ -108,7 +108,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/* Set all neuron parameters from input network in
 		 * local data structures. Also add valid neuron
 		 * indices to the mapper as a side effect.  */
-		void setNeuronParameters(const network::NetworkImpl& net, Mapper&);
+		void setNeuronParameters(const network::Generator& net, Mapper& mapper);
 
 		/*! Update state of all neurons */
 		void update(const stimulus_vector_t&, const current_vector_t&);

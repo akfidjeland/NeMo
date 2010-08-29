@@ -68,17 +68,18 @@ Simulation::Simulation(
 }
 
 
-
-
 void
 Simulation::setNeuronParameters(
-		const nemo::network::NetworkImpl& net,
+		const nemo::network::Generator& net,
 		Mapper& mapper)
 {
-	for(std::map<nidx_t, network::NetworkImpl::neuron_t>::const_iterator i = net.m_neurons.begin();
-			i != net.m_neurons.end(); ++i) {
-		nidx_t nidx = mapper.addGlobal(i->first);
-		network::NetworkImpl::neuron_t n = i->second;
+	using namespace nemo::network;
+
+	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+			i != i_end; ++i) {
+		nidx_t nidx = mapper.addGlobal((*i).first);
+		//! \todo use a better typename here
+		NetworkImpl::neuron_t n = i->second;
 		m_a.at(nidx) = n.a;	
 		m_b.at(nidx) = n.b;	
 		m_c.at(nidx) = n.c;	
@@ -89,7 +90,6 @@ Simulation::setNeuronParameters(
 		m_valid.at(nidx) = true;
 	}
 }
-
 
 
 #ifdef NEMO_CPU_MULTITHREADED
