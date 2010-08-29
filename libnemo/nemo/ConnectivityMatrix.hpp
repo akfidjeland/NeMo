@@ -33,6 +33,7 @@ namespace nemo {
 template<typename W>
 struct FAxonTerminal
 {
+	//! \todo use consistent ordering here. see types.hpp
 	FAxonTerminal(W w, nidx_t t) : weight(w), target(t) {}
 
 	W weight;
@@ -49,7 +50,7 @@ struct Row
 	Row() : len(0) {}
 
 	/* \post synapse order is the same as in input vector */
-	Row(const std::vector<AxonTerminal>&, unsigned fbits);
+	Row(const std::vector<FAxonTerminal<fix_t> >& ss);
 
 	size_t len;
 	boost::shared_array< FAxonTerminal<fix_t> > data;
@@ -133,7 +134,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * don't need to know the number of neurons or the number of delays in
 		 * advance */
 		typedef boost::tuple<nidx_t, delay_t> fidx_t;
-		typedef std::vector<AxonTerminal> row_t;
+		typedef std::vector<FAxonTerminal<fix_t> > row_t;
 		std::map<fidx_t, row_t> m_acc;
 
 		/* At run-time, however, we want the fastest possible lookup of the

@@ -27,7 +27,7 @@
 namespace nemo {
 
 
-Row::Row(const std::vector<AxonTerminal>& ss, unsigned fbits) :
+Row::Row(const std::vector<FAxonTerminal<fix_t> >& ss) :
 	len(ss.size())
 {
 	FAxonTerminal<fix_t>* ptr;
@@ -42,15 +42,10 @@ Row::Row(const std::vector<AxonTerminal>& ss, unsigned fbits) :
 #else
 	ptr = (FAxonTerminal<fix_t>*) malloc(ss.size()*sizeof(FAxonTerminal<fix_t>));
 #endif
+	std::copy(ss.begin(), ss.end(), ptr);
 
+	//! \todo can we use scoped_array here instead?
 	data = boost::shared_array< FAxonTerminal<fix_t> >(ptr, free);
-
-	/* static/plastic flag is not needed in forward matrix */
-	for(std::vector<nemo::AxonTerminal>::const_iterator si = ss.begin();
-			si != ss.end(); ++si) {
-		size_t i = si - ss.begin();
-		ptr[i] = FAxonTerminal<fix_t>(fx_toFix(si->weight, fbits), si->target);
-	}
 }
 
 
@@ -97,23 +92,25 @@ ConnectivityMatrix::ConnectivityMatrix(
 	network::synapse_iterator i = net.synapse_begin();
 	network::synapse_iterator i_end = net.synapse_end();
 
+	typedef FAxonTerminal<fix_t> terminal_t;
+
 	for( ; i != i_end; ++i) {
 
 		nidx_t source = mapper.localIdx(i->source);
 		nidx_t target = mapper.localIdx(i->target());
 		delay_t delay = i->delay;
-		unsigned char plastic = i->plastic();
+		fix_t weight = fx_toFix(i->weight(), m_fractionalBits);
 
-		//! \todo could also do fixed-point conversion here
 		fidx_t fidx(source, delay);
 		row_t& row = m_acc[fidx];
 		sidx_t sidx = row.size();
-		row.push_back(AxonTerminal(i->id(), target, i->weight(), plastic));
+		row.push_back(terminal_t(weight, target));
 
 		//! \todo could do this on finalize pass, since there are fewer steps there
 		m_delays[source].insert(delay);
 		m_maxDelay = std::max(m_maxDelay, delay);
 
+		unsigned char plastic = i->plastic();
 		if(plastic) {
 			m_racc[target].push_back(RSynapse(source, delay, sidx));
 		}
@@ -157,8 +154,7 @@ ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
 			std::map<fidx_t, row_t>::const_iterator row = m_acc.find(fidx_t(n, d));
 			if(row != m_acc.end()) {
 				verifySynapseTerminals(row->first, row->second, mapper);
-				//! \todo make input a row in the correct format.
-				m_cm.at(addressOf(n,d)) = Row(row->second, m_fractionalBits);
+				m_cm.at(addressOf(n,d)) = Row(row->second);
 			} else {
 				/* Insertion into map does not invalidate existing iterators */
 				m_cm.at(addressOf(n,d)) = Row(); // defaults to empty row
