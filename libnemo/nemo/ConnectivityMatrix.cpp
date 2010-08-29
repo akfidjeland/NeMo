@@ -27,25 +27,24 @@
 namespace nemo {
 
 
-Row::Row(const std::vector<FAxonTerminal<fix_t> >& ss) :
+Row::Row(const std::vector<FAxonTerminal>& ss) :
 	len(ss.size())
 {
-	FAxonTerminal<fix_t>* ptr;
+	FAxonTerminal* ptr;
 #ifdef HAVE_POSIX_MEMALIGN
 	//! \todo factor out the memory aligned allocation
 	int error = posix_memalign((void**)&ptr,
 			ASSUMED_CACHE_LINE_SIZE,
-			ss.size()*sizeof(FAxonTerminal<fix_t>));
+			ss.size()*sizeof(FAxonTerminal));
 	if(error) {
 		throw nemo::exception(NEMO_ALLOCATION_ERROR, "Failed to allocate CM row");
 	}
 #else
-	ptr = (FAxonTerminal<fix_t>*) malloc(ss.size()*sizeof(FAxonTerminal<fix_t>));
+	ptr = (FAxonTerminal*) malloc(ss.size()*sizeof(FAxonTerminal));
 #endif
-	std::copy(ss.begin(), ss.end(), ptr);
 
-	//! \todo can we use scoped_array here instead?
-	data = boost::shared_array< FAxonTerminal<fix_t> >(ptr, free);
+	std::copy(ss.begin(), ss.end(), ptr);
+	data = boost::shared_array<FAxonTerminal>(ptr, free);
 }
 
 
@@ -92,8 +91,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 	network::synapse_iterator i = net.synapse_begin();
 	network::synapse_iterator i_end = net.synapse_end();
 
-	typedef FAxonTerminal<fix_t> terminal_t;
-
 	for( ; i != i_end; ++i) {
 
 		nidx_t source = mapper.localIdx(i->source);
@@ -104,7 +101,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		fidx_t fidx(source, delay);
 		row_t& row = m_acc[fidx];
 		sidx_t sidx = row.size();
-		row.push_back(terminal_t(weight, target));
+		row.push_back(FAxonTerminal(target, weight));
 
 		//! \todo could do this on finalize pass, since there are fewer steps there
 		m_delays[source].insert(delay);

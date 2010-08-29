@@ -299,7 +299,7 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 	const nemo::Row& row = m_cm.getRow(source, delay);
 
 	for(unsigned s=0; s < row.len; ++s) {
-		const FAxonTerminal<fix_t>& terminal = row.data[s];
+		const FAxonTerminal& terminal = row.data[s];
 		assert(terminal.target < m_current.size());
 		m_current.at(terminal.target) += terminal.weight;
 		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",
