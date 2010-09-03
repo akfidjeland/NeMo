@@ -188,13 +188,12 @@ commonOptions()
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help", "print this message")
-		//("neurons,n", po::value<unsigned>()->default_value(1000), "number of neurons")
-		//("synapses,m", po::value<unsigned>()->default_value(1000), "number of synapses per neuron")
 		("duration,t", po::value<unsigned>()->default_value(1000), "duration of simulation (ms)")
 		("stdp", po::value<unsigned>()->default_value(0), "STDP application period (ms). If 0 do not use STDP")
 		("verbose", po::value<unsigned>()->default_value(0), "Set verbosity level")
 		("output-file,o", po::value<std::string>(), "output file for firing data")
 		("list-devices", "print the available simulation devices")
+		("benchmark", "report performance results instead of returning firing")
 	;
 
 	return desc;

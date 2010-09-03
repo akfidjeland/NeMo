@@ -328,6 +328,7 @@ main(int argc, char* argv[])
 	unsigned stdp = vm["stdp"].as<unsigned>();
 	unsigned duration = vm["duration"].as<unsigned>();
 	unsigned verbose = vm["verbose"].as<unsigned>();
+	bool runBenchmark = vm.count("benchmark");
 
 	assert(sigma >= PATCH_WIDTH/2);
 
@@ -353,9 +354,12 @@ main(int argc, char* argv[])
 		LOG(verbose, "Creating simulation\n");
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 		LOG(verbose, "Running simulation");
-		// benchmark(sim, pcount*PATCH_SIZE, m);
-		//simulate(sim, 1000, stdp);
-		simulate(sim.get(), duration, stdp, out);
+
+		if(runBenchmark) {
+			benchmark(sim.get(), pcount*PATCH_SIZE, m, stdp);
+		} else {
+			simulate(sim.get(), duration, stdp, out);
+		}
 		LOG(verbose, "Simulation complete");
 		return 0;
 	} catch(std::runtime_error& e) {
