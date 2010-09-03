@@ -54,6 +54,8 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 				const std::vector<unsigned>& fstim = std::vector<unsigned>(),
 				const std::vector<float>& istim = std::vector<float>()) = 0;
 
+		const std::vector<unsigned>& step2() { return step(); }
+
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *
 		 * \param reward
