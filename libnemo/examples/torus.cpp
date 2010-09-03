@@ -323,7 +323,7 @@ main(int argc, char* argv[])
 	po::variables_map vm = processOptions(argc, argv, desc);
 
 	unsigned pcount = vm["pcount"].as<unsigned>();
-	unsigned sigma = vm["variance"].as<unsigned>();
+	unsigned sigma = vm["sigma"].as<unsigned>();
 	unsigned m = vm["synapses"].as<unsigned>();
 	unsigned stdp = vm["stdp"].as<unsigned>();
 	unsigned duration = vm["duration"].as<unsigned>();
