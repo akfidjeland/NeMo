@@ -80,7 +80,7 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		backend_t backend() const { return m_backend; }
 
 		void setBackendDescription(const std::string& descr) { m_backendDescription = descr; }
-		const std::string& backendDescription() const { return m_backendDescription; }
+		std::string backendDescription() const { return m_backendDescription; }
 
 	private:
 

@@ -140,9 +140,7 @@ Configuration::cpuThreadCount() const
 
 
 
-
-
-const std::string&
+std::string
 Configuration::backendDescription() const
 {
 	return m_impl->backendDescription();
