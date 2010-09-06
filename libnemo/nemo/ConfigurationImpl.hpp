@@ -51,11 +51,6 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		void setCudaPartitionSize(unsigned ps) { m_cudaPartitionSize = ps; }
 		unsigned cudaPartitionSize() const { return m_cudaPartitionSize; }
 
-		/*! Set the size of the firing buffer such that it can contain a fixed
-		 * number of \a cycles worth of firing data before overflowing. */
-		void setCudaFiringBufferLength(unsigned cycles) { m_cudaFiringBufferLength = cycles; }
-		unsigned cudaFiringBufferLength() const { return m_cudaFiringBufferLength; }
-
 		void setCudaDevice(unsigned device) { m_cudaDevice = device; }
 		unsigned cudaDevice() const { return m_cudaDevice; }
 
@@ -95,7 +90,6 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		/* CUDA-specific */
 		unsigned m_cudaPartitionSize;
-		unsigned m_cudaFiringBufferLength; // in cycles
 
 		unsigned m_cudaDevice;
 
@@ -115,7 +109,6 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 			ar & m_fractionalBits;
 			ar & m_cpuThreadCount;
 			ar & m_cudaPartitionSize;
-			ar & m_cudaFiringBufferLength;
 			ar & m_backend;
 			ar & m_backendDescription;
 		}

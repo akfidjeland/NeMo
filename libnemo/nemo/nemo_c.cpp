@@ -345,25 +345,11 @@ nemo_set_cpu_backend(nemo_configuration_t conf, int threadCount)
 }
 
 
+
 nemo_status_t
 nemo_cpu_thread_count(nemo_configuration_t conf, int* threadCount)
 {
 	CATCH(Configuration, conf, cpuThreadCount(), *threadCount);
-}
-
-
-nemo_status_t
-nemo_set_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned cycles)
-{
-	CATCH_(Configuration, conf, setCudaFiringBufferLength(cycles));
-}
-
-
-
-nemo_status_t
-nemo_cuda_firing_buffer_length(nemo_configuration_t conf, unsigned* cycles)
-{
-	CATCH(Configuration, conf, cudaFiringBufferLength(), *cycles);
 }
 
 

@@ -45,8 +45,6 @@ class Simulation : public nemo::SimulationBackend
 
 		/* CONFIGURATION */
 
-		unsigned getFiringBufferLength() const { return m_firingOutput.bufferLength(); }
-
 		unsigned getFractionalBits() const;
 
 		/* NETWORK SIMULATION */

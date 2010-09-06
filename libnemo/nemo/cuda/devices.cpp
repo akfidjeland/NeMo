@@ -214,7 +214,6 @@ DeviceMap::setConfiguration(ConfigurationImpl& conf, int device) const // local 
 	}
 
 	conf.setCudaPartitionSize(MAX_PARTITION_SIZE);
-	conf.setCudaFiringBufferLength(FiringOutput::defaultBufferLength());
 }
 
 

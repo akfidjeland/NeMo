@@ -33,9 +33,6 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 
 		virtual ~SimulationBackend();
 
-		/*! \copydoc nemo::Simulation::getFiringBufferLength */
-		virtual unsigned getFiringBufferLength() const = 0;
-
 		virtual unsigned getFractionalBits() const = 0;
 
 		/*! Set firing stimulus for the next simulation step.

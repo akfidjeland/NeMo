@@ -513,33 +513,6 @@ setCudaBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
-setCudaFiringBufferLength(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 0);
-    checkNemoStatus( 
-            nemo_set_cuda_firing_buffer_length( 
-                    getConfiguration(prhs, 1), 
-                    scalar<unsigned,uint32_t>(prhs[2]) 
-            ) 
-    );
-}
-
-
-void
-cudaFiringBufferLength(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 0);
-    checkOutputCount(nlhs, 1);
-    unsigned milliseconds;
-    checkNemoStatus( 
-            nemo_cuda_firing_buffer_length(getConfiguration(prhs, 1), &milliseconds) 
-    );
-    returnScalar<unsigned, uint32_t>(plhs, 0, milliseconds);
-}
-
-
-void
 setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 4);
@@ -560,7 +533,7 @@ setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
-#define FN_COUNT 23
+#define FN_COUNT 21
 
 fn_ptr fn_arr[FN_COUNT] = {
 	newNetwork,
@@ -583,8 +556,6 @@ fn_ptr fn_arr[FN_COUNT] = {
 	deleteConfiguration,
 	setCpuBackend,
 	setCudaBackend,
-	setCudaFiringBufferLength,
-	cudaFiringBufferLength,
 	setStdpFunction};
 
 /* AUTO-GENERATED CODE END */

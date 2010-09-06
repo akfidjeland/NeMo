@@ -5,8 +5,6 @@
 %     nemoConfiguration (constructor)
 %     setCpuBackend
 %     setCudaBackend
-%     setCudaFiringBufferLength
-%     cudaFiringBufferLength
 %     setStdpFunction
 %   
 classdef nemoConfiguration < handle
@@ -62,34 +60,6 @@ classdef nemoConfiguration < handle
             nemo_mex(uint32(19), obj.id, int32(deviceNumber));
         end
 
-        function setCudaFiringBufferLength(obj, milliseconds)
-        % setCudaFiringBufferLength - 
-        %  
-        % Synopsis:
-        %   setCudaFiringBufferLength(milliseconds)
-        %  
-        % Inputs:
-        %   milliseconds -
-        %    
-        % Set the size of the firing buffer such that it can contain a fixed
-        % number of cycles worth of firing before overflowing 
-            nemo_mex(uint32(20), obj.id, uint32(milliseconds));
-        end
-
-        function milliseconds = cudaFiringBufferLength(obj)
-        % cudaFiringBufferLength - 
-        %  
-        % Synopsis:
-        %   milliseconds = cudaFiringBufferLength()
-        %  
-        % Outputs:
-        %   milliseconds -
-        %             Number of milliseconds the simulation is guaranteed to be able to
-        %             run before overflowing firing buffer
-        %     
-            milliseconds = nemo_mex(uint32(21), obj.id);
-        end
-
         function setStdpFunction(obj, prefire, postfire, minWeight, maxWeight)
         % setStdpFunction - Enable STDP and set the global STDP function
         %  
@@ -112,7 +82,7 @@ classdef nemoConfiguration < handle
         % The STDP function is specified by providing the values sampled at
         % integer cycles within the STDP window. 
             nemo_mex(...
-                    uint32(22),...
+                    uint32(20),...
                     obj.id,...
                     double(prefire),...
                     double(postfire),...

@@ -102,19 +102,6 @@ nemo_status_t
 nemo_cpu_thread_count(nemo_configuration_t conf, int* thread_count);
 
 
-/*! \copydoc nemo::Configuration::setCudaFiringBufferLength */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_set_cuda_firing_buffer_length(nemo_configuration_t, unsigned cycles);
-
-
-/*! \copydoc nemo::Configuration::cudaFiringBufferLength */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_cuda_firing_buffer_length(nemo_configuration_t, unsigned* cycles);
-
-
-
 /*! \copydoc nemo::Configuration::setCudaBackend */
 NEMO_DLL_PUBLIC
 nemo_status_t

@@ -58,11 +58,6 @@ class NEMO_DLL_PUBLIC Configuration
 		void setCudaPartitionSize(unsigned ps); 
 		unsigned cudaPartitionSize() const;
 
-		/*! Set the size of the firing buffer such that it can contain a fixed
-		 * number of \a cycles worth of firing data before overflowing. */
-		void setCudaFiringBufferLength(unsigned cycles); 
-		unsigned cudaFiringBufferLength() const;
-
 		void setStdpFunction(
 				const std::vector<float>& prefire,
 				const std::vector<float>& postfire,

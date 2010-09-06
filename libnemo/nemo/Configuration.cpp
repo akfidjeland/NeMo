@@ -66,19 +66,6 @@ Configuration::cudaPartitionSize() const
 }
 
 
-void
-Configuration::setCudaFiringBufferLength(unsigned cycles)
-{
-	m_impl->setCudaFiringBufferLength(cycles);
-}
-
-
-unsigned
-Configuration::cudaFiringBufferLength() const
-{
-	return m_impl->cudaFiringBufferLength();
-}
-
 
 void
 Configuration::setStdpFunction(

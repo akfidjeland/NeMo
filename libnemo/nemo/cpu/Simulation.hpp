@@ -35,10 +35,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		unsigned getFractionalBits() const;
 
-		// there's no real limit here, but return something anyway
-		/*! \copydoc nemo::Simulation::getFiringBufferLength */
-		unsigned getFiringBufferLength() const { return 10000; }
-
 		/*! \copydoc nemo::SimulationBackend::setFiringStimulus */
 		void setFiringStimulus(const std::vector<unsigned>& fstim);
 

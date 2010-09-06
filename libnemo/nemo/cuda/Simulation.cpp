@@ -49,7 +49,7 @@ Simulation::Simulation(
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
 	//! \todo allow external users to directly use the host buffer
 	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true),
-	m_firingOutput(m_mapper, conf.cudaFiringBufferLength()),
+	m_firingOutput(m_mapper),
 	m_cycleCounters(m_mapper.partitionCount(), conf.stdpFunction()),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_pitch32(0),
@@ -225,7 +225,6 @@ void
 Simulation::step()
 {
 	m_timer.step();
-	uint32_t* d_fout = m_firingOutput.step();
 	initLog();
 	::stepSimulation(
 			m_mapper.partitionCount(),
@@ -237,7 +236,7 @@ Simulation::step()
 			m_thalamicInput.deviceSigma(),
 			md_fstim,
 			md_istim,
-			d_fout,
+			m_firingOutput.d_buffer(),
 			m_cm.d_fcm(),
 			m_cm.outgoingCount(),
 			m_cm.outgoing(),
@@ -245,6 +244,8 @@ Simulation::step()
 			m_cm.incoming(),
 			m_cycleCounters.data(),
 			m_cycleCounters.pitch());
+
+	m_firingOutput.sync();
 
 	/* Must clear stimulus pointers in case the low-level interface is used and
 	 * the user does not provide any fresh stimulus */

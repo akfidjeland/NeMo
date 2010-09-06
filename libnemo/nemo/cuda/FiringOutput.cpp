@@ -9,7 +9,6 @@
 
 #include <string.h>
 
-#include "exception.hpp"
 #include "FiringOutput.hpp"
 #include "bitvector.cu_h"
 #include "device_memory.hpp"
@@ -17,17 +16,14 @@
 namespace nemo {
 	namespace cuda {
 
-FiringOutput::FiringOutput(
-		const Mapper& mapper,
-		unsigned maxReadPeriod):
+FiringOutput::FiringOutput(const Mapper& mapper):
 	m_pitch(0),
 	m_bufferedCycles(0),
-	m_maxReadPeriod(maxReadPeriod),
 	md_allocated(0),
 	m_mapper(mapper)
 {
 	size_t width = BV_BYTE_PITCH;
-	size_t height = m_mapper.partitionCount() * m_maxReadPeriod;
+	size_t height = m_mapper.partitionCount();
 
 	size_t bytePitch;
 	uint32_t* d_buffer;
@@ -46,17 +42,13 @@ FiringOutput::FiringOutput(
 
 
 
-uint32_t*
-FiringOutput::step()
+void
+FiringOutput::sync()
 {
-	uint32_t* ret = md_buffer.get() + m_bufferedCycles * m_mapper.partitionCount() * m_pitch;
+	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
+				m_mapper.partitionCount() * m_pitch * sizeof(uint32_t));
+	populateSparse(m_bufferedCycles, mh_buffer.get(), m_cycles, m_neuronIdx);
 	m_bufferedCycles += 1;
-	if(m_bufferedCycles > m_maxReadPeriod) {
-		m_bufferedCycles = 0;
-		ret = md_buffer.get();
-		throw nemo::exception(NEMO_BUFFER_OVERFLOW, "Firing buffer overflow");
-	}
-	return ret;
 }
 
 
@@ -66,17 +58,14 @@ FiringOutput::readFiring(
 		const std::vector<unsigned>** cycles,
 		const std::vector<unsigned>** neuronIdx)
 {
-	m_cycles.clear();
-	m_neuronIdx.clear();
-
-	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
-				m_bufferedCycles * m_mapper.partitionCount() * m_pitch * sizeof(uint32_t));
-	populateSparse(m_bufferedCycles, mh_buffer.get(), m_cycles, m_neuronIdx);
-
-	*cycles = &m_cycles;
-	*neuronIdx = &m_neuronIdx;
+	m_cyclesOut = m_cycles;
+	m_neuronIdxOut = m_neuronIdx;
+	*cycles = &m_cyclesOut;
+	*neuronIdx = &m_neuronIdxOut;
 	unsigned readCycles = m_bufferedCycles;
 	m_bufferedCycles = 0;
+	m_cycles.clear();
+	m_neuronIdx.clear();
 	return readCycles;
 }
 
@@ -84,32 +73,31 @@ FiringOutput::readFiring(
 
 void
 FiringOutput::populateSparse(
-		unsigned bufferedCycles,
+		unsigned cycle,
 		const uint32_t* hostBuffer,
 		std::vector<unsigned>& firingCycle,
 		std::vector<unsigned>& neuronIdx)
 {
 	unsigned pcount = m_mapper.partitionCount();
-	for(unsigned cycle=0; cycle < bufferedCycles; ++cycle) {
-		size_t cycleOffset = cycle * pcount * m_pitch;
 
-		for(size_t partition=0; partition < pcount; ++partition) {
-			size_t partitionOffset = cycleOffset + partition * m_pitch;
+	for(size_t partition=0; partition < pcount; ++partition) {
 
-			for(size_t nword=0; nword < m_pitch; ++nword) {
+		size_t partitionOffset = partition * m_pitch;
 
-				/* Within a partition we might go into the padding part of the
-				 * firing buffer. We rely on the device not leaving any garbage
-				 * in the unused entries */
-				uint32_t word = hostBuffer[partitionOffset + nword];
+		for(size_t nword=0; nword < m_pitch; ++nword) {
 
-				//! \todo skip loop if nothing is set
-				for(size_t nbit=0; nbit < 32; ++nbit) {
-					bool fired = (word & (1 << nbit)) != 0;
-					if(fired) {
-						firingCycle.push_back(cycle);	
-						neuronIdx.push_back(m_mapper.hostIdx(partition, nword*32 + nbit));
-					}
+			/* Within a partition we might go into the padding part of the
+			 * firing buffer. We rely on the device not leaving any garbage
+			 * in the unused entries */
+			uint32_t word = hostBuffer[partitionOffset + nword];
+			if(word == 0)
+				continue;
+
+			for(size_t nbit=0; nbit < 32; ++nbit) {
+				bool fired = (word & (1 << nbit)) != 0;
+				if(fired) {
+					firingCycle.push_back(cycle);
+					neuronIdx.push_back(m_mapper.hostIdx(partition, nword*32 + nbit));
 				}
 			}
 		}
@@ -121,6 +109,8 @@ FiringOutput::populateSparse(
 void
 FiringOutput::flushBuffer()
 {
+	m_cycles.clear();
+	m_neuronIdx.clear();
 	m_bufferedCycles = 0;
 }
 

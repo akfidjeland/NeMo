@@ -38,9 +38,6 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 
 		virtual ~Simulation();
 
-		/*! \return the number of cycles the firing buffer can hold */
-		virtual unsigned getFiringBufferLength() const = 0;
-
 		/*! Run simulation for a single cycle (1ms)
 		 *
 		 * \param fstim
