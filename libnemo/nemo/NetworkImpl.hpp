@@ -72,8 +72,12 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 				std::vector<float>& weights,
 				std::vector<unsigned char>& plastic) const;
 
-		nidx_t minNeuronIndex() const { return m_minIdx; }
-		nidx_t maxNeuronIndex() const { return m_maxIdx; }
+		/* pre: network is not empty */
+		nidx_t minNeuronIndex() const;
+
+		/* pre: network is not empty */
+		nidx_t maxNeuronIndex() const;
+
 		delay_t maxDelay() const { return m_maxDelay; }
 		weight_t maxWeight() const { return m_maxWeight; }
 		weight_t minWeight() const { return m_minWeight; }

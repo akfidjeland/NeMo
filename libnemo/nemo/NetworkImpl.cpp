@@ -195,4 +195,26 @@ NetworkImpl::neuronCount() const
 }
 
 
+nidx_t
+NetworkImpl::minNeuronIndex() const
+{
+	if(neuronCount() == 0) {
+		throw nemo::exception(NEMO_LOGIC_ERROR,
+				"minimum neuron index requested for empty network");
+	}
+	return m_minIdx;
+}
+
+
+nidx_t
+NetworkImpl::maxNeuronIndex() const
+{
+	if(neuronCount() == 0) {
+		throw nemo::exception(NEMO_LOGIC_ERROR,
+				"maximum neuron index requested for empty network");
+	}
+	return m_maxIdx;
+}
+
+
 }
