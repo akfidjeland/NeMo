@@ -18,6 +18,7 @@ for n=0:799
 	net.addNeuron(n, a, b, c, d, u, v, sigma);
 
 	% TODO: check that direction does not matter
+	sources = ones(1, 1000) * n;
 	targets = 0:999;
 	delays = ones(1, 1000);
 	weights = 0.5 * rand(1, 1000);
@@ -25,7 +26,7 @@ for n=0:799
 
 	% Adding groups of synapses
 	% These can also be added individually using addSynapse
-	net.addSynapses(n, targets, delays, weights, plastic);
+	net.addSynapses(sources, targets, delays, weights, plastic);
 end;
 
 
@@ -41,11 +42,12 @@ for n=800:999
 	sigma = 2 * randn;
 	net.addNeuron(n, a, b, c, d, u, v, sigma);
 
+	sources = ones(1, 1000) * n;
 	targets = 0:999;
 	delays = ones(1, 1000);
 	weights = -rand(1, 1000);
 	plastic = false(1, 1000);
-	net.addSynapses(n, targets, delays, weights, plastic);
+	net.addSynapses(sources, targets, delays, weights, plastic);
 end;
 
 
