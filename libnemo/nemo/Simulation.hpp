@@ -46,9 +46,11 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 * \param istim
 		 * 		Optional per-neuron vector specifying externally provided input
 		 * 		current for this cycle.
+		 * \return
+		 * 		List of neurons which fired this cycle. The referenced data is
+		 * 		valid until the next call to step.
 		 */
-		virtual void step(
-				// fstim is optional due to low-level overloaded step()
+		virtual const std::vector<unsigned>& step(
 				const std::vector<unsigned>& fstim = std::vector<unsigned>(),
 				const std::vector<float>& istim = std::vector<float>()) = 0;
 
@@ -58,43 +60,6 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 * 		Multiplier for the accumulated weight change
 		 */
 		virtual void applyStdp(float reward) = 0;
-
-		/*! \name Simulation (firing)
-		 *
-		 * The indices of the fired neurons are buffered on the device, and can
-		 * be read back at run-time. The desired size of the buffer is
-		 * specified when constructing the network. Each read empties the
-		 * buffer. To avoid overflow if the firing data is not needed, call
-		 * \ref flushFiringBuffer periodically.
-		 *
-		 * \{ */
-
-		//! \todo return pairs instead here
-		/*! Read all firing data buffered on the device since the previous
-		 * call to this function (or the start of simulation if this is the
-		 * first call). The return vectors are valid until the next call to
-		 * this function.
-		 *
-		 * \param cycles The cycle numbers during which firing occured
-		 * \param nidx The corresponding neuron indices
-		 *
-		 * \return
-		 *		Total number of cycles for which we return firing. The caller
-		 *		would most likely already know what this should be, so can use
-		 *		this for sanity checking.
-		 */
-		virtual unsigned readFiring(
-				const std::vector<unsigned>** cycles,
-				const std::vector<unsigned>** nidx) = 0;
-
-		/*! If the user is not reading back firing, the firing output buffers
-		 * should be flushed to avoid buffer overflow. The overflow is not
-		 * harmful in that no memory accesses take place outside the buffer,
-		 * but an overflow may result in later calls to readFiring returning
-		 * non-sensical results. */
-		virtual void flushFiringBuffer() = 0;
-
-		/* \} */ // end simulation (firing)
 
 		/*! \name Simulation (queries)
 		 *

@@ -14,6 +14,7 @@
 
 #include "Simulation.hpp"
 #include "internal_types.h"
+#include "FiringBuffer.hpp"
 
 namespace nemo {
 
@@ -64,20 +65,16 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		virtual void step() = 0;
 
 		/*! \copydoc nemo::Simulation::step */
-		virtual void step(
+		virtual const std::vector<unsigned>& step(
 				const std::vector<unsigned>& fstim,
 				const std::vector<float>& istim);
 
 		/*! \copydoc nemo::Simulation::applyStdp */
 		virtual void applyStdp(float reward) = 0;
 
-		/*! \copydoc nemo::Simulation::readFiring */
-		virtual unsigned readFiring(
-				const std::vector<unsigned>** cycles,
-				const std::vector<unsigned>** nidx) = 0;
-
-		/*! \copydoc nemo::Simulation::flushFiringBuffer */
-		virtual void flushFiringBuffer() = 0;
+		/*! \return tuple oldest buffered cycle's worth of firing data and the
+		 * associated cycle number. */
+		virtual FiredList readFiring() = 0;
 
 		/*! \copydoc nemo::Simulation::getSynapses */
 		virtual void getSynapses(unsigned sourceNeuron,

@@ -187,8 +187,6 @@ testFiringStimulus(backend_t backend)
 
 	for(unsigned t = 0; t < cycles; ++t) {
 		std::vector<unsigned> fstim;
-		const std::vector<unsigned>* fired;
-		const std::vector<unsigned>* cycles;
 
 		for(unsigned n = 0; n < ncount; ++n) {
 			if(random() < p_fire) {
@@ -196,11 +194,10 @@ testFiringStimulus(backend_t backend)
 			}
 		}
 
-		sim->step(fstim);
-		sim->readFiring(&cycles, &fired);
+		const std::vector<unsigned>& fired = sim->step(fstim);
 
 		/* The neurons which just fired should be exactly the ones we just stimulated */
-		sortAndCompare(fstim, *fired);
+		sortAndCompare(fstim, fired);
 	}
 }
 
@@ -252,19 +249,13 @@ runRing(unsigned ncount, nemo::Configuration conf)
 	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
-	const std::vector<unsigned>* cycles;
-	const std::vector<unsigned>* fired;
-
 	/* Simulate a single neuron to get the ring going */
 	sim->step(std::vector<unsigned>(1,0));
-	sim->flushFiringBuffer();
 
 	for(unsigned ms=1; ms < duration; ++ms) {
-		sim->step();
-		sim->readFiring(&cycles, &fired);
-		BOOST_CHECK_EQUAL(cycles->size(), fired->size());
-		BOOST_CHECK_EQUAL(fired->size(), 1U);
-		BOOST_REQUIRE_EQUAL(fired->front(), ms % ncount);
+		const std::vector<unsigned>& fired = sim->step();
+		BOOST_CHECK_EQUAL(fired.size(), 1U);
+		BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
 	}
 }
 

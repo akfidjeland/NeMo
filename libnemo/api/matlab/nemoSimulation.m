@@ -11,8 +11,6 @@
 %     nemoSimulation (constructor)
 %     step
 %     applyStdp
-%     readFiring
-%     flushFiringBuffer
 %     getSynapses
 %     elapsedWallclock
 %     elapsedSimulation
@@ -42,17 +40,20 @@ classdef nemoSimulation < handle
         % step - run simulation for a single cycle (1ms)
         %
         % Synpopsis:
-        %	step()
-        %	step(fstim)
+        %	fired = step()
+        %	fired = step(fstim)
         %
         % Inputs:
         % 	 fstim - An optional list of neurons, which will be forced to fire this cycle
+        %
+        % Output:
+        %	fired - A list of the neurons which fired this cycle
         
-        function step(sim, fstim)
+        function fired = step(sim, fstim)
             if nargin < 2
-            	nemo_mex(uint32(8), sim.id, uint32(zeros(1, 0)));
+                fired = nemo_mex(uint32(8), sim.id, uint32(zeros(1, 0)));
             else
-            	nemo_mex(uint32(8), sim.id, uint32(fstim));
+                fired = nemo_mex(uint32(8), sim.id, uint32(fstim));
             end
         end
 
@@ -67,35 +68,6 @@ classdef nemoSimulation < handle
         %   reward  - Multiplier for the accumulated weight change
         %     
             nemo_mex(uint32(9), obj.id, double(reward));
-        end
-
-        function [cycles, nidx] = readFiring(obj)
-        % readFiring - read all buffered firing data
-        %  
-        % Synopsis:
-        %   [cycles, nidx] = readFiring()
-        %  
-        % Outputs:
-        %   cycles  - Cycles during which firings took place
-        %   nidx    - Neurons which fired
-        %    
-        % Firing data is buffered in the simulation while the simulation is
-        % running. readFiring reads all the data that has been buffered since
-        % the previous call to this function (or the start of the simulation
-        % if this is the first call). The return vectors are valid until the
-        % next call to this function. 
-            [cycles, nidx] = nemo_mex(uint32(10), obj.id);
-        end
-
-        function flushFiringBuffer(obj)
-        % flushFiringBuffer - 
-        %  
-        % Synopsis:
-        %   flushFiringBuffer()
-        %  
-        % If the user is not reading back firing, the firing output buffers
-        % should be flushed to avoid buffer overflow. 
-            nemo_mex(uint32(11), obj.id);
         end
 
         function [targets, delays, weights, plastic] = getSynapses(obj, source)
@@ -117,7 +89,7 @@ classdef nemoSimulation < handle
         % certainly differ from the order in which they were specified during
         % network construction. However, each call to getSynapses should
         % return the synapses in the same order. 
-            [targets, delays, weights, plastic] = nemo_mex(uint32(12), obj.id, uint32(source));
+            [targets, delays, weights, plastic] = nemo_mex(uint32(10), obj.id, uint32(source));
         end
 
         function elapsed = elapsedWallclock(obj)
@@ -130,7 +102,7 @@ classdef nemoSimulation < handle
         %   elapsed - Return number of milliseconds of wall-clock time elapsed
         %             since first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(13), obj.id);
+            elapsed = nemo_mex(uint32(11), obj.id);
         end
 
         function elapsed = elapsedSimulation(obj)
@@ -143,7 +115,7 @@ classdef nemoSimulation < handle
         %   elapsed - Return number of milliseconds of simulation time elapsed
         %             since first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(14), obj.id);
+            elapsed = nemo_mex(uint32(12), obj.id);
         end
 
         function resetTimer(obj)
@@ -152,7 +124,7 @@ classdef nemoSimulation < handle
         % Synopsis:
         %   resetTimer()
         %   
-            nemo_mex(uint32(15), obj.id);
+            nemo_mex(uint32(13), obj.id);
         end
     end
 end

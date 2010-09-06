@@ -60,14 +60,15 @@ postfire = -0.08 * exp(-(0:20)./20);
 conf.setStdpFunction(prefire, postfire, -1.0, 1.0);
 
 
-% Run for 10s with STDP enabled
+% Run for 5s with STDP enabled
 sim = nemoSimulation(net, conf);
-for s=1:5
-	for t=1:1000
-		sim.step;
+for s=0:4
+	for ms=1:1000
+		fired = sim.step;
+		t = s*1000 + ms;
+		disp([ones(size(fired')) * t, fired'])
 	end
 	sim.applyStdp(1.0);
-	[cycles, neurons] = sim.readFiring()
 end
 elapsed = sim.elapsedWallclock
 

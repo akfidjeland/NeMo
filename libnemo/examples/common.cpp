@@ -25,7 +25,6 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 		if(stdp && t % stdp == 0) {
 			sim->applyStdp(1.0);
 		}
-		sim->flushFiringBuffer();
 	}
 #ifdef NEMO_TIMING_ENABLED
 	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
@@ -45,7 +44,6 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 		if(stdp && t % stdp == 0) {
 			sim->applyStdp(1.0);
 		}
-		sim->flushFiringBuffer();
 	}
 #ifdef NEMO_TIMING_ENABLED
 	long int elapsedTiming = sim->elapsedWallclock();
@@ -54,22 +52,17 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 #endif
 	std::cout << std::endl;
 
-	/* Dummy buffers for firing data */
-	const std::vector<unsigned>* cycles;
-	const std::vector<unsigned>* fired;
-
 	std::cout << "Running simulation (gathering performance data)...";
 	unsigned long nfired = 0;
 	for(unsigned s=0; s < seconds; ++s) {
 		std::cout << s << " ";
 		for(unsigned ms=0; ms<1000; ++ms, ++t) {
-			sim->step();
+			const std::vector<unsigned>& fired = sim->step();
+			nfired += fired.size();
 		}
 		if(stdp && t % stdp == 0) {
 			sim->applyStdp(1.0);
 		}
-		sim->readFiring(&cycles, &fired);
-		nfired += fired->size();
 	}
 #ifdef NEMO_TIMING_ENABLED
 	long int elapsedData = sim->elapsedWallclock();
@@ -103,32 +96,20 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 }
 
 
-void
-flushFiring(nemo::Simulation* sim, std::ostream& out)
-{
-	const std::vector<unsigned>* cycles;
-	const std::vector<unsigned>* fired;
-
-	sim->readFiring(&cycles, &fired);
-	for(size_t i = 0; i < cycles->size(); ++i) {
-		out << cycles->at(i) << " " << fired->at(i) << "\n";
-	}
-}
 
 void
 simulate(nemo::Simulation* sim, unsigned time_ms, unsigned stdp, std::ostream& out)
 {
 	for(unsigned ms=0; ms<time_ms; ) {
-		sim->step();
-		ms += 1;
-		if(ms % 1000 == 0) {
-			flushFiring(sim, out);
+		const std::vector<unsigned>& fired = sim->step();
+		for(std::vector<unsigned>::const_iterator fi = fired.begin(); fi != fired.end(); ++fi) {
+			out << ms << " " << *fi << "\n";
 		}
+		ms += 1;
 		if(stdp != 0 && ms % stdp == 0) {
 			sim->applyStdp(1.0);
 		}
 	}
-	flushFiring(sim, out);
 }
 
 

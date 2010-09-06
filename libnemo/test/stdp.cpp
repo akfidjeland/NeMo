@@ -217,7 +217,6 @@ testStdp(backend_t backend, bool noiseConnections)
 		for(unsigned ms = 0; ms < 100; ++ms) {
 			std::vector<unsigned> fstim;
 			sim->step(stimulus(ms, fstim));
-			sim->flushFiringBuffer();
 		}
 		/* During the preceding epoch each synapse should have
 		 * been updated according to the STDP rule exactly

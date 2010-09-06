@@ -32,7 +32,6 @@ namespace nemo {
 
 	class Simulation;
 	class Network;
-	class HardwareConfiguration;
 
 	namespace mpi {
 		class Master;
@@ -91,7 +90,6 @@ class NEMO_DLL_PUBLIC Configuration
 		/*! \return the number of threads used by the CPU backend or -1 if CPU
 		 * is not the selected backend. */
 		int cpuThreadCount() const;
-
 
 		/*! \return description of the chosen backend */
 		std::string backendDescription() const;

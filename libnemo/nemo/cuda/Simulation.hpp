@@ -47,13 +47,19 @@ class Simulation : public nemo::SimulationBackend
 
 		unsigned getFractionalBits() const;
 
-		/* NETWORK SIMULATION */
+		/* SIMULATION */
 
+		/*! \copydoc nemo::SimulationBackend::setFiringStimulus */
 		void setFiringStimulus(const std::vector<unsigned>& nidx);
 
+		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
 		void setCurrentStimulus(const std::vector<fix_t>& current);
 
+		/*! \copydoc nemo::SimulationBackend::step */
 		void step();
+
+		/*! \copydoc nemo::SimulationBackend::readFiring */
+		FiredList readFiring();
 
 		void applyStdp(float reward);
 
@@ -62,10 +68,6 @@ class Simulation : public nemo::SimulationBackend
 				const std::vector<unsigned>** delays,
 				const std::vector<float>** weights,
 				const std::vector<unsigned char>** plastic);
-
-		unsigned readFiring(const std::vector<unsigned>** cycles, const std::vector<unsigned>** nidx);
-
-		void flushFiringBuffer();
 
 		void finishSimulation();
 

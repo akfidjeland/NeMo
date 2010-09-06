@@ -30,15 +30,16 @@
 
 #define NEMO_INVALID_INPUT 6
 #define NEMO_BUFFER_OVERFLOW 7
-#define NEMO_LOGIC_ERROR 8
-#define NEMO_ALLOCATION_ERROR 9
+#define NEMO_BUFFER_UNDERFLOW 8
+#define NEMO_LOGIC_ERROR 9
+#define NEMO_ALLOCATION_ERROR 10
 
-#define NEMO_MPI_ERROR 10
+#define NEMO_MPI_ERROR 11
 
 /*! Dynamic library loading error */
-#define NEMO_DL_ERROR 11
+#define NEMO_DL_ERROR 12
 
-#define NEMO_UNKNOWN_ERROR 12
+#define NEMO_UNKNOWN_ERROR 13
 
 
 enum {
@@ -47,5 +48,6 @@ enum {
 };
 
 typedef unsigned backend_t;
+typedef unsigned long long cycle_t;
 
 #endif

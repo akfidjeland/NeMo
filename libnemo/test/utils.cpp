@@ -13,33 +13,24 @@ runSimulation(
 		std::vector<unsigned>* fcycles,
 		std::vector<unsigned>* fnidx,
 		bool stdp,
-		std::vector<unsigned> initFiring)
+		std::vector<unsigned> initStimulus)
 {
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
 	fcycles->clear();
 	fnidx->clear();
 
+	std::vector<unsigned> noStimulus;
+
 	//! todo vary the step size between reads to firing buffer
 	
 	for(unsigned s = 0; s < seconds; ++s) {
 		for(unsigned ms = 0; ms < 1000; ++ms) {
 
-			if(s == 0 && ms == 0) {
-				sim->step(initFiring);
-			} else {
-				sim->step();
-			}
+			const std::vector<unsigned>& fired = sim->step((s == 0 && ms == 0) ? initStimulus : noStimulus);
 
-			//! \todo could modify API here to make this nicer
-			const std::vector<unsigned>* cycles_tmp;
-			const std::vector<unsigned>* nidx_tmp;
-
-			sim->readFiring(&cycles_tmp, &nidx_tmp);
-
-			// push data back onto local buffers
-			std::copy(cycles_tmp->begin(), cycles_tmp->end(), back_inserter(*fcycles));
-			std::copy(nidx_tmp->begin(), nidx_tmp->end(), back_inserter(*fnidx));
+			std::copy(fired.begin(), fired.end(), back_inserter(*fnidx));
+			std::fill_n(back_inserter(*fcycles), fired.size(), s*1000 + ms);
 		}
 		if(stdp) {
 			sim->applyStdp(1.0);

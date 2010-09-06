@@ -233,10 +233,29 @@ nemo_get_synapses(nemo_simulation_t ptr,
 
 
 
-nemo_status_t
-nemo_step(nemo_simulation_t sim, unsigned fstimIdx[], size_t fstimCount)
+
+void
+step(nemo::Simulation* sim, const std::vector<unsigned>& fstim, unsigned *fired[], size_t* fired_len)
 {
-	CATCH_(Simulation, sim, step(std::vector<unsigned>(fstimIdx, fstimIdx + fstimCount)));
+	const std::vector<unsigned>& fired_ = sim->step(fstim);
+	if(fired != NULL) {
+		*fired = fired_.empty() ? NULL : const_cast<unsigned*>(&fired_[0]);
+	}
+	if(fired_len != NULL) {
+		*fired_len = fired_.size();
+	}
+}
+
+
+
+nemo_status_t
+nemo_step(nemo_simulation_t sim_ptr,
+		unsigned fstim[], size_t fstim_count,
+		unsigned* fired[], size_t* fired_count)
+{
+	nemo::Simulation* sim = static_cast<nemo::Simulation*>(sim_ptr);
+	CALL(step(sim, std::vector<unsigned>(fstim, fstim + fstim_count), fired, fired_count));
+	return g_lastCallStatus;
 }
 
 
@@ -245,39 +264,6 @@ nemo_status_t
 nemo_apply_stdp(nemo_simulation_t sim, float reward)
 {
 	CATCH_(Simulation, sim, applyStdp(reward));
-}
-
-
-
-
-nemo_status_t
-nemo_read_firing(nemo_simulation_t ptr,
-		unsigned* cycles_[],
-		unsigned* nidx_[],
-		unsigned* nfired,
-		unsigned* ncycles)
-{
-	const std::vector<unsigned>* cycles;
-	const std::vector<unsigned>* nidx;
-	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
-	CALL(*ncycles = sim->readFiring(&cycles, &nidx));
-	if(NEMO_OK == g_lastCallStatus) {
-		*cycles_ = cycles->empty() ? NULL : const_cast<unsigned*>(&(*cycles)[0]);
-		*nidx_ = nidx->empty() ? NULL : const_cast<unsigned*>(&(*nidx)[0]);
-		*nfired = cycles->size();
-		//! \todo remove assertion here
-		assert(cycles->size() == nidx->size());
-	}
-	return g_lastCallStatus;
-}
-
-
-
-
-nemo_status_t
-nemo_flush_firing_buffer(nemo_simulation_t sim)
-{
-	CATCH_(Simulation, sim, flushFiringBuffer());
 }
 
 

@@ -224,70 +224,33 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount);
 NEMO_DLL_PUBLIC
 nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_configuration_t);
 
-/*! \copydoc nemo::Network::initSimulation */
-//nemo_status_t
-//nemo_init_simulation(nemo_network_t);
 
 /*! Run simulation for a single cycle (1ms)
  *
  * Neurons can be optionally be forced to fire using the two arguments
  *
- * \param fstimIdx
+ * \param firing_stimulus
  * 		Indices of the neurons which should be forced to fire this cycle.
- * \param fstimCount
- * 		Length of fstimIdx
+ * \param firing_stimulus_count
+ * 		Length of \a firing_stimulus
+ * \param fired (output)
+ * 		Vector which fill be filled with the indices of the neurons which fired
+ * 		this cycle. Set to NULL if the firing output is ignored.
+ * \param fired_count (output)
+ * 		Number of neurons which fired this cycle, i.e. the length of \a fired.
+ * 		Set to NULL if the firing output is ignored.
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_step(nemo_simulation_t, unsigned fstimIdx[], size_t fstimCount);
+nemo_step(nemo_simulation_t,
+		unsigned firing_stimulus[], size_t firing_stimulus_count,
+		unsigned* fired[], size_t* fired_count);
 
 
 /*! \copydoc nemo::Simulation::applyStdp */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_apply_stdp(nemo_simulation_t, float reward);
-
-
-//-----------------------------------------------------------------------------
-// FIRING PROBE
-//-----------------------------------------------------------------------------
-
-/*! \name Simulation (firing)
- *
- * The indices of the fired neurons are buffered on the device, and can be read
- * back at run-time. The desired size of the buffer is specified when
- * constructing the network. Each read empties the buffer. To avoid overflow if
- * the firing data is not needed, call \ref nemo_flush_firing_buffer periodically.
- *
- * \{ */
-
-/*! Return contents of firing buffer in the output parameters.
- *
- * \param[out] cycles
- * 		Cycle numbers (relative to start of buffer) at which neurons fired
- * \param[out] nidx
- * 		Neuron indices of fired neurons
- * \param[out] nfired
- * 		Number of neurons which fired since the previous call
- * 		to \ref nemo_read_firing
- * \param[out] ncycles
- * 		Number of cycles for which firing data is returned
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_read_firing(nemo_simulation_t,
-		unsigned* cycles[],
-		unsigned* nidx[],
-		unsigned* nfired,
-		unsigned* ncycles);
-
-
-/*! \copydoc nemo::Network::flushFiringBuffer */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_flush_firing_buffer(nemo_simulation_t);
-
-/* \} */ // end firing group
 
 
 //-----------------------------------------------------------------------------

@@ -312,21 +312,6 @@ deleteSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
-readFiring(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	unsigned* cycles;
-	unsigned* nidx;
-	unsigned nfired;
-	unsigned ncycles;
-	checkNemoStatus(nemo_read_firing(getSimulation(prhs, 1), &cycles, &nidx, &nfired, &ncycles));
-	returnVector<unsigned, uint32_t>(plhs, 0, cycles, nfired);
-	returnVector<unsigned, uint32_t>(plhs, 1, nidx, nfired);
-}
-
-
-
-
-void
 addSynapses(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
 	checkInputCount(nrhs, 5);
@@ -433,9 +418,18 @@ void
 step(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 0);
+    checkOutputCount(nlhs, 1);
     std::vector<unsigned> fstim = vector<unsigned, uint32_t>(prhs[2]);
-    checkNemoStatus(nemo_step(getSimulation(prhs, 1), &fstim[0], fstim.size()));
+    unsigned* fired;
+    size_t fired_len;
+    checkNemoStatus( 
+            nemo_step( 
+                    getSimulation(prhs, 1), 
+                    &fstim[0], fstim.size(), 
+                    &fired, &fired_len 
+            ) 
+    );
+    returnVector<unsigned, uint32_t>(plhs, 0, fired, fired_len);
 }
 
 
@@ -447,15 +441,6 @@ applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkNemoStatus( 
             nemo_apply_stdp(getSimulation(prhs, 1), scalar<float,double>(prhs[2])) 
     );
-}
-
-
-void
-flushFiringBuffer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 0);
-    checkOutputCount(nlhs, 0);
-    checkNemoStatus(nemo_flush_firing_buffer(getSimulation(prhs, 1)));
 }
 
 
@@ -533,7 +518,7 @@ setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
-#define FN_COUNT 21
+#define FN_COUNT 19
 
 fn_ptr fn_arr[FN_COUNT] = {
 	newNetwork,
@@ -546,8 +531,6 @@ fn_ptr fn_arr[FN_COUNT] = {
 	deleteSimulation,
 	step,
 	applyStdp,
-	readFiring,
-	flushFiringBuffer,
 	getSynapses,
 	elapsedWallclock,
 	elapsedSimulation,

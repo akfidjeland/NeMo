@@ -307,20 +307,12 @@ Simulation::getSynapses(unsigned sn,
 
 
 
-unsigned
-Simulation::readFiring(
-		const std::vector<unsigned>** cycles,
-		const std::vector<unsigned>** nidx)
+FiredList
+Simulation::readFiring()
 {
-	return m_firingOutput.readFiring(cycles, nidx);
+	return m_firingOutput.readFiring();
 }
 
-
-void
-Simulation::flushFiringBuffer()
-{
-	m_firingOutput.flushBuffer();
-}
 
 
 void
@@ -334,12 +326,14 @@ Simulation::finishSimulation()
 }
 
 
+
 unsigned long
 Simulation::elapsedWallclock() const
 {
 	CUDA_SAFE_CALL(cudaThreadSynchronize());
 	return m_timer.elapsedWallclock();
 }
+
 
 
 unsigned long

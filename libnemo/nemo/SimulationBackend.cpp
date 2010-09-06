@@ -19,12 +19,13 @@ SimulationBackend::~SimulationBackend()
 }
 
 
-void
+const std::vector<unsigned>&
 SimulationBackend::step(const std::vector<unsigned>& fstim, const std::vector<float>& istim)
 {
 	setFiringStimulus(fstim);
 	setCurrentStimulus(istim);
 	step();
+	return readFiring().neurons;
 }
 
 

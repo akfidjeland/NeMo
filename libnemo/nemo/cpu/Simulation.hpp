@@ -18,6 +18,7 @@
 #include <nemo/internals.hpp>
 #include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/Timer.hpp>
+#include <nemo/FiringBuffer.hpp>
 #include <nemo/RNG.hpp>
 
 #include "Worker.hpp"
@@ -47,13 +48,8 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::applyStdp */
 		void applyStdp(float reward);
 
-		/*! \copydoc nemo::Simulation::readFiring */
-		unsigned readFiring(
-				const std::vector<unsigned>** cycles,
-				const std::vector<unsigned>** nidx);
-
-		/*! \copydoc nemo::Simulation::flushFiringBuffer */
-		void flushFiringBuffer();
+		/*! \copydoc nemo::SimulationBackend::readFiring */
+		FiredList readFiring();
 
 		/*! \copydoc nemo::Simulation::getSynapses */
 		void getSynapses(unsigned sourceNeuron,
@@ -125,14 +121,9 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		//! \todo may want to have one rng per neuron or at least per thread
 		std::vector<nemo::RNG> m_rng;
 
-		/* Accumulated firing history since last flush */
-		unsigned m_lastFlush;
-		std::vector<unsigned int> m_firedCycle;
-		std::vector<unsigned int> m_firedNeuron;
-		/* externally exposed copy of the same data */
-		std::vector<unsigned int> m_firedCycleExt;
-		std::vector<unsigned int> m_firedNeuronExt;
 		void setFiring();
+
+		FiringBuffer m_firingBuffer;
 
 #ifdef NEMO_CPU_MULTITHREADED
 

@@ -124,19 +124,13 @@ c_runSimulation(
 	for(unsigned s = 0; s < seconds; ++s)
 	for(unsigned ms = 0; ms < 1000; ++ms) {
 
-		nemo_step(sim, NULL, 0);
-
-		//! \todo could modify API here to make this nicer
-		unsigned* cycles_tmp;
-		unsigned* nidx_tmp;
-		unsigned nfired;
-		unsigned ncycles;
-
-		nemo_read_firing(sim, &cycles_tmp, &nidx_tmp, &nfired, &ncycles);
+		unsigned *fired;
+		size_t nfired;
+		nemo_step(sim, NULL, 0, &fired, &nfired);
 
 		// push data back onto local buffers
-		std::copy(cycles_tmp, cycles_tmp + nfired, back_inserter(*fcycles));
-		std::copy(nidx_tmp, nidx_tmp + nfired, back_inserter(*fnidx));
+		std::copy(fired, fired + nfired, back_inserter(*fnidx));
+		std::fill_n(back_inserter(*fcycles), nfired, s*1000 + ms);
 	}
 
 	nemo_delete_simulation(sim);

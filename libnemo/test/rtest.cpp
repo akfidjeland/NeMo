@@ -22,10 +22,10 @@ run(nemo::Network* net,
 	bool stdp,
 	bool creating) // are we comparing against existing data or creating fresh data
 {
-	std::cerr << "running test\n";
 	using namespace std;
 
 	nemo::Configuration conf = configuration(stdp, 1024, backend);
+	std::cerr << "running test on " << conf.backendDescription() << " with stdp=" << stdp << std::endl;
 
 	fstream file;
 	//! \todo determine canonical filename based on configuration
@@ -37,20 +37,16 @@ run(nemo::Network* net,
 
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
-	const std::vector<unsigned>* cycles;
-	const std::vector<unsigned>* nidx;
-
 	unsigned ce, ne; // expexted values
 
 	for(unsigned s = 0; s < seconds; ++s) {
 		for(unsigned ms = 0; ms < 1000; ++ms) {
-			sim->step();
-			sim->readFiring(&cycles, &nidx);
-			for(size_t i = 0; i < cycles->size(); ++i) {
-				unsigned c = cycles->at(i);
-				unsigned n = nidx->at(i);
+			const std::vector<unsigned>& fired = sim->step();
+			for(std::vector<unsigned>::const_iterator ni = fired.begin(); ni != fired.end(); ++ni) {
+				unsigned c = 0;
+				unsigned n = *ni;
 				if(creating) {
-					file << cycles->at(i) << "\t" << nidx->at(i) << "\n";
+					file << c << "\t" << n << "\n";
 				} else {
 					BOOST_REQUIRE(!file.eof());
 					file >> ce >> ne;

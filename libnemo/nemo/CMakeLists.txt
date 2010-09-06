@@ -33,6 +33,7 @@ LINK_STATIC_MSVCR()
 
 ADD_LIBRARY(nemo_base
 	ConfigurationImpl.cpp
+	FiringBuffer.cpp
 	Network.cpp
 	NetworkImpl.cpp
 	Simulation.cpp

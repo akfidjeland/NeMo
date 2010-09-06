@@ -56,8 +56,7 @@ Simulation::Simulation(
 	m_cm(net, conf, m_mapper),
 	m_current(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0),
-	m_rng(m_neuronCount),
-	m_lastFlush(0)
+	m_rng(m_neuronCount)
 {
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 	setNeuronParameters(net, m_mapper);
@@ -118,7 +117,7 @@ Simulation::getFractionalBits() const
 
 
 
-void 
+void
 Simulation::step()
 {
 	const current_vector_t& current = deliverSpikes();
@@ -242,40 +241,20 @@ Simulation::update(
 void
 Simulation::setFiring()
 {
-	unsigned t = elapsedSimulation() - m_lastFlush;
+	std::vector<unsigned>& current = m_firingBuffer.enqueue();
 	for(unsigned n=0; n < m_neuronCount; ++n) { 
 		if(m_fired[n]) {
-			m_firedCycle.push_back(t);
-			m_firedNeuron.push_back(m_mapper.globalIdx(n));
+			current.push_back(m_mapper.globalIdx(n));
 		}
 	}
 }
 
 
 
-unsigned
-Simulation::readFiring(
-		const std::vector<unsigned>** cycles,
-		const std::vector<unsigned>** nidx)
-{		
-	unsigned ret = m_timer.elapsedSimulation() - m_lastFlush;
-	m_lastFlush = m_timer.elapsedSimulation();
-	m_firedCycleExt = m_firedCycle;
-	m_firedNeuronExt = m_firedNeuron;
-	m_firedCycle.clear();
-	m_firedNeuron.clear();
-	*cycles = &m_firedCycleExt;
-	*nidx = &m_firedNeuronExt;
-	return ret;
-}
-
-
-
-void
-Simulation::flushFiringBuffer()
+FiredList
+Simulation::readFiring()
 {
-	m_firedCycle.clear();
-	m_firedNeuron.clear();
+	return m_firingBuffer.dequeue();
 }
 
 

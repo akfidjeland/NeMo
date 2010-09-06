@@ -18,7 +18,6 @@ namespace nemo {
 
 FiringOutput::FiringOutput(const Mapper& mapper):
 	m_pitch(0),
-	m_bufferedCycles(0),
 	md_allocated(0),
 	m_mapper(mapper)
 {
@@ -47,39 +46,27 @@ FiringOutput::sync()
 {
 	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
 				m_mapper.partitionCount() * m_pitch * sizeof(uint32_t));
-	populateSparse(m_bufferedCycles, mh_buffer.get(), m_cycles, m_neuronIdx);
-	m_bufferedCycles += 1;
+	std::vector<unsigned>& current = m_outputBuffer.enqueue();
+	populateSparse(mh_buffer.get(), current);
 }
 
 
 
-unsigned
-FiringOutput::readFiring(
-		const std::vector<unsigned>** cycles,
-		const std::vector<unsigned>** neuronIdx)
+FiredList
+FiringOutput::readFiring()
 {
-	m_cyclesOut = m_cycles;
-	m_neuronIdxOut = m_neuronIdx;
-	*cycles = &m_cyclesOut;
-	*neuronIdx = &m_neuronIdxOut;
-	unsigned readCycles = m_bufferedCycles;
-	m_bufferedCycles = 0;
-	m_cycles.clear();
-	m_neuronIdx.clear();
-	return readCycles;
+	return m_outputBuffer.dequeue();
 }
-
 
 
 void
 FiringOutput::populateSparse(
-		unsigned cycle,
 		const uint32_t* hostBuffer,
-		std::vector<unsigned>& firingCycle,
-		std::vector<unsigned>& neuronIdx)
+		std::vector<unsigned>& outputBuffer)
 {
 	unsigned pcount = m_mapper.partitionCount();
 
+	//! \todo consider processing this using multiple threads
 	for(size_t partition=0; partition < pcount; ++partition) {
 
 		size_t partitionOffset = partition * m_pitch;
@@ -93,26 +80,18 @@ FiringOutput::populateSparse(
 			if(word == 0)
 				continue;
 
+			/*! \todo use bitops here to speed up processing. No need to
+			 * iterate over every bit. */
 			for(size_t nbit=0; nbit < 32; ++nbit) {
 				bool fired = (word & (1 << nbit)) != 0;
 				if(fired) {
-					firingCycle.push_back(cycle);
-					neuronIdx.push_back(m_mapper.hostIdx(partition, nword*32 + nbit));
+					outputBuffer.push_back(m_mapper.hostIdx(partition, nword*32 + nbit));
 				}
 			}
 		}
 	}
 }
 
-
-
-void
-FiringOutput::flushBuffer()
-{
-	m_cycles.clear();
-	m_neuronIdx.clear();
-	m_bufferedCycles = 0;
-}
 
 	} // end namespace cuda
 } // end namespace nemo
