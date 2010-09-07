@@ -43,7 +43,7 @@ run(nemo::Network* net,
 		for(unsigned ms = 0; ms < 1000; ++ms) {
 			const std::vector<unsigned>& fired = sim->step();
 			for(std::vector<unsigned>::const_iterator ni = fired.begin(); ni != fired.end(); ++ni) {
-				unsigned c = 0;
+				unsigned c = s * 1000 + ms;
 				unsigned n = *ni;
 				if(creating) {
 					file << c << "\t" << n << "\n";
