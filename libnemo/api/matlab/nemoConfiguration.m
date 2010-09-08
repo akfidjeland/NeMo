@@ -6,6 +6,7 @@
 %     setCpuBackend
 %     setCudaBackend
 %     setStdpFunction
+%     backendDescription
 %   
 classdef nemoConfiguration < handle
 
@@ -89,6 +90,19 @@ classdef nemoConfiguration < handle
                     double(minWeight),...
                     double(maxWeight)...
             );
+        end
+
+        function description = backendDescription(obj)
+        % backendDescription - Description of the currently selected simulation backend
+        %  
+        % Synopsis:
+        %   description = backendDescription()
+        %  
+        % Outputs:
+        %   description -
+        %    
+        % The backend can be changed using setCudaBackend or setCpuBackend 
+            description = nemo_mex(uint32(19), obj.id);
         end
     end
 end

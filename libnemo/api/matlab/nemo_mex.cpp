@@ -41,6 +41,7 @@ template<typename M> mxClassID classId() {
 	mexErrMsgIdAndTxt("nemo:api", "programming error: class id requested for unknown class");
 	return mxUNKNOWN_CLASS;
 }
+template<> mxClassID classId<char*>() { return mxCHAR_CLASS; }
 template<> mxClassID classId<uint8_t>() { return mxUINT8_CLASS; }
 template<> mxClassID classId<uint32_t>() { return mxUINT32_CLASS; }
 template<> mxClassID classId<int32_t>() { return mxINT32_CLASS; }
@@ -142,10 +143,18 @@ checkOutputCount(int actualArgs, int expectedArgs)
  * conversion from the type used by nemo (N) to the type used by matlab (M). */
 template<typename N, typename M>
 void
-returnScalar(mxArray* plhs[], int argno, const N& val)
+returnScalar(mxArray* plhs[], int argno, N val)
 {
 	plhs[argno] = mxCreateNumericMatrix(1, 1, classId<M>(), mxREAL);
 	*(static_cast<M*>(mxGetData(plhs[argno]))) = val;
+}
+
+
+template<>
+void
+returnScalar<const char*, char*>(mxArray* plhs[], int argno, const char* str)
+{
+	plhs[argno] = mxCreateString(str);
 }
 
 
@@ -516,9 +525,22 @@ setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
+void
+backendDescription(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 0);
+    checkOutputCount(nlhs, 1);
+    const char* description;
+    checkNemoStatus( 
+            nemo_backend_description(getConfiguration(prhs, 1), &description) 
+    );
+    returnScalar<const char*, char*>(plhs, 0, description);
+}
+
+
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
-#define FN_COUNT 19
+#define FN_COUNT 20
 
 fn_ptr fn_arr[FN_COUNT] = {
 	newNetwork,
@@ -539,7 +561,8 @@ fn_ptr fn_arr[FN_COUNT] = {
 	deleteConfiguration,
 	setCpuBackend,
 	setCudaBackend,
-	setStdpFunction};
+	setStdpFunction,
+	backendDescription};
 
 /* AUTO-GENERATED CODE END */
 
