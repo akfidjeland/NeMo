@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <nemo/config.h>
+#include <nemo/types.h>
 
 namespace nemo {
 
@@ -62,8 +63,8 @@ class NEMO_BASE_DLL_PUBLIC Network
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
-		/* Add a single synapse */
-		void addSynapse(
+		/* Add a single synapse and return its unique id */
+		synapse_id addSynapse(
 				unsigned source,
 				unsigned target,
 				unsigned delay,

@@ -177,9 +177,14 @@ nemo_add_synapse(nemo_network_t net,
 		unsigned target,
 		unsigned delay,
 		float weight,
-		unsigned char is_plastic)
+		unsigned char is_plastic,
+		synapse_id* id)
 {
-	CATCH_(Network, net, addSynapse(source, target, delay, weight, is_plastic));
+	synapse_id sid;
+	CATCH(Network, net, addSynapse(source, target, delay, weight, is_plastic), sid);
+	if(id != NULL) {
+		*id = sid;
+	}
 }
 
 

@@ -26,7 +26,7 @@ Network::addNeuron(unsigned idx,
 }
 
 
-void
+synapse_id
 Network::addSynapse(
 		unsigned source,
 		unsigned target,
@@ -34,7 +34,7 @@ Network::addSynapse(
 		float weight,
 		unsigned char plastic)
 {
-	m_impl->addSynapse(source, target, delay, weight, plastic);
+	return m_impl->addSynapse(source, target, delay, weight, plastic);
 }
 
 

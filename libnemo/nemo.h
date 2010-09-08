@@ -164,7 +164,12 @@ nemo_add_neuron(nemo_network_t,
 //! \todo add documentation on the possible failure codes
 
 
-/* Add a single synapse to network */
+/* Add a single synapse to network
+ *
+ * \a id
+ * 		Unique id of this synapse (which can be used for run-time queries). Set
+ * 		to NULL if this is not required.
+ */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_add_synapse(nemo_network_t,
@@ -172,7 +177,8 @@ nemo_add_synapse(nemo_network_t,
 		unsigned target,
 		unsigned delay,
 		float weight,
-		unsigned char is_plastic);
+		unsigned char is_plastic,
+		synapse_id* id);
 
 
 /*! Add to the network a group of synapses

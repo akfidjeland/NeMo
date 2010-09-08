@@ -54,7 +54,7 @@ NetworkImpl::addNeuron(nidx_t nidx, const Neuron<float>& n)
 
 
 
-void
+synapse_id
 NetworkImpl::addSynapse(
 		unsigned source,
 		unsigned target,
@@ -70,6 +70,7 @@ NetworkImpl::addSynapse(
 	}
 
 	id32_t& count = m_synapseCount[source];
+	id32_t id = count;
 	m_fcm[source][delay].push_back(synapse_t(count, target, weight, plastic));
 	count += 1;
 
@@ -79,6 +80,9 @@ NetworkImpl::addSynapse(
 	m_maxDelay = std::max(m_maxDelay, delay);
 	m_maxWeight = std::max(m_maxWeight, weight);
 	m_minWeight = std::min(m_minWeight, weight);
+
+	//! \todo do a range check here
+	return (id64_t(source) << 32) | id64_t(id);
 }
 
 

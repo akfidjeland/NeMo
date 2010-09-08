@@ -31,9 +31,6 @@ namespace boost {
 namespace nemo {
 
 
-typedef nemo_synapse_id_t synapse_id;
-
-
 template<typename FP>
 class Neuron
 {

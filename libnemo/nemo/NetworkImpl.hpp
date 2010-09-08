@@ -40,7 +40,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 
 		void addNeuron(nidx_t nidx, const Neuron<float>&);
 
-		void addSynapse(
+		synapse_id addSynapse(
 				unsigned source,
 				unsigned target,
 				unsigned delay,
