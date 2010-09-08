@@ -21,6 +21,7 @@
 #include "NetworkImpl.hpp"
 #include "exception.hpp"
 #include "fixedpoint.hpp"
+#include "synapse_indices.hpp"
 
 
 namespace nemo {
@@ -126,6 +127,7 @@ ConnectivityMatrix::setRow(
 		if(s.plastic) {
 			m_racc[mapper.localIdx(s.target)].push_back(RSynapse(source, delay, sidx));
 		}
+		m_cmAux[forwardIdx].push_back(AxonTerminalAux(s.id, s.plastic));
 	}
 
 	return row;
@@ -299,6 +301,70 @@ ConnectivityMatrix::getSynapses(
 	}
 
 	assert(plastic.size() == targets.size());
+}
+
+
+
+/* Update the cached synapse addresses for /all/ synapses with the given source
+ * neuron */
+void
+ConnectivityMatrix::updateSynapseAddressMap(nidx_t source)
+{
+	address_row addresses = m_synapseAddresses[source];
+
+	/* The per-neuron synapse indices should form a contigous range (from 0),
+	 * so we should be able to pre-allocate */
+	size_t synapseCount = 0;
+	for(delay_iterator di = delay_begin(source); di != delay_end(source); ++di) {
+		synapseCount += getRow(source, *di).len;
+	}
+	addresses.resize(synapseCount);
+
+	aux_map::const_iterator ri_end = m_cmAux.end();
+
+	for(delay_iterator di = delay_begin(source); di != delay_end(source); ++di) {
+
+		delay_t delay = *di;
+		aux_map::const_iterator ri = m_cmAux.find(fidx(source, delay));
+		if(ri == ri_end) {
+			throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid lookup in auxillary synapse data");
+		}
+		const aux_row& row = ri->second;
+
+		for(sidx_t sidx = 0; sidx < row.size(); ++sidx) {
+			id32_t id = row.at(sidx).id;
+			addresses.at(id) = SynapseAddress(addressOf(source, delay), sidx);
+		}
+	}
+}
+
+
+
+SynapseAddress
+ConnectivityMatrix::synapseAddress(synapse_id id)
+{
+	nidx_t neuron = neuronIndex(id);
+	sidx_t synapse = synapseIndex(id);
+
+	address_map::iterator found = m_synapseAddresses.find(neuron);
+	while(found == m_synapseAddresses.end()) {
+		updateSynapseAddressMap(neuron);
+		found = m_synapseAddresses.find(neuron);
+	}
+	return found->second[synapse];
+}
+
+
+
+const std::vector<float>&
+ConnectivityMatrix::getWeights(const std::vector<synapse_id>& synapses)
+{
+	m_queriedWeights.resize(synapses.size());
+	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
+		SynapseAddress addr = synapseAddress(synapses[i]);
+		m_queriedWeights[i] = m_cm[addr.row].data[addr.synapse].weight;
+	}
+	return m_queriedWeights;
 }
 
 

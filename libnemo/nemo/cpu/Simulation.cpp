@@ -334,6 +334,13 @@ Simulation::getSynapses(
 
 
 
+const std::vector<float>&
+Simulation::getWeights(const std::vector<synapse_id>& synapses)
+{
+	return m_cm.getWeights(synapses);
+}
+
+
 unsigned long
 Simulation::elapsedWallclock() const
 {

@@ -16,6 +16,7 @@
 
 #include <nemo/bitops.h>
 #include "exception.hpp"
+#include "synapse_indices.hpp"
 
 namespace nemo {
 
@@ -81,8 +82,7 @@ NetworkImpl::addSynapse(
 	m_maxWeight = std::max(m_maxWeight, weight);
 	m_minWeight = std::min(m_minWeight, weight);
 
-	//! \todo do a range check here
-	return (id64_t(source) << 32) | id64_t(id);
+	return make_synapse_id(source, id);
 }
 
 

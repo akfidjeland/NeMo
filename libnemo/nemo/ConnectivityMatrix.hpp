@@ -40,6 +40,17 @@ struct FAxonTerminal
 };
 
 
+/* The rest of the synapse data is only needed if querying synapses at
+ * run-time. This data is stored separately */
+struct AxonTerminalAux
+{
+	id32_t id;
+	bool plastic;
+
+	AxonTerminalAux(id32_t id, bool plastic) :
+		id(id), plastic(plastic) { }
+};
+
 
 /* A row contains a number of synapses with a fixed source and delay. A
  * fixed-point format is used internally. The caller needs to specify the
@@ -53,6 +64,20 @@ struct Row
 
 	size_t len;
 	boost::shared_array< FAxonTerminal<fix_t> > data;
+};
+
+
+
+struct SynapseAddress
+{
+	size_t row;
+	sidx_t synapse;
+
+	SynapseAddress(size_t row, sidx_t synapse):
+		row(row), synapse(synapse) { }
+
+	SynapseAddress():
+		row(~0), synapse(~0) { }
 };
 
 
@@ -110,6 +135,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 				std::vector<unsigned>& delays,
 				std::vector<float>& weights,
 				std::vector<unsigned char>& plastic) const;
+
+		const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses);
 
 		void finalize(const mapper_t&);
 
@@ -169,6 +196,33 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/*! \return address of the synapse weight in the forward matrix, given
 		 * a synapse in the reverse matrix */
 		fix_t* weight(const RSynapse&) const;
+
+		/* Internal buffers for synapse queries */
+		std::vector<float> m_queriedWeights;
+
+		/* Per-neuron list of full synapse addresses. The index here is the
+		 * 32-bit synapse id provided by the input network. */
+		typedef std::vector<SynapseAddress> address_row;
+		typedef std::map<nidx_t, address_row> address_map;
+
+		address_map m_synapseAddresses;
+
+		/* The synapse address map is constructed lazily (on a per-neuron
+		 * basis) to avoid having to store this for the full CM when the user
+		 * is not querying synapses */
+		void updateSynapseAddressMap(nidx_t source);
+
+		/*! \return the full synapse address of the given synapse. Cache the
+		 * mapping as a side effect. */
+		SynapseAddress synapseAddress(synapse_id);
+
+		/* Additional synapse data which is only needed for runtime queries.
+		 * This is kept separate from m_cm so that we can make m_cm fast and
+		 * compact. The query information is not crucial for performance.  */
+
+		typedef std::vector<AxonTerminalAux> aux_row;
+		typedef std::map<fidx, aux_row> aux_map;
+		aux_map m_cmAux;
 };
 
 
