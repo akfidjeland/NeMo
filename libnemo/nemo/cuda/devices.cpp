@@ -9,7 +9,6 @@
 #include <nemo/ConfigurationImpl.hpp>
 
 #include "exception.hpp"
-#include "FiringOutput.hpp"
 #include "kernel.cu_h"
 
 namespace nemo {

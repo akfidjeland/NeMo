@@ -26,7 +26,7 @@
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
-#include "FiringOutput.hpp"
+#include "FiringBuffer.hpp"
 #include "NeuronParameters.hpp"
 #include "ThalamicInput.hpp"
 
@@ -112,7 +112,7 @@ class Simulation : public nemo::SimulationBackend
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
-		FiringOutput m_firingOutput;
+		FiringBuffer m_firingBuffer;
 
 		CycleCounters m_cycleCounters;
 

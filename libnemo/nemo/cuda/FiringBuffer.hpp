@@ -17,7 +17,7 @@
 #include <nemo/FiringBuffer.hpp>
 #include "Mapper.hpp"
 
-//! \file FiringOutput.hpp
+//! \file FiringBuffer.hpp
 
 /*! \brief Data and functions for reading firing data from device to host
  *
@@ -27,12 +27,12 @@
 namespace nemo {
 	namespace cuda {
 
-class FiringOutput {
+class FiringBuffer {
 
 	public:
 
 		/*! Set up data on both host and device for probing firing */
-		FiringOutput(const Mapper& mapper);
+		FiringBuffer(const Mapper& mapper);
 
 		/*! Read firing data from device to host buffer. This should be called
 		 * every simulation cycle */
@@ -62,7 +62,7 @@ class FiringOutput {
 
 		Mapper m_mapper;
 
-		FiringBuffer m_outputBuffer;
+		nemo::FiringBuffer m_outputBuffer;
 };
 
 	} // end namespace cuda

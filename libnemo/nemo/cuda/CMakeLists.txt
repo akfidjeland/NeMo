@@ -62,7 +62,7 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	Simulation.cpp
 	CycleCounters.cpp
 	DeviceAssertions.cpp
-	FiringOutput.cpp
+	FiringBuffer.cpp
 	Incoming.cpp
 	NeuronParameters.cpp
 	Mapper.cpp

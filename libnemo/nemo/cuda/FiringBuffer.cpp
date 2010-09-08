@@ -9,14 +9,14 @@
 
 #include <string.h>
 
-#include "FiringOutput.hpp"
+#include "FiringBuffer.hpp"
 #include "bitvector.cu_h"
 #include "device_memory.hpp"
 
 namespace nemo {
 	namespace cuda {
 
-FiringOutput::FiringOutput(const Mapper& mapper):
+FiringBuffer::FiringBuffer(const Mapper& mapper):
 	m_pitch(0),
 	md_allocated(0),
 	m_mapper(mapper)
@@ -42,7 +42,7 @@ FiringOutput::FiringOutput(const Mapper& mapper):
 
 
 void
-FiringOutput::sync()
+FiringBuffer::sync()
 {
 	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
 				m_mapper.partitionCount() * m_pitch * sizeof(uint32_t));
@@ -53,14 +53,14 @@ FiringOutput::sync()
 
 
 FiredList
-FiringOutput::readFiring()
+FiringBuffer::readFiring()
 {
 	return m_outputBuffer.dequeue();
 }
 
 
 void
-FiringOutput::populateSparse(
+FiringBuffer::populateSparse(
 		const uint32_t* hostBuffer,
 		std::vector<unsigned>& outputBuffer)
 {

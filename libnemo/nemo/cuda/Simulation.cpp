@@ -49,7 +49,7 @@ Simulation::Simulation(
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
 	//! \todo allow external users to directly use the host buffer
 	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true),
-	m_firingOutput(m_mapper),
+	m_firingBuffer(m_mapper),
 	m_cycleCounters(m_mapper.partitionCount(), conf.stdpFunction()),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_pitch32(0),
@@ -192,7 +192,7 @@ Simulation::d_allocated() const
 		+ m_currentStimulus.d_allocated()
 		+ m_recentFiring.d_allocated()
 		+ m_neurons.d_allocated()
-		+ m_firingOutput.d_allocated()
+		+ m_firingBuffer.d_allocated()
 		+ m_thalamicInput.d_allocated()
 		+ m_cm.d_allocated();
 }
@@ -209,7 +209,7 @@ Simulation::setPitch()
 	//! \todo fold thalamic input into neuron parameters
 	checkPitch(m_pitch32, m_thalamicInput.wordPitch());
 	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
-	checkPitch(pitch1, m_firingOutput.wordPitch());
+	checkPitch(pitch1, m_firingBuffer.wordPitch());
 	CUDA_SAFE_CALL(bv_setPitch(pitch1));
 }
 
@@ -236,7 +236,7 @@ Simulation::step()
 			m_thalamicInput.deviceSigma(),
 			md_fstim,
 			md_istim,
-			m_firingOutput.d_buffer(),
+			m_firingBuffer.d_buffer(),
 			m_cm.d_fcm(),
 			m_cm.outgoingCount(),
 			m_cm.outgoing(),
@@ -245,7 +245,7 @@ Simulation::step()
 			m_cycleCounters.data(),
 			m_cycleCounters.pitch());
 
-	m_firingOutput.sync();
+	m_firingBuffer.sync();
 
 	/* Must clear stimulus pointers in case the low-level interface is used and
 	 * the user does not provide any fresh stimulus */
@@ -310,7 +310,7 @@ Simulation::getSynapses(unsigned sn,
 FiredList
 Simulation::readFiring()
 {
-	return m_firingOutput.readFiring();
+	return m_firingBuffer.readFiring();
 }
 
 
