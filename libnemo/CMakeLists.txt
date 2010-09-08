@@ -48,7 +48,6 @@ OPTION(NEMO_CPU_DEBUG_TRACE "Add debugging trace in the CPU backend" OFF)
 OPTION(NEMO_EXAMPLES_ENABLED "Build binaries for example networks" ON)
 IF(NEMO_EXAMPLES_ENABLED)
 	LIST(APPEND DIRS examples)
-	LIST(APPEND BOOST_COMPONENTS program_options)
 ENDIF(NEMO_EXAMPLES_ENABLED)
 
 
