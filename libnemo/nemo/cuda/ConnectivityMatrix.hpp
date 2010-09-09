@@ -170,11 +170,10 @@ class ConnectivityMatrix
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress() const;
 
-		/* Static FCM data, stored the same order as on the device for each
-		 * neuron. This data is used when the user requests synapse data at
-		 * run-time. Neuron indices are global rather than the partition/neuron
-		 * scheme used on the device, so no decoding needs to take place at
-		 * run-time. */
+		/* Static FCM data for each neuron, required for synapse queries.
+		 * Neuron indices are global rather than the partition/neuron scheme
+		 * used on the device, so no decoding needs to take place at run-time.
+		 */
 		std::map<nidx_t, std::vector<unsigned> > mh_fcmTargets;
 		std::map<nidx_t, std::vector<unsigned> > mh_fcmDelays;
 		std::map<nidx_t, std::vector<unsigned char> > mh_fcmPlastic;

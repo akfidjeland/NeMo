@@ -334,10 +334,31 @@ Simulation::getSynapses(
 
 
 
+const std::vector<unsigned>&
+Simulation::getTargets(const std::vector<synapse_id>& synapses)
+{
+	return m_cm.getTargets(synapses);
+}
+
+
+const std::vector<unsigned>&
+Simulation::getDelays(const std::vector<synapse_id>& synapses)
+{
+	return m_cm.getDelays(synapses);
+}
+
+
 const std::vector<float>&
 Simulation::getWeights(const std::vector<synapse_id>& synapses)
 {
 	return m_cm.getWeights(synapses);
+}
+
+
+const std::vector<unsigned char>&
+Simulation::getPlastic(const std::vector<synapse_id>& synapses)
+{
+	return m_cm.getPlastic(synapses);
 }
 
 

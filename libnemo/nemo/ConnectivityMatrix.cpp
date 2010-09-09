@@ -55,7 +55,11 @@ Row::Row(const std::vector<IdAxonTerminal>& ss, unsigned fbits) :
 
 
 
-ConnectivityMatrix::ConnectivityMatrix(const ConfigurationImpl& conf) :
+
+ConnectivityMatrix::ConnectivityMatrix(
+		const ConfigurationImpl& conf,
+		const mapper_t& mapper) :
+	m_mapper(mapper),
 	m_fractionalBits(conf.fractionalBits()),
 	m_maxDelay(0)
 {
@@ -70,6 +74,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const NetworkImpl& net,
 		const ConfigurationImpl& conf,
 		const mapper_t& mapper) :
+	m_mapper(mapper),
 	m_fractionalBits(conf.fractionalBits()),
 	m_maxDelay(0)
 {
@@ -88,6 +93,18 @@ ConnectivityMatrix::ConnectivityMatrix(
 	}
 }
 
+
+
+/* Insert into vector, resizing if appropriate */
+template<typename T>
+void
+insert(size_t idx, const T& val, std::vector<T>& vec)
+{
+	if(idx >= vec.size()) {
+		vec.resize(idx+1);
+	}
+	vec.at(idx) = val;
+}
 
 
 Row&
@@ -116,18 +133,16 @@ ConnectivityMatrix::setRow(
 	m_maxDelay = std::max(m_maxDelay, delay);
 
 	Row& row = insertion.first->second;
-	for(size_t s=0; s < row.len; ++s) {
-		nidx_t target = mapper.localIdx(row.data[s].target);
-		row.data[s].target = target;
-	}
+	aux_row& auxRow = m_cmAux[source];
 
-	for(unsigned sidx=0; sidx < ss.size(); ++sidx) {
+	for(size_t sidx=0; sidx < row.len; ++sidx) {
+		nidx_t target = mapper.localIdx(row.data[sidx].target);
+		row.data[sidx].target = target;
 		const IdAxonTerminal& s = ss.at(sidx);
-		m_plastic[forwardIdx].push_back(s.plastic);
 		if(s.plastic) {
 			m_racc[mapper.localIdx(s.target)].push_back(RSynapse(source, delay, sidx));
 		}
-		m_cmAux[forwardIdx].push_back(AxonTerminalAux(s.id, s.plastic));
+		insert(s.id, AxonTerminalAux(sidx, delay, s.plastic), auxRow);
 	}
 
 	return row;
@@ -270,88 +285,54 @@ ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 
 
 
-//! \todo could do mapping internally here instead of in caller
 void
 ConnectivityMatrix::getSynapses(
 		unsigned source,
-		std::vector<unsigned>& targets,
-		std::vector<unsigned>& delays,
-		std::vector<float>& weights,
-		std::vector<unsigned char>& plastic) const
+		std::vector<unsigned>&,
+		std::vector<unsigned>&,
+		std::vector<float>&,
+		std::vector<unsigned char>&) const
 {
-	targets.clear();
-	delays.clear();
-	weights.clear();
-	plastic.clear();
-
-	unsigned fbits = fractionalBits();
-
-	for(delay_iterator d = delay_begin(source), d_end = delay_end(source);
-			d != d_end; ++d) {
-		const Row& ss = getRow(source, *d);
-		for(unsigned i = 0; i < ss.len; ++i) {
-			FAxonTerminal<fix_t> s = ss.data[i];
-			targets.push_back(s.target);
-			weights.push_back(fx_toFloat(s.weight, fbits));
-			delays.push_back(*d);
-		}
-
-		const std::vector<unsigned char>& p_row = m_plastic.find(fidx(source, *d))->second;
-		std::copy(p_row.begin(), p_row.end(), std::back_inserter(plastic));
-	}
-
-	assert(plastic.size() == targets.size());
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "Old-style synapse-query");
 }
 
 
 
-/* Update the cached synapse addresses for /all/ synapses with the given source
- * neuron */
-void
-ConnectivityMatrix::updateSynapseAddressMap(nidx_t source)
+const AxonTerminalAux&
+ConnectivityMatrix::axonTerminalAux(nidx_t neuron, id32_t synapse) const
 {
-	address_row addresses = m_synapseAddresses[source];
+	using boost::format;
 
-	/* The per-neuron synapse indices should form a contigous range (from 0),
-	 * so we should be able to pre-allocate */
-	size_t synapseCount = 0;
-	for(delay_iterator di = delay_begin(source); di != delay_end(source); ++di) {
-		synapseCount += getRow(source, *di).len;
+	aux_map::const_iterator it = m_cmAux.find(neuron);
+	if(it == m_cmAux.end()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid neuron id (%u) in synapse query") % neuron));
 	}
-	addresses.resize(synapseCount);
-
-	aux_map::const_iterator ri_end = m_cmAux.end();
-
-	for(delay_iterator di = delay_begin(source); di != delay_end(source); ++di) {
-
-		delay_t delay = *di;
-		aux_map::const_iterator ri = m_cmAux.find(fidx(source, delay));
-		if(ri == ri_end) {
-			throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid lookup in auxillary synapse data");
-		}
-		const aux_row& row = ri->second;
-
-		for(sidx_t sidx = 0; sidx < row.size(); ++sidx) {
-			id32_t id = row.at(sidx).id;
-			addresses.at(id) = SynapseAddress(addressOf(source, delay), sidx);
-		}
-	}
+	return it->second.at(synapse);
 }
 
 
 
-SynapseAddress
-ConnectivityMatrix::synapseAddress(synapse_id id)
+const AxonTerminalAux&
+ConnectivityMatrix::axonTerminalAux(const synapse_id& id) const
 {
-	nidx_t neuron = neuronIndex(id);
-	sidx_t synapse = synapseIndex(id);
+	return  axonTerminalAux(m_mapper.localIdx(neuronIndex(id)), synapseIndex(id));
+}
 
-	address_map::iterator found = m_synapseAddresses.find(neuron);
-	while(found == m_synapseAddresses.end()) {
-		updateSynapseAddressMap(neuron);
-		found = m_synapseAddresses.find(neuron);
+
+
+const std::vector<unsigned>&
+ConnectivityMatrix::getTargets(const std::vector<synapse_id>& synapses)
+{
+	m_queriedTargets.resize(synapses.size());
+	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
+		synapse_id id = synapses[i];
+		nidx_t l_source = m_mapper.localIdx(neuronIndex(id));
+		const AxonTerminalAux& s = axonTerminalAux(l_source, synapseIndex(id));
+		nidx_t l_target = m_cm[addressOf(l_source, s.delay)].data[s.idx].target;
+		m_queriedTargets[i] = m_mapper.globalIdx(l_target);
 	}
-	return found->second[synapse];
+	return m_queriedTargets;
 }
 
 
@@ -361,10 +342,39 @@ ConnectivityMatrix::getWeights(const std::vector<synapse_id>& synapses)
 {
 	m_queriedWeights.resize(synapses.size());
 	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
-		SynapseAddress addr = synapseAddress(synapses[i]);
-		m_queriedWeights[i] = m_cm[addr.row].data[addr.synapse].weight;
+		synapse_id id = synapses[i];
+		nidx_t source = m_mapper.localIdx(neuronIndex(id));
+		const AxonTerminalAux& s = axonTerminalAux(source, synapseIndex(id));
+		const Row& row = m_cm[addressOf(source, s.delay)];
+		assert(s.idx < row.len);
+		fix_t w = row.data[s.idx].weight;
+		m_queriedWeights[i] = fx_toFloat(w, m_fractionalBits);
 	}
 	return m_queriedWeights;
+}
+
+
+
+const std::vector<unsigned>&
+ConnectivityMatrix::getDelays(const std::vector<synapse_id>& synapses)
+{
+	m_queriedDelays.resize(synapses.size());
+	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
+		m_queriedDelays[i] = axonTerminalAux(synapses[i]).delay;
+	}
+	return m_queriedDelays;
+}
+
+
+
+const std::vector<unsigned char>&
+ConnectivityMatrix::getPlastic(const std::vector<synapse_id>& synapses)
+{
+	m_queriedPlastic.resize(synapses.size());
+	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
+		m_queriedPlastic[i] = axonTerminalAux(synapses[i]).plastic;
+	}
+	return m_queriedPlastic;
 }
 
 

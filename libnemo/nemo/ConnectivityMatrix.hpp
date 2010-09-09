@@ -73,8 +73,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		typedef Mapper<nidx_t, nidx_t> mapper_t;
 
-		//! \todo remove this ctor
-		ConnectivityMatrix(const ConfigurationImpl& conf);
+		 ConnectivityMatrix(const ConfigurationImpl& conf, const mapper_t&);
 
 		/*! Populate runtime CM from existing network.
 		 *
@@ -98,6 +97,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * The mapper is used to map the target neuron indices (source indices
 		 * are unaffected) from one index space to another.
 		 */
+		//! \todo remove mapper argument. Mapper is already a member so no need to pass it in.
 		Row& setRow(nidx_t source, delay_t,
 				const std::vector<IdAxonTerminal>&,
 				const mapper_t&);
@@ -113,7 +113,10 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 				std::vector<float>& weights,
 				std::vector<unsigned char>& plastic) const;
 
-		const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses);
+		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
+		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>&);
+		const std::vector<float>& getWeights(const std::vector<synapse_id>&);
+		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>&);
 
 		void finalize(const mapper_t&);
 
@@ -132,6 +135,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 	private:
 
+		const mapper_t& m_mapper;
+
 		unsigned m_fractionalBits;
 
 		/* During network construction we accumulate data in a map. This way we
@@ -139,11 +144,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * advance */
 		typedef boost::tuple<nidx_t, delay_t> fidx;
 		std::map<fidx, Row> m_acc;
-
-		/* In order to be able to read back synapse data at run-time we record
-		 * some data in a separate map. Weights need to be read from m_cm as
-		 * they can change at run-time. */
-		std::map<fidx, std::vector<unsigned char> > m_plastic;
 
 		/* At run-time, however, we want the fastest possible lookup of the
 		 * rows. We therefore use a vector with linear addressing. This just
@@ -175,31 +175,21 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		fix_t* weight(const RSynapse&) const;
 
 		/* Internal buffers for synapse queries */
+		std::vector<unsigned> m_queriedTargets;
+		std::vector<unsigned> m_queriedDelays;
 		std::vector<float> m_queriedWeights;
-
-		/* Per-neuron list of full synapse addresses. The index here is the
-		 * 32-bit synapse id provided by the input network. */
-		typedef std::vector<SynapseAddress> address_row;
-		typedef std::map<nidx_t, address_row> address_map;
-
-		address_map m_synapseAddresses;
-
-		/* The synapse address map is constructed lazily (on a per-neuron
-		 * basis) to avoid having to store this for the full CM when the user
-		 * is not querying synapses */
-		void updateSynapseAddressMap(nidx_t source);
-
-		/*! \return the full synapse address of the given synapse. Cache the
-		 * mapping as a side effect. */
-		SynapseAddress synapseAddress(synapse_id);
+		std::vector<unsigned char> m_queriedPlastic;
 
 		/* Additional synapse data which is only needed for runtime queries.
 		 * This is kept separate from m_cm so that we can make m_cm fast and
 		 * compact. The query information is not crucial for performance.  */
-
 		typedef std::vector<AxonTerminalAux> aux_row;
-		typedef std::map<fidx, aux_row> aux_map;
+		typedef std::map<nidx_t, aux_row> aux_map;
 		aux_map m_cmAux;
+
+		/* Look up auxillary synapse data and report invalid lookups */
+		const AxonTerminalAux& axonTerminalAux(nidx_t neuron, id32_t synapse) const;
+		const AxonTerminalAux& axonTerminalAux(const synapse_id&) const;
 };
 
 
@@ -217,11 +207,18 @@ ConnectivityMatrix::addressOf(nidx_t source, delay_t delay) const
  * run-time. This data is stored separately */
 struct AxonTerminalAux
 {
-	id32_t id;
+	/* We need to store the synapse address /within/ a row. The row number
+	 * itself can be computed on-the-fly based on the delay. */
+	sidx_t idx;
+
+	unsigned delay;
 	bool plastic;
 
-	AxonTerminalAux(id32_t id, bool plastic) :
-		id(id), plastic(plastic) { }
+	AxonTerminalAux(sidx_t idx, unsigned delay, bool plastic) :
+		idx(idx), delay(delay), plastic(plastic) { }
+
+	AxonTerminalAux() :
+		idx(~0), delay(~0), plastic(false) { }
 };
 
 

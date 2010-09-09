@@ -58,8 +58,10 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 				const std::vector<float>** weights,
 				const std::vector<unsigned char>** plastic);
 
-		/*! \copydoc nemo::Simulation::getWeights */
+		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
+		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses);
 		const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses);
+		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses);
 
 		/*! \copydoc nemo::SimulationBackend::elapsedWallclock */
 		unsigned long elapsedWallclock() const;
