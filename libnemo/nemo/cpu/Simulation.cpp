@@ -312,33 +312,12 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 
-
-void
-Simulation::getSynapses(
-		unsigned sourceNeuron,
-		const std::vector<unsigned>** targets,
-		const std::vector<unsigned>** delays,
-		const std::vector<float>** weights,
-		const std::vector<unsigned char>** plastic)
-{
-	m_cm.getSynapses(m_mapper.localIdx(sourceNeuron), m_targetsOut, m_delaysOut, m_weightsOut, m_plasticOut);
-	for(std::vector<unsigned>::iterator i = m_targetsOut.begin();
-			i != m_targetsOut.end(); ++i) {
-		*i = m_mapper.globalIdx(*i);
-	}
-	*targets = &m_targetsOut;
-	*delays = &m_delaysOut;
-	*weights = &m_weightsOut;
-	*plastic = &m_plasticOut;
-}
-
-
-
 const std::vector<unsigned>&
 Simulation::getTargets(const std::vector<synapse_id>& synapses)
 {
 	return m_cm.getTargets(synapses);
 }
+
 
 
 const std::vector<unsigned>&
@@ -348,6 +327,7 @@ Simulation::getDelays(const std::vector<synapse_id>& synapses)
 }
 
 
+
 const std::vector<float>&
 Simulation::getWeights(const std::vector<synapse_id>& synapses)
 {
@@ -355,11 +335,13 @@ Simulation::getWeights(const std::vector<synapse_id>& synapses)
 }
 
 
+
 const std::vector<unsigned char>&
 Simulation::getPlastic(const std::vector<synapse_id>& synapses)
 {
 	return m_cm.getPlastic(synapses);
 }
+
 
 
 unsigned long

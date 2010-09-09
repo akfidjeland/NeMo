@@ -265,29 +265,66 @@ nemo_apply_stdp(nemo_simulation_t, float reward);
 
 /*! \name Simulation (queries)
  *
- * If STDP is enabled, the synaptic weights may change at
- * run-time. The user can read these back on a per-(source)
- * neuron basis.
+ * The synapse state can be read back at run-time by specifiying a list of
+ * synpase ids (\see addSynapse). The weights may change at run-time, while the
+ * other synapse data is static.
  * \{ */
 
-/*! Read connectivity matrix back from device for a single neuron and delay.
- * Every call to this function will return synapses in the same order.
- * The output vectors are valid until the next call to this function.
+
+/*! Get synapse target for the specified synapses
  *
- * \post
- * 		Output vectors \a targetNeuron, \a weights, \a delays,
- * 		and \a is_plastic all have length \a len
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param targets (output)
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_synapses(nemo_simulation_t,
-		unsigned sourceNeuron,
-		unsigned* targetNeuron[],
-		unsigned* delays[],
-		float* weights[],
-		unsigned char* is_plastic[],
-		size_t* len);
+nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* targets[]);
 
+
+/*! Get conductance delays for the specified synapses
+ *
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param delays (output)
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[]);
+
+
+/*! Get weights for the specified synapses
+ *
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param weights (output)
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float* weights[]);
+
+
+/*! Get boolean plasticity status for the specified synapses
+ *
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param weights (output)
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char* plastic[]);
 
 
 /* \} */ // end simulation group

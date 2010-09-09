@@ -61,24 +61,32 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();
 
+		/*! \copydoc nemo::Simulation::applyStdp */
 		void applyStdp(float reward);
 
-		void getSynapses(unsigned sourceNeuron,
-				const std::vector<unsigned>** targetNeuron,
-				const std::vector<unsigned>** delays,
-				const std::vector<float>** weights,
-				const std::vector<unsigned char>** plastic);
+		/*! \copydoc nemo::Simulation::getTargets */
+		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
 
-		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
-		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses);
-		const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses);
-		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses);
+		/*! \copydoc nemo::Simulation::getDelays */
+		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>&);
+
+		/*! \copydoc nemo::Simulation::getWeights */
+		const std::vector<float>& getWeights(const std::vector<synapse_id>&);
+
+		/*! \copydoc nemo::Simulation::getPlastic */
+		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>&);
 
 		void finishSimulation();
 
 		/* TIMING */
+
+		/*! \copydoc nemo::Simulation::elapsedWallclock */
 		unsigned long elapsedWallclock() const;
+
+		/*! \copydoc nemo::Simulation::elapsedSimulation */
 		unsigned long elapsedSimulation() const;
+
+		/*! \copydoc nemo::Simulation::resetTimer */
 		void resetTimer();
 
 	private :

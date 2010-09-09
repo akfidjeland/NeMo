@@ -105,17 +105,16 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/*! \return all synapses for a given source and delay */
 		const Row& getRow(nidx_t source, delay_t) const;
 
-		/*! \return all synapses for a given source */
-		void getSynapses(
-				unsigned source,
-				std::vector<unsigned>& targets,
-				std::vector<unsigned>& delays,
-				std::vector<float>& weights,
-				std::vector<unsigned char>& plastic) const;
-
+		/*! \copydoc nemo::Simulation::getTargets */
 		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
+
+		/*! \copydoc nemo::Simulation::getDelays */
 		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>&);
+
+		/*! \copydoc nemo::Simulation::getWeights */
 		const std::vector<float>& getWeights(const std::vector<synapse_id>&);
+
+		/*! \copydoc nemo::Simulation::getPlastic */
 		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>&);
 
 		void finalize(const mapper_t&);

@@ -76,22 +76,6 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 * associated cycle number. */
 		virtual FiredList readFiring() = 0;
 
-		/*! \copydoc nemo::Simulation::getSynapses */
-		virtual void getSynapses(unsigned sourceNeuron,
-				const std::vector<unsigned>** targetNeuron,
-				const std::vector<unsigned>** delays,
-				const std::vector<float>** weights,
-				const std::vector<unsigned char>** plastic) = 0;
-
-		/*! \copydoc nemo::Simulation::elapsedWallclock */
-		virtual unsigned long elapsedWallclock() const = 0;
-
-		/*! \copydoc nemo::Simulation::elapsedSimulation */
-		virtual unsigned long elapsedSimulation() const = 0;
-
-		/*! \copydoc nemo::Simulation::resetTimer */
-		virtual void resetTimer() = 0;
-
 	protected :
 
 		SimulationBackend() { };

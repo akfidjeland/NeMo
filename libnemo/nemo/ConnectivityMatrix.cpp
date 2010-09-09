@@ -285,19 +285,6 @@ ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 
 
 
-void
-ConnectivityMatrix::getSynapses(
-		unsigned source,
-		std::vector<unsigned>&,
-		std::vector<unsigned>&,
-		std::vector<float>&,
-		std::vector<unsigned char>&) const
-{
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "Old-style synapse-query");
-}
-
-
-
 const AxonTerminalAux&
 ConnectivityMatrix::axonTerminalAux(nidx_t neuron, id32_t synapse) const
 {

@@ -295,18 +295,6 @@ Simulation::applyStdp(float reward)
 
 
 
-void
-Simulation::getSynapses(unsigned sn,
-		const std::vector<unsigned>** tn,
-		const std::vector<unsigned>** d,
-		const std::vector<float>** w,
-		const std::vector<unsigned char>** p)
-{
-	return m_cm.getSynapses(sn, tn, d, w, p);
-}
-
-
-
 const std::vector<unsigned>&
 Simulation::getTargets(const std::vector<synapse_id>& synapses)
 {

@@ -51,25 +51,25 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();
 
-		/*! \copydoc nemo::Simulation::getSynapses */
-		void getSynapses(unsigned sourceNeuron,
-				const std::vector<unsigned>** targetNeuron,
-				const std::vector<unsigned>** delays,
-				const std::vector<float>** weights,
-				const std::vector<unsigned char>** plastic);
+		/*! \copydoc nemo::Simulation::getTargets */
+		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
 
-		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
-		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses);
-		const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses);
-		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses);
+		/*! \copydoc nemo::Simulation::getDelays */
+		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>&);
 
-		/*! \copydoc nemo::SimulationBackend::elapsedWallclock */
+		/*! \copydoc nemo::Simulation::getWeights */
+		const std::vector<float>& getWeights(const std::vector<synapse_id>&);
+
+		/*! \copydoc nemo::Simulation::getPlastic */
+		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>&);
+
+		/*! \copydoc nemo::Simulation::elapsedWallclock */
 		unsigned long elapsedWallclock() const;
 
-		/*! \copydoc nemo::SimulationBackend::elapsedSimulation */
+		/*! \copydoc nemo::Simulation::elapsedSimulation */
 		unsigned long elapsedSimulation() const;
 
-		/*! \copydoc nemo::SimulationBackend::resetTimer */
+		/*! \copydoc nemo::Simulation::resetTimer */
 		void resetTimer();
 
 	private:
@@ -144,13 +144,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 
 		Timer m_timer;
-
-		/* Local buffers for reading of synapse data */
-		//! \todo modify interface for getSynapses and get rid of these
-		std::vector<unsigned> m_targetsOut;
-		std::vector<unsigned> m_delaysOut;
-		std::vector<float> m_weightsOut;
-		std::vector<unsigned char> m_plasticOut;
 };
 
 

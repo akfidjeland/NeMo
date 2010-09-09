@@ -128,6 +128,22 @@ c_runSimulation(
 		size_t nfired;
 		nemo_step(sim, NULL, 0, &fired, &nfired);
 
+		// read back a few synapses every now and then just to make sure it works
+		if(ms % 100 == 0) {
+			std::vector<synapse_id> synapses = synapseIds(1, 1000);
+			float* weights;
+			nemo_get_weights(sim, &synapses[0], synapses.size(), &weights);
+
+			unsigned* targets;
+			nemo_get_targets(sim, &synapses[0], synapses.size(), &targets);
+
+			unsigned* delays;
+			nemo_get_delays(sim, &synapses[0], synapses.size(), &delays);
+
+			unsigned char* plastic;
+			nemo_get_plastic(sim, &synapses[0], synapses.size(), &plastic);
+		}
+
 		// push data back onto local buffers
 		std::copy(fired, fired + nfired, back_inserter(*fnidx));
 		std::fill_n(back_inserter(*fcycles), nfired, s*1000 + ms);

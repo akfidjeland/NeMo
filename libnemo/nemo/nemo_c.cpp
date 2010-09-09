@@ -211,32 +211,43 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount)
 
 
 
-nemo_status_t
-nemo_get_synapses(nemo_simulation_t ptr,
-		unsigned source,
-		unsigned* targets_[],
-		unsigned* delays_[],
-		float* weights_[],
-		unsigned char* plastic_[],
-		size_t* len)
-{
-	const std::vector<unsigned>* targets;
-	const std::vector<unsigned>* delays;
-	const std::vector<float>* weights;
-	const std::vector<unsigned char>* plastic;
-	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
-	CALL(sim->getSynapses(source, &targets, &delays, &weights, &plastic));
-	if(NEMO_OK == g_lastCallStatus) {
-		*targets_ = targets->empty() ? NULL : const_cast<unsigned*>(&(*targets)[0]);
-		*delays_ = delays->empty() ? NULL : const_cast<unsigned*>(&(*delays)[0]);
-		*weights_ = weights->empty() ? NULL : const_cast<float*>(&(*weights)[0]);
-		*plastic_ = plastic->empty() ? NULL : const_cast<unsigned char*>(&(*plastic)[0]);
-		*len = targets->size();
+#define GET_SYNAPSE_STATE(T, ptr, call, synapses, len, ret)                      \
+	if(len > 0) {                                                             \
+        nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);           \
+        CALL(*ret = &const_cast<T&>(sim->call(std::vector<synapse_id>(synapses, synapses+len))[0]));                                                \
+        return g_lastCallStatus;                                              \
+	} else {                                                                  \
+		*ret = NULL;                                                      \
+		return NEMO_OK;                                                       \
 	}
-	return g_lastCallStatus;
+
+
+nemo_status_t
+nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* targets[])
+{
+	GET_SYNAPSE_STATE(unsigned, ptr, getTargets, synapses, len, targets);
 }
 
 
+nemo_status_t
+nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[])
+{
+	GET_SYNAPSE_STATE(unsigned, ptr, getDelays, synapses, len, delays);
+}
+
+
+nemo_status_t
+nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float* weights[])
+{
+	GET_SYNAPSE_STATE(float, ptr, getWeights, synapses, len, weights);
+}
+
+
+nemo_status_t
+nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char* plastic[])
+{
+	GET_SYNAPSE_STATE(unsigned char, ptr, getPlastic, synapses, len, plastic);
+}
 
 
 void
