@@ -11,7 +11,10 @@
 %     nemoSimulation (constructor)
 %     step
 %     applyStdp
-%     getSynapses
+%     getTargets
+%     getDelays
+%     getWeights
+%     getPlastic
 %     elapsedWallclock
 %     elapsedSimulation
 %     resetTimer
@@ -70,26 +73,68 @@ classdef nemoSimulation < handle
             nemo_mex(uint32(9), obj.id, double(reward));
         end
 
-        function [targets, delays, weights, plastic] = getSynapses(obj, source)
-        % getSynapses - return synapses for a single neuron
+        function targets = getTargets(obj, synapses)
+        % getTargets - Return the targets for the specified synapses
         %  
         % Synopsis:
-        %   [targets, delays, weights, plastic] = getSynapses(source)
+        %   targets = getTargets(synapses)
         %  
         % Inputs:
-        %   source  - index of source neuron
+        %   synapses -
+        %             synapse ids (as returned by addSynapse)
         %    
         % Outputs:
         %   targets - indices of target neurons
-        %   delays  - conductance delay for each synapse
-        %   weights -
-        %   plastic - per-neuron boolean specifying whether synapse is static
+        %     
+            targets = nemo_mex(uint32(10), obj.id, uint64(synapses));
+        end
+
+        function delays = getDelays(obj, synapses)
+        % getDelays - Return the conductance delays for the specified synapses
+        %  
+        % Synopsis:
+        %   delays = getDelays(synapses)
+        %  
+        % Inputs:
+        %   synapses -
+        %             synapse ids (as returned by addSynapse)
         %    
-        % The order of synapses returned by this function will almost
-        % certainly differ from the order in which they were specified during
-        % network construction. However, each call to getSynapses should
-        % return the synapses in the same order. 
-            [targets, delays, weights, plastic] = nemo_mex(uint32(10), obj.id, uint32(source));
+        % Outputs:
+        %   delays  - conductance delays of the specified synpases
+        %     
+            delays = nemo_mex(uint32(11), obj.id, uint64(synapses));
+        end
+
+        function weights = getWeights(obj, synapses)
+        % getWeights - Return the weights for the specified synapses
+        %  
+        % Synopsis:
+        %   weights = getWeights(synapses)
+        %  
+        % Inputs:
+        %   synapses -
+        %             synapse ids (as returned by addSynapse)
+        %    
+        % Outputs:
+        %   weights - weights of the specified synapses
+        %     
+            weights = nemo_mex(uint32(12), obj.id, uint64(synapses));
+        end
+
+        function plastic = getPlastic(obj, synapses)
+        % getPlastic - Return the boolean plasticity status for the specified synapses
+        %  
+        % Synopsis:
+        %   plastic = getPlastic(synapses)
+        %  
+        % Inputs:
+        %   synapses -
+        %             synapse ids (as returned by addSynapse)
+        %    
+        % Outputs:
+        %   plastic - plasticity status of the specified synpases
+        %     
+            plastic = nemo_mex(uint32(13), obj.id, uint64(synapses));
         end
 
         function elapsed = elapsedWallclock(obj)
@@ -102,7 +147,7 @@ classdef nemoSimulation < handle
         %   elapsed - Return number of milliseconds of wall-clock time elapsed
         %             since first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(11), obj.id);
+            elapsed = nemo_mex(uint32(14), obj.id);
         end
 
         function elapsed = elapsedSimulation(obj)
@@ -115,7 +160,7 @@ classdef nemoSimulation < handle
         %   elapsed - Return number of milliseconds of simulation time elapsed
         %             since first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(12), obj.id);
+            elapsed = nemo_mex(uint32(15), obj.id);
         end
 
         function resetTimer(obj)
@@ -124,7 +169,7 @@ classdef nemoSimulation < handle
         % Synopsis:
         %   resetTimer()
         %   
-            nemo_mex(uint32(13), obj.id);
+            nemo_mex(uint32(16), obj.id);
         end
     end
 end

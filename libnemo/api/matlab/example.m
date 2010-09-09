@@ -73,5 +73,14 @@ end
 elapsed = sim.elapsedWallclock
 
 
-% Read back synapses of neuron 500.
-[targets, delays, weights, plastic] = sim.getSynapses(500);
+
+% Test the synapse queries work.
+%
+% Note: the synapse ids returned by addSynapse should be used here. The synapse
+% queries below relies on knowing the internals of how synapse ids are
+% allocated (it refers to the first 10 synapse of neuron 0).
+
+weights = sim.getWeights(0:10)
+targets = sim.getTargets(0:10)
+delays = sim.getDelays(0:10)
+plastic = sim.getPlastic(0:10)

@@ -18,11 +18,11 @@ classdef nemoConfiguration < handle
     methods
 
         function obj = nemoConfiguration()
-        	obj.id = nemo_mex(uint32(14));
+        	obj.id = nemo_mex(uint32(17));
         end
 
         function delete(obj)
-            nemo_mex(uint32(15), obj.id);
+            nemo_mex(uint32(18), obj.id);
         end
 
         function setCpuBackend(obj, tcount)
@@ -38,7 +38,7 @@ classdef nemoConfiguration < handle
         % the number of threads to use. If the default thread count of -1 is
         % used, the backend will choose a sensible value based on the
         % available hardware concurrency. 
-            nemo_mex(uint32(16), obj.id, int32(tcount));
+            nemo_mex(uint32(19), obj.id, int32(tcount));
         end
 
         function setCudaBackend(obj, deviceNumber)
@@ -58,7 +58,7 @@ classdef nemoConfiguration < handle
         % internally by nemo (see cudaDeviceCount and cudaDeviceDescription).
         % This device numbering may differ from the one provided by the CUDA
         % driver directly, since nemo ignores any devices it cannot use. 
-            nemo_mex(uint32(17), obj.id, int32(deviceNumber));
+            nemo_mex(uint32(20), obj.id, int32(deviceNumber));
         end
 
         function setStdpFunction(obj, prefire, postfire, minWeight, maxWeight)
@@ -83,7 +83,7 @@ classdef nemoConfiguration < handle
         % The STDP function is specified by providing the values sampled at
         % integer cycles within the STDP window. 
             nemo_mex(...
-                    uint32(18),...
+                    uint32(21),...
                     obj.id,...
                     double(prefire),...
                     double(postfire),...
@@ -102,7 +102,7 @@ classdef nemoConfiguration < handle
         %   description -
         %    
         % The backend can be changed using setCudaBackend or setCpuBackend 
-            description = nemo_mex(uint32(19), obj.id);
+            description = nemo_mex(uint32(22), obj.id);
         end
     end
 end
