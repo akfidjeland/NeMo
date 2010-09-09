@@ -12,7 +12,7 @@
 #include <sstream>
 #include <vector>
 
-#include <nemo/NetworkImpl.hpp>
+#include <nemo/network/Generator.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
@@ -26,7 +26,7 @@ namespace nemo {
 	namespace cuda {
 
 
-NeuronParameters::NeuronParameters(const network::NetworkImpl& net, Mapper& mapper) :
+NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper) :
 	m_allocated(0),
 	m_wpitch(0)
 {
@@ -37,8 +37,8 @@ NeuronParameters::NeuronParameters(const network::NetworkImpl& net, Mapper& mapp
 
 	size_t veclen = mapper.partitionCount() * m_wpitch;
 
-	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
-			i != net.m_neurons.end(); ++i) {
+	for(network::neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+			i != i_end; ++i) {
 
 		DeviceIdx dev = mapper.addIdx(i->first);
 		// address within a plane
