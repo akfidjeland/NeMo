@@ -306,46 +306,47 @@ construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging=tru
 
 #ifdef USING_MAIN
 
-#define LOG(cond, ...) if(cond) fprintf(stdout, __VA_ARGS__)
+#define LOG(cond, ...) if(cond) { fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); }
 
 int
 main(int argc, char* argv[])
 {
 	namespace po = boost::program_options;
 
-	po::options_description desc = commonOptions();
-	desc.add_options()
-		("pcount,n", po::value<unsigned>()->default_value(1), "number of 1024-sized partitions")
-		("synapses,m", po::value<unsigned>()->default_value(1000), "number of synapses per neuron")
-		("sigma,s", po::value<unsigned>()->default_value(32), "standard deviation in connectivity probability");
-	;
-
-	po::variables_map vm = processOptions(argc, argv, desc);
-
-	unsigned pcount = vm["pcount"].as<unsigned>();
-	unsigned sigma = vm["sigma"].as<unsigned>();
-	unsigned m = vm["synapses"].as<unsigned>();
-	unsigned stdp = vm["stdp"].as<unsigned>();
-	unsigned duration = vm["duration"].as<unsigned>();
-	unsigned verbose = vm["verbose"].as<unsigned>();
-	bool runBenchmark = vm.count("benchmark");
-
-	assert(sigma >= PATCH_WIDTH/2);
-
-	std::ofstream file;
-	std::string filename;
-
-	if(vm.count("output-file")) {
-		filename = vm["output-file"].as<std::string>();
-		file.open(filename.c_str()); // closes on destructor
-	}
-
-	std::ostream& out = filename.empty() ? std::cout : file;
-
-	//! \todo get RNG seed option from command line
-	//! \todo otherwise seed from system time
-	
 	try {
+
+		po::options_description desc = commonOptions();
+		desc.add_options()
+			("pcount,n", po::value<unsigned>()->default_value(1), "number of 1024-sized partitions")
+			("synapses,m", po::value<unsigned>()->default_value(1000), "number of synapses per neuron")
+			("sigma,s", po::value<unsigned>()->default_value(32), "standard deviation in connectivity probability");
+		;
+
+		po::variables_map vm = processOptions(argc, argv, desc);
+
+		unsigned pcount = vm["pcount"].as<unsigned>();
+		unsigned sigma = vm["sigma"].as<unsigned>();
+		unsigned m = vm["synapses"].as<unsigned>();
+		unsigned stdp = vm["stdp"].as<unsigned>();
+		unsigned duration = vm["duration"].as<unsigned>();
+		unsigned verbose = vm["verbose"].as<unsigned>();
+		bool runBenchmark = vm.count("benchmark");
+
+		assert(sigma >= PATCH_WIDTH/2);
+
+		std::ofstream file;
+		std::string filename;
+
+		if(vm.count("output-file")) {
+			filename = vm["output-file"].as<std::string>();
+			file.open(filename.c_str()); // closes on destructor
+		}
+
+		std::ostream& out = filename.empty() ? std::cout : file;
+
+		//! \todo get RNG seed option from command line
+		//! \todo otherwise seed from system time
+	
 		LOG(verbose, "Constructing network");
 		boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, stdp, sigma));
 		LOG(verbose, "Creating configuration");
@@ -362,11 +363,11 @@ main(int argc, char* argv[])
 		}
 		LOG(verbose, "Simulation complete");
 		return 0;
-	} catch(std::runtime_error& e) {
+	} catch(std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return -1;
 	} catch(...) {
-		std::cerr << "random1k: An unknown error occurred\n";
+		std::cerr << "torus: An unknown error occurred\n";
 		return -1;
 	}
 }
