@@ -40,17 +40,6 @@ struct FAxonTerminal
 };
 
 
-/* The rest of the synapse data is only needed if querying synapses at
- * run-time. This data is stored separately */
-struct AxonTerminalAux
-{
-	id32_t id;
-	bool plastic;
-
-	AxonTerminalAux(id32_t id, bool plastic) :
-		id(id), plastic(plastic) { }
-};
-
 
 /* A row contains a number of synapses with a fixed source and delay. A
  * fixed-point format is used internally. The caller needs to specify the
@@ -68,21 +57,9 @@ struct Row
 
 
 
-struct SynapseAddress
-{
-	size_t row;
-	sidx_t synapse;
-
-	SynapseAddress(size_t row, sidx_t synapse):
-		row(row), synapse(synapse) { }
-
-	SynapseAddress():
-		row(~0), synapse(~0) { }
-};
-
-
 class NetworkImpl;
 class ConfigurationImpl;
+struct AxonTerminalAux;
 
 
 /* Generic connectivity matrix
@@ -233,6 +210,21 @@ ConnectivityMatrix::addressOf(nidx_t source, delay_t delay) const
 {
 	return source * m_maxDelay + delay - 1;
 }
+
+
+
+/* The parts of the synapse data is only needed if querying synapses at
+ * run-time. This data is stored separately */
+struct AxonTerminalAux
+{
+	id32_t id;
+	bool plastic;
+
+	AxonTerminalAux(id32_t id, bool plastic) :
+		id(id), plastic(plastic) { }
+};
+
+
 
 } // end namespace nemo
 

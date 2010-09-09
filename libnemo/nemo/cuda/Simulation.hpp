@@ -69,6 +69,11 @@ class Simulation : public nemo::SimulationBackend
 				const std::vector<float>** weights,
 				const std::vector<unsigned char>** plastic);
 
+		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
+		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses);
+		const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses);
+		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses);
+
 		void finishSimulation();
 
 		/* TIMING */

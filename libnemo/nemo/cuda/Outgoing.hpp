@@ -31,7 +31,6 @@ class Outgoing
 				delay_t delay,
 				pidx_t targetPartition);
 
-
 		outgoing_t* data() const { return md_arr.get(); }
 
 		unsigned* count() const { return md_rowLength.get(); }
@@ -60,6 +59,7 @@ class Outgoing
 		typedef boost::tuple<pidx_t, delay_t> tkey_t;
 		typedef std::map<tkey_t, unsigned> targets_t;
 
+		//! \todo use DeviceAddress here instead
 		typedef boost::tuple<pidx_t, nidx_t> skey_t;
 		typedef std::map<skey_t, targets_t> map_t;
 

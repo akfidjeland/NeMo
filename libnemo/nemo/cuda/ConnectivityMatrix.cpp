@@ -19,6 +19,7 @@
 #include <nemo/util.h>
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/fixedpoint.hpp>
+#include <nemo/synapse_indices.hpp>
 
 #include "RSMatrix.hpp"
 #include "exception.hpp"
@@ -39,13 +40,13 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const nemo::ConfigurationImpl& conf,
 		const Mapper& mapper) :
 	m_maxDelay(net.maxDelay()),
+	mh_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
 	m_fractionalBits(~0)
 {
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> h_targets(WARP_SIZE, f_nullSynapse());
-	std::vector<weight_dt> h_weights(WARP_SIZE, 0);
 	WarpAddressTable wtable;
 
 	bool logging = conf.loggingEnabled();
@@ -63,13 +64,12 @@ ConnectivityMatrix::ConnectivityMatrix(
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(net, mapper, m_fractionalBits, conf.cudaPartitionSize(), wtable, h_targets, h_weights);
+	size_t totalWarps = createFcm(net, mapper, m_fractionalBits, conf.cudaPartitionSize(), wtable, h_targets, mh_weights);
 
 	verifySynapseTerminals(mh_fcmTargets, mapper);
 
-	moveFcmToDevice(totalWarps, h_targets, h_weights, logging);
+	moveFcmToDevice(totalWarps, h_targets, mh_weights, logging);
 	h_targets.clear();
-	h_weights.clear();
 
 	//! \todo remove need for creating intermediary warp address table. Just
 	//construct this directly in m_outgoing.
@@ -81,6 +81,17 @@ ConnectivityMatrix::ConnectivityMatrix(
 }
 
 
+
+/* Insert into vector, resizing if appropriate */
+template<typename T>
+void
+insert(size_t idx, const T& val, std::vector<T>& vec)
+{
+	if(idx >= vec.size()) {
+		vec.resize(idx+1);
+	}
+	vec.at(idx) = val;
+}
 
 
 size_t
@@ -102,7 +113,23 @@ ConnectivityMatrix::createFcm(
 
 		nidx_t h_sourceIdx = axon->first;
 		DeviceIdx d_sourceIdx = mapper.deviceIdx(h_sourceIdx);
-		size_t neuronStartWarp = currentWarp;
+
+		/* Data used when user reads FCM back from device. These are indexed by
+		 * (global) synapse ids, and are thus filled in a random order. To
+		 * populate these in a single pass over the input, resize on insertion.
+		 * The synapse ids are required to form a contigous range, so every
+		 * element should be assigned exactly once.
+		 */
+
+		//! \todo merge this into a single data structure
+		std::vector<unsigned>& h_fcmTarget = mh_fcmTargets[h_sourceIdx];
+		std::vector<unsigned>& h_fcmDelay = mh_fcmDelays[h_sourceIdx];
+		std::vector<SynapseAddress>& h_fcmSynapseAddress = mh_fcmSynapseAddress[h_sourceIdx];
+		std::vector<unsigned char>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
+
+		/* As a simple sanity check, verify that the length of the above data
+		 * structures are the same */
+		unsigned synapseCount = 0;
 
 		for(std::map<delay_t, NetworkImpl::bundle_t>::const_iterator bi = axon->second.begin();
 				bi != axon->second.end(); ++bi) {
@@ -114,13 +141,12 @@ ConnectivityMatrix::createFcm(
 						str(format("Neuron %u has synapses with delay < 1 (%u)") % h_sourceIdx % delay));
 			}
 
-
 			NetworkImpl::bundle_t bundle = bi->second;
 
 			/* A bundle contains a number of synapses with the same source
 			 * neuron and delay. On the device we need to further subdivide
 			 * this into groups of synapses with the same target partition */
-			std::map<pidx_t, std::vector<synapse_ht> > pgroups;
+			std::map<pidx_t, std::vector<IdAxonTerminal> > pgroups;
 
 			/* Populate the partition groups. We only need to store the target
 			 * neuron and weight. We store these as a pair so that we can
@@ -129,25 +155,20 @@ ConnectivityMatrix::createFcm(
 					si != bundle.end(); ++si) {
 				nidx_t h_targetIdx = si->target;
 				DeviceIdx d_targetIdx = mapper.deviceIdx(h_targetIdx);
-				weight_dt weight = fx_toFix(si->weight, fbits);
-				unsigned char plastic = si->plastic;
-				pgroups[d_targetIdx.partition].push_back(synapse_ht(d_targetIdx.neuron, weight, plastic));
+				pgroups[d_targetIdx.partition].push_back(*si);
+				synapseCount += 1;
 			}
 
-			/* Data used when user reads FCM back from device */
-			std::vector<nidx_t>& h_fcmTarget = mh_fcmTargets[h_sourceIdx];
-			std::vector<unsigned char>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
-
-			for(std::map<pidx_t, std::vector<synapse_ht> >::const_iterator g = pgroups.begin();
+			for(std::map<pidx_t, std::vector<IdAxonTerminal> >::const_iterator g = pgroups.begin();
 					g != pgroups.end(); ++g) {
 
-				pidx_t targetPartition = g->first;
-				std::vector<synapse_ht> bundle = g->second;
+				pidx_t d_targetPartition = g->first;
+				const std::vector<IdAxonTerminal>& bundle = g->second;
 				size_t warps = DIV_CEIL(bundle.size(), WARP_SIZE);
 				size_t words = warps * WARP_SIZE;
 				//! \todo change prototype to accept DeviceIdx
 				wtable.set(d_sourceIdx.partition, d_sourceIdx.neuron,
-						targetPartition, delay, currentWarp);
+						d_targetPartition, delay, currentWarp);
 
 				//! \todo allocate these only only once (in outer context)
 				/* Stage new addresses/weights in temporary buffer. We can re-order
@@ -156,40 +177,35 @@ ConnectivityMatrix::createFcm(
 				std::vector<synapse_t> targets(words, f_nullSynapse());
 				std::vector<weight_dt> weights(words, 0);
 				
-				for(std::vector<synapse_ht>::const_iterator s = bundle.begin();
+				for(std::vector<IdAxonTerminal>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
 
 					size_t sidx = s - bundle.begin();
-					targets.at(sidx) = s->target;
-					weights.at(sidx) = s->weight;
-					//! \todo just push the whole targets vector after loop?
-					//! \todo remove unused host/device address translation functions
-					h_fcmTarget.push_back(mapper.hostIdx(targetPartition, s->target));
-					h_fcmPlastic.push_back(s->plastic);
+					nidx_t d_targetNeuron = mapper.deviceIdx(s->target).neuron;
+					targets.at(sidx) = d_targetNeuron;
+					weights.at(sidx) = fx_toFix(s->weight, fbits);
+
+					insert(s->id, s->target, h_fcmTarget);
+					insert(s->id, delay, h_fcmDelay);
+					insert(s->id, SynapseAddress(currentWarp, sidx), h_fcmSynapseAddress);
+					insert(s->id, (unsigned char) s->plastic, h_fcmPlastic);
 
 					//! \todo use a struct for device addresses in outgoing arglist as well
 					m_outgoing.addSynapse(d_sourceIdx.partition,
-							d_sourceIdx.neuron, delay, targetPartition);
+							d_sourceIdx.neuron, delay, d_targetPartition);
 
 					/*! \todo simplify RCM structure, using a format similar to the FCM */
 					//! \todo factor out
 					//! \todo only need to set this if stdp is enabled
 					if(s->plastic) {
 						rcm_t& rcm = m_rsynapses;
-						if(rcm.find(targetPartition) == rcm.end()) {
-							rcm[targetPartition] = new RSMatrix(partitionSize);
+						if(rcm.find(d_targetPartition) == rcm.end()) {
+							rcm[d_targetPartition] = new RSMatrix(partitionSize);
 						}
 						//! \todo pass in DeviceIdx here
-						rcm[targetPartition]->addSynapse(d_sourceIdx.partition, d_sourceIdx.neuron, sidx, s->target, delay);
+						rcm[d_targetPartition]->addSynapse(d_sourceIdx.partition, d_sourceIdx.neuron, sidx, d_targetNeuron, delay);
 					}
 				}
-				std::fill_n(std::back_inserter(mh_fcmDelays[h_sourceIdx]), bundle.size(), delay);
-
-				/* /Word/ offset relative to first warp for this neuron. In principle this
-				 * function could write synapses to a non-contigous range of memory.
-				 * However, we currently write this as a single range. */
-				size_t bundleStart = (currentWarp - neuronStartWarp) * WARP_SIZE;
-				m_synapseAddresses.addBlock(h_sourceIdx, bundleStart, bundleStart + bundle.size());
 
 				std::copy(targets.begin(), targets.end(), back_inserter(h_targets));
 				std::copy(weights.begin(), weights.end(), back_inserter(h_weights));
@@ -200,7 +216,10 @@ ConnectivityMatrix::createFcm(
 			 * iterate over it, so we can work in constant space */
 		}
 
-		m_synapseAddresses.setWarpRange(h_sourceIdx, neuronStartWarp, currentWarp);
+		assert(synapseCount == h_fcmTarget.size());
+		assert(synapseCount == h_fcmPlastic.size());
+		assert(synapseCount == h_fcmSynapseAddress.size());
+		assert(synapseCount == h_fcmDelay.size());
 	}
 
 	return currentWarp;
@@ -299,41 +318,91 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 void
 ConnectivityMatrix::getSynapses(
 		nidx_t sourceNeuron, // global index
-		const std::vector<unsigned>** targets,
-		const std::vector<unsigned>** delays,
-		const std::vector<float>** weights,
-		const std::vector<unsigned char>** plastic)
+		const std::vector<unsigned>**,
+		const std::vector<unsigned>**,
+		const std::vector<float>**,
+		const std::vector<unsigned char>**)
 {
-	//! \todo assert that we have moved onto device
-	AddressRange warps = m_synapseAddresses.warpsOf(sourceNeuron);
-	size_t words = warps.size() * WARP_SIZE;
-
-	mh_weightBuffer.resize(words);
-	memcpyFromDevice(mh_weightBuffer,
-				md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize + warps.start * WARP_SIZE,
-				words);
-	/*! \todo read back data for more than one neuron. Keep
-	 * track of what cycle we last accessed each neuron and
-	 * what device data is currently cached here. */
-
-	// fill in weights
-	assert(m_fractionalBits != ~0U);
-	mh_fcmWeights.clear();
-	const std::vector<AddressRange>& ranges = m_synapseAddresses.synapsesOf(sourceNeuron);
-	for(std::vector<AddressRange>::const_iterator i = ranges.begin();
-			i != ranges.end(); ++i) {
-		for(unsigned addr = i->start; addr < i->end; ++addr) {
-			weight_t w = fx_toFloat(mh_weightBuffer[addr], m_fractionalBits);
-			mh_fcmWeights.push_back(w);
-		}
-	}
-
-	*targets = &mh_fcmTargets[sourceNeuron];
-	*delays = &mh_fcmDelays[sourceNeuron];
-	*weights = &mh_fcmWeights;
-	*plastic = &mh_fcmPlastic[sourceNeuron];
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "Old-style synapse-query");
 }
 
+
+
+const std::vector<weight_dt>&
+ConnectivityMatrix::syncWeights(cycle_t cycle, const std::vector<synapse_id>& synapses)
+{
+	if(cycle != m_lastWeightSync && !synapses.empty() && !mh_weights.empty()) {
+		//! \todo refine this by only doing the minimal amount of copying
+		memcpyFromDevice(&mh_weights[0],
+					md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize,
+					md_fcmPlaneSize * sizeof(weight_dt));
+		m_lastWeightSync = cycle;
+	}
+	return mh_weights;
+}
+
+
+
+const std::vector<float>&
+ConnectivityMatrix::getWeights(cycle_t cycle, const std::vector<synapse_id>& synapses)
+{
+	m_queriedWeights.resize(synapses.size());
+	const std::vector<weight_dt>& h_weights = syncWeights(cycle, synapses);
+	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
+		synapse_id id = synapses.at(i);
+		SynapseAddress addr = mh_fcmSynapseAddress[neuronIndex(id)][synapseIndex(id)];
+		weight_dt w = h_weights[addr.row * WARP_SIZE + addr.synapse];
+		m_queriedWeights[i] = fx_toFloat(w, m_fractionalBits);;
+	}
+	return m_queriedWeights;
+}
+
+
+
+
+template<typename T>
+const std::vector<T>&
+getSynapseState(
+		const std::vector<synapse_id>& synapses,
+		const std::map<nidx_t, std::vector<T> >& fcm,
+		std::vector<T>& out)
+{
+	using boost::format;
+
+	out.resize(synapses.size());
+	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
+		synapse_id id = synapses.at(i);
+		typename std::map<nidx_t, std::vector<T> >::const_iterator it = fcm.find(neuronIndex(id));
+		if(it == fcm.end()) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron id (%u) in synapse query") % neuronIndex(id)));
+		}
+		out[i] = it->second.at(synapseIndex(id));
+	}
+	return out;
+}
+
+
+
+const std::vector<unsigned>&
+ConnectivityMatrix::getTargets(const std::vector<synapse_id>& synapses)
+{
+	return getSynapseState(synapses, mh_fcmTargets, m_queriedTargets);
+}
+
+
+const std::vector<unsigned>&
+ConnectivityMatrix::getDelays(const std::vector<synapse_id>& synapses)
+{
+	return getSynapseState(synapses, mh_fcmDelays, m_queriedDelays);
+}
+
+
+const std::vector<unsigned char>&
+ConnectivityMatrix::getPlastic(const std::vector<synapse_id>& synapses)
+{
+	return getSynapseState(synapses, mh_fcmPlastic, m_queriedPlastic);
+}
 
 
 void

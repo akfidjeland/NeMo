@@ -24,7 +24,6 @@
 #include "Mapper.hpp"
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
-#include "SynapseAddressTable.hpp"
 #include "WarpAddressTable.hpp"
 
 namespace nemo {
@@ -80,6 +79,11 @@ class ConnectivityMatrix
 				const std::vector<float>** weights,
 				const std::vector<unsigned char>** plastic);
 
+		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
+		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses);
+		const std::vector<float>& getWeights(cycle_t cycle, const std::vector<synapse_id>& synapses);
+		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses);
+
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
 
@@ -110,9 +114,6 @@ class ConnectivityMatrix
 
 	private:
 
-		//! \todo use a union type here to ensure both fields are the same size?
-		typedef AxonTerminal<nidx_t, weight_dt> synapse_ht;
-
 		delay_t m_maxDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
@@ -123,6 +124,14 @@ class ConnectivityMatrix
 
 		/* Compact fcm on device */
 		boost::shared_ptr<synapse_t> md_fcm;
+
+		/* Host-side copy of the weight data. */
+		std::vector<weight_dt> mh_weights;
+
+		/* \post The weight of every synapse in 'synapses' is found up-to-date
+		 * in mh_weights. */
+		const std::vector<weight_dt>& syncWeights(cycle_t, const std::vector<synapse_id>& synapses);
+		cycle_t m_lastWeightSync;
 
 		size_t md_fcmPlaneSize; // in words
 		size_t md_fcmAllocated; // in bytes
@@ -166,30 +175,26 @@ class ConnectivityMatrix
 		 * run-time. Neuron indices are global rather than the partition/neuron
 		 * scheme used on the device, so no decoding needs to take place at
 		 * run-time. */
-		std::map<nidx_t, std::vector<nidx_t> > mh_fcmTargets;
-		std::map<nidx_t, std::vector<delay_t> > mh_fcmDelays;
+		std::map<nidx_t, std::vector<unsigned> > mh_fcmTargets;
+		std::map<nidx_t, std::vector<unsigned> > mh_fcmDelays;
 		std::map<nidx_t, std::vector<unsigned char> > mh_fcmPlastic;
 
-		/* The weights may change at run-time, so we need to read them back
-		 * from the device, and reconstruct possibly disparate data into a
-		 * single vector. The synapse addresses table contains the relevant
-		 * data for this reconstruction */
-		SynapseAddressTable m_synapseAddresses;
-
-		/* We buffer data for only a single source neuron at a time */
-		std::vector<weight_t> mh_fcmWeights;
-
-		/* The weight buffer contains the FCM data for a
-		 * single neuron, exactly as stored on the device. In
-		 * principle, we could load weights for more than one
-		 * source neuron at a time, to cut down on PCI traffic
-		 * */
-		std::vector<synapse_t> mh_weightBuffer;
+		/* For the weights we need to look up the data at run-time. We thus
+		 * need the warp/synapse index pair */
+		std::map<nidx_t, std::vector<SynapseAddress> > mh_fcmSynapseAddress;
 
 		void verifySynapseTerminals(
 				const std::map<nidx_t, std::vector<nidx_t> >& targets,
 				const Mapper& mapper);
+
+		/* Internal buffers for synapse queries */
+		std::vector<unsigned> m_queriedTargets;
+		std::vector<unsigned> m_queriedDelays;
+		std::vector<float> m_queriedWeights;
+		std::vector<unsigned char> m_queriedPlastic;
 };
+
+
 
 	} // end namespace cuda
 } // end namespace nemo

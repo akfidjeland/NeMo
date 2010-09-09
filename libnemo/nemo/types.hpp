@@ -154,6 +154,21 @@ class RSynapse
 		fix_t w_diff;
 };
 
+
+
+struct SynapseAddress
+{
+	size_t row;
+	sidx_t synapse;
+
+	SynapseAddress(size_t row, sidx_t synapse):
+		row(row), synapse(synapse) { }
+
+	SynapseAddress():
+		row(~0), synapse(~0) { }
+};
+
+
 } // end namespace nemo
 
 #endif

@@ -3,6 +3,8 @@
 
 #include <nemo/internal_types.h>
 
+typedef unsigned warp_idx;
+
 typedef fix_t weight_dt; // on the device
 typedef unsigned int pidx_t; // partition index 
 
