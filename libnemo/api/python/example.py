@@ -66,11 +66,20 @@ def run_random(ncount, scount, duration=1000):
     net = construct_random(ncount, scount)
     print "create simulation"
     sim = nemo.Simulation(net, conf)
-    # TODO: factor out simulation runners in put in nemo.util
     print "run simulation"
     for t in range(duration):
         fired = sim.step()
-        print t, ": ", fired
+        print t, ":", fired
+
+    # TODO: move this to test code
+    # Read back a few synapse values.
+    # TODO: use synapse_id getters for this
+    synapses = range(10) # relies on internals of Id allocation: neuron 0, first 10 synapses
+    print sim.get_targets(synapses);
+    print sim.get_delays(synapses);
+    print sim.get_weights(synapses);
+    print sim.get_plastic(synapses);
+
 
 
 if __name__ == "__main__":
