@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <nemo/config.h>
+#include <nemo/types.h>
 
 namespace nemo {
 
@@ -83,6 +84,11 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 				const std::vector<unsigned>** delays,
 				const std::vector<float>** weights,
 				const std::vector<unsigned char>** plastic) = 0;
+
+		virtual const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses) = 0;
+		virtual const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses) = 0;
+		virtual const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses) = 0;
+		virtual const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses) = 0;
 
 		/* \} */ // end simulation (queries) section
 

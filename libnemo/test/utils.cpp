@@ -107,3 +107,14 @@ addExcitatoryNeuron(unsigned nidx, nemo::Network& net, float sigma)
 	float v = -65.0;
 	net.addNeuron(nidx, 0.02f + 0.08f * r, b, v, 2.0f, b*v, v, sigma);
 }
+
+
+std::vector<synapse_id>
+synapseIds(unsigned neuron, unsigned synapses)
+{
+	std::vector<synapse_id> ids(synapses);
+	for(uint32_t sidx = 0; sidx < synapses; ++sidx) {
+		ids[sidx] = (uint64_t(neuron) << 32) | uint64_t(sidx);
+	}
+	return ids;
+}

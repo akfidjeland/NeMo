@@ -360,7 +360,8 @@ BOOST_AUTO_TEST_SUITE_END()
 void
 testGetSynapses(const nemo::Network& net,
 		nemo::Configuration& conf,
-		unsigned n0)
+		unsigned n0,
+		unsigned m)
 {
 	unsigned fbits = 20;
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
@@ -369,21 +370,20 @@ testGetSynapses(const nemo::Network& net,
 	std::vector<unsigned> ndelays;
 	std::vector<float> nweights;
 	std::vector<unsigned char> nplastic;
-	const std::vector<unsigned> *stargets;
-	const std::vector<unsigned> *sdelays;
-	const std::vector<float> *sweights;
-	const std::vector<unsigned char> *splastic;
 
 	for(unsigned src = n0, src_end = n0 + net.neuronCount(); src < src_end; ++src) {
+
+		std::vector<synapse_id> ids = synapseIds(src, m);
+
 		net.getSynapses(src, ntargets, ndelays, nweights, nplastic);
-		sim->getSynapses(src, &stargets, &sdelays, &sweights, &splastic);
-		sortAndCompare(ntargets, *const_cast<std::vector<unsigned>*>(stargets));
 		for(std::vector<float>::iterator i = nweights.begin(); i != nweights.end(); ++i) {
 			*i = fx_toFloat(fx_toFix(*i, fbits), fbits);
 		}
-		sortAndCompare(nweights, *const_cast<std::vector<float>*>(sweights));
-		sortAndCompare(ndelays, *const_cast<std::vector<unsigned>*>(sdelays));
-		sortAndCompare(nplastic, *const_cast<std::vector<unsigned char>*>(splastic));
+
+		sortAndCompare(sim->getWeights(ids), nweights);
+		sortAndCompare(sim->getTargets(ids), ntargets);
+		sortAndCompare(sim->getDelays(ids), ndelays);
+		sortAndCompare(sim->getPlastic(ids), nplastic);
 	}
 }
 
@@ -391,13 +391,15 @@ testGetSynapses(const nemo::Network& net,
 void
 testGetSynapses(backend_t backend, bool stdp)
 {
-	boost::scoped_ptr<nemo::Network> net1(nemo::torus::construct(4, 1000, stdp, 32, false));
 	nemo::Configuration conf = configuration(stdp, 1024, backend);
-	testGetSynapses(*net1, conf, 0);
+
+	unsigned m = 1000;
+	boost::scoped_ptr<nemo::Network> net1(nemo::torus::construct(4, m, stdp, 32, false));
+	testGetSynapses(*net1, conf, 0, m);
 
 	unsigned n0 = 1000000U;
 	boost::scoped_ptr<nemo::Network> net2(createRing(1500, n0));
-	testGetSynapses(*net2, conf, n0);
+	testGetSynapses(*net2, conf, n0, 1);
 }
 
 

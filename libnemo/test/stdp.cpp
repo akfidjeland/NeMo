@@ -87,7 +87,8 @@ delay(unsigned local)
 }
 
 
-void
+/* Return number of synapses per neuron */
+unsigned
 construct(nemo::Network& net, bool noiseConnections)
 {
 	/* Neurons in the two groups have standard parameters and no spontaneous
@@ -130,6 +131,8 @@ construct(nemo::Network& net, bool noiseConnections)
 			}
 		}
 	}
+
+	return noiseConnections ? groupSize : 1;
 }
 
 
@@ -157,29 +160,29 @@ stimulus(unsigned ms, std::vector<unsigned>& fstim)
 
 
 void
-verifyWeightChange(unsigned epoch, nemo::Simulation* sim)
+verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m)
 {
 	unsigned checked = 0; 
 
 	for(unsigned local = 0; local < groupSize; ++local) {
-		const std::vector<unsigned>* targets;
-		const std::vector<unsigned>* delays;
-		const std::vector<float>* weights;
-		const std::vector<unsigned char>* plastic;
 
-		sim->getSynapses(globalIdx(0, local), &targets, &delays, &weights, &plastic);
+		std::vector<synapse_id> synapses = synapseIds(globalIdx(0, local), m);
+		const std::vector<unsigned>& targets = sim->getTargets(synapses);
+		const std::vector<float>& weights = sim->getWeights(synapses);
+		const std::vector<unsigned>& delays = sim->getDelays(synapses);
+		const std::vector<unsigned char>& plastic = sim->getPlastic(synapses);
 
-		for(unsigned s = 0; s < targets->size(); ++s) {
+		for(unsigned s = 0; s < targets.size(); ++s) {
 
-			if(local != localIdx(targets->at(s)))
+			if(local != localIdx(targets.at(s)))
 				continue;
 
-			BOOST_REQUIRE_EQUAL(delay(localIdx(targets->at(s))), delays->at(s));
-			BOOST_REQUIRE(plastic->at(s));
+			BOOST_REQUIRE_EQUAL(delay(localIdx(targets.at(s))), delays.at(s));
+			BOOST_REQUIRE(plastic.at(s));
 
 			/* dt is positive for pre-post pair, and negative for post-pre
 			 * pairs */ 
-			int dt = -(postFireDelay - delays->at(s));
+			int dt = -(postFireDelay - delays.at(s));
 
 			float dw_expected = 0.0f; 
 			if(dt > 0) {
@@ -189,7 +192,7 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim)
 			}
 
 			float expectedWeight = initWeight + epoch * dw_expected;
-			float actualWeight = weights->at(s);
+			float actualWeight = weights.at(s);
 
 			const float tolerance = 0.001f; // percent
 			BOOST_REQUIRE_CLOSE(expectedWeight, actualWeight, tolerance);
@@ -206,12 +209,12 @@ void
 testStdp(backend_t backend, bool noiseConnections)
 {
 	nemo::Network net;
-	construct(net, noiseConnections);
+	unsigned m = construct(net, noiseConnections);
 	nemo::Configuration conf = configuration(backend);
 
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
 
-	verifyWeightChange(0, sim.get());
+	verifyWeightChange(0, sim.get(), m);
 
 	for(unsigned epoch = 1; epoch <= nepochs; ++epoch) {
 		for(unsigned ms = 0; ms < 100; ++ms) {
@@ -223,6 +226,6 @@ testStdp(backend_t backend, bool noiseConnections)
 		 * once. The magnitude of the weight change will vary
 		 * between synapses according to their delay */
 		sim->applyStdp(1.0);
-		verifyWeightChange(epoch, sim.get());
+		verifyWeightChange(epoch, sim.get(), m);
 	}
 }
