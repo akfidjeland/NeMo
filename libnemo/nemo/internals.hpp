@@ -14,7 +14,6 @@
 
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/SimulationBackend.hpp>
-#include <nemo/NetworkImpl.hpp>
 #include <nemo/Mapper.hpp>
 
 namespace nemo {

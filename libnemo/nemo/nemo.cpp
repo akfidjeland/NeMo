@@ -11,6 +11,7 @@
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
+#include <nemo/NetworkImpl.hpp>
 
 #ifdef NEMO_CUDA_ENABLED
 #include <nemo/cuda/create_simulation.hpp>

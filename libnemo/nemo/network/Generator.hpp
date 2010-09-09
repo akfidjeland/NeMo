@@ -20,6 +20,11 @@ class Generator
 
 		virtual synapse_iterator synapse_begin() const = 0;
 		virtual synapse_iterator synapse_end() const = 0;
+
+		virtual unsigned neuronCount() const = 0;
+
+		virtual unsigned minNeuronIndex() const = 0;
+		virtual unsigned maxNeuronIndex() const = 0;
 };
 
 

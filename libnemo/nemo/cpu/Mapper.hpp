@@ -12,7 +12,7 @@
 
 #include <set>
 #include <nemo/types.hpp>
-#include <nemo/NetworkImpl.hpp>
+#include <nemo/network/Generator.hpp>
 #include <nemo/Mapper.hpp>
 
 namespace nemo {
@@ -22,7 +22,7 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 {
 	public :
 
-		Mapper(const nemo::network::NetworkImpl& net) :
+		Mapper(const network::Generator& net) :
 			m_offset(0),
 			m_ncount(0)
 		{

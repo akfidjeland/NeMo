@@ -35,9 +35,8 @@ namespace nemo {
 	namespace cpu {
 
 
-
 Simulation::Simulation(
-		const nemo::network::NetworkImpl& net,
+		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net),
 	//! \todo remove redundant member?
@@ -78,8 +77,7 @@ Simulation::setNeuronParameters(
 	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
 		nidx_t nidx = mapper.addGlobal((*i).first);
-		//! \todo use a better typename here
-		NetworkImpl::neuron_t n = i->second;
+		const Neuron<float>& n = i->second;
 		m_a.at(nidx) = n.a;	
 		m_b.at(nidx) = n.b;	
 		m_c.at(nidx) = n.c;	
@@ -299,7 +297,7 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 	const nemo::Row& row = m_cm.getRow(source, delay);
 
 	for(unsigned s=0; s < row.len; ++s) {
-		const FAxonTerminal& terminal = row.data[s];
+		const FAxonTerminal& terminal = row[s];
 		assert(terminal.target < m_current.size());
 		m_current.at(terminal.target) += terminal.weight;
 		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",

@@ -32,8 +32,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 {
 	public:
 
-		//! \todo switch to pure NetworkGenerator interface
-		Simulation(const nemo::network::NetworkImpl& net, const nemo::ConfigurationImpl&);
+		Simulation(const network::Generator&, const nemo::ConfigurationImpl&);
 
 		unsigned getFractionalBits() const;
 
