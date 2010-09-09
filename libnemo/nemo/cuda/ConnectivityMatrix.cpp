@@ -146,7 +146,7 @@ ConnectivityMatrix::createFcm(
 			/* A bundle contains a number of synapses with the same source
 			 * neuron and delay. On the device we need to further subdivide
 			 * this into groups of synapses with the same target partition */
-			std::map<pidx_t, std::vector<IdAxonTerminal> > pgroups;
+			std::map<pidx_t, std::vector<AxonTerminal> > pgroups;
 
 			/* Populate the partition groups. We only need to store the target
 			 * neuron and weight. We store these as a pair so that we can
@@ -159,11 +159,11 @@ ConnectivityMatrix::createFcm(
 				synapseCount += 1;
 			}
 
-			for(std::map<pidx_t, std::vector<IdAxonTerminal> >::const_iterator g = pgroups.begin();
+			for(std::map<pidx_t, std::vector<AxonTerminal> >::const_iterator g = pgroups.begin();
 					g != pgroups.end(); ++g) {
 
 				pidx_t d_targetPartition = g->first;
-				const std::vector<IdAxonTerminal>& bundle = g->second;
+				const std::vector<AxonTerminal>& bundle = g->second;
 				size_t warps = DIV_CEIL(bundle.size(), WARP_SIZE);
 				size_t words = warps * WARP_SIZE;
 				//! \todo change prototype to accept DeviceIdx
@@ -177,7 +177,7 @@ ConnectivityMatrix::createFcm(
 				std::vector<synapse_t> targets(words, f_nullSynapse());
 				std::vector<weight_dt> weights(words, 0);
 				
-				for(std::vector<IdAxonTerminal>::const_iterator s = bundle.begin();
+				for(std::vector<AxonTerminal>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
 
 					size_t sidx = s - bundle.begin();

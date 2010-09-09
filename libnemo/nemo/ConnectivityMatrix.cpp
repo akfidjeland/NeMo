@@ -27,7 +27,7 @@
 namespace nemo {
 
 
-Row::Row(const std::vector<IdAxonTerminal>& ss, unsigned fbits) :
+Row::Row(const std::vector<AxonTerminal>& ss, unsigned fbits) :
 	len(ss.size())
 {
 	FAxonTerminal<fix_t>* ptr;
@@ -46,7 +46,7 @@ Row::Row(const std::vector<IdAxonTerminal>& ss, unsigned fbits) :
 	data = boost::shared_array< FAxonTerminal<fix_t> >(ptr, free);
 
 	/* static/plastic flag is not needed in forward matrix */
-	for(std::vector<nemo::IdAxonTerminal>::const_iterator si = ss.begin();
+	for(std::vector<nemo::AxonTerminal>::const_iterator si = ss.begin();
 			si != ss.end(); ++si) {
 		size_t i = si - ss.begin();
 		ptr[i] = FAxonTerminal<fix_t>(fx_toFix(si->weight, fbits), si->target);
@@ -111,7 +111,7 @@ Row&
 ConnectivityMatrix::setRow(
 		nidx_t source,
 		delay_t delay,
-		const std::vector<IdAxonTerminal>& ss,
+		const std::vector<AxonTerminal>& ss,
 		const mapper_t& mapper)
 {
 	using boost::format;
@@ -138,7 +138,7 @@ ConnectivityMatrix::setRow(
 	for(size_t sidx=0; sidx < row.len; ++sidx) {
 		nidx_t target = mapper.localIdx(row.data[sidx].target);
 		row.data[sidx].target = target;
-		const IdAxonTerminal& s = ss.at(sidx);
+		const AxonTerminal& s = ss.at(sidx);
 		if(s.plastic) {
 			m_racc[mapper.localIdx(s.target)].push_back(RSynapse(source, delay, sidx));
 		}

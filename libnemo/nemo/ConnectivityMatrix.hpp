@@ -49,7 +49,7 @@ struct Row
 	Row() : len(0) {}
 
 	/* \post synapse order is the same as in input vector */
-	Row(const std::vector<IdAxonTerminal>&, unsigned fbits);
+	Row(const std::vector<AxonTerminal>&, unsigned fbits);
 
 	size_t len;
 	boost::shared_array< FAxonTerminal<fix_t> > data;
@@ -99,7 +99,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 */
 		//! \todo remove mapper argument. Mapper is already a member so no need to pass it in.
 		Row& setRow(nidx_t source, delay_t,
-				const std::vector<IdAxonTerminal>&,
+				const std::vector<AxonTerminal>&,
 				const mapper_t&);
 
 		/*! \return all synapses for a given source and delay */

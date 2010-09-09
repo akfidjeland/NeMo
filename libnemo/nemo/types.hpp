@@ -64,9 +64,7 @@ class Neuron
 
 
 
-//! \todo sort out naming here. Move AxonTerminal to CUDA namespace
-
-struct IdAxonTerminal
+struct AxonTerminal
 {
 	public :
 
@@ -75,24 +73,11 @@ struct IdAxonTerminal
 		float weight;
 		bool plastic;
 
-		IdAxonTerminal(synapse_id id, nidx_t t, float w, bool p):
+		AxonTerminal():
+			id(~0), target(~0), weight(0.0f), plastic(false) { }
+
+		AxonTerminal(synapse_id id, nidx_t t, float w, bool p):
 			id(id), target(t), weight(w), plastic(p) { }
-};
-
-
-template<typename I, typename W>
-class AxonTerminal
-{
-	public :
-
-		I target;
-		W weight;
-		//! \todo change to bool?
-		unsigned char plastic;
-
-		AxonTerminal() : target(0), weight(0.0f), plastic(false) { }
-
-		AxonTerminal(I t, W w, unsigned char p) : target(t), weight(w), plastic(p) {}
 
 	private :
 #ifdef INCLUDE_MPI
@@ -100,6 +85,7 @@ class AxonTerminal
 
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
+			ar & id;
 			ar & target;
 			ar & weight;
 			ar & plastic;
@@ -109,19 +95,18 @@ class AxonTerminal
 
 
 
-template<typename I, typename D, typename W>
 class Synapse
 {
 	public :
 
 		Synapse() : source(0), delay(0) {}
 
-		Synapse(I source, D delay, const AxonTerminal<I, W>& terminal) :
+		Synapse(nidx_t source, delay_t delay, const AxonTerminal& terminal) :
 			source(source), delay(delay), terminal(terminal) { }
 
-		I source;
-		D delay;
-		AxonTerminal<I, W> terminal;
+		nidx_t source;
+		delay_t delay;
+		AxonTerminal terminal;
 
 	private :
 

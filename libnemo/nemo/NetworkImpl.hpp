@@ -90,7 +90,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl
 		typedef nemo::Neuron<weight_t> neuron_t;
 		std::map<nidx_t, neuron_t> m_neurons;
 
-		typedef IdAxonTerminal synapse_t;
+		typedef AxonTerminal synapse_t;
 		typedef std::vector<synapse_t> bundle_t;
 		//! \todo could keep this in a single map with a tuple index
 		typedef std::map<delay_t, bundle_t> axon_t;
