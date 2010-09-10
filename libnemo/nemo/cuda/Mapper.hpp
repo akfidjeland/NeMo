@@ -33,6 +33,15 @@ struct DeviceIdx
 };
 
 
+inline
+bool
+operator<(const DeviceIdx& lhs, const DeviceIdx& rhs)
+{
+	return lhs.partition < rhs.partition ||
+		(lhs.partition == rhs.partition && lhs.neuron < rhs.neuron);
+}
+
+
 
 /*! Maps between device and global indices */
 class Mapper {

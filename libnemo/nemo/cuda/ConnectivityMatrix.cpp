@@ -169,8 +169,6 @@ ConnectivityMatrix::createFcm(
 				size_t warps = DIV_CEIL(bundle.size(), WARP_SIZE);
 				size_t words = warps * WARP_SIZE;
 
-				SynapseAddress addr = wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, currentWarp);
-
 				//! \todo allocate these only only once (in outer context)
 				/* Stage new addresses/weights in temporary buffer. We can re-order
 				 * this buffer before writing to h_targets/h_weights in order
@@ -181,7 +179,8 @@ ConnectivityMatrix::createFcm(
 				for(std::vector<AxonTerminal>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
 
-					// SynapseAddress addr = wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, currentWarp);
+					// SynapseAddress addr =
+					wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, currentWarp);
 					//! \todo update currentWarp and resize host buffer if relevant
 
 					size_t sidx = s - bundle.begin();

@@ -93,18 +93,6 @@ Outgoing::reportWarpSizeHistogram(std::ostream& out) const
 
 
 
-size_t
-Outgoing::maxPitch() const
-{
-	size_t pitch = 0;
-	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
-		pitch = std::max(pitch, warpCount(i->second));
-	}
-	return pitch;
-}
-
-
-
 bool
 compare_warp_counts(
 		const std::pair<pidx_t, size_t>& lhs,
@@ -121,7 +109,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	using namespace boost::tuples;
 
 	size_t height = partitionCount * MAX_PARTITION_SIZE;
-	size_t width = maxPitch() * sizeof(outgoing_t);
+	size_t width = wtable.maxWarpsPerNeuron() * sizeof(outgoing_t);
 
 	// allocate device memory for table
 	outgoing_t* d_arr = NULL;

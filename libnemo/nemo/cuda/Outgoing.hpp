@@ -65,7 +65,6 @@ class Outgoing
 
 		map_t m_acc;
 
-		size_t maxPitch() const;
 		size_t warpCount(const targets_t& targets) const;
 
 		size_t m_allocated;

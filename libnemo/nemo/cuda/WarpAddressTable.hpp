@@ -36,6 +36,8 @@ class WarpAddressTable
 
 	public :
 
+		WarpAddressTable();
+
 		/*
 		 * \param nextFreeWarp
 		 * 		The next unused warp in the host FCM.
@@ -54,6 +56,10 @@ class WarpAddressTable
 		const_iterator warps_begin(pidx_t, nidx_t, pidx_t, delay_t) const;
 		const_iterator warps_end(pidx_t, nidx_t, pidx_t, delay_t) const;
 
+		unsigned warpCount() const { return m_warpCount; }
+
+		unsigned maxWarpsPerNeuron() const;
+
 	private :
 
 		typedef std::map<idx_t, warp_set> warp_map;
@@ -63,7 +69,11 @@ class WarpAddressTable
 		const WarpAddressTable::warp_set&
 			warpSet(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const;
 
-		std::map<idx_t, unsigned> m_rowLength;
+		std::map<idx_t, unsigned> m_rowSynapses;
+
+		std::map<DeviceIdx, unsigned> m_warpsPerNeuron;
+
+		unsigned m_warpCount;
 };
 
 	} // end namespace cuda
