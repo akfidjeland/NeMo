@@ -250,12 +250,21 @@ synapse_iterator
 NetworkImpl::synapse_begin() const
 {
 	fcm_t::const_iterator ni = m_fcm.begin();
-	axon_t::const_iterator bi = ni->second.begin();
+	fcm_t::const_iterator ni_end = m_fcm.end();
+
+	axon_t::const_iterator bi, bi_end;
+	bundle_t::const_iterator si, si_end;
+
+	if(ni != ni_end) {
+		bi = ni->second.begin();
+		bi_end = ni->second.end();
+		if(bi != bi_end) {
+			si = bi->second.begin();
+			si_end = bi->second.end();
+		}
+	}
 	return synapse_iterator(
-			new programmatic::synapse_iterator(
-					ni, m_fcm.end(),
-					bi, ni->second.end(),
-					bi->second.begin(), bi->second.end()));
+		new programmatic::synapse_iterator(ni, ni_end, bi, bi_end, si, si_end));
 }
 
 
@@ -263,8 +272,17 @@ synapse_iterator
 NetworkImpl::synapse_end() const
 {
 	fcm_t::const_iterator ni = m_fcm.end();
-	axon_t::const_iterator bi = m_fcm.rbegin()->second.end();
-	bundle_t::const_iterator si = m_fcm.rbegin()->second.rbegin()->second.end();
+	axon_t::const_iterator bi;
+	bundle_t::const_iterator si;
+
+	if(m_fcm.begin() != ni) {
+		const axon_t& axon = m_fcm.rbegin()->second;
+		bi = axon.end();
+		if(axon.begin() != bi) {
+			si = axon.rbegin()->second.end();
+		}
+	}
+
 	return synapse_iterator(
 			new programmatic::synapse_iterator(ni, ni, bi, bi, si, si));
 }
