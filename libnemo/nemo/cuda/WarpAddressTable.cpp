@@ -33,7 +33,7 @@ WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, de
 	unsigned column = rowSynapses % WARP_SIZE;
 	rowSynapses += 1;
 
-	std::set<size_t>& warps = m_warps[idx];
+	warp_set& warps = m_warps[idx];
 
 	if(column == 0) {
 		warps.insert(nextFreeWarp);

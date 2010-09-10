@@ -177,7 +177,7 @@ ConnectivityMatrix::createFcm(
 						s != bundle.end(); ++s) {
 
 					SynapseAddress addr =
-					wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, nextFreeWarp);
+						wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, nextFreeWarp);
 
 					if(addr.synapse == 0 && addr.row == nextFreeWarp) {
 						nextFreeWarp += 1;
@@ -191,7 +191,7 @@ ConnectivityMatrix::createFcm(
 
 					insert(s->id, s->target, h_fcmTarget);
 					insert(s->id, delay, h_fcmDelay);
-					insert(s->id, SynapseAddress(addr.row, sidx), h_fcmSynapseAddress);
+					insert(s->id, addr, h_fcmSynapseAddress);
 					insert(s->id, (unsigned char) s->plastic, h_fcmPlastic);
 
 					/*! \todo simplify RCM structure, using a format similar to the FCM */
