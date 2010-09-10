@@ -23,9 +23,16 @@
 namespace nemo {
 	namespace cuda {
 
-Outgoing::Outgoing() : m_pitch(0), m_allocated(0) {}
+Outgoing::Outgoing() : m_pitch(0), m_allocated(0), m_maxIncomingWarps(0) {}
 
 
+Outgoing::Outgoing(size_t partitionCount, const WarpAddressTable& wtable) :
+		m_pitch(0),
+		m_allocated(0),
+		m_maxIncomingWarps(0)
+{
+	init(partitionCount, wtable);
+}
 
 
 void
@@ -69,9 +76,8 @@ compare_warp_counts(
 
 
 
-//! \todo call directly from ctor
-size_t
-Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
+void
+Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 {
 	using namespace boost::tuples;
 
@@ -138,7 +144,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 
 	// return maximum number of incoming groups for any one partition
 	//! \todo compute this on forward pass
-	return incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
+	m_maxIncomingWarps = incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
 }
 
 	} // end namespace cuda

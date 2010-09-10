@@ -25,6 +25,9 @@ class Outgoing
 
 		Outgoing();
 
+		/*! Set the device data containing the outgoing spike groups. */
+		Outgoing(size_t partitionCount, const class WarpAddressTable& wtable);
+
 		outgoing_t* data() const { return md_arr.get(); }
 
 		unsigned* count() const { return md_rowLength.get(); }
@@ -32,16 +35,15 @@ class Outgoing
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
 
-		/*! Set the device data containing the outgoing spike groups.
-		 *
-		 * \return
+		/* \return
 		 * 		the maximum number of incoming warps for any one partition.
 		 * 		This is a worst-case value, which assumes that every source
-		 * 		neuron fires every cycle for some time.
-		 */
-		size_t moveToDevice(size_t partitionCount, const class WarpAddressTable& wtable);
+		 * 		neuron fires every cycle for some time. */
+		size_t maxIncomingWarps() const { return m_maxIncomingWarps; }
 
 	private :
+
+		void init(size_t partitionCount, const class WarpAddressTable& wtable);
 
 		boost::shared_ptr<outgoing_t> md_arr;  // device data
 		size_t m_pitch;                       // max pitch
@@ -55,6 +57,7 @@ class Outgoing
 		 * warp to stdout */
 		void reportWarpSizeHistogram(std::ostream& out) const;
 
+		size_t m_maxIncomingWarps;
 };
 
 	} // end namespace cuda

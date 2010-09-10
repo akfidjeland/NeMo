@@ -71,9 +71,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(totalWarps, h_targets, mh_weights, logging);
 	h_targets.clear();
 
-	//! \todo should we get maxWarps directly in this function?
-	size_t maxWarps = m_outgoing.moveToDevice(mapper.partitionCount(), wtable);
-	m_incoming.allocate(mapper.partitionCount(), maxWarps, 1.0);
+	m_outgoing = Outgoing(mapper.partitionCount(), wtable);
+	m_incoming.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
 
 	moveRcmToDevice(wtable);
 }
