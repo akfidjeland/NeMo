@@ -27,47 +27,12 @@ Outgoing::Outgoing() : m_pitch(0), m_allocated(0) {}
 
 
 
-void 
-Outgoing::addSynapse(
-		pidx_t sourcePartition,
-		nidx_t sourceNeuron,
-		delay_t delay,
-		pidx_t targetPartition)
-{
-	skey_t skey(sourcePartition, sourceNeuron);
-	tkey_t tkey(targetPartition, delay);
-	m_acc[skey][tkey] += 1;
-}
-
-
-
-size_t
-Outgoing::warpCount(const targets_t& targets) const
-{
-	size_t warps = 0;
-	for(targets_t::const_iterator i = targets.begin(); i != targets.end(); ++i) {
-		warps += DIV_CEIL(i->second, WARP_SIZE);
-	}
-	return warps;
-}
-
-
-
-size_t
-Outgoing::totalWarpCount() const
-{
-	size_t count = 0;
-	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
-		count += warpCount(i->second);
-	}
-	return count;
-}
-
-
 
 void
 Outgoing::reportWarpSizeHistogram(std::ostream& out) const
 {
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "Warp size reporting currently disabled");
+#if 0
 	unsigned total = 0;
 	std::vector<unsigned> hist(WARP_SIZE+1, 0);
 	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
@@ -89,6 +54,7 @@ Outgoing::reportWarpSizeHistogram(std::ostream& out) const
 		out << size << ": " << count << "(" << percentage << "%)\n";
 	}
 	out << "total: " << total << std::endl;
+#endif
 }
 
 
@@ -103,6 +69,7 @@ compare_warp_counts(
 
 
 
+//! \todo call directly from ctor
 size_t
 Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 {
@@ -129,45 +96,31 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	std::map<pidx_t, size_t> incoming;
 
 	// fill host memory
-	for(map_t::const_iterator i = m_acc.begin(); i != m_acc.end(); ++i) {
+	for(WarpAddressTable::row_iterator ri = wtable.row_begin(); ri != wtable.row_end(); ++ri) {
 
-		skey_t key = i->first;
-		const targets_t& targets = i->second;
+		const WarpAddressTable::key& k = ri->first;
 
-		assert(targets.size() <= wpitch);
+		//! \todo store DeviceIdx directly
+		pidx_t sourcePartition = get<0>(k);
+		nidx_t sourceNeuron = get<1>(k);
+		pidx_t targetPartition = get<2>(k);
+		delay_t delay = get<3>(k);
 
-		pidx_t sourcePartition = get<0>(key);
-		nidx_t sourceNeuron = get<1>(key);
+		const WarpAddressTable::warp_set& r = ri->second;
 
-		size_t t_addr = outgoingRow(sourcePartition, sourceNeuron, wpitch);
-
-		size_t j = 0;
-		for(targets_t::const_iterator r = targets.begin(); r != targets.end(); ++r) {
-
-			pidx_t targetPartition = get<0>(r->first);
-			delay_t delay = get<1>(r->first);
-			//! \todo add run-time test that warp-size is as expected
-			unsigned warps = DIV_CEIL(r->second, WARP_SIZE);
-
-			incoming[targetPartition] += warps;
-
-			//! \todo check for overflow here
-			uint32_t offset = wtable.get(sourcePartition, sourceNeuron, targetPartition, delay);
-			for(unsigned warp = 0; warp < warps; ++warp) {
-				h_arr[t_addr + j + warp] =
-					make_outgoing(targetPartition, delay, offset + warp);
-			}
-			j += warps;
-			assert(j <= wpitch);
-		}
+		typedef WarpAddressTable::warp_set::const_iterator warp_iterator;
 
 		//! \todo move this into shared __device__/__host__ function
 		size_t r_addr = sourcePartition * MAX_PARTITION_SIZE + sourceNeuron;
-		h_rowLength.at(r_addr) = warpCount(targets);
-	}
 
-	// delete accumulator memory which is no longer needed
-	m_acc.clear();
+		for(warp_iterator wi = r.begin(); wi != r.end(); ++wi) {
+			//! \todo use DeviceIdx overload here. Refactor to share with r_addr
+			size_t rowBegin = outgoingRow(sourcePartition, sourceNeuron, wpitch);
+			size_t col = h_rowLength[r_addr]++;
+			h_arr[rowBegin + col] = make_outgoing(targetPartition, delay, *wi);
+			incoming[targetPartition] += 1;
+		}
+	}
 
 	// copy table from host to device
 	if(d_arr != NULL && !h_arr.empty()) {
@@ -184,6 +137,7 @@ Outgoing::moveToDevice(size_t partitionCount, const WarpAddressTable& wtable)
 	memcpyToDevice(d_rowLength, h_rowLength);
 
 	// return maximum number of incoming groups for any one partition
+	//! \todo compute this on forward pass
 	return incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
 }
 

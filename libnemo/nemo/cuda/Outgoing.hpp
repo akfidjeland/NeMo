@@ -25,20 +25,12 @@ class Outgoing
 
 		Outgoing();
 
-		void addSynapse(
-				pidx_t sourcePartition,
-				nidx_t sourceNeuron,
-				delay_t delay,
-				pidx_t targetPartition);
-
 		outgoing_t* data() const { return md_arr.get(); }
 
 		unsigned* count() const { return md_rowLength.get(); }
 
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
-
-		size_t totalWarpCount() const;
 
 		/*! Set the device data containing the outgoing spike groups.
 		 *
@@ -56,19 +48,9 @@ class Outgoing
 
 		boost::shared_ptr<unsigned> md_rowLength; // per-neuron pitch
 
-		typedef boost::tuple<pidx_t, delay_t> tkey_t;
-		typedef std::map<tkey_t, unsigned> targets_t;
-
-		//! \todo use DeviceAddress here instead
-		typedef boost::tuple<pidx_t, nidx_t> skey_t;
-		typedef std::map<skey_t, targets_t> map_t;
-
-		map_t m_acc;
-
-		size_t warpCount(const targets_t& targets) const;
-
 		size_t m_allocated;
 
+		//! \todo move this function to WarpAddressTable
 		/*! \return print histogram of sizes of each synapse
 		 * warp to stdout */
 		void reportWarpSizeHistogram(std::ostream& out) const;

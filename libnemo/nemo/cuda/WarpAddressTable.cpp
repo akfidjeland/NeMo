@@ -27,7 +27,7 @@ WarpAddressTable::WarpAddressTable() :
 SynapseAddress
 WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, delay_t delay, size_t nextFreeWarp)
 {
-	idx_t idx(source.partition, source.neuron, targetPartition, delay);
+	key idx(source.partition, source.neuron, targetPartition, delay);
 
 	unsigned& rowSynapses = m_rowSynapses[idx];
 	unsigned column = rowSynapses % WARP_SIZE;
@@ -46,48 +46,23 @@ WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, de
 }
 
 
-#if 1
 size_t
 WarpAddressTable::get(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const
 {
-	idx_t idx(sp, sn, tp, d);
+	key idx(sp, sn, tp, d);
 	warp_map::const_iterator wa = m_warps.find(idx);
 	if(wa == m_warps.end()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "invalid row in WarpAddressTable lookup");
 	}
 	return *wa->second.begin();
 }
-#endif
 
 
-
-const WarpAddressTable::warp_set&
-WarpAddressTable::warpSet(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const
+unsigned
+WarpAddressTable::warpsPerNeuron(const DeviceIdx& neuron) const
 {
-	idx_t idx(sp, sn, tp, d);
-	warp_map::const_iterator wa = m_warps.find(idx);
-	if(wa == m_warps.end()) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "invalid row in WarpAddressTable lookup");
-	}
-	return wa->second;
+	return m_warpsPerNeuron.find(neuron)->second;
 }
-
-
-
-WarpAddressTable::const_iterator
-WarpAddressTable::warps_begin(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const
-{
-	return warpSet(sp, sn, tp, d).begin();
-}
-
-
-
-WarpAddressTable::const_iterator
-WarpAddressTable::warps_end(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const
-{
-	return warpSet(sp, sn, tp, d).end();
-}
-
 
 
 unsigned

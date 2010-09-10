@@ -71,8 +71,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(totalWarps, h_targets, mh_weights, logging);
 	h_targets.clear();
 
-	//! \todo remove need for creating intermediary warp address table. Just
-	//construct this directly in m_outgoing.
 	//! \todo should we get maxWarps directly in this function?
 	size_t maxWarps = m_outgoing.moveToDevice(mapper.partitionCount(), wtable);
 	m_incoming.allocate(mapper.partitionCount(), maxWarps, 1.0);
@@ -106,7 +104,7 @@ ConnectivityMatrix::createFcm(
 {
 	using boost::format;
 
-	size_t currentWarp = 1; // leave space for null warp at beginning
+	size_t nextFreeWarp = 1; // leave space for null warp at beginning
 
 	for(std::map<nidx_t, network::NetworkImpl::axon_t>::const_iterator axon = net.m_fcm.begin();
 			axon != net.m_fcm.end(); ++axon) {
@@ -179,9 +177,13 @@ ConnectivityMatrix::createFcm(
 				for(std::vector<AxonTerminal>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
 
-					// SynapseAddress addr =
-					wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, currentWarp);
-					//! \todo update currentWarp and resize host buffer if relevant
+					SynapseAddress addr =
+					wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, nextFreeWarp);
+
+					if(addr.synapse == 0 && addr.row == nextFreeWarp) {
+						nextFreeWarp += 1;
+					}
+					//! \todo also resize the host buffer if required.
 
 					size_t sidx = s - bundle.begin();
 					nidx_t d_targetNeuron = mapper.deviceIdx(s->target).neuron;
@@ -190,12 +192,8 @@ ConnectivityMatrix::createFcm(
 
 					insert(s->id, s->target, h_fcmTarget);
 					insert(s->id, delay, h_fcmDelay);
-					insert(s->id, SynapseAddress(currentWarp, sidx), h_fcmSynapseAddress);
+					insert(s->id, SynapseAddress(addr.row, sidx), h_fcmSynapseAddress);
 					insert(s->id, (unsigned char) s->plastic, h_fcmPlastic);
-
-					//! \todo use a struct for device addresses in outgoing arglist as well
-					m_outgoing.addSynapse(d_sourceIdx.partition,
-							d_sourceIdx.neuron, delay, d_targetPartition);
 
 					/*! \todo simplify RCM structure, using a format similar to the FCM */
 					//! \todo factor out
@@ -212,8 +210,6 @@ ConnectivityMatrix::createFcm(
 
 				std::copy(targets.begin(), targets.end(), back_inserter(h_targets));
 				std::copy(weights.begin(), weights.end(), back_inserter(h_weights));
-
-				currentWarp += warps;
 			}
 			/*! \todo optionally clear nemo::NetworkImpl data structure as we
 			 * iterate over it, so we can work in constant space */
@@ -225,7 +221,7 @@ ConnectivityMatrix::createFcm(
 		assert(synapseCount == h_fcmDelay.size());
 	}
 
-	return currentWarp;
+	return nextFreeWarp;
 }
 
 

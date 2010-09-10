@@ -24,15 +24,19 @@ namespace nemo {
 
 class WarpAddressTable
 {
-	private :
+	public :
 
 		/* Synapses are grouped into 'rows' which share the same source neuron,
 		 * target partition
 		 *                   source  source  target */
-		typedef boost::tuple<pidx_t, nidx_t, pidx_t, delay_t> idx_t;
+		typedef boost::tuple<pidx_t, nidx_t, pidx_t, delay_t> key;
 
 		/* Each row may be spread over a disparate set of warps */
 		typedef std::set<size_t> warp_set;
+
+	private :
+
+		typedef std::map<key, warp_set> warp_map;
 
 	public :
 
@@ -49,27 +53,25 @@ class WarpAddressTable
 		 */
 		SynapseAddress addSynapse(const DeviceIdx&, pidx_t, delay_t, size_t nextFreeWarp);
 
+		/*! \todo should remove this when it's no longer needed by RSMatrix */
 		size_t get(pidx_t, nidx_t, pidx_t, delay_t) const;
 
-		typedef std::set<size_t>::const_iterator const_iterator;
+		typedef warp_map::const_iterator row_iterator;
 
-		const_iterator warps_begin(pidx_t, nidx_t, pidx_t, delay_t) const;
-		const_iterator warps_end(pidx_t, nidx_t, pidx_t, delay_t) const;
+		row_iterator row_begin() const { return m_warps.begin(); }
+		row_iterator row_end() const { return m_warps.end(); }
 
 		unsigned warpCount() const { return m_warpCount; }
+
+		unsigned warpsPerNeuron(const DeviceIdx& neuron) const;
 
 		unsigned maxWarpsPerNeuron() const;
 
 	private :
 
-		typedef std::map<idx_t, warp_set> warp_map;
-
 		warp_map m_warps;
 
-		const WarpAddressTable::warp_set&
-			warpSet(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const;
-
-		std::map<idx_t, unsigned> m_rowSynapses;
+		std::map<key, unsigned> m_rowSynapses;
 
 		std::map<DeviceIdx, unsigned> m_warpsPerNeuron;
 
