@@ -39,7 +39,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const nemo::network::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf,
 		const Mapper& mapper) :
-	m_maxDelay(net.maxDelay()),
+	m_maxDelay(0),
 	mh_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
@@ -136,6 +136,8 @@ ConnectivityMatrix::createFcm(
 
 			delay_t delay = bi->first;
 
+			m_maxDelay = std::max(m_maxDelay, delay);
+
 			if(delay < 1) {
 				throw nemo::exception(NEMO_INVALID_INPUT,
 						str(format("Neuron %u has synapses with delay < 1 (%u)") % h_sourceIdx % delay));
@@ -166,9 +168,8 @@ ConnectivityMatrix::createFcm(
 				const std::vector<AxonTerminal>& bundle = g->second;
 				size_t warps = DIV_CEIL(bundle.size(), WARP_SIZE);
 				size_t words = warps * WARP_SIZE;
-				//! \todo change prototype to accept DeviceIdx
-				wtable.set(d_sourceIdx.partition, d_sourceIdx.neuron,
-						d_targetPartition, delay, currentWarp);
+
+				SynapseAddress addr = wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, currentWarp);
 
 				//! \todo allocate these only only once (in outer context)
 				/* Stage new addresses/weights in temporary buffer. We can re-order
@@ -179,6 +180,9 @@ ConnectivityMatrix::createFcm(
 				
 				for(std::vector<AxonTerminal>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
+
+					// SynapseAddress addr = wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, currentWarp);
+					//! \todo update currentWarp and resize host buffer if relevant
 
 					size_t sidx = s - bundle.begin();
 					nidx_t d_targetNeuron = mapper.deviceIdx(s->target).neuron;
