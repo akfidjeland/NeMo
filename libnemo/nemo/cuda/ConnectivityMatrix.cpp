@@ -163,15 +163,6 @@ ConnectivityMatrix::createFcm(
 
 				pidx_t d_targetPartition = g->first;
 				const std::vector<AxonTerminal>& bundle = g->second;
-				size_t warps = DIV_CEIL(bundle.size(), WARP_SIZE);
-				size_t words = warps * WARP_SIZE;
-
-				//! \todo allocate these only only once (in outer context)
-				/* Stage new addresses/weights in temporary buffer. We can re-order
-				 * this buffer before writing to h_targets/h_weights in order
-				 * to, e.g. optimise for shared memory bank conflicts. */
-				std::vector<synapse_t> targets(words, f_nullSynapse());
-				std::vector<weight_dt> weights(words, 0);
 				
 				for(std::vector<AxonTerminal>::const_iterator s = bundle.begin();
 						s != bundle.end(); ++s) {
@@ -181,35 +172,37 @@ ConnectivityMatrix::createFcm(
 
 					if(addr.synapse == 0 && addr.row == nextFreeWarp) {
 						nextFreeWarp += 1;
+						/* Resize host buffers to accomodate the new warp. This
+						 * allocation scheme could potentially result in a
+						 * large number of reallocations, so we might be better
+						 * off allocating larger chunks here */
+						h_targets.resize(nextFreeWarp * WARP_SIZE, f_nullSynapse());
+						h_weights.resize(nextFreeWarp * WARP_SIZE, 0);
 					}
-					//! \todo also resize the host buffer if required.
 
-					size_t sidx = s - bundle.begin();
 					nidx_t d_targetNeuron = mapper.deviceIdx(s->target).neuron;
-					targets.at(sidx) = d_targetNeuron;
-					weights.at(sidx) = fx_toFix(s->weight, fbits);
 
-					insert(s->id, s->target, h_fcmTarget);
+					size_t f_addr = addr.row * WARP_SIZE + addr.synapse;
+					//! \todo range check this address
+
+					h_targets.at(f_addr) = d_targetNeuron;
+					h_weights.at(f_addr) = fx_toFix(s->weight, fbits);
+
+					insert(s->id, s->target, h_fcmTarget); // keep global address
 					insert(s->id, delay, h_fcmDelay);
 					insert(s->id, addr, h_fcmSynapseAddress);
 					insert(s->id, (unsigned char) s->plastic, h_fcmPlastic);
 
 					/*! \todo simplify RCM structure, using a format similar to the FCM */
-					//! \todo factor out
 					//! \todo only need to set this if stdp is enabled
 					if(s->plastic) {
 						rcm_t& rcm = m_rsynapses;
 						if(rcm.find(d_targetPartition) == rcm.end()) {
 							rcm[d_targetPartition] = new RSMatrix(partitionSize);
 						}
-						rcm[d_targetPartition]->addSynapse(
-								d_sourceIdx, d_targetNeuron, delay,
-								addr.row * WARP_SIZE + addr.synapse);
+						rcm[d_targetPartition]->addSynapse(d_sourceIdx, d_targetNeuron, delay, f_addr);
 					}
 				}
-
-				std::copy(targets.begin(), targets.end(), back_inserter(h_targets));
-				std::copy(weights.begin(), weights.end(), back_inserter(h_weights));
 			}
 			/*! \todo optionally clear nemo::NetworkImpl data structure as we
 			 * iterate over it, so we can work in constant space */
