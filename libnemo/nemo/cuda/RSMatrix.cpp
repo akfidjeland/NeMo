@@ -14,7 +14,6 @@
 #include "connectivityMatrix.cu_h"
 #include "device_memory.hpp"
 #include "exception.hpp"
-#include "WarpAddressTable.hpp"
 
 
 namespace nemo {
@@ -22,7 +21,8 @@ namespace nemo {
 
 
 RSMatrix::RSMatrix(size_t partitionSize) :
-	m_hostData(partitionSize),
+	mh_source(partitionSize),
+	mh_sourceAddress(partitionSize),
 	m_partitionSize(partitionSize),
 	m_pitch(0),
 	m_allocated(0)
@@ -71,8 +71,8 @@ size_t
 RSMatrix::maxSynapsesPerNeuron() const
 {
 	size_t n = 0;
-	for(host_sparse_t::const_iterator i = m_hostData.begin();
-			i != m_hostData.end(); ++i) {
+	for(host_plane::const_iterator i = mh_source.begin();
+			i != mh_source.end(); ++i) {
 		n = std::max(n, i->size());
 	}
 	return n;
@@ -80,73 +80,48 @@ RSMatrix::maxSynapsesPerNeuron() const
 
 
 void
-RSMatrix::copyToDevice(
-		const WarpAddressTable& wtable,
-		pidx_t targetPartition,
-		host_sparse_t h_mem,
+RSMatrix::moveToDevice(
+		host_plane& h_mem,
+		size_t plane,
+		uint32_t defaultValue,
 		uint32_t* d_mem)
 {
 	/* We only need to store the addresses on the host side */
-	std::vector<uint32_t> buf(planeSize(), INVALID_REVERSE_SYNAPSE);
-	for(host_sparse_t::const_iterator n = h_mem.begin(); n != h_mem.end(); ++n) {
+	std::vector<uint32_t> buf(planeSize(), defaultValue);
+	for(host_plane::const_iterator n = h_mem.begin(); n != h_mem.end(); ++n) {
 		size_t offset = (n - h_mem.begin()) * m_pitch;
 		std::copy(n->begin(), n->end(), buf.begin() + offset);
 	}
-
-	memcpyToDevice(d_mem + RCM_ADDRESS * planeSize(), buf, planeSize());
-
-	/* Now fill in forward addresses for the STDP application step */
-	std::fill(buf.begin(), buf.end(), 0); // points to the null FCM warp
-	for(host_sparse_t::const_iterator n = h_mem.begin(); n != h_mem.end(); ++n) {
-
-		size_t offset = (n - h_mem.begin()) * m_pitch; // to beginning of current row
-
-		//! \todo store RSMatrix in a sensible format to begin with, so we
-		//don't have to extract this data again.
-		for(std::vector<uint32_t>::const_iterator rs = n->begin();
-				rs != n->end(); ++rs) {
-			uint32_t warpOffset = wtable.get(
-					sourcePartition(*rs),
-					sourceNeuron(*rs),
-					targetPartition,
-					r_delay1(*rs));
-			size_t faddress = (warpOffset * WARP_SIZE) + forwardIdx(*rs);
-			assert(faddress <= 0xffffffff);
-			buf.at(offset) = uint32_t(faddress);
-			++offset;
-		}
-	}
-
-	memcpyToDevice(d_mem + RCM_FADDRESS * planeSize(), buf, planeSize());
+	h_mem.clear();
+	memcpyToDevice(d_mem + plane * planeSize(), buf, planeSize());
 }
 
 
-
 void
-RSMatrix::moveToDevice(
-		const WarpAddressTable& wtable,
-		pidx_t targetPartition)
+RSMatrix::moveToDevice()
 {
 	boost::shared_ptr<uint32_t> d_mem = allocateDeviceMemory();
-	copyToDevice(wtable, targetPartition, m_hostData, d_mem.get());
-	m_hostData.clear();
+	moveToDevice(mh_source, RCM_ADDRESS, INVALID_REVERSE_SYNAPSE, d_mem.get());
+	moveToDevice(mh_sourceAddress, RCM_FADDRESS, 0, d_mem.get());
 }
 
 
 
 void 
 RSMatrix::addSynapse(
-		unsigned int sourcePartition,
-		unsigned int sourceNeuron,
-		unsigned int sourceSynapse,
-		unsigned int targetNeuron,
-		unsigned int delay)
+		unsigned sourcePartition,
+		unsigned sourceNeuron,
+		unsigned sourceSynapse,
+		unsigned targetNeuron,
+		unsigned delay,
+		uint32_t forwardAddress)
 {
 	/*! \note we cannot check source partition or neuron here, since this class
 	 * only deals with the reverse synapses for a single partition. It should
 	 * be checked in the caller */
 	uint32_t synapse = r_packSynapse(sourcePartition, sourceNeuron, sourceSynapse, delay);
-	m_hostData.at(targetNeuron).push_back(synapse);
+	mh_source.at(targetNeuron).push_back(synapse);
+	mh_sourceAddress.at(targetNeuron).push_back(forwardAddress);
 }
 
 
@@ -159,7 +134,6 @@ RSMatrix::clearStdpAccumulator()
 		throw nemo::exception(NEMO_LOGIC_ERROR,
 				"attempting to clear STDP array before device memory allocated");
 	}
-
 	d_memset2D(d_stdp(), m_pitch*sizeof(uint32_t), 0, m_partitionSize);
 }
 

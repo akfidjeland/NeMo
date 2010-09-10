@@ -164,7 +164,7 @@ class ConnectivityMatrix
 		unsigned m_fractionalBits;
 
 		/* Per-partition addressing of RCM */
-		void moveRcmToDevice(const WarpAddressTable& wtable);
+		void moveRcmToDevice();
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;

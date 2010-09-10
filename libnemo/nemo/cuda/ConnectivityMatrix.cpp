@@ -74,7 +74,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	m_outgoing = Outgoing(mapper.partitionCount(), wtable);
 	m_incoming.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
 
-	moveRcmToDevice(wtable);
+	moveRcmToDevice();
 }
 
 
@@ -202,8 +202,11 @@ ConnectivityMatrix::createFcm(
 						if(rcm.find(d_targetPartition) == rcm.end()) {
 							rcm[d_targetPartition] = new RSMatrix(partitionSize);
 						}
-						//! \todo pass in DeviceIdx here
-						rcm[d_targetPartition]->addSynapse(d_sourceIdx.partition, d_sourceIdx.neuron, sidx, d_targetNeuron, delay);
+						rcm[d_targetPartition]->addSynapse(
+								//! \todo pass in DeviceIdx here
+								d_sourceIdx.partition, d_sourceIdx.neuron,
+								sidx, d_targetNeuron, delay,
+								addr.row * WARP_SIZE + addr.synapse);
 					}
 				}
 
@@ -279,14 +282,14 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 
 
 void
-ConnectivityMatrix::moveRcmToDevice(const WarpAddressTable& wtable)
+ConnectivityMatrix::moveRcmToDevice()
 {
 	if(m_rsynapses.size() == 0) {
 		return;
 	}
 
 	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-		i->second->moveToDevice(wtable, i->first);
+		i->second->moveToDevice();
 	}
 
 	CUDA_SAFE_CALL(

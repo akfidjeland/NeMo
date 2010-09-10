@@ -53,17 +53,12 @@ class WarpAddressTable
 		 */
 		SynapseAddress addSynapse(const DeviceIdx&, pidx_t, delay_t, size_t nextFreeWarp);
 
-		/*! \todo should remove this when it's no longer needed by RSMatrix */
-		size_t get(pidx_t, nidx_t, pidx_t, delay_t) const;
-
 		typedef warp_map::const_iterator row_iterator;
 
 		row_iterator row_begin() const { return m_warps.begin(); }
 		row_iterator row_end() const { return m_warps.end(); }
 
 		unsigned warpCount() const { return m_warpCount; }
-
-		unsigned warpsPerNeuron(const DeviceIdx& neuron) const;
 
 		unsigned maxWarpsPerNeuron() const;
 

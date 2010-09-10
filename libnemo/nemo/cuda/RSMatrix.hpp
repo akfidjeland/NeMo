@@ -43,15 +43,14 @@ class RSMatrix
 		RSMatrix(size_t partitionSize);
 
 		void addSynapse(
-				unsigned int sourcePartition,
-				unsigned int sourceNeuron,
-				unsigned int sourceSynapse,
-				unsigned int targetNeuron,
-				unsigned int delay);
+				unsigned sourcePartition,
+				unsigned sourceNeuron,
+				unsigned sourceSynapse,
+				unsigned targetNeuron,
+				unsigned delay,
+				uint32_t forwardAddress);
 
-		void moveToDevice(
-				const class WarpAddressTable& wtable,
-				pidx_t targetPartition);
+		void moveToDevice();
 
 		void clearStdpAccumulator();
 
@@ -71,10 +70,16 @@ class RSMatrix
 
 	private:
 
+		//! \todo rename
 		boost::shared_ptr<uint32_t> m_deviceData;
 
-		typedef std::vector< std::vector<uint32_t> > host_sparse_t;
-		host_sparse_t m_hostData;
+		typedef std::vector< std::vector<uint32_t> > host_plane;
+
+		/* Source neuron information */
+		host_plane mh_source;
+
+		/* The full address (in the FCM) to this particular synapse */
+		host_plane mh_sourceAddress;
 
 		size_t m_partitionSize;
 
@@ -100,11 +105,8 @@ class RSMatrix
 
 		boost::shared_ptr<uint32_t>& allocateDeviceMemory();
 
-		void copyToDevice(
-				const class WarpAddressTable& wtable,
-				pidx_t targetPartition,
-				host_sparse_t h_mem,
-				uint32_t* d_mem);
+		/* Move /one/ plane to device */
+		void moveToDevice(host_plane& h_mem, size_t plane, uint32_t dflt, uint32_t* d_mem);
 };
 
 	} // end namespace cuda

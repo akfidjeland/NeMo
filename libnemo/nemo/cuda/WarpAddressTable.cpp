@@ -46,29 +46,15 @@ WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, de
 }
 
 
-size_t
-WarpAddressTable::get(pidx_t sp, nidx_t sn, pidx_t tp, delay_t d) const
-{
-	key idx(sp, sn, tp, d);
-	warp_map::const_iterator wa = m_warps.find(idx);
-	if(wa == m_warps.end()) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "invalid row in WarpAddressTable lookup");
-	}
-	return *wa->second.begin();
-}
-
-
-unsigned
-WarpAddressTable::warpsPerNeuron(const DeviceIdx& neuron) const
-{
-	return m_warpsPerNeuron.find(neuron)->second;
-}
-
 
 unsigned
 WarpAddressTable::maxWarpsPerNeuron() const
 {
-	return std::max_element(m_warpsPerNeuron.begin(), m_warpsPerNeuron.end())->second;
+	if(m_warpsPerNeuron.empty()) {
+		return 0;
+	} else {
+		return std::max_element(m_warpsPerNeuron.begin(), m_warpsPerNeuron.end())->second;
+	}
 }
 
 
