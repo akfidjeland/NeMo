@@ -20,7 +20,7 @@
 /* \brief Synapse encoding/decoding
  *
  * Forward synapse: target neuron
- * Reverse synapse: source synapse / source partition / source neuron
+ * Reverse synapse: source neuron + delay
  */
 
 
@@ -36,14 +36,12 @@ synapse_t f_nullSynapse();
 unsigned r_packSynapse(
 		unsigned sourcePartition,
 		unsigned sourceNeuron,
-		unsigned sourceSynapse,
 		unsigned delay);
 
 #define INVALID_REVERSE_SYNAPSE ((unsigned) ~0)
 
 unsigned sourceNeuron(unsigned rsynapse);
 unsigned sourcePartition(unsigned rsynapse);
-unsigned forwardIdx(unsigned rsynapse);
 unsigned r_delay1(unsigned rsynapse);
 
 

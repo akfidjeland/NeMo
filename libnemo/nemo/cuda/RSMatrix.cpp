@@ -109,9 +109,7 @@ RSMatrix::moveToDevice()
 
 void 
 RSMatrix::addSynapse(
-		unsigned sourcePartition,
-		unsigned sourceNeuron,
-		unsigned sourceSynapse,
+		const DeviceIdx& source,
 		unsigned targetNeuron,
 		unsigned delay,
 		uint32_t forwardAddress)
@@ -119,7 +117,7 @@ RSMatrix::addSynapse(
 	/*! \note we cannot check source partition or neuron here, since this class
 	 * only deals with the reverse synapses for a single partition. It should
 	 * be checked in the caller */
-	uint32_t synapse = r_packSynapse(sourcePartition, sourceNeuron, sourceSynapse, delay);
+	uint32_t synapse = r_packSynapse(source.partition, source.neuron, delay);
 	mh_source.at(targetNeuron).push_back(synapse);
 	mh_sourceAddress.at(targetNeuron).push_back(forwardAddress);
 }

@@ -203,9 +203,7 @@ ConnectivityMatrix::createFcm(
 							rcm[d_targetPartition] = new RSMatrix(partitionSize);
 						}
 						rcm[d_targetPartition]->addSynapse(
-								//! \todo pass in DeviceIdx here
-								d_sourceIdx.partition, d_sourceIdx.neuron,
-								sidx, d_targetNeuron, delay,
+								d_sourceIdx, d_targetNeuron, delay,
 								addr.row * WARP_SIZE + addr.synapse);
 					}
 				}

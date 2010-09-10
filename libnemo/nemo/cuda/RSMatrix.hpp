@@ -20,6 +20,7 @@
 
 #include "kernel.cu_h"
 #include "types.h"
+#include "Mapper.hpp"
 
 namespace nemo {
 	namespace cuda {
@@ -43,9 +44,7 @@ class RSMatrix
 		RSMatrix(size_t partitionSize);
 
 		void addSynapse(
-				unsigned sourcePartition,
-				unsigned sourceNeuron,
-				unsigned sourceSynapse,
+				const DeviceIdx& source,
 				unsigned targetNeuron,
 				unsigned delay,
 				uint32_t forwardAddress);

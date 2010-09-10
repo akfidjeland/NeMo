@@ -19,7 +19,6 @@
 
 #define NEURON_MASK MASK(NEURON_BITS)
 #define PARTITION_MASK MASK(PARTITION_BITS)
-#define FSYNAPSE_MASK MASK(SYNAPSE_BITS)
 #define DELAY_MASK MASK(DELAY_BITS)
 
 #define PARTITION_SHIFT NEURON_BITS
@@ -66,19 +65,14 @@ targetNeuron(unsigned synapse)
 
 __host__
 unsigned
-r_packSynapse(
-        unsigned sourcePartition,
-        unsigned sourceNeuron,
-        unsigned sourceSynapse,
-        unsigned delay)
+r_packSynapse(unsigned sourcePartition, unsigned sourceNeuron, unsigned delay)
 {
-    assert(!(sourcePartition & ~PARTITION_MASK));
-    assert(!(sourceNeuron & ~NEURON_MASK));
-    assert(!(delay & ~DELAY_MASK));
-    return (  (sourceSynapse & FSYNAPSE_MASK) << R_FSYNAPSE_SHIFT)
-            | (sourcePartition                << R_PARTITION_SHIFT)
-            | (sourceNeuron                   << R_NEURON_SHIFT)
-            | delay;
+	assert(!(sourcePartition & ~PARTITION_MASK));
+	assert(!(sourceNeuron & ~NEURON_MASK));
+	assert(!(delay & ~DELAY_MASK));
+	return (sourcePartition << R_PARTITION_SHIFT)
+	     | (sourceNeuron    << R_NEURON_SHIFT)
+	     |  delay;
 }
 
 
@@ -96,14 +90,6 @@ unsigned
 sourcePartition(unsigned rsynapse)
 {
     return (rsynapse >> R_PARTITION_SHIFT) & PARTITION_MASK;
-}
-
-
-__device__ __host__
-unsigned
-forwardIdx(unsigned rsynapse)
-{
-    return rsynapse >> R_FSYNAPSE_SHIFT;
 }
 
 
