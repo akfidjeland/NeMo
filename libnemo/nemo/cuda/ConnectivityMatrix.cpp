@@ -91,6 +91,52 @@ insert(size_t idx, const T& val, std::vector<T>& vec)
 }
 
 
+
+
+void
+ConnectivityMatrix::addSynapse(
+		const AxonTerminal& s,
+		const SynapseAddress& addr,
+		const DeviceIdx& d_sourceIdx,
+		pidx_t d_targetPartition,
+		delay_t delay,
+		const Mapper& mapper,
+		unsigned fbits, //! \todo could remove
+		size_t& nextFreeWarp,
+		std::vector<synapse_t>& h_targets,
+		std::vector<weight_dt>& h_weights,
+		std::vector<unsigned>& h_fcmTargets,
+		std::vector<unsigned>& h_fcmDelays,
+		std::vector<unsigned char>& h_fcmPlastic,
+		std::vector<SynapseAddress>& h_fcmSynapseAddress
+		)
+{
+	//! \todo do more per-synapse computation internally here
+	nidx_t d_targetNeuron = mapper.deviceIdx(s.target).neuron;
+
+	size_t f_addr = addr.row * WARP_SIZE + addr.synapse;
+	//! \todo range check this address
+
+	h_targets.at(f_addr) = d_targetNeuron;
+	h_weights.at(f_addr) = fx_toFix(s.weight, fbits);
+
+	insert(s.id, s.target, h_fcmTargets); // keep global address
+	insert(s.id, delay, h_fcmDelays);
+	//! \todo store fully computed address here instead
+	insert(s.id, addr, h_fcmSynapseAddress);
+	insert(s.id, (unsigned char) s.plastic, h_fcmPlastic);
+
+	/*! \todo simplify RCM structure, using a format similar to the FCM */
+	//! \todo only need to set this if stdp is enabled
+	if(s.plastic) {
+		rcm_t& rcm = m_rsynapses;
+		if(rcm.find(d_targetPartition) == rcm.end()) {
+			rcm[d_targetPartition] = new RSMatrix(mapper.partitionSize());
+		}
+		rcm[d_targetPartition]->addSynapse(d_sourceIdx, d_targetNeuron, delay, f_addr);
+	}
+}
+
 size_t
 ConnectivityMatrix::createFcm(
 		const nemo::network::NetworkImpl& net,
@@ -119,8 +165,8 @@ ConnectivityMatrix::createFcm(
 		 */
 
 		//! \todo merge this into a single data structure
-		std::vector<unsigned>& h_fcmTarget = mh_fcmTargets[h_sourceIdx];
-		std::vector<unsigned>& h_fcmDelay = mh_fcmDelays[h_sourceIdx];
+		std::vector<unsigned>& h_fcmTargets = mh_fcmTargets[h_sourceIdx];
+		std::vector<unsigned>& h_fcmDelays = mh_fcmDelays[h_sourceIdx];
 		std::vector<SynapseAddress>& h_fcmSynapseAddress = mh_fcmSynapseAddress[h_sourceIdx];
 		std::vector<unsigned char>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
 
@@ -180,38 +226,23 @@ ConnectivityMatrix::createFcm(
 						h_weights.resize(nextFreeWarp * WARP_SIZE, 0);
 					}
 
-					nidx_t d_targetNeuron = mapper.deviceIdx(s->target).neuron;
-
-					size_t f_addr = addr.row * WARP_SIZE + addr.synapse;
-					//! \todo range check this address
-
-					h_targets.at(f_addr) = d_targetNeuron;
-					h_weights.at(f_addr) = fx_toFix(s->weight, fbits);
-
-					insert(s->id, s->target, h_fcmTarget); // keep global address
-					insert(s->id, delay, h_fcmDelay);
-					insert(s->id, addr, h_fcmSynapseAddress);
-					insert(s->id, (unsigned char) s->plastic, h_fcmPlastic);
-
-					/*! \todo simplify RCM structure, using a format similar to the FCM */
-					//! \todo only need to set this if stdp is enabled
-					if(s->plastic) {
-						rcm_t& rcm = m_rsynapses;
-						if(rcm.find(d_targetPartition) == rcm.end()) {
-							rcm[d_targetPartition] = new RSMatrix(partitionSize);
-						}
-						rcm[d_targetPartition]->addSynapse(d_sourceIdx, d_targetNeuron, delay, f_addr);
-					}
+					addSynapse(*s, addr, d_sourceIdx, d_targetPartition, delay, mapper, fbits,
+							nextFreeWarp, h_targets, h_weights,
+							h_fcmTargets,
+							h_fcmDelays,
+							h_fcmPlastic,
+							h_fcmSynapseAddress
+							);
 				}
 			}
 			/*! \todo optionally clear nemo::NetworkImpl data structure as we
 			 * iterate over it, so we can work in constant space */
 		}
 
-		assert(synapseCount == h_fcmTarget.size());
+		assert(synapseCount == h_fcmTargets.size());
 		assert(synapseCount == h_fcmPlastic.size());
 		assert(synapseCount == h_fcmSynapseAddress.size());
-		assert(synapseCount == h_fcmDelay.size());
+		assert(synapseCount == h_fcmDelays.size());
 	}
 
 	return nextFreeWarp;
