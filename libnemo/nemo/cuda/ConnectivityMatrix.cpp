@@ -96,21 +96,34 @@ insert(size_t idx, const T& val, std::vector<T>& vec)
 void
 ConnectivityMatrix::addSynapse(
 		const AxonTerminal& s,
-		const SynapseAddress& addr,
 		const DeviceIdx& d_sourceIdx,
-		pidx_t d_targetPartition,
 		delay_t delay,
 		const Mapper& mapper,
 		unsigned fbits, //! \todo could remove
 		size_t& nextFreeWarp,
+		WarpAddressTable& wtable,
 		std::vector<synapse_t>& h_targets,
 		std::vector<weight_dt>& h_weights,
 		std::vector<unsigned>& h_fcmTargets,
 		std::vector<unsigned>& h_fcmDelays,
 		std::vector<unsigned char>& h_fcmPlastic,
-		std::vector<SynapseAddress>& h_fcmSynapseAddress
-		)
+		std::vector<SynapseAddress>& h_fcmSynapseAddress)
 {
+	pidx_t d_targetPartition = mapper.deviceIdx(s.target).partition;
+
+	SynapseAddress addr =
+		wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, nextFreeWarp);
+
+	if(addr.synapse == 0 && addr.row == nextFreeWarp) {
+		nextFreeWarp += 1;
+		/* Resize host buffers to accomodate the new warp. This
+		 * allocation scheme could potentially result in a
+		 * large number of reallocations, so we might be better
+		 * off allocating larger chunks here */
+		h_targets.resize(nextFreeWarp * WARP_SIZE, f_nullSynapse());
+		h_weights.resize(nextFreeWarp * WARP_SIZE, 0);
+	}
+
 	//! \todo do more per-synapse computation internally here
 	nidx_t d_targetNeuron = mapper.deviceIdx(s.target).neuron;
 
@@ -164,6 +177,7 @@ ConnectivityMatrix::createFcm(
 		 * element should be assigned exactly once.
 		 */
 
+		//! \todo move access into addSynapse
 		//! \todo merge this into a single data structure
 		std::vector<unsigned>& h_fcmTargets = mh_fcmTargets[h_sourceIdx];
 		std::vector<unsigned>& h_fcmDelays = mh_fcmDelays[h_sourceIdx];
@@ -188,52 +202,19 @@ ConnectivityMatrix::createFcm(
 
 			network::NetworkImpl::bundle_t bundle = bi->second;
 
-			/* A bundle contains a number of synapses with the same source
-			 * neuron and delay. On the device we need to further subdivide
-			 * this into groups of synapses with the same target partition */
-			std::map<pidx_t, std::vector<AxonTerminal> > pgroups;
-
 			/* Populate the partition groups. We only need to store the target
 			 * neuron and weight. We store these as a pair so that we can
 			 * reorganise these later. */
 			for(network::NetworkImpl::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
-				nidx_t h_targetIdx = si->target;
-				DeviceIdx d_targetIdx = mapper.deviceIdx(h_targetIdx);
-				pgroups[d_targetIdx.partition].push_back(*si);
+				addSynapse(*si, d_sourceIdx, delay, mapper, fbits,
+						nextFreeWarp, wtable,
+						h_targets, h_weights,
+						h_fcmTargets,
+						h_fcmDelays,
+						h_fcmPlastic,
+						h_fcmSynapseAddress);
 				synapseCount += 1;
-			}
-
-			for(std::map<pidx_t, std::vector<AxonTerminal> >::const_iterator g = pgroups.begin();
-					g != pgroups.end(); ++g) {
-
-				pidx_t d_targetPartition = g->first;
-				const std::vector<AxonTerminal>& bundle = g->second;
-				
-				for(std::vector<AxonTerminal>::const_iterator s = bundle.begin();
-						s != bundle.end(); ++s) {
-
-					SynapseAddress addr =
-						wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, nextFreeWarp);
-
-					if(addr.synapse == 0 && addr.row == nextFreeWarp) {
-						nextFreeWarp += 1;
-						/* Resize host buffers to accomodate the new warp. This
-						 * allocation scheme could potentially result in a
-						 * large number of reallocations, so we might be better
-						 * off allocating larger chunks here */
-						h_targets.resize(nextFreeWarp * WARP_SIZE, f_nullSynapse());
-						h_weights.resize(nextFreeWarp * WARP_SIZE, 0);
-					}
-
-					addSynapse(*s, addr, d_sourceIdx, d_targetPartition, delay, mapper, fbits,
-							nextFreeWarp, h_targets, h_weights,
-							h_fcmTargets,
-							h_fcmDelays,
-							h_fcmPlastic,
-							h_fcmSynapseAddress
-							);
-				}
 			}
 			/*! \todo optionally clear nemo::NetworkImpl data structure as we
 			 * iterate over it, so we can work in constant space */

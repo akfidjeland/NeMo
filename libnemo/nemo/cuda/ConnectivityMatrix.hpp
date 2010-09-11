@@ -195,13 +195,12 @@ class ConnectivityMatrix
 		void
 		addSynapse(
 				const AxonTerminal& s,
-				const SynapseAddress& addr,
 				const DeviceIdx& d_sourceIdx,
-				pidx_t d_targetPartition,
 				delay_t delay,
 				const Mapper& mapper,
 				unsigned fbits, //! \todo could remove
 				size_t& nextFreeWarp,
+				WarpAddressTable& wtable,
 				std::vector<synapse_t>& h_targets,
 				std::vector<weight_dt>& h_weights,
 				std::vector<unsigned>& h_fcmTargets,
