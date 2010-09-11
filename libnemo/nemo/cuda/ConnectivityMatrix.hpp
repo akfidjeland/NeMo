@@ -140,7 +140,6 @@ class ConnectivityMatrix
 		size_t createFcm(
 				const nemo::network::NetworkImpl& net,
 				const Mapper&,
-				unsigned fbits,
 				size_t partitionSize,
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& targets,
@@ -197,7 +196,6 @@ class ConnectivityMatrix
 				nidx_t source,
 				delay_t delay,
 				const Mapper& mapper,
-				unsigned fbits, //! \todo could remove
 				size_t& nextFreeWarp,
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& h_targets,

@@ -64,7 +64,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(net, mapper, m_fractionalBits, conf.cudaPartitionSize(), wtable, h_targets, mh_weights);
+	size_t totalWarps = createFcm(net, mapper, conf.cudaPartitionSize(), wtable, h_targets, mh_weights);
 
 	verifySynapseTerminals(mh_fcmTargets, mapper);
 
@@ -99,12 +99,20 @@ ConnectivityMatrix::addSynapse(
 		nidx_t h_sourceIdx,
 		delay_t delay,
 		const Mapper& mapper,
-		unsigned fbits, //! \todo could remove
 		size_t& nextFreeWarp,
 		WarpAddressTable& wtable,
 		std::vector<synapse_t>& h_targets,
 		std::vector<weight_dt>& h_weights)
 {
+	using boost::format;
+
+	m_maxDelay = std::max(m_maxDelay, delay);
+
+	if(delay < 1) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Neuron %u has synapses with delay < 1 (%u)") % h_sourceIdx % delay));
+	}
+
 	pidx_t d_targetPartition = mapper.deviceIdx(s.target).partition;
 	DeviceIdx d_sourceIdx = mapper.deviceIdx(h_sourceIdx);
 
@@ -128,7 +136,7 @@ ConnectivityMatrix::addSynapse(
 	//! \todo range check this address
 
 	h_targets.at(f_addr) = d_targetNeuron;
-	h_weights.at(f_addr) = fx_toFix(s.weight, fbits);
+	h_weights.at(f_addr) = fx_toFix(s.weight, m_fractionalBits);
 
 	/* Data used when user reads FCM back from device. These are indexed by
 	 * (global) synapse ids, and are thus filled in a random order. To
@@ -156,14 +164,11 @@ size_t
 ConnectivityMatrix::createFcm(
 		const nemo::network::NetworkImpl& net,
 		const Mapper& mapper,
-		unsigned fbits,
 		size_t partitionSize,
 		WarpAddressTable& wtable,
 		std::vector<synapse_t>& h_targets,
 		std::vector<weight_dt>& h_weights)
 {
-	using boost::format;
-
 	size_t nextFreeWarp = 1; // leave space for null warp at beginning
 
 	for(std::map<nidx_t, network::NetworkImpl::axon_t>::const_iterator axon = net.m_fcm.begin();
@@ -179,22 +184,11 @@ ConnectivityMatrix::createFcm(
 				bi != axon->second.end(); ++bi) {
 
 			delay_t delay = bi->first;
-
-			m_maxDelay = std::max(m_maxDelay, delay);
-
-			if(delay < 1) {
-				throw nemo::exception(NEMO_INVALID_INPUT,
-						str(format("Neuron %u has synapses with delay < 1 (%u)") % h_sourceIdx % delay));
-			}
-
 			network::NetworkImpl::bundle_t bundle = bi->second;
 
-			/* Populate the partition groups. We only need to store the target
-			 * neuron and weight. We store these as a pair so that we can
-			 * reorganise these later. */
 			for(network::NetworkImpl::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
-				addSynapse(*si, h_sourceIdx, delay, mapper, fbits,
+				addSynapse(*si, h_sourceIdx, delay, mapper,
 						nextFreeWarp, wtable, h_targets, h_weights);
 				synapseCount += 1;
 			}
