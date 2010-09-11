@@ -192,21 +192,16 @@ class ConnectivityMatrix
 		std::vector<float> m_queriedWeights;
 		std::vector<unsigned char> m_queriedPlastic;
 
-		void
-		addSynapse(
+		void addSynapse(
 				const AxonTerminal& s,
-				const DeviceIdx& d_sourceIdx,
+				nidx_t source,
 				delay_t delay,
 				const Mapper& mapper,
 				unsigned fbits, //! \todo could remove
 				size_t& nextFreeWarp,
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& h_targets,
-				std::vector<weight_dt>& h_weights,
-				std::vector<unsigned>& h_fcmTargets,
-				std::vector<unsigned>& h_fcmDelays,
-				std::vector<unsigned char>& h_fcmPlastic,
-				std::vector<SynapseAddress>& h_fcmSynapseAddress);
+				std::vector<weight_dt>& h_weights);
 };
 
 

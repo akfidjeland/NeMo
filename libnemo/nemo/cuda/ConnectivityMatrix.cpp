@@ -96,20 +96,17 @@ insert(size_t idx, const T& val, std::vector<T>& vec)
 void
 ConnectivityMatrix::addSynapse(
 		const AxonTerminal& s,
-		const DeviceIdx& d_sourceIdx,
+		nidx_t h_sourceIdx,
 		delay_t delay,
 		const Mapper& mapper,
 		unsigned fbits, //! \todo could remove
 		size_t& nextFreeWarp,
 		WarpAddressTable& wtable,
 		std::vector<synapse_t>& h_targets,
-		std::vector<weight_dt>& h_weights,
-		std::vector<unsigned>& h_fcmTargets,
-		std::vector<unsigned>& h_fcmDelays,
-		std::vector<unsigned char>& h_fcmPlastic,
-		std::vector<SynapseAddress>& h_fcmSynapseAddress)
+		std::vector<weight_dt>& h_weights)
 {
 	pidx_t d_targetPartition = mapper.deviceIdx(s.target).partition;
+	DeviceIdx d_sourceIdx = mapper.deviceIdx(h_sourceIdx);
 
 	SynapseAddress addr =
 		wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, nextFreeWarp);
@@ -133,11 +130,16 @@ ConnectivityMatrix::addSynapse(
 	h_targets.at(f_addr) = d_targetNeuron;
 	h_weights.at(f_addr) = fx_toFix(s.weight, fbits);
 
-	insert(s.id, s.target, h_fcmTargets); // keep global address
-	insert(s.id, delay, h_fcmDelays);
+	/* Data used when user reads FCM back from device. These are indexed by
+	 * (global) synapse ids, and are thus filled in a random order. To
+	 * populate these in a single pass over the input, resize on insertion.
+	 * The synapse ids are required to form a contigous range, so every
+	 * element should be assigned exactly once.  */
+	insert(s.id, s.target, mh_fcmTargets[h_sourceIdx]); // keep global address
+	insert(s.id, delay, mh_fcmDelays[h_sourceIdx]);
 	//! \todo store fully computed address here instead
-	insert(s.id, addr, h_fcmSynapseAddress);
-	insert(s.id, (unsigned char) s.plastic, h_fcmPlastic);
+	insert(s.id, addr, mh_fcmSynapseAddress[h_sourceIdx]);
+	insert(s.id, (unsigned char) s.plastic, mh_fcmPlastic[h_sourceIdx]);
 
 	/*! \todo simplify RCM structure, using a format similar to the FCM */
 	//! \todo only need to set this if stdp is enabled
@@ -168,21 +170,6 @@ ConnectivityMatrix::createFcm(
 			axon != net.m_fcm.end(); ++axon) {
 
 		nidx_t h_sourceIdx = axon->first;
-		DeviceIdx d_sourceIdx = mapper.deviceIdx(h_sourceIdx);
-
-		/* Data used when user reads FCM back from device. These are indexed by
-		 * (global) synapse ids, and are thus filled in a random order. To
-		 * populate these in a single pass over the input, resize on insertion.
-		 * The synapse ids are required to form a contigous range, so every
-		 * element should be assigned exactly once.
-		 */
-
-		//! \todo move access into addSynapse
-		//! \todo merge this into a single data structure
-		std::vector<unsigned>& h_fcmTargets = mh_fcmTargets[h_sourceIdx];
-		std::vector<unsigned>& h_fcmDelays = mh_fcmDelays[h_sourceIdx];
-		std::vector<SynapseAddress>& h_fcmSynapseAddress = mh_fcmSynapseAddress[h_sourceIdx];
-		std::vector<unsigned char>& h_fcmPlastic = mh_fcmPlastic[h_sourceIdx];
 
 		/* As a simple sanity check, verify that the length of the above data
 		 * structures are the same */
@@ -207,23 +194,18 @@ ConnectivityMatrix::createFcm(
 			 * reorganise these later. */
 			for(network::NetworkImpl::bundle_t::const_iterator si = bundle.begin();
 					si != bundle.end(); ++si) {
-				addSynapse(*si, d_sourceIdx, delay, mapper, fbits,
-						nextFreeWarp, wtable,
-						h_targets, h_weights,
-						h_fcmTargets,
-						h_fcmDelays,
-						h_fcmPlastic,
-						h_fcmSynapseAddress);
+				addSynapse(*si, h_sourceIdx, delay, mapper, fbits,
+						nextFreeWarp, wtable, h_targets, h_weights);
 				synapseCount += 1;
 			}
 			/*! \todo optionally clear nemo::NetworkImpl data structure as we
 			 * iterate over it, so we can work in constant space */
 		}
 
-		assert(synapseCount == h_fcmTargets.size());
-		assert(synapseCount == h_fcmPlastic.size());
-		assert(synapseCount == h_fcmSynapseAddress.size());
-		assert(synapseCount == h_fcmDelays.size());
+		assert(synapseCount == mh_fcmTargets[h_sourceIdx].size());
+		assert(synapseCount == mh_fcmPlastic[h_sourceIdx].size());
+		assert(synapseCount == mh_fcmSynapseAddress[h_sourceIdx].size());
+		assert(synapseCount == mh_fcmDelays[h_sourceIdx].size());
 	}
 
 	return nextFreeWarp;
