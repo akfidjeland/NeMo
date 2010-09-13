@@ -3,6 +3,7 @@
 #include <cassert>
 #include <boost/format.hpp>
 
+#include <nemo/network/Generator.hpp>
 #include <nemo/exception.hpp>
 #include <nemo/util.h>
 
@@ -14,7 +15,7 @@ namespace nemo {
 
 using boost::format;
 
-Mapper::Mapper(const nemo::network::NetworkImpl& net, unsigned partitionSize) :
+Mapper::Mapper(const nemo::network::Generator& net, unsigned partitionSize) :
 	m_partitionSize(partitionSize),
 	m_partitionCount(0),
 	m_offset(0)

@@ -12,6 +12,7 @@
 
 #include <nemo.hpp>
 
+#include <nemo/network/Generator.hpp>
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/SimulationBackend.hpp>
 #include <nemo/Mapper.hpp>
@@ -19,7 +20,7 @@
 namespace nemo {
 
 SimulationBackend*
-simulationBackend(const network::NetworkImpl& net, const ConfigurationImpl& conf);
+simulationBackend(const network::Generator& net, const ConfigurationImpl& conf);
 
 void
 setDefaultHardware(nemo::ConfigurationImpl& conf);

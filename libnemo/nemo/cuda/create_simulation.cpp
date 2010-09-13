@@ -8,7 +8,7 @@ namespace nemo {
 	namespace cuda {
 
 SimulationBackend*
-simulation(const network::NetworkImpl& net, const ConfigurationImpl& conf)
+simulation(const network::Generator& net, const ConfigurationImpl& conf)
 {
 	/* We need to select the device before calling the constructor. The
 	 * constructor sends data to the device, so we need to know in advance what
@@ -21,7 +21,7 @@ simulation(const network::NetworkImpl& net, const ConfigurationImpl& conf)
 }	}
 
 nemo::SimulationBackend*
-cuda_simulation(const nemo::network::NetworkImpl* net, const nemo::ConfigurationImpl* conf)
+cuda_simulation(const nemo::network::Generator* net, const nemo::ConfigurationImpl* conf)
 {
 	return nemo::cuda::simulation(*net, *conf);
 }

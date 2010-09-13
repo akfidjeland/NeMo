@@ -11,6 +11,7 @@
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
+#include <nemo/network/Generator.hpp>
 #include <nemo/NetworkImpl.hpp>
 
 #ifdef NEMO_CUDA_ENABLED
@@ -111,7 +112,7 @@ cudaDeviceDescription(unsigned device)
 #ifdef NEMO_CUDA_ENABLED
 
 SimulationBackend*
-cudaSimulation(const network::NetworkImpl& net, const ConfigurationImpl& conf)
+cudaSimulation(const network::Generator& net, const ConfigurationImpl& conf)
 {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 	dl_handle hdl = loadCudaLibrary();
@@ -132,7 +133,7 @@ cudaSimulation(const network::NetworkImpl& net, const ConfigurationImpl& conf)
  * makes sense (see e.g. nemo::mpi::Worker), so provide an overload of 'create'
  * that takes such an object directly. */
 SimulationBackend*
-simulationBackend(const network::NetworkImpl& net, const ConfigurationImpl& conf)
+simulationBackend(const network::Generator& net, const ConfigurationImpl& conf)
 {
 	if(net.neuronCount() == 0) {
 		throw nemo::exception(NEMO_INVALID_INPUT,

@@ -15,6 +15,7 @@
 
 #include <boost/tuple/tuple.hpp>
 
+#include <nemo/types.hpp>
 //! \todo move DeviceIdx to types.hpp
 #include "Mapper.hpp"
 #include "types.h"

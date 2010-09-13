@@ -11,11 +11,15 @@
  */
 
 #include <set>
-#include <nemo/NetworkImpl.hpp>
 
 #include "types.h"
 
 namespace nemo {
+
+	namespace network {
+		class Generator;
+	}
+
 	namespace cuda {
 
 /*! Neuron indices as used on CUDA devices
@@ -48,7 +52,7 @@ class Mapper {
 
 	public :
 
-		Mapper(const nemo::network::NetworkImpl& net, unsigned partitionSize);
+		Mapper(const nemo::network::Generator& net, unsigned partitionSize);
 
 		/* Add global neuron index to the set of 'valid' synapses and return
 		 * the correspondong device neuron index */

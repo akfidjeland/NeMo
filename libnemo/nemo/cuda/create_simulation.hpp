@@ -5,7 +5,7 @@
 
 namespace nemo {
 	namespace network {
-		class NetworkImpl;
+		class Generator;
 	}
 	class ConfigurationImpl;
 	class SimulationBackend;
@@ -13,11 +13,11 @@ namespace nemo {
 
 extern "C" {
 
-typedef nemo::SimulationBackend* cuda_simulation_t(const nemo::network::NetworkImpl*, const nemo::ConfigurationImpl*);
+typedef nemo::SimulationBackend* cuda_simulation_t(const nemo::network::Generator*, const nemo::ConfigurationImpl*);
 
 NEMO_CUDA_DLL_PUBLIC
 nemo::SimulationBackend*
-cuda_simulation(const nemo::network::NetworkImpl* net, const nemo::ConfigurationImpl* conf);
+cuda_simulation(const nemo::network::Generator* net, const nemo::ConfigurationImpl* conf);
 
 }
 

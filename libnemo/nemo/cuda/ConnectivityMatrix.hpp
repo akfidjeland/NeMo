@@ -14,6 +14,7 @@
 #include <cuda_runtime.h>
 
 #include <map>
+#include <vector>
 #include <boost/shared_ptr.hpp>
 
 #include <nemo/types.hpp>

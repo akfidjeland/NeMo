@@ -32,7 +32,9 @@
 
 namespace nemo {
 
-	class NetworkImpl;
+	namespace network {
+		class Generator;
+	}
 
 	namespace cuda {
 
@@ -92,9 +94,9 @@ class Simulation : public nemo::SimulationBackend
 	private :
 
 		/* Use factory method for generating objects */
-		Simulation(const network::NetworkImpl&, const nemo::ConfigurationImpl&);
+		Simulation(const network::Generator&, const nemo::ConfigurationImpl&);
 
-		friend SimulationBackend* simulation(const network::NetworkImpl& net, const ConfigurationImpl& conf);
+		friend SimulationBackend* simulation(const network::Generator& net, const ConfigurationImpl& conf);
 
 		Mapper m_mapper;
 
