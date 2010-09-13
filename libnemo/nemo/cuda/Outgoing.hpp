@@ -52,11 +52,6 @@ class Outgoing
 
 		size_t m_allocated;
 
-		//! \todo move this function to WarpAddressTable
-		/*! \return print histogram of sizes of each synapse
-		 * warp to stdout */
-		void reportWarpSizeHistogram(std::ostream& out) const;
-
 		size_t m_maxIncomingWarps;
 };
 

@@ -7,10 +7,13 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "WarpAddressTable.hpp"
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
 #include <boost/tuple/tuple_comparison.hpp>
 
-#include <nemo/exception.hpp>
+#include "WarpAddressTable.hpp"
 #include "kernel.cu_h"
 
 namespace nemo {
@@ -55,6 +58,32 @@ WarpAddressTable::maxWarpsPerNeuron() const
 	} else {
 		return std::max_element(m_warpsPerNeuron.begin(), m_warpsPerNeuron.end())->second;
 	}
+}
+
+
+
+void
+WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
+{
+	unsigned total = 0;
+	std::vector<unsigned> hist(WARP_SIZE+1, 0);
+
+	for(std::map<key, unsigned>::const_iterator i = m_rowSynapses.begin(); i != m_rowSynapses.end(); ++i) {
+		unsigned fullWarps = i->second / WARP_SIZE;
+		unsigned partialWarp = i->second % WARP_SIZE;
+		hist.at(WARP_SIZE) += fullWarps;
+		total += fullWarps;
+		if(partialWarp != 0) {
+			hist.at(partialWarp) += 1;
+			total += 1;
+		}
+	}
+	for(unsigned size=1; size < WARP_SIZE+1; ++size) {
+		unsigned count = hist.at(size);
+		double percentage = double(100 * count) / double(total);
+		out << size << ": " << count << "(" << percentage << "%)\n";
+	}
+	out << "total: " << total << std::endl;
 }
 
 

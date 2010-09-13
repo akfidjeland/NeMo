@@ -75,6 +75,11 @@ ConnectivityMatrix::ConnectivityMatrix(
 	m_incoming.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
 
 	moveRcmToDevice();
+
+	if(conf.loggingEnabled()) {
+		printMemoryUsage(std::cout);
+		// wtable.reportWarpSizeHistogram(std::cout);
+	}
 }
 
 

@@ -63,6 +63,10 @@ class WarpAddressTable
 
 		unsigned maxWarpsPerNeuron() const;
 
+		/*! \return print histogram of sizes of each synapse
+		 * warp to stdout */
+		void reportWarpSizeHistogram(std::ostream& out) const;
+
 	private :
 
 		warp_map m_warps;
