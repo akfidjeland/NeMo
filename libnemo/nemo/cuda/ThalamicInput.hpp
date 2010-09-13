@@ -28,7 +28,7 @@
 namespace nemo {
 
 	namespace network {
-		class NetworkImpl;
+		class Generator;
 	}
 
 	namespace cuda {
@@ -38,7 +38,7 @@ class ThalamicInput
 	public :
 
 		//! \todo add seed input
-		ThalamicInput(const nemo::network::NetworkImpl& net, const class Mapper&);
+		ThalamicInput(const nemo::network::Generator& net, const class Mapper&);
 
 		/*! \return pointer to device memory containing the RNG state. If
 		 * thalamic input is not used, i.e. setSigma has never been called,

@@ -13,7 +13,7 @@
 
 #include <map>
 
-#include <nemo/NetworkImpl.hpp>
+#include <nemo/network/Generator.hpp>
 #include <nemo/types.hpp>
 #include <nemo/RNG.hpp>
 
@@ -27,7 +27,7 @@ namespace nemo {
 
 
 ThalamicInput::ThalamicInput(
-		const nemo::network::NetworkImpl& net,
+		const nemo::network::Generator& net,
 		const Mapper& mapper) :
 	m_rngState(mapper.partitionCount(), mapper.partitionSize(), true, 4),
 	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true, 1),
@@ -36,8 +36,7 @@ ThalamicInput::ThalamicInput(
 	std::vector<nemo::RNG> rngs(mapper.maxHostIdx() - mapper.minHostIdx() + 1);
 	initialiseRng(mapper.minHostIdx(), mapper.maxHostIdx(), rngs);
 
-	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net.m_neurons.begin();
-			i != net.m_neurons.end(); ++i) {
+	for(network::neuron_iterator i = net.neuron_begin(); i != net.neuron_end(); ++i) {
 		DeviceIdx didx = mapper.deviceIdx(i->first);
 		float sigma = i->second.sigma;
 		m_inUse |= sigma != 0.0f;
