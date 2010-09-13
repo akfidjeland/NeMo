@@ -175,6 +175,11 @@ class ConnectivityMatrix
 
 		void addAuxTerminal(const Synapse&, size_t addr);
 
+#ifndef NDEBUG
+		/* Count synapses to verify that m_cmAux contains dense rows */
+		std::map<nidx_t, unsigned> m_synapsesPerNeuron;
+#endif
+
 		/* Internal buffers for synapse queries */
 		std::vector<unsigned> m_queriedTargets;
 		std::vector<unsigned> m_queriedDelays;

@@ -148,17 +148,6 @@ ConnectivityMatrix::createFcm(
 			s != net.synapse_end(); ++s) {
 		addSynapse(*s, mapper, nextFreeWarp, wtable, h_targets, h_weights);
 	}
-
-#if 0
-	//! \todo do assertions in a separate pass
-	/* As a simple sanity check, verify that the length of the above data
-	 * structures are the same */
-	assert(synapseCount == mh_fcmTargets[h_sourceIdx].size());
-	assert(synapseCount == mh_fcmPlastic[h_sourceIdx].size());
-	assert(synapseCount == mh_fcmSynapseAddress[h_sourceIdx].size());
-	assert(synapseCount == mh_fcmDelays[h_sourceIdx].size());
-#endif
-
 	return nextFreeWarp;
 }
 
@@ -175,12 +164,18 @@ ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapp
 	for(aux_map::const_iterator ni = cm.begin(); ni != cm.end(); ++ni) {
 
 		nidx_t source = ni->first;
+
 		if(!mapper.valid(source)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid synapse source neuron %u") % source));
 		}
 
 		aux_row row = ni->second;
+
+#ifndef NDEBUG
+		assert(m_synapsesPerNeuron[source] == row.size());
+#endif
+
 		for(aux_row::const_iterator si = row.begin(); si != row.end(); ++si) {
 			nidx_t target = si->target();
 			if(!mapper.valid(target)) {
@@ -264,6 +259,9 @@ ConnectivityMatrix::addAuxTerminal(const Synapse& s, size_t addr)
 		row.resize(s.id()+1);
 	}
 	row.at(s.id()) = AxonTerminalAux(s, addr);
+#ifndef NDEBUG
+	m_synapsesPerNeuron[s.source] += 1;
+#endif
 }
 
 
