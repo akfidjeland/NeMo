@@ -178,8 +178,8 @@ class ConnectivityMatrix
 		std::map<nidx_t, std::vector<unsigned char> > mh_fcmPlastic;
 
 		/* For the weights we need to look up the data at run-time. We thus
-		 * need the warp/synapse index pair */
-		std::map<nidx_t, std::vector<SynapseAddress> > mh_fcmSynapseAddress;
+		 * need the address into the FCM, for each synapse. */
+		std::map<nidx_t, std::vector<size_t> > mh_fcmSynapseAddress;
 
 		void verifySynapseTerminals(
 				const std::map<nidx_t, std::vector<nidx_t> >& targets,

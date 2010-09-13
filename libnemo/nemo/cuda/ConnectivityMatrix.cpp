@@ -139,8 +139,7 @@ ConnectivityMatrix::addSynapse(
 	 * element should be assigned exactly once.  */
 	insert(s.id(), s.target(), mh_fcmTargets[s.source]); // keep global address
 	insert(s.id(), s.delay, mh_fcmDelays[s.source]);
-	//! \todo store fully computed address here instead
-	insert(s.id(), addr, mh_fcmSynapseAddress[s.source]);
+	insert(s.id(), f_addr, mh_fcmSynapseAddress[s.source]);
 	insert(s.id(), (unsigned char) s.plastic(), mh_fcmPlastic[s.source]);
 
 	/*! \todo simplify RCM structure, using a format similar to the FCM */
@@ -187,6 +186,9 @@ ConnectivityMatrix::createFcm(
 
 
 
+/*! \note We could verify the synapse terminals during FCM construction. This
+ * was found to be somewhat slower, however, as we then end up performing
+ * around twice as many checks (since each source is tested many times). */
 void
 ConnectivityMatrix::verifySynapseTerminals(
 		const std::map<nidx_t, std::vector<nidx_t> >& targets,
@@ -308,8 +310,8 @@ ConnectivityMatrix::getWeights(cycle_t cycle, const std::vector<synapse_id>& syn
 	const std::vector<weight_dt>& h_weights = syncWeights(cycle, synapses);
 	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
 		synapse_id id = synapses.at(i);
-		SynapseAddress addr = mh_fcmSynapseAddress[neuronIndex(id)][synapseIndex(id)];
-		weight_dt w = h_weights[addr.row * WARP_SIZE + addr.synapse];
+		size_t addr = mh_fcmSynapseAddress[neuronIndex(id)][synapseIndex(id)];
+		weight_dt w = h_weights[addr];
 		m_queriedWeights[i] = fx_toFloat(w, m_fractionalBits);;
 	}
 	return m_queriedWeights;
