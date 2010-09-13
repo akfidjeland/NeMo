@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <nemo/types.hpp>
-#include <nemo/NetworkImpl.hpp>
+#include <nemo/network/Generator.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
@@ -59,7 +59,7 @@ class ConnectivityMatrix
 	public:
 
 		ConnectivityMatrix(
-				const nemo::network::NetworkImpl&,
+				const nemo::network::Generator&,
 				const nemo::ConfigurationImpl&,
 				const Mapper&);
 
@@ -138,7 +138,7 @@ class ConnectivityMatrix
 
 		/*! \return total number of warps */
 		size_t createFcm(
-				const nemo::network::NetworkImpl& net,
+				const nemo::network::Generator& net,
 				const Mapper&,
 				size_t partitionSize,
 				WarpAddressTable& wtable,
@@ -192,9 +192,7 @@ class ConnectivityMatrix
 		std::vector<unsigned char> m_queriedPlastic;
 
 		void addSynapse(
-				const AxonTerminal& s,
-				nidx_t source,
-				delay_t delay,
+				const Synapse&,
 				const Mapper& mapper,
 				size_t& nextFreeWarp,
 				WarpAddressTable& wtable,

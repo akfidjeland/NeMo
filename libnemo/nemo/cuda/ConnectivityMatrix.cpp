@@ -36,7 +36,7 @@ namespace nemo {
 
 
 ConnectivityMatrix::ConnectivityMatrix(
-		const nemo::network::NetworkImpl& net,
+		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf,
 		const Mapper& mapper) :
 	m_maxDelay(0),
@@ -95,9 +95,7 @@ insert(size_t idx, const T& val, std::vector<T>& vec)
 
 void
 ConnectivityMatrix::addSynapse(
-		const AxonTerminal& s,
-		nidx_t h_sourceIdx,
-		delay_t delay,
+		const Synapse& s,
 		const Mapper& mapper,
 		size_t& nextFreeWarp,
 		WarpAddressTable& wtable,
@@ -106,18 +104,17 @@ ConnectivityMatrix::addSynapse(
 {
 	using boost::format;
 
-	m_maxDelay = std::max(m_maxDelay, delay);
+	m_maxDelay = std::max(m_maxDelay, s.delay);
 
-	if(delay < 1) {
+	if(s.delay < 1) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Neuron %u has synapses with delay < 1 (%u)") % h_sourceIdx % delay));
+				str(format("Neuron %u has synapses with delay < 1 (%u)") % s.source % s.delay));
 	}
 
-	pidx_t d_targetPartition = mapper.deviceIdx(s.target).partition;
-	DeviceIdx d_sourceIdx = mapper.deviceIdx(h_sourceIdx);
+	DeviceIdx d_target = mapper.deviceIdx(s.target());
+	DeviceIdx d_source = mapper.deviceIdx(s.source);
 
-	SynapseAddress addr =
-		wtable.addSynapse(d_sourceIdx, d_targetPartition, delay, nextFreeWarp);
+	SynapseAddress addr = wtable.addSynapse(d_source, d_target.partition, s.delay, nextFreeWarp);
 
 	if(addr.synapse == 0 && addr.row == nextFreeWarp) {
 		nextFreeWarp += 1;
@@ -129,40 +126,39 @@ ConnectivityMatrix::addSynapse(
 		h_weights.resize(nextFreeWarp * WARP_SIZE, 0);
 	}
 
-	//! \todo do more per-synapse computation internally here
-	nidx_t d_targetNeuron = mapper.deviceIdx(s.target).neuron;
-
 	size_t f_addr = addr.row * WARP_SIZE + addr.synapse;
 	//! \todo range check this address
 
-	h_targets.at(f_addr) = d_targetNeuron;
-	h_weights.at(f_addr) = fx_toFix(s.weight, m_fractionalBits);
+	h_targets.at(f_addr) = d_target.neuron;
+	h_weights.at(f_addr) = fx_toFix(s.weight(), m_fractionalBits);
 
 	/* Data used when user reads FCM back from device. These are indexed by
 	 * (global) synapse ids, and are thus filled in a random order. To
 	 * populate these in a single pass over the input, resize on insertion.
 	 * The synapse ids are required to form a contigous range, so every
 	 * element should be assigned exactly once.  */
-	insert(s.id, s.target, mh_fcmTargets[h_sourceIdx]); // keep global address
-	insert(s.id, delay, mh_fcmDelays[h_sourceIdx]);
+	insert(s.id(), s.target(), mh_fcmTargets[s.source]); // keep global address
+	insert(s.id(), s.delay, mh_fcmDelays[s.source]);
 	//! \todo store fully computed address here instead
-	insert(s.id, addr, mh_fcmSynapseAddress[h_sourceIdx]);
-	insert(s.id, (unsigned char) s.plastic, mh_fcmPlastic[h_sourceIdx]);
+	insert(s.id(), addr, mh_fcmSynapseAddress[s.source]);
+	insert(s.id(), (unsigned char) s.plastic(), mh_fcmPlastic[s.source]);
 
 	/*! \todo simplify RCM structure, using a format similar to the FCM */
 	//! \todo only need to set this if stdp is enabled
-	if(s.plastic) {
+	if(s.plastic()) {
 		rcm_t& rcm = m_rsynapses;
-		if(rcm.find(d_targetPartition) == rcm.end()) {
-			rcm[d_targetPartition] = new RSMatrix(mapper.partitionSize());
+		if(rcm.find(d_target.partition) == rcm.end()) {
+			rcm[d_target.partition] = new RSMatrix(mapper.partitionSize());
 		}
-		rcm[d_targetPartition]->addSynapse(d_sourceIdx, d_targetNeuron, delay, f_addr);
+		rcm[d_target.partition]->addSynapse(d_source, d_target.neuron, s.delay, f_addr);
 	}
 }
 
+
+
 size_t
 ConnectivityMatrix::createFcm(
-		const nemo::network::NetworkImpl& net,
+		const network::Generator& net,
 		const Mapper& mapper,
 		size_t partitionSize,
 		WarpAddressTable& wtable,
@@ -171,36 +167,20 @@ ConnectivityMatrix::createFcm(
 {
 	size_t nextFreeWarp = 1; // leave space for null warp at beginning
 
-	for(std::map<nidx_t, network::NetworkImpl::axon_t>::const_iterator axon = net.m_fcm.begin();
-			axon != net.m_fcm.end(); ++axon) {
-
-		nidx_t h_sourceIdx = axon->first;
-
-		/* As a simple sanity check, verify that the length of the above data
-		 * structures are the same */
-		unsigned synapseCount = 0;
-
-		for(std::map<delay_t, network::NetworkImpl::bundle_t>::const_iterator bi = axon->second.begin();
-				bi != axon->second.end(); ++bi) {
-
-			delay_t delay = bi->first;
-			network::NetworkImpl::bundle_t bundle = bi->second;
-
-			for(network::NetworkImpl::bundle_t::const_iterator si = bundle.begin();
-					si != bundle.end(); ++si) {
-				addSynapse(*si, h_sourceIdx, delay, mapper,
-						nextFreeWarp, wtable, h_targets, h_weights);
-				synapseCount += 1;
-			}
-			/*! \todo optionally clear nemo::NetworkImpl data structure as we
-			 * iterate over it, so we can work in constant space */
-		}
-
-		assert(synapseCount == mh_fcmTargets[h_sourceIdx].size());
-		assert(synapseCount == mh_fcmPlastic[h_sourceIdx].size());
-		assert(synapseCount == mh_fcmSynapseAddress[h_sourceIdx].size());
-		assert(synapseCount == mh_fcmDelays[h_sourceIdx].size());
+	for(network::synapse_iterator s = net.synapse_begin();
+			s != net.synapse_end(); ++s) {
+		addSynapse(*s, mapper, nextFreeWarp, wtable, h_targets, h_weights);
 	}
+
+#if 0
+	//! \todo do assertions in a separate pass
+	/* As a simple sanity check, verify that the length of the above data
+	 * structures are the same */
+	assert(synapseCount == mh_fcmTargets[h_sourceIdx].size());
+	assert(synapseCount == mh_fcmPlastic[h_sourceIdx].size());
+	assert(synapseCount == mh_fcmSynapseAddress[h_sourceIdx].size());
+	assert(synapseCount == mh_fcmDelays[h_sourceIdx].size());
+#endif
 
 	return nextFreeWarp;
 }
@@ -242,8 +222,6 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 		const std::vector<weight_dt>& h_weights,
 		bool logging)
 {
-	//! \todo remove warp count from outgoing data structure. It's no longer needed.
-
 	md_fcmPlaneSize = totalWarps * WARP_SIZE;
 	size_t bytes = md_fcmPlaneSize * 2 * sizeof(synapse_t);
 
