@@ -126,9 +126,13 @@ simulateToFile(nemo::Simulation* sim, unsigned time_ms, unsigned stdp, const cha
 
 
 nemo::Configuration
-configuration(bool stdp)
+configuration(bool stdp, bool log)
 {
 	nemo::Configuration conf;
+
+	if(log) {
+		conf.enableLogging();
+	}
 
 	if(stdp) {
 		std::vector<float> pre(20);
@@ -145,10 +149,11 @@ configuration(bool stdp)
 }
 
 
+
 nemo::Configuration
-configuration(bool stdp, backend_t backend)
+configuration(bool stdp, backend_t backend, bool log)
 {
-	nemo::Configuration conf = configuration(stdp);
+	nemo::Configuration conf = configuration(stdp, log);
 	switch(backend) {
 		case NEMO_BACKEND_CPU: conf.setCpuBackend(); break;
 		case NEMO_BACKEND_CUDA: conf.setCudaBackend(); break;
@@ -168,7 +173,7 @@ commonOptions()
 
 	po::options_description desc("Allowed options");
 	desc.add_options()
-		("help", "print this message")
+		("help,h", "print this message")
 		("duration,t", po::value<unsigned>()->default_value(1000), "duration of simulation (ms)")
 		("stdp", po::value<unsigned>()->default_value(0), "STDP application period (ms). If 0 do not use STDP")
 		("verbose,v", po::value<unsigned>()->default_value(0), "Set verbosity level")

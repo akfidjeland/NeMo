@@ -44,12 +44,12 @@ simulateToFile(nemo::Simulation* sim, unsigned time_ms, unsigned stdp, const cha
 
 /*! \return a 'standard' configuration using the default backend and STDP
  * optionally enabled. */
-nemo::Configuration configuration(bool stdp);
+nemo::Configuration configuration(bool stdp, bool log=false);
 
 
 /*! \return a 'standard' configuration with the specified backend and STDP
  * optionally enabled. */
-nemo::Configuration configuration(bool stdp, backend_t backend);
+nemo::Configuration configuration(bool stdp, backend_t backend, bool log=false);
 
 
 /* Return common program options */
