@@ -32,6 +32,8 @@ namespace nemo {
 
 	namespace cuda {
 
+		class AxonTerminalAux;
+
 /*! \brief Connectivity matrix
  *
  * The connectivity matrix (CM) specifies how neurons are connected. The CM has
@@ -65,23 +67,16 @@ class ConnectivityMatrix
 
 		delay_t maxDelay() const { return m_maxDelay; }
 
-		/*! Write all synapse data for a single neuron to output vectors.
-		 *
-		 * The output vectors are valid until the next call to
-		 * this method.
-		 *
-		 * \post all output vectors have the same length
-		 */
-		void getSynapses(
-				unsigned sourceNeuron, // global index
-				const std::vector<unsigned>** targets,
-				const std::vector<unsigned>** delays,
-				const std::vector<float>** weights,
-				const std::vector<unsigned char>** plastic);
-
+		/*! \copydoc nemo::Simulation::getTargets */
 		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
+
+		/*! \copydoc nemo::Simulation::getDelays */
 		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses);
+
+		/*! \copydoc nemo::Simulation::getWeights */
 		const std::vector<float>& getWeights(cycle_t cycle, const std::vector<synapse_id>& synapses);
+
+		/*! \copydoc nemo::Simulation::getPlastic */
 		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses);
 
 		/*! Clear one plane of connectivity matrix on the device */
@@ -169,21 +164,16 @@ class ConnectivityMatrix
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
 		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress() const;
 
-		/* Static FCM data for each neuron, required for synapse queries.
+		/* Additional synapse data which is only needed for runtime queries.
+		 * Static FCM data for each neuron, required for synapse queries.
 		 * Neuron indices are global rather than the partition/neuron scheme
 		 * used on the device, so no decoding needs to take place at run-time.
 		 */
-		std::map<nidx_t, std::vector<unsigned> > mh_fcmTargets;
-		std::map<nidx_t, std::vector<unsigned> > mh_fcmDelays;
-		std::map<nidx_t, std::vector<unsigned char> > mh_fcmPlastic;
+		typedef std::vector<AxonTerminalAux> aux_row;
+		typedef std::map<nidx_t, aux_row> aux_map;
+		aux_map m_cmAux;
 
-		/* For the weights we need to look up the data at run-time. We thus
-		 * need the address into the FCM, for each synapse. */
-		std::map<nidx_t, std::vector<size_t> > mh_fcmSynapseAddress;
-
-		void verifySynapseTerminals(
-				const std::map<nidx_t, std::vector<nidx_t> >& targets,
-				const Mapper& mapper);
+		void addAuxTerminal(const Synapse&, size_t addr);
 
 		/* Internal buffers for synapse queries */
 		std::vector<unsigned> m_queriedTargets;
@@ -198,6 +188,40 @@ class ConnectivityMatrix
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& h_targets,
 				std::vector<weight_dt>& h_weights);
+
+		void verifySynapseTerminals(const aux_map&, const Mapper& mapper);
+};
+
+
+
+/* The parts of the synapse data is only needed if querying synapses at
+ * run-time. This data is stored separately */
+struct AxonTerminalAux
+{
+	public :
+
+		unsigned target() const { return m_target; }
+		unsigned delay() const { return m_delay; }
+		unsigned char plastic() const { return (unsigned char) m_plastic; }
+		size_t addr() const { return m_addr; }
+
+		AxonTerminalAux(const Synapse& s, size_t addr) :
+			m_target(s.target()), m_delay(s.delay), m_plastic(s.plastic()), m_addr(addr) { }
+
+		AxonTerminalAux() :
+			m_target(~0), m_delay(~0), m_plastic(false), m_addr(~0) { }
+
+	private :
+
+		/* Global target index */
+		unsigned m_target;
+
+		unsigned m_delay;
+		bool m_plastic;
+
+		/* Address into FCM on device */
+		size_t m_addr;
+
 };
 
 

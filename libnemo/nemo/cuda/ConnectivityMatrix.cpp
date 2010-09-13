@@ -66,7 +66,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	size_t totalWarps = createFcm(net, mapper, conf.cudaPartitionSize(), wtable, h_targets, mh_weights);
 
-	verifySynapseTerminals(mh_fcmTargets, mapper);
+	verifySynapseTerminals(m_cmAux, mapper);
 
 	moveFcmToDevice(totalWarps, h_targets, mh_weights, logging);
 	h_targets.clear();
@@ -76,20 +76,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	moveRcmToDevice();
 }
-
-
-
-/* Insert into vector, resizing if appropriate */
-template<typename T>
-void
-insert(size_t idx, const T& val, std::vector<T>& vec)
-{
-	if(idx >= vec.size()) {
-		vec.resize(idx+1);
-	}
-	vec.at(idx) = val;
-}
-
 
 
 
@@ -132,15 +118,7 @@ ConnectivityMatrix::addSynapse(
 	h_targets.at(f_addr) = d_target.neuron;
 	h_weights.at(f_addr) = fx_toFix(s.weight(), m_fractionalBits);
 
-	/* Data used when user reads FCM back from device. These are indexed by
-	 * (global) synapse ids, and are thus filled in a random order. To
-	 * populate these in a single pass over the input, resize on insertion.
-	 * The synapse ids are required to form a contigous range, so every
-	 * element should be assigned exactly once.  */
-	insert(s.id(), s.target(), mh_fcmTargets[s.source]); // keep global address
-	insert(s.id(), s.delay, mh_fcmDelays[s.source]);
-	insert(s.id(), f_addr, mh_fcmSynapseAddress[s.source]);
-	insert(s.id(), (unsigned char) s.plastic(), mh_fcmPlastic[s.source]);
+	addAuxTerminal(s, f_addr);
 
 	/*! \todo simplify RCM structure, using a format similar to the FCM */
 	//! \todo only need to set this if stdp is enabled
@@ -190,25 +168,21 @@ ConnectivityMatrix::createFcm(
  * was found to be somewhat slower, however, as we then end up performing
  * around twice as many checks (since each source is tested many times). */
 void
-ConnectivityMatrix::verifySynapseTerminals(
-		const std::map<nidx_t, std::vector<nidx_t> >& targets,
-		const Mapper& mapper)
+ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapper)
 {
 	using boost::format;
 
-	typedef std::vector<nidx_t> vec;
-	typedef std::map<nidx_t, vec>::const_iterator it;
-	for(it src_i = targets.begin(); src_i != targets.end(); ++src_i) {
+	for(aux_map::const_iterator ni = cm.begin(); ni != cm.end(); ++ni) {
 
-		nidx_t source = src_i->first;
+		nidx_t source = ni->first;
 		if(!mapper.valid(source)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid synapse source neuron %u") % source));
 		}
 
-		const vec& row = src_i->second;
-		for(vec::const_iterator tgt_i = row.begin(); tgt_i != row.end(); ++tgt_i) {
-			nidx_t target = *tgt_i;
+		aux_row row = ni->second;
+		for(aux_row::const_iterator si = row.begin(); si != row.end(); ++si) {
+			nidx_t target = si->target();
 			if(!mapper.valid(target)) {
 				throw nemo::exception(NEMO_INVALID_INPUT,
 						str(format("Invalid synapse target neuron %u (source: %u)") % target % source));
@@ -216,6 +190,7 @@ ConnectivityMatrix::verifySynapseTerminals(
 		}
 	}
 }
+
 
 
 void
@@ -275,15 +250,20 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 
 
 
+
+/* Data used when user reads FCM back from device. These are indexed by
+ * (global) synapse ids, and are thus filled in a random order. To populate
+ * these in a single pass over the input, resize on insertion.  The synapse ids
+ * are required to form a contigous range, so every element should be assigned
+ * exactly once.  */
 void
-ConnectivityMatrix::getSynapses(
-		nidx_t sourceNeuron, // global index
-		const std::vector<unsigned>**,
-		const std::vector<unsigned>**,
-		const std::vector<float>**,
-		const std::vector<unsigned char>**)
+ConnectivityMatrix::addAuxTerminal(const Synapse& s, size_t addr)
 {
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "Old-style synapse-query");
+	aux_row& row= m_cmAux[s.source];
+	if(s.id() >= row.size()) {
+		row.resize(s.id()+1);
+	}
+	row.at(s.id()) = AxonTerminalAux(s, addr);
 }
 
 
@@ -310,7 +290,7 @@ ConnectivityMatrix::getWeights(cycle_t cycle, const std::vector<synapse_id>& syn
 	const std::vector<weight_dt>& h_weights = syncWeights(cycle, synapses);
 	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
 		synapse_id id = synapses.at(i);
-		size_t addr = mh_fcmSynapseAddress[neuronIndex(id)][synapseIndex(id)];
+		size_t addr = m_cmAux[neuronIndex(id)][synapseIndex(id)].addr();
 		weight_dt w = h_weights[addr];
 		m_queriedWeights[i] = fx_toFloat(w, m_fractionalBits);;
 	}
@@ -319,12 +299,12 @@ ConnectivityMatrix::getWeights(cycle_t cycle, const std::vector<synapse_id>& syn
 
 
 
-
 template<typename T>
 const std::vector<T>&
 getSynapseState(
 		const std::vector<synapse_id>& synapses,
-		const std::map<nidx_t, std::vector<T> >& fcm,
+		const std::map<nidx_t, std::vector<AxonTerminalAux> >& cm,
+		std::const_mem_fun_ref_t<T, AxonTerminalAux> fun,
 		std::vector<T>& out)
 {
 	using boost::format;
@@ -332,12 +312,12 @@ getSynapseState(
 	out.resize(synapses.size());
 	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
 		synapse_id id = synapses.at(i);
-		typename std::map<nidx_t, std::vector<T> >::const_iterator it = fcm.find(neuronIndex(id));
-		if(it == fcm.end()) {
+		std::map<nidx_t, std::vector<AxonTerminalAux> >::const_iterator it = cm.find(neuronIndex(id));
+		if(it == cm.end()) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid neuron id (%u) in synapse query") % neuronIndex(id)));
 		}
-		out[i] = it->second.at(synapseIndex(id));
+		out[i] = fun(it->second.at(synapseIndex(id)));
 	}
 	return out;
 }
@@ -347,21 +327,21 @@ getSynapseState(
 const std::vector<unsigned>&
 ConnectivityMatrix::getTargets(const std::vector<synapse_id>& synapses)
 {
-	return getSynapseState(synapses, mh_fcmTargets, m_queriedTargets);
+	return getSynapseState(synapses, m_cmAux, std::mem_fun_ref(&AxonTerminalAux::target), m_queriedTargets);
 }
 
 
 const std::vector<unsigned>&
 ConnectivityMatrix::getDelays(const std::vector<synapse_id>& synapses)
 {
-	return getSynapseState(synapses, mh_fcmDelays, m_queriedDelays);
+	return getSynapseState(synapses, m_cmAux, std::mem_fun_ref(&AxonTerminalAux::delay), m_queriedDelays);
 }
 
 
 const std::vector<unsigned char>&
 ConnectivityMatrix::getPlastic(const std::vector<synapse_id>& synapses)
 {
-	return getSynapseState(synapses, mh_fcmPlastic, m_queriedPlastic);
+	return getSynapseState(synapses, m_cmAux, std::mem_fun_ref(&AxonTerminalAux::plastic), m_queriedPlastic);
 }
 
 
