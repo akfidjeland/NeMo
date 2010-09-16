@@ -77,7 +77,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		typedef Mapper<nidx_t, nidx_t> mapper_t;
 
-		 ConnectivityMatrix(const ConfigurationImpl& conf, const mapper_t&);
+		ConnectivityMatrix(const ConfigurationImpl& conf, const mapper_t&);
 
 		/*! Populate runtime CM from existing network.
 		 *
@@ -94,6 +94,11 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 				const network::Generator& net,
 				const ConfigurationImpl& conf,
 				const mapper_t&);
+
+		/* Add synapse but use the provided source and target values rather
+		 * than the ones provided in the underlying synapse. The caller can
+		 * thus provide an appropriate mapping of either index. */
+		void addSynapse(nidx_t source, nidx_t target, const Synapse&);
 
 		/*! \return all synapses for a given source and delay */
 		const Row& getRow(nidx_t source, delay_t) const;

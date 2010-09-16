@@ -92,30 +92,36 @@ ConnectivityMatrix::ConnectivityMatrix(
 	network::synapse_iterator i_end = net.synapse_end();
 
 	for( ; i != i_end; ++i) {
-
-		nidx_t source = mapper.localIdx(i->source);
-		nidx_t target = mapper.localIdx(i->target());
-		delay_t delay = i->delay;
-		fix_t weight = fx_toFix(i->weight(), m_fractionalBits);
-
-		fidx_t fidx(source, delay);
-		row_t& row = m_acc[fidx];
-		sidx_t sidx = row.size();
-		row.push_back(FAxonTerminal(target, weight));
-
-		//! \todo could do this on finalize pass, since there are fewer steps there
-		m_delays[source].insert(delay);
-		m_maxDelay = std::max(m_maxDelay, delay);
-
-		unsigned char plastic = i->plastic();
-		if(plastic) {
-			m_racc[target].push_back(RSynapse(source, delay, sidx));
-		}
-
-		aux_row& auxRow = m_cmAux[source];
-		insert(i->id(), AxonTerminalAux(sidx, delay, plastic != 0), auxRow);
+		addSynapse(mapper.localIdx(i->source), mapper.localIdx(i->target()), *i);
 	}
 }
+
+
+
+void
+ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
+{
+	delay_t delay = s.delay;
+	fix_t weight = fx_toFix(s.weight(), m_fractionalBits);
+
+	fidx_t fidx(source, delay);
+	row_t& row = m_acc[fidx];
+	sidx_t sidx = row.size();
+	row.push_back(FAxonTerminal(target, weight));
+
+	//! \todo could do this on finalize pass, since there are fewer steps there
+	m_delays[source].insert(delay);
+	m_maxDelay = std::max(m_maxDelay, delay);
+
+	unsigned char plastic = s.plastic();
+	if(plastic) {
+		m_racc[target].push_back(RSynapse(source, delay, sidx));
+	}
+
+	aux_row& auxRow = m_cmAux[source];
+	insert(s.id(), AxonTerminalAux(sidx, delay, plastic != 0), auxRow);
+}
+
 
 
 void
