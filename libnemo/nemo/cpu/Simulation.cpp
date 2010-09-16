@@ -60,7 +60,7 @@ Simulation::Simulation(
 {
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 	setNeuronParameters(net, m_mapper);
-	m_cm.finalize(m_mapper); // all valid neuron indices are known. See CM ctor.
+	m_cm.finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
 	for(size_t source=0; source < m_neuronCount; ++source) {
 		m_delays[source] = m_cm.delayBits(source);
 	}

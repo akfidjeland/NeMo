@@ -115,7 +115,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/*! \copydoc nemo::Simulation::getPlastic */
 		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>&);
 
-		void finalize(const mapper_t&);
+		void finalize(const mapper_t& mapper, bool verifySources);
 
 		typedef std::set<delay_t>::const_iterator delay_iterator;
 
@@ -148,13 +148,11 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		typedef std::vector<FAxonTerminal> row_t;
 		std::map<fidx_t, row_t> m_acc;
 
-		/* At run-time, however, we want the fastest possible lookup of the
-		 * rows. We therefore use a vector with linear addressing. This just
-		 * points to the data in the accumulator. This is constructed in \a
-		 * finalize which must be called prior to getRow being called */
-		//! \todo use two different classes for this in order to ensure ordering
+		/* At run-time, however, we want a fast lookup of the rows. We
+		 * therefore use a vector with linear addressing.  This is constructed
+		 * in \a finalize which must be called prior to getRow being called */
 		std::vector<Row> m_cm;
-		void finalizeForward(const mapper_t&);
+		void finalizeForward(const mapper_t&, bool verifySources);
 
 		/* For the reverse matrix we don't need to group by delay */
 		//! \todo move into std::vector when finalizing
@@ -171,7 +169,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */
 		size_t addressOf(nidx_t, delay_t) const;
 
-		void verifySynapseTerminals(fidx_t idx, const row_t& row, const mapper_t&) const;
+		void verifySynapseTerminals(fidx_t idx,
+				const row_t& row, const mapper_t&, bool verifySource) const;
 
 		/*! \return address of the synapse weight in the forward matrix, given
 		 * a synapse in the reverse matrix */

@@ -125,25 +125,27 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 
 
 void
-ConnectivityMatrix::finalize(const mapper_t& mapper)
+ConnectivityMatrix::finalize(const mapper_t& mapper, bool verifySources)
 {
-	finalizeForward(mapper);
+	finalizeForward(mapper, verifySources);
 }
 
 
 
 /* The fast lookup is indexed by source and delay. */
 void
-ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
+ConnectivityMatrix::finalizeForward(const mapper_t& mapper, bool verifySources)
 {
-	if(mapper.neuronCount() == 0)
+	if(m_acc.empty())
 		return;
 
-	nidx_t maxIdx = mapper.maxLocalIdx();
-	m_cm.resize((maxIdx+1) * m_maxDelay);
+	/* this relies on lexicographical ordering of tuple */
+	nidx_t maxSourceIdx = m_acc.rbegin()->first.get<0>();
+
+	m_cm.resize((maxSourceIdx+1) * m_maxDelay);
 
 	//! \todo change order here: default to Row() in all location, and then just iterate over map
-	for(nidx_t n=0; n <= maxIdx; ++n) {
+	for(nidx_t n=0; n <= maxSourceIdx; ++n) {
 		for(delay_t d=1; d <= m_maxDelay; ++d) {
 
 #if 0
@@ -156,7 +158,7 @@ ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
 
 			std::map<fidx_t, row_t>::const_iterator row = m_acc.find(fidx_t(n, d));
 			if(row != m_acc.end()) {
-				verifySynapseTerminals(row->first, row->second, mapper);
+				verifySynapseTerminals(row->first, row->second, mapper, verifySources);
 				m_cm.at(addressOf(n,d)) = Row(row->second);
 			} else {
 				/* Insertion into map does not invalidate existing iterators */
@@ -172,21 +174,24 @@ ConnectivityMatrix::finalizeForward(const mapper_t& mapper)
 void
 ConnectivityMatrix::verifySynapseTerminals(fidx_t idx,
 		const row_t& row,
-		const mapper_t& mapper) const
+		const mapper_t& mapper,
+		bool verifySource) const
 {
 	using boost::format;
 
-	nidx_t source = idx.get<0>();
-	if(!mapper.validLocal(source)) {
-		throw nemo::exception(NEMO_INVALID_INPUT,
-			str(format("Invalid synapse source neuron %u") % source));
+	if(verifySource) {
+		nidx_t source = idx.get<0>();
+		if(!mapper.validLocal(source)) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid synapse source neuron %u") % source));
+		}
 	}
 
 	for(size_t s=0; s < row.size(); ++s) {
 		nidx_t target = row.at(s).target;
 		if(!mapper.validLocal(target)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid synapse target neuron %u (source: %u)") % target % source));
+					str(format("Invalid synapse target neuron %u (source: %u)") % target % idx.get<0>()));
 		}
 	}
 }
