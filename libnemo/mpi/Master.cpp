@@ -62,7 +62,7 @@ Master::Master(
 	 * methods. */
 
 	m_timer.reset();
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	m_mpiTimer.reset();
 #endif
 }
@@ -71,7 +71,7 @@ Master::Master(
 
 Master::~Master()
 {
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	m_mpiTimer.report(0);
 #endif
 	terminate();
@@ -133,7 +133,7 @@ Master::step(const std::vector<unsigned>& fstim)
 {
 	m_timer.step();
 
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	m_mpiTimer.reset();
 #endif
 
@@ -143,19 +143,19 @@ Master::step(const std::vector<unsigned>& fstim)
 	std::vector<boost::mpi::request> oreqs(wcount);
 
 	distributeFiringStimulus(m_mapper, fstim, oreqData);
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	m_mpiTimer.substep();
 #endif
 
 	for(unsigned r=0; r < wcount; ++r) {
 		oreqs.at(r) = m_world.isend(r+1, MASTER_STEP, oreqData.at(r));
 	}
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	m_mpiTimer.substep();
 #endif
 
 	boost::mpi::wait_all(oreqs.begin(), oreqs.end());
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	m_mpiTimer.substep();
 #endif
 
@@ -175,7 +175,7 @@ Master::step(const std::vector<unsigned>& fstim)
 #ifdef INCLUDE_MPI_LOGGING
 	std::copy(m_firing.back().begin(), m_firing.back().end(), std::ostream_iterator<unsigned>(std::cout, " "));
 #endif
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	m_mpiTimer.substep();
 	m_mpiTimer.step();
 #endif

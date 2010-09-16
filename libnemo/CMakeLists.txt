@@ -39,6 +39,7 @@ IF(INCLUDE_MPI)
 	LIST(APPEND DIRS "mpi")
 
 	OPTION(INCLUDE_MPI_LOGGING "Enable logging (for debugging) in MPI applications" OFF)
+	OPTION(NEMO_MPI_DEBUG_TIMING "Add detailed timing of MPI operations" OFF)
 ENDIF(INCLUDE_MPI)
 
 

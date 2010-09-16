@@ -11,6 +11,7 @@
 #cmakedefine NEMO_TIMING_ENABLED
 #cmakedefine INCLUDE_MPI
 #cmakedefine INCLUDE_MPI_LOGGING
+#cmakedefine NEMO_MPI_DEBUG_TIMING
 #cmakedefine NEMO_CUDA_ENABLED
 #cmakedefine NEMO_CUDA_DYNAMIC_LOADING
 #cmakedefine NEMO_CUDA_KERNEL_TIMING

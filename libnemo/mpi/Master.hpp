@@ -16,12 +16,15 @@
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 
+#include <nemo/config.h>
 #include <nemo/types.hpp>
 #include <nemo/Timer.hpp>
 #include <nemo/network/Generator.hpp>
 
 #include "Mapper.hpp"
-#include "MpiTimer.hpp"
+#ifdef NEMO_MPI_DEBUG_TIMING
+#	include "MpiTimer.hpp"
+#endif
 
 namespace nemo {
 
@@ -77,7 +80,7 @@ class Master
 
 		Timer m_timer;
 
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 		MpiTimer m_mpiTimer;
 #endif
 };

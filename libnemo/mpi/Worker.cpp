@@ -22,7 +22,9 @@
 #include <nemo/config.h>
 
 #include "Mapper.hpp"
-#include "MpiTimer.hpp"
+#ifdef NEMO_MPI_DEBUG_TIMING
+#	include "MpiTimer.hpp"
+#endif
 #include "SpikeQueue.hpp"
 #include "nemo_mpi_common.hpp"
 #include "log.hpp"
@@ -200,7 +202,7 @@ gather(const SpikeQueue& queue,
 
 
 
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 #define STEP(name, code)                                                      \
     MPI_LOG("c%u: worker %u %s\n", cycle, m_rank, name);                      \
     code;                                                                     \
@@ -260,7 +262,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 	/* Scatter empty firing packages to start with */
 	initGlobalScatter(fbuf(), oreqs, obufs);
 
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	/* For basic profiling, time the different stages of the main step loop.
 	 * Note that the MPI timers we use here are wallclock-timers, and are thus
 	 * sensitive to OS effects */
@@ -268,7 +270,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 #endif
 
 	while(!masterReq.terminate) {
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 		unsigned cycle = sim->elapsedSimulation();
 #endif
 		STEP("init incoming master req", mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq));
@@ -293,13 +295,13 @@ Worker::runSimulation(const network::NetworkImpl& net,
 		STEP("init global scatter", initGlobalScatter(fired.neurons, oreqs, obufs));
 		STEP("send master", gather(m_world, fired.neurons, MASTER));
 		queue.step();
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 		timer.step();
 #endif
 		//! \todo local scatter
 	}
 
-#ifdef NEMO_DEBUG_MPI_TIMING
+#ifdef NEMO_MPI_DEBUG_TIMING
 	timer.report(m_rank);
 #endif
 
