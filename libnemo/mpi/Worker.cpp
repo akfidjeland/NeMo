@@ -9,11 +9,8 @@
 
 #include "Worker.hpp"
 
-#include <stdexcept>
 #include <algorithm>
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -21,8 +18,11 @@
 #include <boost/serialization/utility.hpp>
 
 #include <nemo/internals.hpp>
+#include <nemo/NetworkImpl.hpp>
+#include <nemo/config.h>
 
 #include "Mapper.hpp"
+#include "MpiTimer.hpp"
 #include "SpikeQueue.hpp"
 #include "nemo_mpi_common.hpp"
 #include "log.hpp"
@@ -32,9 +32,59 @@ namespace nemo {
 	namespace mpi {
 
 
+nemo::Configuration
+getConfiguration(boost::mpi::communicator& world)
+{
+	ConfigurationImpl conf;
+	boost::mpi::broadcast(world, conf, MASTER);
+	conf.disableLogging();
+	if(!conf.fractionalBitsSet()) {
+		throw nemo::exception(NEMO_UNKNOWN_ERROR, "Fractional bits not set when using MPI backend");
+	}
+	return Configuration(conf, true); // this will override backend
+}
+
+
+
+Mapper
+getMapper(boost::mpi::communicator& world)
+{
+	//! \todo fold this into the Mapper ctor instead
+	unsigned neurons;
+	boost::mpi::broadcast(world, neurons, MASTER);
+	int workers = world.size() - 1;
+	return Mapper(neurons, workers, world.rank());
+}
+
+
+
+void
+runWorker(boost::mpi::environment& env,
+		boost::mpi::communicator& world)
+{
+	MPI_LOG("Starting worker %u on %s\n", world.rank(), env.processor_name().c_str());
+	Configuration conf = getConfiguration(world);
+	MPI_LOG("Worker %u: Creating mapper\n", world.rank());
+	Mapper mapper = getMapper(world);
+	MPI_LOG("Worker %u: Creating runtime data\n", world.rank());
+	try {
+		Worker sim(world, conf, mapper);
+	} catch (nemo::exception& e) {
+		std::cerr << world.rank() << ":" << e.what() << std::endl;
+		env.abort(e.errorNumber());
+	} catch (std::exception& e) {
+		std::cerr << world.rank() << ": " << e.what() << std::endl;
+		env.abort(-1);
+	}
+}
+
+
+
 Worker::Worker(
-		boost::mpi::environment& env,
-		boost::mpi::communicator& world) :
+		boost::mpi::communicator& world,
+		Configuration& conf,
+		Mapper& mapper) :
+	m_fcmIn(*conf.m_impl, mapper),
 	m_world(world),
 	m_rank(world.rank()),
 	ml_scount(0),
@@ -42,157 +92,92 @@ Worker::Worker(
 	mgo_scount(0),
 	m_ncount(0)
 {
-	MPI_LOG("Starting worker %u on %s\n", world.rank(),
-			env.processor_name().c_str());
-
-	nemo::Configuration conf_;
-	boost::mpi::broadcast(m_world, *conf_.m_impl, MASTER);
-	ConfigurationImpl& conf = *conf_.m_impl;
-	conf.disableLogging();
-
-	if(!conf.fractionalBitsSet()) {
-		throw nemo::exception(NEMO_UNKNOWN_ERROR, "Fractional bits not set when using MPI backend");
-	}
-
-	unsigned neurons;
-	boost::mpi::broadcast(m_world, neurons, MASTER);
-
-	int workers = m_world.size() - 1;
-	Mapper mapper(neurons, workers, m_rank);
-
+	//! \todo move construction into a separate class, or at least function 
 	bool constructionDone = false;
-	nemo::NetworkImpl net;
+	network::NetworkImpl net;
 	int buf;
 
-	global_fcm_t g_ss;
+	MPI_LOG("Worker %u: constructing network\n", m_rank);
 
+	//! \todo we now the order of receives here, so we can simplify processing.
 	while(!constructionDone) {
 		boost::mpi::status msg = m_world.probe();
 		switch(msg.tag()) {
-			case NEURON_SCALAR: addNeuron(net); break;
-			case SYNAPSE_VECTOR: addSynapseVector(mapper, net, g_ss); break;
+			case NEURON_SCALAR: addNeuron(mapper, net); break;
+			case SYNAPSE_SCALAR: addSynapse(mapper, net); break;
 			case END_CONSTRUCTION: 
 				world.recv(MASTER, END_CONSTRUCTION, buf);
 				constructionDone = true;
 				break;
 			default:
-				//! \todo throw mpi error here instead. Remove stdexcept header when doing so
-				//! \todo deal with errors properly
-				throw std::runtime_error("unknown tag");
+				throw nemo::exception(NEMO_MPI_ERROR, "Unknown tag received during construction phase");
 		}
 	}
 
-	/* At simulation-time the synapse data is stored on the host-side at
-	 * the target node */
-
-	/* We keep a local FCM which is used to accumulate current from all
-	 * incoming firings. All source indices are global, while target
-	 * indices are local */
-	nemo::ConnectivityMatrix l_fcm(conf);
-
-	exchangeGlobalData(mapper, g_ss, l_fcm);
-
-	m_world.barrier();
+	MPI_LOG("Worker %u: finalize network\n", m_rank);
+	m_fcmIn.finalize(mapper, false);
 
 	MPI_LOG("Worker %u: %u neurons\n", m_rank, m_ncount);
 	MPI_LOG("Worker %u: %u local synapses\n", m_rank, ml_scount);
 	MPI_LOG("Worker %u: %u global synapses (out)\n", m_rank,  mgo_scount);
 	MPI_LOG("Worker %u: %u global synapses (int)\n", m_rank, mgi_scount);
 
-	runSimulation(net, conf, l_fcm, mapper.localCount());
+	//! \todo move all intialisation into ctor, and make run a separate function.
+	runSimulation(net, *conf.m_impl, mapper.localCount());
 }
 
 
+
 void
-Worker::addNeuron(nemo::NetworkImpl& net)
+Worker::addNeuron(Mapper& mapper, network::NetworkImpl& net)
 {
 	std::pair<nidx_t, nemo::Neuron<float> > n;
 	m_world.recv(MASTER, NEURON_SCALAR, n);
 	net.addNeuron(n.first, n.second);
 	m_ncount++;
+	mapper.addGlobal(n.first);
 }
 
 
 
+//! \todo could use an iterator which sets up local simulations as a side effect
+// we can pass this iterator to the local simulation and incrementally construct our own CM
 void
-Worker::addSynapseVector(const Mapper& mapper,
-		nemo::NetworkImpl& net,
-		global_fcm_t& g_ss)
+Worker::addSynapse(const Mapper& mapper, network::NetworkImpl& net)
 {
 	/* Incoming data from master */
 	//! \todo allocate this only once
-	SynapseVector svec;
-	m_world.recv(MASTER, SYNAPSE_VECTOR, svec);
+	Synapse s;
+	m_world.recv(MASTER, SYNAPSE_SCALAR, s);
 
-	typedef std::map<rank_t, std::vector<SynapseVector::terminal_t> > acc_t;
-	acc_t ss;
+	// is this local or global?
+	const int sourceRank = mapper.rankOf(s.source);
+	const int targetRank = mapper.rankOf(s.target());
 
-	// now, for each synapse determine where it should go: local or global
-	for(std::vector<SynapseVector::terminal_t>::const_iterator i = svec.terminals.begin();
-			i != svec.terminals.end(); ++i) {
-		int targetRank = mapper.rankOf(i->target);
-		if(targetRank == m_rank) {
-			//! \todo add alternative addSynapse method which uses AxonTerminal directly
-			net.addSynapse(svec.source, i->target, svec.delay, i->weight, i->plastic);
-			ml_scount++;
-		} else {
-			mg_fcm[svec.source].insert(targetRank);
-			mgo_scount++;
-			ss[targetRank].push_back(*i);
-		}
-	}
-
-	for(acc_t::const_iterator i = ss.begin(); i != ss.end(); ++i) {
-		rank_t targetRank = i->first;
-		g_ss[targetRank].push_back(SynapseVector(svec.source, svec.delay, i->second));
+	if(sourceRank == targetRank) {
+		/* Most neurons should be purely local neurons */
+		assert(sourceRank == m_rank); // see how master performs seneding
+		/*! \todo could use a function to pass in synapse directly instead of
+		 * constructing an intermediate network. */
+		net.addSynapse(s.source, s.target(), s.delay, s.weight(), s.plastic());
+		ml_scount++;
+	} else if(sourceRank == m_rank) {
+		/* Source neuron is found on this node, but target is on some other node */
+		m_fcmOut[s.source].insert(targetRank);
+		//! \todo could construct mg_targetNodes after completion of m_fcmOut
+		mg_targetNodes.insert(targetRank);
+		mgo_scount++;
+	} else if(targetRank == m_rank) {
+		/* Source neuron is found on some other node, but target neuron is
+		 * found here. Incoming spikes are handled by the worker, before being
+		 * handed over to the workers underlying simulation */
+		mgi_scount++;
+		mg_sourceNodes.insert(sourceRank);
+		m_fcmIn.addSynapse(s.source, mapper.localIdx(s.target()), s);
 	}
 }
 
 
-
-void
-Worker::exchangeGlobalData(
-		const Mapper& mapper,
-		global_fcm_t& g_ss,
-		nemo::ConnectivityMatrix& l_fcm)
-{
-	/* Mapping from global to local indices */
-	boost::function<nidx_t(nidx_t)> targetMap =
-		boost::bind(&Mapper::localIndex, &mapper, _1);
-
-	for(rank_t targetOffset = 1; targetOffset < m_world.size() - 1; ++targetOffset) {
-		/* We need to send something to all targets, so just use default-
-		 * constructed entry if nothing is present */
-		rank_t source = 1 + ((m_rank - 1 + (m_world.size() - 1) - targetOffset) % (m_world.size() - 1));
-		rank_t target = 1 + ((m_rank - 1 + targetOffset) % (m_world.size() - 1));
-		boost::mpi::request reqs[2];
-
-		m_obuf = g_ss[target];
-		if(m_obuf.size() != 0) {
-			mg_targets.insert(target);
-		}
-		reqs[0] = m_world.isend(target, SYNAPSE_VECTOR, m_obuf);
-		g_ss.erase(target);
-
-		//! \todo probably not needed
-		m_ibuf.clear();
-		reqs[1] = m_world.irecv(source, SYNAPSE_VECTOR, m_ibuf);
-		boost::mpi::wait_all(reqs, reqs+2);
-		if(m_ibuf.size() != 0) {
-			mg_sources.insert(source);
-		}
-
-		for(std::vector<SynapseVector>::const_iterator i = m_ibuf.begin();
-				i != m_ibuf.end(); ++i) {
-			/* Source indices are in global indices, while targets are mapped
-			 * to local indices */
-			l_fcm.setRow(i->source, i->delay, i->terminals, targetMap);
-			mgi_scount += i->terminals.size();
-		}
-	}
-
-	l_fcm.finalize();
-}
 
 
 void
@@ -206,20 +191,31 @@ gather(const SpikeQueue& queue,
 	for(SpikeQueue::const_iterator arrival = queue.current_begin();
 			arrival != arrival_end; ++arrival) {
 		const Row& row = fcm.getRow(arrival->source(), arrival->delay());
-		for(unsigned s=0; s < row.len; ++s) {
-			const FAxonTerminal<fix_t>& terminal = row.data[s];
-			assert(terminal.target < current.size());
-			current.at(terminal.target) += terminal.weight;
+		FAxonTerminal* row_end = row.data.get() + row.len;
+		for(FAxonTerminal* terminal = row.data.get(); terminal != row_end; ++terminal) {
+			current.at(terminal->target) += terminal->weight;
 		}
 	}
 }
 
 
+
+#ifdef NEMO_DEBUG_MPI_TIMING
+#define STEP(name, code)                                                      \
+    MPI_LOG("c%u: worker %u %s\n", cycle, m_rank, name);                      \
+    code;                                                                     \
+    timer.substep()
+#else
+#define STEP(name, code)                                                      \
+    MPI_LOG("c%u: worker %u %s\n", cycle, m_rank, name);                      \
+    code
+#endif
+
+
 void
-Worker::runSimulation(const nemo::NetworkImpl& net,
+Worker::runSimulation(const network::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf,
-		const nemo::ConnectivityMatrix& l_fcm,
-		size_t localCount)
+		unsigned localCount)
 {
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
 
@@ -228,8 +224,6 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
 
-	const std::vector<unsigned>* l_firedCycles;         // unused
-	const std::vector<unsigned>* l_fired;               // neurons
 	std::vector<fix_t> istim(localCount, 0);         // input from global spikes
 	SpikeQueue queue(net.maxDelay());
 
@@ -237,12 +231,15 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	boost::mpi::request mreq;
 	SimulationStep masterReq;
 
+	/* Return data to master */
+	boost::mpi::request moreq;
+
 	/* Incoming peer requests */
 	//! \todo can just fill this in as we go
 	fbuf_vector ibufs;
-	req_vector ireqs(mg_sources.size());
-	for(std::set<rank_t>::const_iterator i = mg_sources.begin();
-			i != mg_sources.end(); ++i) {
+	req_vector ireqs(mg_sourceNodes.size());
+	for(std::set<rank_t>::const_iterator i = mg_sourceNodes.begin();
+			i != mg_sourceNodes.end(); ++i) {
 		ibufs[*i] = fbuf();
 	}
 
@@ -251,9 +248,9 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	 * Allocated it with potentially unused entries so that insertion (which is
 	 * frequent) is faster */
 	fbuf_vector obufs;
-	req_vector oreqs(mg_targets.size());
-	for(std::set<rank_t>::const_iterator i = mg_targets.begin();
-			i != mg_targets.end(); ++i) {
+	req_vector oreqs(mg_targetNodes.size());
+	for(std::set<rank_t>::const_iterator i = mg_targetNodes.begin();
+			i != mg_targetNodes.end(); ++i) {
 		obufs[*i] = fbuf();
 	}
 
@@ -263,55 +260,65 @@ Worker::runSimulation(const nemo::NetworkImpl& net,
 	/* Scatter empty firing packages to start with */
 	initGlobalScatter(fbuf(), oreqs, obufs);
 
+#ifdef NEMO_DEBUG_MPI_TIMING
+	/* For basic profiling, time the different stages of the main step loop.
+	 * Note that the MPI timers we use here are wallclock-timers, and are thus
+	 * sensitive to OS effects */
+	MpiTimer timer;
+#endif
+
 	while(!masterReq.terminate) {
+#ifdef NEMO_DEBUG_MPI_TIMING
 		unsigned cycle = sim->elapsedSimulation();
-		MPI_LOG("c%u: worker %u waiting for master req\n", cycle, m_rank);
-		mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq);
+#endif
+		STEP("init incoming master req", mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq));
 
 		/*! \note could use globalGather instead of initGlobalGather/waitGlobalGather */
 		// globalGather(l_fcm, queue);
 		
-		MPI_LOG("c%u: worker %u init global gather\n", cycle, m_rank);
-		initGlobalGather(ireqs, ibufs);
-
-		MPI_LOG("c%u: worker %u wait global scatter\n", cycle, m_rank);
+		STEP("init global gather", initGlobalGather(ireqs, ibufs));
 		//! \todo local gather
-		waitGlobalScatter(oreqs);
-
-		MPI_LOG("c%u: worker %u wait global gather\n", cycle, m_rank);
-		waitGlobalGather(ireqs, ibufs, l_fcm, queue);
-
-		MPI_LOG("c%u: worker %u master req wait\n", cycle, m_rank);
-		mreq.wait();
+		STEP("wait global scatter", waitGlobalScatter(oreqs));
+		STEP("wait global gather", waitGlobalGather(ireqs, ibufs, m_fcmIn, queue));
 		//! \todo improve naming
-		MPI_LOG("c%u: worker %u gather\n", cycle, m_rank);
-		gather(queue, l_fcm, istim);
-		sim->setFiringStimulus(masterReq.fstim);
-		sim->setCurrentStimulus(istim);
+		//! \todo experiment with order of gather and mreq
+		STEP("gather", gather(queue, m_fcmIn, istim));
+		STEP("wait incoming master req", mreq.wait());
+		STEP("firing stimulus", sim->setFiringStimulus(masterReq.fstim));
+		STEP("current stimulus", sim->setCurrentStimulus(istim));
 		//! \todo split up step and only do neuron update here
-		sim->step();
-		sim->readFiring(&l_firedCycles, &l_fired);
-		MPI_LOG("c%u: worker %u init global scatter\n", cycle, m_rank);
-		initGlobalScatter(*l_fired, oreqs, obufs);
-		MPI_LOG("c%u: worker %u send master\n", cycle, m_rank);
-		sendMaster(*l_fired);
+		STEP("step", sim->step());
+		STEP("read firing", FiredList fired = sim->readFiring());
+		//! \note take care here: fired contains reference to internal buffers in sim.
+		STEP("init global scatter", initGlobalScatter(fired.neurons, oreqs, obufs));
+		STEP("send master", gather(m_world, fired.neurons, MASTER));
 		queue.step();
+#ifdef NEMO_DEBUG_MPI_TIMING
+		timer.step();
+#endif
 		//! \todo local scatter
 	}
 
+#ifdef NEMO_DEBUG_MPI_TIMING
+	timer.report(m_rank);
+#endif
+
 	//! \todo perhaps we should do a final waitGlobalScatter?
 }
+
+
+#undef STEP
 
 
 
 void
 Worker::initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs)
 {
-	assert(mg_sources.size() == ibufs.size());
-	assert(mg_sources.size() == ireqs.size());
+	assert(mg_sourceNodes.size() == ibufs.size());
+	assert(mg_sourceNodes.size() == ireqs.size());
 	unsigned sid = 0;
-	for(std::set<rank_t>::const_iterator source = mg_sources.begin();
-			source != mg_sources.end(); ++source, ++sid) {
+	for(std::set<rank_t>::const_iterator source = mg_sourceNodes.begin();
+			source != mg_sourceNodes.end(); ++source, ++sid) {
 		MPI_LOG("Worker %u init gather from %u\n", m_rank, *source);
 		assert(ibufs.find(*source) != ibufs.end());
 		fbuf& incoming = ibufs[*source];
@@ -397,8 +404,8 @@ Worker::globalGather(
 		const nemo::ConnectivityMatrix& l_fcm,
 		SpikeQueue& queue)
 {
-	for(std::set<rank_t>::const_iterator source = mg_sources.begin();
-			source != mg_sources.end(); ++source) {
+	for(std::set<rank_t>::const_iterator source = mg_sourceNodes.begin();
+			source != mg_sourceNodes.end(); ++source) {
 		fbuf incoming;
 		m_world.irecv(*source, WORKER_STEP, incoming);
 		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), *source);
@@ -429,18 +436,18 @@ Worker::initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obu
 	/* Each local firing may be sent to zero or more peers */
 	for(std::vector<unsigned>::const_iterator source = fired.begin();
 			source != fired.end(); ++source) {
-		const std::set<rank_t>& targets = mg_fcm[*source];
+		const std::set<rank_t>& targets = m_fcmOut[*source];
 		for(std::set<rank_t>::const_iterator target = targets.begin();
 				target != targets.end(); ++target) {
 			rank_t targetRank = *target;
-			assert(mg_targets.count(targetRank) == 1);
+			assert(mg_targetNodes.count(targetRank) == 1);
 			obufs[targetRank].push_back(*source);
 		}
 	}
 
 	unsigned tid = 0;
-	for(std::set<rank_t>::const_iterator target = mg_targets.begin();
-			target != mg_targets.end(); ++target, ++tid) {
+	for(std::set<rank_t>::const_iterator target = mg_targetNodes.begin();
+			target != mg_targetNodes.end(); ++target, ++tid) {
 		rank_t targetRank = *target;
 		MPI_LOG("Worker %u sending %lu firings to %u\n", m_rank, obufs[targetRank].size(), targetRank);
 		oreqs.at(tid) = m_world.isend(targetRank, WORKER_STEP, obufs[targetRank]);
@@ -455,15 +462,6 @@ Worker::waitGlobalScatter(req_vector& oreqs)
 	boost::mpi::wait_all(oreqs.begin(), oreqs.end());
 }
 
-
-
-/* Send most recent cycle's firing back to master */
-void
-Worker::sendMaster(const fbuf& fired)
-{
-	//! \todo async send here?
-	m_world.send(MASTER, MASTER_STEP, fired);
-}
 
 
 	} // end namespace mpi

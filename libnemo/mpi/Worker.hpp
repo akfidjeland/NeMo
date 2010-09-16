@@ -16,18 +16,28 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/mpi/environment.hpp>
 
+#include <nemo/config.h>
 #include <nemo/ConnectivityMatrix.hpp>
 #include "mpi_types.hpp"
 
 namespace nemo {
 
-	class NetworkImpl;
+	namespace network {
+		class NetworkImpl;
+	}
+	//! \todo use consistent interface here
 	class ConfigurationImpl;
+	class Configuration;
 
 	namespace mpi {
 
 	class Mapper;
 	class SpikeQueue;
+
+
+void
+runWorker(boost::mpi::environment& env, boost::mpi::communicator& world);
+
 
 /*
  * prefixes:
@@ -38,9 +48,11 @@ class Worker
 {
 	public:
 
-		Worker(boost::mpi::environment& env,
-				boost::mpi::communicator& world);
+		Worker( boost::mpi::communicator& world,
+				Configuration& conf,
+				Mapper& mapper);
 
+		//! \todo move this type to nemo::FiringBuffer instead perhaps typedefed as Fired::neuron_list
 		typedef std::vector<unsigned> fbuf;
 
 	private:
@@ -48,25 +60,27 @@ class Worker
 		//! \todo move this to common types
 		typedef int rank_t;
 
-		typedef Synapse<unsigned, unsigned, float> synapse_t;
+		/* While most synapses are likely to be local to a single simulation
+		 * (i.e. both the source and target neurons are found on the same
+		 * node), there will also be a large number of /global/ synapses, which
+		 * cross node boundaries. Most of the associated synapse data is stored
+		 * at the node containing the target neuron. */
 
-		/* Most of the data for the global synapses will be stored at the node
-		 * where the target neuron is processed. We need to build up the
-		 * collection of these synapses and later send these to the target
-		 * node.
-		 *
-		 * We could potentially interleave this with the other construction */
-		typedef std::map<rank_t, std::vector<SynapseVector> > global_fcm_t;
+		/* On the node with the target we store a connectivity matrix where the
+		 * source neurons are specified in global ids, while the targets are
+		 * stored in local ids (to simplify forwarding to the local simulation
+		 * object at run-time */
 
-		/* Buffer for incoming/outgoing data */
-		//! \todo make this a non-member
-		std::vector<SynapseVector> m_ibuf;
-		std::vector<SynapseVector> m_obuf;
+		nemo::ConnectivityMatrix m_fcmIn;
+
+		/* On the node with the source, we only need to store a mapping from
+		 * the neuron (in local indices) to the target nodes (rank id). */
+
+		std::map<nidx_t, std::set<rank_t> > m_fcmOut;
 		
-		void addSynapseVector(const Mapper&, nemo::NetworkImpl& net, global_fcm_t&);
-		void addNeuron(nemo::NetworkImpl& net);
+		void addNeuron(Mapper& mapper, network::NetworkImpl& net);
 
-		void exchangeGlobalData(const Mapper&, global_fcm_t& g_ss, nemo::ConnectivityMatrix& l_fcm);
+		void addSynapse(const Mapper& mapper, network::NetworkImpl& net);
 
 		boost::mpi::communicator m_world;
 
@@ -74,14 +88,12 @@ class Worker
 
 		/* All the peers to which this worker should send firing data every
 		 * simulation cycle */
-		std::set<rank_t> mg_targets;
+		//! \todo since we continually update this, could make it a vector<bool> instead
+		std::set<rank_t> mg_targetNodes;
 
 		/* All the peers from which this worker should receive firing data
 		 * every simulation cycle */
-		std::set<rank_t> mg_sources;
-
-		/* The specific source firings we should send. */
-		std::map<nidx_t, std::set<rank_t> > mg_fcm;
+		std::set<rank_t> mg_sourceNodes;
 
 		unsigned ml_scount;
 		unsigned mgi_scount;
@@ -91,10 +103,9 @@ class Worker
 		typedef std::vector<boost::mpi::request> req_vector;
 		typedef std::map<rank_t, fbuf> fbuf_vector;
 
-		void runSimulation(const nemo::NetworkImpl& net,
+		void runSimulation(const network::NetworkImpl& net,
 				const nemo::ConfigurationImpl& conf,
-				const nemo::ConnectivityMatrix& l_fcm,
-				size_t localCount);
+				unsigned localCount);
 
 		void initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obufs);
 		void waitGlobalScatter(req_vector&);
@@ -107,8 +118,6 @@ class Worker
 				SpikeQueue& queue);
 
 		void globalGather(const nemo::ConnectivityMatrix& l_fcm, SpikeQueue& queue);
-
-		void sendMaster(const fbuf& fired);
 };
 
 

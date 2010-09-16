@@ -20,6 +20,8 @@ ADD_LIBRARY(nemo_mpi SHARED
 	Worker.cpp
 	Mapper.cpp
 	SpikeQueue.cpp
+	# TODO: only include if mpi timing is enabled
+	MpiTimer.cpp
 )
 
 SET_TARGET_PROPERTIES(nemo_mpi PROPERTIES
@@ -31,12 +33,22 @@ SET_TARGET_PROPERTIES(nemo_mpi PROPERTIES
 TARGET_LINK_LIBRARIES(nemo_mpi nemo ${MPI_LIBRARIES})
 
 SET(EXAMPLES_DIR ${CMAKE_SOURCE_DIR}/examples)
-ADD_EXECUTABLE(example
+ADD_EXECUTABLE(mpi_example
 	example.cpp
-	${EXAMPLES_DIR}/random1k.cpp
+	${EXAMPLES_DIR}/random.cpp
 )
 
 # TODO: extract only mpi and serialisation here.
-TARGET_LINK_LIBRARIES(example nemo_mpi nemo ${MPI_LIBRARIES} ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(mpi_example nemo_mpi nemo ${MPI_LIBRARIES} ${Boost_LIBRARIES})
+
+# TODO: can share this code with examples cmakefile
+IF(UNIX)
+	SET(INSTALL_EXAMPLE_BIN_DIR "share/nemo/examples")
+ENDIF(UNIX)
+
+IF(WIN32)
+	SET(INSTALL_EXAMPLE_BIN_DIR "examples")
+ENDIF(WIN32)
 
 INSTALL(TARGETS nemo_mpi DESTINATION ${INSTALL_LIB_DIR})
+INSTALL(TARGETS mpi_example DESTINATION ${INSTALL_EXAMPLE_BIN_DIR})

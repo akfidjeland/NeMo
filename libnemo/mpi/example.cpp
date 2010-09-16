@@ -4,6 +4,7 @@
 
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <nemo.hpp>
 #include <nemo/exception.hpp>
@@ -23,9 +24,8 @@ run(int argc, char* argv[],
 	try {
 		if(world.rank() == nemo::mpi::MASTER) {
 
-			nemo::Network* net = nemo::random1k::construct(ncount, scount);
+			boost::scoped_ptr<nemo::Network> net(nemo::random::construct(ncount, scount, false));
 			nemo::Configuration conf;
-			conf.setFractionalBits(26);
 			nemo::mpi::Master sim(env, world, *net, conf);
 
 			std::ofstream file(filename);
@@ -41,10 +41,8 @@ run(int argc, char* argv[],
 
 			std::cout << "Simulated " << sim.elapsedSimulation() << "ms "
 				<< "in " << sim.elapsedWallclock() << "ms\n";
-
-			delete net;
 		} else {
-			nemo::mpi::Worker sim(env, world);
+			nemo::mpi::runWorker(env, world);
 		}
 	} catch (nemo::exception& e) {
 		std::cerr << world.rank() << ":" << e.what() << std::endl;
@@ -64,24 +62,17 @@ run(int argc, char* argv[],
 int
 runNoMPI(unsigned ncount, unsigned scount, unsigned duration, const char* filename)
 {
-	nemo::Network* net = nemo::random1k::construct(ncount, scount);
+	nemo::Network* net = nemo::random::construct(ncount, scount, false);
 	nemo::Configuration conf;
-	conf.setFractionalBits(26);
 	nemo::Simulation* sim = nemo::simulation(*net, conf);
 
 	std::ofstream file(filename);
 
 	sim->resetTimer();
 	for(unsigned ms=0; ms < duration; ++ms) {
-		sim->step();
-		//! \todo make nemo::Simulation::readFiring use the same interface as in MPI::Master.
-		const std::vector<unsigned>* cycles;
-		const std::vector<unsigned>* firing;
-
-		sim->readFiring(&cycles, &firing);
-
+		const std::vector<unsigned>& fired = sim->step();
 		file << ms << ": ";
-		std::copy(firing->begin(), firing->end(), std::ostream_iterator<unsigned>(file, " "));
+		std::copy(fired.begin(), fired.end(), std::ostream_iterator<unsigned>(file, " "));
 		file << std::endl;
 	}
 	std::cout << "Simulated " << sim->elapsedSimulation() << "ms "

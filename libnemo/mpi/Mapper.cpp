@@ -42,7 +42,7 @@ Mapper::rankOf(nidx_t n) const
 
 
 nidx_t
-Mapper::localIndex(nidx_t global) const
+Mapper::localIdx(const nidx_t& global) const
 {
 	assert(rankOf(global) == m_rank);
 	assert(global >= m_startIdx);
@@ -52,10 +52,51 @@ Mapper::localIndex(nidx_t global) const
 
 
 
+nidx_t
+Mapper::globalIdx(const nidx_t& local) const
+{
+	return m_startIdx + local;
+}
+
+
+
 unsigned
 Mapper::localCount() const
 {
 	return m_nodeSize;
+}
+
+
+
+nidx_t
+Mapper::maxLocalIdx() const
+{
+	return m_nodeSize - 1;
+}
+
+
+
+nidx_t
+Mapper::addGlobal(const nidx_t& global)
+{
+	m_validGlobal.insert(global);
+	return localIdx(global);
+
+}
+
+
+
+bool
+Mapper::validGlobal(const nidx_t& global) const
+{
+	return m_validGlobal.count(global) == 1;
+}
+
+
+bool
+Mapper::validLocal(const nidx_t& local) const
+{
+	return validGlobal(globalIdx(local));
 }
 
 

@@ -18,14 +18,18 @@
 
 #include <nemo/types.hpp>
 #include <nemo/Timer.hpp>
+#include <nemo/network/Generator.hpp>
 
 #include "Mapper.hpp"
+#include "MpiTimer.hpp"
 
 namespace nemo {
 
 	class Network;
-	class NetworkImpl;
 	class Configuration;
+	namespace network {
+		class NetworkImpl;
+	}
 
 	namespace mpi {
 
@@ -63,7 +67,7 @@ class Master
 
 		Mapper m_mapper;
 
-		void distributeNetwork(const Mapper&, const nemo::NetworkImpl* net);
+		void distributeNetwork(const Mapper&, const network::Generator& net);
 
 		unsigned workers() const;
 
@@ -72,6 +76,10 @@ class Master
 		std::deque< std::vector<unsigned> > m_firing;
 
 		Timer m_timer;
+
+#ifdef NEMO_DEBUG_MPI_TIMING
+		MpiTimer m_mpiTimer;
+#endif
 };
 
 	} // end namespace mpi

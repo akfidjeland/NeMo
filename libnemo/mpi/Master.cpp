@@ -45,21 +45,16 @@ Master::Master(
 	/* Need a dummy entry, to pop on first call to readFiring */
 	m_firing.push_back(std::vector<unsigned>());
 
-	/* send configuration from master to all configurations */
+	/* send configuration from master to all workers */
 	boost::mpi::broadcast(world, *conf.m_impl, MASTER);
 
-	/* send (approximate?) network size to all nodes */
+	/* send overall network size to all workers */
 	unsigned neurons = net.neuronCount();
 	boost::mpi::broadcast(world, neurons, MASTER);
 
-	distributeNetwork(m_mapper, net.m_impl);
+	distributeNetwork(m_mapper, *net.m_impl);
 
-	/* The workers now exchange connectivity information. */
-
-	m_world.barrier();
-
-	/* The workers now set up the local simulations. This
-	 * could take some time */
+	/* The workers now set up the local simulations. This could take some time. */
 
 	m_world.barrier();
 
@@ -67,12 +62,18 @@ Master::Master(
 	 * methods. */
 
 	m_timer.reset();
+#ifdef NEMO_DEBUG_MPI_TIMING
+	m_mpiTimer.reset();
+#endif
 }
 
 
 
 Master::~Master()
 {
+#ifdef NEMO_DEBUG_MPI_TIMING
+	m_mpiTimer.report(0);
+#endif
 	terminate();
 }
 
@@ -85,32 +86,22 @@ Master::workers() const
 }
 
 
-//! \todo implement this in terms of iterators on some base class of //NetworkImpl.
+
 void
 Master::distributeNetwork(
 		const Mapper& mapper,
-		const nemo::NetworkImpl* net)
+		const network::Generator& net)
 {
-	for(std::map<nidx_t, nemo::Neuron<float> >::const_iterator i = net->m_neurons.begin();
-			i != net->m_neurons.end(); ++i) {
-		nidx_t source = i->first;
-		int rank = mapper.rankOf(source);
-		m_world.send(rank, NEURON_SCALAR, *i);
+	for(network::neuron_iterator n = net.neuron_begin(); n != net.neuron_end(); ++n) {
+		m_world.send(mapper.rankOf(n->first), NEURON_SCALAR, *n);
 	}
 
-	for(std::map<nidx_t, NetworkImpl::axon_t>::const_iterator axon = net->m_fcm.begin();
-			axon != net->m_fcm.end(); ++axon) {
-
-		nidx_t source = axon->first;
-		int rank = mapper.rankOf(source);
-
-		for(std::map<delay_t, NetworkImpl::bundle_t>::const_iterator bi = axon->second.begin();
-				bi != axon->second.end(); ++bi) {
-			delay_t delay = bi->first;
-			const NetworkImpl::bundle_t& bundle = bi->second;
-			//! \todo use a predefined output buffer
-			SynapseVector svec(source, delay, bundle);
-			m_world.send(rank, SYNAPSE_VECTOR, svec);
+	for(network::synapse_iterator s = net.synapse_begin(); s != net.synapse_end(); ++s) {
+		int sourceRank = mapper.rankOf(s->source);
+		int targetRank = mapper.rankOf(s->target());
+		m_world.send(sourceRank, SYNAPSE_SCALAR, *s);
+		if(sourceRank != targetRank) {
+			m_world.send(targetRank, SYNAPSE_SCALAR, *s);
 		}
 	}
 
@@ -142,36 +133,51 @@ Master::step(const std::vector<unsigned>& fstim)
 {
 	m_timer.step();
 
+#ifdef NEMO_DEBUG_MPI_TIMING
+	m_mpiTimer.reset();
+#endif
+
 	unsigned wcount = workers();
 
 	std::vector<SimulationStep> oreqData(wcount);
 	std::vector<boost::mpi::request> oreqs(wcount);
 
 	distributeFiringStimulus(m_mapper, fstim, oreqData);
+#ifdef NEMO_DEBUG_MPI_TIMING
+	m_mpiTimer.substep();
+#endif
 
 	for(unsigned r=0; r < wcount; ++r) {
 		oreqs.at(r) = m_world.isend(r+1, MASTER_STEP, oreqData.at(r));
 	}
+#ifdef NEMO_DEBUG_MPI_TIMING
+	m_mpiTimer.substep();
+#endif
 
 	boost::mpi::wait_all(oreqs.begin(), oreqs.end());
+#ifdef NEMO_DEBUG_MPI_TIMING
+	m_mpiTimer.substep();
+#endif
 
-	/* Ideally we'd get the results back in order. Just insert in rank order to
-	 * avoid having to sort later */
-	std::vector<unsigned> ibuf;
 	m_firing.push_back(std::vector<unsigned>());
 
+	std::vector<unsigned> dummy_fired;
+	std::vector< std::vector<unsigned> > fired;
+	gather(m_world, dummy_fired, fired, MASTER);
+
+	/* If neurons are allocated to nodes ordered by neuron index, we can get a
+	 * sorted list by just concatening the per-node lists in rank order */
 	for(unsigned r=0; r < wcount; ++r) {
-		m_world.recv(r+1, MASTER_STEP, ibuf);
-		std::copy(ibuf.begin(), ibuf.end(), std::back_inserter(m_firing.back()));
+		const std::vector<unsigned>& node_fired = fired.at(r+1);
+		std::copy(node_fired.begin(), node_fired.end(), std::back_inserter(m_firing.back()));
+	}
+
 #ifdef INCLUDE_MPI_LOGGING
-		std::copy(ibuf.begin(), ibuf.end(),
-				std::ostream_iterator<unsigned>(std::cout, " "));
+	std::copy(m_firing.back().begin(), m_firing.back().end(), std::ostream_iterator<unsigned>(std::cout, " "));
 #endif
-	}
-#ifdef INCLUDE_MPI_LOGGING
-	if(ibuf.size() > 0) {
-		std::cout << std::endl;
-	}
+#ifdef NEMO_DEBUG_MPI_TIMING
+	m_mpiTimer.substep();
+	m_mpiTimer.step();
 #endif
 }
 
