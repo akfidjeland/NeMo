@@ -22,6 +22,7 @@
 #ifdef INCLUDE_MPI
 
 #include <boost/serialization/serialization.hpp>
+#include <boost/serialization/optional.hpp>
 
 namespace boost {
 	namespace serialization {

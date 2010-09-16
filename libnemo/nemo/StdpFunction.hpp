@@ -36,6 +36,8 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 {
 	public :
 
+		StdpFunction() : m_minWeight(0.0), m_maxWeight(0.0) { }
+
 		StdpFunction(const std::vector<float>& prefire,
 				const std::vector<float>& postfire,
 				float minWeight, float maxWeight);

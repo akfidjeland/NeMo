@@ -23,6 +23,16 @@ Configuration::Configuration(const Configuration& other) :
 }
 
 
+Configuration::Configuration(const ConfigurationImpl& other, bool ignoreBackendOptions) :
+	m_impl(new ConfigurationImpl(other))
+{
+	if(ignoreBackendOptions) {
+		setDefaultHardware(*m_impl);
+		setBackendDescription();
+	}
+}
+
+
 
 Configuration::~Configuration()
 {

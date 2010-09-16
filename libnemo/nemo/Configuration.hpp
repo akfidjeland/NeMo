@@ -32,6 +32,7 @@ namespace nemo {
 
 	class Simulation;
 	class Network;
+	class ConfigurationImpl;
 
 	namespace mpi {
 		class Master;
@@ -45,6 +46,8 @@ class NEMO_DLL_PUBLIC Configuration
 		Configuration();
 
 		Configuration(const Configuration&);
+
+		Configuration(const ConfigurationImpl& other, bool ignoreBackendOptions);
 
 		~Configuration();
 
@@ -102,7 +105,7 @@ class NEMO_DLL_PUBLIC Configuration
 
 		friend std::ostream& ::operator<<(std::ostream& o, Configuration const&);
 
-		class ConfigurationImpl* m_impl;
+		ConfigurationImpl* m_impl;
 
 		// undefined
 		Configuration& operator=(const Configuration&);
