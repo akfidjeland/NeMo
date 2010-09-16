@@ -19,7 +19,7 @@
 #include "StdpFunction.hpp"
 #include "types.h"
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/optional.hpp>
@@ -100,7 +100,7 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		std::string m_backendDescription;
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;
 
 		template<class Archive>

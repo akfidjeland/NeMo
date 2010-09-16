@@ -12,7 +12,7 @@
 
 #include <nemo/config.h>
 
-#ifdef INCLUDE_MPI_LOGGING
+#ifdef NEMO_MPI_DEBUG_TRACE
 
 #include <stdio.h>
 #include <stdlib.h>

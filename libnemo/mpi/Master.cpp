@@ -16,8 +16,6 @@
 #include <boost/mpi/nonblocking.hpp>
 #include <boost/serialization/utility.hpp>
 
-#include <nemo/config.h>
-
 #include <nemo/Network.hpp>
 #include <nemo/NetworkImpl.hpp>
 #include <nemo/Configuration.hpp>
@@ -172,7 +170,7 @@ Master::step(const std::vector<unsigned>& fstim)
 		std::copy(node_fired.begin(), node_fired.end(), std::back_inserter(m_firing.back()));
 	}
 
-#ifdef INCLUDE_MPI_LOGGING
+#ifdef NEMO_MPI_DEBUG_TRACE
 	std::copy(m_firing.back().begin(), m_firing.back().end(), std::ostream_iterator<unsigned>(std::cout, " "));
 #endif
 #ifdef NEMO_MPI_DEBUG_TIMING

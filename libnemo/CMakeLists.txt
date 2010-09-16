@@ -33,14 +33,13 @@ IF(NEMO_TIMING_ENABLED)
 ENDIF(NEMO_TIMING_ENABLED)
 
 
-OPTION(INCLUDE_MPI "Create MPI-enabled simulation" OFF)
-IF(INCLUDE_MPI)
+OPTION(NEMO_MPI_ENABLED "Create MPI-enabled simulation" OFF)
+IF(NEMO_MPI_ENABLED)
 	LIST(APPEND BOOST_COMPONENTS mpi serialization)
 	LIST(APPEND DIRS "mpi")
-
-	OPTION(INCLUDE_MPI_LOGGING "Enable logging (for debugging) in MPI applications" OFF)
+	OPTION(NEMO_MPI_DEBUG_TRACE "Enable debug trace for MPI backend" OFF)
 	OPTION(NEMO_MPI_DEBUG_TIMING "Add detailed timing of MPI operations" OFF)
-ENDIF(INCLUDE_MPI)
+ENDIF(NEMO_MPI_ENABLED)
 
 
 OPTION(NEMO_CPU_DEBUG_TRACE "Add debugging trace in the CPU backend" OFF)

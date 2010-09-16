@@ -9,8 +9,8 @@
 #cmakedefine HAVE_CUPRINTF
 #cmakedefine CAN_SET_THREAD_AFFINITY
 #cmakedefine NEMO_TIMING_ENABLED
-#cmakedefine INCLUDE_MPI
-#cmakedefine INCLUDE_MPI_LOGGING
+#cmakedefine NEMO_MPI_ENABLED
+#cmakedefine NEMO_MPI_DEBUG_TRACE
 #cmakedefine NEMO_MPI_DEBUG_TIMING
 #cmakedefine NEMO_CUDA_ENABLED
 #cmakedefine NEMO_CUDA_DYNAMIC_LOADING

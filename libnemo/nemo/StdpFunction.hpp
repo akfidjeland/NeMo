@@ -15,7 +15,7 @@
 #include <nemo/config.h>
 #include <nemo/internal_types.h>
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
@@ -72,7 +72,7 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 
 		uint64_t getBits(bool (*pred)(float)) const;
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;
 
 		template<class Archive>

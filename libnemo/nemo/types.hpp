@@ -15,12 +15,12 @@
 #include <nemo/config.h>
 #include "internal_types.h"
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 #include <boost/serialization/serialization.hpp>
 #endif
 
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 namespace boost {
 	namespace serialization {
 		class access;
@@ -45,7 +45,7 @@ class Neuron
 
 	private :
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;
 
 		template<class Archive>
@@ -80,7 +80,7 @@ struct AxonTerminal
 			id(id), target(t), weight(w), plastic(p) { }
 
 	private :
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;
 
 		template<class Archive>
@@ -118,7 +118,7 @@ class Synapse
 
 	private :
 
-#ifdef INCLUDE_MPI
+#ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;
 
 		template<class Archive>
