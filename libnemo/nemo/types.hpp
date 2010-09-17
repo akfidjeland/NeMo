@@ -17,6 +17,7 @@
 
 #ifdef NEMO_MPI_ENABLED
 #include <boost/serialization/serialization.hpp>
+#include <boost/mpi/datatype.hpp>
 #endif
 
 
@@ -131,6 +132,7 @@ class Synapse
 };
 
 
+
 class RSynapse
 {
 	public :
@@ -163,5 +165,23 @@ struct SynapseAddress
 
 
 } // end namespace nemo
+
+
+#ifdef NEMO_MPI_ENABLED
+
+BOOST_CLASS_IMPLEMENTATION(nemo::AxonTerminal, object_serializable)
+BOOST_CLASS_IMPLEMENTATION(nemo::Synapse, object_serializable)
+BOOST_CLASS_IMPLEMENTATION(nemo::Neuron<float>, object_serializable)
+
+BOOST_IS_MPI_DATATYPE(nemo::AxonTerminal);
+BOOST_IS_MPI_DATATYPE(nemo::Synapse);
+BOOST_IS_MPI_DATATYPE(nemo::Neuron<float>);
+
+BOOST_CLASS_TRACKING(nemo::AxonTerminal, track_never)
+BOOST_CLASS_TRACKING(nemo::Synapse, track_never)
+BOOST_CLASS_TRACKING(nemo::Neuron<float>, track_never)
+
+#endif
+
 
 #endif
