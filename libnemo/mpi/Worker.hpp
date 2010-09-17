@@ -98,6 +98,15 @@ class Worker
 		 * every simulation cycle */
 		std::set<rank_t> mg_sourceNodes;
 
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+		uint64_t m_packetsSent;
+		uint64_t m_packetsReceived;
+		uint64_t m_bytesSent;
+		uint64_t m_bytesReceived;
+
+		void reportCommunicationCounters() const;
+#endif
+
 		unsigned ml_scount;
 		unsigned mgi_scount;
 		unsigned mgo_scount;
@@ -121,6 +130,7 @@ class Worker
 				SpikeQueue& queue);
 
 		void globalGather(const nemo::ConnectivityMatrix& l_fcm, SpikeQueue& queue);
+
 };
 
 

@@ -89,6 +89,12 @@ Worker::Worker(
 	m_fcmIn(*conf.m_impl, mapper),
 	m_world(world),
 	m_rank(world.rank()),
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+	m_packetsSent(0),
+	m_packetsReceived(0),
+	m_bytesSent(0),
+	m_bytesReceived(0),
+#endif
 	ml_scount(0),
 	mgi_scount(0),
 	mgo_scount(0),
@@ -332,13 +338,27 @@ Worker::runSimulation(const network::NetworkImpl& net,
 	timer.report(m_rank);
 #endif
 
-	//! \todo perhaps we should do a final waitGlobalScatter?
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+	reportCommunicationCounters();
+#endif
 }
 
 
 #undef STEP
 
 
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+void
+Worker::reportCommunicationCounters() const
+{
+	printf("Worker %u\n\tsent %lu packets/%luB (%luB/packet)\n\treceived %lu packets / %luB (%luB/packet)\n",
+			m_rank,
+			m_packetsSent, m_bytesSent,
+			m_packetsSent ? m_bytesSent / m_packetsSent : 0,
+			m_packetsReceived, m_bytesReceived,
+			m_packetsReceived ? m_bytesReceived / m_packetsReceived : 0);
+}
+#endif
 
 void
 Worker::initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs)
@@ -418,7 +438,13 @@ Worker::waitGlobalGather(
 		const fbuf& incoming = ibufs.find(sourceRank)->second;
 		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
 		enqueueIncoming(incoming, l_fcm, queue);
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+		m_bytesReceived += sizeof(unsigned) * incoming.size();
+#endif
 	}
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+	m_packetsReceived += ireqs.size();
+#endif
 }
 
 
@@ -458,6 +484,10 @@ Worker::initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obu
 {
 	MPI_LOG("Worker %u sending firing to %lu peers\n", m_rank, oreqs.size());
 
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+	m_packetsSent += oreqs.size();
+#endif
+
 	for(fbuf_vector::iterator i = obufs.begin(); i != obufs.end(); ++i) {
 		i->second.clear();
 	}
@@ -480,6 +510,9 @@ Worker::initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obu
 		rank_t targetRank = *target;
 		MPI_LOG("Worker %u sending %lu firings to %u\n", m_rank, obufs[targetRank].size(), targetRank);
 		oreqs.at(tid) = m_world.isend(targetRank, WORKER_STEP, obufs[targetRank]);
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+		m_bytesSent += sizeof(unsigned) * obufs[targetRank].size();
+#endif
 	}
 }
 

@@ -39,6 +39,7 @@ IF(NEMO_MPI_ENABLED)
 	LIST(APPEND DIRS "mpi")
 	OPTION(NEMO_MPI_DEBUG_TRACE "Enable debug trace for MPI backend" OFF)
 	OPTION(NEMO_MPI_DEBUG_TIMING "Add detailed timing of MPI operations" OFF)
+	OPTION(NEMO_MPI_COMMUNICATION_COUNTERS "Add packet counting and reporting" OFF)
 ENDIF(NEMO_MPI_ENABLED)
 
 
