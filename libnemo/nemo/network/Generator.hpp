@@ -14,6 +14,9 @@ namespace nemo {
 class Generator
 {
 	public : 
+
+		typedef std::pair<nidx_t, Neuron<float> > neuron;
+		typedef Synapse synapse;
 		
 		virtual neuron_iterator neuron_begin() const = 0;
 		virtual neuron_iterator neuron_end() const = 0;

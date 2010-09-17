@@ -48,6 +48,8 @@ class iterator
 {
 	public:
 
+		typedef T value_type;
+
 		explicit iterator(abstract_iterator<T>* base) :
 			m_base(base) { }
 

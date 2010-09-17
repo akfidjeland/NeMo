@@ -50,7 +50,8 @@ Master::Master(
 	unsigned neurons = net.neuronCount();
 	boost::mpi::broadcast(world, neurons, MASTER);
 
-	distributeNetwork(m_mapper, *net.m_impl);
+	distributeNeurons(m_mapper, *net.m_impl);
+	distributeSynapses(m_mapper, *net.m_impl);
 
 	/* The workers now set up the local simulations. This could take some time. */
 
@@ -85,28 +86,72 @@ Master::workers() const
 
 
 
+template<class T>
 void
-Master::distributeNetwork(
-		const Mapper& mapper,
-		const network::Generator& net)
+flushBuffer(int tag,
+		std::vector<T>& input,
+		std::vector< std::vector<T> >& output,
+		boost::mpi::communicator& world)
 {
-	for(network::neuron_iterator n = net.neuron_begin(); n != net.neuron_end(); ++n) {
-		m_world.send(mapper.rankOf(n->first), NEURON_SCALAR, *n);
+	broadcast(world, tag, MASTER);
+	scatter(world, output, input, MASTER);
+	for(typename std::vector< std::vector<T> >::iterator i = output.begin(); i != output.end(); ++i) {
+		i->clear();
 	}
+}
 
-	for(network::synapse_iterator s = net.synapse_begin(); s != net.synapse_end(); ++s) {
-		int sourceRank = mapper.rankOf(s->source);
-		int targetRank = mapper.rankOf(s->target());
-		m_world.send(sourceRank, SYNAPSE_SCALAR, *s);
-		if(sourceRank != targetRank) {
-			m_world.send(targetRank, SYNAPSE_SCALAR, *s);
+
+void
+Master::distributeNeurons(const Mapper& mapper, const network::Generator& net)
+{
+	typedef std::vector< std::pair<nidx_t, Neuron<float> > > nvector;
+	nvector input; // dummy
+	std::vector<nvector> output(m_world.size());
+	unsigned queued = 0;
+	//! \todo pass this in
+	const unsigned bufferSize = 2 << 11;
+
+	for(network::neuron_iterator n = net.neuron_begin(); n != net.neuron_end(); ++n, ++queued) {
+		output.at(mapper.rankOf(n->first)).push_back(*n);
+		if(queued == bufferSize) {
+			flushBuffer(NEURON_VECTOR, input, output, m_world);
+			queued = 0;
 		}
 	}
 
-	unsigned wcount = workers();
-	for(unsigned r=0; r < wcount; ++r) {
-		m_world.send(r+1, END_CONSTRUCTION, int(0));
+	flushBuffer(NEURON_VECTOR, input, output, m_world);
+	int tag = NEURONS_END;
+	broadcast(m_world, tag, MASTER);
+}
+
+
+
+void
+Master::distributeSynapses(const Mapper& mapper, const network::Generator& net)
+{
+	typedef std::vector<Synapse> svector;
+	svector input; // dummy
+	std::vector<svector> output(m_world.size());
+	unsigned queued = 0;
+
+	//! \todo pass this in
+	const unsigned bufferSize = 2 << 11;
+
+	for(network::synapse_iterator s = net.synapse_begin(); s != net.synapse_end(); ++s, ++queued) {
+		int sourceRank = mapper.rankOf(s->source);
+		int targetRank = mapper.rankOf(s->target());
+		output.at(sourceRank).push_back(*s);
+		if(sourceRank != targetRank) {
+			output.at(targetRank).push_back(*s);
+		}
+		if(queued == bufferSize) {
+			flushBuffer(SYNAPSE_VECTOR, input, output, m_world);
+			queued = 0;
+		}
 	}
+	flushBuffer(SYNAPSE_VECTOR, input, output, m_world);
+	int tag = SYNAPSES_END;
+	broadcast(m_world, tag, MASTER);
 }
 
 

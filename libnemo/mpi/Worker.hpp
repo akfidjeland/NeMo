@@ -18,6 +18,7 @@
 
 #include <nemo/config.h>
 #include <nemo/ConnectivityMatrix.hpp>
+#include <nemo/network/Generator.hpp>
 #include "mpi_types.hpp"
 
 namespace nemo {
@@ -77,10 +78,12 @@ class Worker
 		 * the neuron (in local indices) to the target nodes (rank id). */
 
 		std::map<nidx_t, std::set<rank_t> > m_fcmOut;
-		
-		void addNeuron(Mapper& mapper, network::NetworkImpl& net);
 
-		void addSynapse(const Mapper& mapper, network::NetworkImpl& net);
+		void loadNeurons(Mapper& mapper, network::NetworkImpl& net);
+		void addNeuron(const network::Generator::neuron&, Mapper& mapper, network::NetworkImpl& net);
+
+		void loadSynapses(Mapper& mapper, network::NetworkImpl& net);
+		void addSynapse(const Synapse& s, const Mapper& mapper, network::NetworkImpl& net);
 
 		boost::mpi::communicator m_world;
 

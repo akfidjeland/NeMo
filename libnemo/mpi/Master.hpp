@@ -70,13 +70,15 @@ class Master
 
 		Mapper m_mapper;
 
-		void distributeNetwork(const Mapper&, const network::Generator& net);
-
 		unsigned workers() const;
 
 		void terminate();
 
+		//! \todo use FiringBuffer here instead
 		std::deque< std::vector<unsigned> > m_firing;
+
+		void distributeSynapses(const Mapper& mapper, const network::Generator& net);
+		void distributeNeurons(const Mapper& mapper, const network::Generator& net);
 
 		Timer m_timer;
 

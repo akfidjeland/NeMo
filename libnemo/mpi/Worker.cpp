@@ -94,29 +94,14 @@ Worker::Worker(
 	mgo_scount(0),
 	m_ncount(0)
 {
-	//! \todo move construction into a separate class, or at least function 
-	bool constructionDone = false;
-	network::NetworkImpl net;
-	int buf;
-
 	MPI_LOG("Worker %u: constructing network\n", m_rank);
 
-	//! \todo we now the order of receives here, so we can simplify processing.
-	while(!constructionDone) {
-		boost::mpi::status msg = m_world.probe();
-		switch(msg.tag()) {
-			case NEURON_SCALAR: addNeuron(mapper, net); break;
-			case SYNAPSE_SCALAR: addSynapse(mapper, net); break;
-			case END_CONSTRUCTION: 
-				world.recv(MASTER, END_CONSTRUCTION, buf);
-				constructionDone = true;
-				break;
-			default:
-				throw nemo::exception(NEMO_MPI_ERROR, "Unknown tag received during construction phase");
-		}
-	}
+	/* Temporary network, used to initialise backend */
+	network::NetworkImpl net;
 
-	MPI_LOG("Worker %u: finalize network\n", m_rank);
+	loadNeurons(mapper, net);
+	loadSynapses(mapper, net);
+
 	m_fcmIn.finalize(mapper, false);
 
 	MPI_LOG("Worker %u: %u neurons\n", m_rank, m_ncount);
@@ -131,10 +116,55 @@ Worker::Worker(
 
 
 void
-Worker::addNeuron(Mapper& mapper, network::NetworkImpl& net)
+Worker::loadNeurons(Mapper& mapper, network::NetworkImpl& net)
 {
-	std::pair<nidx_t, nemo::Neuron<float> > n;
-	m_world.recv(MASTER, NEURON_SCALAR, n);
+	std::vector<network::Generator::neuron> neurons;
+	while(true) {
+		int tag;
+		broadcast(m_world, tag, MASTER);
+		if(tag == NEURON_VECTOR) {
+			scatter(m_world, neurons, MASTER);
+			for(std::vector<network::Generator::neuron>::const_iterator n = neurons.begin();
+					n != neurons.end(); ++n) {
+				addNeuron(*n, mapper, net);
+			}
+		} else if(tag == NEURONS_END) {
+			break;
+		} else {
+			throw nemo::exception(NEMO_MPI_ERROR, "Unknown tag received during neuron scatter");
+		}
+	}
+}
+
+
+
+void
+Worker::loadSynapses(Mapper& mapper, network::NetworkImpl& net)
+{
+	while(true) {
+		int tag;
+		broadcast(m_world, tag, MASTER);
+		if(tag == SYNAPSE_VECTOR) {
+			std::vector<Synapse> ss;
+			scatter(m_world, ss, MASTER);
+			for(std::vector<Synapse>::const_iterator s = ss.begin(); s != ss.end(); ++s) {
+				addSynapse(*s, mapper, net);
+			}
+		} else if(tag == SYNAPSES_END) {
+			break;
+		} else {
+			throw nemo::exception(NEMO_MPI_ERROR, "Unknown tag received during synapse scatter");
+		}
+	}
+}
+
+
+
+void
+Worker::addNeuron(const network::Generator::neuron& n,
+		Mapper& mapper,
+		network::NetworkImpl& net)
+{
 	net.addNeuron(n.first, n.second);
 	m_ncount++;
 	mapper.addGlobal(n.first);
@@ -144,15 +174,12 @@ Worker::addNeuron(Mapper& mapper, network::NetworkImpl& net)
 
 //! \todo could use an iterator which sets up local simulations as a side effect
 // we can pass this iterator to the local simulation and incrementally construct our own CM
-void
-Worker::addSynapse(const Mapper& mapper, network::NetworkImpl& net)
-{
-	/* Incoming data from master */
-	//! \todo allocate this only once
-	Synapse s;
-	m_world.recv(MASTER, SYNAPSE_SCALAR, s);
 
-	// is this local or global?
+
+
+void
+Worker::addSynapse(const Synapse& s, const Mapper& mapper, network::NetworkImpl& net)
+{
 	const int sourceRank = mapper.rankOf(s.source);
 	const int targetRank = mapper.rankOf(s.target());
 
