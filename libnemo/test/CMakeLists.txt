@@ -39,3 +39,24 @@ ENDIF(INCLUDE_MPI)
 ADD_EXECUTABLE(api_test test_c_api.cpp utils.cpp)
 TARGET_LINK_LIBRARIES(api_test nemo ${Boost_LIBRARIES})
 
+IF(NEMO_MPI_ENABLED)
+
+	FIND_PACKAGE(MPI)
+
+	IF(NOT MPI_FOUND)
+		MESSAGE(SEND_ERROR "MPI enabled, but no MPI implementation found on this system")
+	ENDIF(NOT MPI_FOUND)
+
+	INCLUDE_DIRECTORIES(
+		${CMAKE_SOURCE_DIR}/mpi
+		${MPI_INCLUDE_PATH}
+		${Boost_INCLUDE_DIR})
+	LINK_DIRECTORIES("${CMAKE_BINARY_DIR}/mpi")
+	ADD_EXECUTABLE(mpi_test mpi_test.cpp)
+	# TODO: do we need both nemo_mpi and nemo?
+	TARGET_LINK_LIBRARIES(mpi_test nemo_mpi nemo ${MPI_LIBRARIES} ${Boost_LIBRARIES})
+
+	# TODO: remove this again
+	INSTALL(TARGETS mpi_test DESTINATION ${INSTALL_LIB_DIR})
+
+ENDIF(NEMO_MPI_ENABLED)

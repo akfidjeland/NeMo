@@ -34,21 +34,14 @@ check_close(const std::vector<T>& lhs,
 
 namespace nemo {
 
-template<typename T>
+
 void
-check_close(const nemo::STDP<T>& lhs, const nemo::STDP<T>& rhs)
+check_close(const StdpFunction& lhs, const StdpFunction& rhs)
 {
-	::check_close<float>(lhs.m_function, rhs.m_function);
-	::check_close<float>(lhs.m_fnPre, rhs.m_fnPre);
-	::check_close<float>(lhs.m_fnPost, rhs.m_fnPost);
-	BOOST_CHECK_EQUAL(lhs.m_preFireWindow, rhs.m_preFireWindow);
-	BOOST_CHECK_EQUAL(lhs.m_postFireWindow, rhs.m_postFireWindow);
-	BOOST_CHECK_EQUAL(lhs.m_potentiationBits, rhs.m_potentiationBits);
-	BOOST_CHECK_EQUAL(lhs.m_depressionBits, rhs.m_depressionBits);
-	BOOST_CHECK_EQUAL(lhs.m_preFireBits, rhs.m_preFireBits);
-	BOOST_CHECK_EQUAL(lhs.m_postFireBits, rhs.m_postFireBits);
-	BOOST_CHECK_CLOSE(lhs.m_maxWeight, rhs.m_maxWeight, tolerance);
-	BOOST_CHECK_CLOSE(lhs.m_minWeight, rhs.m_minWeight, tolerance);
+	::check_close<float>(lhs.prefire(), rhs.prefire());
+	::check_close<float>(lhs.postfire(), rhs.postfire());
+	BOOST_CHECK_CLOSE(lhs.maxWeight(), rhs.maxWeight(), tolerance);
+	BOOST_CHECK_CLOSE(lhs.minWeight(), rhs.minWeight(), tolerance);
 }
 
 
@@ -58,9 +51,11 @@ check_close(const nemo::ConfigurationImpl& lhs,
 		const nemo::ConfigurationImpl& rhs)
 {
 	BOOST_CHECK_EQUAL(lhs.m_logging, rhs.m_logging);
-	check_close(lhs.m_stdpFn, rhs.m_stdpFn);
+	BOOST_CHECK_EQUAL(bool(lhs.stdpFunction()), bool(rhs.stdpFunction()));
+	if(lhs.stdpFunction() && rhs.stdpFunction()) {
+		check_close(lhs.stdpFunction().get(), rhs.stdpFunction().get());
+	}
 	BOOST_CHECK_EQUAL(lhs.m_cudaPartitionSize, rhs.m_cudaPartitionSize);
-	BOOST_CHECK_EQUAL(lhs.m_cudaFiringBufferLength, rhs.m_cudaFiringBufferLength);
 }
 
 } // namespace nemo
@@ -82,7 +77,6 @@ randomConfiguration()
 	nemo::ConfigurationImpl conf;
 	conf.enableLogging();
 	conf.setCudaPartitionSize(randi());
-	conf.setCudaFiringBufferLength(randi());
 
 	std::vector<float> prefire;
 	std::vector<float> postfire;
@@ -90,7 +84,7 @@ randomConfiguration()
 		prefire.push_back(randf());
 		postfire.push_back(randf());
 	}
-	conf.setStdpFunction(prefire, postfire, randf(), randf());
+	conf.setStdpFunction(prefire, postfire, -fabs(randf()), fabs(randf()));
 
 	return conf;
 }
