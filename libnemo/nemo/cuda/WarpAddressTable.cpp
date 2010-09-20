@@ -87,5 +87,23 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 }
 
 
+bool
+value_compare(const std::pair<DeviceIdx,
+		unsigned>& lhs, const std::pair<DeviceIdx, unsigned>& rhs)
+{
+	return lhs.second < rhs.second;
+}
+
+
+unsigned
+WarpAddressTable::maxWarpsPerNeuron() const
+{
+	if(m_warpsPerNeuron.empty()) {
+		return 0;
+	}
+	return std::max_element(m_warpsPerNeuron.begin(), m_warpsPerNeuron.end(), value_compare)->second;
+}
+
+
 	} // end namespace cuda
 } // end namespace nemo
