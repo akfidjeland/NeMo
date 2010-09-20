@@ -302,7 +302,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 	MpiTimer timer;
 #endif
 
-	while(!masterReq.terminate) {
+	while(true) {
 #ifdef NEMO_MPI_DEBUG_TIMING
 		unsigned cycle = sim->elapsedSimulation();
 #endif
@@ -319,6 +319,9 @@ Worker::runSimulation(const network::NetworkImpl& net,
 		//! \todo experiment with order of gather and mreq
 		STEP("gather", gather(queue, m_fcmIn, istim));
 		STEP("wait incoming master req", mreq.wait());
+		if(masterReq.terminate) {
+			break;
+		}
 		STEP("firing stimulus", sim->setFiringStimulus(masterReq.fstim));
 		STEP("current stimulus", sim->setCurrentStimulus(istim));
 		//! \todo split up step and only do neuron update here
