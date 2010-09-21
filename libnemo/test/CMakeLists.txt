@@ -48,11 +48,15 @@ IF(NEMO_MPI_ENABLED)
 	ENDIF(NOT MPI_FOUND)
 
 	INCLUDE_DIRECTORIES(
-		${CMAKE_SOURCE_DIR}/mpi
+		${CMAKE_SOURCE_DIR}
 		${MPI_INCLUDE_PATH}
 		${Boost_INCLUDE_DIR})
 	LINK_DIRECTORIES("${CMAKE_BINARY_DIR}/mpi")
-	ADD_EXECUTABLE(mpi_test mpi_test.cpp)
+	ADD_EXECUTABLE(mpi_test
+		mpi_test.cpp
+		${EXAMPLES_DIR}/torus.cpp
+		utils.cpp
+	)
 	# TODO: do we need both nemo_mpi and nemo?
 	TARGET_LINK_LIBRARIES(mpi_test nemo_mpi nemo ${MPI_LIBRARIES} ${Boost_LIBRARIES})
 

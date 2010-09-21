@@ -213,6 +213,9 @@ Master::step(const std::vector<unsigned>& fstim)
 	for(unsigned r=0; r < wcount; ++r) {
 		const std::vector<unsigned>& node_fired = fired.at(r+1);
 		std::copy(node_fired.begin(), node_fired.end(), std::back_inserter(m_firing.back()));
+#ifdef NEMO_MPI_DEBUG_TRACE
+		MPI_LOG("Master received %u firings from %u\n", node_fired.size(), r+1);
+#endif
 	}
 
 #ifdef NEMO_MPI_DEBUG_TRACE

@@ -66,6 +66,7 @@ runWorker(boost::mpi::environment& env,
 {
 	MPI_LOG("Starting worker %u on %s\n", world.rank(), env.processor_name().c_str());
 	Configuration conf = getConfiguration(world);
+	MPI_LOG("Worker %u using %s\n", world.rank(), conf.backendDescription().c_str());
 	MPI_LOG("Worker %u: Creating mapper\n", world.rank());
 	Mapper mapper = getMapper(world);
 	MPI_LOG("Worker %u: Creating runtime data\n", world.rank());
