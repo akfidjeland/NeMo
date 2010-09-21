@@ -50,18 +50,6 @@ WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, de
 
 
 
-unsigned
-WarpAddressTable::maxWarpsPerNeuron() const
-{
-	if(m_warpsPerNeuron.empty()) {
-		return 0;
-	} else {
-		return std::max_element(m_warpsPerNeuron.begin(), m_warpsPerNeuron.end())->second;
-	}
-}
-
-
-
 void
 WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 {
