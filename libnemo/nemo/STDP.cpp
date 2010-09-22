@@ -90,12 +90,12 @@ StdpProcess::updateRegion(uint64_t arrivals, nidx_t source, nidx_t target) const
 	/* The potentiation can happen on either side of the firing. We want to
 	 * find the one closest to the firing. We therefore need to compute the
 	 * prefire and postfire dt's separately. */
-	fix_t w_diff = 0.0;
+	fix_t w_diff = 0;
 
 	if(arrivals) {
 
-		uint dt_pre = closestPreFire(arrivals);
-		uint dt_post = closestPostFire(arrivals);
+		unsigned dt_pre = closestPreFire(arrivals);
+		unsigned dt_post = closestPostFire(arrivals);
 
 		if(dt_pre < dt_post) {
 			//! \todo inline
@@ -128,7 +128,7 @@ StdpProcess::weightChange(uint64_t preFiring, nidx_t pre, nidx_t post) const
 fix_t
 StdpProcess::updatedWeight(fix_t w_old, fix_t w_diff) const
 {
-	weight_t w_new = 0;
+	fix_t w_new = 0;
 	if(w_old > 0) {
 		w_new = std::min(m_maxWeight, std::max(w_old + w_diff, 0));
 	} else if(w_old < 0) {

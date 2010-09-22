@@ -202,7 +202,7 @@ class ConnectivityMatrix
 
 /* The parts of the synapse data is only needed if querying synapses at
  * run-time. This data is stored separately */
-struct AxonTerminalAux
+class AxonTerminalAux
 {
 	public :
 
@@ -212,7 +212,7 @@ struct AxonTerminalAux
 		size_t addr() const { return m_addr; }
 
 		AxonTerminalAux(const Synapse& s, size_t addr) :
-			m_target(s.target()), m_delay(s.delay), m_plastic(s.plastic()), m_addr(addr) { }
+			m_target(s.target()), m_delay(s.delay), m_plastic(s.plastic() != 0), m_addr(addr) { }
 
 		AxonTerminalAux() :
 			m_target(~0), m_delay(~0), m_plastic(false), m_addr(~0) { }

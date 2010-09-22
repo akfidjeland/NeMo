@@ -76,7 +76,7 @@ struct AxonTerminal
 		AxonTerminal():
 			id(~0), target(~0), weight(0.0f), plastic(false) { }
 
-		AxonTerminal(synapse_id id, nidx_t t, float w, bool p):
+		AxonTerminal(id32_t id, nidx_t t, float w, bool p):
 			id(id), target(t), weight(w), plastic(p) { }
 
 	private :

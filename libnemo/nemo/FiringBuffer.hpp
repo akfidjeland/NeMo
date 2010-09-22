@@ -3,6 +3,8 @@
 
 #include <deque>
 #include <vector>
+
+#include <nemo/config.h>
 #include <nemo/types.h>
 
 namespace nemo {
@@ -11,7 +13,7 @@ namespace nemo {
 /* One cycle's worth of fired neurons. Note that we store a reference to the
  * vector of neurons, so the user needs to be aware of the lifetime of this and
  * copy the contents if appropriate. */
-struct FiredList
+struct NEMO_BASE_DLL_PUBLIC FiredList
 {
 	cycle_t cycle;
 	std::vector<unsigned>& neurons;
@@ -23,7 +25,7 @@ struct FiredList
 
 /* A firing buffer containing a FIFO of firing data with one entry for each
  * cycle. */
-class FiringBuffer
+class NEMO_BASE_DLL_PUBLIC FiringBuffer
 {
 	public :
 

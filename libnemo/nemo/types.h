@@ -16,6 +16,8 @@
  * this, however, do not include this file. To be on the safe side we use the
  * windows-specific fixed-width types regardless of whether we're on a broken
  * version of VC++ .  */
+typedef signed __int8 int8_t;
+typedef unsigned __int8 uint8_t;
 typedef signed __int32 int32_t;
 typedef unsigned __int32 uint32_t;
 typedef signed __int64 int64_t;

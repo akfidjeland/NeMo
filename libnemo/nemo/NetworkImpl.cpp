@@ -75,7 +75,7 @@ NetworkImpl::addSynapse(
 
 	id32_t& count = m_synapseCount[source];
 	id32_t id = count;
-	m_fcm[source][delay].push_back(synapse_t(count, target, weight, plastic));
+	m_fcm[source][delay].push_back(synapse_t(count, target, weight, plastic != 0));
 	count += 1;
 
 	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix

@@ -2,6 +2,7 @@
 #define NEMO_BITOPS_H
 
 #include <limits.h>
+#include <cmath>
 #include <nemo/config.h>
 
 /* Compute leading zeros for type T which should have B bits.

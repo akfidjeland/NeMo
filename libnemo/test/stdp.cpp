@@ -27,7 +27,7 @@ float
 dwPre(int dt)
 {
 	assert(dt <= 0);
-	return 1.0 * expf(float(dt) / 20.0f);
+	return 1.0f * expf(float(dt) / 20.0f);
 }
 
 
@@ -36,7 +36,7 @@ float
 dwPost(int dt)
 {
 	assert(dt >= 0.0f);
-	return -0.8 * expf(float(-dt) / 20.0f);
+	return -0.8f * expf(float(-dt) / 20.0f);
 }
 
 
@@ -126,7 +126,7 @@ construct(nemo::Network& net, bool noiseConnections)
 						globalIdx(0, lsrc),
 						globalIdx(1, ltgt),
 						delay(ltgt + lsrc),
-						-0.00001,
+						-0.00001f,
 						 ltgt & 0x1);
 			}
 		}
@@ -182,7 +182,7 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m)
 
 			/* dt is positive for pre-post pair, and negative for post-pre
 			 * pairs */ 
-			int dt = -(postFireDelay - delays.at(s));
+			int dt = -(int(postFireDelay - delays.at(s)));
 
 			float dw_expected = 0.0f; 
 			if(dt > 0) {

@@ -105,7 +105,7 @@ runSimple(unsigned startNeuron, unsigned neuronCount)
 {
 	nemo::Network net;
 	for(int nidx = 0; nidx < 4; ++nidx) {
-		net.addNeuron(nidx, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7);
+		net.addNeuron(nidx, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
 	}
 	nemo::Configuration conf;
 	nemo::Simulation* sim = NULL;

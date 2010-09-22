@@ -65,7 +65,7 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		virtual void step() = 0;
 
 		/*! \copydoc nemo::Simulation::step */
-		virtual const std::vector<unsigned>& step(
+		const std::vector<unsigned>& step(
 				const std::vector<unsigned>& fstim,
 				const std::vector<float>& istim);
 

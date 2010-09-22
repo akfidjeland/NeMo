@@ -11,6 +11,8 @@
  */
 
 #include <vector>
+
+#include <nemo/config.h>
 #include <nemo/internal_types.h>
 
 #ifdef INCLUDE_MPI
@@ -30,7 +32,7 @@ namespace nemo {
 
 
 /*! \brief User-configurable STDP function */
-class StdpFunction 
+class NEMO_BASE_DLL_PUBLIC StdpFunction
 {
 	public :
 

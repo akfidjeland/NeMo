@@ -1,19 +1,12 @@
 #include <vector>
 #include <algorithm>
 #include <string>
-#ifdef _MSC_VER
-#include <nemo/win_stdint.h> // in own local build directory
-#else
-#include <stdint.h>
-#endif
 
 #include <boost/numeric/conversion/cast.hpp>
 #include <mex.h>
 
-
-extern "C" {
 #include <nemo.h>
-}
+#include <nemo/types.h>
 
 
 /* We maintain pointers to all simulator objects as globals here, since Matlab

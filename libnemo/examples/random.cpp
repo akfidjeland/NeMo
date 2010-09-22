@@ -160,7 +160,7 @@ main(int argc, char* argv[])
 		unsigned duration = vm["duration"].as<unsigned>();
 		unsigned stdp = vm["stdp"].as<unsigned>();
 		unsigned verbose = vm["verbose"].as<unsigned>();
-		bool runBenchmark = vm.count("benchmark");
+		bool runBenchmark = vm.count("benchmark") != 0;
 
 		std::ofstream file;
 		std::string filename;
@@ -173,9 +173,9 @@ main(int argc, char* argv[])
 		std::ostream& out = filename.empty() ? std::cout : file;
 
 		LOG(verbose, "Constructing network");
-		boost::scoped_ptr<nemo::Network> net(nemo::random::construct(ncount, scount, stdp));
+		boost::scoped_ptr<nemo::Network> net(nemo::random::construct(ncount, scount, stdp != 0));
 		LOG(verbose, "Creating configuration");
-		nemo::Configuration conf = configuration(stdp, NEMO_BACKEND_CUDA, verbose >= 2);
+		nemo::Configuration conf = configuration(stdp != 0, NEMO_BACKEND_CUDA, verbose >= 2);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription().c_str());
 		LOG(verbose, "Creating simulation");
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));

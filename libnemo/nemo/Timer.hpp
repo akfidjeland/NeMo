@@ -13,6 +13,7 @@
 #ifdef NEMO_TIMING_ENABLED
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#else
 #include "exception.hpp"
 #endif
 

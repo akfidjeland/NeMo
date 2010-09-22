@@ -113,7 +113,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		}
 
 		aux_row& auxRow = m_cmAux[source];
-		insert(i->id(), AxonTerminalAux(sidx, delay, plastic), auxRow);
+		insert(i->id(), AxonTerminalAux(sidx, delay, plastic != 0), auxRow);
 	}
 }
 

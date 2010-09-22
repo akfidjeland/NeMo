@@ -139,10 +139,10 @@ configuration(bool stdp, bool log)
 		std::vector<float> post(20);
 		for(unsigned i = 0; i < 20; ++i) {
 			float dt = float(i + 1);
-			pre.at(i) = 0.1 * expf(-dt / 20.0f);
-			post.at(i) = -0.08 * expf(-dt / 20.0f);
+			pre.at(i) = 0.1f * expf(-dt / 20.0f);
+			post.at(i) = -0.08f * expf(-dt / 20.0f);
 		}
-		conf.setStdpFunction(pre, post, -1.0, 1.0);
+		conf.setStdpFunction(pre, post, -1.0f, 1.0f);
 	}
 
 	return conf;

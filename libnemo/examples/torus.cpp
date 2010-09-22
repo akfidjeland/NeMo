@@ -330,7 +330,7 @@ main(int argc, char* argv[])
 		unsigned stdp = vm["stdp"].as<unsigned>();
 		unsigned duration = vm["duration"].as<unsigned>();
 		unsigned verbose = vm["verbose"].as<unsigned>();
-		bool runBenchmark = vm.count("benchmark");
+		bool runBenchmark = vm.count("benchmark") != 0;
 
 		assert(sigma >= PATCH_WIDTH/2);
 
@@ -348,9 +348,9 @@ main(int argc, char* argv[])
 		//! \todo otherwise seed from system time
 	
 		LOG(verbose, "Constructing network");
-		boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, stdp, sigma));
+		boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, stdp != 0, sigma));
 		LOG(verbose, "Creating configuration");
-		nemo::Configuration conf = configuration(stdp, verbose >= 2);
+		nemo::Configuration conf = configuration(stdp != 0, verbose >= 2);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription().c_str());
 		LOG(verbose, "Creating simulation\n");
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
