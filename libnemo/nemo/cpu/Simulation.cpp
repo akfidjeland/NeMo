@@ -239,10 +239,10 @@ Simulation::update(
 void
 Simulation::setFiring()
 {
-	std::vector<unsigned>& current = m_firingBuffer.enqueue();
+	m_firingBuffer.enqueueCycle();
 	for(unsigned n=0; n < m_neuronCount; ++n) { 
 		if(m_fired[n]) {
-			current.push_back(m_mapper.globalIdx(n));
+			m_firingBuffer.addFiredNeuron(m_mapper.globalIdx(n));
 		}
 	}
 }
@@ -252,7 +252,7 @@ Simulation::setFiring()
 FiredList
 Simulation::readFiring()
 {
-	return m_firingBuffer.dequeue();
+	return m_firingBuffer.dequeueCycle();
 }
 
 

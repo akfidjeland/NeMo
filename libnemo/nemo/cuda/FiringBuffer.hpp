@@ -58,7 +58,7 @@ class FiringBuffer {
 
 		size_t md_allocated;
 
-		void populateSparse(const uint32_t* hostBuffer, std::vector<unsigned>& outputBuffer);
+		void populateSparse(const uint32_t* hostBuffer);
 
 		Mapper m_mapper;
 

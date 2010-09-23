@@ -46,8 +46,7 @@ FiringBuffer::sync()
 {
 	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
 				m_mapper.partitionCount() * m_pitch * sizeof(uint32_t));
-	std::vector<unsigned>& current = m_outputBuffer.enqueue();
-	populateSparse(mh_buffer.get(), current);
+	populateSparse(mh_buffer.get());
 }
 
 
@@ -55,16 +54,15 @@ FiringBuffer::sync()
 FiredList
 FiringBuffer::readFiring()
 {
-	return m_outputBuffer.dequeue();
+	return m_outputBuffer.dequeueCycle();
 }
 
 
 void
-FiringBuffer::populateSparse(
-		const uint32_t* hostBuffer,
-		std::vector<unsigned>& outputBuffer)
+FiringBuffer::populateSparse(const uint32_t* hostBuffer)
 {
 	unsigned pcount = m_mapper.partitionCount();
+	m_outputBuffer.enqueueCycle();
 
 	//! \todo consider processing this using multiple threads
 	for(size_t partition=0; partition < pcount; ++partition) {
@@ -85,7 +83,7 @@ FiringBuffer::populateSparse(
 			for(size_t nbit=0; nbit < 32; ++nbit) {
 				bool fired = (word & (1 << nbit)) != 0;
 				if(fired) {
-					outputBuffer.push_back(m_mapper.hostIdx(partition, nword*32 + nbit));
+					m_outputBuffer.addFiredNeuron(m_mapper.hostIdx(partition, nword*32 + nbit));
 				}
 			}
 		}

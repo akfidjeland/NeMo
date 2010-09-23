@@ -31,13 +31,16 @@ class NEMO_BASE_DLL_PUBLIC FiringBuffer
 
 		FiringBuffer();
 
-		/*! Add a new cycle at the end of the FIFO */
-		std::vector<unsigned>& enqueue();
+		/*! Add a new cycle's firing vector (empty) at the end of the FIFO.
+		 * The caller can fill this in by calling addFiredNeuron */
+		void enqueueCycle();
+
+		void addFiredNeuron(unsigned neuron);
 
 		/*! Discard the current oldest cycle's data and return reference to the
 		 * new oldest cycle's data. The data referenced in the returned list of
 		 * firings is valid until the next call to \a read or \a dequeue. */
-		FiredList dequeue();
+		FiredList dequeueCycle();
 
 	private :
 
