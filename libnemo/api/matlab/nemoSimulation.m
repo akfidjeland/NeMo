@@ -40,9 +40,10 @@ classdef nemoSimulation < handle
         function delete(obj)
             nemo_mex(uint32(7), obj.id);
         end
+        function fired = step(sim, fstim)
         % step - run simulation for a single cycle (1ms)
         %
-        % Synpopsis:
+        % Synopsis:
         %	fired = step()
         %	fired = step(fstim)
         %
@@ -51,8 +52,6 @@ classdef nemoSimulation < handle
         %
         % Output:
         %	fired - A list of the neurons which fired this cycle
-        
-        function fired = step(sim, fstim)
             if nargin < 2
                 fired = nemo_mex(uint32(8), sim.id, uint32(zeros(1, 0)));
             else

@@ -81,6 +81,7 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 	INSTALL(
 		FILES
 			${MEX_OUTPUT}
+			nemo.m
 			nemoNetwork.m
 			nemoConfiguration.m
 			nemoSimulation.m
