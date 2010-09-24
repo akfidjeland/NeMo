@@ -45,10 +45,9 @@ Simulation::Simulation(
 	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false),
 	//! \todo seed properly from configuration
 	m_thalamicInput(net, m_mapper),
-	//! \todo use pinned host memory here
-	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false),
+	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false, true),
 	//! \todo allow external users to directly use the host buffer
-	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true),
+	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
 	m_firingBuffer(m_mapper),
 	m_cycleCounters(m_mapper.partitionCount(), conf.stdpFunction()),
 	m_deviceAssertions(m_mapper.partitionCount()),
