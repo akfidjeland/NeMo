@@ -13,43 +13,34 @@ NVector<T, M>::NVector(
 		size_t partitionCount,
 		size_t maxPartitionSize,
 		bool allocHostData) :
-	m_hostData(NULL),
 	m_partitionCount(partitionCount),
 	m_pitch(0)
 {
 	size_t height = M * partitionCount;
 	size_t bytePitch = 0;
-	d_mallocPitch((void**)&m_deviceData, &bytePitch,
-				maxPartitionSize * sizeof(T), height, "NVector");
+	void* d_ptr = NULL;
+	d_mallocPitch(&d_ptr, &bytePitch, maxPartitionSize * sizeof(T), height, "NVector");
+	m_deviceData = boost::shared_array<T>(static_cast<T*>(d_ptr), d_free);
+
 	m_pitch = bytePitch / sizeof(T);
 
 	/* Set all space including padding to fixed value. This is important as
 	 * some warps may read beyond the end of these arrays. */
-
-	d_memset2D(m_deviceData, bytePitch, 0x0, height);
+	d_memset2D(d_ptr, bytePitch, 0x0, height);
 
 	//! \todo may need a default value here
 	if(allocHostData) {
-		m_hostData = new T[height * m_pitch];
+		m_hostData = boost::shared_array<T>(new T[height * m_pitch]);
 	}
 }
 
-
-template<typename T, int M>
-NVector<T, M>::~NVector()
-{
-	d_free(m_deviceData);
-	if(m_hostData != NULL) {
-		delete[] m_hostData;
-	}
-}
 
 
 template<typename T, int M>
 T*
 NVector<T, M>::deviceData() const
 {
-	return m_deviceData;
+	return m_deviceData.get();
 }
 
 
@@ -98,8 +89,8 @@ template<typename T, int M>
 const T*
 NVector<T, M>::copyFromDevice()
 {
-	memcpyFromDevice(m_hostData, m_deviceData, M * size());
-	return m_hostData;
+	memcpyFromDevice(m_hostData.get(), m_deviceData.get(), M * size());
+	return m_hostData.get();
 }
 
 
@@ -108,8 +99,7 @@ void
 NVector<T, M>::moveToDevice()
 {
 	copyToDevice();
-	delete[] m_hostData;
-	m_hostData = NULL;
+	m_hostData.reset();
 }
 
 
@@ -117,7 +107,7 @@ template<typename T, int M>
 void
 NVector<T, M>::copyToDevice()
 {
-	memcpyToDevice(m_deviceData, m_hostData, M * size());
+	memcpyToDevice(m_deviceData.get(), m_hostData.get(), M * size());
 }
 
 
@@ -138,7 +128,7 @@ template<typename T, int M>
 void
 NVector<T, M>::setPartition(size_t partitionIdx, const T* data, size_t length, size_t subvector)
 {
-	std::copy(data, data + length, m_hostData + offset(subvector, partitionIdx, 0));
+	std::copy(data, data + length, m_hostData.get() + offset(subvector, partitionIdx, 0));
 }
 
 
@@ -164,7 +154,7 @@ template<typename T, int M>
 void
 NVector<T, M>::fill(const T& val, size_t subvector)
 {
-	std::fill(m_hostData + subvector * m_pitch, m_hostData + (subvector+1) * m_pitch, val);
+	std::fill(m_hostData.get() + subvector * m_pitch, m_hostData.get() + (subvector+1) * m_pitch, val);
 }
 
 }	} // end namespace
