@@ -58,9 +58,9 @@ class ThalamicInput
 	
 	private :
 
-		NVector<unsigned> m_rngState;
+		NVector<unsigned, 4> m_rngState;
 
-		NVector<float> m_sigma;
+		NVector<float, 1> m_sigma;
 
 		bool m_inUse;
 };

@@ -19,11 +19,12 @@ namespace nemo {
 
 /*! \brief Per-neuron data array 
  *
- * Neuron data are organised on a per-partition basis. 
+ * Neuron data are organised on a per-partition basis. There are M copies
+ * (planes, subvectors) of the data.
  *
  * \author Andreas Fidjeland
  */
-template<typename T>
+template<typename T, int M = 1>
 class NVector
 {
 	public :
@@ -39,16 +40,19 @@ class NVector
 		 *
 		 * The host memory is *not* pinned.
 		 *
+		 * \param partitionCount
+		 * 		total number of partitionCount simulated on device
 		 * \param maxPartitionSize 
 		 * 		max size of all partitions in part of network simulated on
 		 * 		device 
-		 * \param partitionCount
-		 * 		total number of partitionCount simulated on device 
+		 * \param allocHostData
+		 * 		by default a host-side copy of the data is created. This can be
+		 * 		populated and copied to the device, or conversely be filled by
+		 * 		copying *from* the device and then queried.
 		 */
 		NVector(size_t partitionCount,
 				size_t maxPartitionSize,
-				bool allocHostData,
-				size_t subvectorCount=1);
+				bool allocHostData);
         
 		~NVector();
 
@@ -101,12 +105,10 @@ class NVector
 
 		size_t m_pitch;
 
-		size_t m_subvectorCount;
-
 		size_t offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const;
 
-		NVector(const NVector<T>&);                     // undefined
-		const NVector<T>& operator=(const NVector<T>&); // undefined
+		NVector(const NVector<T, M>&);                        // undefined
+		const NVector<T, M>& operator=(const NVector<T, M>&); // undefined
 };
 
 }	} // end namespace

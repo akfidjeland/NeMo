@@ -8,18 +8,16 @@ namespace nemo {
 	namespace cuda {
 
 
-template<typename T>
-NVector<T>::NVector(
+template<typename T, int M>
+NVector<T, M>::NVector(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-		bool allocHostData,
-		size_t subvectorCount) :
+		bool allocHostData) :
 	m_hostData(NULL),
 	m_partitionCount(partitionCount),
-	m_pitch(0),
-	m_subvectorCount(subvectorCount)
+	m_pitch(0)
 {
-	size_t height = subvectorCount * partitionCount;
+	size_t height = M * partitionCount;
 	size_t bytePitch = 0;
 	d_mallocPitch((void**)&m_deviceData, &bytePitch,
 				maxPartitionSize * sizeof(T), height, "NVector");
@@ -37,8 +35,8 @@ NVector<T>::NVector(
 }
 
 
-template<typename T>
-NVector<T>::~NVector()
+template<typename T, int M>
+NVector<T, M>::~NVector()
 {
 	d_free(m_deviceData);
 	if(m_hostData != NULL) {
@@ -47,67 +45,67 @@ NVector<T>::~NVector()
 }
 
 
-template<typename T>
+template<typename T, int M>
 T*
-NVector<T>::deviceData() const
+NVector<T, M>::deviceData() const
 {
 	return m_deviceData;
 }
 
 
-template<typename T>
+template<typename T, int M>
 size_t
-NVector<T>::size() const
+NVector<T, M>::size() const
 {
 	return m_partitionCount * m_pitch;
 }
 
 
-template<typename T>
+template<typename T, int M>
 size_t
-NVector<T>::bytes() const
+NVector<T, M>::bytes() const
 {
-	return m_subvectorCount * size() * sizeof(T);
+	return M * size() * sizeof(T);
 }
 
 
-template<typename T>
+template<typename T, int M>
 size_t
-NVector<T>::d_allocated() const
+NVector<T, M>::d_allocated() const
 {
 	return bytes();
 }
 
 
 
-template<typename T>
+template<typename T, int M>
 size_t
-NVector<T>::wordPitch() const
+NVector<T, M>::wordPitch() const
 {
 	return m_pitch;
 }
 
 
-template<typename T>
+template<typename T, int M>
 size_t
-NVector<T>::bytePitch() const
+NVector<T, M>::bytePitch() const
 {
 	return m_pitch * sizeof(T);
 }
 
 
-template<typename T>
+template<typename T, int M>
 const T*
-NVector<T>::copyFromDevice()
+NVector<T, M>::copyFromDevice()
 {
-	memcpyFromDevice(m_hostData, m_deviceData, m_subvectorCount * size());
+	memcpyFromDevice(m_hostData, m_deviceData, M * size());
 	return m_hostData;
 }
 
 
-template<typename T>
+template<typename T, int M>
 void
-NVector<T>::moveToDevice()
+NVector<T, M>::moveToDevice()
 {
 	copyToDevice();
 	delete[] m_hostData;
@@ -115,56 +113,56 @@ NVector<T>::moveToDevice()
 }
 
 
-template<typename T>
+template<typename T, int M>
 void
-NVector<T>::copyToDevice()
+NVector<T, M>::copyToDevice()
 {
-	memcpyToDevice(m_deviceData, m_hostData, m_subvectorCount * size());
+	memcpyToDevice(m_deviceData, m_hostData, M * size());
 }
 
 
 
-template<typename T>
+template<typename T, int M>
 size_t
-NVector<T>::offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const
+NVector<T, M>::offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const
 {
 	//! \todo thow exception if incorrect size is used
-	assert(subvector < m_subvectorCount);
+	assert(subvector < M);
 	assert(partitionIdx < m_partitionCount);
 	assert(neuronIdx < m_pitch);
 	return (subvector * m_partitionCount + partitionIdx) * m_pitch + neuronIdx;
 }
 
 
-template<typename T>
+template<typename T, int M>
 void
-NVector<T>::setPartition(size_t partitionIdx, const T* data, size_t length, size_t subvector)
+NVector<T, M>::setPartition(size_t partitionIdx, const T* data, size_t length, size_t subvector)
 {
 	std::copy(data, data + length, m_hostData + offset(subvector, partitionIdx, 0));
 }
 
 
-template<typename T>
+template<typename T, int M>
 void
-NVector<T>::setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector)
+NVector<T, M>::setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector)
 {
     m_hostData[offset(subvector, partitionIdx, neuronIdx)] = val;
 }
 
 
 
-template<typename T>
+template<typename T, int M>
 T
-NVector<T>::getNeuron(size_t partitionIdx, size_t neuronIdx, size_t subvector) const
+NVector<T, M>::getNeuron(size_t partitionIdx, size_t neuronIdx, size_t subvector) const
 {
     return m_hostData[offset(subvector, partitionIdx, neuronIdx)];
 }
 
 
 
-template<typename T>
+template<typename T, int M>
 void
-NVector<T>::fill(const T& val, size_t subvector)
+NVector<T, M>::fill(const T& val, size_t subvector)
 {
 	std::fill(m_hostData + subvector * m_pitch, m_hostData + (subvector+1) * m_pitch, val);
 }

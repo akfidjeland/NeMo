@@ -114,7 +114,7 @@ class Simulation : public nemo::SimulationBackend
 
 		ConnectivityMatrix m_cm;
 
-		NVector<uint64_t> m_recentFiring;
+		NVector<uint64_t, 2> m_recentFiring;
 
 		ThalamicInput m_thalamicInput;
 

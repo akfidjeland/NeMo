@@ -42,7 +42,7 @@ Simulation::Simulation(
 	m_conf(conf),
 	m_neurons(net, m_mapper),
 	m_cm(net, conf, m_mapper),
-	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false, 2),
+	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false),
 	//! \todo seed properly from configuration
 	m_thalamicInput(net, m_mapper),
 	//! \todo use pinned host memory here

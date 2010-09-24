@@ -29,8 +29,8 @@ namespace nemo {
 ThalamicInput::ThalamicInput(
 		const nemo::network::Generator& net,
 		const Mapper& mapper) :
-	m_rngState(mapper.partitionCount(), mapper.partitionSize(), true, 4),
-	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true, 1),
+	m_rngState(mapper.partitionCount(), mapper.partitionSize(), true),
+	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true),
 	m_inUse(false)
 {
 	std::vector<nemo::RNG> rngs(mapper.maxHostIdx() - mapper.minHostIdx() + 1);
