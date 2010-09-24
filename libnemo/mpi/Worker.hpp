@@ -112,6 +112,8 @@ class Worker
 		unsigned mgo_scount;
 		unsigned m_ncount;
 
+		typedef std::list<boost::mpi::request> ireq_list;
+
 		typedef std::vector<boost::mpi::request> req_vector;
 		typedef std::map<rank_t, fbuf> fbuf_vector;
 
@@ -119,13 +121,19 @@ class Worker
 				const nemo::ConfigurationImpl& conf,
 				unsigned localCount);
 
-		void initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obufs);
+		void bufferScatterData(const fbuf& fired, fbuf_vector& obufs);
+		void initGlobalScatter(req_vector& oreqs, fbuf_vector& obufs);
 		void waitGlobalScatter(req_vector&);
 
-		void initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs);
+		void initGlobalGather(ireq_list& ireqs, fbuf_vector& ibufs);
 
-		void waitGlobalGather(req_vector& ireqs,
+		void waitGlobalGather(ireq_list& ireqs,
 				const fbuf_vector& ibufs,
+				const nemo::ConnectivityMatrix& l_fcm,
+				SpikeQueue& queue);
+
+		void enqueAllIncoming(
+				const fbuf_vector& bufs,
 				const nemo::ConnectivityMatrix& l_fcm,
 				SpikeQueue& queue);
 

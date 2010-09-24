@@ -273,7 +273,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 	/* Incoming peer requests */
 	//! \todo can just fill this in as we go
 	fbuf_vector ibufs;
-	req_vector ireqs(mg_sourceNodes.size());
+	ireq_list ireqs;
 	for(std::set<rank_t>::const_iterator i = mg_sourceNodes.begin();
 			i != mg_sourceNodes.end(); ++i) {
 		ibufs[*i] = fbuf();
@@ -294,7 +294,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 	m_world.barrier();
 
 	/* Scatter empty firing packages to start with */
-	initGlobalScatter(fbuf(), oreqs, obufs);
+	initGlobalScatter(oreqs, obufs);
 
 #ifdef NEMO_MPI_DEBUG_TIMING
 	/* For basic profiling, time the different stages of the main step loop.
@@ -307,6 +307,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 #ifdef NEMO_MPI_DEBUG_TIMING
 		unsigned cycle = sim->elapsedSimulation();
 #endif
+
 		STEP("init incoming master req", mreq = m_world.irecv(MASTER, MASTER_STEP, masterReq));
 
 		/*! \note could use globalGather instead of initGlobalGather/waitGlobalGather */
@@ -316,6 +317,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 		//! \todo local gather
 		STEP("wait global scatter", waitGlobalScatter(oreqs));
 		STEP("wait global gather", waitGlobalGather(ireqs, ibufs, m_fcmIn, queue));
+		STEP("enqueue", enqueAllIncoming(ibufs, m_fcmIn, queue));
 		//! \todo improve naming
 		//! \todo experiment with order of gather and mreq
 		STEP("gather", gather(queue, m_fcmIn, istim));
@@ -329,7 +331,8 @@ Worker::runSimulation(const network::NetworkImpl& net,
 		STEP("step", sim->step());
 		STEP("read firing", FiredList fired = sim->readFiring());
 		//! \note take care here: fired contains reference to internal buffers in sim.
-		STEP("init global scatter", initGlobalScatter(fired.neurons, oreqs, obufs));
+		STEP("buffer scatter data", bufferScatterData(fired.neurons, obufs));
+		STEP("init global scatter", initGlobalScatter(oreqs, obufs));
 		STEP("send master", gather(m_world, fired.neurons, MASTER));
 		queue.step();
 #ifdef NEMO_MPI_DEBUG_TIMING
@@ -365,10 +368,9 @@ Worker::reportCommunicationCounters() const
 #endif
 
 void
-Worker::initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs)
+Worker::initGlobalGather(ireq_list& ireqs, fbuf_vector& ibufs)
 {
 	assert(mg_sourceNodes.size() == ibufs.size());
-	assert(mg_sourceNodes.size() == ireqs.size());
 	unsigned sid = 0;
 	for(std::set<rank_t>::const_iterator source = mg_sourceNodes.begin();
 			source != mg_sourceNodes.end(); ++source, ++sid) {
@@ -377,7 +379,7 @@ Worker::initGlobalGather(req_vector& ireqs, fbuf_vector& ibufs)
 		fbuf& incoming = ibufs[*source];
 		incoming.clear();
 		//! \todo do we do an incorrect copy operation here?
-		ireqs.at(sid) = m_world.irecv(*source, WORKER_STEP, incoming);
+		ireqs.push_back(m_world.irecv(*source, WORKER_STEP, incoming));
 	}
 }
 
@@ -404,12 +406,30 @@ enqueueIncoming(
 
 
 
+void
+Worker::enqueAllIncoming(
+		const fbuf_vector& ibufs,
+		const nemo::ConnectivityMatrix& l_fcm,
+		SpikeQueue& queue)
+{
+	for(fbuf_vector::const_iterator i = ibufs.begin(); i != ibufs.end(); ++i) {
+		rank_t source = i->first;
+		const fbuf& fired = i->second;
+		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, fired.size(), source);
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+		m_bytesReceived += sizeof(unsigned) * fired.size();
+#endif
+		enqueueIncoming(fired, l_fcm, queue);
+	}
+}
+
+
 
 /* Wait for all incoming firings sent during the previous cycle. Add these
  * firings to the queue */
 void
 Worker::waitGlobalGather(
-		req_vector& ireqs,
+		ireq_list& ireqs,
 		const fbuf_vector& ibufs,
 		const nemo::ConnectivityMatrix& l_fcm,
 		SpikeQueue& queue)
@@ -418,33 +438,10 @@ Worker::waitGlobalGather(
 
 	MPI_LOG("Worker %u waiting for messages from %lu peers\n", m_rank, ireqs.size());
 
-#if 0 // see note below
 	unsigned nreqs = ireqs.size();
 	for(unsigned r=0; r < nreqs; ++r) {
-		std::pair<status, req_vector::iterator> result = wait_any(ireqs.begin(), ireqs.end());
-		rank_t sourceRank = result.first.source();
-		assert(ibufs.find(sourceRank) != ibufs.end());
-		const fbuf& incoming = ibufs.find(sourceRank)->second;
-		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
-		enqueueIncoming(incoming, l_fcm, queue);
-
-	}
-#endif
-
-	/*! \note It should not be necessary to process these requests in order.
-	 * However, the above commented-out code results in run-time errors, as it
-	 * seems that some sources are received twice and others not at all. We
-	 * should come back to this issue later.  */
-	for(req_vector::iterator i = ireqs.begin(); i != ireqs.end(); ++i) {
-		status result = i->wait();
-		rank_t sourceRank = result.source();
-		assert(ibufs.find(sourceRank) != ibufs.end());
-		const fbuf& incoming = ibufs.find(sourceRank)->second;
-		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, incoming.size(), sourceRank);
-		enqueueIncoming(incoming, l_fcm, queue);
-#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
-		m_bytesReceived += sizeof(unsigned) * incoming.size();
-#endif
+		std::pair<status, ireq_list::iterator> result = wait_any(ireqs.begin(), ireqs.end());
+		ireqs.erase(result.second);
 	}
 #ifdef NEMO_MPI_COMMUNICATION_COUNTERS
 	m_packetsReceived += ireqs.size();
@@ -475,23 +472,16 @@ Worker::globalGather(
 
 
 
-/*
+/* Sort outgoing firing data into per-node buffers
+ *
  * \param fired
  * 		Firing generated this cycle in the local simulation
- * \param oreqs
- * 		Per-/target/ rank buffer of send requests
  * \param obuf
  * 		Per-rank buffer of firing.
  */
 void
-Worker::initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obufs)
+Worker::bufferScatterData(const fbuf& fired, fbuf_vector& obufs)
 {
-	MPI_LOG("Worker %u sending firing to %lu peers\n", m_rank, oreqs.size());
-
-#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
-	m_packetsSent += oreqs.size();
-#endif
-
 	for(fbuf_vector::iterator i = obufs.begin(); i != obufs.end(); ++i) {
 		i->second.clear();
 	}
@@ -507,6 +497,25 @@ Worker::initGlobalScatter(const fbuf& fired, req_vector& oreqs, fbuf_vector& obu
 			obufs[targetRank].push_back(*source);
 		}
 	}
+}
+
+
+
+/* Initialise asynchronous send of firing to all neighbours.
+ *
+ * \param oreqs
+ * 		Per-/target/ rank buffer of send requests
+ * \param obuf
+ * 		Per-rank buffer of firing.
+ */
+void
+Worker::initGlobalScatter(req_vector& oreqs, fbuf_vector& obufs)
+{
+	MPI_LOG("Worker %u sending firing to %lu peers\n", m_rank, oreqs.size());
+
+#ifdef NEMO_MPI_COMMUNICATION_COUNTERS
+	m_packetsSent += oreqs.size();
+#endif
 
 	unsigned tid = 0;
 	for(std::set<rank_t>::const_iterator target = mg_targetNodes.begin();
