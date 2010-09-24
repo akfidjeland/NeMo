@@ -33,12 +33,10 @@ class NVector
 		 * partitions. 
 		 *
 		 * The data is organised in a 2D data struture such that one row
-		 * contains all the 1D data for a single cluster. This ensures correct
-		 * coalescing for 64b data and for 32b data on 1.0 and 1.1 devices. For
-		 * >=1.2 devices accesses will be coalesced regardless of whether we
-		 * use the additional padding a 2D allocation gives.
-		 *
-		 * The host memory is *not* pinned.
+		 * contains all the 1D data for a single partition. This ensures
+		 * correct coalescing for 64b data and for 32b data on 1.0 and 1.1
+		 * devices. For >=1.2 devices accesses will be coalesced regardless of
+		 * whether we use the additional padding a 2D allocation gives.
 		 *
 		 * \param partitionCount
 		 * 		total number of partitionCount simulated on device
@@ -49,10 +47,16 @@ class NVector
 		 * 		by default a host-side copy of the data is created. This can be
 		 * 		populated and copied to the device, or conversely be filled by
 		 * 		copying *from* the device and then queried.
+		 * \param pinHostData
+		 * 		if the host side buffer is used for device input or output, it
+		 * 		can be allocated as 'pinned' memory. This makes data transfers
+		 * 		faster at the cost of reducing the amount of virtual memory
+		 * 		available to the host system.
 		 */
 		NVector(size_t partitionCount,
 				size_t maxPartitionSize,
-				bool allocHostData);
+				bool allocHostData,
+				bool pinHostData = false);
         
 		/*! \return pointer to device data */
 		T* deviceData() const;

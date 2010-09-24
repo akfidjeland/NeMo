@@ -12,7 +12,8 @@ template<typename T, int M>
 NVector<T, M>::NVector(
 		size_t partitionCount,
 		size_t maxPartitionSize,
-		bool allocHostData) :
+		bool allocHostData,
+		bool pinHostData) :
 	m_partitionCount(partitionCount),
 	m_pitch(0)
 {
@@ -30,7 +31,13 @@ NVector<T, M>::NVector(
 
 	//! \todo may need a default value here
 	if(allocHostData) {
-		m_hostData = boost::shared_array<T>(new T[height * m_pitch]);
+		if(pinHostData) {
+			void* h_ptr = NULL;
+			mallocPinned(&h_ptr, height * m_pitch * sizeof(T));
+			m_hostData = boost::shared_array<T>(static_cast<T*>(h_ptr), freePinned);
+		} else {
+			m_hostData = boost::shared_array<T>(new T[height * m_pitch]);
+		}
 	}
 }
 
