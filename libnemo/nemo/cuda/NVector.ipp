@@ -14,6 +14,7 @@ NVector<T>::NVector(
 		size_t maxPartitionSize,
 		bool allocHostData,
 		size_t subvectorCount) :
+	m_hostData(NULL),
 	m_partitionCount(partitionCount),
 	m_pitch(0),
 	m_subvectorCount(subvectorCount)
@@ -31,7 +32,7 @@ NVector<T>::NVector(
 
 	//! \todo may need a default value here
 	if(allocHostData) {
-		m_hostData.resize(height * m_pitch);
+		m_hostData = new T[height * m_pitch];
 	}
 }
 
@@ -40,6 +41,9 @@ template<typename T>
 NVector<T>::~NVector()
 {
 	d_free(m_deviceData);
+	if(m_hostData != NULL) {
+		delete[] m_hostData;
+	}
 }
 
 
@@ -93,7 +97,7 @@ NVector<T>::bytePitch() const
 
 
 template<typename T>
-const std::vector<T>& 
+const T*
 NVector<T>::copyFromDevice()
 {
 	memcpyFromDevice(m_hostData, m_deviceData, m_subvectorCount * size());
@@ -106,7 +110,8 @@ void
 NVector<T>::moveToDevice()
 {
 	copyToDevice();
-	m_hostData.clear();
+	delete[] m_hostData;
+	m_hostData = NULL;
 }
 
 
@@ -135,7 +140,7 @@ template<typename T>
 void
 NVector<T>::setPartition(size_t partitionIdx, const T* data, size_t length, size_t subvector)
 {
-	std::copy(data, data + length, m_hostData.begin() + offset(subvector, partitionIdx, 0));
+	std::copy(data, data + length, m_hostData + offset(subvector, partitionIdx, 0));
 }
 
 
@@ -161,8 +166,7 @@ template<typename T>
 void
 NVector<T>::fill(const T& val, size_t subvector)
 {
-	std::fill(m_hostData.begin() + subvector * m_pitch,
-			m_hostData.begin() + (subvector+1) * m_pitch, val);
+	std::fill(m_hostData + subvector * m_pitch, m_hostData + (subvector+1) * m_pitch, val);
 }
 
 }	} // end namespace

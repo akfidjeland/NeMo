@@ -42,6 +42,15 @@ void
 memcpyToDevice(void* dst, const void* src, size_t count);
 
 
+
+template<typename T>
+void
+memcpyToDevice(T* dst, const T* src, size_t count)
+{
+	memcpyToDevice((void*)dst, (void*)src, count * sizeof(T));
+}
+
+
 /*
  * \param count
  * 		Number of elements to copy from vector

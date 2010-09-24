@@ -12,7 +12,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <vector>
+#include <cstddef>
 
 namespace nemo {
 	namespace cuda {
@@ -71,7 +71,7 @@ class NVector
 		 * padding) for each partition */
 		size_t bytePitch() const;
 
-		const std::vector<T>& copyFromDevice();
+		const T* copyFromDevice();
 
 		/*! Copy entire host buffer to device and deallocote host memory */
 		void moveToDevice();
@@ -95,7 +95,7 @@ class NVector
 	private :
 
 		T* m_deviceData;
-		std::vector<T> m_hostData;
+		T* m_hostData;
 
 		const size_t m_partitionCount;
 
@@ -104,6 +104,9 @@ class NVector
 		size_t m_subvectorCount;
 
 		size_t offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const;
+
+		NVector(const NVector<T>&);                     // undefined
+		const NVector<T>& operator=(const NVector<T>&); // undefined
 };
 
 }	} // end namespace

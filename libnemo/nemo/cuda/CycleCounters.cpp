@@ -79,21 +79,21 @@ CycleCounters::printCounterSet(
 		const char* names[], // for intermediate counters
 		std::ostream& outfile)
 {
-	const std::vector<unsigned long long>& cc = cc_in.copyFromDevice();
+	const unsigned long long* cc = cc_in.copyFromDevice();
 	//! \todo average over all partitions
 	/* The data return by copyFromDevice is the raw device data, including any
 	 * padding. Using cc.end() would therefore read too far */ 
-	std::vector<unsigned long long>::const_iterator end = cc.begin() + counters;
-	unsigned long long totalCycles = std::accumulate(cc.begin(), end, 0l);
+	unsigned long long totalCycles = std::accumulate(cc, cc + counters, 0l);
 
 	int clockRateKHz = clockRate();
 	printLine(setName, totalCycles, totalCycles, clockRateKHz, outfile);
 	outfile << std::endl;
 
 	if(names != NULL) {
-		for(std::vector<unsigned long long>::const_iterator i=cc.begin(); i != end; ++i) {
+		for(const unsigned long long *i = cc, *i_end = cc + counters;
+				i != i_end; ++i) {
 			unsigned long long cycles = *i;
-			printLine(names[i-cc.begin()], cycles, totalCycles, clockRateKHz, outfile);
+			printLine(names[i-cc], cycles, totalCycles, clockRateKHz, outfile);
 		}
 		outfile << std::endl;
 	}
