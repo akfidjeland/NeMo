@@ -18,15 +18,15 @@ classdef nemoConfiguration < handle
     methods
 
         function obj = nemoConfiguration()
-        	obj.id = nemo_mex(uint32(17));
+        	obj.id = nemo_mex(uint32(6));
         end
 
         function delete(obj)
-            nemo_mex(uint32(18), obj.id);
+            nemo_mex(uint32(7), obj.id);
         end
 
         function setCpuBackend(obj, tcount)
-        % setCpuBackend - Specify that the CPU backend should be used
+        % setCpuBackend - specify that the CPU backend should be used
         %  
         % Synopsis:
         %   setCpuBackend(tcount)
@@ -38,11 +38,11 @@ classdef nemoConfiguration < handle
         % the number of threads to use. If the default thread count of -1 is
         % used, the backend will choose a sensible value based on the
         % available hardware concurrency. 
-            nemo_mex(uint32(19), obj.id, int32(tcount));
+            nemo_mex(uint32(8), obj.id, int32(tcount));
         end
 
         function setCudaBackend(obj, deviceNumber)
-        % setCudaBackend - Specify that the CUDA backend should be used
+        % setCudaBackend - specify that the CUDA backend should be used
         %  
         % Synopsis:
         %   setCudaBackend(deviceNumber)
@@ -58,11 +58,11 @@ classdef nemoConfiguration < handle
         % internally by nemo (see cudaDeviceCount and cudaDeviceDescription).
         % This device numbering may differ from the one provided by the CUDA
         % driver directly, since nemo ignores any devices it cannot use. 
-            nemo_mex(uint32(20), obj.id, int32(deviceNumber));
+            nemo_mex(uint32(9), obj.id, int32(deviceNumber));
         end
 
         function setStdpFunction(obj, prefire, postfire, minWeight, maxWeight)
-        % setStdpFunction - Enable STDP and set the global STDP function
+        % setStdpFunction - enable STDP and set the global STDP function
         %  
         % Synopsis:
         %   setStdpFunction(prefire, postfire, minWeight, maxWeight)
@@ -83,7 +83,7 @@ classdef nemoConfiguration < handle
         % The STDP function is specified by providing the values sampled at
         % integer cycles within the STDP window. 
             nemo_mex(...
-                    uint32(21),...
+                    uint32(10),...
                     obj.id,...
                     double(prefire),...
                     double(postfire),...
@@ -100,9 +100,10 @@ classdef nemoConfiguration < handle
         %  
         % Outputs:
         %   description -
+        %             Textual description of the currently selected backend
         %    
         % The backend can be changed using setCudaBackend or setCpuBackend 
-            description = nemo_mex(uint32(22), obj.id);
+            description = nemo_mex(uint32(11), obj.id);
         end
     end
 end

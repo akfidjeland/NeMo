@@ -1,10 +1,10 @@
 % nemoNetwork
 %  
-% Networks are constructed by adding individual neurons, and single
-% or groups of synapses to the network. Neurons are given indices
-% (from 0) which should be unique for each neuron. When adding
-% synapses the source or target neurons need not necessarily exist
-% yet, but should be defined before the network is finalised.
+% A Network is constructed by adding individual neurons synapses to
+% the network. Neurons are given indices (from 0) which should be
+% unique for each neuron. When adding synapses the source or target
+% neurons need not necessarily exist yet, but should be defined
+% before the network is finalised.
 %  
 % Methods:
 %     nemoNetwork (constructor)

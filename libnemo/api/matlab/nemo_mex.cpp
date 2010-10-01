@@ -422,6 +422,60 @@ neuronCount(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+setCpuBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus( 
+            nemo_set_cpu_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
+    );
+}
+
+
+void
+setCudaBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus( 
+            nemo_set_cuda_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
+    );
+}
+
+
+void
+setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 4);
+    checkOutputCount(nlhs, 0);
+    std::vector<float> prefire = vector<float, double>(prhs[2]);
+    std::vector<float> postfire = vector<float, double>(prhs[3]);
+    checkNemoStatus( 
+            nemo_set_stdp_function( 
+                    getConfiguration(prhs, 1), 
+                    &prefire[0], prefire.size(), 
+                    &postfire[0], postfire.size(), 
+                    scalar<float,double>(prhs[4]), 
+                    scalar<float,double>(prhs[5]) 
+            ) 
+    );
+}
+
+
+void
+backendDescription(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 0);
+    checkOutputCount(nlhs, 1);
+    const char* description;
+    checkNemoStatus( 
+            nemo_backend_description(getConfiguration(prhs, 1), &description) 
+    );
+    returnScalar<const char*, char*>(plhs, 0, description);
+}
+
+
+void
 step(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
@@ -558,60 +612,6 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
-void
-setCpuBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 0);
-    checkNemoStatus( 
-            nemo_set_cpu_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
-    );
-}
-
-
-void
-setCudaBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 0);
-    checkNemoStatus( 
-            nemo_set_cuda_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
-    );
-}
-
-
-void
-setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 4);
-    checkOutputCount(nlhs, 0);
-    std::vector<float> prefire = vector<float, double>(prhs[2]);
-    std::vector<float> postfire = vector<float, double>(prhs[3]);
-    checkNemoStatus( 
-            nemo_set_stdp_function( 
-                    getConfiguration(prhs, 1), 
-                    &prefire[0], prefire.size(), 
-                    &postfire[0], postfire.size(), 
-                    scalar<float,double>(prhs[4]), 
-                    scalar<float,double>(prhs[5]) 
-            ) 
-    );
-}
-
-
-void
-backendDescription(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 0);
-    checkOutputCount(nlhs, 1);
-    const char* description;
-    checkNemoStatus( 
-            nemo_backend_description(getConfiguration(prhs, 1), &description) 
-    );
-    returnScalar<const char*, char*>(plhs, 0, description);
-}
-
-
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
 #define FN_COUNT 23
@@ -623,6 +623,12 @@ fn_ptr fn_arr[FN_COUNT] = {
 	addSynapse,
 	addSynapses,
 	neuronCount,
+	newConfiguration,
+	deleteConfiguration,
+	setCpuBackend,
+	setCudaBackend,
+	setStdpFunction,
+	backendDescription,
 	newSimulation,
 	deleteSimulation,
 	step,
@@ -633,13 +639,7 @@ fn_ptr fn_arr[FN_COUNT] = {
 	getPlastic,
 	elapsedWallclock,
 	elapsedSimulation,
-	resetTimer,
-	newConfiguration,
-	deleteConfiguration,
-	setCpuBackend,
-	setCudaBackend,
-	setStdpFunction,
-	backendDescription};
+	resetTimer};
 
 /* AUTO-GENERATED CODE END */
 
