@@ -1,0 +1,577 @@
+\subsection{Network class}
+\label{Network}
+A Network is constructed by adding individual neurons synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+Network::Network()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_network_t
+nemo_new_network()
+ 
+nemo_delete_network(nemo_network_t net)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+net = nemoNetwork()
+\end{lstlisting}
+\paragraph{Functions}
+\begin{itemize}
+\item \hyperref[fn: addNeuron]{addNeuron}
+\item \hyperref[fn: addSynapse]{addSynapse}
+\item \hyperref[fn: neuronCount]{neuronCount}
+\end{itemize}
+\clearpage
+\subsubsection*{Network::addNeuron}
+\label{fn: addNeuron}
+add a single neuron to network
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Network::addNeuron(unsigned idx, float a, float b, float c, 
+        float d, float u, float v, float sigma)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_add_neuron(nemo_network_t net, unsigned idx, float a, 
+        float b, float c, float d, float u, float v, float sigma)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+net.addNeuron(idx, a, b, c, d, u, v, sigma)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[idx] Neuron index (0-based)
+\item[a] Time scale of the recovery variable
+\item[b] Sensitivity to sub-threshold fluctuations in the membrane potential v
+\item[c] After-spike value of the membrane potential v
+\item[d] After-spike reset of the recovery variable u
+\item[u] Initial value for the membrane recovery variable
+\item[v] Initial value for the membrane potential
+\item[sigma] Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated
+\end{description}
+The neuron uses the Izhikevich neuron model. See E. M. Izhikevich "Simple model of spiking neurons", IEEE Trans. Neural Networks, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.
+
+\clearpage
+\subsubsection*{Network::addSynapse}
+\label{fn: addSynapse}
+add a single synapse to the network
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+uint64_t
+Network::addSynapse(unsigned source, unsigned target, 
+        unsigned delay, float weight, unsigned char plastic)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_add_synapse(nemo_network_t net, unsigned source, 
+        unsigned target, unsigned delay, float weight, 
+        unsigned char plastic, uint64_t* id)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+id = net.addSynapse(source, target, delay, weight, plastic)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[source] Index of source neuron
+\item[target] Index of target neuron
+\item[delay] Synapse conductance delay in milliseconds
+\item[weight] Synapse weights
+\item[plastic] Boolean specifying whether or not this synapse is plastic
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[id] Unique synapse ID
+\end{description}
+
+\clearpage
+\subsubsection*{Network::neuronCount}
+\label{fn: neuronCount}
+
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+unsigned
+Network::neuronCount()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_neuron_count(nemo_network_t net, unsigned* ncount)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+ncount = net.neuronCount()
+\end{lstlisting}
+\paragraph{Outputs}
+\begin{description}
+\item[ncount] number of neurons in the network
+\end{description}
+
+\clearpage
+\subsection{Configuration class}
+\label{Configuration}
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+Configuration::Configuration()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_configuration_t
+nemo_new_configuration()
+ 
+nemo_delete_configuration(nemo_configuration_t conf)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+conf = nemoConfiguration()
+\end{lstlisting}
+\paragraph{Functions}
+\begin{itemize}
+\item \hyperref[fn: setCpuBackend]{setCpuBackend}
+\item \hyperref[fn: setCudaBackend]{setCudaBackend}
+\item \hyperref[fn: setStdpFunction]{setStdpFunction}
+\item \hyperref[fn: backendDescription]{backendDescription}
+\end{itemize}
+\clearpage
+\subsubsection*{Configuration::setCpuBackend}
+\label{fn: setCpuBackend}
+specify that the CPU backend should be used
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Configuration::setCpuBackend(int tcount)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_set_cpu_backend(nemo_configuration_t conf, int tcount)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+conf.setCpuBackend(tcount)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[tcount] number of threads
+\end{description}
+Specify that the CPU backend should be used and optionally specify the number of threads to use. If the default thread count of -1 is used, the backend will choose a sensible value based on the available hardware concurrency.
+
+\clearpage
+\subsubsection*{Configuration::setCudaBackend}
+\label{fn: setCudaBackend}
+specify that the CUDA backend should be used
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Configuration::setCudaBackend(int deviceNumber)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_set_cuda_backend(nemo_configuration_t conf, int deviceNumber)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+conf.setCudaBackend(deviceNumber)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[deviceNumber]
+\end{description}
+Specify that the CUDA backend should be used and optionally specify a desired device. If the (default) device value of -1 is used the backend will choose the best available device.   If the cuda backend (and the chosen device) cannot be used for  whatever reason, an exception is raised.   The device numbering is the numbering used internally by nemo (see  cudaDeviceCount and cudaDeviceDescription). This device  numbering may differ from the one provided by the CUDA driver  directly, since nemo ignores any devices it cannot use. 
+
+\clearpage
+\subsubsection*{Configuration::setStdpFunction}
+\label{fn: setStdpFunction}
+enable STDP and set the global STDP function
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Configuration::setStdpFunction(const vector<float>& prefire, 
+        const vector<float>& postfire, float minWeight, float maxWeight)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_set_stdp_function(nemo_configuration_t conf, 
+        float prefire[], size_t prefire_len, 
+        float postfire[], size_t postfire_len, float minWeight, 
+        float maxWeight)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+conf.setStdpFunction(prefire, postfire, minWeight, maxWeight)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[prefire] STDP function values for spikes arrival times before the postsynaptic firing, starting closest to the postsynaptic firing
+\item[postfire] STDP function values for spikes arrival times after the postsynaptic firing, starting closest to the postsynaptic firing
+\item[minWeight] Lowest (negative) weight beyond which inhibitory synapses are not potentiated
+\item[maxWeight] Highest (positive) weight beyond which excitatory synapses are not potentiated
+\end{description}
+The STDP function is specified by providing the values sampled at integer cycles within the STDP window.
+
+\clearpage
+\subsubsection*{Configuration::backendDescription}
+\label{fn: backendDescription}
+Description of the currently selected simulation backend
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+std::string
+Configuration::backendDescription()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_backend_description(nemo_configuration_t conf, const char** description)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+description = conf.backendDescription()
+\end{lstlisting}
+\paragraph{Outputs}
+\begin{description}
+\item[description] Textual description of the currently selected backend
+\end{description}
+The backend can be changed using setCudaBackend or setCpuBackend
+
+\clearpage
+\subsection{Simulation class}
+\label{Simulation}
+A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+Simulation*
+simulation(const Network&, const Configuration&)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_simulation_t
+nemo_new_simulation(nemo_network_t net, nemo_configuration_t conf)
+ 
+nemo_delete_simulation(nemo_simulation_t sim)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+sim = nemoSimulation(net, conf)
+\end{lstlisting}
+\paragraph{Functions}
+\begin{itemize}
+\item \hyperref[fn: step]{step}
+\item \hyperref[fn: applyStdp]{applyStdp}
+\item \hyperref[fn: getTargets]{getTargets}
+\item \hyperref[fn: getDelays]{getDelays}
+\item \hyperref[fn: getWeights]{getWeights}
+\item \hyperref[fn: getPlastic]{getPlastic}
+\item \hyperref[fn: elapsedWallclock]{elapsedWallclock}
+\item \hyperref[fn: elapsedSimulation]{elapsedSimulation}
+\item \hyperref[fn: resetTimer]{resetTimer}
+\end{itemize}
+\clearpage
+\subsubsection*{Simulation::step}
+\label{fn: step}
+run simulation for a single cycle (1ms)
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+const vector<unsigned>&
+Simulation::step(const vector<unsigned>& fstim)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_step(nemo_simulation_t sim, 
+        unsigned fstim[], size_t fstim_len, 
+        unsigned* fired[], size_t* fired_len)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+fired = sim.step(fstim)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[fstim] An optional list of neurons, which will be forced to fire this cycle
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[fired] Neurons which fired this cycle
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::applyStdp}
+\label{fn: applyStdp}
+update synapse weights using the accumulated STDP statistics
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Simulation::applyStdp(float reward)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_apply_stdp(nemo_simulation_t sim, float reward)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+sim.applyStdp(reward)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[reward] Multiplier for the accumulated weight change
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::getTargets}
+\label{fn: getTargets}
+return the targets for the specified synapses
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+const vector<unsigned>&
+Simulation::getTargets(const vector<uint64_t>& synapses)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_get_targets(nemo_simulation_t sim, 
+        uint64_t synapses[], size_t synapses_len, unsigned* targets[])
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+targets = sim.getTargets(synapses)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[synapses] synapse ids (as returned by addSynapse)
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[targets] indices of target neurons
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::getDelays}
+\label{fn: getDelays}
+return the conductance delays for the specified synapses
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+const vector<unsigned>&
+Simulation::getDelays(const vector<uint64_t>& synapses)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_get_delays(nemo_simulation_t sim, 
+        uint64_t synapses[], size_t synapses_len, unsigned* delays[])
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+delays = sim.getDelays(synapses)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[synapses] synapse ids (as returned by addSynapse)
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[delays] conductance delays of the specified synpases
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::getWeights}
+\label{fn: getWeights}
+return the weights for the specified synapses
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+const vector<float>&
+Simulation::getWeights(const vector<uint64_t>& synapses)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_get_weights(nemo_simulation_t sim, 
+        uint64_t synapses[], size_t synapses_len, float* weights[])
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+weights = sim.getWeights(synapses)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[synapses] synapse ids (as returned by addSynapse)
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[weights] weights of the specified synapses
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::getPlastic}
+\label{fn: getPlastic}
+return the boolean plasticity status for the specified synapses
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+const vector<unsigned char>&
+Simulation::getPlastic(const vector<uint64_t>& synapses)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_get_plastic(nemo_simulation_t sim, 
+        uint64_t synapses[], size_t synapses_len, unsigned char* plastic[])
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+plastic = sim.getPlastic(synapses)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[synapses] synapse ids (as returned by addSynapse)
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[plastic] plasticity status of the specified synpases
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::elapsedWallclock}
+\label{fn: elapsedWallclock}
+
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+unsigned long
+Simulation::elapsedWallclock()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_elapsed_wallclock(nemo_simulation_t sim, unsigned long* elapsed)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+elapsed = sim.elapsedWallclock()
+\end{lstlisting}
+\paragraph{Outputs}
+\begin{description}
+\item[elapsed] number of milliseconds of wall-clock time elapsed since first simulation step (or last timer reset)
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::elapsedSimulation}
+\label{fn: elapsedSimulation}
+
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+unsigned long
+Simulation::elapsedSimulation()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_elapsed_simulation(nemo_simulation_t sim, unsigned long* elapsed)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+elapsed = sim.elapsedSimulation()
+\end{lstlisting}
+\paragraph{Outputs}
+\begin{description}
+\item[elapsed] number of milliseconds of simulation time elapsed since first simulation step (or last timer reset)
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::resetTimer}
+\label{fn: resetTimer}
+reset both wall-clock and simulation timer
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Simulation::resetTimer()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_reset_timer(nemo_simulation_t sim)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+sim.resetTimer()
+\end{lstlisting}
+
+\clearpage
