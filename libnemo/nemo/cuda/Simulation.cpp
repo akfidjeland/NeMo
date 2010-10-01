@@ -268,7 +268,7 @@ void
 Simulation::applyStdp(float reward)
 {
 	if(!m_stdp) {
-		throw exception(NEMO_LOGIC_ERROR, "applyStdp called when STDP not in use");
+		throw exception(NEMO_LOGIC_ERROR, "applyStdp called, but no STDP model specified");
 		return;
 	}
 

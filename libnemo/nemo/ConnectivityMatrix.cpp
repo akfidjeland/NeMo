@@ -231,6 +231,10 @@ ConnectivityMatrix::weight(const RSynapse& r_idx) const
 void
 ConnectivityMatrix::applyStdp(float reward)
 {
+	if(!m_stdp) {
+		throw exception(NEMO_LOGIC_ERROR, "applyStdp called, but no STDP model specified");
+	}
+
 	for(std::map<nidx_t, Incoming>::iterator row = m_racc.begin(); row != m_racc.end(); ++row) {
 
 		Incoming& incoming = row->second;
