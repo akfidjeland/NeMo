@@ -229,3 +229,24 @@ testStdp(backend_t backend, bool noiseConnections)
 		verifyWeightChange(epoch, sim.get(), m);
 	}
 }
+
+
+void
+simpleStdpRun(const nemo::Network& net, const nemo::Configuration& conf)
+{
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
+	sim->step();
+	sim->applyStdp(1.0);
+}
+
+
+
+/* Make sure that calling applyStdp gives an error */
+void
+testInvalidStdpUsage(backend_t backend)
+{
+	boost::scoped_ptr<nemo::Network> net(createRing(10, 0, true));
+	nemo::Configuration conf;
+	setBackend(backend, conf);
+	BOOST_REQUIRE_THROW(simpleStdpRun(*net, conf), nemo::exception);
+}

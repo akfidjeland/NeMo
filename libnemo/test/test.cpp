@@ -215,31 +215,6 @@ BOOST_AUTO_TEST_SUITE(fstim)
 BOOST_AUTO_TEST_SUITE_END()
 
 
-
-
-/* Simple ring network.
- *
- * This is useful for basic testing as the exact firing pattern is known in
- * advance. Every cycle a single neuron fires. Each neuron connected to only
- * the next neuron (in global index space) with an abnormally strong synapse,
- * so the result is the firing propagating around the ring.
- */
-nemo::Network*
-createRing(unsigned ncount, unsigned n0 = 0)
-{
-	nemo::Network* net = new nemo::Network;
-	for(unsigned source=n0; source < n0 + ncount; ++source) {
-		float v = -65.0f;
-		float b = 0.2f;
-		float r = 0.5f;
-		float r2 = r * r;
-		net->addNeuron(source, 0.02f, b, v+15.0f*r2, 8.0f-6.0f*r2, b*v, v, 0.0f);
-		net->addSynapse(source, n0 + ((source - n0 + 1) % ncount), 1, 1000.0f, false);
-	}
-	return net;
-}
-
-
 void
 runRing(unsigned ncount, nemo::Configuration conf)
 {
@@ -250,7 +225,7 @@ runRing(unsigned ncount, nemo::Configuration conf)
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
 	/* Simulate a single neuron to get the ring going */
-	sim->step(std::vector<unsigned>(1,0));
+	sim->step(std::vector<unsigned>(1, 0));
 
 	for(unsigned ms=1; ms < duration; ++ms) {
 		const std::vector<unsigned>& fired = sim->step();
@@ -421,6 +396,7 @@ BOOST_AUTO_TEST_SUITE_END();
 
 
 void testStdp(backend_t backend, bool noiseConnections);
+void testInvalidStdpUsage(backend_t);
 
 BOOST_AUTO_TEST_SUITE(stdp);
 
@@ -433,6 +409,18 @@ BOOST_AUTO_TEST_SUITE(stdp);
 		testStdp(NEMO_BACKEND_CPU, false);
 		testStdp(NEMO_BACKEND_CPU, true);
 	}
+
+	BOOST_AUTO_TEST_SUITE(error);
+
+		BOOST_AUTO_TEST_CASE(cuda) {
+			testInvalidStdpUsage(NEMO_BACKEND_CUDA);
+		}
+
+		BOOST_AUTO_TEST_CASE(cpu) {
+			testInvalidStdpUsage(NEMO_BACKEND_CPU);
+		}
+
+	BOOST_AUTO_TEST_SUITE_END();
 
 BOOST_AUTO_TEST_SUITE_END();
 
