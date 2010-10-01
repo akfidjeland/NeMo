@@ -88,6 +88,23 @@ scalar(const mxArray* arr)
 
 
 
+/* Return scalar from a given position in a Matlab array. M and N refers to
+ * Matlab and Nemo types, rather than array dimensions.  */
+template<typename N, typename M>
+N
+scalarAt(const mxArray* arr, size_t offset)
+{
+	/* Skip bounds checking here since we have already verified the bonds for all input vectors */
+	//! \todo remove bounds checking here
+	//if(offset >= mxGetN(arr) * mxGetM(arr)) {
+	//	mexErrMsgIdAndTxt("nemo:api", "ouf-of-bounds array access");
+	//}
+	// target, source
+	return boost::numeric_cast<N, M>(*(static_cast<M*>(mxGetData(numeric<M>(arr)))+offset));
+}
+
+
+
 /* Return vector from a numeric 1 x m array provided by Matlab. M and N refers
  * to Matlab and Nemo types, rather than array dimensions. */
 template<typename N, typename M>
@@ -132,6 +149,30 @@ checkOutputCount(int actualArgs, int expectedArgs)
 }
 
 
+
+/* For the vector form of functions which are scalar in the C++ API (i.e. all
+ * inputs and outputs are scalars) we allow using a vector form in Matlab, but
+ * require that all vectors have the same dimensions. Return this and report
+ * error if sizes are not the same. The precise shape of the matrices do not
+ matter. */ 
+size_t
+vectorDimension(int nrhs, const mxArray* prhs[])
+{
+	if(nrhs < 1) {
+		mexErrMsgIdAndTxt("nemo:mex", "function should have at least on input argument"); 
+	}
+	size_t dim = mxGetN(prhs[0]) * mxGetM(prhs[0]);
+	for(int i=1; i < nrhs; ++i) {
+		size_t found = mxGetN(prhs[i]) * mxGetM(prhs[i]);
+		if(found != dim) {
+			mexErrMsgIdAndTxt("nemo:mex", "vector arguments do not have the same dimensions"); 
+		}
+	}
+	return dim;
+}
+
+
+
 /* Return numeric scalar in output argument 0 after doing the appropriate
  * conversion from the type used by nemo (N) to the type used by matlab (M). */
 template<typename N, typename M>
@@ -148,6 +189,27 @@ void
 returnScalar<const char*, char*>(mxArray* plhs[], int argno, const char* str)
 {
 	plhs[argno] = mxCreateString(str);
+}
+
+
+
+/* Allocate memory for return vector */
+template<typename M>
+void
+allocateOutputVector(mxArray* plhs[], int argno, size_t len)
+{
+	plhs[argno] = mxCreateNumericMatrix(1, len, classId<M>(), mxREAL);
+}
+
+
+
+/* Set an element in output array and do the required casting from the type
+ * used by nemo (N) to the type used by matlab (M). */
+template<typename N, typename M>
+void
+returnScalarAt(mxArray* plhs[], int argno, size_t offset, N val)
+{
+	static_cast<M*>(mxGetData(plhs[argno]))[offset] = boost::numeric_cast<N, M>(val);
 }
 
 
@@ -371,42 +433,51 @@ nemo_get_plastic(nemo_simulation_t sim, uint64_t* synapses, size_t syn_len, unsi
 void
 addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
+    size_t elems = vectorDimension(8, prhs + 2);
     checkInputCount(nrhs, 8);
     checkOutputCount(nlhs, 0);
-    checkNemoStatus( 
-            nemo_add_neuron( 
-                    getNetwork(prhs, 1), 
-                    scalar<unsigned,uint32_t>(prhs[2]), 
-                    scalar<float,double>(prhs[3]), 
-                    scalar<float,double>(prhs[4]), 
-                    scalar<float,double>(prhs[5]), 
-                    scalar<float,double>(prhs[6]), 
-                    scalar<float,double>(prhs[7]), 
-                    scalar<float,double>(prhs[8]), 
-                    scalar<float,double>(prhs[9]) 
-            ) 
-    );
+    void* hdl = getNetwork(prhs, 1);
+    for(size_t i=0; i<elems; ++i){
+        checkNemoStatus( 
+                nemo_add_neuron( 
+                        hdl, 
+                        scalarAt<unsigned,uint32_t>(prhs[2], i), 
+                        scalarAt<float,double>(prhs[3], i), 
+                        scalarAt<float,double>(prhs[4], i), 
+                        scalarAt<float,double>(prhs[5], i), 
+                        scalarAt<float,double>(prhs[6], i), 
+                        scalarAt<float,double>(prhs[7], i), 
+                        scalarAt<float,double>(prhs[8], i), 
+                        scalarAt<float,double>(prhs[9], i) 
+                ) 
+        );
+    }
 }
 
 
 void
 addSynapse(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
+    size_t elems = vectorDimension(5, prhs + 2);
     checkInputCount(nrhs, 5);
     checkOutputCount(nlhs, 1);
-    uint64_t id;
-    checkNemoStatus( 
-            nemo_add_synapse( 
-                    getNetwork(prhs, 1), 
-                    scalar<unsigned,uint32_t>(prhs[2]), 
-                    scalar<unsigned,uint32_t>(prhs[3]), 
-                    scalar<unsigned,uint32_t>(prhs[4]), 
-                    scalar<float,double>(prhs[5]), 
-                    scalar<unsigned char,uint8_t>(prhs[6]), 
-                    &id 
-            ) 
-    );
-    returnScalar<uint64_t, uint64_t>(plhs, 0, id);
+    allocateOutputVector<uint64_t>(plhs, 0, elems);
+    void* hdl = getNetwork(prhs, 1);
+    for(size_t i=0; i<elems; ++i){
+        uint64_t id;
+        checkNemoStatus( 
+                nemo_add_synapse( 
+                        hdl, 
+                        scalarAt<unsigned,uint32_t>(prhs[2], i), 
+                        scalarAt<unsigned,uint32_t>(prhs[3], i), 
+                        scalarAt<unsigned,uint32_t>(prhs[4], i), 
+                        scalarAt<float,double>(prhs[5], i), 
+                        scalarAt<unsigned char,uint8_t>(prhs[6], i), 
+                        &id 
+                ) 
+        );
+        returnScalarAt<uint64_t, uint64_t>(plhs, 0, i, id);
+    }
 }
 
 
