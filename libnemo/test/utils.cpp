@@ -118,3 +118,21 @@ synapseIds(unsigned neuron, unsigned synapses)
 	}
 	return ids;
 }
+
+
+
+nemo::Network*
+createRing(unsigned ncount, unsigned n0, bool plastic)
+{
+	nemo::Network* net = new nemo::Network;
+	for(unsigned source=n0; source < n0 + ncount; ++source) {
+		float v = -65.0f;
+		float b = 0.2f;
+		float r = 0.5f;
+		float r2 = r * r;
+		net->addNeuron(source, 0.02f, b, v+15.0f*r2, 8.0f-6.0f*r2, b*v, v, 0.0f);
+		net->addSynapse(source, n0 + ((source - n0 + 1) % ncount), 1, 1000.0f, plastic);
+	}
+	return net;
+}
+

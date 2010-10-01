@@ -39,4 +39,15 @@ std::vector<synapse_id>
 synapseIds(unsigned neuron, unsigned synapses);
 
 
+/* Simple ring network.
+ *
+ * This is useful for basic testing as the exact firing pattern is known in
+ * advance. Every cycle a single neuron fires. Each neuron connected to only
+ * the next neuron (in global index space) with an abnormally strong synapse,
+ * so the result is the firing propagating around the ring.
+ */
+nemo::Network*
+createRing(unsigned ncount, unsigned n0 = 0, bool plastic=false);
+
+
 #endif
