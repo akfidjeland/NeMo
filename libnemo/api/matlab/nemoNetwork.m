@@ -10,7 +10,6 @@
 %     nemoNetwork (constructor)
 %     addNeuron
 %     addSynapse
-%     addSynapses
 %     neuronCount
 %   
 classdef nemoNetwork < handle
@@ -95,32 +94,6 @@ classdef nemoNetwork < handle
                  );
         end
 
-        function addSynapses(obj, sources, targets, delays, weights, plastic)
-        % addSynapses - add multiple synapses to the network
-        %  
-        % Synopsis:
-        %   addSynapses(sources, targets, delays, weights, plastic)
-        %  
-        % Inputs:
-        %   sources - Source neuron indices
-        %   targets - Vector of target indices
-        %   delays  - Vector of delays (in milliseconds)
-        %   weights - Vector of weights
-        %   plastic - Vector of booleans specifying whether each neuron is
-        %             plastic
-        %    
-        % The input vectors should all have the same length 
-            nemo_mex(...
-                    uint32(4),...
-                    obj.id,...
-                    uint32(sources),...
-                    uint32(targets),...
-                    uint32(delays),...
-                    double(weights),...
-                    uint8(plastic)...
-            );
-        end
-
         function ncount = neuronCount(obj)
         % neuronCount - 
         %  
@@ -130,7 +103,7 @@ classdef nemoNetwork < handle
         % Outputs:
         %   ncount  - number of neurons in the network
         %     
-            ncount = nemo_mex(uint32(5), obj.id);
+            ncount = nemo_mex(uint32(4), obj.id);
         end
     end
 end

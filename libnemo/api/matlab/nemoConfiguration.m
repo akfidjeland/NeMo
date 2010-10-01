@@ -18,11 +18,11 @@ classdef nemoConfiguration < handle
     methods
 
         function obj = nemoConfiguration()
-        	obj.id = nemo_mex(uint32(6));
+        	obj.id = nemo_mex(uint32(5));
         end
 
         function delete(obj)
-            nemo_mex(uint32(7), obj.id);
+            nemo_mex(uint32(6), obj.id);
         end
 
         function setCpuBackend(obj, tcount)
@@ -38,7 +38,7 @@ classdef nemoConfiguration < handle
         % the number of threads to use. If the default thread count of -1 is
         % used, the backend will choose a sensible value based on the
         % available hardware concurrency. 
-            nemo_mex(uint32(8), obj.id, int32(tcount));
+            nemo_mex(uint32(7), obj.id, int32(tcount));
         end
 
         function setCudaBackend(obj, deviceNumber)
@@ -58,7 +58,7 @@ classdef nemoConfiguration < handle
         % internally by nemo (see cudaDeviceCount and cudaDeviceDescription).
         % This device numbering may differ from the one provided by the CUDA
         % driver directly, since nemo ignores any devices it cannot use. 
-            nemo_mex(uint32(9), obj.id, int32(deviceNumber));
+            nemo_mex(uint32(8), obj.id, int32(deviceNumber));
         end
 
         function setStdpFunction(obj, prefire, postfire, minWeight, maxWeight)
@@ -83,7 +83,7 @@ classdef nemoConfiguration < handle
         % The STDP function is specified by providing the values sampled at
         % integer cycles within the STDP window. 
             nemo_mex(...
-                    uint32(10),...
+                    uint32(9),...
                     obj.id,...
                     double(prefire),...
                     double(postfire),...
@@ -103,7 +103,7 @@ classdef nemoConfiguration < handle
         %             Textual description of the currently selected backend
         %    
         % The backend can be changed using setCudaBackend or setCpuBackend 
-            description = nemo_mex(uint32(11), obj.id);
+            description = nemo_mex(uint32(10), obj.id);
         end
     end
 end

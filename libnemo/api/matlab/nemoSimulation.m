@@ -33,11 +33,11 @@ classdef nemoSimulation < handle
         % Inputs:
         %	net - an existing, populated network (nemoNetwork)
         %	conf - simulation configuration (nemoConfiguration)
-        	obj.id = nemo_mex(uint32(12), uint32(net.id), uint32(conf.id));
+        	obj.id = nemo_mex(uint32(11), uint32(net.id), uint32(conf.id));
         end
 
         function delete(obj)
-            nemo_mex(uint32(13), obj.id);
+            nemo_mex(uint32(12), obj.id);
         end
         function fired = step(sim, fstim)
         % step - run simulation for a single cycle (1ms)
@@ -52,9 +52,9 @@ classdef nemoSimulation < handle
         % Output:
         %	fired - A list of the neurons which fired this cycle
             if nargin < 2
-                fired = nemo_mex(uint32(14), sim.id, uint32(zeros(1, 0)));
+                fired = nemo_mex(uint32(13), sim.id, uint32(zeros(1, 0)));
             else
-                fired = nemo_mex(uint32(14), sim.id, uint32(fstim));
+                fired = nemo_mex(uint32(13), sim.id, uint32(fstim));
             end
         end
 
@@ -68,7 +68,7 @@ classdef nemoSimulation < handle
         % Inputs:
         %   reward  - Multiplier for the accumulated weight change
         %     
-            nemo_mex(uint32(15), obj.id, double(reward));
+            nemo_mex(uint32(14), obj.id, double(reward));
         end
 
         function targets = getTargets(obj, synapses)
@@ -84,7 +84,7 @@ classdef nemoSimulation < handle
         % Outputs:
         %   targets - indices of target neurons
         %     
-            targets = nemo_mex(uint32(16), obj.id, uint64(synapses));
+            targets = nemo_mex(uint32(15), obj.id, uint64(synapses));
         end
 
         function delays = getDelays(obj, synapses)
@@ -100,7 +100,7 @@ classdef nemoSimulation < handle
         % Outputs:
         %   delays  - conductance delays of the specified synpases
         %     
-            delays = nemo_mex(uint32(17), obj.id, uint64(synapses));
+            delays = nemo_mex(uint32(16), obj.id, uint64(synapses));
         end
 
         function weights = getWeights(obj, synapses)
@@ -116,7 +116,7 @@ classdef nemoSimulation < handle
         % Outputs:
         %   weights - weights of the specified synapses
         %     
-            weights = nemo_mex(uint32(18), obj.id, uint64(synapses));
+            weights = nemo_mex(uint32(17), obj.id, uint64(synapses));
         end
 
         function plastic = getPlastic(obj, synapses)
@@ -132,7 +132,7 @@ classdef nemoSimulation < handle
         % Outputs:
         %   plastic - plasticity status of the specified synpases
         %     
-            plastic = nemo_mex(uint32(19), obj.id, uint64(synapses));
+            plastic = nemo_mex(uint32(18), obj.id, uint64(synapses));
         end
 
         function elapsed = elapsedWallclock(obj)
@@ -145,7 +145,7 @@ classdef nemoSimulation < handle
         %   elapsed - number of milliseconds of wall-clock time elapsed since
         %             first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(20), obj.id);
+            elapsed = nemo_mex(uint32(19), obj.id);
         end
 
         function elapsed = elapsedSimulation(obj)
@@ -158,7 +158,7 @@ classdef nemoSimulation < handle
         %   elapsed - number of milliseconds of simulation time elapsed since
         %             first simulation step (or last timer reset)
         %     
-            elapsed = nemo_mex(uint32(21), obj.id);
+            elapsed = nemo_mex(uint32(20), obj.id);
         end
 
         function resetTimer(obj)
@@ -167,7 +167,7 @@ classdef nemoSimulation < handle
         % Synopsis:
         %   resetTimer()
         %   
-            nemo_mex(uint32(22), obj.id);
+            nemo_mex(uint32(21), obj.id);
         end
     end
 end

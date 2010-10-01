@@ -374,29 +374,6 @@ deleteSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
-
-void
-addSynapses(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	checkInputCount(nrhs, 5);
-	nemo_network_t net = getNetwork(prhs, 1);
-	std::vector<unsigned> sources = vector<unsigned, uint32_t>(prhs[2]);
-	std::vector<unsigned> targets = vector<unsigned, uint32_t>(prhs[3]);
-	std::vector<unsigned> delays = vector<unsigned, uint32_t>(prhs[4]);
-	std::vector<float> weights = vector<float, double>(prhs[5]);
-	std::vector<unsigned char> plastic = vector<unsigned char, uint8_t>(prhs[6]);
-	nemo_status_t ret = nemo_add_synapses(net,
-			&sources[0],
-			&targets[0],
-			&delays[0],
-			&weights[0],
-			&plastic[0],
-			//! \todo check that all inputs are the same length
-			mxGetN(prhs[3]));
-	checkNemoStatus(ret);
-}
-
-
 /*
  * Thin wrappers for synapse query API, to simplify auto-generation of code. We
  * could add this to the C API. 
@@ -685,14 +662,13 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
-#define FN_COUNT 23
+#define FN_COUNT 22
 
 fn_ptr fn_arr[FN_COUNT] = {
 	newNetwork,
 	deleteNetwork,
 	addNeuron,
 	addSynapse,
-	addSynapses,
 	neuronCount,
 	newConfiguration,
 	deleteConfiguration,
