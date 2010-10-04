@@ -160,7 +160,7 @@ stimulus(unsigned ms, std::vector<unsigned>& fstim)
 
 
 void
-verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m)
+verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m, float reward)
 {
 	unsigned checked = 0; 
 
@@ -191,7 +191,7 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m)
 				dw_expected = dwPre(dt);
 			}
 
-			float expectedWeight = initWeight + epoch * dw_expected;
+			float expectedWeight = initWeight + epoch * reward * dw_expected;
 			float actualWeight = weights.at(s);
 
 			const float tolerance = 0.001f; // percent
@@ -206,7 +206,7 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m)
 
 
 void
-testStdp(backend_t backend, bool noiseConnections)
+testStdp(backend_t backend, bool noiseConnections, float reward)
 {
 	nemo::Network net;
 	unsigned m = construct(net, noiseConnections);
@@ -214,7 +214,7 @@ testStdp(backend_t backend, bool noiseConnections)
 
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
 
-	verifyWeightChange(0, sim.get(), m);
+	verifyWeightChange(0, sim.get(), m, reward);
 
 	for(unsigned epoch = 1; epoch <= nepochs; ++epoch) {
 		for(unsigned ms = 0; ms < 100; ++ms) {
@@ -225,8 +225,8 @@ testStdp(backend_t backend, bool noiseConnections)
 		 * been updated according to the STDP rule exactly
 		 * once. The magnitude of the weight change will vary
 		 * between synapses according to their delay */
-		sim->applyStdp(1.0);
-		verifyWeightChange(epoch, sim.get(), m);
+		sim->applyStdp(reward);
+		verifyWeightChange(epoch, sim.get(), m, reward);
 	}
 }
 

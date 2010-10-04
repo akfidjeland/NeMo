@@ -395,28 +395,42 @@ BOOST_AUTO_TEST_SUITE(get_synapses);
 BOOST_AUTO_TEST_SUITE_END();
 
 
-void testStdp(backend_t backend, bool noiseConnections);
+void testStdp(backend_t backend, bool noiseConnections, float reward);
 void testInvalidStdpUsage(backend_t);
 
 BOOST_AUTO_TEST_SUITE(stdp);
 
-	BOOST_AUTO_TEST_CASE(cuda) {
-		testStdp(NEMO_BACKEND_CUDA, false);
-		testStdp(NEMO_BACKEND_CUDA, true);
-	}
+	BOOST_AUTO_TEST_SUITE(cuda);
 
-	BOOST_AUTO_TEST_CASE(cpu) {
-		testStdp(NEMO_BACKEND_CPU, false);
-		testStdp(NEMO_BACKEND_CPU, true);
-	}
+		BOOST_AUTO_TEST_CASE(integral) {
+			testStdp(NEMO_BACKEND_CUDA, false, 1.0);
+			testStdp(NEMO_BACKEND_CUDA, true, 1.0);
+		}
 
-	BOOST_AUTO_TEST_SUITE(error);
+		BOOST_AUTO_TEST_CASE(fractional) {
+			testStdp(NEMO_BACKEND_CUDA, false, 0.8);
+			testStdp(NEMO_BACKEND_CUDA, true, 0.8);
+		}
 
-		BOOST_AUTO_TEST_CASE(cuda) {
+		BOOST_AUTO_TEST_CASE(error) {
 			testInvalidStdpUsage(NEMO_BACKEND_CUDA);
 		}
 
-		BOOST_AUTO_TEST_CASE(cpu) {
+	BOOST_AUTO_TEST_SUITE_END();
+
+	BOOST_AUTO_TEST_SUITE(cpu);
+
+		BOOST_AUTO_TEST_CASE(integral) {
+			testStdp(NEMO_BACKEND_CPU, false, 1.0);
+			testStdp(NEMO_BACKEND_CPU, true, 1.0);
+		}
+
+		BOOST_AUTO_TEST_CASE(fractional) {
+			testStdp(NEMO_BACKEND_CPU, false, 0.8);
+			testStdp(NEMO_BACKEND_CPU, true, 0.8);
+		}
+
+		BOOST_AUTO_TEST_CASE(error) {
 			testInvalidStdpUsage(NEMO_BACKEND_CPU);
 		}
 
