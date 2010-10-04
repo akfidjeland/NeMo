@@ -22,8 +22,8 @@
 #include <nemo/ConfigurationImpl.hpp>
 #include "nemo_mpi_common.hpp"
 #include <nemo/types.hpp>
-#include "mpi_types.hpp"
 
+#include "types.hpp"
 #include "log.hpp"
 
 

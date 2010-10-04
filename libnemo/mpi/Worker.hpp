@@ -19,7 +19,6 @@
 #include <nemo/config.h>
 #include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/network/Generator.hpp>
-#include "mpi_types.hpp"
 
 namespace nemo {
 

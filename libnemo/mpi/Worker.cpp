@@ -27,6 +27,7 @@
 #endif
 #include "SpikeQueue.hpp"
 #include "nemo_mpi_common.hpp"
+#include "types.hpp"
 #include "log.hpp"
 
 
