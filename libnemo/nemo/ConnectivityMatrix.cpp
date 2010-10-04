@@ -235,20 +235,25 @@ ConnectivityMatrix::applyStdp(float reward)
 		throw exception(NEMO_LOGIC_ERROR, "applyStdp called, but no STDP model specified");
 	}
 
+	fix_t fx_reward = fx_toFix(reward, m_fractionalBits);
+
 	for(std::map<nidx_t, Incoming>::iterator row = m_racc.begin(); row != m_racc.end(); ++row) {
 
 		Incoming& incoming = row->second;
 
 		for(Incoming::iterator s = incoming.begin(); s != incoming.end(); ++s) {
 
-			if(reward != 0.0) {
+
+			if(fx_reward != 0U) {
 				fix_t* w_old = weight(*s);
-				fix_t w_new = m_stdp->updatedWeight(*w_old, reward * s->w_diff);
+				fix_t w_new = m_stdp->updatedWeight(*w_old, fx_mul(fx_reward, s->w_diff, m_fractionalBits));
 
 				if(*w_old != w_new) {
 #ifdef DEBUG_TRACE
 					fprintf(stderr, "stdp (%u -> %u) %f %+f = %f\n",
-							s->source, row->first, *w_old, reward * s->w_diff, w_new);
+							s->source, row->first, fx_toFloat(*w_old, m_fractionalBits),
+							fx_toFloat(fx_mul(reward, s->w_diff, m_fractionalBits), m_fractionalBits),
+							fx_toFloat(w_new, m_fractionalBits));
 #endif
 					*w_old = w_new;
 				}
