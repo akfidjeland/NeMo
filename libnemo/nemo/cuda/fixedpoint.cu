@@ -92,8 +92,7 @@ fix_t
 fx_mul(fix_t a, fix_t b)
 {
 	ASSERT(sizeof(fix_t) == 4);
-	int64_t r = int64_t(a) * int64_t(b);
-	return fix_t(r >> c_fixedPointFractionalBits);
+	return fx_mul(a, b, c_fixedPointFractionalBits);
 }
 
 

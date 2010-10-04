@@ -25,4 +25,17 @@ NEMO_BASE_DLL_PUBLIC
 float
 fx_toFloat(fix_t v, unsigned fractionalBits);
 
+
+
+inline
+#ifdef __CUDACC__
+__host__ __device__
+#endif
+fix_t
+fx_mul(fix_t a, fix_t b, unsigned fractionalBits)
+{
+	int64_t r = int64_t(a) * int64_t(b);
+	return fix_t(r >> fractionalBits);
+}
+
 #endif
