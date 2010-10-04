@@ -112,9 +112,7 @@ class Worker
 		unsigned mgo_scount;
 		unsigned m_ncount;
 
-		typedef std::list<boost::mpi::request> ireq_list;
-
-		typedef std::vector<boost::mpi::request> req_vector;
+		typedef std::list<boost::mpi::request> req_list;
 		typedef std::map<rank_t, fbuf> fbuf_vector;
 
 		void runSimulation(const network::NetworkImpl& net,
@@ -122,12 +120,12 @@ class Worker
 				unsigned localCount);
 
 		void bufferScatterData(const fbuf& fired, fbuf_vector& obufs);
-		void initGlobalScatter(req_vector& oreqs, fbuf_vector& obufs);
-		void waitGlobalScatter(req_vector&);
+		void initGlobalScatter(req_list& oreqs, fbuf_vector& obufs);
+		void waitGlobalScatter(req_list&);
 
-		void initGlobalGather(ireq_list& ireqs, fbuf_vector& ibufs);
+		void initGlobalGather(req_list& ireqs, fbuf_vector& ibufs);
 
-		void waitGlobalGather(ireq_list& ireqs,
+		void waitGlobalGather(req_list& ireqs,
 				const fbuf_vector& ibufs,
 				const nemo::ConnectivityMatrix& l_fcm,
 				SpikeQueue& queue);

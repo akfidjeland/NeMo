@@ -273,7 +273,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 	/* Incoming peer requests */
 	//! \todo can just fill this in as we go
 	fbuf_vector ibufs;
-	ireq_list ireqs;
+	req_list ireqs;
 	for(std::set<rank_t>::const_iterator i = mg_sourceNodes.begin();
 			i != mg_sourceNodes.end(); ++i) {
 		ibufs[*i] = fbuf();
@@ -284,7 +284,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 	 * Allocated it with potentially unused entries so that insertion (which is
 	 * frequent) is faster */
 	fbuf_vector obufs;
-	req_vector oreqs(mg_targetNodes.size());
+	req_list oreqs;
 	for(std::set<rank_t>::const_iterator i = mg_targetNodes.begin();
 			i != mg_targetNodes.end(); ++i) {
 		obufs[*i] = fbuf();
@@ -368,7 +368,7 @@ Worker::reportCommunicationCounters() const
 #endif
 
 void
-Worker::initGlobalGather(ireq_list& ireqs, fbuf_vector& ibufs)
+Worker::initGlobalGather(req_list& ireqs, fbuf_vector& ibufs)
 {
 	assert(mg_sourceNodes.size() == ibufs.size());
 	unsigned sid = 0;
@@ -429,7 +429,7 @@ Worker::enqueAllIncoming(
  * firings to the queue */
 void
 Worker::waitGlobalGather(
-		ireq_list& ireqs,
+		req_list& ireqs,
 		const fbuf_vector& ibufs,
 		const nemo::ConnectivityMatrix& l_fcm,
 		SpikeQueue& queue)
@@ -440,7 +440,7 @@ Worker::waitGlobalGather(
 
 	unsigned nreqs = ireqs.size();
 	for(unsigned r=0; r < nreqs; ++r) {
-		std::pair<status, ireq_list::iterator> result = wait_any(ireqs.begin(), ireqs.end());
+		std::pair<status, req_list::iterator> result = wait_any(ireqs.begin(), ireqs.end());
 		ireqs.erase(result.second);
 	}
 #ifdef NEMO_MPI_COMMUNICATION_COUNTERS
@@ -504,25 +504,27 @@ Worker::bufferScatterData(const fbuf& fired, fbuf_vector& obufs)
 /* Initialise asynchronous send of firing to all neighbours.
  *
  * \param oreqs
- * 		Per-/target/ rank buffer of send requests
+ * 		List of requests which will be populated by this function. Any existing
+ * 		contents will be cleared.
  * \param obuf
  * 		Per-rank buffer of firing.
  */
 void
-Worker::initGlobalScatter(req_vector& oreqs, fbuf_vector& obufs)
+Worker::initGlobalScatter(req_list& oreqs, fbuf_vector& obufs)
 {
-	MPI_LOG("Worker %u sending firing to %lu peers\n", m_rank, oreqs.size());
+	MPI_LOG("Worker %u sending firing to %lu peers\n", m_rank, mg_targetNodes.size());
 
 #ifdef NEMO_MPI_COMMUNICATION_COUNTERS
-	m_packetsSent += oreqs.size();
+	m_packetsSent += mg_targetNodes.size();
 #endif
 
-	unsigned tid = 0;
+	oreqs.clear();
+
 	for(std::set<rank_t>::const_iterator target = mg_targetNodes.begin();
-			target != mg_targetNodes.end(); ++target, ++tid) {
+			target != mg_targetNodes.end(); ++target) {
 		rank_t targetRank = *target;
 		MPI_LOG("Worker %u sending %lu firings to %u\n", m_rank, obufs[targetRank].size(), targetRank);
-		oreqs.at(tid) = m_world.isend(targetRank, WORKER_STEP, obufs[targetRank]);
+		oreqs.push_back(m_world.isend(targetRank, WORKER_STEP, obufs[targetRank]));
 #ifdef NEMO_MPI_COMMUNICATION_COUNTERS
 		m_bytesSent += sizeof(unsigned) * obufs[targetRank].size();
 #endif
@@ -532,7 +534,7 @@ Worker::initGlobalScatter(req_vector& oreqs, fbuf_vector& obufs)
 
 
 void
-Worker::waitGlobalScatter(req_vector& oreqs)
+Worker::waitGlobalScatter(req_list& oreqs)
 {
 	boost::mpi::wait_all(oreqs.begin(), oreqs.end());
 }
