@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_DEVICE_IDX_HPP
-#define NEMO_CUDA_DEVICE_IDX_HPP
+#ifndef NEMO_CUDA_MAPPER_HPP
+#define NEMO_CUDA_MAPPER_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -11,6 +11,7 @@
  */
 
 #include <set>
+#include <nemo/Mapper.hpp>
 
 #include "types.h"
 
@@ -47,12 +48,44 @@ operator<(const DeviceIdx& lhs, const DeviceIdx& rhs)
 
 
 
-/*! Maps between device and global indices */
-class Mapper {
+/*! Maps between local and global indices.
+ *
+ * The local indices can be either 2D (partition/neuron) or 1D with
+ * straightforward mappings between them.
+ */
+class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 
 	public :
 
 		Mapper(const nemo::network::Generator& net, unsigned partitionSize);
+
+		/*! Convert from device index (2D) to local 1D index */
+		nidx_t localIdx(const DeviceIdx& d) const {
+			return d.partition * m_partitionSize + d.neuron;
+		}
+
+		/*! \copydoc nemo::Mapper::localIdx */
+		nidx_t localIdx(const nidx_t& global) const {
+			return localIdx(deviceIdx(global));
+		}
+
+		/*! \copydoc nemo::Mapper::globalIdx */
+		nidx_t globalIdx(const nidx_t& local) const {
+			return m_offset + local;
+		}
+
+		nidx_t globalIdx(const DeviceIdx& d) const {
+			return m_offset + localIdx(d);
+		}
+
+		nidx_t globalIdx(pidx_t p, nidx_t n) const {
+			return m_offset + p * m_partitionSize + n;
+		}
+
+		/*! \copydoc nemo::Mapper::addGlobal */
+		nidx_t addGlobal(const nidx_t& global) {
+			return localIdx(addIdx(global));
+		}
 
 		/* Add global neuron index to the set of 'valid' synapses and return
 		 * the correspondong device neuron index */
@@ -60,23 +93,30 @@ class Mapper {
 
 		DeviceIdx deviceIdx(nidx_t global) const;
 
-		nidx_t hostIdx(DeviceIdx d) const {
-			return m_offset + d.partition * m_partitionSize + d.neuron;
-		}
-
-		nidx_t hostIdx(pidx_t p, nidx_t n) const {
-			return m_offset + p * m_partitionSize + n;
-		}
-
 		unsigned partitionSize() const { return m_partitionSize; }
 
 		unsigned partitionCount() const { return m_partitionCount; }
 
-		unsigned minHostIdx() const { return m_offset; }
+		/*! \return minimum global indexed supported by this mapper */
+		unsigned minHandledGlobalIdx() const { return m_offset; }
 
-		unsigned maxHostIdx() const;
+		/*! \return maximum global indexed supported by this mapper */
+		unsigned maxHandledGlobalIdx() const;
 
-		bool valid(nidx_t global) const { return m_validGlobal.count(global) == 1; }
+		/*! \copydoc nemo::Mapper::validGlobal */
+		bool validGlobal(const nidx_t& global) const {
+			return m_validGlobal.count(global) == 1;
+		}
+
+		/*! \copydoc nemo::Mapper::validLocal */
+		bool validLocal(const nidx_t& local) const {
+			return validGlobal(globalIdx(local));
+		}
+
+		/*! \copydoc nemo::Mapper::neuronCount */
+		unsigned neuronCount() const {
+			return partitionCount() * partitionSize();
+		}
 
 	private :
 

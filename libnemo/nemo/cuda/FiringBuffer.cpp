@@ -83,7 +83,7 @@ FiringBuffer::populateSparse(const uint32_t* hostBuffer)
 			for(size_t nbit=0; nbit < 32; ++nbit) {
 				bool fired = (word & (1 << nbit)) != 0;
 				if(fired) {
-					m_outputBuffer.addFiredNeuron(m_mapper.hostIdx(partition, nword*32 + nbit));
+					m_outputBuffer.addFiredNeuron(m_mapper.globalIdx(partition, nword*32 + nbit));
 				}
 			}
 		}

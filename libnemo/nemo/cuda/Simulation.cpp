@@ -152,7 +152,7 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 	 * same time, rather than having to do this on a per-neuron basis. If the
 	 * current copying scheme turns out to be a bottleneck, modify this. */
 	//! \todo in public API get vector of neuron/current pairs instead.
-	nidx_t neuron = m_mapper.minHostIdx();
+	nidx_t neuron = m_mapper.minHandledGlobalIdx();
 	for(std::vector<fix_t>::const_iterator i = current.begin();
 			i != current.end(); ++i, ++neuron) {
 		DeviceIdx dev = m_mapper.deviceIdx(neuron);

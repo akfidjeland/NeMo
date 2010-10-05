@@ -33,8 +33,8 @@ ThalamicInput::ThalamicInput(
 	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true),
 	m_inUse(false)
 {
-	std::vector<nemo::RNG> rngs(mapper.maxHostIdx() - mapper.minHostIdx() + 1);
-	initialiseRng(mapper.minHostIdx(), mapper.maxHostIdx(), rngs);
+	std::vector<nemo::RNG> rngs(mapper.maxHandledGlobalIdx() - mapper.minHandledGlobalIdx() + 1);
+	initialiseRng(mapper.minHandledGlobalIdx(), mapper.maxHandledGlobalIdx(), rngs);
 
 	for(network::neuron_iterator i = net.neuron_begin(); i != net.neuron_end(); ++i) {
 		DeviceIdx didx = mapper.deviceIdx(i->first);
@@ -42,7 +42,7 @@ ThalamicInput::ThalamicInput(
 		m_inUse |= sigma != 0.0f;
 		m_sigma.setNeuron(didx.partition, didx.neuron, sigma);
 		for(unsigned plane = 0; plane < 4; ++plane) {
-			nidx_t localIdx = mapper.hostIdx(didx) - mapper.minHostIdx();
+			nidx_t localIdx = mapper.globalIdx(didx) - mapper.minHandledGlobalIdx();
 			m_rngState.setNeuron(didx.partition, didx.neuron, rngs[localIdx][plane], plane);
 		}
 	}

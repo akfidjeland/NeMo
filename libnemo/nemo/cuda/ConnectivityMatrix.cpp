@@ -170,7 +170,7 @@ ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapp
 
 		nidx_t source = ni->first;
 
-		if(!mapper.valid(source)) {
+		if(!mapper.validGlobal(source)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid synapse source neuron %u") % source));
 		}
@@ -183,7 +183,7 @@ ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapp
 
 		for(aux_row::const_iterator si = row.begin(); si != row.end(); ++si) {
 			nidx_t target = si->target();
-			if(!mapper.valid(target)) {
+			if(!mapper.validGlobal(target)) {
 				throw nemo::exception(NEMO_INVALID_INPUT,
 						str(format("Invalid synapse target neuron %u (source: %u)") % target % source));
 			}

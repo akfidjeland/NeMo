@@ -3,7 +3,7 @@
 
 namespace nemo {
 
-/* Class which performs mapping from one global index space (G) to a local
+/* Class which performs mapping from a global index space (G) to a local
  * index space (L).
  */
 
@@ -27,8 +27,6 @@ class Mapper
 
 		/*! \return number of valid neurons registered with the mapper */
 		virtual unsigned neuronCount() const = 0;
-
-		virtual L maxLocalIdx() const = 0;
 };
 
 }
