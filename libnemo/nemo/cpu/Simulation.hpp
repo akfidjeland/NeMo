@@ -72,6 +72,9 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::resetTimer */
 		void resetTimer();
 
+		/*! \copydoc nemo::SimulationBackend::mapper */
+		virtual Mapper& mapper() { return m_mapper; }
+
 	private:
 
 		Mapper m_mapper;

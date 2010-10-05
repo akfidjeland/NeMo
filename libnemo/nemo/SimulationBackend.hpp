@@ -15,6 +15,7 @@
 #include "Simulation.hpp"
 #include "internal_types.h"
 #include "FiringBuffer.hpp"
+#include "Mapper.hpp"
 
 namespace nemo {
 
@@ -75,6 +76,9 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		/*! \return tuple oldest buffered cycle's worth of firing data and the
 		 * associated cycle number. */
 		virtual FiredList readFiring() = 0;
+
+		/*! \return the mapper used internally by the simulation */
+		virtual Mapper<nidx_t, nidx_t>& mapper() = 0;
 
 	protected :
 

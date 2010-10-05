@@ -91,6 +91,9 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::resetTimer */
 		void resetTimer();
 
+		/*! \copydoc nemo::SimulationBackend::mapper */
+		virtual Mapper& mapper() { return m_mapper; }
+
 	private :
 
 		/* Use factory method for generating objects */
