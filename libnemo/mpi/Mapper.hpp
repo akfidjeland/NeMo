@@ -34,13 +34,10 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 
 		bool validLocal(const nidx_t& local) const;
 
-		unsigned neuronCount() const { return localCount(); }
+		/*! \return number of neurons handled locally */
+		unsigned neuronCount() const;
 
 		nidx_t maxLocalIdx() const;
-
-		//! \todo tidy by folding into neuronCount
-		/*! \return number of neurons handled locally */
-		unsigned localCount() const;
 
 	private:
 

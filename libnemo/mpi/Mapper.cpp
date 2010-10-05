@@ -61,7 +61,7 @@ Mapper::globalIdx(const nidx_t& local) const
 
 
 unsigned
-Mapper::localCount() const
+Mapper::neuronCount() const
 {
 	return m_nodeSize;
 }

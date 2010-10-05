@@ -118,7 +118,7 @@ Worker::Worker(
 	MPI_LOG("Worker %u: %u global synapses (int)\n", m_rank, mgi_scount);
 
 	//! \todo move all intialisation into ctor, and make run a separate function.
-	runSimulation(net, *conf.m_impl, mapper.localCount());
+	runSimulation(net, *conf.m_impl, mapper.neuronCount());
 }
 
 
@@ -305,7 +305,7 @@ Worker::runSimulation(const network::NetworkImpl& net,
 #endif
 
 	while(true) {
-#ifdef NEMO_MPI_DEBUG_TIMING
+#ifdef NEMO_MPI_DEBUG_TRACE
 		unsigned cycle = sim->elapsedSimulation();
 #endif
 
@@ -414,7 +414,9 @@ Worker::enqueAllIncoming(
 		SpikeQueue& queue)
 {
 	for(fbuf_vector::const_iterator i = ibufs.begin(); i != ibufs.end(); ++i) {
+#ifdef NEMO_MPI_DEBUG_TRACE
 		rank_t source = i->first;
+#endif
 		const fbuf& fired = i->second;
 		MPI_LOG("Worker %u receiving %lu firings from %u\n", m_rank, fired.size(), source);
 #ifdef NEMO_MPI_COMMUNICATION_COUNTERS
