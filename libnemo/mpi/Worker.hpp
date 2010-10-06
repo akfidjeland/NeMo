@@ -11,13 +11,13 @@
  */
 
 #include <vector>
+#include <deque>
 #include <set>
 
 #include <boost/mpi/communicator.hpp>
 #include <boost/mpi/environment.hpp>
 
 #include <nemo/config.h>
-#include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/network/Generator.hpp>
 
 namespace nemo {
@@ -28,6 +28,7 @@ namespace nemo {
 	//! \todo use consistent interface here
 	class ConfigurationImpl;
 	class Configuration;
+	class ConnectivityMatrix;
 
 	namespace mpi {
 
@@ -66,23 +67,27 @@ class Worker
 		 * cross node boundaries. Most of the associated synapse data is stored
 		 * at the node containing the target neuron. */
 
+		/* On the node with the source, we only need to store a mapping from
+		 * the neuron (in local indices) to the target nodes (rank id). */
+		std::map<nidx_t, std::set<rank_t> > m_fcmOut;
+
 		/* On the node with the target we store a connectivity matrix where the
 		 * source neurons are specified in global ids, while the targets are
 		 * stored in local ids (to simplify forwarding to the local simulation
-		 * object at run-time */
-
-		nemo::ConnectivityMatrix m_fcmIn;
-
-		/* On the node with the source, we only need to store a mapping from
-		 * the neuron (in local indices) to the target nodes (rank id). */
-
-		std::map<nidx_t, std::set<rank_t> > m_fcmOut;
+		 * object at run-time. See runSimulation for the construction of this
+		 * object. */
 
 		void loadNeurons(Mapper& mapper, network::NetworkImpl& net);
 		void addNeuron(const network::Generator::neuron&, Mapper& mapper, network::NetworkImpl& net);
 
-		void loadSynapses(Mapper& mapper, network::NetworkImpl& net);
-		void addSynapse(const Synapse& s, const Mapper& mapper, network::NetworkImpl& net);
+		void loadSynapses(Mapper&,
+				std::deque<Synapse>& globalSynapses,
+				network::NetworkImpl& net);
+
+		void addSynapse(const Synapse& s,
+				const Mapper& mapper,
+				std::deque<Synapse>& globalSynapses,
+				network::NetworkImpl& net);
 
 		boost::mpi::communicator m_world;
 
@@ -114,8 +119,11 @@ class Worker
 		typedef std::list<boost::mpi::request> req_list;
 		typedef std::map<rank_t, fbuf> fbuf_vector;
 
-		void runSimulation(const network::NetworkImpl& net,
+		void runSimulation(
+				const std::deque<Synapse>& globalSynapses,
+				const network::NetworkImpl& net,
 				const nemo::ConfigurationImpl& conf,
+				const mpi::Mapper& mapper,
 				unsigned localCount);
 
 		void bufferScatterData(const fbuf& fired, fbuf_vector& obufs);

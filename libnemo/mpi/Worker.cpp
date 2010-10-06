@@ -19,6 +19,7 @@
 
 #include <nemo/internals.hpp>
 #include <nemo/NetworkImpl.hpp>
+#include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/config.h>
 
 #include "Mapper.hpp"
@@ -88,7 +89,6 @@ Worker::Worker(
 		boost::mpi::communicator& world,
 		Configuration& conf,
 		Mapper& mapper) :
-	m_fcmIn(*conf.m_impl, mapper),
 	m_world(world),
 	m_rank(world.rank()),
 #ifdef NEMO_MPI_COMMUNICATION_COUNTERS
@@ -108,9 +108,10 @@ Worker::Worker(
 	network::NetworkImpl net;
 
 	loadNeurons(mapper, net);
-	loadSynapses(mapper, net);
 
-	m_fcmIn.finalize(mapper, false);
+	/* Global synapses */
+	std::deque<Synapse> globalSynapses;
+	loadSynapses(mapper, globalSynapses, net);
 
 	MPI_LOG("Worker %u: %u neurons\n", m_rank, m_ncount);
 	MPI_LOG("Worker %u: %u local synapses\n", m_rank, ml_scount);
@@ -118,7 +119,7 @@ Worker::Worker(
 	MPI_LOG("Worker %u: %u global synapses (int)\n", m_rank, mgi_scount);
 
 	//! \todo move all intialisation into ctor, and make run a separate function.
-	runSimulation(net, *conf.m_impl, mapper.neuronCount());
+	runSimulation(globalSynapses, net, *conf.m_impl, mapper, mapper.neuronCount());
 }
 
 
@@ -147,7 +148,10 @@ Worker::loadNeurons(Mapper& mapper, network::NetworkImpl& net)
 
 
 void
-Worker::loadSynapses(Mapper& mapper, network::NetworkImpl& net)
+Worker::loadSynapses(
+		Mapper& mapper,
+		std::deque<Synapse>& globalSynapses,
+		network::NetworkImpl& net)
 {
 	while(true) {
 		int tag;
@@ -156,7 +160,7 @@ Worker::loadSynapses(Mapper& mapper, network::NetworkImpl& net)
 			std::vector<Synapse> ss;
 			scatter(m_world, ss, MASTER);
 			for(std::vector<Synapse>::const_iterator s = ss.begin(); s != ss.end(); ++s) {
-				addSynapse(*s, mapper, net);
+				addSynapse(*s, mapper, globalSynapses, net);
 			}
 		} else if(tag == SYNAPSES_END) {
 			break;
@@ -186,7 +190,10 @@ Worker::addNeuron(const network::Generator::neuron& n,
 
 
 void
-Worker::addSynapse(const Synapse& s, const Mapper& mapper, network::NetworkImpl& net)
+Worker::addSynapse(const Synapse& s,
+		const Mapper& mapper,
+		std::deque<Synapse>& globalSynapses,
+		network::NetworkImpl& net)
 {
 	const int sourceRank = mapper.rankOf(s.source);
 	const int targetRank = mapper.rankOf(s.target());
@@ -205,12 +212,16 @@ Worker::addSynapse(const Synapse& s, const Mapper& mapper, network::NetworkImpl&
 		mg_targetNodes.insert(targetRank);
 		mgo_scount++;
 	} else if(targetRank == m_rank) {
+
 		/* Source neuron is found on some other node, but target neuron is
 		 * found here. Incoming spikes are handled by the worker, before being
 		 * handed over to the workers underlying simulation */
 		mgi_scount++;
 		mg_sourceNodes.insert(sourceRank);
-		m_fcmIn.addSynapse(s.source, mapper.localIdx(s.target()), s);
+
+		/* Just save the synapse for now. The relevant FCM object is
+		 * constructed later, once we know how the local mapping should be done */
+		globalSynapses.push_back(s);
 	}
 }
 
@@ -250,14 +261,25 @@ gather(const SpikeQueue& queue,
 
 
 void
-Worker::runSimulation(const network::NetworkImpl& net,
+Worker::runSimulation(
+		const std::deque<Synapse>& globalSynapses,
+		const network::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf,
+		const mpi::Mapper& mapper,
 		unsigned localCount)
 {
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
 
 	/* Local simulation data */
 	boost::scoped_ptr<nemo::SimulationBackend> sim(nemo::simulationBackend(net, conf));
+
+	//! \todo use local mapper here instead
+	nemo::ConnectivityMatrix g_fcmIn(conf, mapper);
+	for(std::deque<Synapse>::const_iterator s = globalSynapses.begin();
+			s != globalSynapses.end(); ++s) {
+		g_fcmIn.addSynapse(s->source, mapper.localIdx(s->target()), *s);
+	}
+	g_fcmIn.finalize(mapper, false);
 
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
 
@@ -317,11 +339,11 @@ Worker::runSimulation(const network::NetworkImpl& net,
 		STEP("init global gather", initGlobalGather(ireqs, ibufs));
 		//! \todo local gather
 		STEP("wait global scatter", waitGlobalScatter(oreqs));
-		STEP("wait global gather", waitGlobalGather(ireqs, ibufs, m_fcmIn, queue));
-		STEP("enqueue", enqueAllIncoming(ibufs, m_fcmIn, queue));
+		STEP("global gather", waitGlobalGather(ireqs, ibufs, g_fcmIn, queue));
+		STEP("enqueue", enqueAllIncoming(ibufs, g_fcmIn, queue));
 		//! \todo improve naming
 		//! \todo experiment with order of gather and mreq
-		STEP("gather", gather(queue, m_fcmIn, istim));
+		STEP("local gather", gather(queue, g_fcmIn, istim));
 		STEP("wait incoming master req", mreq.wait());
 		if(masterReq.terminate) {
 			break;
@@ -425,6 +447,7 @@ Worker::enqueAllIncoming(
 		enqueueIncoming(fired, l_fcm, queue);
 	}
 }
+
 
 
 
