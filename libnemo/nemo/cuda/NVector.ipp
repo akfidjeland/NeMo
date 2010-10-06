@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 
 #include "exception.hpp"
 #include "device_memory.hpp"
@@ -144,6 +144,16 @@ void
 NVector<T, M>::setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector)
 {
     m_hostData[offset(subvector, partitionIdx, neuronIdx)] = val;
+}
+
+
+
+template<typename T, int M>
+void
+NVector<T, M>::set(const std::vector<T>& vec)
+{
+	assert(vec.size() == M * size());
+	std::copy(vec.begin(), vec.end(), m_hostData.get());
 }
 
 

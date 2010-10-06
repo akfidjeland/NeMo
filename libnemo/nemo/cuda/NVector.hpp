@@ -12,6 +12,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
 #include <boost/shared_array.hpp>
 
 namespace nemo {
@@ -92,6 +93,9 @@ class NVector
 		/*! Set value (in host buffer) for a single neuron */
 		//! \todo change parameter order, with vector first
 		void setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector=0);
+
+		/* Replace host data */
+		void set(const std::vector<T>&);
 
 		T getNeuron(size_t partitionIdx, size_t neuronIdx, size_t subvector=0) const;
 

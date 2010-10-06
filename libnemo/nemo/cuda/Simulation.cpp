@@ -136,28 +136,39 @@ Simulation::clearFiringStimulus()
 
 
 void
+Simulation::setCurrentStimulus(const std::vector<float>& current)
+{
+	if(current.empty()) {
+		md_istim = NULL;
+		return;
+	}
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "setting current stimulus (floating point vector) not supported for CUDA backend");
+#if 0
+	m_currentStimulus.fill(0);
+	//! \todo handle this using pairs in the input instead. This approach is
+	//extremely brittle.
+	nidx_t neuron = m_mapper.minHandledGlobalIdx();
+	for(std::vector<float>::const_iterator i = current.begin();
+			i != current.end(); ++i, ++neuron) {
+		DeviceIdx dev = m_mapper.deviceIdx(neuron);
+		fix_t fx_current = fx_toFix(*i, m_fractionalBits);
+		m_currentStimulus.setNeuron(dev.partition, dev.neuron, fx_current);
+	}
+	m_currentStimulus.copyToDevice();
+	md_istim = m_currentStimulus.deviceData();
+#endif
+}
+
+
+
+void
 Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 {
 	if(current.empty()) {
 		md_istim = NULL;
 		return;
 	}
-
-	m_currentStimulus.fill(0);
-
-	/* The indices into 'current' are 0-based local indices. We need to
-	 * translate this into the appropriately mapped device indices. In
-	 * practice, the mapping currently is such that we should be able to copy
-	 * all the weights for a single partition (or even whole network) at the
-	 * same time, rather than having to do this on a per-neuron basis. If the
-	 * current copying scheme turns out to be a bottleneck, modify this. */
-	//! \todo in public API get vector of neuron/current pairs instead.
-	nidx_t neuron = m_mapper.minHandledGlobalIdx();
-	for(std::vector<fix_t>::const_iterator i = current.begin();
-			i != current.end(); ++i, ++neuron) {
-		DeviceIdx dev = m_mapper.deviceIdx(neuron);
-		m_currentStimulus.setNeuron(dev.partition, dev.neuron, *i);
-	}
+	m_currentStimulus.set(current);
 	m_currentStimulus.copyToDevice();
 	md_istim = m_currentStimulus.deviceData();
 }

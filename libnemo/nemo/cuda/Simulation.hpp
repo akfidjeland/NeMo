@@ -55,6 +55,9 @@ class Simulation : public nemo::SimulationBackend
 		void setFiringStimulus(const std::vector<unsigned>& nidx);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
+		void setCurrentStimulus(const std::vector<float>& current);
+
+		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
 		void setCurrentStimulus(const std::vector<fix_t>& current);
 
 		/*! \copydoc nemo::SimulationBackend::step */

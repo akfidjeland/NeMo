@@ -146,6 +146,18 @@ Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 
 
 void
+Simulation::setCurrentStimulus(const std::vector<float>& current)
+{
+	if(current.empty()) {
+		//! do we need to clear current?
+		return;
+	}
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "setting current stimulus vector not supported for CPU backend");
+}
+
+
+
+void
 Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 {
 	if(current.empty()) {

@@ -48,16 +48,30 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 * the device pointer is NULL.
 		 *
 		 * The behaviour is undefined if this function is called multiple times
-		 * between two calls to \a step */
-		void setCurrentStimulus(const std::vector<float>& current);
+		 * between two calls to \a step
+		 *
+		 * Furthermore this function should not be called in the same cycle as
+		 * the fixed-point function with the same name.
+		 */
+		virtual void setCurrentStimulus(const std::vector<float>& current) = 0;
+		//! \todo we should expose this using tuples. The C API can be adapted
+		//using a zipping iterator.
 
 		/*! Set per-neuron input current on the device and set the relevant
 		 * member variable containing the device pointer. If there is no input
 		 * the device pointer is NULL.
 		 *
-		 * This function should only be called once per cycle.
+		 * This function should only be called once per cycle and should not be
+		 * called in the same cycle as the floating-point function with the
+		 * same name.
 		 *
-		 * Pre: the input vector uses the same fixed-point format as the backend */
+		 * \param current
+		 * 		Input current vector using the same fixed-point format as the
+		 * 		backend. The current vector indices should have a one-to-one
+		 * 		mapping to the valid indices in the simulation. In other words,
+		 * 		the input current vector must have been constructed filled
+		 * 		taking into account the backend's own mapper.
+		 */
 		virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
 
 		/*! Perform a single simulation step, using any stimuli (firing
