@@ -107,7 +107,7 @@ Worker::Worker(
 	/* Temporary network, used to initialise backend */
 	network::NetworkImpl net;
 
-	loadNeurons(globalMapper, net);
+	loadNeurons(net);
 
 	/* Global synapses */
 	std::deque<Synapse> globalSynapses;
@@ -125,7 +125,7 @@ Worker::Worker(
 
 
 void
-Worker::loadNeurons(Mapper& mapper, network::NetworkImpl& net)
+Worker::loadNeurons(network::NetworkImpl& net)
 {
 	std::vector<network::Generator::neuron> neurons;
 	while(true) {
@@ -135,7 +135,8 @@ Worker::loadNeurons(Mapper& mapper, network::NetworkImpl& net)
 			scatter(m_world, neurons, MASTER);
 			for(std::vector<network::Generator::neuron>::const_iterator n = neurons.begin();
 					n != neurons.end(); ++n) {
-				addNeuron(*n, mapper, net);
+				net.addNeuron(n->first, n->second);
+				m_ncount++;
 			}
 		} else if(tag == NEURONS_END) {
 			break;
@@ -168,18 +169,6 @@ Worker::loadSynapses(
 			throw nemo::exception(NEMO_MPI_ERROR, "Unknown tag received during synapse scatter");
 		}
 	}
-}
-
-
-
-void
-Worker::addNeuron(const network::Generator::neuron& n,
-		Mapper& mapper,
-		network::NetworkImpl& net)
-{
-	net.addNeuron(n.first, n.second);
-	m_ncount++;
-	mapper.addGlobal(n.first);
 }
 
 
@@ -279,8 +268,6 @@ Worker::runSimulation(
 		g_fcmIn.addSynapse(s->source, localMapper.localIdx(s->target()), *s);
 	}
 	g_fcmIn.finalize(localMapper, false);
-
-	MPI_LOG("Worker %u starting simulation\n", m_rank);
 
 	std::vector<fix_t> istim(localCount, 0);         // input from global spikes
 	SpikeQueue queue(net.maxDelay());

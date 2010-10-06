@@ -77,8 +77,7 @@ class Worker
 		 * object at run-time. See runSimulation for the construction of this
 		 * object. */
 
-		void loadNeurons(Mapper& mapper, network::NetworkImpl& net);
-		void addNeuron(const network::Generator::neuron&, Mapper& mapper, network::NetworkImpl& net);
+		void loadNeurons(network::NetworkImpl& net);
 
 		void loadSynapses(const Mapper&,
 				std::deque<Synapse>& globalSynapses,
