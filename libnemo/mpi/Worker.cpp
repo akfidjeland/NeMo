@@ -88,7 +88,7 @@ runWorker(boost::mpi::environment& env,
 Worker::Worker(
 		boost::mpi::communicator& world,
 		Configuration& conf,
-		Mapper& mapper) :
+		Mapper& globalMapper) :
 	m_world(world),
 	m_rank(world.rank()),
 #ifdef NEMO_MPI_COMMUNICATION_COUNTERS
@@ -107,11 +107,11 @@ Worker::Worker(
 	/* Temporary network, used to initialise backend */
 	network::NetworkImpl net;
 
-	loadNeurons(mapper, net);
+	loadNeurons(globalMapper, net);
 
 	/* Global synapses */
 	std::deque<Synapse> globalSynapses;
-	loadSynapses(mapper, globalSynapses, net);
+	loadSynapses(globalMapper, globalSynapses, net);
 
 	MPI_LOG("Worker %u: %u neurons\n", m_rank, m_ncount);
 	MPI_LOG("Worker %u: %u local synapses\n", m_rank, ml_scount);
@@ -119,7 +119,7 @@ Worker::Worker(
 	MPI_LOG("Worker %u: %u global synapses (int)\n", m_rank, mgi_scount);
 
 	//! \todo move all intialisation into ctor, and make run a separate function.
-	runSimulation(globalSynapses, net, *conf.m_impl, mapper, mapper.neuronCount());
+	runSimulation(globalSynapses, net, *conf.m_impl, globalMapper.neuronCount());
 }
 
 
@@ -149,7 +149,7 @@ Worker::loadNeurons(Mapper& mapper, network::NetworkImpl& net)
 
 void
 Worker::loadSynapses(
-		Mapper& mapper,
+		const Mapper& mapper,
 		std::deque<Synapse>& globalSynapses,
 		network::NetworkImpl& net)
 {
@@ -265,7 +265,6 @@ Worker::runSimulation(
 		const std::deque<Synapse>& globalSynapses,
 		const network::NetworkImpl& net,
 		const nemo::ConfigurationImpl& conf,
-		const mpi::Mapper& mapper,
 		unsigned localCount)
 {
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
@@ -273,13 +272,13 @@ Worker::runSimulation(
 	/* Local simulation data */
 	boost::scoped_ptr<nemo::SimulationBackend> sim(nemo::simulationBackend(net, conf));
 
-	//! \todo use local mapper here instead
-	nemo::ConnectivityMatrix g_fcmIn(conf, mapper);
+	nemo::Mapper<nidx_t, nidx_t>& localMapper = sim->mapper();
+	nemo::ConnectivityMatrix g_fcmIn(conf, localMapper);
 	for(std::deque<Synapse>::const_iterator s = globalSynapses.begin();
 			s != globalSynapses.end(); ++s) {
-		g_fcmIn.addSynapse(s->source, mapper.localIdx(s->target()), *s);
+		g_fcmIn.addSynapse(s->source, localMapper.localIdx(s->target()), *s);
 	}
-	g_fcmIn.finalize(mapper, false);
+	g_fcmIn.finalize(localMapper, false);
 
 	MPI_LOG("Worker %u starting simulation\n", m_rank);
 

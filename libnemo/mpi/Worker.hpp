@@ -80,7 +80,7 @@ class Worker
 		void loadNeurons(Mapper& mapper, network::NetworkImpl& net);
 		void addNeuron(const network::Generator::neuron&, Mapper& mapper, network::NetworkImpl& net);
 
-		void loadSynapses(Mapper&,
+		void loadSynapses(const Mapper&,
 				std::deque<Synapse>& globalSynapses,
 				network::NetworkImpl& net);
 
@@ -123,7 +123,6 @@ class Worker
 				const std::deque<Synapse>& globalSynapses,
 				const network::NetworkImpl& net,
 				const nemo::ConfigurationImpl& conf,
-				const mpi::Mapper& mapper,
 				unsigned localCount);
 
 		void bufferScatterData(const fbuf& fired, fbuf_vector& obufs);
