@@ -42,29 +42,6 @@ addExcitatoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 }
 
 
-void
-addExcitatorySynapses(nemo::Network* net,
-		unsigned source,
-		unsigned ncount,
-		unsigned scount,
-		uirng_t& rtarget,
-		urng_t& rweight,
-		bool stdp)
-{
-	std::vector<unsigned> sources(scount, source);
-	std::vector<unsigned> targets(scount, 0U);
-	std::vector<unsigned> delays(scount, 1U);
-	std::vector<float> weights(scount, 0.0f);
-	std::vector<unsigned char> isPlastic(scount, (unsigned char) stdp);
-
-	for(unsigned s = 0; s < scount; ++s) {
-		targets.at(s) = rtarget();
-		weights.at(s) = 0.5f * float(rweight());
-	}
-
-	net->addSynapses(sources, targets, delays, weights, isPlastic);
-}
-
 
 void
 addInhibitoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
@@ -83,31 +60,6 @@ addInhibitoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 
 
 
-void
-addInhibitorySynapses(nemo::Network* net,
-		unsigned source,
-		unsigned ncount,
-		unsigned scount,
-		uirng_t& rtarget,
-		urng_t& rweight)
-{
-	std::vector<unsigned> sources(scount, source);
-	std::vector<unsigned> targets(scount, 0);
-	std::vector<unsigned> delays(scount, 1U);
-	std::vector<float> weights(scount, 0.0f);
-	std::vector<unsigned char> isPlastic(scount, 0);
-
-	for(unsigned s = 0; s < scount; ++s) {
-		targets.at(s) = rtarget();
-		weights.at(s) = float(-rweight());
-	}
-
-	net->addSynapses(sources, targets, delays, weights, isPlastic);
-}
-
-
-
-
 nemo::Network*
 construct(unsigned ncount, unsigned scount, bool stdp)
 {
@@ -121,10 +73,14 @@ construct(unsigned ncount, unsigned scount, bool stdp)
 	for(unsigned nidx=0; nidx < ncount; ++nidx) {
 		if(nidx < (ncount * 4) / 5) { // excitatory
 			addExcitatoryNeuron(net, nidx, randomParameter);
-			addExcitatorySynapses(net, nidx, ncount, scount, randomTarget, randomParameter, stdp);
+			for(unsigned s = 0; s < scount; ++s) {
+				net->addSynapse(nidx, randomTarget(), 1U, 0.5f * float(randomParameter()), stdp);
+			}
 		} else { // inhibitory
 			addInhibitoryNeuron(net, nidx, randomParameter);
-			addInhibitorySynapses(net, nidx, ncount, scount, randomTarget, randomParameter);
+			for(unsigned s = 0; s < scount; ++s) {
+				net->addSynapse(nidx, randomTarget(), 1U, float(-randomParameter()), 0);
+			}
 		}
 	}
 	return net;

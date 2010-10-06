@@ -42,19 +42,12 @@ addExcitatorySynapses(
 		uirng_t& rtarget,
 		urng_t& rweight)
 {
-	std::vector<unsigned> sources(scount, source);
-	std::vector<unsigned> targets(scount, 0U);
-	std::vector<unsigned> delays(scount, 1U);
-	std::vector<float> weights(scount, 0.0f);
-	std::vector<unsigned char> isPlastic(scount, 0);
-
 	for(unsigned s = 0; s < scount; ++s) {
-		targets.at(s) = rtarget();
-		weights.at(s) = 0.5f * float(rweight());
+		unsigned target = rtarget();
+		float weight = 0.5f * float(rweight());
+		net->addSynapse(source, target, 1U, weight, 0);
+		nemo_add_synapse(c_net, source, target, 1U, weight, 0, NULL);
 	}
-
-	net->addSynapses(sources, targets, delays, weights, isPlastic);
-	nemo_add_synapses(c_net, &sources[0], &targets[0], &delays[0], &weights[0], &isPlastic[0], targets.size());
 }
 
 
@@ -90,19 +83,12 @@ addInhibitorySynapses(
 		uirng_t& rtarget,
 		urng_t& rweight)
 {
-	std::vector<unsigned> sources(scount, source);
-	std::vector<unsigned> targets(scount, 0);
-	std::vector<unsigned> delays(scount, 1U);
-	std::vector<float> weights(scount, 0.0f);
-	std::vector<unsigned char> isPlastic(scount, 0);
-
 	for(unsigned s = 0; s < scount; ++s) {
-		targets.at(s) = rtarget();
-		weights.at(s) = float(-rweight());
+		unsigned target = rtarget();
+		float weight = float(-rweight());
+		net->addSynapse(source, target, 1U, weight, 0);
+		nemo_add_synapse(c_net, source, target, 1U, weight, 0, NULL);
 	}
-
-	net->addSynapses(sources, targets, delays, weights, isPlastic);
-	nemo_add_synapses(c_net, &sources[0], &targets[0], &delays[0], &weights[0], &isPlastic[0], targets.size());
 }
 
 

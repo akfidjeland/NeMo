@@ -54,25 +54,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 				float weight,
 				unsigned char plastic);
 
-		void addSynapses(
-				const std::vector<unsigned>& sources,
-				const std::vector<unsigned>& targets,
-				const std::vector<unsigned>& delays,
-				const std::vector<float>& weights,
-				const std::vector<unsigned char>& plastic);
-
-		/* lower-level interface using raw C arrays. This is mainly intended
-		 * for use in foreign language interfaces such as C and Mex, where
-		 * constructing std::vectors would be redundant. */
-		template<typename N, typename D, typename W, typename B>
-		void addSynapses(
-				const N source[],
-				const N targets[],
-				const D delays[],
-				const W weights[],
-				const B plastic[],
-				size_t len);
-
 		void getSynapses(
 				unsigned source,
 				std::vector<unsigned>& targets,

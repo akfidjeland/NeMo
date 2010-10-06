@@ -181,35 +181,6 @@ nemo_add_synapse(nemo_network_t,
 		synapse_id* id);
 
 
-/*! Add to the network a group of synapses
- *
- * \param sources
- * 		Indices of source neurons
- * \param targets
- * 		Indices of target neurons
- * \param delays
- * 		Synapse conductance delays in milliseconds
- * \param weights
- * 		Synapse weights
- * \param is_plastic
- * 		Specifies for each synapse whether or not it is plastic. See section on STDP.
- * \param length
- * 		Number of synapses.
- *
- * \pre
- * 		Each of \a sources, \a targets, \a delays, \a weights, and \a is_plastic contains
- * 		\a length elements.
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_add_synapses(nemo_network_t,
-		unsigned sources[],
-		unsigned targets[],
-		unsigned delays[],
-		float weights[],
-		unsigned char is_plastic[],
-		size_t length);
-
 
 NEMO_DLL_PUBLIC
 nemo_status_t

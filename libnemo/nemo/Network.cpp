@@ -38,33 +38,6 @@ Network::addSynapse(
 }
 
 
-void
-Network::addSynapses(
-		const std::vector<unsigned>& sources,
-		const std::vector<unsigned>& targets,
-		const std::vector<unsigned>& delays,
-		const std::vector<float>& weights,
-		const std::vector<unsigned char>& plastic)
-{
-	m_impl->addSynapses(sources, targets, delays, weights, plastic);
-}
-
-
-
-void
-Network::addSynapses(
-		const unsigned sources[],
-		const unsigned targets[],
-		const unsigned delays[],
-		const float weights[],
-		const unsigned char plastic[],
-		size_t length)
-{
-	m_impl->addSynapses<unsigned, unsigned, float, unsigned char>(sources,
-			targets, delays, weights, plastic, length);
-}
-
-
 
 void
 Network::getSynapses(

@@ -192,20 +192,6 @@ nemo_add_synapse(nemo_network_t net,
 
 
 nemo_status_t
-nemo_add_synapses(nemo_network_t net,
-		unsigned sources[],
-		unsigned targets[],
-		unsigned delays[],
-		float weights[],
-		unsigned char is_plastic[],
-		size_t length)
-{
-	CATCH_(Network, net, addSynapses(sources, targets, delays, weights, is_plastic, length));
-}
-
-
-
-nemo_status_t
 nemo_neuron_count(nemo_network_t net, unsigned* ncount)
 {
 	CATCH(Network, net, neuronCount(), *ncount);
