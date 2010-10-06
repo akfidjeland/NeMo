@@ -226,3 +226,37 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 	nemo_delete_configuration(c_conf);
 	nemo_delete_network(c_net);
 }
+
+
+
+/* Test that
+ *
+ * 1. we get back synapse id
+ * 2. the synapse ids are correct (based on our knowledge of the internals
+ */
+void
+testSynapseId()
+{
+	nemo_network_t net = nemo_new_network();
+
+	synapse_id id00, id01, id10;
+
+	nemo_add_synapse(net, 0, 1, 1, 0.0f, 0, &id00);
+	nemo_add_synapse(net, 0, 1, 1, 0.0f, 0, &id01);
+	nemo_add_synapse(net, 1, 0, 1, 0.0f, 0, &id10);
+
+	BOOST_REQUIRE_EQUAL(id01 - id00, 1U);
+	BOOST_REQUIRE_EQUAL(id10 & 0xffffffff, 0U);
+	BOOST_REQUIRE_EQUAL(id00 & 0xffffffff, 0U);
+	BOOST_REQUIRE_EQUAL(id01 & 0xffffffff, 1U);
+	BOOST_REQUIRE_EQUAL(id00 >> 32, 0U);
+	BOOST_REQUIRE_EQUAL(id01 >> 32, 0U);
+	BOOST_REQUIRE_EQUAL(id10 >> 32, 1U);
+
+	nemo_delete_network(net);
+}
+
+BOOST_AUTO_TEST_CASE(synapse_ids)
+{
+	testSynapseId();
+}
