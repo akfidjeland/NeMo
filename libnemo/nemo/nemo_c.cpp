@@ -180,11 +180,13 @@ nemo_add_synapse(nemo_network_t net,
 		unsigned char is_plastic,
 		synapse_id* id)
 {
-	synapse_id sid;
-	CATCH(Network, net, addSynapse(source, target, delay, weight, is_plastic), sid);
+	synapse_id sid = 0;
+	nemo::Network* obj = static_cast<nemo::Network*>(net);
+	CALL(sid = obj->addSynapse(source, target, delay, weight, is_plastic));
 	if(id != NULL) {
 		*id = sid;
 	}
+	return g_lastCallStatus;
 }
 
 
