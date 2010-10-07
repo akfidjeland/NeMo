@@ -104,6 +104,10 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/* last 64 cycles worth of firing, one entry per neuron */
 		std::vector<uint64_t> m_recentFiring;
 
+		/* bit-mask containing delays at which neuron has *any* outoing
+		 * synapses */
+		std::vector<uint64_t> m_delays;
+
 		/* Set all neuron parameters from input network in
 		 * local data structures. Also add valid neuron
 		 * indices to the mapper as a side effect.  */

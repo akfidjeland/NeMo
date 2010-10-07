@@ -51,6 +51,7 @@ Simulation::Simulation(
 	m_valid(m_neuronCount, false),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
+	m_delays(m_neuronCount, 0),
 	//! \todo Determine fixedpoint format based on input network
 	m_cm(net, conf, m_mapper),
 	m_current(m_neuronCount, 0),
@@ -60,6 +61,9 @@ Simulation::Simulation(
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 	setNeuronParameters(net, m_mapper);
 	m_cm.finalize(m_mapper); // all valid neuron indices are known. See CM ctor.
+	for(size_t source=0; source < m_neuronCount; ++source) {
+		m_delays[source] = m_cm.delayBits(source);
+	}
 #ifdef NEMO_CPU_MULTITHREADED
 	initWorkers(m_neuronCount, conf.cpuThreadCount());
 #endif
@@ -274,8 +278,7 @@ Simulation::deliverSpikes()
 
 	for(size_t source=0; source < m_neuronCount; ++source) {
 
-		//! \todo make use of delay bits here to avoid looping
-		uint64_t f = m_recentFiring[source] & validSpikes;
+		uint64_t f = m_recentFiring[source] & validSpikes & m_delays[source];
 
 		int delay = 0;
 		while(f) {

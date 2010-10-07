@@ -377,4 +377,20 @@ ConnectivityMatrix::delay_end(nidx_t source) const
 }
 
 
+
+uint64_t
+ConnectivityMatrix::delayBits(nidx_t l_source) const
+{
+	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_delays.find(l_source);
+	uint64_t bits = 0;
+	if(found != m_delays.end()) {
+		for(delay_iterator d = found->second.begin(), d_end = found->second.end();
+				d != d_end; ++d) {
+			bits = bits | (0x1 << (*d - 1));
+		}
+	}
+	return bits;
+}
+
+
 } // namespace nemo

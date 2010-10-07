@@ -125,6 +125,11 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		void applyStdp(float reward);
 
+		/*! \return bit-mask indicating the delays at which the given neuron
+		 * has *any* outgoing synapses. If the source neuron is invalid 0 is
+		 * returned. */
+		uint64_t delayBits(nidx_t l_source) const;
+
 	private:
 
 		const mapper_t& m_mapper;
