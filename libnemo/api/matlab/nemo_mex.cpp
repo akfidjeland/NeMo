@@ -150,11 +150,24 @@ checkOutputCount(int actualArgs, int expectedArgs)
 
 
 
+/* Print out all dimensions and lengths of all arguments (either input or output) */
+size_t
+reportVectorDimensions(int argc, const mxArray* argv[])
+{
+	for(int i=0; i < argc; ++i) {
+		size_t n = mxGetN(argv[i]);
+		size_t m = mxGetM(argv[i]);
+		mexPrintf("argument %u: size=(%u,%u) length=%u\n", i, m, n, m*n);
+	}
+}
+
+
+
 /* For the vector form of functions which are scalar in the C++ API (i.e. all
  * inputs and outputs are scalars) we allow using a vector form in Matlab, but
  * require that all vectors have the same dimensions. Return this and report
  * error if sizes are not the same. The precise shape of the matrices do not
- matter. */ 
+ * matter. */
 size_t
 vectorDimension(int nrhs, const mxArray* prhs[])
 {
@@ -165,7 +178,8 @@ vectorDimension(int nrhs, const mxArray* prhs[])
 	for(int i=1; i < nrhs; ++i) {
 		size_t found = mxGetN(prhs[i]) * mxGetM(prhs[i]);
 		if(found != dim) {
-			mexErrMsgIdAndTxt("nemo:api", "vector arguments do not have the same dimensions");
+			reportVectorDimensions(nrhs, prhs);
+			mexErrMsgIdAndTxt("nemo:api", "vector arguments do not have the same size");
 		}
 	}
 	return dim;
