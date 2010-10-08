@@ -538,7 +538,6 @@ Since Matlab lacks namespaces, or indeed any module system,
 	the class names are prefixed with `\code{nemo}':
 	\code{nemoNetwork}, \code{nemoConfiguration}, and \code{nemoSimulation}.
 
-
 Help is available for each class and for each function using Matlab's regular help system,
 	i.e. via calls such as
 		\code{help nemoNetwork} 
@@ -546,6 +545,10 @@ Help is available for each class and for each function using Matlab's regular he
 
 Internal \nemo\ errors result in regular Matlab errors,
 	(i.e. as when \code{error} is called in a script).
+These errors use identifier
+	\code{nemo:api} for basic usage errors for input and output arguments,
+	\code{nemo:backend} for errors within the \nemo\ library itself, and
+	\code{nemo:mex} for internal errors in the MEX layer.
 
 The Matlab path must contain the directory with the m-files
 	defining the three classes and the MEX library that interfaces with libnemo.
@@ -553,10 +556,22 @@ On Windows this directory defaults to \file{C:\textbackslash Program Files\textb
 and on Linux to \file{/usr/share/nemo/matlab}.
 Use \code{addpath} from within Matlab to set the path.
 
-Additionally, the nemo libraries (plus any dependencies such as possibly the CUDA runtime library)
+Additionally, the \nemo\ libraries (plus any dependencies such as possibly the CUDA runtime library)
 	needs to be on the system path.
 Note that this is different from the Matlab path.
 If the system path is not set correctly Matlab will issue a rather unhelpful message about the MEX-file being invalid.
+
+Note that on linux Matlab does its own loading of \cpp\ standard libraries
+	(to use the version used when Matlab was built).
+Unless the stars are aligned just so this standard library version will be
+different from the default \cpp\ standard libraries on the system (which \nemo\ should have been built against), resulting in an error when loading the MEX file.
+This can be fixed by setting \code{LD\_PRELOAD} by doing something like this
+
+\begin{shell}
+export LD_PRELOAD='/lib/libgcc_s.so.1:/usr/lib/libstdc++.so.6.0.13
+\end{shell}
+
+before starting Matlab.
 
 The following shows a simple Matlab session using \nemo\ to set up a minimal
 network and run it for 1000ms printing pairs of time and fired neuron number:
