@@ -5,42 +5,7 @@ IF(WIN32)
 ELSE(WIN32)
 	FIND_PROGRAM(MEX NAMES matlab-mex mex)
 ENDIF(WIN32)
-
-# Set the file extension used for generated MEX libraries. MEX help reports the
-# following extensions:
-#
-#	solaris         - .mexsol
-#	hpux            - .mexhpux
-#	glnx86          - .mexglx
-#	glnxi64         - .mexi64
-#	Mac OS X        - .mexmac
-#	Windows         - .mexw32. Older version use .dll
-# 
-# It looks like Cmake does not distinguish between unices, so we assume Linux. 
-MACRO(MEX_LIB_SUFFIX VAR)
-
-	SET(${VAR} "unknown")
-
-	IF(WIN32)
-		# TODO: not sure how/if this works with 64-bit OS
-		SET(${VAR} "mexw32")
-	ENDIF(WIN32)
-
-	IF(UNIX)
-		IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-			# Note: this will fail on itanium
-			SET(${VAR} "mexa64")
-		ELSE()
-			SET(${VAR} "mexglx")
-		ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	ENDIF(UNIX)
-
-	IF(APPLE) # overrides UNIX
-		SET(${VAR} "mexmac")
-	ENDIF(APPLE)
-
-ENDMACRO(MEX_LIB_SUFFIX)
-
+FIND_PROGRAM(MEXEXT NAMES mexext)
 
 
 IF(NOT MEX STREQUAL MEX-NOTFOUND)
@@ -48,7 +13,16 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 	# The input sources to MEX is mostly auto-generated. This is not part of
 	# the main build process since user builds should not need to do this.
 
-	MEX_LIB_SUFFIX(SUFFIX)
+	IF(MEXEXT STREQUAL MEXEXT-NOTFOUND)
+		MESSAGE(ERROR "Could not find mexext, so cannot determine correct MEX extension")
+	ENDIF(MEXEXT STREQUAL MEXEXT-NOTFOUND)
+
+	EXECUTE_PROCESS(
+		COMMAND ${MEXEXT}
+		OUTPUT_VARIABLE SUFFIX
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+
 	SET(MEX_INCLUDES
 		-I${CMAKE_SOURCE_DIR}
 		-I${CMAKE_BINARY_DIR} # for configured file
