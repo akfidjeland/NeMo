@@ -31,7 +31,7 @@ static std::vector<nemo_simulation_t> g_sims;
  * Matlab classes. The full list of supported classes can be found in 
  * /path-to-matlab/extern/include/matrix.h */
 template<typename M> mxClassID classId() { 
-	mexErrMsgIdAndTxt("nemo:api", "programming error: class id requested for unknown class");
+	mexErrMsgIdAndTxt("nemo:mex", "programming error: class id requested for unknown class");
 	return mxUNKNOWN_CLASS;
 }
 template<> mxClassID classId<char*>() { return mxCHAR_CLASS; }
@@ -133,7 +133,7 @@ checkInputCount(int actualArgs, int expectedArgs)
 {
 	// The function id and handle are always an extra parameter
 	if(actualArgs - 2 != expectedArgs) {
-		mexErrMsgIdAndTxt("nemo:mex", "found %u input arguments, but expected %u",
+		mexErrMsgIdAndTxt("nemo:api", "found %u input arguments, but expected %u",
 			actualArgs - 2, expectedArgs);
 	}
 }
@@ -143,7 +143,7 @@ void
 checkOutputCount(int actualArgs, int expectedArgs)
 {
 	if(actualArgs != expectedArgs) {
-		mexErrMsgIdAndTxt("nemo:mex", "found %u output arguments, but expected %u",
+		mexErrMsgIdAndTxt("nemo:api", "found %u output arguments, but expected %u",
 			actualArgs, expectedArgs);
 	}
 }
@@ -159,13 +159,13 @@ size_t
 vectorDimension(int nrhs, const mxArray* prhs[])
 {
 	if(nrhs < 1) {
-		mexErrMsgIdAndTxt("nemo:mex", "function should have at least on input argument"); 
+		mexErrMsgIdAndTxt("nemo:api", "function should have at least one input argument");
 	}
 	size_t dim = mxGetN(prhs[0]) * mxGetM(prhs[0]);
 	for(int i=1; i < nrhs; ++i) {
 		size_t found = mxGetN(prhs[i]) * mxGetM(prhs[i]);
 		if(found != dim) {
-			mexErrMsgIdAndTxt("nemo:mex", "vector arguments do not have the same dimensions"); 
+			mexErrMsgIdAndTxt("nemo:api", "vector arguments do not have the same dimensions");
 		}
 	}
 	return dim;
