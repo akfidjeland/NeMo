@@ -92,7 +92,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 
 	private :
 
-		friend NEMO_DLL_PUBLIC Simulation* simulation(const Network& net, const Configuration& conf);
+		friend NEMO_DLL_PUBLIC SimulationBackend* simulationBackend(const Network&, const Configuration&);
 		friend class nemo::mpi::Master;
 
 		class network::NetworkImpl* m_impl;

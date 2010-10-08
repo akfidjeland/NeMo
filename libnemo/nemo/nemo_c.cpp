@@ -11,13 +11,11 @@
 
 /*! C API for libnemo
  *
- * This simply wrapes the API exposed in nemo::Simulation
+ * This simply wraps the C++ API
  */
 
-#include <cassert>
-
 #include <nemo.h>
-#include <nemo.hpp>
+#include "internals.hpp"
 #include "exception.hpp"
 
 /* We cannot propagate exceptions via the C API, so we catch all and convert to
@@ -136,7 +134,7 @@ nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 	try {
 		nemo::Network* net = static_cast<nemo::Network*>(net_ptr);
 		nemo::Configuration* conf = static_cast<nemo::Configuration*>(conf_ptr);
-		return static_cast<nemo_simulation_t>(nemo::simulation(*net, *conf));
+		return static_cast<nemo_simulation_t>(nemo::simulationBackend(*net, *conf));
 	} catch(nemo::exception& e) {
 		setResult(e.what(), e.errorNumber());
 		return NULL;
@@ -155,7 +153,7 @@ nemo_new_simulation(nemo_network_t net_ptr, nemo_configuration_t conf_ptr)
 void
 nemo_delete_simulation(nemo_simulation_t sim)
 {
-	delete static_cast<nemo::Simulation*>(sim);
+	delete static_cast<nemo::SimulationBackend*>(sim);
 }
 
 
@@ -199,15 +197,16 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount)
 
 
 
-#define GET_SYNAPSE_STATE(T, ptr, call, synapses, len, ret)                      \
-	if(len > 0) {                                                             \
-        nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);           \
-        CALL(*ret = &const_cast<T&>(sim->call(std::vector<synapse_id>(synapses, synapses+len))[0]));                                                \
+#define GET_SYNAPSE_STATE(T, ptr, call, synapses, len, ret)                   \
+    if(len > 0) {                                                             \
+        nemo::SimulationBackend* sim =                                        \
+            static_cast<nemo::SimulationBackend*>(ptr);                       \
+        CALL(*ret = &const_cast<T&>(sim->call(std::vector<synapse_id>(synapses, synapses+len))[0])); \
         return g_lastCallStatus;                                              \
-	} else {                                                                  \
-		*ret = NULL;                                                      \
-		return NEMO_OK;                                                       \
-	}
+    } else {                                                                  \
+        *ret = NULL;                                                          \
+        return NEMO_OK;                                                       \
+    }
 
 
 nemo_status_t
@@ -239,9 +238,12 @@ nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsig
 
 
 void
-step(nemo::Simulation* sim, const std::vector<unsigned>& fstim, unsigned *fired[], size_t* fired_len)
+step(nemo::SimulationBackend* sim, const std::vector<unsigned>& fstim, unsigned *fired[], size_t* fired_len)
 {
-	const std::vector<unsigned>& fired_ = sim->step(fstim);
+	sim->setFiringStimulus(fstim);
+	//! \todo add current stimulus here
+	sim->step();
+	const std::vector<unsigned>& fired_ = sim->readFiring().neurons;
 	if(fired != NULL) {
 		*fired = fired_.empty() ? NULL : const_cast<unsigned*>(&fired_[0]);
 	}
@@ -257,7 +259,7 @@ nemo_step(nemo_simulation_t sim_ptr,
 		unsigned fstim[], size_t fstim_count,
 		unsigned* fired[], size_t* fired_count)
 {
-	nemo::Simulation* sim = static_cast<nemo::Simulation*>(sim_ptr);
+	nemo::SimulationBackend* sim = static_cast<nemo::SimulationBackend*>(sim_ptr);
 	CALL(step(sim, std::vector<unsigned>(fstim, fstim + fstim_count), fired, fired_count));
 	return g_lastCallStatus;
 }
@@ -267,7 +269,7 @@ nemo_step(nemo_simulation_t sim_ptr,
 nemo_status_t
 nemo_apply_stdp(nemo_simulation_t sim, float reward)
 {
-	CATCH_(Simulation, sim, applyStdp(reward));
+	CATCH_(SimulationBackend, sim, applyStdp(reward));
 }
 
 
@@ -288,7 +290,7 @@ nemo_log_stdout(nemo_configuration_t conf)
 nemo_status_t
 nemo_elapsed_wallclock(nemo_simulation_t sim, unsigned long* elapsed)
 {
-	CATCH(Simulation, sim, elapsedWallclock(), *elapsed);
+	CATCH(SimulationBackend, sim, elapsedWallclock(), *elapsed);
 }
 
 
@@ -296,7 +298,7 @@ nemo_elapsed_wallclock(nemo_simulation_t sim, unsigned long* elapsed)
 nemo_status_t
 nemo_elapsed_simulation(nemo_simulation_t sim, unsigned long* elapsed)
 {
-	CATCH(Simulation, sim, elapsedSimulation(), *elapsed);
+	CATCH(SimulationBackend, sim, elapsedSimulation(), *elapsed);
 }
 
 
@@ -304,7 +306,7 @@ nemo_elapsed_simulation(nemo_simulation_t sim, unsigned long* elapsed)
 nemo_status_t
 nemo_reset_timer(nemo_simulation_t sim)
 {
-	CATCH_(Simulation, sim, resetTimer());
+	CATCH_(SimulationBackend, sim, resetTimer());
 }
 
 
