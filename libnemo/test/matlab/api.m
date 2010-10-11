@@ -28,7 +28,7 @@ try
     net.addNeuron(2*n+1:2*n+n, a(1:10), b, c, d, u, v, s);
     error('nemo:test', 'Invalid use of addNeuron not detected correctly');
 catch e
-    if ~strcmp(e.identifier, 'nemo:mex')
+    if ~strcmp(e.identifier, 'nemo:api')
         rethrow(e);
     end   
 end
@@ -60,4 +60,24 @@ sim = nemoSimulation(net, conf);
 
 for ms = 1:100
     sim.step;
+end
+
+% Simulation with firing stimulus
+for ms = 1:100
+    sim.step([]);
+end
+
+% Simulation with firing stimulus
+for ms = 1:100
+    sim.step([1, 2]);
+end
+
+% Simulation with current stimulus
+for ms = 1:100
+    sim.step([], [1], [1.0]);
+end
+
+% Simulation with both firing and current stimulus
+for ms = 1:100
+    sim.step([1], [1], [1.0]);
 end
