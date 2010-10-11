@@ -94,12 +94,7 @@ template<typename N, typename M>
 N
 scalarAt(const mxArray* arr, size_t offset)
 {
-	/* Skip bounds checking here since we have already verified the bonds for all input vectors */
-	//! \todo remove bounds checking here
-	//if(offset >= mxGetN(arr) * mxGetM(arr)) {
-	//	mexErrMsgIdAndTxt("nemo:api", "ouf-of-bounds array access");
-	//}
-	// target, source
+	/* No bounds checking here since we have already verified the bonds for all input vectors */
 	return boost::numeric_cast<N, M>(*(static_cast<M*>(mxGetData(numeric<M>(arr)))+offset));
 }
 
@@ -111,6 +106,11 @@ template<typename N, typename M>
 std::vector<N> // let's hope the compiler can optimise the return...
 vector(const mxArray* arr)
 {
+	std::vector<N> ret;
+	if(mxGetM(arr) == 0 && mxGetN(arr) == 0) {
+		return ret;
+	}
+
 	if(mxGetM(arr) != 1) {
 		mexErrMsgIdAndTxt("nemo:api", 
 				"argument should be 1 x m vector. Size is %u x %u",
@@ -118,7 +118,6 @@ vector(const mxArray* arr)
 	}
 
 	size_t length = mxGetN(arr);
-	std::vector<N> ret;
 	M* begin = static_cast<M*>(mxGetData(numeric<M>(arr)));
 	std::transform(begin, begin + length,
 			std::back_inserter(ret),
