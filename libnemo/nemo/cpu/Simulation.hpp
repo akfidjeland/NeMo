@@ -40,10 +40,16 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		void setFiringStimulus(const std::vector<unsigned>& fstim);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
-		void setCurrentStimulus(const std::vector<float>& current);
+		void setCurrentStimulus(const std::vector<fix_t>& current);
+
+		/*! \copydoc nemo::SimulationBackend::initCurrentStimulus */
+		void initCurrentStimulus(size_t count);
+
+		/*! \copydoc nemo::SimulationBackend::addCurrentStimulus */
+		void addCurrentStimulus(nidx_t neuron, float current);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
-		void setCurrentStimulus(const std::vector<fix_t>& current);
+		void finalizeCurrentStimulus(size_t count);
 
 		/*! \copydoc nemo::SimulationBackend::step */
 		void step();

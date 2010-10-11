@@ -136,27 +136,34 @@ Simulation::clearFiringStimulus()
 
 
 void
-Simulation::setCurrentStimulus(const std::vector<float>& current)
+Simulation::initCurrentStimulus(size_t count)
 {
-	if(current.empty()) {
+	if(count > 0) {
+		m_currentStimulus.fill(0);
+	}
+}
+
+
+
+void
+Simulation::addCurrentStimulus(nidx_t neuron, float current)
+{
+	DeviceIdx dev = m_mapper.deviceIdx(neuron);
+	fix_t fx_current = fx_toFix(current, m_cm.fractionalBits());
+	m_currentStimulus.setNeuron(dev.partition, dev.neuron, fx_current);
+}
+
+
+
+void
+Simulation::finalizeCurrentStimulus(size_t count)
+{
+	if(count > 0) {
+		m_currentStimulus.copyToDevice();
+		md_istim = m_currentStimulus.deviceData();
+	} else {
 		md_istim = NULL;
-		return;
 	}
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "setting current stimulus (floating point vector) not supported for CUDA backend");
-#if 0
-	m_currentStimulus.fill(0);
-	//! \todo handle this using pairs in the input instead. This approach is
-	//extremely brittle.
-	nidx_t neuron = m_mapper.minHandledGlobalIdx();
-	for(std::vector<float>::const_iterator i = current.begin();
-			i != current.end(); ++i, ++neuron) {
-		DeviceIdx dev = m_mapper.deviceIdx(neuron);
-		fix_t fx_current = fx_toFix(*i, m_fractionalBits);
-		m_currentStimulus.setNeuron(dev.partition, dev.neuron, fx_current);
-	}
-	m_currentStimulus.copyToDevice();
-	md_istim = m_currentStimulus.deviceData();
-#endif
 }
 
 
@@ -171,14 +178,6 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 	m_currentStimulus.set(current);
 	m_currentStimulus.copyToDevice();
 	md_istim = m_currentStimulus.deviceData();
-}
-
-
-
-void
-Simulation::clearCurrentStimulus()
-{
-	md_istim = NULL;
 }
 
 
@@ -260,7 +259,6 @@ Simulation::step()
 	/* Must clear stimulus pointers in case the low-level interface is used and
 	 * the user does not provide any fresh stimulus */
 	clearFiringStimulus();
-	clearCurrentStimulus();
 
 	cudaError_t status = cudaGetLastError();
 	if(status != cudaSuccess) {

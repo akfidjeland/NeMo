@@ -146,13 +146,25 @@ Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 
 
 void
-Simulation::setCurrentStimulus(const std::vector<float>& current)
+Simulation::initCurrentStimulus(size_t count)
 {
-	if(current.empty()) {
-		//! do we need to clear current?
-		return;
-	}
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "setting current stimulus vector not supported for CPU backend");
+	/* The current is cleared after use, so no need to reset */
+}
+
+
+
+void
+Simulation::addCurrentStimulus(nidx_t neuron, float current)
+{
+	m_current[m_mapper.localIdx(neuron)] = fx_toFix(current, getFractionalBits());
+}
+
+
+
+void
+Simulation::finalizeCurrentStimulus(size_t count)
+{
+	/* The current is cleared after use, so no need to reset */
 }
 
 

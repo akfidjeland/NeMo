@@ -386,39 +386,6 @@ deleteSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		g_sims.at(id) = NULL;
 	}
 }
-
-
-/*
- * Thin wrappers for synapse query API, to simplify auto-generation of code. We
- * could add this to the C API. 
- */
-
-nemo_status_t
-nemo_get_targets(nemo_simulation_t sim, uint64_t* synapses, size_t syn_len, unsigned* out[], size_t* out_len)
-{
-	return nemo_get_targets(sim, synapses, *out_len = syn_len, out);
-}
-
-
-nemo_status_t
-nemo_get_weights(nemo_simulation_t sim, uint64_t* synapses, size_t syn_len, float* out[], size_t* out_len)
-{
-	return nemo_get_weights(sim, synapses, *out_len = syn_len, out);
-}
-
-
-nemo_status_t
-nemo_get_delays(nemo_simulation_t sim, uint64_t* synapses, size_t syn_len, unsigned* out[], size_t* out_len)
-{
-	return nemo_get_delays(sim, synapses, *out_len = syn_len, out);
-}
-
-
-nemo_status_t
-nemo_get_plastic(nemo_simulation_t sim, uint64_t* synapses, size_t syn_len, unsigned char* out[], size_t* out_len)
-{
-	return nemo_get_plastic(sim, synapses, *out_len = syn_len, out);
-}
 /* AUTO-GENERATED CODE START */
 
 void
@@ -540,15 +507,19 @@ backendDescription(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 step(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    checkInputCount(nrhs, 1);
+    checkInputCount(nrhs, 3);
     checkOutputCount(nlhs, 1);
     std::vector<unsigned> fstim = vector<unsigned, uint32_t>(prhs[2]);
+    std::vector<unsigned> istim_nidx = vector<unsigned, uint32_t>(prhs[3]);
+    std::vector<float> istim_current = vector<float, double>(prhs[4]);
     unsigned* fired;
     size_t fired_len;
     checkNemoStatus( 
             nemo_step( 
                     getSimulation(prhs, 1), 
                     &fstim[0], fstim.size(), 
+                    &istim_nidx[0], 
+                    &istim_current[0], istim_current.size(), 
                     &fired, &fired_len 
             ) 
     );
@@ -579,7 +550,7 @@ getTargets(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             nemo_get_targets( 
                     getSimulation(prhs, 1), 
                     &synapses[0], synapses.size(), 
-                    &targets, &targets_len 
+                    &targets 
             ) 
     );
     returnVector<unsigned, uint32_t>(plhs, 0, targets, targets_len);
@@ -598,7 +569,7 @@ getDelays(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             nemo_get_delays( 
                     getSimulation(prhs, 1), 
                     &synapses[0], synapses.size(), 
-                    &delays, &delays_len 
+                    &delays 
             ) 
     );
     returnVector<unsigned, uint32_t>(plhs, 0, delays, delays_len);
@@ -617,7 +588,7 @@ getWeights(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             nemo_get_weights( 
                     getSimulation(prhs, 1), 
                     &synapses[0], synapses.size(), 
-                    &weights, &weights_len 
+                    &weights 
             ) 
     );
     returnVector<float, double>(plhs, 0, weights, weights_len);
@@ -636,7 +607,7 @@ getPlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             nemo_get_plastic( 
                     getSimulation(prhs, 1), 
                     &synapses[0], synapses.size(), 
-                    &plastic, &plastic_len 
+                    &plastic 
             ) 
     );
     returnVector<unsigned char, uint8_t>(plhs, 0, plastic, plastic_len);

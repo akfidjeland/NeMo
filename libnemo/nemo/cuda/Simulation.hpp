@@ -55,10 +55,16 @@ class Simulation : public nemo::SimulationBackend
 		void setFiringStimulus(const std::vector<unsigned>& nidx);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
-		void setCurrentStimulus(const std::vector<float>& current);
+		void setCurrentStimulus(const std::vector<fix_t>& current);
+
+		/*! \copydoc nemo::SimulationBackend::initCurrentStimulus */
+		void initCurrentStimulus(size_t count);
+
+		/*! \copydoc nemo::SimulationBackend::addCurrentStimulus */
+		void addCurrentStimulus(nidx_t neuron, float current);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
-		void setCurrentStimulus(const std::vector<fix_t>& current);
+		void finalizeCurrentStimulus(size_t count);
 
 		/*! \copydoc nemo::SimulationBackend::step */
 		void step();
@@ -129,7 +135,6 @@ class Simulation : public nemo::SimulationBackend
 		void clearFiringStimulus();
 
 		NVector<fix_t> m_currentStimulus;
-		void clearCurrentStimulus();
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */

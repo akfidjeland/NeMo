@@ -13,6 +13,7 @@
 //! \file Simulation.hpp
 
 #include <vector>
+#include <utility>
 #include <nemo/config.h>
 #include <nemo/types.h>
 
@@ -39,6 +40,9 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 
 		virtual ~Simulation();
 
+
+		typedef std::vector< std::pair<unsigned, float> > current_stimulus;
+
 		/*! Run simulation for a single cycle (1ms)
 		 *
 		 * \param fstim
@@ -53,7 +57,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 */
 		virtual const std::vector<unsigned>& step(
 				const std::vector<unsigned>& fstim = std::vector<unsigned>(),
-				const std::vector<float>& istim = std::vector<float>()) = 0;
+				const current_stimulus& istim = current_stimulus()) = 0;
 
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *

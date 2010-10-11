@@ -238,10 +238,17 @@ nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsig
 
 
 void
-step(nemo::SimulationBackend* sim, const std::vector<unsigned>& fstim, unsigned *fired[], size_t* fired_len)
+step(nemo::SimulationBackend* sim,
+		const std::vector<unsigned>& fstim,
+		unsigned istim_nidx[], float istim_current[], size_t istim_len,
+		unsigned *fired[], size_t* fired_len)
 {
 	sim->setFiringStimulus(fstim);
-	//! \todo add current stimulus here
+	sim->initCurrentStimulus(istim_len);
+	for(size_t i = 0; i < istim_len; ++i) {
+		sim->addCurrentStimulus(istim_nidx[i], istim_current[i]);
+	}
+	sim->finalizeCurrentStimulus(istim_len);
 	sim->step();
 	const std::vector<unsigned>& fired_ = sim->readFiring().neurons;
 	if(fired != NULL) {
@@ -256,11 +263,15 @@ step(nemo::SimulationBackend* sim, const std::vector<unsigned>& fstim, unsigned 
 
 nemo_status_t
 nemo_step(nemo_simulation_t sim_ptr,
-		unsigned fstim[], size_t fstim_count,
+		unsigned fstim_nidx[], size_t fstim_count,
+		unsigned istim_nidx[], float istim_current[], size_t istim_count,
 		unsigned* fired[], size_t* fired_count)
 {
 	nemo::SimulationBackend* sim = static_cast<nemo::SimulationBackend*>(sim_ptr);
-	CALL(step(sim, std::vector<unsigned>(fstim, fstim + fstim_count), fired, fired_count));
+	CALL(step(sim,
+			std::vector<unsigned>(fstim_nidx, fstim_nidx + fstim_count),
+			istim_nidx, istim_current, istim_count,
+			fired, fired_count));
 	return g_lastCallStatus;
 }
 

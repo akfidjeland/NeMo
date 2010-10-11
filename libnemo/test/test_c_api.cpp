@@ -112,7 +112,7 @@ c_runSimulation(
 
 		unsigned *fired;
 		size_t nfired;
-		nemo_step(sim, NULL, 0, &fired, &nfired);
+		nemo_step(sim, NULL, 0, NULL, NULL, 0, &fired, &nfired);
 
 		// read back a few synapses every now and then just to make sure it works
 		if(ms % 100 == 0) {

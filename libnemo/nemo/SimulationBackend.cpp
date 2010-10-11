@@ -20,10 +20,16 @@ SimulationBackend::~SimulationBackend()
 
 
 const std::vector<unsigned>&
-SimulationBackend::step(const std::vector<unsigned>& fstim, const std::vector<float>& istim)
+SimulationBackend::step(const std::vector<unsigned>& fstim,
+		const current_stimulus& istim)
 {
 	setFiringStimulus(fstim);
-	setCurrentStimulus(istim);
+	initCurrentStimulus(istim.size());
+	for(current_stimulus::const_iterator i = istim.begin();
+			i != istim.end(); ++i) {
+		addCurrentStimulus(i->first, i->second);
+	}
+	finalizeCurrentStimulus(istim.size());
 	step();
 	return readFiring().neurons;
 }

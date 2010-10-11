@@ -206,10 +206,17 @@ nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_configuration_t);
  *
  * Neurons can be optionally be forced to fire using the two arguments
  *
- * \param firing_stimulus
+ * \param fstim_nidx
  * 		Indices of the neurons which should be forced to fire this cycle.
- * \param firing_stimulus_count
- * 		Length of \a firing_stimulus
+ * \param fstim_count
+ * 		Length of \a fstim_nidx
+ * \param istim_nidx
+ * 		Indices of neurons which should receive external current stimulus this
+ * 		cycle.
+ * \param istim_current
+ * 		The corresponding vector of current
+ * \param istim_count
+ * 		Length of \a istim_nidx *and* \a istim_current
  * \param fired (output)
  * 		Vector which fill be filled with the indices of the neurons which fired
  * 		this cycle. Set to NULL if the firing output is ignored.
@@ -220,7 +227,8 @@ nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_configuration_t);
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_step(nemo_simulation_t,
-		unsigned firing_stimulus[], size_t firing_stimulus_count,
+		unsigned fstim_nidx[], size_t fstim_count,
+		unsigned istim_nidx[], float istim_current[], size_t istim_count,
 		unsigned* fired[], size_t* fired_count);
 
 

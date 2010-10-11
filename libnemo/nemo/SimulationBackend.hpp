@@ -43,19 +43,35 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 * between two calls to \a step */
 		virtual void setFiringStimulus(const std::vector<unsigned>& nidx) = 0;
 
-		/*! Set per-neuron input current on the device and set the relevant
-		 * member variable containing the device pointer. If there is no input
-		 * the device pointer is NULL.
+		/* CURRENT STIMULUS
 		 *
-		 * The behaviour is undefined if this function is called multiple times
-		 * between two calls to \a step
+		 * This class provides two interfaces for setting the current stimulus.
+		 * First callers can use a low-level interface where each stimulus pair
+		 * is set separately and is specified using global neuron indices:
 		 *
-		 * Furthermore this function should not be called in the same cycle as
-		 * the fixed-point function with the same name.
+		 * 	sim->initCurrentStimulus();
+		 * 	for each pair
+		 * 		sim->addCurrentStimulus(pair);
+		 *  sim->setCurrentStimulus
+		 *
+		 * Alternatively, call the setCurrentStimulus method where neurons are
+		 * specified using the internal neuron indexing and the current is
+		 * already converted to the correct fixed-point format. This can be
+		 * quite a bit faster, especially if there is input current for *every*
+		 * neuron, and is used in the MPI backend.
+		 *
+		 * Only one of these interfaces should be used.
 		 */
-		virtual void setCurrentStimulus(const std::vector<float>& current) = 0;
-		//! \todo we should expose this using tuples. The C API can be adapted
-		//using a zipping iterator.
+
+		/*! Perform any required internal initialisation of input current
+		 * buffers, assuming that \a count stimuli will be provided */
+		virtual void initCurrentStimulus(size_t count) = 0;
+
+		/*! Add a single neuron/current stimlulus pair */
+		virtual void addCurrentStimulus(unsigned, float) = 0;
+
+		/*! Perform any finalisation of input current stimulus buffers. */
+		virtual void finalizeCurrentStimulus(size_t count) = 0;
 
 		/*! Set per-neuron input current on the device and set the relevant
 		 * member variable containing the device pointer. If there is no input
@@ -82,7 +98,7 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		/*! \copydoc nemo::Simulation::step */
 		const std::vector<unsigned>& step(
 				const std::vector<unsigned>& fstim,
-				const std::vector<float>& istim);
+				const current_stimulus& istim);
 
 		/*! \copydoc nemo::Simulation::applyStdp */
 		virtual void applyStdp(float reward) = 0;
