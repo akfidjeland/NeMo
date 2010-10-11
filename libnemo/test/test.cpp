@@ -216,6 +216,48 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 void
+testCurrentStimulus(backend_t backend)
+{
+	unsigned ncount = 1500;
+	unsigned duration = ncount * 2;
+
+	nemo::Configuration conf = configuration(false, 1024, backend);
+	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+
+	nemo::Simulation::current_stimulus istim;
+	// add some noise before and after
+	istim.push_back(std::make_pair(5U, 0.001f));
+	istim.push_back(std::make_pair(8U, 0.001f));
+	istim.push_back(std::make_pair(0U, 1000.0f));
+	istim.push_back(std::make_pair(100U, 0.001f));
+	istim.push_back(std::make_pair(1U, 0.001f));
+
+	/* Simulate a single neuron to get the ring going */
+	sim->step(std::vector<unsigned>(), istim);
+
+	for(unsigned ms=1; ms < duration; ++ms) {
+		const std::vector<unsigned>& fired = sim->step();
+		BOOST_CHECK_EQUAL(fired.size(), 1U);
+		BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
+	}
+}
+
+
+BOOST_AUTO_TEST_SUITE(istim)
+
+	BOOST_AUTO_TEST_CASE(cuda) {
+		testCurrentStimulus(NEMO_BACKEND_CUDA);
+	}
+
+	BOOST_AUTO_TEST_CASE(cpu) {
+		testCurrentStimulus(NEMO_BACKEND_CPU);
+	}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+void
 runRing(unsigned ncount, nemo::Configuration conf)
 {
 	/* Make sure we go around the ring at least a couple of times */
