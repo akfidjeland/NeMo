@@ -12,7 +12,10 @@ runSimulation(
 		std::vector<unsigned>* fcycles,
 		std::vector<unsigned>* fnidx,
 		bool stdp,
-		std::vector<unsigned> initFiring = std::vector<unsigned>());
+		std::vector<unsigned> initFiring = std::vector<unsigned>(),
+		std::vector< std::pair<unsigned, float> > initCurrent =
+			std::vector< std::pair<unsigned, float> >()
+		);
 
 void
 compareSimulationResults(

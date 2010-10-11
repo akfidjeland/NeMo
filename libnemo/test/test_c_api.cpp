@@ -1,5 +1,6 @@
 #define BOOST_TEST_MODULE nemo test_c_api
 
+#include <utility>
 #include <boost/random.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -97,6 +98,9 @@ c_runSimulation(
 		const nemo_network_t net,
 		nemo_configuration_t conf,
 		unsigned seconds,
+		std::vector<unsigned>& fstim,
+		std::vector<unsigned>& istim_nidx,
+		std::vector<float>& istim_current,
 		std::vector<unsigned>* fcycles,
 		std::vector<unsigned>* fnidx)
 {
@@ -111,8 +115,15 @@ c_runSimulation(
 	for(unsigned ms = 0; ms < 1000; ++ms) {
 
 		unsigned *fired;
-		size_t nfired;
-		nemo_step(sim, NULL, 0, NULL, NULL, 0, &fired, &nfired);
+		size_t fired_len;
+
+		if(s == 0 && ms == 0) {
+			nemo_step(sim, &fstim[0], fstim.size(),
+					&istim_nidx[0], &istim_current[0], istim_nidx.size(),
+					&fired, &fired_len);
+		} else {
+			nemo_step(sim, NULL, 0, NULL, NULL, 0, &fired, &fired_len);
+		}
 
 		// read back a few synapses every now and then just to make sure it works
 		if(ms % 100 == 0) {
@@ -131,8 +142,8 @@ c_runSimulation(
 		}
 
 		// push data back onto local buffers
-		std::copy(fired, fired + nfired, back_inserter(*fnidx));
-		std::fill_n(back_inserter(*fcycles), nfired, s*1000 + ms);
+		std::copy(fired, fired + fired_len, back_inserter(*fnidx));
+		std::fill_n(back_inserter(*fcycles), fired_len, s*1000 + ms);
 	}
 
 	nemo_delete_simulation(sim);
@@ -150,7 +161,11 @@ c_safeCall(nemo_status_t err)
 }
 
 
-BOOST_AUTO_TEST_CASE(test_c_api)
+
+/* Compare simulation runs using C and C++ APIs with optional firing and
+ * current stimulus during cycle 100 */
+void
+runComparison(bool useFstim, bool useIstim)
 {
 	unsigned ncount = 1000;
 	unsigned scount = 1000;
@@ -186,8 +201,30 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 
 	std::vector<unsigned> cycles1, cycles2, nidx1, nidx2;
 
+	std::vector<unsigned> fstim;
+	if(useFstim) {
+		fstim.push_back(100);
+	}
+
+	std::vector< std::pair<unsigned, float> > istim;
+	std::vector<unsigned> istim_nidx;
+	std::vector<float> istim_current;
+	if(useIstim) {
+		istim.push_back(std::make_pair(20U, 20.0f));
+		istim_nidx.push_back(20);
+		istim_current.push_back(20.0f);
+
+		istim.push_back(std::make_pair(40U, 20.0f));
+		istim_nidx.push_back(40);
+		istim_current.push_back(20.0f);
+
+		istim.push_back(std::make_pair(60U, 20.0f));
+		istim_nidx.push_back(60);
+		istim_current.push_back(20.0f);
+	}
+
 	std::cerr << "Running network (C++ API)\n";
-	runSimulation(net, conf, duration, &cycles1, &nidx1, stdp);
+	runSimulation(net, conf, duration, &cycles1, &nidx1, stdp, fstim, istim);
 
 	unsigned cuda_dcount;
 	c_safeCall(nemo_cuda_device_count(&cuda_dcount));
@@ -205,13 +242,30 @@ BOOST_AUTO_TEST_CASE(test_c_api)
 	c_safeCall(nemo_backend_description(c_conf, &descr));
 	std::cerr << descr << std::endl;
 	std::cerr << "Running network (C API)\n";
-	c_runSimulation(c_net, c_conf, duration, &cycles2, &nidx2);
+	c_runSimulation(c_net, c_conf, duration,
+			fstim, istim_nidx, istim_current, &cycles2, &nidx2);
 	std::cerr << "Checking results\n";
 	compareSimulationResults(cycles1, nidx1, cycles2, nidx2);
 
 	nemo_delete_configuration(c_conf);
 	nemo_delete_network(c_net);
 }
+
+
+
+BOOST_AUTO_TEST_SUITE(comparison)
+	BOOST_AUTO_TEST_CASE(nostim) {
+		runComparison(false, false);
+	}
+
+	BOOST_AUTO_TEST_CASE(fstim) {
+		runComparison(true, false);
+	}
+
+	BOOST_AUTO_TEST_CASE(istim) {
+		runComparison(false, true);
+	}
+BOOST_AUTO_TEST_SUITE_END()
 
 
 
