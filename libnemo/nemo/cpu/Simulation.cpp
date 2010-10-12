@@ -120,7 +120,7 @@ Simulation::getFractionalBits() const
 
 
 void
-Simulation::step()
+Simulation::update()
 {
 	const current_vector_t& current = deliverSpikes();
 	update(m_fstim, current);

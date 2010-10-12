@@ -19,9 +19,41 @@ SimulationBackend::~SimulationBackend()
 }
 
 
-const std::vector<unsigned>&
-SimulationBackend::step(const std::vector<unsigned>& fstim,
-		const current_stimulus& istim)
+const Simulation::firing_output&
+SimulationBackend::step()
+{
+	initCurrentStimulus(0);
+	update();
+	return readFiring().neurons;
+}
+
+
+const Simulation::firing_output&
+SimulationBackend::step(const firing_stimulus& fstim)
+{
+	setFiringStimulus(fstim);
+	initCurrentStimulus(0);
+	update();
+	return readFiring().neurons;
+}
+
+
+const Simulation::firing_output&
+SimulationBackend::step(const current_stimulus& istim)
+{
+	initCurrentStimulus(istim.size());
+	for(current_stimulus::const_iterator i = istim.begin();
+			i != istim.end(); ++i) {
+		addCurrentStimulus(i->first, i->second);
+	}
+	finalizeCurrentStimulus(istim.size());
+	update();
+	return readFiring().neurons;
+}
+
+
+const Simulation::firing_output&
+SimulationBackend::step(const firing_stimulus& fstim, const current_stimulus& istim)
 {
 	setFiringStimulus(fstim);
 	initCurrentStimulus(istim.size());
@@ -30,7 +62,7 @@ SimulationBackend::step(const std::vector<unsigned>& fstim,
 		addCurrentStimulus(i->first, i->second);
 	}
 	finalizeCurrentStimulus(istim.size());
-	step();
+	update();
 	return readFiring().neurons;
 }
 

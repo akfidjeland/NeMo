@@ -231,7 +231,7 @@ Simulation::setPitch()
 
 
 void
-Simulation::step()
+Simulation::update()
 {
 	m_timer.step();
 	initLog();

@@ -40,14 +40,25 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 
 		virtual ~Simulation();
 
-
+		typedef std::vector<unsigned> firing_output;
+		typedef std::vector<unsigned> firing_stimulus;
 		typedef std::vector< std::pair<unsigned, float> > current_stimulus;
 
-		/*! Run simulation for a single cycle (1ms)
+		/*! Run simulation for a single cycle (1ms) without external stimulus */
+		virtual const firing_output& step() = 0;
+
+		/*! Run simulation for a single cycle (1ms) with firing stimulus
 		 *
 		 * \param fstim
-		 * 		An optional list of neurons, which will be forced to fire this
-		 * 		cycle.
+		 * 		An list of neurons, which will be forced to fire this cycle.
+		 * \return
+		 * 		List of neurons which fired this cycle. The referenced data is
+		 * 		valid until the next call to step.
+		 */
+		virtual const firing_output& step(const firing_stimulus&) = 0;
+
+		/*! Run simulation for a single cycle (1ms) with current stimulus
+		 *
 		 * \param istim
 		 * 		Optional per-neuron vector specifying externally provided input
 		 * 		current for this cycle.
@@ -55,9 +66,21 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 * 		List of neurons which fired this cycle. The referenced data is
 		 * 		valid until the next call to step.
 		 */
-		virtual const std::vector<unsigned>& step(
-				const std::vector<unsigned>& fstim = std::vector<unsigned>(),
-				const current_stimulus& istim = current_stimulus()) = 0;
+		virtual const firing_output& step(const current_stimulus&) = 0;
+
+		/*! Run simulation for a single cycle (1ms) with both firing stimulus
+		 * and current stimulus
+		 *
+		 * \param fstim
+		 * 		An list of neurons, which will be forced to fire this cycle.
+		 * \param istim
+		 * 		Optional per-neuron vector specifying externally provided input
+		 * 		current for this cycle.
+		 * \return
+		 * 		List of neurons which fired this cycle. The referenced data is
+		 * 		valid until the next call to step.
+		 */
+		virtual const firing_output& step(const firing_stimulus&, const current_stimulus&) = 0;
 
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *

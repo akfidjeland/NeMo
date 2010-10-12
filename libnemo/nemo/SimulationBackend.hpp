@@ -93,12 +93,19 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		/*! Perform a single simulation step, using any stimuli (firing
 		 * and current) provided by the caller after the previous call
 		 * to step */
-		virtual void step() = 0;
+		virtual void update() = 0;
 
 		/*! \copydoc nemo::Simulation::step */
-		const std::vector<unsigned>& step(
-				const std::vector<unsigned>& fstim,
-				const current_stimulus& istim);
+		const firing_output& step();
+
+		/*! \copydoc nemo::Simulation::step */
+		const firing_output& step(const firing_stimulus&);
+
+		/*! \copydoc nemo::Simulation::step */
+		const firing_output& step(const current_stimulus&);
+
+		/*! \copydoc nemo::Simulation::step */
+		const firing_output& step(const firing_stimulus&, const current_stimulus&);
 
 		/*! \copydoc nemo::Simulation::applyStdp */
 		virtual void applyStdp(float reward) = 0;

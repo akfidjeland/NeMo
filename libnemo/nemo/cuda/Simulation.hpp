@@ -66,8 +66,8 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
 		void finalizeCurrentStimulus(size_t count);
 
-		/*! \copydoc nemo::SimulationBackend::step */
-		void step();
+		/*! \copydoc nemo::SimulationBackend::update */
+		void update();
 
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();
