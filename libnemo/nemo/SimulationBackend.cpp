@@ -23,6 +23,7 @@ const Simulation::firing_output&
 SimulationBackend::step()
 {
 	initCurrentStimulus(0);
+	finalizeCurrentStimulus(0);
 	update();
 	return readFiring().neurons;
 }
@@ -33,6 +34,7 @@ SimulationBackend::step(const firing_stimulus& fstim)
 {
 	setFiringStimulus(fstim);
 	initCurrentStimulus(0);
+	finalizeCurrentStimulus(0);
 	update();
 	return readFiring().neurons;
 }

@@ -234,7 +234,7 @@ testCurrentStimulus(backend_t backend)
 	istim.push_back(std::make_pair(1U, 0.001f));
 
 	/* Simulate a single neuron to get the ring going */
-	sim->step(std::vector<unsigned>(), istim);
+	sim->step(istim);
 
 	for(unsigned ms=1; ms < duration; ++ms) {
 		const std::vector<unsigned>& fired = sim->step();
