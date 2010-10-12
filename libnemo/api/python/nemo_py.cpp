@@ -59,6 +59,59 @@ std_bool_vector_str(std::vector<unsigned char>& self)
 
 
 
+/* Converter from python pair to std::pair */
+template<typename T1, typename T2>
+struct from_py_list_of_pairs
+{
+	typedef std::pair<T1, T2> pair_t;
+	typedef std::vector<pair_t> vector_t;
+
+	from_py_list_of_pairs() {
+		converter::registry::push_back(
+			&convertible,
+			&construct,
+			boost::python::type_id<vector_t>()
+		);
+	}
+
+	static void* convertible(PyObject* obj_ptr) {
+		if (!PyList_Check(obj_ptr)) {
+			return 0;
+		}
+		/* It's possible for the list to contain data of different type. In
+         * that case, fall over later, during the actual conversion. */
+		return obj_ptr;
+	}
+
+	/* Convert obj_ptr into a std::vector */
+	static void construct(
+			PyObject* list,
+			boost::python::converter::rvalue_from_python_stage1_data* data)
+	{
+		/* grab pointer to memory into which to construct vector */
+		typedef converter::rvalue_from_python_storage<vector_t> storage_t;
+		void* storage = reinterpret_cast<storage_t*>(data)->storage.bytes;
+
+		/* in-place construct vector */
+		Py_ssize_t len = PyList_Size(list);
+		// vector_t* instance = new (storage) vector_t(len, 0);
+		vector_t* instance = new (storage) vector_t(len);
+
+		/* stash the memory chunk pointer for later use by boost.python */
+		data->convertible = storage;
+
+		/* populate the vector */
+		vector_t& vec = *instance;
+		for(unsigned i=0, i_end=len; i != i_end; ++i) {
+			PyObject* pair = PyList_GetItem(list, i);
+			PyObject* first = PyTuple_GetItem(pair, 0);
+			PyObject* second = PyTuple_GetItem(pair, 1);
+			vec[i] = std::make_pair<T1, T2>(extract<T1>(first), extract<T2>(second));
+		}
+	}
+};
+
+
 /* Python list to std::vector convertor */
 template<typename T>
 struct from_py_list
@@ -111,16 +164,32 @@ struct from_py_list
 
 /* This wrappers for overloads of nemo::Simulation::step */
 const std::vector<unsigned>&
-step0(nemo::Simulation& sim)
+step(nemo::Simulation& sim)
 {
 	return sim.step();
 }
 
 
 const std::vector<unsigned>&
-step1(nemo::Simulation& sim, const std::vector<unsigned>& fstim)
+step_f(nemo::Simulation& sim, const std::vector<unsigned>& fstim)
 {
 	return sim.step(fstim);
+}
+
+
+const std::vector<unsigned>&
+step_i(nemo::Simulation& sim, const std::vector< std::pair<unsigned, float> >& istim)
+{
+	return sim.step(istim);
+}
+
+
+const std::vector<unsigned>&
+step_fi(nemo::Simulation& sim,
+		const std::vector<unsigned>& fstim,
+		const std::vector< std::pair<unsigned, float> >& istim)
+{
+	return sim.step(fstim, istim);
 }
 
 
@@ -133,6 +202,7 @@ initializeConverters()
 	from_py_list<unsigned>();
 	from_py_list<unsigned char>();
 	from_py_list<float>();
+	from_py_list_of_pairs<unsigned, float>();
 }
 
 
@@ -181,11 +251,14 @@ BOOST_PYTHON_MODULE(nemo)
 
 	class_<nemo::Simulation, boost::shared_ptr<nemo::Simulation>, boost::noncopyable>("Simulation", no_init)
 		.def("__init__", make_constructor(makeSimulation))
-		.def("step", &nemo::Simulation::step, return_internal_reference<1>(), SIMULATION_STEP_DOC)
+		// .def("step", &nemo::Simulation::step, return_internal_reference<1>(), SIMULATION_STEP_DOC)
 			/* May want to make a copy here, for some added safety:
 			 * return_value_policy<copy_const_reference>() */
-		.def("step", step1, return_internal_reference<1>(), SIMULATION_STEP_DOC)
-		.def("step", step0, return_internal_reference<1>(), SIMULATION_STEP_DOC)
+		.def("step", step, return_internal_reference<1>(), SIMULATION_STEP_DOC)
+		//! \todo add back these functions. Currently cannot distinguish between them
+		//.def("step", step_f, return_internal_reference<1>(), SIMULATION_STEP_DOC)
+		//.def("step", step_i, return_internal_reference<1>(), SIMULATION_STEP_DOC)
+		.def("step", step_fi, return_internal_reference<1>(), SIMULATION_STEP_DOC)
 		.def("apply_stdp", &nemo::Simulation::applyStdp, SIMULATION_APPLY_STDP_DOC)
 		.def("get_targets", &nemo::Simulation::getTargets, return_value_policy<copy_const_reference>(), SIMULATION_GET_TARGETS_DOC)
 		.def("get_delays", &nemo::Simulation::getDelays, return_value_policy<copy_const_reference>(), SIMULATION_GET_DELAYS_DOC)
