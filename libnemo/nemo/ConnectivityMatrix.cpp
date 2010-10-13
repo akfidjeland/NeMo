@@ -397,7 +397,7 @@ ConnectivityMatrix::delayBits(nidx_t l_source) const
 	if(found != m_delays.end()) {
 		for(delay_iterator d = found->second.begin(), d_end = found->second.end();
 				d != d_end; ++d) {
-			bits = bits | (0x1 << (*d - 1));
+			bits = bits | (uint64_t(0x1) << uint64_t(*d - 1));
 		}
 	}
 	return bits;
