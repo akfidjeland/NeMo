@@ -25,8 +25,7 @@ for n=0:799
 	plastic = true(1, 1000);
 
 	% Adding groups of synapses
-	% These can also be added individually using addSynapse
-	net.addSynapses(sources, targets, delays, weights, plastic);
+	net.addSynapse(sources, targets, delays, weights, plastic);
 end;
 
 
@@ -47,7 +46,7 @@ for n=800:999
 	delays = ones(1, 1000);
 	weights = -rand(1, 1000);
 	plastic = false(1, 1000);
-	net.addSynapses(sources, targets, delays, weights, plastic);
+	net.addSynapse(sources, targets, delays, weights, plastic);
 end;
 
 
