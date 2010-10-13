@@ -150,7 +150,7 @@ checkOutputCount(int actualArgs, int expectedArgs)
 
 
 /* Print out all dimensions and lengths of all arguments (either input or output) */
-size_t
+void
 reportVectorDimensions(int argc, const mxArray* argv[])
 {
 	for(int i=0; i < argc; ++i) {
@@ -544,7 +544,6 @@ getTargets(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
     unsigned* targets;
-    size_t targets_len;
     checkNemoStatus( 
             nemo_get_targets( 
                     getSimulation(prhs, 1), 
@@ -552,7 +551,7 @@ getTargets(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
                     &targets 
             ) 
     );
-    returnVector<unsigned, uint32_t>(plhs, 0, targets, targets_len);
+    returnVector<unsigned, uint32_t>(plhs, 0, targets, synapses.size());
 }
 
 
@@ -563,7 +562,6 @@ getDelays(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
     unsigned* delays;
-    size_t delays_len;
     checkNemoStatus( 
             nemo_get_delays( 
                     getSimulation(prhs, 1), 
@@ -571,7 +569,7 @@ getDelays(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
                     &delays 
             ) 
     );
-    returnVector<unsigned, uint32_t>(plhs, 0, delays, delays_len);
+    returnVector<unsigned, uint32_t>(plhs, 0, delays, synapses.size());
 }
 
 
@@ -582,7 +580,6 @@ getWeights(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
     float* weights;
-    size_t weights_len;
     checkNemoStatus( 
             nemo_get_weights( 
                     getSimulation(prhs, 1), 
@@ -590,7 +587,7 @@ getWeights(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
                     &weights 
             ) 
     );
-    returnVector<float, double>(plhs, 0, weights, weights_len);
+    returnVector<float, double>(plhs, 0, weights, synapses.size());
 }
 
 
@@ -601,7 +598,6 @@ getPlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
     unsigned char* plastic;
-    size_t plastic_len;
     checkNemoStatus( 
             nemo_get_plastic( 
                     getSimulation(prhs, 1), 
@@ -609,7 +605,7 @@ getPlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
                     &plastic 
             ) 
     );
-    returnVector<unsigned char, uint8_t>(plhs, 0, plastic, plastic_len);
+    returnVector<unsigned char, uint8_t>(plhs, 0, plastic, synapses.size());
 }
 
 
