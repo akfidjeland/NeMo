@@ -97,6 +97,8 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 
 		unsigned partitionCount() const { return m_partitionCount; }
 
+		unsigned maxLocalIdx() const { return partitionSize() * partitionCount() - 1; }
+
 		/*! \return minimum global indexed supported by this mapper */
 		unsigned minHandledGlobalIdx() const { return m_offset; }
 

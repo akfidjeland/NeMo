@@ -25,6 +25,8 @@ class Mapper
 
 		virtual bool validLocal(const L&) const = 0;
 
+		virtual L maxLocalIdx() const = 0;
+
 		/*! \return number of valid neurons registered with the mapper */
 		virtual unsigned neuronCount() const = 0;
 };
