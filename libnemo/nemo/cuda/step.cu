@@ -114,6 +114,7 @@ void
 fire(
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
+	float* g_neuronState,
 	// input
 	float* s_current,    // input current
 	// buffers
@@ -128,8 +129,8 @@ fire(
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
 	float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
 	float* g_d = g_neuronParameters + PARAM_D * neuronParametersSize;
-	float* g_u = g_neuronParameters + STATE_U * neuronParametersSize;
-	float* g_v = g_neuronParameters + STATE_V * neuronParametersSize;
+	float* g_u = g_neuronState + STATE_U * neuronParametersSize;
+	float* g_v = g_neuronState + STATE_V * neuronParametersSize;
 
 	for(unsigned nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
 
@@ -380,6 +381,7 @@ step (
 		uint64_t* g_recentFiring,
 		// neuron state
 		float* g_neuronParameters,
+		float* g_neuronState,
 		unsigned* g_rngState,
 		float* g_rngSigma,			//! \todo combine with g_neuronParameters
 		// spike delivery
@@ -474,6 +476,7 @@ step (
 
 	fire( s_partitionSize,
 			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
+			g_neuronState + CURRENT_PARTITION * s_pitch32,
 			s_current,
 			s_fstim,
 			&s_firingCount,

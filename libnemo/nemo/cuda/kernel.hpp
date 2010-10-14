@@ -32,6 +32,7 @@ stepSimulation(
 		bool usingStdp,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
+		float* d_neuronParameters,
 		float* d_neuronState,
 		unsigned* d_rngState,
 		float* d_rngSigma,

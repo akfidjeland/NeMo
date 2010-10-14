@@ -49,9 +49,10 @@
 #define PARAM_B 1
 #define PARAM_C 2
 #define PARAM_D 3
-#define STATE_U 4
-#define STATE_V 5
-#define NVEC_COUNT 6
+#define NEURON_PARAM_COUNT 4
+#define STATE_U 0
+#define STATE_V 1
+#define NEURON_STATE_COUNT 2
 
 
 //! \todo move to nemo_cuda_types

@@ -65,6 +65,7 @@ stepSimulation(
 		bool usingStdp,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
+		float* d_neuronParameters,
 		float* d_neuronState,
 		unsigned* d_rngState,
 		float* d_rngSigma,
@@ -87,8 +88,9 @@ stepSimulation(
 			cycle,
 			d_recentFiring,
 			// neuron parameters
+			d_neuronParameters,
 			d_neuronState,
-			d_rngState, d_rngSigma,
+			d_rngState, d_rngSigma, //! \todo merge this into parmeters and state respectively
 			// spike delivery
 			d_fcm,
 			d_outgoingCount, d_outgoing,

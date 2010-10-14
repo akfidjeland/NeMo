@@ -28,14 +28,15 @@ namespace nemo {
 
 NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper) :
 	m_allocated(0),
-	m_wpitch(0)
+	m_wpitch(0),
+	m_pcount(mapper.partitionCount())
 {
-	size_t height = allocateDeviceData(mapper.partitionCount(), mapper.partitionSize());
+	size_t height = allocateDeviceData(m_pcount, mapper.partitionSize());
 
 	std::vector<float> h_arr(height * m_wpitch, 0);
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
-	size_t veclen = mapper.partitionCount() * m_wpitch;
+	size_t veclen = m_pcount * m_wpitch;
 
 	for(network::neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
@@ -50,8 +51,8 @@ NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper
 		h_arr.at(PARAM_B * veclen + addr) = n.b;
 		h_arr.at(PARAM_C * veclen + addr) = n.c;
 		h_arr.at(PARAM_D * veclen + addr) = n.d;
-		h_arr.at(STATE_U * veclen + addr) = n.u;
-		h_arr.at(STATE_V * veclen + addr) = n.v;
+		h_arr.at((NEURON_PARAM_COUNT + STATE_U) * veclen + addr) = n.u;
+		h_arr.at((NEURON_PARAM_COUNT + STATE_V) * veclen + addr) = n.v;
 
 		maxPartitionNeuron[dev.partition] =
 			std::max(maxPartitionNeuron[dev.partition], dev.neuron);
@@ -67,7 +68,7 @@ size_t
 NeuronParameters::allocateDeviceData(size_t pcount, size_t psize)
 {
 	size_t width = psize * sizeof(float);
-	size_t height = NVEC_COUNT * pcount;
+	size_t height = (NEURON_PARAM_COUNT + NEURON_STATE_COUNT) * pcount;
 	size_t bpitch = 0;
 
 	float* d_arr;
@@ -102,6 +103,23 @@ NeuronParameters::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPar
 
 	CUDA_SAFE_CALL(configurePartitionSize(&partitionSizes[0], partitionSizes.size()));
 }
+
+
+float*
+NeuronParameters::d_parameters() const
+{
+	//! \todo remove hard-coded assumptions regarding parameter/state order
+	return md_arr.get();
+}
+
+
+float*
+NeuronParameters::d_state() const
+{
+	//! \todo remove hard-coded assumptions regarding parameter/state order
+	return md_arr.get() + NEURON_PARAM_COUNT * m_pcount * wordPitch();
+}
+
 
 	} // end namespace cuda
 } // end namespace nemo

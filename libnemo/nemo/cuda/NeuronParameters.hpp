@@ -33,7 +33,11 @@ class NeuronParameters
 
 		NeuronParameters(const network::Generator& net, Mapper&);
 
-		float* deviceData() { return md_arr.get(); }
+		/*! \return device pointer to neuron parameter data */
+		float* d_parameters() const;
+
+		/*! \return device pointer to neuron state data */
+		float* d_state() const;
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const { return m_allocated; }
@@ -47,6 +51,8 @@ class NeuronParameters
 		size_t m_allocated;
 
 		size_t m_wpitch;
+
+		size_t m_pcount;
 
 		size_t allocateDeviceData(size_t pcount, size_t psize);
 
