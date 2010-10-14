@@ -337,6 +337,14 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 
+float
+Simulation::getMembranePotential(unsigned neuron) const
+{
+	return m_v.at(m_mapper.localIdx(neuron));
+}
+
+
+
 const std::vector<unsigned>&
 Simulation::getTargets(const std::vector<synapse_id>& synapses)
 {
