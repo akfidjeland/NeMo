@@ -171,7 +171,7 @@ template<typename T, int M>
 void
 NVector<T, M>::fill(const T& val, size_t subvector)
 {
-	std::fill(m_hostData.get() + subvector * m_pitch, m_hostData.get() + (subvector+1) * m_pitch, val);
+	std::fill(m_hostData.get() + subvector * size(), m_hostData.get() + (subvector+1) * size(), val);
 }
 
 }	} // end namespace
