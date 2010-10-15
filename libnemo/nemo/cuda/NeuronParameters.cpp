@@ -16,7 +16,6 @@
 #include "types.h"
 #include "exception.hpp"
 #include "kernel.hpp"
-#include "Mapper.hpp"
 
 
 namespace nemo {
@@ -25,7 +24,11 @@ namespace nemo {
 
 NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper) :
 	m_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
-	m_state(mapper.partitionCount(), mapper.partitionSize(), true, false)
+	m_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	m_cycle(0),
+	m_lastSync(~0),
+	m_paramDirty(false),
+	m_stateDirty(false)
 {
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
@@ -82,6 +85,67 @@ NeuronParameters::wordPitch() const
 		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitch");
 	}
 	return param_pitch;
+}
+
+
+
+void
+NeuronParameters::step(cycle_t cycle)
+{
+	if(m_paramDirty) {
+		m_param.copyToDevice();
+	}
+	if(m_stateDirty) {
+		m_state.copyToDevice();
+	}
+	m_cycle = cycle;
+}
+
+
+
+float
+NeuronParameters::getParameter(const DeviceIdx& idx, int parameter) const
+{
+	return m_param.getNeuron(idx.partition, idx.neuron, parameter);
+}
+
+
+
+void
+NeuronParameters::setParameter(const DeviceIdx& idx, int parameter, float value)
+{
+	m_param.setNeuron(idx.partition, idx.neuron, value, parameter);
+	m_paramDirty = true;
+}
+
+
+
+void
+NeuronParameters::readStateFromDevice() const
+{
+	if(m_lastSync != m_cycle) {
+		m_state.copyFromDevice();
+		m_lastSync = m_cycle;
+	}
+}
+
+
+
+float
+NeuronParameters::getState(const DeviceIdx& idx, int parameter) const
+{
+	readStateFromDevice();
+	return m_param.getNeuron(idx.partition, idx.neuron, parameter);
+}
+
+
+
+void
+NeuronParameters::setState(const DeviceIdx& idx, int parameter, float value)
+{
+	readStateFromDevice();
+	m_param.setNeuron(idx.partition, idx.neuron, value, parameter);
+	m_paramDirty = true;
 }
 
 

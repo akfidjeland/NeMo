@@ -234,6 +234,7 @@ void
 Simulation::update()
 {
 	m_timer.step();
+	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
 	::stepSimulation(
 			m_mapper.partitionCount(),
