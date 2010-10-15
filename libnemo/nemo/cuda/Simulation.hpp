@@ -72,6 +72,9 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();
 
+		/*! \copydoc nemo::Simulation::getMembranePotential */
+		float getMembranePotential(unsigned neuron) const;
+
 		/*! \copydoc nemo::Simulation::applyStdp */
 		void applyStdp(float reward);
 

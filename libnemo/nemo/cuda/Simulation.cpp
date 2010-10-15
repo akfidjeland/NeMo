@@ -342,6 +342,13 @@ Simulation::readFiring()
 
 
 
+float
+Simulation::getMembranePotential(unsigned neuron) const
+{
+	return m_neurons.getState(m_mapper.deviceIdx(neuron), STATE_V);
+}
+
+
 void
 Simulation::finishSimulation()
 {
