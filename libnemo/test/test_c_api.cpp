@@ -141,6 +141,13 @@ c_runSimulation(
 			nemo_get_plastic(sim, &synapses[0], synapses.size(), &plastic);
 		}
 
+		// read back a some membrane potential, just to make sure it works
+		if(ms % 100 == 0) {
+			float v;
+			nemo_get_membrane_potential(sim, 40, &v);
+			nemo_get_membrane_potential(sim, 50, &v);
+		}
+
 		// push data back onto local buffers
 		std::copy(fired, fired + fired_len, back_inserter(*fnidx));
 		std::fill_n(back_inserter(*fcycles), fired_len, s*1000 + ms);
