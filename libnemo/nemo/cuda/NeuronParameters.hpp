@@ -13,8 +13,9 @@
 //! \file NeuronParameters.hpp
 
 #include <map>
-#include <boost/shared_ptr.hpp>
 
+#include "NVector.hpp"
+#include "kernel.cu_h"
 #include "types.h"
 
 namespace nemo {
@@ -34,28 +35,24 @@ class NeuronParameters
 		NeuronParameters(const network::Generator& net, Mapper&);
 
 		/*! \return device pointer to neuron parameter data */
-		float* d_parameters() const;
+		float* d_parameters() const { return m_param.deviceData(); }
 
 		/*! \return device pointer to neuron state data */
-		float* d_state() const;
+		float* d_state() const { return m_state.deviceData(); }
 
 		/*! \return number of bytes allocated on the device */
-		size_t d_allocated() const { return m_allocated; }
+		size_t d_allocated() const { return m_state.d_allocated() + m_param.d_allocated(); }
 
-		size_t wordPitch() const { return m_wpitch; }
+		/*! \return the word pitch of each per-partition row of data (for a
+		 * single parameter/state variable) */
+		size_t wordPitch() const;
 
 	private:
 
-		boost::shared_ptr<float> md_arr;  // device data
+		NVector<float, NEURON_PARAM_COUNT> m_param;
+		NVector<float, NEURON_STATE_COUNT> m_state;
 
-		size_t m_allocated;
-
-		size_t m_wpitch;
-
-		size_t m_pcount;
-
-		size_t allocateDeviceData(size_t pcount, size_t psize);
-
+		/*! Load vector of the size of each partition onto the device */
 		void configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron);
 };
 
