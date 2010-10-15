@@ -197,6 +197,14 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount)
 
 
 
+nemo_status_t
+nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v)
+{
+	CATCH(Simulation, sim, getMembranePotential(neuron), *v);
+}
+
+
+
 #define GET_SYNAPSE_STATE(T, ptr, call, synapses, len, ret)                   \
     if(len > 0) {                                                             \
         nemo::SimulationBackend* sim =                                        \

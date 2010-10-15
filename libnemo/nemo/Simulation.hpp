@@ -91,11 +91,18 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 
 		/*! \name Simulation (queries)
 		 *
+		 * Neuron and synapse state is availble at run-time.
+		 *
 		 * The synapse state can be read back at run-time by specifiying a list
 		 * of synpase ids (\see addSynapse). The weights may change at
 		 * run-time, while the other synapse data is static.
 		 *
 		 * \{ */
+
+		/*! \return
+		 * 		membrane potential of the specified neuron
+		 */
+		virtual float getMembranePotential(unsigned neuron) const = 0;
 
 		/*! \return
 		 * 		target neurons for the specified synapses. The reference is

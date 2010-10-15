@@ -250,6 +250,10 @@ nemo_apply_stdp(nemo_simulation_t, float reward);
  * \{ */
 
 
+nemo_status_t
+nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v);
+
+
 /*! Get synapse target for the specified synapses
  *
  * \param synapses list of synapse ids (\see nemo_add_synapse)
