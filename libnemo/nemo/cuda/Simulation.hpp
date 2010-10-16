@@ -77,6 +77,11 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::applyStdp */
 		void applyStdp(float reward);
 
+		/*! \copydoc nemo::Simulation::setNeuron */
+		void setNeuron(unsigned idx,
+				float a, float b, float c, float d,
+				float u, float v, float sigma);
+
 		/*! \copydoc nemo::Simulation::getTargets */
 		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
 

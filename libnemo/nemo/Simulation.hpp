@@ -82,6 +82,14 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 */
 		virtual const firing_output& step(const firing_stimulus&, const current_stimulus&) = 0;
 
+		/*! Change the parameters of an existing neuron.
+		 *
+		 * \see nemo::Network::addNeuron for parameters
+		 */
+		virtual void setNeuron(unsigned idx,
+				float a, float b, float c, float d,
+				float u, float v, float sigma) = 0;
+
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *
 		 * \param reward

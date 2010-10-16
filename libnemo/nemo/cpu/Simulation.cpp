@@ -82,12 +82,12 @@ Simulation::setNeuronParameters(
 			i != i_end; ++i) {
 		nidx_t nidx = mapper.addGlobal((*i).first);
 		const Neuron<float>& n = i->second;
-		m_a.at(nidx) = n.a;	
-		m_b.at(nidx) = n.b;	
-		m_c.at(nidx) = n.c;	
-		m_d.at(nidx) = n.d;	
-		m_u.at(nidx) = n.u;	
-		m_v.at(nidx) = n.v;	
+		m_a.at(nidx) = n.a;
+		m_b.at(nidx) = n.b;
+		m_c.at(nidx) = n.c;
+		m_d.at(nidx) = n.d;
+		m_u.at(nidx) = n.u;
+		m_v.at(nidx) = n.v;
 		m_sigma.at(nidx) = n.sigma;	
 		m_valid.at(nidx) = true;
 	}
@@ -281,6 +281,34 @@ FiredList
 Simulation::readFiring()
 {
 	return m_firingBuffer.dequeueCycle();
+}
+
+
+
+void
+Simulation::setNeuron(unsigned g_idx,
+			float a, float b, float c, float d,
+			float u, float v, float sigma)
+{
+	nidx_t l_idx = m_mapper.localIdx(g_idx);
+	if(!m_valid.at(l_idx)) {
+		/* Setting the parameters of a neuron which does not already exists
+		 * would not have any ill effects (as long the local index is in the
+		 * valid range). However, doing so will have no effect on the
+		 * simulation, as changing the connectivity of the network at run-time
+		 * is not supported and consequently this new neuron will have no
+		 * connections. Therefore, it is more likely that setting a
+		 * non-existing neuron is a user error. */
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"setNeuron called with non-existing neuron index");
+	}
+	m_a.at(l_idx) = a;
+	m_b.at(l_idx) = b;
+	m_c.at(l_idx) = c;
+	m_d.at(l_idx) = d;
+	m_u.at(l_idx) = u;
+	m_v.at(l_idx) = v;
+	m_sigma.at(l_idx) = sigma;
 }
 
 
