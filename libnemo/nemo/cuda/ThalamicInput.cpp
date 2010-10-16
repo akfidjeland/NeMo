@@ -30,7 +30,6 @@ ThalamicInput::ThalamicInput(
 		const nemo::network::Generator& net,
 		const Mapper& mapper) :
 	m_rngState(mapper.partitionCount(), mapper.partitionSize(), true),
-	m_sigma(mapper.partitionCount(), mapper.partitionSize(), true),
 	m_inUse(false)
 {
 	std::vector<nemo::RNG> rngs(mapper.maxHandledGlobalIdx() - mapper.minHandledGlobalIdx() + 1);
@@ -40,7 +39,6 @@ ThalamicInput::ThalamicInput(
 		DeviceIdx didx = mapper.deviceIdx(i->first);
 		float sigma = i->second.sigma;
 		m_inUse |= sigma != 0.0f;
-		m_sigma.setNeuron(didx.partition, didx.neuron, sigma);
 		for(unsigned plane = 0; plane < 4; ++plane) {
 			nidx_t localIdx = mapper.globalIdx(didx) - mapper.minHandledGlobalIdx();
 			m_rngState.setNeuron(didx.partition, didx.neuron, rngs[localIdx][plane], plane);
@@ -49,7 +47,6 @@ ThalamicInput::ThalamicInput(
 
 	if(m_inUse) {
 		m_rngState.moveToDevice();
-		m_sigma.moveToDevice();
 	}
 }
 
@@ -58,7 +55,7 @@ ThalamicInput::ThalamicInput(
 size_t
 ThalamicInput::d_allocated() const
 {
-	return m_rngState.d_allocated() + m_sigma.d_allocated();
+	return m_rngState.d_allocated();
 }
 
 
@@ -71,23 +68,12 @@ ThalamicInput::deviceRngState() const
 
 
 
-float* 
-ThalamicInput::deviceSigma() const
-{
-	return m_inUse ? m_sigma.deviceData() : NULL;
-}
-
-
-
 size_t
 ThalamicInput::wordPitch() const
 {
-	size_t p1 = m_rngState.wordPitch();
-	size_t p2 = m_sigma.wordPitch();
-	//! \todo throw exception here instead
-	assert(p1 == p2);
-	return p1 == p2 ? p1 : 0;
+	return m_rngState.wordPitch();
 }
+
 
 	} // end namespace cuda
 } // end namespace nemo

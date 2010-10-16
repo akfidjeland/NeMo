@@ -57,18 +57,18 @@ applyStdp(
 
 
 /*! Wrapper for the __global__ call that performs a single simulation step */
-//! \todo use consitent argument ordering
+//! \todo use consistent argument ordering
 __host__
 void
 stepSimulation(
 		unsigned partitionCount,
-		bool usingStdp,
+		bool stdpEnabled,
+		bool thalamicInputEnabled,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
 		float* d_neuronParameters,
 		float* d_neuronState,
 		unsigned* d_rngState,
-		float* d_rngSigma,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
 		uint32_t* d_fout,
@@ -84,13 +84,14 @@ stepSimulation(
 	dim3 dimGrid(partitionCount);
 
 	step<<<dimGrid, dimBlock>>>(
-			usingStdp,
+			stdpEnabled,
+			thalamicInputEnabled,
 			cycle,
 			d_recentFiring,
 			// neuron parameters
 			d_neuronParameters,
 			d_neuronState,
-			d_rngState, d_rngSigma, //! \todo merge this into parmeters and state respectively
+			d_rngState,
 			// spike delivery
 			d_fcm,
 			d_outgoingCount, d_outgoing,

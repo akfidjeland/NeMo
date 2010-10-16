@@ -73,13 +73,17 @@ rng_genGaussian(unsigned* rngState)
 __device__
 void
 thalamicInput(
-        size_t partitionSize,
-        size_t pitch,
-        unsigned* g_rngState,
-        float* g_sigma,
-        float* s_current)
+		size_t partitionSize,
+		size_t pitch,
+		unsigned* g_rngState,
+		float* g_nparam,
+		float* s_current)
 {
 	unsigned rngState[4];
+
+	float* g_sigma = g_nparam +
+			+ PARAM_SIGMA * PARTITION_COUNT * pitch
+			+ CURRENT_PARTITION * pitch;
 
 	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 
@@ -91,10 +95,8 @@ thalamicInput(
 
 		if(neuron < partitionSize) {
 
-			size_t partitionOffset = CURRENT_PARTITION * pitch;
 			//! \todo make use of  both randoms
 			float2 r = rng_genGaussian(rngState);
-			float sigma = g_sigma[partitionOffset + neuron];
 
 			/*! \bug It seems that if r.x is very small the result of the
 			 * multiplication is NaN (at least if sigma is 0, possibly in other
@@ -104,7 +106,7 @@ thalamicInput(
 			 * (4.57384e-41) we get a NaN result. Could not reproduce in
 			 * standalone test-case, however. */
 			//! \todo consider using fixed-point arithmetic here as well.
-			s_current[neuron] += r.x * sigma;
+			s_current[neuron] += r.x * g_sigma[neuron];
 		}
 
 		/* Copy the current RNG state back to memory (not strictly necessary, you

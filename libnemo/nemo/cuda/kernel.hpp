@@ -29,13 +29,13 @@ applyStdp(
 void
 stepSimulation(
 		unsigned partitionCount,
-		bool usingStdp,
+		bool stdpEnabled,
+		bool thalamicInputEnabled,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
 		float* d_neuronParameters,
 		float* d_neuronState,
 		unsigned* d_rngState,
-		float* d_rngSigma,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
 		uint32_t* d_fout,

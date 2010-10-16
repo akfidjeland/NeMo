@@ -19,7 +19,7 @@
  * Current stimulus as used by Izhikevich in his 2004 paper. The RNG is due to
  * David Thomas.
  *
- * Thalamic input is not alway desirable. It's only enabled if setSigma has
+ * Thalamic input is not always desirable. It's only enabled if setSigma has
  * been set for at least one partition.
  *
  * \author Andreas Fidjeland
@@ -45,22 +45,17 @@ class ThalamicInput
 		 * return NULL */
 		unsigned* deviceRngState() const;
 
-		/*! \return pointer to device memory containing the sigma for each
-		 * neuron. If thalamic input is not used, i.e. setSigma has never been
-		 * called, return NULL */
-		float* deviceSigma() const;
-
 		/*! \return word pitch of both the RNG state vector and the sigma
 		 * vector */
 		size_t wordPitch() const;
 
 		size_t d_allocated() const;
+
+		bool inUse() const { return m_inUse; }
 	
 	private :
 
 		NVector<unsigned, 4> m_rngState;
-
-		NVector<float, 1> m_sigma;
 
 		bool m_inUse;
 };

@@ -49,7 +49,8 @@
 #define PARAM_B 1
 #define PARAM_C 2
 #define PARAM_D 3
-#define NEURON_PARAM_COUNT 4
+#define PARAM_SIGMA 4 // for gaussian RNG
+#define NEURON_PARAM_COUNT 5
 #define STATE_U 0
 #define STATE_V 1
 #define NEURON_STATE_COUNT 2

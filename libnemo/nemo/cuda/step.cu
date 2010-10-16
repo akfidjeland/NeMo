@@ -377,13 +377,13 @@ __global__
 void
 step (
 		bool stdpEnabled,
+		bool thalamicInputEnabled,
 		uint32_t cycle,
 		uint64_t* g_recentFiring,
 		// neuron state
 		float* g_neuronParameters,
 		float* g_neuronState,
 		unsigned* g_rngState,
-		float* g_rngSigma,			//! \todo combine with g_neuronParameters
 		// spike delivery
 		synapse_t* g_fcm,
 		unsigned* g_outgoingCount,
@@ -465,8 +465,9 @@ step (
 	 * However, we need to either provide fixed-point random input or do an
 	 * additional conversion inside the thalamic input code in order for this
 	 * to work. */
-	if(g_rngState != NULL && g_rngSigma != NULL) {
-		thalamicInput(s_partitionSize, s_pitch32, g_rngState, g_rngSigma, s_current);
+	if(thalamicInputEnabled) {
+		thalamicInput(s_partitionSize, s_pitch32, g_rngState,
+				g_neuronParameters, s_current);
 	}
 
 	SET_COUNTER(s_ccMain, 4);

@@ -239,12 +239,12 @@ Simulation::update()
 	::stepSimulation(
 			m_mapper.partitionCount(),
 			m_stdp,
+			m_thalamicInput.inUse(),
 			m_timer.elapsedSimulation(),
 			m_recentFiring.deviceData(),
 			m_neurons.d_parameters(),
 			m_neurons.d_state(),
 			m_thalamicInput.deviceRngState(),
-			m_thalamicInput.deviceSigma(),
 			md_fstim,
 			md_istim,
 			m_firingBuffer.d_buffer(),

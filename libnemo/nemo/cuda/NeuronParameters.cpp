@@ -42,6 +42,7 @@ NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper
 		m_param.setNeuron(dev.partition, dev.neuron, n.b, PARAM_B);
 		m_param.setNeuron(dev.partition, dev.neuron, n.c, PARAM_C);
 		m_param.setNeuron(dev.partition, dev.neuron, n.d, PARAM_D);
+		m_param.setNeuron(dev.partition, dev.neuron, n.sigma, PARAM_SIGMA);
 		m_state.setNeuron(dev.partition, dev.neuron, n.u, STATE_U);
 		m_state.setNeuron(dev.partition, dev.neuron, n.v, STATE_V);
 
