@@ -381,9 +381,9 @@ step (
 		uint32_t cycle,
 		uint64_t* g_recentFiring,
 		// neuron state
-		float* g_neuronParameters,
-		float* g_neuronState,
-		unsigned* g_rngState,
+		float* gf_neuronParameters,
+		float* gf_neuronState,
+		unsigned* gu_neuronState,
 		// spike delivery
 		synapse_t* g_fcm,
 		unsigned* g_outgoingCount,
@@ -466,8 +466,8 @@ step (
 	 * additional conversion inside the thalamic input code in order for this
 	 * to work. */
 	if(thalamicInputEnabled) {
-		thalamicInput(s_partitionSize, s_pitch32, g_rngState,
-				g_neuronParameters, s_current);
+		thalamicInput(s_partitionSize, s_pitch32,
+				gu_neuronState, gf_neuronParameters, s_current);
 	}
 
 	SET_COUNTER(s_ccMain, 4);
@@ -476,8 +476,8 @@ step (
 	loadFiringInput(g_fstim, s_fstim);
 
 	fire( s_partitionSize,
-			g_neuronParameters + CURRENT_PARTITION * s_pitch32,
-			g_neuronState + CURRENT_PARTITION * s_pitch32,
+			gf_neuronParameters + CURRENT_PARTITION * s_pitch32,
+			gf_neuronState + CURRENT_PARTITION * s_pitch32,
 			s_current,
 			s_fstim,
 			&s_firingCount,

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <nemo/network/Generator.hpp>
+#include <nemo/RNG.hpp>
 
 #include "types.h"
 #include "exception.hpp"
@@ -23,14 +24,21 @@ namespace nemo {
 
 
 NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper) :
-	m_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
-	m_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mu_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_cycle(0),
-	m_lastSync(~0),
-	m_paramDirty(false),
-	m_stateDirty(false)
+	mf_lastSync(~0),
+	mf_paramDirty(false),
+	mf_stateDirty(false),
+	m_rngEnabled(false)
 {
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
+
+	/* Create all the RNG seeds */
+	//! \todo seed this from configuration
+	std::vector<nemo::RNG> rngs(mapper.maxHandledGlobalIdx() - mapper.minHandledGlobalIdx() + 1);
+	initialiseRng(mapper.minHandledGlobalIdx(), mapper.maxHandledGlobalIdx(), rngs);
 
 	for(network::neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
@@ -38,23 +46,39 @@ NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper
 		DeviceIdx dev = mapper.addIdx(i->first);
 		const nemo::Neuron<float>& n = i->second;
 
-		m_param.setNeuron(dev.partition, dev.neuron, n.a, PARAM_A);
-		m_param.setNeuron(dev.partition, dev.neuron, n.b, PARAM_B);
-		m_param.setNeuron(dev.partition, dev.neuron, n.c, PARAM_C);
-		m_param.setNeuron(dev.partition, dev.neuron, n.d, PARAM_D);
-		m_param.setNeuron(dev.partition, dev.neuron, n.sigma, PARAM_SIGMA);
-		m_state.setNeuron(dev.partition, dev.neuron, n.u, STATE_U);
-		m_state.setNeuron(dev.partition, dev.neuron, n.v, STATE_V);
+		mf_param.setNeuron(dev.partition, dev.neuron, n.a, PARAM_A);
+		mf_param.setNeuron(dev.partition, dev.neuron, n.b, PARAM_B);
+		mf_param.setNeuron(dev.partition, dev.neuron, n.c, PARAM_C);
+		mf_param.setNeuron(dev.partition, dev.neuron, n.d, PARAM_D);
+		mf_param.setNeuron(dev.partition, dev.neuron, n.sigma, PARAM_SIGMA);
+		mf_state.setNeuron(dev.partition, dev.neuron, n.u, STATE_U);
+		mf_state.setNeuron(dev.partition, dev.neuron, n.v, STATE_V);
+
+		m_rngEnabled |= n.sigma != 0.0f;
+		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
+		for(unsigned plane = 0; plane < 4; ++plane) {
+			mu_state.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], STATE_RNG+plane);
+		}
 
 		maxPartitionNeuron[dev.partition] =
 			std::max(maxPartitionNeuron[dev.partition], dev.neuron);
 	}
 
-	m_param.copyToDevice();
-	m_state.copyToDevice();
+	mf_param.copyToDevice();
+	mf_state.copyToDevice();
+	mu_state.moveToDevice();
 	configurePartitionSizes(maxPartitionNeuron);
 }
 
+
+
+size_t
+NeuronParameters::d_allocated() const
+{
+	return mf_param.d_allocated()
+		+ mf_state.d_allocated()
+		+ mu_state.d_allocated();
+}
 
 
 void
@@ -80,12 +104,13 @@ NeuronParameters::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPar
 size_t
 NeuronParameters::wordPitch() const
 {
-	size_t param_pitch = m_param.wordPitch();
-	size_t state_pitch = m_state.wordPitch();
-	if(param_pitch != state_pitch) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitch");
+	size_t f_param_pitch = mf_param.wordPitch();
+	size_t f_state_pitch = mf_state.wordPitch();
+	size_t u_state_pitch = mu_state.wordPitch();
+	if(f_param_pitch != f_state_pitch || f_param_pitch != u_state_pitch) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitches");
 	}
-	return param_pitch;
+	return f_param_pitch;
 }
 
 
@@ -93,11 +118,11 @@ NeuronParameters::wordPitch() const
 void
 NeuronParameters::step(cycle_t cycle)
 {
-	if(m_paramDirty) {
-		m_param.copyToDevice();
+	if(mf_paramDirty) {
+		mf_param.copyToDevice();
 	}
-	if(m_stateDirty) {
-		m_state.copyToDevice();
+	if(mf_stateDirty) {
+		mf_state.copyToDevice();
 	}
 	m_cycle = cycle;
 }
@@ -107,7 +132,7 @@ NeuronParameters::step(cycle_t cycle)
 float
 NeuronParameters::getParameter(const DeviceIdx& idx, int parameter) const
 {
-	return m_param.getNeuron(idx.partition, idx.neuron, parameter);
+	return mf_param.getNeuron(idx.partition, idx.neuron, parameter);
 }
 
 
@@ -115,8 +140,8 @@ NeuronParameters::getParameter(const DeviceIdx& idx, int parameter) const
 void
 NeuronParameters::setParameter(const DeviceIdx& idx, int parameter, float value)
 {
-	m_param.setNeuron(idx.partition, idx.neuron, value, parameter);
-	m_paramDirty = true;
+	mf_param.setNeuron(idx.partition, idx.neuron, value, parameter);
+	mf_paramDirty = true;
 }
 
 
@@ -124,9 +149,9 @@ NeuronParameters::setParameter(const DeviceIdx& idx, int parameter, float value)
 void
 NeuronParameters::readStateFromDevice() const
 {
-	if(m_lastSync != m_cycle) {
-		m_state.copyFromDevice();
-		m_lastSync = m_cycle;
+	if(mf_lastSync != m_cycle) {
+		mf_state.copyFromDevice();
+		mf_lastSync = m_cycle;
 	}
 }
 
@@ -136,7 +161,7 @@ float
 NeuronParameters::getState(const DeviceIdx& idx, int parameter) const
 {
 	readStateFromDevice();
-	return m_param.getNeuron(idx.partition, idx.neuron, parameter);
+	return mf_param.getNeuron(idx.partition, idx.neuron, parameter);
 }
 
 
@@ -145,8 +170,8 @@ void
 NeuronParameters::setState(const DeviceIdx& idx, int parameter, float value)
 {
 	readStateFromDevice();
-	m_param.setNeuron(idx.partition, idx.neuron, value, parameter);
-	m_paramDirty = true;
+	mf_param.setNeuron(idx.partition, idx.neuron, value, parameter);
+	mf_paramDirty = true;
 }
 
 

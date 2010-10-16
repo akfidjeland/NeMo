@@ -21,23 +21,22 @@ neuronLocalStateIndex(unsigned neuron, unsigned plane, size_t pitch)
 
 
 
-//! \todo use unsigned4 instead?
 __device__ 
 void 
-rng_loadState(unsigned *rngState, const unsigned* g_rngState, unsigned neuron, size_t pitch)
+rng_loadState(unsigned *rngState, const unsigned* g_nstate, unsigned neuron, size_t pitch)
 {
-	for(unsigned i=0; i<4; i++){
-		rngState[i] = g_rngState[neuronLocalStateIndex(neuron, i, pitch)];
+	for(unsigned i=STATE_RNG0; i <= STATE_RNG3; i++){
+		rngState[i] = g_nstate[neuronLocalStateIndex(neuron, i, pitch)];
 	}
 }
 
 
 __device__ 
 void 
-rng_saveState(const unsigned *rngState, unsigned *g_rngState, unsigned neuron, size_t pitch)
+rng_saveState(const unsigned *rngState, unsigned *g_nstate, unsigned neuron, size_t pitch)
 {
-	for(unsigned i=0; i<4; i++){
-		g_rngState[neuronLocalStateIndex(neuron, i, pitch)] = rngState[i];
+	for(unsigned i=STATE_RNG0; i <= STATE_RNG3; i++){
+		g_nstate[neuronLocalStateIndex(neuron, i, pitch)] = rngState[i];
 	}
 }
 
@@ -75,13 +74,13 @@ void
 thalamicInput(
 		size_t partitionSize,
 		size_t pitch,
-		unsigned* g_rngState,
+		unsigned* g_nstate,
 		float* g_nparam,
 		float* s_current)
 {
 	unsigned rngState[4];
 
-	float* g_sigma = g_nparam +
+	float* g_sigma = g_nparam
 			+ PARAM_SIGMA * PARTITION_COUNT * pitch
 			+ CURRENT_PARTITION * pitch;
 
@@ -90,8 +89,7 @@ thalamicInput(
 		unsigned neuron = nbase + threadIdx.x;
 
 		/* Copy the input state from memory into our local state */
-		rng_loadState(rngState, g_rngState, neuron, pitch);
-
+		rng_loadState(rngState, g_nstate, neuron, pitch);
 
 		if(neuron < partitionSize) {
 
@@ -111,7 +109,7 @@ thalamicInput(
 
 		/* Copy the current RNG state back to memory (not strictly necessary, you
 		 * can just generate a new random state every time if you want). */
-		rng_saveState(rngState, g_rngState, neuron, pitch);
+		rng_saveState(rngState, g_nstate, neuron, pitch);
 
 	}
 

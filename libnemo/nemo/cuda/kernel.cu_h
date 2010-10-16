@@ -44,16 +44,26 @@
 #define PARTITION_COUNT gridDim.x
 #define CURRENT_PARTITION blockIdx.x
 
-// neuron parameter arrays
+/* Floating-point neuron parameters */
 #define PARAM_A 0
 #define PARAM_B 1
 #define PARAM_C 2
 #define PARAM_D 3
 #define PARAM_SIGMA 4 // for gaussian RNG
-#define NEURON_PARAM_COUNT 5
+#define NEURON_FLOAT_PARAM_COUNT 5
+
+/* Floating-point neuron state variables */
 #define STATE_U 0
 #define STATE_V 1
-#define NEURON_STATE_COUNT 2
+#define NEURON_FLOAT_STATE_COUNT 2
+
+/* Unsigned neuron state variables */
+#define STATE_RNG  0 // use STATE_RNG+plane
+#define STATE_RNG0 0
+#define STATE_RNG1 1
+#define STATE_RNG2 2
+#define STATE_RNG3 3
+#define NEURON_UNSIGNED_STATE_COUNT 4
 
 
 //! \todo move to nemo_cuda_types

@@ -22,7 +22,6 @@
 
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
-#include "ThalamicInput.hpp"
 #include "bitvector.hpp"
 #include "exception.hpp"
 
@@ -43,8 +42,6 @@ Simulation::Simulation(
 	m_neurons(net, m_mapper),
 	m_cm(net, conf, m_mapper),
 	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false),
-	//! \todo seed properly from configuration
-	m_thalamicInput(net, m_mapper),
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false, true),
 	//! \todo allow external users to directly use the host buffer
 	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
@@ -202,7 +199,6 @@ Simulation::d_allocated() const
 		+ m_recentFiring.d_allocated()
 		+ m_neurons.d_allocated()
 		+ m_firingBuffer.d_allocated()
-		+ m_thalamicInput.d_allocated()
 		+ m_cm.d_allocated();
 }
 
@@ -215,8 +211,6 @@ Simulation::setPitch()
 	size_t pitch1 = m_firingStimulus.wordPitch();
 	m_pitch32 = m_neurons.wordPitch();
 	m_pitch64 = m_recentFiring.wordPitch();
-	//! \todo fold thalamic input into neuron parameters
-	checkPitch(m_pitch32, m_thalamicInput.wordPitch());
 	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
 	checkPitch(pitch1, m_firingBuffer.wordPitch());
 	CUDA_SAFE_CALL(bv_setPitch(pitch1));
@@ -239,12 +233,12 @@ Simulation::update()
 	::stepSimulation(
 			m_mapper.partitionCount(),
 			m_stdp,
-			m_thalamicInput.inUse(),
+			m_neurons.rngEnabled(),
 			m_timer.elapsedSimulation(),
 			m_recentFiring.deviceData(),
-			m_neurons.d_parameters(),
-			m_neurons.d_state(),
-			m_thalamicInput.deviceRngState(),
+			m_neurons.df_parameters(),
+			m_neurons.df_state(),
+			m_neurons.du_state(),
 			md_fstim,
 			md_istim,
 			m_firingBuffer.d_buffer(),

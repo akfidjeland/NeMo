@@ -68,7 +68,6 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	Mapper.cpp
 	Outgoing.cpp
 	RSMatrix.cpp
-	ThalamicInput.cpp
 	WarpAddressTable.cpp
 	device_memory.cpp
 	devices.cpp

@@ -28,7 +28,6 @@
 #include "DeviceAssertions.hpp"
 #include "FiringBuffer.hpp"
 #include "NeuronParameters.hpp"
-#include "ThalamicInput.hpp"
 
 namespace nemo {
 
@@ -130,8 +129,6 @@ class Simulation : public nemo::SimulationBackend
 		ConnectivityMatrix m_cm;
 
 		NVector<uint64_t, 2> m_recentFiring;
-
-		ThalamicInput m_thalamicInput;
 
 		/* Densely packed, one bit per neuron */
 		NVector<uint32_t> m_firingStimulus;

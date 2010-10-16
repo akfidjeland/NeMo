@@ -66,9 +66,9 @@ stepSimulation(
 		bool thalamicInputEnabled,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
-		float* d_neuronParameters,
-		float* d_neuronState,
-		unsigned* d_rngState,
+		float* df_neuronParameters,
+		float* df_neuronState,
+		unsigned* du_neuronState,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
 		uint32_t* d_fout,
@@ -88,10 +88,10 @@ stepSimulation(
 			thalamicInputEnabled,
 			cycle,
 			d_recentFiring,
-			// neuron parameters
-			d_neuronParameters,
-			d_neuronState,
-			d_rngState,
+			// neuron data
+			df_neuronParameters,
+			df_neuronState,
+			du_neuronState,
 			// spike delivery
 			d_fcm,
 			d_outgoingCount, d_outgoing,
