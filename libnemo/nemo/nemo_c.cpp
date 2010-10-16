@@ -205,6 +205,17 @@ nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v)
 
 
 
+nemo_status_t
+nemo_set_neuron(nemo_network_t sim,
+		unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	CATCH_(Simulation, sim, setNeuron(idx, a, b, c, d, u, v, sigma));
+}
+
+
+
 #define GET_SYNAPSE_STATE(T, ptr, call, synapses, len, ret)                   \
     if(len > 0) {                                                             \
         nemo::SimulationBackend* sim =                                        \

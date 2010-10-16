@@ -254,6 +254,19 @@ nemo_status_t
 nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v);
 
 
+/*! Modify the parameters/state for a single neuron at run-time
+ *
+ * The neuron must already exist.
+ *
+ * \see nemo_add_neuron for parameters
+ */
+nemo_status_t
+nemo_set_neuron(nemo_network_t sim,
+		unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma);
+
+
 /*! Get synapse target for the specified synapses
  *
  * \param synapses list of synapse ids (\see nemo_add_synapse)
