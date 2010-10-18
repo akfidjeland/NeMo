@@ -269,8 +269,9 @@ Worker::runSimulation(
 	}
 	g_fcmIn.finalize(localMapper, false);
 
-	std::vector<fix_t> istim(localCount, 0);         // input from global spikes
-	SpikeQueue queue(net.maxDelay());
+	std::vector<fix_t> istim(localMapper.neuronsInValidRange(), 0);
+	assert(localMapper.neuronsInValidRange() >= localCount);
+	SpikeQueue queue(net.maxDelay()); // input from global spikes
 
 	/* Incoming master request */
 	boost::mpi::request mreq;
