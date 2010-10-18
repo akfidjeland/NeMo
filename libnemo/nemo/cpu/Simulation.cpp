@@ -40,7 +40,7 @@ Simulation::Simulation(
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(net),
 	//! \todo remove redundant member?
-	m_neuronCount(m_mapper.neuronCount()),
+	m_neuronCount(m_mapper.neuronsInValidRange()),
 	m_a(m_neuronCount, 0),
 	m_b(m_neuronCount, 0),
 	m_c(m_neuronCount, 0),

@@ -115,8 +115,8 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 			return validGlobal(globalIdx(local));
 		}
 
-		/*! \copydoc nemo::Mapper::neuronCount */
-		unsigned neuronCount() const {
+		/*! \copydoc nemo::Mapper::neuronsInValidRange */
+		unsigned neuronsInValidRange() const {
 			return partitionCount() * partitionSize();
 		}
 

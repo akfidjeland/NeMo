@@ -50,10 +50,8 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 			return local + m_offset;
 		}
 
-		/* Return number of valid neuron *indices*. The actual number of
-		 * neurons may be smaller as some indices may correspond to inactive
-		 * neurons */ 
-		unsigned neuronCount() const {
+		/*! \copydoc nemo::Mapper::neuronsInValidRange */
+		unsigned neuronsInValidRange() const {
 			return m_ncount;
 		}
 

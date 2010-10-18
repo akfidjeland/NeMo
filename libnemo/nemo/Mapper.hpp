@@ -27,8 +27,10 @@ class Mapper
 
 		virtual L maxLocalIdx() const = 0;
 
-		/*! \return number of valid neurons registered with the mapper */
-		virtual unsigned neuronCount() const = 0;
+		/*! \return number of neurons in the valid index range. This may be
+		 * larger than the actual number of neurons in this range as some
+		 * indices may be unused.*/
+		virtual unsigned neuronsInValidRange() const = 0;
 };
 
 }
