@@ -261,7 +261,7 @@ nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v);
  * \see nemo_add_neuron for parameters
  */
 nemo_status_t
-nemo_set_neuron(nemo_network_t sim,
+nemo_set_neuron(nemo_simulation_t sim,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
