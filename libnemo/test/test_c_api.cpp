@@ -153,6 +153,14 @@ c_runSimulation(
 		std::fill_n(back_inserter(*fcycles), fired_len, s*1000 + ms);
 	}
 
+	// try replacing a neuron, just to make sure it doesn't make things fall over.
+	nemo_set_neuron(sim, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -64.0f, 0.0f);
+	{
+		float v;
+		nemo_get_membrane_potential(sim, 0, &v);
+		BOOST_REQUIRE_EQUAL(v, -64.0);
+	}
+
 	nemo_delete_simulation(sim);
 }
 
