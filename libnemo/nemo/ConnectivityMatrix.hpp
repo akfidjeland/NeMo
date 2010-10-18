@@ -22,6 +22,7 @@
 #include "types.hpp"
 #include "Mapper.hpp"
 #include "STDP.hpp"
+#include "OutgoingDelays.hpp"
 
 #define ASSUMED_CACHE_LINE_SIZE 64
 
@@ -65,6 +66,11 @@ namespace network {
 class ConfigurationImpl;
 struct AxonTerminalAux;
 
+
+/*! \todo Split this into a construction-time and run-time class. Currently
+ * using this class is a bit clumsy, as some functions should only really be
+ * accessed at construction time, while others should only be accessed at
+ * run-time. This constraint is not enforced by the interface */
 
 /* Generic connectivity matrix
  *
@@ -117,9 +123,20 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		void finalize(const mapper_t& mapper, bool verifySources);
 
-		typedef std::set<delay_t>::const_iterator delay_iterator;
+		typedef OutgoingDelays::const_iterator delay_iterator;
 
+		/*! \param neuron
+		 * 		global neuron index
+		 *  \return
+		 *  	iterator pointing to first delay for the \a neuron
+		 */
 		delay_iterator delay_begin(nidx_t source) const;
+
+		/*! \param neuron
+		 * 		global neuron index
+		 *  \return
+		 *  	iterator pointing beyond the last delay for the \a neuron
+		 */
 		delay_iterator delay_end(nidx_t source) const;
 
 		unsigned fractionalBits() const { return m_fractionalBits; }
@@ -132,8 +149,10 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		/*! \return bit-mask indicating the delays at which the given neuron
 		 * has *any* outgoing synapses. If the source neuron is invalid 0 is
-		 * returned. */
-		uint64_t delayBits(nidx_t l_source) const;
+		 * returned.
+		 *
+		 * Only call this after finalize has been called. */
+		uint64_t delayBits(nidx_t l_source) const { return m_delays.delayBits(l_source); }
 
 	private:
 
@@ -160,10 +179,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::map<nidx_t, Incoming> m_racc;
 		boost::optional<StdpProcess> m_stdp;
 
-		std::map<nidx_t, std::set<delay_t> > m_delays;
-
-		//! \todo could add a fast lookup here as well
-
+		OutgoingDelaysAcc m_delaysAcc;
+		OutgoingDelays m_delays;
 		delay_t m_maxDelay;
 
 		/*! \return linear index into CM, based on 2D index (neuron,delay) */

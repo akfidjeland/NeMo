@@ -110,8 +110,7 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 	row.push_back(FAxonTerminal(target, weight));
 
 	//! \todo could do this on finalize pass, since there are fewer steps there
-	m_delays[source].insert(delay);
-	m_maxDelay = std::max(m_maxDelay, delay);
+	m_delaysAcc.addDelay(source, delay);
 
 	unsigned char plastic = s.plastic();
 	if(plastic) {
@@ -136,12 +135,16 @@ ConnectivityMatrix::finalize(const mapper_t& mapper, bool verifySources)
 void
 ConnectivityMatrix::finalizeForward(const mapper_t& mapper, bool verifySources)
 {
-	if(m_acc.empty())
+	m_maxDelay = m_delaysAcc.maxDelay();
+	m_delays.init(m_delaysAcc);
+	m_delaysAcc.clear();
+
+	if(m_acc.empty()) {
 		return;
+	}
 
-	/* this relies on lexicographical ordering of tuple */
+	/* This relies on lexicographical ordering of tuple */
 	nidx_t maxSourceIdx = m_acc.rbegin()->first.get<0>();
-
 	m_cm.resize((maxSourceIdx+1) * m_maxDelay);
 
 	//! \todo change order here: default to Row() in all location, and then just iterate over map
@@ -368,11 +371,7 @@ ConnectivityMatrix::getPlastic(const std::vector<synapse_id>& synapses)
 ConnectivityMatrix::delay_iterator
 ConnectivityMatrix::delay_begin(nidx_t source) const
 {
-	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_delays.find(source);
-	if(found == m_delays.end()) {
-		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
-	}
-	return found->second.begin();
+	return m_delays.begin(source);
 }
 
 
@@ -380,27 +379,7 @@ ConnectivityMatrix::delay_begin(nidx_t source) const
 ConnectivityMatrix::delay_iterator
 ConnectivityMatrix::delay_end(nidx_t source) const
 {
-	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_delays.find(source);
-	if(found == m_delays.end()) {
-		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
-	}
-	return found->second.end();
-}
-
-
-
-uint64_t
-ConnectivityMatrix::delayBits(nidx_t l_source) const
-{
-	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_delays.find(l_source);
-	uint64_t bits = 0;
-	if(found != m_delays.end()) {
-		for(delay_iterator d = found->second.begin(), d_end = found->second.end();
-				d != d_end; ++d) {
-			bits = bits | (uint64_t(0x1) << uint64_t(*d - 1));
-		}
-	}
-	return bits;
+	return m_delays.end(source);
 }
 
 

@@ -39,6 +39,7 @@ ADD_LIBRARY(nemo_base
 	NetworkImpl.cpp
 	Simulation.cpp
 	SimulationBackend.cpp
+	OutgoingDelays.cpp
 	ConnectivityMatrix.cpp
 	RNG.cpp
 	STDP.cpp
