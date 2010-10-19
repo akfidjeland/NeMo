@@ -162,6 +162,12 @@ A default-constructed configuration object will choose the best backend,
 conf.setCudaBackend();
 \end{ccode}
 
+or
+
+\begin{ccode}
+conf.setCpuBackend();
+\end{ccode}
+
 \subsection{Creating and running a simulation}
 
 We can now create a simulation object from the network and configuration objects.
@@ -359,9 +365,11 @@ The state update step uses the Euler method with a step size of 0.25ms.
 
 The weights are stored internally in a fixed-point format (Q11.20) for two reasons.
 First,
-	it is then possible to get repeatable results regardless of the order in which synapses are processed in a parallel setting (fixed-point addition is commutative, unlike floating point addition).
+	it is then possible to get repeatable results regardless of the order in which synapses are processed in a parallel setting (fixed-point addition is associative, unlike floating point addition).
 Second, 
-	it results in better performance, at least on the CUDA backend, where atomic operations are available for integer/fixed-point but not for floating point. 
+	it results in better performance,
+		at least on the CUDA backend with older cards,
+		where atomic operations are available for integer/fixed-point but not for floating point. 
 The fixed-point format should not overflow for synapses with remotely plausible weights,
 	but the current accumulation uses saturating arithmetic nonetheless.
 
