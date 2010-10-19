@@ -10,6 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "types.h"
 #include "NVector.hpp"
 
 namespace nemo {
@@ -23,28 +24,28 @@ class CycleCounters
 
 		void printCounters(std::ostream& out);
 
-		unsigned long long* data() const;
+		cycle_counter_t* data() const;
 
 		/*! \return word pitch for cycle counting arrays */
 		size_t pitch() const;
 
-		unsigned long long* dataApplySTDP() const { return m_ccApplySTDP.deviceData(); }
+		cycle_counter_t* dataApplySTDP() const { return m_ccApplySTDP.deviceData(); }
 		size_t pitchApplySTDP() const { return m_ccApplySTDP.wordPitch(); }
 
 	private:
 
 		//! \todo use a single list of counters (but with different sizes)
-		NVector<unsigned long long> m_ccMain;
-		NVector<unsigned long long> m_ccApplySTDP;
+		NVector<cycle_counter_t> m_ccMain;
+		NVector<cycle_counter_t> m_ccApplySTDP;
 
 		size_t m_partitionCount;
 
-		unsigned long long m_clockRateKHz;
+		cycle_counter_t m_clockRateKHz;
 
 		bool m_stdpEnabled;
 
 		void printCounterSet(
-				NVector<unsigned long long>& cc_in,
+				NVector<cycle_counter_t>& cc_in,
 				size_t counters,
 				const char* setName,
 				const char* names[], // for intermediate counters

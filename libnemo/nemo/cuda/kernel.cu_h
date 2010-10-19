@@ -77,4 +77,7 @@
 #define CC_MAIN_COUNT 8
 #define CC_STDP_APPLY_COUNT 2
 
+/* Factor by which to reduce cycle counts, in order to avoid overflow */
+#define CC_MULT 1024
+
 #endif

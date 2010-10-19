@@ -45,17 +45,17 @@ const char* durationNames[] = {
 void
 printLine(
 		const char* label,
-		unsigned long long cycles,
-		unsigned long long total,
-		unsigned long long clockRateKHz,
+		cycle_counter_t cycles,
+		cycle_counter_t total,
+		cycle_counter_t clockRateKHz,
 		std::ostream& outfile)
 {
-	unsigned long long timeMs = cycles / clockRateKHz;
+	cycle_counter_t timeMs = CC_MULT * cycles / clockRateKHz;
 	outfile << std::setw(15) << label << ":" 
 		<< std::setw(10) << timeMs << "ms, "
 		<< std::setw(15) << cycles << "cycles, "; 
 	if(total != 0)
-		outfile << std::setw(4) << 100*cycles/total << "%";
+		outfile << std::setw(4) << 100.0*(double(cycles)/double(total)) << "%";
 	outfile << std::endl;
 }
 
@@ -74,26 +74,26 @@ clockRate()
 
 void
 CycleCounters::printCounterSet(
-		NVector<unsigned long long>& cc_in,
+		NVector<cycle_counter_t>& cc_in,
 		size_t counters,
 		const char* setName,
 		const char* names[], // for intermediate counters
 		std::ostream& outfile)
 {
-	const unsigned long long* cc = cc_in.copyFromDevice();
+	const cycle_counter_t* cc = cc_in.copyFromDevice();
 	//! \todo average over all partitions
 	/* The data return by copyFromDevice is the raw device data, including any
 	 * padding. Using cc.end() would therefore read too far */ 
-	unsigned long long totalCycles = std::accumulate(cc, cc + counters, 0l);
+	cycle_counter_t totalCycles = std::accumulate(cc, cc + counters, 0l);
 
 	int clockRateKHz = clockRate();
 	printLine(setName, totalCycles, totalCycles, clockRateKHz, outfile);
 	outfile << std::endl;
 
 	if(names != NULL) {
-		for(const unsigned long long *i = cc, *i_end = cc + counters;
+		for(const cycle_counter_t*i = cc, *i_end = cc + counters;
 				i != i_end; ++i) {
-			unsigned long long cycles = *i;
+			cycle_counter_t cycles = *i;
 			printLine(names[i-cc], cycles, totalCycles, clockRateKHz, outfile);
 		}
 		outfile << std::endl;
@@ -113,7 +113,7 @@ CycleCounters::printCounters(std::ostream& outfile)
 
 
 
-unsigned long long*
+cycle_counter_t*
 CycleCounters::data() const
 {
 	//! \todo return data for different sets

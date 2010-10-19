@@ -36,7 +36,7 @@ __global__
 void
 applySTDP_(
 #ifdef NEMO_CUDA_KERNEL_TIMING
-	unsigned long long* g_cc,
+	cycle_counter_t* g_cc,
 	size_t ccPitch,
 #endif
 	synapse_t* g_fcm,

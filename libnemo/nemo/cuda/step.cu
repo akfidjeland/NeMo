@@ -619,8 +619,7 @@ step (
 		fix_t* g_istim,
 #ifdef NEMO_CUDA_KERNEL_TIMING
 		// cycle counting
-		//! \todo change to uint64_t
-		unsigned long long* g_cycleCounters,
+		cycle_counter_t* g_cycleCounters,
 		//! \todo move to cmem
 		size_t ccPitch,
 #endif

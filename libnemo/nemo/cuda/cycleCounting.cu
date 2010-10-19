@@ -47,12 +47,12 @@ setCycleCounter(clock_t* s_cc, size_t counter)
 
 __device__
 void
-writeCycleCounters(clock_t* s_cc, unsigned long long* g_cc, size_t pitch, size_t count)
+writeCycleCounters(clock_t* s_cc, cycle_counter_t* g_cc, size_t pitch, size_t count)
 {
     __syncthreads();
 	if(threadIdx.x < count-1) {
 		clock_t d = duration(s_cc[threadIdx.x], s_cc[threadIdx.x+1]);
-		atomicAdd(g_cc + blockIdx.x * pitch + threadIdx.x, (unsigned long long) d);
+		atomicAdd(g_cc + blockIdx.x * pitch + threadIdx.x, (cycle_counter_t) d/CC_MULT);
 	}
 }
 

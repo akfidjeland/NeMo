@@ -17,7 +17,7 @@
 
 void
 applyStdp(
-		unsigned long long* d_cc,
+		cycle_counter_t* d_cc,
 		size_t ccPitch,
 		unsigned partitionCount,
 		unsigned fractionalBits,
@@ -48,7 +48,7 @@ stepSimulation(
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
 		uint64_t* d_delays,
-		unsigned long long* d_cc,
+		cycle_counter_t* d_cc,
 		size_t ccPitch);
 
 cudaError
