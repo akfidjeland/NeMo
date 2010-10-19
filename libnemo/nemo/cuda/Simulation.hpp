@@ -291,7 +291,8 @@ class Simulation : public nemo::SimulationBackend
 		NVector<uint32_t> m_firingStimulus;
 		void clearFiringStimulus();
 
-		NVector<fix_t> m_currentStimulus;
+		NVector<fix_t> m_currentStimulus; // user-provided
+		NVector<float> m_current;         // driven by simulation
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */

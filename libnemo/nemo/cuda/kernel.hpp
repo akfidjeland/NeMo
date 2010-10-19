@@ -39,6 +39,7 @@ stepSimulation(
 		unsigned* du_neuronState,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
+		float* d_current,
 		uint32_t* d_fout,
 		synapse_t* d_fcm,
 		outgoing_addr_t* d_outgoingAddr,

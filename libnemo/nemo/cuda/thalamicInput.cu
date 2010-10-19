@@ -75,11 +75,12 @@ thalamicInput(
 		size_t partitionSize,
 		size_t pitch,
 		unsigned* g_nstate,
-		float* g_nparam,
-		float* s_current)
+		float* g_nparam,    // not offset
+		float* s_current)   // correctly offset for this partition
 {
 	unsigned rngState[4];
 
+	//! \todo make the partition offset in call (for consistency).
 	float* g_sigma = g_nparam
 			+ PARAM_SIGMA * PARTITION_COUNT * pitch
 			+ CURRENT_PARTITION * pitch;
@@ -110,7 +111,6 @@ thalamicInput(
 		/* Copy the current RNG state back to memory (not strictly necessary, you
 		 * can just generate a new random state every time if you want). */
 		rng_saveState(rngState, g_nstate, neuron, pitch);
-
 	}
 
 	__syncthreads();

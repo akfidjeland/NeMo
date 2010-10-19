@@ -20,7 +20,6 @@
 #include <nemo/NetworkImpl.hpp>
 #include <nemo/fixedpoint.hpp>
 
-#include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
 #include "bitvector.hpp"
 #include "exception.hpp"
@@ -44,8 +43,8 @@ Simulation::Simulation(
 	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
 	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false),
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false, true),
-	//! \todo allow external users to directly use the host buffer
 	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
+	m_current(m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingBuffer(m_mapper),
 	m_cycleCounters(m_mapper.partitionCount(), conf.stdpFunction()),
 	m_deviceAssertions(m_mapper.partitionCount()),
@@ -251,6 +250,7 @@ Simulation::update()
 			m_neurons.du_state(),
 			md_fstim,
 			md_istim,
+			m_current.deviceData(),
 			m_firingBuffer.d_buffer(),
 			m_cm.d_fcm(),
 			m_cm.d_outgoingAddr(),

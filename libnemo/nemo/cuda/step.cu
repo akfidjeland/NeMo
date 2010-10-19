@@ -148,6 +148,27 @@ addCurrentStimulus(unsigned psize,
 
 
 
+/*! Write all per-neuron accumulated current to global memory
+ *
+ * The global memory roundtrip is so that the accumulation and fire steps can
+ * be done in separate kernel invocations.
+ *
+ * \param[in] s_current Per-neuron accumulated current
+ * \param[out] g_current Per-neuron accumulated current (with correct partition offset in gmem)
+
+ */
+__device__
+void
+storeAccumulatedCurrent(unsigned nNeurons, float* s_current, float* g_current)
+{
+	for(unsigned bNeuron=0; bNeuron < nNeurons; bNeuron += THREADS_PER_BLOCK) {
+		unsigned neuron = bNeuron + threadIdx.x;
+		g_current[neuron] = s_current[neuron];
+	}
+}
+
+
+
 /*! Update state of all neurons
  *
  * Update the state of all neurons in partition according to the equations in
@@ -187,7 +208,7 @@ fire(
 	float* g_neuronParameters,
 	float* g_neuronState,
 	// input
-	float* s_current,    // input current
+	float* g_current,    // input current
 	// buffers
 	uint32_t* s_fstim,
 	// output
@@ -212,7 +233,7 @@ fire(
 			float u = g_u[neuron];
 			float a = g_a[neuron];
 			float b = g_b[neuron];
-			float I = s_current[neuron];
+			float I = g_current[neuron];
 
 			/* n sub-steps for numerical stability, with u held */
 			bool fired = false;
@@ -617,6 +638,7 @@ step (
 		// firing stimulus
 		uint32_t* g_fstim,
 		fix_t* g_istim,
+		float* g_current,
 #ifdef NEMO_CUDA_KERNEL_TIMING
 		// cycle counting
 		cycle_counter_t* g_cycleCounters,
@@ -691,6 +713,8 @@ step (
 				gu_neuronState, gf_neuronParameters, s_current);
 	}
 
+	storeAccumulatedCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
+
 	SET_COUNTER(s_ccMain, 4);
 
 	uint32_t* s_fstim = s_N1A;
@@ -699,7 +723,7 @@ step (
 	fire( s_partitionSize,
 			gf_neuronParameters + CURRENT_PARTITION * c_pitch32,
 			gf_neuronState + CURRENT_PARTITION * c_pitch32,
-			s_current,
+			g_current + CURRENT_PARTITION * c_pitch32,
 			s_fstim,
 			&s_firingCount,
 			s_fired);

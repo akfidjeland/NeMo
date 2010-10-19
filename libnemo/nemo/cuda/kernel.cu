@@ -98,6 +98,7 @@ stepSimulation(
 		unsigned* du_neuronState,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
+		float* d_current,
 		uint32_t* d_fout,
 		synapse_t* d_fcm,
 		outgoing_addr_t* d_outgoingAddr,
@@ -128,8 +129,9 @@ stepSimulation(
 			d_gqData, d_gqFill,
 			d_lqData, d_lqFill, d_delays,
 			// stimulus
-			d_fstim, // firing
-			d_istim, // current
+			d_fstim, // firing stimulus
+			d_istim, // external input current
+			d_current, // internal input current
 			// cycle counting
 #ifdef NEMO_CUDA_KERNEL_TIMING
 			d_cc, ccPitch,
