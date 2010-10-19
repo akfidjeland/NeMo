@@ -40,7 +40,7 @@ OutgoingDelays::init(const OutgoingDelaysAcc& acc)
 OutgoingDelays::const_iterator
 OutgoingDelays::begin(nidx_t source) const
 {
-	std::map<nidx_t, std::vector<delay_t> >::const_iterator found = m_data.find(source);
+	boost::unordered_map<nidx_t, std::vector<delay_t> >::const_iterator found = m_data.find(source);
 	if(found == m_data.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
 	}
@@ -52,7 +52,7 @@ OutgoingDelays::begin(nidx_t source) const
 OutgoingDelays::const_iterator
 OutgoingDelays::end(nidx_t source) const
 {
-	std::map<nidx_t, std::vector<delay_t> >::const_iterator found = m_data.find(source);
+	boost::unordered_map<nidx_t, std::vector<delay_t> >::const_iterator found = m_data.find(source);
 	if(found == m_data.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
 	}

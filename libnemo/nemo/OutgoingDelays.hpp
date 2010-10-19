@@ -13,6 +13,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <boost/unordered_map.hpp>
 
 #include <nemo/internal_types.h>
 
@@ -87,7 +88,11 @@ class OutgoingDelays
 		
 	private :
 
-		std::map<nidx_t, std::vector<delay_t> > m_data;
+		/*! \note Did some experimentation with replacing std::vector with raw
+		 * arrays but this did not improve performance appreciably. The main
+		 * cost of using this data structure is in calling find on the hash
+		 * table */
+		boost::unordered_map<nidx_t, std::vector<delay_t> > m_data;
 
 		delay_t m_maxDelay;
 
