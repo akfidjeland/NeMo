@@ -65,7 +65,7 @@ class OutgoingDelays
 
 		delay_t maxDelay() const { return m_maxDelay; }
 
-		typedef std::set<delay_t>::const_iterator const_iterator; 
+		typedef std::vector<delay_t>::const_iterator const_iterator;
 
 		/*! \param neuron
 		 * 		global neuron index
@@ -87,7 +87,7 @@ class OutgoingDelays
 		
 	private :
 
-		std::map<nidx_t, std::set<delay_t> > m_data;
+		std::map<nidx_t, std::vector<delay_t> > m_data;
 
 		delay_t m_maxDelay;
 

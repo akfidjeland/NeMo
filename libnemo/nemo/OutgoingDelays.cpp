@@ -26,7 +26,13 @@ void
 OutgoingDelays::init(const OutgoingDelaysAcc& acc)
 {
 	m_maxDelay = acc.maxDelay();
-	m_data = acc.m_delays;
+
+	typedef std::map<unsigned, std::set<unsigned> >::const_iterator it;
+	for(it i = acc.m_delays.begin(), i_end = acc.m_delays.end(); i != i_end; ++i) {
+		const std::set<unsigned>& delays = i->second;
+		unsigned neuron = i->first;
+		m_data[neuron] = std::vector<delay_t>(delays.begin(), delays.end());
+	}
 }
 
 
@@ -34,7 +40,7 @@ OutgoingDelays::init(const OutgoingDelaysAcc& acc)
 OutgoingDelays::const_iterator
 OutgoingDelays::begin(nidx_t source) const
 {
-	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_data.find(source);
+	std::map<nidx_t, std::vector<delay_t> >::const_iterator found = m_data.find(source);
 	if(found == m_data.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
 	}
@@ -46,7 +52,7 @@ OutgoingDelays::begin(nidx_t source) const
 OutgoingDelays::const_iterator
 OutgoingDelays::end(nidx_t source) const
 {
-	std::map<nidx_t, std::set<delay_t> >::const_iterator found = m_data.find(source);
+	std::map<nidx_t, std::vector<delay_t> >::const_iterator found = m_data.find(source);
 	if(found == m_data.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "Invalid source neuron");
 	}
