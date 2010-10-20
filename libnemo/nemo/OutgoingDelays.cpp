@@ -60,13 +60,21 @@ OutgoingDelays::end(nidx_t source) const
 }
 
 
+bool
+OutgoingDelays::hasSynapses(nidx_t source) const
+{
+	return m_data.find(source) != m_data.end();
+}
+
 
 uint64_t
 OutgoingDelays::delayBits(nidx_t source) const
 {
 	uint64_t bits = 0;
-	for(const_iterator d = begin(source), d_end = end(source); d != d_end; ++d) {
-		bits = bits | (uint64_t(0x1) << uint64_t(*d - 1));
+	if(hasSynapses(source)) {
+		for(const_iterator d = begin(source), d_end = end(source); d != d_end; ++d) {
+			bits = bits | (uint64_t(0x1) << uint64_t(*d - 1));
+		}
 	}
 	return bits;
 }

@@ -98,6 +98,8 @@ class OutgoingDelays
 
 		OutgoingDelays(const OutgoingDelays& );
 		OutgoingDelays& operator=(const OutgoingDelays&);
+
+		bool hasSynapses(nidx_t source) const;
 };
 
 }
