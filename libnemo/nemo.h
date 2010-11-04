@@ -249,7 +249,7 @@ nemo_apply_stdp(nemo_simulation_t, float reward);
  * other synapse data is static.
  * \{ */
 
-
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v);
 
@@ -260,6 +260,7 @@ nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v);
  *
  * \see nemo_add_neuron for parameters
  */
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_neuron(nemo_simulation_t sim,
 		unsigned idx,
