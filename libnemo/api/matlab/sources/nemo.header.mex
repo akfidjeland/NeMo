@@ -9,20 +9,10 @@
 #include <nemo/types.h>
 
 
-/* We maintain pointers to all simulator objects as globals here, since Matlab
- * does not seem to have any support for foreign pointers.
- *
- * Instead of returning opaque poitners to the user we return indices into
- * these global vectors */ 
-
-/* The user can specify multiple networks */
-static std::vector<nemo_network_t> g_networks;
-
-/* Additionally, the user can specify multiple configurations. */
-static std::vector<nemo_configuration_t> g_configs;
-
-//! \todo should we limit this to one?
-static std::vector<nemo_simulation_t> g_sims;
+/* Unique global objects containing all NeMo state */
+static nemo_network_t g_network = NULL;
+static nemo_configuration_t g_configuration = NULL;
+static nemo_simulation_t g_simulation = NULL;
 
 
 
@@ -130,10 +120,10 @@ vector(const mxArray* arr)
 void
 checkInputCount(int actualArgs, int expectedArgs)
 {
-	// The function id and handle are always an extra parameter
-	if(actualArgs - 2 != expectedArgs) {
+	// The function id is always an extra parameter
+	if(actualArgs - 1 != expectedArgs) {
 		mexErrMsgIdAndTxt("nemo:api", "found %u input arguments, but expected %u",
-			actualArgs - 2, expectedArgs);
+			actualArgs - 1, expectedArgs);
 	}
 }
 
@@ -256,132 +246,109 @@ returnVector(mxArray* plhs[], int argno, N* arr, unsigned len)
 
 
 
-//! \todo add collection name?
-//put collection inside struct instead
-uint32_t
-getHandleId(std::vector<void*> collection, const mxArray* prhs[], unsigned argno)
+void
+deleteGlobals()
 {
-	uint32_t id = scalar<uint32_t, uint32_t>(prhs[argno]);
-	if(id >= collection.size()) {
-		mexErrMsgIdAndTxt("nemo:mex", "handle id %u out of bounds (%u items)",
-				id, collection.size());
+	if(g_simulation != NULL) {
+		nemo_delete_simulation(g_simulation);
 	}
-	return id;
-}
-
-
-
-void*
-getHandle(std::vector<void*>& collection, const mxArray* prhs[], unsigned argno)
-{
-	uint32_t id = getHandleId(collection, prhs, argno);
-	void* ptr = collection.at(id);
-	if(ptr == NULL) {
-		//! \todo add collection name
-		mexErrMsgIdAndTxt("nemo:mex", "handle id %u is NULL", id);
+	if(g_network != NULL) {
+		nemo_delete_network(g_network);
 	}
-	return ptr;
+	if(g_configuration != NULL) {
+		nemo_delete_configuration(g_configuration);
+	}
 }
 
 
 
 nemo_network_t
-getNetwork(const mxArray* prhs[], unsigned argno)
+getNetwork()
 {
-	return getHandle(g_networks, prhs, argno);
+	if(g_network == NULL) {
+		g_network = nemo_new_network();
+		mexAtExit(deleteGlobals);
+	}
+	return g_network;
+}
+
+
+
+void
+clearNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	if(g_network == NULL) {
+		/* This should not be considered a usage an error. If the user has not
+		 * added any neurons or synapses the network object is NULL. Clearing
+		 * this should be perfectly valid. */
+		return;
+	}
+	nemo_delete_network(g_network);
 }
 
 
 
 nemo_configuration_t
-getConfiguration(const mxArray* prhs[], unsigned argno)
+getConfiguration()
 {
-	return getHandle(g_configs, prhs, argno);
+	if(g_configuration == NULL) {
+		g_configuration = nemo_new_configuration();
+		mexAtExit(deleteGlobals);
+	}
+	return g_configuration;
 }
 
 
 
+/*! Reset the configuration object to the default settings */
+void
+resetConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	//! \todo do a swap here instead, to avoid dangling pointers 
+	if(g_configuration != NULL) {
+		nemo_delete_configuration(g_configuration);
+	}
+	g_configuration = nemo_new_configuration();
+}
+
+
+/*! The simulation only exists between calls to \a createSimulation and
+ * \a destroySimulation. Asking for the simulation object outside this region is
+ * an error. */
 nemo_simulation_t
-getSimulation(const mxArray* prhs[], unsigned argno)
+getSimulation()
 {
-	return getHandle(g_sims, prhs, argno);
-}
-
-
-
-void
-newNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = g_networks.size();
-	nemo_network_t net = nemo_new_network();
-	g_networks.push_back(net);
-	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
-}
-
-
-
-void
-deleteNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = getHandleId(g_networks, prhs, 1);
-	void* ptr = g_networks.at(id);
-	if(ptr != NULL) {
-		nemo_delete_network(ptr);
-		g_networks.at(id) = NULL;
+	if(g_simulation == NULL) {
+		//! \todo add a more helpful error message
+		mexErrMsgIdAndTxt("nemo:api", "non-existing simulation object requested");
 	}
+	return g_simulation;
 }
 
 
 
 void
-newConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+createSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	uint32_t id = g_configs.size();
-	nemo_configuration_t conf = nemo_new_configuration();
-	g_configs.push_back(conf);
-	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
-}
-
-
-
-
-void
-deleteConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = getHandleId(g_configs, prhs, 1);
-	void* ptr = g_configs.at(id);
-	if(ptr != NULL) {
-		nemo_delete_configuration(ptr);
-		g_configs.at(id) = NULL;
-	}
-}
-
-
-
-void
-newSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = g_sims.size(); 
-
-	nemo_network_t net = getNetwork(prhs, 1);
-	nemo_configuration_t conf = getConfiguration(prhs, 2);
+	nemo_network_t net = getNetwork();
+	nemo_configuration_t conf = getConfiguration();
 	nemo_simulation_t sim = nemo_new_simulation(net, conf);
 	if(sim == NULL) {
 		mexErrMsgIdAndTxt("nemo:backend", "failed to create simulation: %s", nemo_strerror());
 	}
-	g_sims.push_back(sim);	
-	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
+	g_simulation = sim;
+	mexAtExit(deleteGlobals);
 }
 
 
 
 void
-deleteSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+destroySimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	uint32_t id = getHandleId(g_sims, prhs, 1);
-	void* ptr = g_sims.at(id);
-	if(ptr != NULL) {
-		nemo_delete_simulation(ptr);
-		g_sims.at(id) = NULL;
+	if(g_simulation == NULL) {
+		mexErrMsgIdAndTxt("nemo:api", "Attempt to stop simulation when simulation is not running");
 	}
+	//! \todo do a swap for exception safety?
+	nemo_delete_simulation(g_simulation);
+	g_simulation = NULL;
 }

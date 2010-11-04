@@ -24,6 +24,7 @@ net = nemoNetwork()
 \item \hyperref[fn: addNeuron]{addNeuron}
 \item \hyperref[fn: addSynapse]{addSynapse}
 \item \hyperref[fn: neuronCount]{neuronCount}
+\item \hyperref[fn: clearNetwork]{clearNetwork}
 \end{itemize}
 \clearpage
 \subsubsection*{Network::addNeuron}
@@ -128,6 +129,29 @@ ncount = net.neuronCount()
 \end{description}
 
 \clearpage
+\subsubsection*{Network::clearNetwork}
+\label{fn: clearNetwork}
+clear all neurons/synapses from network
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Network::clearNetwork()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_clear_network(nemo_network_t net)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+net.clearNetwork()
+\end{lstlisting}
+
+\clearpage
 \subsection{Configuration class}
 \label{Configuration}
 
@@ -154,6 +178,7 @@ conf = nemoConfiguration()
 \item \hyperref[fn: setCudaBackend]{setCudaBackend}
 \item \hyperref[fn: setStdpFunction]{setStdpFunction}
 \item \hyperref[fn: backendDescription]{backendDescription}
+\item \hyperref[fn: resetConfiguration]{resetConfiguration}
 \end{itemize}
 \clearpage
 \subsubsection*{Configuration::setCpuBackend}
@@ -275,6 +300,29 @@ description = conf.backendDescription()
 The backend can be changed using setCudaBackend or setCpuBackend
 
 \clearpage
+\subsubsection*{Configuration::resetConfiguration}
+\label{fn: resetConfiguration}
+Replace configuration with default configuration
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Configuration::resetConfiguration()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_reset_configuration(nemo_configuration_t conf)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+conf.resetConfiguration()
+\end{lstlisting}
+
+\clearpage
 \subsection{Simulation class}
 \label{Simulation}
 A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.
@@ -308,6 +356,8 @@ sim = nemoSimulation(net, conf)
 \item \hyperref[fn: elapsedWallclock]{elapsedWallclock}
 \item \hyperref[fn: elapsedSimulation]{elapsedSimulation}
 \item \hyperref[fn: resetTimer]{resetTimer}
+\item \hyperref[fn: createSimulation]{createSimulation}
+\item \hyperref[fn: destroySimulation]{destroySimulation}
 \end{itemize}
 \clearpage
 \subsubsection*{Simulation::step}
@@ -318,24 +368,29 @@ run simulation for a single cycle (1ms)
 \noindent C++:
 \begin{lstlisting}[aboveskip=2pt]
 const vector<unsigned>&
-Simulation::step(const vector<unsigned>& fstim)
+Simulation::step(const vector<unsigned>& fstim, 
+        const vector<unsigned>& istim_nidx, 
+        const vector<float>& istim_current)
 \end{lstlisting}
 
 \noindent C:
 \begin{lstlisting}[aboveskip=2pt]
 nemo_status_t
 nemo_step(nemo_simulation_t sim, 
-        unsigned fstim[], size_t fstim_len, 
+        unsigned fstim[], size_t fstim_len, unsigned istim_nidx[], 
+        float istim_current[], size_t istim_current_len, 
         unsigned* fired[], size_t* fired_len)
 \end{lstlisting}
 
 \noindent Matlab:
 \begin{lstlisting}[aboveskip=2pt]
-fired = sim.step(fstim)
+fired = sim.step(fstim, istim_nidx, istim_current)
 \end{lstlisting}
 \paragraph{Inputs}
 \begin{description}
 \item[fstim] An optional list of neurons, which will be forced to fire this cycle
+\item[istim_nidx] An optional list of neurons which will be given input current stimulus this cycle
+\item[istim_current] The corresponding list of current input
 \end{description}
 \paragraph{Outputs}
 \begin{description}
@@ -573,5 +628,53 @@ nemo_reset_timer(nemo_simulation_t sim)
 \begin{lstlisting}[aboveskip=2pt]
 sim.resetTimer()
 \end{lstlisting}
+
+\clearpage
+\subsubsection*{Simulation::createSimulation}
+\label{fn: createSimulation}
+Initialise simulation data
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Simulation::createSimulation()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_create_simulation(nemo_simulation_t sim)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+sim.createSimulation()
+\end{lstlisting}
+Initialise simulation data, but do not start running. Call step to run simulation. The initialisation step can be time-consuming.
+
+\clearpage
+\subsubsection*{Simulation::destroySimulation}
+\label{fn: destroySimulation}
+Stop simulation and free associated data
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Simulation::destroySimulation()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_destroy_simulation(nemo_simulation_t sim)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+sim.destroySimulation()
+\end{lstlisting}
+The simulation can have a significant amount of memory associated with it. Calling destroySimulation frees up this memory.
 
 \clearpage

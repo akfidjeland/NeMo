@@ -220,6 +220,18 @@ instance Described ApiModule where
     describe = mdl_descr
 
 
+clearNetwork =
+    ApiFunction
+        "clearNetwork"
+        "clear all neurons/synapses from network"
+        Nothing
+        []
+        []
+        [MEX]
+        False
+
+
+
 -- TODO: add references to variables etc.
 addNeuron =
     ApiFunction
@@ -285,7 +297,7 @@ network =
     ApiModule "Network" "net"
         (Just "A Network is constructed by adding individual neurons synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.")
         defaultConstructor
-        [addNeuron, addSynapse, neuronCount]
+        [addNeuron, addSynapse, neuronCount, clearNetwork]
 
 
 
@@ -377,12 +389,33 @@ elapsedSimulation =
 
 resetTimer = ApiFunction "resetTimer" "reset both wall-clock and simulation timer" Nothing [] [] [] False
 
+createSimulation =
+    ApiFunction
+        "createSimulation"
+        "Initialise simulation data"
+        (Just "Initialise simulation data, but do not start running. Call step to run simulation. The initialisation step can be time-consuming.")
+        []
+        []
+        [MEX]
+        False
+
+
+destroySimulation =
+    ApiFunction
+        "destroySimulation"
+        "Stop simulation and free associated data"
+        (Just "The simulation can have a significant amount of memory associated with it. Calling destroySimulation frees up this memory.")
+        []
+        []
+        [MEX]
+        False
+
 
 simulation =
     ApiModule "Simulation" "sim"
         (Just "A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.")
         (Factory [network, configuration])
-        [step, applyStdp, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer]
+        [step, applyStdp, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
 
 
 setCpuBackend =
@@ -442,6 +475,15 @@ backendDescription =
         []
         [] False
 
+resetConfiguration =
+    ApiFunction
+        "resetConfiguration"
+        "Replace configuration with default configuration"
+        Nothing
+        []
+        []
+        [MEX]
+        False
 
 configuration = ApiModule "Configuration" "conf" Nothing defaultConstructor
-    [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription]
+    [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription, resetConfiguration]

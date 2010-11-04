@@ -53,16 +53,15 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 		SET(INSTALL_DIR share/nemo/matlab)
 	ENDIF(WIN32)
 
+	FILE(STRINGS "install.cmake" AUTO_MATLAB_FILES)
+
 	INSTALL(
-		FILES
-			${MEX_OUTPUT}
-			nemo.m
-			nemoNetwork.m
-			nemoConfiguration.m
-			nemoSimulation.m
-			example.m
-		DESTINATION
-			${INSTALL_DIR}
+		FILES ${MEX_OUTPUT} nemo.m example.m
+		DESTINATION ${INSTALL_DIR}
+	)
+	INSTALL(
+		FILES ${AUTO_MATLAB_FILES}
+		DESTINATION ${INSTALL_DIR}
 	)
 
 ELSE(NOT MEX STREQUAL MEX-NOTFOUND)

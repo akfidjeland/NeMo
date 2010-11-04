@@ -31,7 +31,7 @@ camelToUnderscore (x:xs) = toLower x : go xs
             | otherwise = x : go xs
 
 
--- different function nameing schemes
+-- different function naming schemes
 underscoredName :: [String] -> Doc
 underscoredName xs = text $ map toLower $ intercalate "_" xs
 
@@ -40,9 +40,9 @@ underscoredUpper :: [String] -> Doc
 underscoredUpper xs = text $ map toUpper $ intercalate "_" xs
 
 
-camelCasedName :: [String] -> Doc
-camelCasedName [] = empty
-camelCasedName (x:xs) = (text x) <> text (concatMap (firstCap) xs)
+camelCasedName :: [String] -> String
+camelCasedName [] = ""
+camelCasedName (x:xs) = x ++ (concatMap (firstCap) xs)
     where
         firstCap :: String -> String
         firstCap [] = []
@@ -111,8 +111,10 @@ functionDefinition
     -> Doc
 functionDefinition = functionGeneric space
 
-
-
 angleBrackets :: Doc -> Doc
 angleBrackets p = char '<' <> p <> char '>'
 
+
+{- Sometimes 'empty' does the wrong thing -}
+emptyLine :: Doc
+emptyLine = text ""

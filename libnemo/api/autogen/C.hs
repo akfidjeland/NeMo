@@ -1,6 +1,17 @@
-module C (synopsis, ctorSynopsis, constant, pointerTo) where
+module C (
+    statement,
+    synopsis,
+    ctorSynopsis,
+    constant,
+    pointerTo,
+    forLoop,
+    addressOf,
+    comment,
+    commentLine)
+where
 
 import Text.PrettyPrint
+import Text.Printf
 import Data.Char (toLower)
 
 import API
@@ -196,3 +207,34 @@ typeName = text . go
         go ApiULong = "unsigned long"
         go ApiBool = "unsigned char"
         go ApiString = "const char*"
+
+
+{- Idiomatic for loop -}
+forLoop
+    :: String  -- ^ indexing variable
+    -> String  -- ^ start
+    -> String  -- ^ end
+    -> Doc     -- ^ body of loop
+    -> Doc
+forLoop idx start end body = vcat [header, nest 4 body, char '}']
+    where
+        header = text $ printf "for(size_t %s=%s; %s<%s; ++%s){" idx start idx end idx
+
+
+addressOf :: Doc -> Doc
+addressOf x = char '&' <> x
+
+
+comment :: Doc -> Doc
+comment x = text "/*" <+> x <+> text "*/"
+
+
+commentLine :: Doc -> Doc
+commentLine = (<+>) $ text "//"
+
+
+statement :: Doc -> Doc
+statement x = x <> char ';'
+
+statements :: [Doc] -> Doc
+statements = vcat . map statement

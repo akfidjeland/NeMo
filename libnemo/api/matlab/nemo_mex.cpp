@@ -9,20 +9,10 @@
 #include <nemo/types.h>
 
 
-/* We maintain pointers to all simulator objects as globals here, since Matlab
- * does not seem to have any support for foreign pointers.
- *
- * Instead of returning opaque poitners to the user we return indices into
- * these global vectors */ 
-
-/* The user can specify multiple networks */
-static std::vector<nemo_network_t> g_networks;
-
-/* Additionally, the user can specify multiple configurations. */
-static std::vector<nemo_configuration_t> g_configs;
-
-//! \todo should we limit this to one?
-static std::vector<nemo_simulation_t> g_sims;
+/* Unique global objects containing all NeMo state */
+static nemo_network_t g_network = NULL;
+static nemo_configuration_t g_configuration = NULL;
+static nemo_simulation_t g_simulation = NULL;
 
 
 
@@ -130,10 +120,10 @@ vector(const mxArray* arr)
 void
 checkInputCount(int actualArgs, int expectedArgs)
 {
-	// The function id and handle are always an extra parameter
-	if(actualArgs - 2 != expectedArgs) {
+	// The function id is always an extra parameter
+	if(actualArgs - 1 != expectedArgs) {
 		mexErrMsgIdAndTxt("nemo:api", "found %u input arguments, but expected %u",
-			actualArgs - 2, expectedArgs);
+			actualArgs - 1, expectedArgs);
 	}
 }
 
@@ -256,180 +246,158 @@ returnVector(mxArray* plhs[], int argno, N* arr, unsigned len)
 
 
 
-//! \todo add collection name?
-//put collection inside struct instead
-uint32_t
-getHandleId(std::vector<void*> collection, const mxArray* prhs[], unsigned argno)
+void
+deleteGlobals()
 {
-	uint32_t id = scalar<uint32_t, uint32_t>(prhs[argno]);
-	if(id >= collection.size()) {
-		mexErrMsgIdAndTxt("nemo:mex", "handle id %u out of bounds (%u items)",
-				id, collection.size());
+	if(g_simulation != NULL) {
+		nemo_delete_simulation(g_simulation);
 	}
-	return id;
-}
-
-
-
-void*
-getHandle(std::vector<void*>& collection, const mxArray* prhs[], unsigned argno)
-{
-	uint32_t id = getHandleId(collection, prhs, argno);
-	void* ptr = collection.at(id);
-	if(ptr == NULL) {
-		//! \todo add collection name
-		mexErrMsgIdAndTxt("nemo:mex", "handle id %u is NULL", id);
+	if(g_network != NULL) {
+		nemo_delete_network(g_network);
 	}
-	return ptr;
+	if(g_configuration != NULL) {
+		nemo_delete_configuration(g_configuration);
+	}
 }
 
 
 
 nemo_network_t
-getNetwork(const mxArray* prhs[], unsigned argno)
+getNetwork()
 {
-	return getHandle(g_networks, prhs, argno);
+	if(g_network == NULL) {
+		g_network = nemo_new_network();
+		mexAtExit(deleteGlobals);
+	}
+	return g_network;
+}
+
+
+
+void
+clearNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	if(g_network == NULL) {
+		/* This should not be considered a usage an error. If the user has not
+		 * added any neurons or synapses the network object is NULL. Clearing
+		 * this should be perfectly valid. */
+		return;
+	}
+	nemo_delete_network(g_network);
 }
 
 
 
 nemo_configuration_t
-getConfiguration(const mxArray* prhs[], unsigned argno)
+getConfiguration()
 {
-	return getHandle(g_configs, prhs, argno);
+	if(g_configuration == NULL) {
+		g_configuration = nemo_new_configuration();
+		mexAtExit(deleteGlobals);
+	}
+	return g_configuration;
 }
 
 
 
+/*! Reset the configuration object to the default settings */
+void
+resetConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	//! \todo do a swap here instead, to avoid dangling pointers 
+	if(g_configuration != NULL) {
+		nemo_delete_configuration(g_configuration);
+	}
+	g_configuration = nemo_new_configuration();
+}
+
+
+/*! The simulation only exists between calls to \a createSimulation and
+ * \a destroySimulation. Asking for the simulation object outside this region is
+ * an error. */
 nemo_simulation_t
-getSimulation(const mxArray* prhs[], unsigned argno)
+getSimulation()
 {
-	return getHandle(g_sims, prhs, argno);
-}
-
-
-
-void
-newNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = g_networks.size();
-	nemo_network_t net = nemo_new_network();
-	g_networks.push_back(net);
-	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
-}
-
-
-
-void
-deleteNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = getHandleId(g_networks, prhs, 1);
-	void* ptr = g_networks.at(id);
-	if(ptr != NULL) {
-		nemo_delete_network(ptr);
-		g_networks.at(id) = NULL;
+	if(g_simulation == NULL) {
+		//! \todo add a more helpful error message
+		mexErrMsgIdAndTxt("nemo:api", "non-existing simulation object requested");
 	}
+	return g_simulation;
 }
 
 
 
 void
-newConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+createSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	uint32_t id = g_configs.size();
-	nemo_configuration_t conf = nemo_new_configuration();
-	g_configs.push_back(conf);
-	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
-}
-
-
-
-
-void
-deleteConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = getHandleId(g_configs, prhs, 1);
-	void* ptr = g_configs.at(id);
-	if(ptr != NULL) {
-		nemo_delete_configuration(ptr);
-		g_configs.at(id) = NULL;
-	}
-}
-
-
-
-void
-newSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-	uint32_t id = g_sims.size(); 
-
-	nemo_network_t net = getNetwork(prhs, 1);
-	nemo_configuration_t conf = getConfiguration(prhs, 2);
+	nemo_network_t net = getNetwork();
+	nemo_configuration_t conf = getConfiguration();
 	nemo_simulation_t sim = nemo_new_simulation(net, conf);
 	if(sim == NULL) {
 		mexErrMsgIdAndTxt("nemo:backend", "failed to create simulation: %s", nemo_strerror());
 	}
-	g_sims.push_back(sim);	
-	returnScalar<uint32_t, uint32_t>(plhs, 0, id);
+	g_simulation = sim;
+	mexAtExit(deleteGlobals);
 }
 
 
 
 void
-deleteSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+destroySimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	uint32_t id = getHandleId(g_sims, prhs, 1);
-	void* ptr = g_sims.at(id);
-	if(ptr != NULL) {
-		nemo_delete_simulation(ptr);
-		g_sims.at(id) = NULL;
+	if(g_simulation == NULL) {
+		mexErrMsgIdAndTxt("nemo:api", "Attempt to stop simulation when simulation is not running");
 	}
+	//! \todo do a swap for exception safety?
+	nemo_delete_simulation(g_simulation);
+	g_simulation = NULL;
 }
 /* AUTO-GENERATED CODE START */
 
 void
 addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(8, prhs + 2);
+    size_t elems = vectorDimension(8, prhs + 1);
     checkInputCount(nrhs, 8);
     checkOutputCount(nlhs, 0);
-    void* hdl = getNetwork(prhs, 1);
+    void* hdl = getNetwork();
     for(size_t i=0; i<elems; ++i){
         checkNemoStatus( 
                 nemo_add_neuron( 
                         hdl, 
-                        scalarAt<unsigned,uint32_t>(prhs[2], i), 
+                        scalarAt<unsigned,uint32_t>(prhs[1], i), 
+                        scalarAt<float,double>(prhs[2], i), 
                         scalarAt<float,double>(prhs[3], i), 
                         scalarAt<float,double>(prhs[4], i), 
                         scalarAt<float,double>(prhs[5], i), 
                         scalarAt<float,double>(prhs[6], i), 
                         scalarAt<float,double>(prhs[7], i), 
-                        scalarAt<float,double>(prhs[8], i), 
-                        scalarAt<float,double>(prhs[9], i) 
+                        scalarAt<float,double>(prhs[8], i) 
                 ) 
         );
     }
 }
 
 
+
 void
 addSynapse(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(5, prhs + 2);
+    size_t elems = vectorDimension(5, prhs + 1);
     checkInputCount(nrhs, 5);
     checkOutputCount(nlhs, 1);
     allocateOutputVector<uint64_t>(plhs, 0, elems);
-    void* hdl = getNetwork(prhs, 1);
+    void* hdl = getNetwork();
     for(size_t i=0; i<elems; ++i){
         uint64_t id;
         checkNemoStatus( 
                 nemo_add_synapse( 
                         hdl, 
+                        scalarAt<unsigned,uint32_t>(prhs[1], i), 
                         scalarAt<unsigned,uint32_t>(prhs[2], i), 
                         scalarAt<unsigned,uint32_t>(prhs[3], i), 
-                        scalarAt<unsigned,uint32_t>(prhs[4], i), 
-                        scalarAt<float,double>(prhs[5], i), 
-                        scalarAt<unsigned char,uint8_t>(prhs[6], i), 
+                        scalarAt<float,double>(prhs[4], i), 
+                        scalarAt<unsigned char,uint8_t>(prhs[5], i), 
                         &id 
                 ) 
         );
@@ -438,15 +406,17 @@ addSynapse(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
+
 void
 neuronCount(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 1);
     unsigned ncount;
-    checkNemoStatus(nemo_neuron_count(getNetwork(prhs, 1), &ncount));
+    checkNemoStatus(nemo_neuron_count(getNetwork(), &ncount));
     returnScalar<unsigned, uint32_t>(plhs, 0, ncount);
 }
+
 
 
 void
@@ -455,9 +425,10 @@ setCpuBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 0);
     checkNemoStatus( 
-            nemo_set_cpu_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
+            nemo_set_cpu_backend(getConfiguration(), scalar<int,int32_t>(prhs[1])) 
     );
 }
+
 
 
 void
@@ -466,9 +437,10 @@ setCudaBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 0);
     checkNemoStatus( 
-            nemo_set_cuda_backend(getConfiguration(prhs, 1), scalar<int,int32_t>(prhs[2])) 
+            nemo_set_cuda_backend(getConfiguration(), scalar<int,int32_t>(prhs[1])) 
     );
 }
+
 
 
 void
@@ -476,18 +448,19 @@ setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 4);
     checkOutputCount(nlhs, 0);
-    std::vector<float> prefire = vector<float, double>(prhs[2]);
-    std::vector<float> postfire = vector<float, double>(prhs[3]);
+    std::vector<float> prefire = vector<float, double>(prhs[1]);
+    std::vector<float> postfire = vector<float, double>(prhs[2]);
     checkNemoStatus( 
             nemo_set_stdp_function( 
-                    getConfiguration(prhs, 1), 
+                    getConfiguration(), 
                     &prefire[0], prefire.size(), 
                     &postfire[0], postfire.size(), 
-                    scalar<float,double>(prhs[4]), 
-                    scalar<float,double>(prhs[5]) 
+                    scalar<float,double>(prhs[3]), 
+                    scalar<float,double>(prhs[4]) 
             ) 
     );
 }
+
 
 
 void
@@ -496,11 +469,10 @@ backendDescription(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 1);
     const char* description;
-    checkNemoStatus( 
-            nemo_backend_description(getConfiguration(prhs, 1), &description) 
-    );
+    checkNemoStatus(nemo_backend_description(getConfiguration(), &description));
     returnScalar<const char*, char*>(plhs, 0, description);
 }
+
 
 
 void
@@ -508,14 +480,14 @@ step(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 3);
     checkOutputCount(nlhs, 1);
-    std::vector<unsigned> fstim = vector<unsigned, uint32_t>(prhs[2]);
-    std::vector<unsigned> istim_nidx = vector<unsigned, uint32_t>(prhs[3]);
-    std::vector<float> istim_current = vector<float, double>(prhs[4]);
+    std::vector<unsigned> fstim = vector<unsigned, uint32_t>(prhs[1]);
+    std::vector<unsigned> istim_nidx = vector<unsigned, uint32_t>(prhs[2]);
+    std::vector<float> istim_current = vector<float, double>(prhs[3]);
     unsigned* fired;
     size_t fired_len;
     checkNemoStatus( 
             nemo_step( 
-                    getSimulation(prhs, 1), 
+                    getSimulation(), 
                     &fstim[0], fstim.size(), 
                     &istim_nidx[0], 
                     &istim_current[0], istim_current.size(), 
@@ -526,15 +498,17 @@ step(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 }
 
 
+
 void
 applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 0);
     checkNemoStatus( 
-            nemo_apply_stdp(getSimulation(prhs, 1), scalar<float,double>(prhs[2])) 
+            nemo_apply_stdp(getSimulation(), scalar<float,double>(prhs[1])) 
     );
 }
+
 
 
 void
@@ -542,17 +516,15 @@ getTargets(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
+    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     unsigned* targets;
+    size_t targets_len;
     checkNemoStatus( 
-            nemo_get_targets( 
-                    getSimulation(prhs, 1), 
-                    &synapses[0], synapses.size(), 
-                    &targets 
-            ) 
+            nemo_get_targets(getSimulation(), &synapses[0], synapses.size(), &targets) 
     );
-    returnVector<unsigned, uint32_t>(plhs, 0, targets, synapses.size());
+    returnVector<unsigned, uint32_t>(plhs, 0, targets, targets_len);
 }
+
 
 
 void
@@ -560,17 +532,15 @@ getDelays(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
+    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     unsigned* delays;
+    size_t delays_len;
     checkNemoStatus( 
-            nemo_get_delays( 
-                    getSimulation(prhs, 1), 
-                    &synapses[0], synapses.size(), 
-                    &delays 
-            ) 
+            nemo_get_delays(getSimulation(), &synapses[0], synapses.size(), &delays) 
     );
-    returnVector<unsigned, uint32_t>(plhs, 0, delays, synapses.size());
+    returnVector<unsigned, uint32_t>(plhs, 0, delays, delays_len);
 }
+
 
 
 void
@@ -578,17 +548,15 @@ getWeights(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
+    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     float* weights;
+    size_t weights_len;
     checkNemoStatus( 
-            nemo_get_weights( 
-                    getSimulation(prhs, 1), 
-                    &synapses[0], synapses.size(), 
-                    &weights 
-            ) 
+            nemo_get_weights(getSimulation(), &synapses[0], synapses.size(), &weights) 
     );
-    returnVector<float, double>(plhs, 0, weights, synapses.size());
+    returnVector<float, double>(plhs, 0, weights, weights_len);
 }
+
 
 
 void
@@ -596,17 +564,15 @@ getPlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[2]);
+    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     unsigned char* plastic;
+    size_t plastic_len;
     checkNemoStatus( 
-            nemo_get_plastic( 
-                    getSimulation(prhs, 1), 
-                    &synapses[0], synapses.size(), 
-                    &plastic 
-            ) 
+            nemo_get_plastic(getSimulation(), &synapses[0], synapses.size(), &plastic) 
     );
-    returnVector<unsigned char, uint8_t>(plhs, 0, plastic, synapses.size());
+    returnVector<unsigned char, uint8_t>(plhs, 0, plastic, plastic_len);
 }
+
 
 
 void
@@ -615,9 +581,10 @@ elapsedWallclock(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 1);
     unsigned long elapsed;
-    checkNemoStatus(nemo_elapsed_wallclock(getSimulation(prhs, 1), &elapsed));
+    checkNemoStatus(nemo_elapsed_wallclock(getSimulation(), &elapsed));
     returnScalar<unsigned long, uint64_t>(plhs, 0, elapsed);
 }
+
 
 
 void
@@ -626,9 +593,10 @@ elapsedSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 1);
     unsigned long elapsed;
-    checkNemoStatus(nemo_elapsed_simulation(getSimulation(prhs, 1), &elapsed));
+    checkNemoStatus(nemo_elapsed_simulation(getSimulation(), &elapsed));
     returnScalar<unsigned long, uint64_t>(plhs, 0, elapsed);
 }
+
 
 
 void
@@ -636,41 +604,37 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 0);
-    checkNemoStatus(nemo_reset_timer(getSimulation(prhs, 1)));
+    checkNemoStatus(nemo_reset_timer(getSimulation()));
 }
 
 
+
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-
-#define FN_COUNT 22
-
+#define FN_COUNT 20
 fn_ptr fn_arr[FN_COUNT] = {
-	newNetwork,
-	deleteNetwork,
-	addNeuron,
-	addSynapse,
-	neuronCount,
-	newConfiguration,
-	deleteConfiguration,
-	setCpuBackend,
-	setCudaBackend,
-	setStdpFunction,
-	backendDescription,
-	newSimulation,
-	deleteSimulation,
-	step,
-	applyStdp,
-	getTargets,
-	getDelays,
-	getWeights,
-	getPlastic,
-	elapsedWallclock,
-	elapsedSimulation,
-	resetTimer};
+    addNeuron,
+    addSynapse,
+    neuronCount,
+    clearNetwork,
+    setCpuBackend,
+    setCudaBackend,
+    setStdpFunction,
+    backendDescription,
+    resetConfiguration,
+    step,
+    applyStdp,
+    getTargets,
+    getDelays,
+    getWeights,
+    getPlastic,
+    elapsedWallclock,
+    elapsedSimulation,
+    resetTimer,
+    createSimulation,
+    destroySimulation
+};
 
 /* AUTO-GENERATED CODE END */
-
-
 void
 mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
