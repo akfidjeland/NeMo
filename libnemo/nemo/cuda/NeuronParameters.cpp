@@ -170,8 +170,8 @@ void
 NeuronParameters::setState(const DeviceIdx& idx, int parameter, float value)
 {
 	readStateFromDevice();
-	mf_param.setNeuron(idx.partition, idx.neuron, value, parameter);
-	mf_paramDirty = true;
+	mf_state.setNeuron(idx.partition, idx.neuron, value, parameter);
+	mf_stateDirty = true;
 }
 
 
