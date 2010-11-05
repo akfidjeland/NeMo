@@ -5,6 +5,9 @@
 
 #ifdef _MSC_VER
 
+/* Suppress generation of MSVC-specific min/max macros which otherwise break
+ * std::min and std::max */
+#define NOMINMAX
 #include <windows.h>
 typedef HMODULE dl_handle;
 
