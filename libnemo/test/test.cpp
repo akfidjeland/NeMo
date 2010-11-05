@@ -544,3 +544,55 @@ BOOST_AUTO_TEST_SUITE(vprobe)
 		testVProbe(NEMO_BACKEND_CPU);
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
+
+
+void
+testSetNeuron(backend_t backend)
+{
+	float a = 0.02f;
+	float b = 0.2f;
+	float c = -65.0f+15.0f*0.25f;
+	float d = 8.0f-6.0f*0.25f;
+	float v = -65.0f;
+	float u = b * v;
+	float sigma = 5.0f;
+
+	/* Create a minimal network with a single neuron */
+	nemo::Network net;
+	net.addNeuron(0, a, b, c, d, u, v, sigma);
+
+	nemo::Configuration conf = configuration(false, 1024, backend);
+
+	float v0 = 0.0f, v1 = 0.0f;
+
+	{
+		boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
+		sim->step();
+		v0 = sim->getMembranePotential(0);
+	}
+
+	{
+		boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
+		/* Marginally change the 'c' parameter. This is only used if the neuron
+		 * fires (which it shouldn't do this cycle). This modification
+		 * therefore should not affect the simulation result (here measured via
+		 * the membrane potential) */
+		sim->setNeuron(0, a, b, c+1.0f, d, u, v, sigma);
+		sim->step();
+		v1 = sim->getMembranePotential(0);
+	}
+
+	BOOST_REQUIRE_EQUAL(v0, v1);
+}
+
+
+
+BOOST_AUTO_TEST_SUITE(set_neuron)
+	BOOST_AUTO_TEST_CASE(cuda) {
+		testSetNeuron(NEMO_BACKEND_CUDA);
+	}
+	BOOST_AUTO_TEST_CASE(cpu) {
+		testSetNeuron(NEMO_BACKEND_CPU);
+	}
+BOOST_AUTO_TEST_SUITE_END()
