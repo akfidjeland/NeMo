@@ -45,9 +45,9 @@ memcpyToDevice(void* dst, const void* src, size_t count);
 
 template<typename T>
 void
-memcpyToDevice(T* dst, const T* src, size_t count)
+memcpyToDevice(T* dst, const T* src, size_t words)
 {
-	memcpyToDevice((void*)dst, (void*)src, count * sizeof(T));
+	memcpyToDevice((void*)dst, (void*)src, words * sizeof(T));
 }
 
 
@@ -81,7 +81,16 @@ memcpyToDevice(void* dst, const std::vector<T>& vec)
 
 
 void
-memcpyFromDevice(void* dst, const void* src, size_t count);
+memcpyBytesFromDevice(void* dst, const void* src, size_t bytes);
+
+
+
+template<typename T>
+void
+memcpyFromDevice(T* dst, const T* src, size_t words)
+{
+	memcpyBytesFromDevice((void*)dst, (void*)src, words * sizeof(T));
+}
 
 
 /* \param count
@@ -98,7 +107,7 @@ memcpyFromDevice(std::vector<T>& vec, const void* src, size_t count)
 	if(count > vec.size()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "attempt to copy into vector which is too small");
 	}
-	memcpyFromDevice(&vec[0], src, count * sizeof(T));
+	memcpyBytesFromDevice(&vec[0], src, count * sizeof(T));
 }
 
 

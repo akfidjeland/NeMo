@@ -276,9 +276,9 @@ ConnectivityMatrix::syncWeights(cycle_t cycle, const std::vector<synapse_id>& sy
 {
 	if(cycle != m_lastWeightSync && !synapses.empty() && !mh_weights.empty()) {
 		//! \todo refine this by only doing the minimal amount of copying
-		memcpyFromDevice(&mh_weights[0],
+		memcpyFromDevice(reinterpret_cast<synapse_t*>(&mh_weights[0]),
 					md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize,
-					md_fcmPlaneSize * sizeof(weight_dt));
+					md_fcmPlaneSize);
 		m_lastWeightSync = cycle;
 	}
 	return mh_weights;

@@ -79,9 +79,9 @@ memcpyToDevice(void* dst, const void* src, size_t count)
 
 
 void
-memcpyFromDevice(void* dst, const void* src, size_t count)
+memcpyBytesFromDevice(void* dst, const void* src, size_t bytes)
 {
-	safeCall(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost));
+	safeCall(cudaMemcpy(dst, src, bytes, cudaMemcpyDeviceToHost));
 }
 
 

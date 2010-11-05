@@ -45,7 +45,7 @@ void
 FiringBuffer::sync()
 {
 	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
-				m_mapper.partitionCount() * m_pitch * sizeof(uint32_t));
+				m_mapper.partitionCount() * m_pitch);
 	populateSparse(mh_buffer.get());
 }
 
