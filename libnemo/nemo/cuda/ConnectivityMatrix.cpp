@@ -210,7 +210,8 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	CUDA_SAFE_CALL(setFcmPlaneSize(md_fcmPlaneSize));
 
 	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
-	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_WEIGHT, h_weights, md_fcmPlaneSize);
+	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_WEIGHT,
+			reinterpret_cast<const synapse_t*>(&h_weights[0]), md_fcmPlaneSize);
 }
 
 

@@ -39,7 +39,7 @@ d_mallocPitch(void** d_ptr, size_t* bytePitch, size_t width, size_t height, cons
 
 
 void
-memcpyToDevice(void* dst, const void* src, size_t count);
+memcpyBytesToDevice(void* dst, const void* src, size_t count);
 
 
 
@@ -47,7 +47,7 @@ template<typename T>
 void
 memcpyToDevice(T* dst, const T* src, size_t words)
 {
-	memcpyToDevice((void*)dst, (void*)src, words * sizeof(T));
+	memcpyBytesToDevice((void*)dst, (void*)src, words * sizeof(T));
 }
 
 
@@ -59,21 +59,21 @@ memcpyToDevice(T* dst, const T* src, size_t words)
  */
 template<typename T>
 void
-memcpyToDevice(void* dst, const std::vector<T>& vec, size_t count)
+memcpyToDevice(T* dst, const std::vector<T>& vec, size_t words)
 {
 	if(vec.empty()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "cannot copy empty vector to device");
 	}
-	if(count > vec.size()) {
+	if(words > vec.size()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "cannot copy more than length of vector");
 	}
-	memcpyToDevice(dst, &vec[0], count * sizeof(T));
+	memcpyToDevice(dst, &vec[0], words);
 }
 
 
 template<typename T>
 void
-memcpyToDevice(void* dst, const std::vector<T>& vec)
+memcpyToDevice(T* dst, const std::vector<T>& vec)
 {
 	memcpyToDevice(dst, vec, vec.size());
 }

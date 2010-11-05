@@ -72,9 +72,9 @@ d_mallocPitch(void** d_ptr, size_t* bpitch, size_t width, size_t height, const c
 
 
 void
-memcpyToDevice(void* dst, const void* src, size_t count)
+memcpyBytesToDevice(void* dst, const void* src, size_t bytes)
 {
-	safeCall(cudaMemcpy(dst, src, count, cudaMemcpyHostToDevice));
+	safeCall(cudaMemcpy(dst, src, bytes, cudaMemcpyHostToDevice));
 }
 
 
