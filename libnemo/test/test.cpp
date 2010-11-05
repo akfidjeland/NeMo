@@ -514,3 +514,33 @@ BOOST_AUTO_TEST_SUITE(high_firing)
 	}
 BOOST_AUTO_TEST_SUITE_END()
 
+
+
+
+/* create basic network with a single neuron and verify that membrane potential
+ * is set correctly initially */
+void
+testVProbe(backend_t backend)
+{
+	nemo::Network net;
+	float v0 = -65.0;
+	net.addNeuron(0, 0.02f, 0.2f, -65.0f+15.0f*0.25f, 8.0f-6.0f*0.25f, 0.2f*-65.0f, v0, 5.0f);
+
+	nemo::Configuration conf = configuration(false, 1024, backend);
+
+	boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
+	float v1 = sim->getMembranePotential(0);
+
+	BOOST_REQUIRE_EQUAL(v0, v1);
+}
+
+
+
+BOOST_AUTO_TEST_SUITE(vprobe)
+	BOOST_AUTO_TEST_CASE(cuda) {
+		testVProbe(NEMO_BACKEND_CUDA);
+	}
+	BOOST_AUTO_TEST_CASE(cpu) {
+		testVProbe(NEMO_BACKEND_CPU);
+	}
+BOOST_AUTO_TEST_SUITE_END()
