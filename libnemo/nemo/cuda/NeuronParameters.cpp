@@ -161,7 +161,7 @@ float
 NeuronParameters::getState(const DeviceIdx& idx, int parameter) const
 {
 	readStateFromDevice();
-	return mf_param.getNeuron(idx.partition, idx.neuron, parameter);
+	return mf_state.getNeuron(idx.partition, idx.neuron, parameter);
 }
 
 
