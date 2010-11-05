@@ -529,9 +529,7 @@ testVProbe(backend_t backend)
 	nemo::Configuration conf = configuration(false, 1024, backend);
 
 	boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
-	float v1 = sim->getMembranePotential(0);
-
-	BOOST_REQUIRE_EQUAL(v0, v1);
+	BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
 }
 
 
@@ -564,8 +562,7 @@ testSetNeuron(backend_t backend)
 
 	nemo::Configuration conf = configuration(false, 1024, backend);
 
-	float v0 = 0.0f, v1 = 0.0f;
-
+	float v0 = 0.0f;
 	{
 		boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
 		sim->step();
@@ -580,10 +577,19 @@ testSetNeuron(backend_t backend)
 		 * the membrane potential) */
 		sim->setNeuron(0, a, b, c+1.0f, d, u, v, sigma);
 		sim->step();
-		v1 = sim->getMembranePotential(0);
+		BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
 	}
 
-	BOOST_REQUIRE_EQUAL(v0, v1);
+	{
+		/* Modify membrane potential after simulation has been created.
+		 * Again the result should be the same */
+		nemo::Network net1;
+		net1.addNeuron(0, a, b, c, d, u, v-1.0f, sigma);
+		boost::scoped_ptr<nemo::Simulation> sim(simulation(net1, conf));
+		sim->setNeuron(0, a, b, c, d, u, v, sigma);
+		sim->step();
+		BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
+	}
 }
 
 
