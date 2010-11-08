@@ -27,7 +27,7 @@
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
 #include "FiringBuffer.hpp"
-#include "NeuronParameters.hpp"
+#include "Neurons.hpp"
 
 namespace nemo {
 
@@ -129,7 +129,7 @@ class Simulation : public nemo::SimulationBackend
 		 * of memory, so this value could be useful for diagnostic purposes */
 		size_t d_allocated() const;
 
-		NeuronParameters m_neurons;
+		Neurons m_neurons;
 
 		ConnectivityMatrix m_cm;
 

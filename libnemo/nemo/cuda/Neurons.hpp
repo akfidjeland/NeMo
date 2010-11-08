@@ -1,5 +1,5 @@
-#ifndef NEURON_PARAMETERS_HPP
-#define NEURON_PARAMETERS_HPP
+#ifndef NEMO_CUDA_NEURONS_HPP
+#define NEMO_CUDA_NEURONS_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \file NeuronParameters.hpp
+//! \file Neurons.hpp
 
 #include <map>
 
@@ -41,11 +41,11 @@ namespace nemo {
  * variables can be read or written. The need for doing this with integer data
  * does not arise when using Izhikevich neurons.
  */
-class NeuronParameters
+class Neurons
 {
 	public:
 
-		NeuronParameters(const network::Generator& net, Mapper&);
+		Neurons(const network::Generator& net, Mapper&);
 
 		/*! Perform any required synchronisation between host and device data.
 		 * Such synchronisation may be required if the user has requested that

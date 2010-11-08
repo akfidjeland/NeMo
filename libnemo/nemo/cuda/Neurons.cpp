@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "NeuronParameters.hpp"
+#include "Neurons.hpp"
 
 #include <vector>
 
@@ -23,7 +23,7 @@ namespace nemo {
 	namespace cuda {
 
 
-NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper) :
+Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mf_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mf_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mu_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
@@ -73,7 +73,7 @@ NeuronParameters::NeuronParameters(const network::Generator& net, Mapper& mapper
 
 
 size_t
-NeuronParameters::d_allocated() const
+Neurons::d_allocated() const
 {
 	return mf_param.d_allocated()
 		+ mf_state.d_allocated()
@@ -82,7 +82,7 @@ NeuronParameters::d_allocated() const
 
 
 void
-NeuronParameters::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
+Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
 {
 	if(maxPartitionNeuron.size() == 0) {
 		return;
@@ -102,7 +102,7 @@ NeuronParameters::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPar
 
 
 size_t
-NeuronParameters::wordPitch() const
+Neurons::wordPitch() const
 {
 	size_t f_param_pitch = mf_param.wordPitch();
 	size_t f_state_pitch = mf_state.wordPitch();
@@ -116,7 +116,7 @@ NeuronParameters::wordPitch() const
 
 
 void
-NeuronParameters::step(cycle_t cycle)
+Neurons::step(cycle_t cycle)
 {
 	if(mf_paramDirty) {
 		mf_param.copyToDevice();
@@ -130,7 +130,7 @@ NeuronParameters::step(cycle_t cycle)
 
 
 float
-NeuronParameters::getParameter(const DeviceIdx& idx, int parameter) const
+Neurons::getParameter(const DeviceIdx& idx, int parameter) const
 {
 	return mf_param.getNeuron(idx.partition, idx.neuron, parameter);
 }
@@ -138,7 +138,7 @@ NeuronParameters::getParameter(const DeviceIdx& idx, int parameter) const
 
 
 void
-NeuronParameters::setParameter(const DeviceIdx& idx, int parameter, float value)
+Neurons::setParameter(const DeviceIdx& idx, int parameter, float value)
 {
 	mf_param.setNeuron(idx.partition, idx.neuron, value, parameter);
 	mf_paramDirty = true;
@@ -147,7 +147,7 @@ NeuronParameters::setParameter(const DeviceIdx& idx, int parameter, float value)
 
 
 void
-NeuronParameters::readStateFromDevice() const
+Neurons::readStateFromDevice() const
 {
 	if(mf_lastSync != m_cycle) {
 		mf_state.copyFromDevice();
@@ -158,7 +158,7 @@ NeuronParameters::readStateFromDevice() const
 
 
 float
-NeuronParameters::getState(const DeviceIdx& idx, int parameter) const
+Neurons::getState(const DeviceIdx& idx, int parameter) const
 {
 	readStateFromDevice();
 	return mf_state.getNeuron(idx.partition, idx.neuron, parameter);
@@ -167,7 +167,7 @@ NeuronParameters::getState(const DeviceIdx& idx, int parameter) const
 
 
 void
-NeuronParameters::setState(const DeviceIdx& idx, int parameter, float value)
+Neurons::setState(const DeviceIdx& idx, int parameter, float value)
 {
 	readStateFromDevice();
 	mf_state.setNeuron(idx.partition, idx.neuron, value, parameter);
