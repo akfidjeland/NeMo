@@ -251,12 +251,15 @@ deleteGlobals()
 {
 	if(g_simulation != NULL) {
 		nemo_delete_simulation(g_simulation);
+		g_simulation = NULL;
 	}
 	if(g_network != NULL) {
 		nemo_delete_network(g_network);
+		g_network = NULL;
 	}
 	if(g_configuration != NULL) {
 		nemo_delete_configuration(g_configuration);
+		g_configuration = NULL;
 	}
 }
 
@@ -284,6 +287,7 @@ clearNetwork(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		return;
 	}
 	nemo_delete_network(g_network);
+	g_network = NULL;
 }
 
 
