@@ -33,6 +33,22 @@ namespace nemo {
 	namespace cuda {
 
 
+void
+setDelays(const WarpAddressTable& wtable, NVector<uint64_t>* delays)
+{
+	using namespace boost::tuples;
+
+	for(WarpAddressTable::row_iterator ri = wtable.row_begin(); ri != wtable.row_end(); ++ri) {
+		const WarpAddressTable::key& k = ri->first;
+		pidx_t p = get<0>(k);
+		nidx_t n = get<1>(k);
+		delay_t delay = get<3>(k);
+		uint64_t bits = delays->getNeuron(p, n);
+		bits |= (uint64_t(0x1) << uint64_t(delay-1));
+		delays->setNeuron(p, n, bits);
+	}
+	delays->moveToDevice();
+}
 
 
 ConnectivityMatrix::ConnectivityMatrix(
@@ -43,6 +59,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	mh_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
+	m_delays(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_fractionalBits(~0)
 {
 	//! \todo change synapse_t, perhaps to nidx_dt
@@ -70,6 +87,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	moveFcmToDevice(totalWarps, h_targets, mh_weights, logging);
 	h_targets.clear();
+
+	setDelays(wtable, &m_delays);
 
 	m_outgoing = Outgoing(mapper.partitionCount(), wtable);
 	m_incoming.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
@@ -454,6 +473,7 @@ ConnectivityMatrix::r_partitionFAddress() const
 {
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));
 }
+
 
 
 	} // end namespace cuda

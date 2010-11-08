@@ -26,6 +26,7 @@
 #include "Outgoing.hpp"
 #include "Incoming.hpp"
 #include "WarpAddressTable.hpp"
+#include "NVector.hpp"
 
 namespace nemo {
 
@@ -145,6 +146,10 @@ class ConnectivityMatrix
 				const std::vector<synapse_t>& h_targets,
 				const std::vector<weight_dt>& h_weights,
 				bool logging);
+
+		/* For each neuron, record the delays for which there are /any/
+		 * outgoing connections */
+		NVector<uint64_t> m_delays;
 
 		/* For spike delivery we need to keep track of all target partitions
 		 * for each neuron */
