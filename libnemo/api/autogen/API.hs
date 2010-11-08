@@ -21,14 +21,14 @@ instance Named Language where
 
 -- add c types here
 data BaseType
-    = ApiFloat
-    | ApiUInt
-    | ApiUInt64
-    | ApiInt
-    | ApiULong
-    | ApiBool
-    | ApiString
-
+        = ApiFloat
+        | ApiUInt
+        | ApiUInt64
+        | ApiInt
+        | ApiULong
+        | ApiBool
+        | ApiString
+    deriving Eq
 
 class Typed a where
     baseType :: a -> BaseType
@@ -43,8 +43,11 @@ class Typed a where
  - Sometimes, however, the same length applies to several vectors, i.e. the
  - length is *implicit*. This should be documented in the associated
  - docstrings. For vectors with implicit length the s tring specifies the name
- - of the variable which length should be used (and checked against). -}
-data VectorLength = ImplicitLength String | ExplicitLength deriving (Eq)
+ - of the variable which length should be used (and checked against).
+ -
+ - The implicit dependency is always on some input argument.  -}
+-- data VectorLength = ImplicitLength String | ExplicitLength deriving (Eq)
+data VectorLength = ImplicitLength Input | ExplicitLength deriving (Eq)
 
 
 explicitLength :: Type -> Bool
@@ -60,8 +63,9 @@ implicitLength (Vector _ ExplicitLength) = False
 
 
 data Type
-    = Scalar BaseType
-    | Vector BaseType VectorLength
+        = Scalar BaseType
+        | Vector BaseType VectorLength
+    deriving Eq
 
 instance Typed Type where
     baseType (Scalar t) = t
@@ -89,7 +93,7 @@ instance Dimensional Type where
 
 
 
-data ApiArg = ApiArg String ApiDescr Type
+data ApiArg = ApiArg String ApiDescr Type deriving Eq
     -- = Scalar String ApiDescr BaseType
     -- | Vector String ApiDescr BaseType
     -- arguments can be grouped into vectors
@@ -121,7 +125,10 @@ type OutputType = ApiArg
 
 -- The optional argument default is just the string to insert into code
 -- Need to add a value type otherwise
-data Input = Required ApiArg | Optional ApiArg String
+data Input
+        = Required ApiArg
+        | Optional ApiArg String
+    deriving Eq
 
 instance Dimensional Input where
     vector = vector . arg
@@ -268,24 +275,6 @@ addSynapse =
         [] True
 
 
-
--- TODO: get rid of this function. Write by hand for Matlab/MEX
-{-
-addSynapses =
-    ApiFunction
-        "addSynapses"
-        "add multiple synapses to the network"
-        (Just "The input vectors should all have the same length")
-        []
-        [   Required (ApiArg "sources" (Just "Source neuron indices") (Vector ApiUInt ImplicitLength)),
-            Required (ApiArg "targets" (Just "Vector of target indices") (Vector ApiUInt ImplicitLength)),
-            Required (ApiArg "delays" (Just "Vector of delays (in milliseconds)")  (Vector ApiUInt ImplicitLength)),
-            Required (ApiArg "weights" (Just "Vector of weights") (Vector ApiFloat ImplicitLength)),
-            Required (ApiArg "plastic" (Just "Vector of booleans specifying whether each neuron is plastic") (Vector ApiBool ExplicitLength))
-        ]
-        [MEX, LaTeX] False
--}
-
 neuronCount =
     ApiFunction
         "neuronCount"
@@ -302,7 +291,10 @@ network =
 
 
 step =
-    ApiFunction "step"
+    let istim = Required $ ApiArg "istim_current"
+                    (Just "The corresponding list of current input")
+                    (Vector ApiFloat ExplicitLength)
+    in ApiFunction "step"
         "run simulation for a single cycle (1ms)"
         Nothing
         [   ApiArg "fired" (Just "Neurons which fired this cycle") (Vector ApiUInt ExplicitLength) ]
@@ -311,10 +303,8 @@ step =
                 (Vector ApiUInt ExplicitLength)),
             Required (ApiArg "istim_nidx"
                 (Just "An optional list of neurons which will be given input current stimulus this cycle")
-                (Vector ApiUInt (ImplicitLength "istim_current"))),
-            Required (ApiArg "istim_current"
-                (Just "The corresponding list of current input")
-                (Vector ApiFloat ExplicitLength))
+                (Vector ApiUInt (ImplicitLength istim))),
+            istim
         ]
         [Matlab] False
 
@@ -332,45 +322,57 @@ applyStdp =
 
 
 getTargets =
-    ApiFunction "getTargets"
+    let synapses = Required $ ApiArg "synapses"
+                    (Just "synapse ids (as returned by addSynapse)")
+                    (Vector ApiUInt64 ExplicitLength)
+    in ApiFunction "getTargets"
         "return the targets for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
         Nothing
-        [   ApiArg "targets" (Just "indices of target neurons") (Vector ApiUInt (ImplicitLength "synapses")) ]
-        [   Required $ ApiArg "synapses" (Just "synapse ids (as returned by addSynapse)") (Vector ApiUInt64 ExplicitLength) ]
+        [   ApiArg "targets" (Just "indices of target neurons") (Vector ApiUInt (ImplicitLength synapses)) ]
+        [ synapses ]
         [] False
 
 
 
 
 getDelays =
-    ApiFunction "getDelays"
+    let synapses = Required $ ApiArg "synapses"
+                    (Just "synapse ids (as returned by addSynapse)")
+                    (Vector ApiUInt64 ExplicitLength)
+    in ApiFunction "getDelays"
         "return the conductance delays for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
         Nothing
-        [   ApiArg "delays" (Just "conductance delays of the specified synpases") (Vector ApiUInt (ImplicitLength "synapses")) ]
-        [   Required $ ApiArg "synapses" (Just "synapse ids (as returned by addSynapse)") (Vector ApiUInt64 ExplicitLength) ]
+        [   ApiArg "delays" (Just "conductance delays of the specified synpases") (Vector ApiUInt (ImplicitLength synapses)) ]
+        [ synapses ]
         [] False
 
 
 getWeights =
-    ApiFunction "getWeights"
+    let synapses = Required $ ApiArg "synapses"
+                    (Just "synapse ids (as returned by addSynapse)")
+                    (Vector ApiUInt64 ExplicitLength)
+    in ApiFunction "getWeights"
         "return the weights for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
         Nothing
-        [   ApiArg "weights" (Just "weights of the specified synapses") (Vector ApiFloat (ImplicitLength "synapses")) ]
-        [   Required $ ApiArg "synapses" (Just "synapse ids (as returned by addSynapse)") (Vector ApiUInt64 ExplicitLength) ]
+        [   ApiArg "weights" (Just "weights of the specified synapses") (Vector ApiFloat (ImplicitLength synapses)) ]
+        [ synapses ]
         [] False
 
 
 
 getPlastic =
-    ApiFunction "getPlastic"
+    let synapses = Required $ ApiArg "synapses"
+                    (Just "synapse ids (as returned by addSynapse)")
+                    (Vector ApiUInt64 ExplicitLength)
+    in ApiFunction "getPlastic"
         "return the boolean plasticity status for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
         Nothing
-        [   ApiArg "plastic" (Just "plasticity status of the specified synpases") (Vector ApiBool (ImplicitLength "synapses")) ]
-        [   Required $ ApiArg "synapses" (Just "synapse ids (as returned by addSynapse)") (Vector ApiUInt64 ExplicitLength) ]
+        [   ApiArg "plastic" (Just "plasticity status of the specified synpases") (Vector ApiBool (ImplicitLength synapses)) ]
+        [ synapses ]
         [] False
 
 
