@@ -337,7 +337,6 @@ mexScalarFunction mdl_name fn = mexFunctionDefinition fn body
 
 mexVectorFunction :: String -> ApiFunction -> Doc
 mexVectorFunction mname fn = mexFunctionDefinition fn body
-    -- TODO: get the handle argument only once to reduce overhead, esp. for error checking
     where
         body = vcat $ [
                 {- In the vector form, all inputs should have the same format.
@@ -347,7 +346,7 @@ mexVectorFunction mname fn = mexFunctionDefinition fn body
                 C.statement $ cFunctionCall (text "checkOutputCount") Nothing [text "nlhs", int outputCount],
                 mexDeclareInputVariables 1 $ fn_inputs fn,
                 mexAllocateVectorOutputs $ fn_output fn,
-                -- mexDeclareOutputVariables $ fn_output fn,
+                -- get the handle argument only once to reduce overhead, esp. for error checking
                 C.statement $ cFunctionCall getHandle (Just (text "void* hdl")) [],
                 C.forLoop indexVar "0" "elems" loopBody
                 -- mexReturnOutputVariables $ fn_output fn
@@ -399,11 +398,9 @@ mexDeclareOutputVariables xs = vcat $ map singleDecl xs
 
         mainDecl x = (typeDecl $ arg_type x) <+> (text $ name x) <> char ';'
 
-        vectorLen x = if scalar x then empty else (text $ "size_t " ++ name x ++ "_len;")
-
---            if scalar x
---                then (typeDecl $ arg_type x) <+> (text $ name x) <> char ';'
---                else (typeDecl $ arg_type x) <+> (text $ name x
+        vectorLen x = if explicitLength (fullType x)
+                        then (text $ "size_t " ++ name x ++ "_len;")
+                        else empty
 
         typeDecl :: Type -> Doc
         typeDecl (Scalar t) = text $ cppType t
@@ -423,11 +420,19 @@ mexReturnOutputVariables xs = vcat $ zipWith go [0..] xs
         -- go (Vector t) = printf "returnVector<%s, %s>(plhs, %s)" (cppType t) (mexType t) str
         go argno arg = text $
             if scalar arg
-                then printf "returnScalar<%s, %s>(plhs, %u, %s);" (cppType t) (mexType t) argno (name arg)
-                else printf "returnVector<%s, %s>(plhs, %u, %s, %s);" (cppType t) (mexType t) argno n (n ++ "_len")
+                then printf "returnScalar<%s, %s>(plhs, %u, %s);" (cppType t) (mexType t) argno n
+                else printf "returnVector<%s, %s>(plhs, %u, %s, %s);" (cppType t) (mexType t) argno n len
             where
                 t = baseType $ arg_type arg
                 n = name arg
+
+                len =
+                    case fullType arg of
+                        Scalar _ -> error "unexpected scalar"
+                        Vector _ vlen ->
+                            case vlen of
+                                ExplicitLength -> n ++ "_len"
+                                (ImplicitLength x) -> name x ++ ".size()"
 
 
 

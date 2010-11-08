@@ -67,15 +67,15 @@ for s=0:4
 end
 elapsed = nemoElapsedWallclock
 
-% Test the synapse queries work.
+% Test that the synapse queries work.
 %
 % Note: the synapse ids returned by addSynapse should be used here. The synapse
 % queries below relies on knowing the internals of how synapse ids are
 % allocated (it refers to the first 10 synapse of neuron 0).
 
-weights = nemoGetWeights(0:10)
-targets = nemoGetTargets(0:10)
-delays = nemoGetDelays(0:10)
-plastic = nemoGetPlastic(0:10)
+weights = nemoGetWeights(0:9)
+targets = nemoGetTargets(0:9)
+delays = nemoGetDelays(0:9)
+plastic = nemoGetPlastic(0:9)
 
 nemoDestroySimulation;

@@ -518,11 +518,10 @@ getTargets(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     unsigned* targets;
-    size_t targets_len;
     checkNemoStatus( 
             nemo_get_targets(getSimulation(), &synapses[0], synapses.size(), &targets) 
     );
-    returnVector<unsigned, uint32_t>(plhs, 0, targets, targets_len);
+    returnVector<unsigned, uint32_t>(plhs, 0, targets, synapses.size());
 }
 
 
@@ -534,11 +533,10 @@ getDelays(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     unsigned* delays;
-    size_t delays_len;
     checkNemoStatus( 
             nemo_get_delays(getSimulation(), &synapses[0], synapses.size(), &delays) 
     );
-    returnVector<unsigned, uint32_t>(plhs, 0, delays, delays_len);
+    returnVector<unsigned, uint32_t>(plhs, 0, delays, synapses.size());
 }
 
 
@@ -550,11 +548,10 @@ getWeights(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     float* weights;
-    size_t weights_len;
     checkNemoStatus( 
             nemo_get_weights(getSimulation(), &synapses[0], synapses.size(), &weights) 
     );
-    returnVector<float, double>(plhs, 0, weights, weights_len);
+    returnVector<float, double>(plhs, 0, weights, synapses.size());
 }
 
 
@@ -566,11 +563,10 @@ getPlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
     unsigned char* plastic;
-    size_t plastic_len;
     checkNemoStatus( 
             nemo_get_plastic(getSimulation(), &synapses[0], synapses.size(), &plastic) 
     );
-    returnVector<unsigned char, uint8_t>(plhs, 0, plastic, plastic_len);
+    returnVector<unsigned char, uint8_t>(plhs, 0, plastic, synapses.size());
 }
 
 
