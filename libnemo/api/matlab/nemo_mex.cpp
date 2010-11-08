@@ -270,6 +270,9 @@ getNetwork()
 {
 	if(g_network == NULL) {
 		g_network = nemo_new_network();
+		if(g_network == NULL) {
+			mexErrMsgIdAndTxt("nemo:backend", "failed to create network: %s", nemo_strerror());
+		}
 		mexAtExit(deleteGlobals);
 	}
 	return g_network;
@@ -297,6 +300,9 @@ getConfiguration()
 {
 	if(g_configuration == NULL) {
 		g_configuration = nemo_new_configuration();
+		if(g_configuration == NULL) {
+			mexErrMsgIdAndTxt("nemo:backend", "failed to create configuration: %s", nemo_strerror());
+		}
 		mexAtExit(deleteGlobals);
 	}
 	return g_configuration;
@@ -308,11 +314,14 @@ getConfiguration()
 void
 resetConfiguration(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	//! \todo do a swap here instead, to avoid dangling pointers 
 	if(g_configuration != NULL) {
 		nemo_delete_configuration(g_configuration);
+		g_configuration = NULL;
 	}
 	g_configuration = nemo_new_configuration();
+	if(g_configuration == NULL) {
+		mexErrMsgIdAndTxt("nemo:backend", "failed to create configuration: %s", nemo_strerror());
+	}
 }
 
 
@@ -323,8 +332,7 @@ nemo_simulation_t
 getSimulation()
 {
 	if(g_simulation == NULL) {
-		//! \todo add a more helpful error message
-		mexErrMsgIdAndTxt("nemo:api", "non-existing simulation object requested");
+		mexErrMsgIdAndTxt("nemo:api", "Non-existing simulation object requested. Make sure nemoCreateSimulation is called before any simulation commands.");
 	}
 	return g_simulation;
 }
@@ -352,7 +360,6 @@ destroySimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	if(g_simulation == NULL) {
 		mexErrMsgIdAndTxt("nemo:api", "Attempt to stop simulation when simulation is not running");
 	}
-	//! \todo do a swap for exception safety?
 	nemo_delete_simulation(g_simulation);
 	g_simulation = NULL;
 }
