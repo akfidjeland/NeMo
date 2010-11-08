@@ -2,7 +2,7 @@ module Matlab (generate, synopsis, ctorSynopsis) where
 
 import Control.Monad (zipWithM, zipWithM_, when, liftM)
 import Data.Char (toUpper, toLower, isUpper)
-import Data.List (intercalate)
+import Data.List (intercalate, intersperse)
 import Data.Maybe (catMaybes)
 import Data.String.Utils
 import Text.Printf
@@ -26,6 +26,7 @@ generate modules = do
     generateMex $ zip moduleNames functionDefs
     zipWithM_ generateMatlabFile functionDefs [0..]
     generateCMake functionDefs
+    generateHelp modules
     where
         -- all functions, regardless of module
         functionDefs = concatMap mdl_functions modules
@@ -34,6 +35,26 @@ generate modules = do
         moduleNames =
             let go m = replicate (length $ mdl_functions m) (mdl_name m)
             in concatMap go modules
+
+
+{- | Create the top-level help file. -}
+generateHelp :: [ApiModule] -> IO ()
+generateHelp modules = do
+    withFile "../matlab/nemo.m" WriteMode $ \h -> do
+    hPutStr h =<< readFile "../matlab/sources/nemo.m.in"
+    hPutStr h $ render $ vcat $ intersperse (char '%') $ map moduleHelp modules
+    hPutStr h "\n"
+    where
+        moduleHelp :: ApiModule -> Doc
+        moduleHelp m = (commentLine $ text $ stage m) <> char ':' $+$ moduleFunctions m
+
+        moduleFunctions :: ApiModule -> Doc
+        moduleFunctions m = vcat $ map (commentLine . (char ' ' <>) . text . matlabFunctionName) $ mdl_functions m
+
+        stage :: ApiModule -> String
+        stage m = case name m of
+            "Network" -> "Construction"
+            _ -> name m
 
 
 {- | Auto-generate the list of m-files that cmake should install. This includes

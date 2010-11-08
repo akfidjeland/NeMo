@@ -25,28 +25,3 @@
 % NeMo provides the functions listed below. See the documentation for the
 % respective functions for more detail.
 %
-% Construction:
-%  nemoAddNeuron
-%  nemoAddSynapse
-%  nemoNeuronCount
-%  nemoClearNetwork
-%
-% Configuration:
-%  nemoSetCpuBackend
-%  nemoSetCudaBackend
-%  nemoSetStdpFunction
-%  nemoBackendDescription
-%  nemoResetConfiguration
-%
-% Simulation:
-%  nemoStep
-%  nemoApplyStdp
-%  nemoGetTargets
-%  nemoGetDelays
-%  nemoGetWeights
-%  nemoGetPlastic
-%  nemoElapsedWallclock
-%  nemoElapsedSimulation
-%  nemoResetTimer
-%  nemoCreateSimulation
-%  nemoDestroySimulation
