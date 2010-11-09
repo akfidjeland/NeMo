@@ -58,8 +58,6 @@ Simulation::Simulation(
 		configureStdp();
 	}
 	setPitch();
-	//! \todo do this configuration as part of CM setup
-	CUDA_SAFE_CALL(configureKernel(m_cm.maxDelay(), m_pitch32, m_pitch64));
 	resetTimer();
 }
 
@@ -213,6 +211,8 @@ Simulation::setPitch()
 	m_pitch64 = m_recentFiring.wordPitch();
 	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
 	checkPitch(pitch1, m_firingBuffer.wordPitch());
+	CUDA_SAFE_CALL(nv_setPitch32(m_pitch32));
+	CUDA_SAFE_CALL(nv_setPitch64(m_pitch64));
 	CUDA_SAFE_CALL(bv_setPitch(pitch1));
 }
 

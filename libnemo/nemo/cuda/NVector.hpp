@@ -1,7 +1,7 @@
 //! \file NVector.hpp
 
-#ifndef N_VECTOR_HPP
-#define N_VECTOR_HPP
+#ifndef NEMO_CUDA_NVECTOR_HPP
+#define NEMO_CUDA_NVECTOR_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <boost/shared_array.hpp>
+#include <cuda_runtime.h>
 
 namespace nemo {
 	namespace cuda {
@@ -116,7 +117,10 @@ class NVector
 
 }	} // end namespace
 
-#include "NVector.ipp"
+/* Functions to set pitch on device. Defined in nvector.cu */
+cudaError nv_setPitch32(size_t pitch32);
+cudaError nv_setPitch64(size_t pitch64);
 
+#include "NVector.ipp"
 
 #endif

@@ -286,14 +286,14 @@ updateSTDP_(
 		unsigned target = nbase + threadIdx.x;
 
 		uint64_t targetRecentFiring =
-			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target];
+			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + target];
 
 		const int processingDelay = s_stdpPostFireWindow - 1;
 
 		bool fired = targetRecentFiring & (0x1 << processingDelay);
 
 		/* Write updated history to double buffer */
-		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_pitch64 + target] =
+		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + target] =
 				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
 		if(cr_address[CURRENT_PARTITION] == 0) {

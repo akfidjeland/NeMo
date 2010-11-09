@@ -123,8 +123,7 @@ fire(
 	unsigned* s_firingCount,
 	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
-	//! \todo put s_pitch32 in cmem
-	size_t neuronParametersSize = PARTITION_COUNT * s_pitch32;
+	size_t neuronParametersSize = PARTITION_COUNT * c_pitch32;
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
 	float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
@@ -441,8 +440,6 @@ step (
     }
 	__syncthreads();
 
-	loadNetworkParameters();
-
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
 		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
 	}
@@ -455,7 +452,7 @@ step (
 
 	SET_COUNTER(s_ccMain, 2);
 
-	addCurrentStimulus(s_partitionSize, s_pitch32, g_istim, (fix_t*) s_current, s_overflow, s_negative);
+	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, (fix_t*) s_current, s_overflow, s_negative);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
 	SET_COUNTER(s_ccMain, 3);
@@ -466,7 +463,7 @@ step (
 	 * additional conversion inside the thalamic input code in order for this
 	 * to work. */
 	if(thalamicInputEnabled) {
-		thalamicInput(s_partitionSize, s_pitch32,
+		thalamicInput(s_partitionSize, c_pitch32,
 				gu_neuronState, gf_neuronParameters, s_current);
 	}
 
@@ -476,8 +473,8 @@ step (
 	loadFiringInput(g_fstim, s_fstim);
 
 	fire( s_partitionSize,
-			gf_neuronParameters + CURRENT_PARTITION * s_pitch32,
-			gf_neuronState + CURRENT_PARTITION * s_pitch32,
+			gf_neuronParameters + CURRENT_PARTITION * c_pitch32,
+			gf_neuronState + CURRENT_PARTITION * c_pitch32,
 			s_current,
 			s_fstim,
 			&s_firingCount,
@@ -507,7 +504,7 @@ step (
 				cycle,
 				s_dfired,
 				g_recentFiring,
-				s_pitch64,
+				c_pitch64,
 				s_partitionSize,
 				cr_address, cr_stdp, cr_pitch,
 				s_fired);

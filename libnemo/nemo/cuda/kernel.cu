@@ -24,6 +24,7 @@
 #include "outgoing.cu"
 #include "incoming.cu"
 #include "thalamicInput.cu"
+#include "nvector.cu"
 #include "stdp.cu"
 #include "step.cu"
 

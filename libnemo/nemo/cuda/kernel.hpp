@@ -56,7 +56,6 @@ configureStdp(
 		weight_dt* stdpFn);
 
 cudaError configurePartitionSize(const unsigned* d_partitionSize, size_t len);
-cudaError configureKernel(unsigned maxDelay, unsigned pitch32, unsigned pitch64);
 
 cudaError fx_setFormat(unsigned fractionalBits);
 

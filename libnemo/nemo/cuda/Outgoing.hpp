@@ -1,5 +1,5 @@
-#ifndef OUTGOING_HPP
-#define OUTGOING_HPP
+#ifndef NEMO_CUDA_OUTGOING_HPP
+#define NEMO_CUDA_OUTGOING_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -12,7 +12,6 @@
 
 #include <map>
 #include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
 
 #include "outgoing.cu_h"
 
@@ -45,7 +44,7 @@ class Outgoing
 
 		void init(size_t partitionCount, const class WarpAddressTable& wtable);
 
-		boost::shared_ptr<outgoing_t> md_arr;  // device data
+		boost::shared_ptr<outgoing_t> md_arr; // device data
 		size_t m_pitch;                       // max pitch
 
 		boost::shared_ptr<unsigned> md_rowLength; // per-neuron pitch
