@@ -28,6 +28,7 @@
 #include "DeviceAssertions.hpp"
 #include "FiringBuffer.hpp"
 #include "Neurons.hpp"
+#include "LocalQueue.hpp"
 
 namespace nemo {
 
@@ -132,6 +133,8 @@ class Simulation : public nemo::SimulationBackend
 		Neurons m_neurons;
 
 		ConnectivityMatrix m_cm;
+
+		LocalQueue m_lq;
 
 		NVector<uint64_t, 2> m_recentFiring;
 

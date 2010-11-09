@@ -10,6 +10,7 @@
 #include "log.cu_h"
 #include "fixedpoint.cu"
 #include "bitvector.cu"
+#include "localQueue.cu"
 
 
 //=============================================================================
@@ -196,6 +197,62 @@ fire(
 //=============================================================================
 // Spike delivery
 //=============================================================================
+
+
+/*! Enque all recently fired neurons in the local queue
+ *
+ * \param nFired number of valid entries in s_fired
+ * \param s_fired shared memory buffer containing the recently fired neurons
+ * \param g_delays delay bits for each neuron
+ * \param g_queue global memory for the local queue
+ * \param s_counts shared memory buffer for the per delay-slot queue fill. This
+ *        should contain at leaset MAX_DELAY elements.
+ */
+__device__
+void
+scatterLocal(
+		unsigned cycle,
+		unsigned nFired,
+		const nidx_dt* s_fired,
+		uint64_t* g_delays,
+		unsigned* g_fill,
+		lq_entry_t* g_queue)
+{
+	/* This shared memory vector is quite small, so no need to reuse */
+	__shared__ unsigned s_fill[MAX_DELAY];
+
+	lq_loadQueueFill(g_fill, s_fill);
+
+	/*! \todo do more than one neuron at a time. We can deal with
+	 * THREADS_PER_BLOCK/MAX_DELAY per iteration. */
+	for(unsigned iFired = 0; iFired < nFired; iFired++) {
+
+		unsigned neuron = s_fired[iFired];
+
+		__shared__ uint64_t delayBits;
+		/*! \todo could load more delay data in one go */
+		if(threadIdx.x == 0) {
+			delayBits = nv_load64(neuron, 0, g_delays);
+		}
+		__syncthreads();
+
+		//! \todo handle MAX_DELAY > THREADS_PER_BLOCK
+		unsigned delay0 = threadIdx.x;
+		if(delay0 < MAX_DELAY) {
+			bool delaySet = (delayBits >> uint64_t(delay0)) & 0x1;
+			if(delaySet) {
+				/* This write operation will almost certainly be non-coalesced.
+				 * It would be possible to stage data in smem, e.g. one warp
+				 * per queue slot. 64 slots would require 64 x 32 x 4B = 8kB.
+				 * Managaging this data can be costly, however, as we need to
+				 * flush buffers as we go. */
+				lq_enque(neuron, cycle, delay0, s_fill, g_queue);
+			}
+		}
+	}
+	lq_storeQueueFill(s_fill, g_fill);
+}
+
 
 
 __device__
@@ -389,6 +446,9 @@ step (
 		outgoing_t* g_outgoing,
 		unsigned* g_incomingHeads,
 		incoming_t* g_incoming,
+		lq_entry_t* g_lqData,      // pitch = c_lqPitch
+		unsigned* g_lqFill,
+		uint64_t* g_delays,        // pitch = c_pitch64
 		// firing stimulus
 		uint32_t* g_fstim,
 		fix_t* g_istim,
@@ -487,6 +547,10 @@ step (
 
 	SET_COUNTER(s_ccMain, 5);
 
+	scatterLocal(cycle, s_firingCount, s_fired, g_delays, g_lqFill, g_lqData);
+
+	SET_COUNTER(s_ccMain, 6);
+
 	scatter(
 			cycle,
 			s_firingCount,
@@ -496,7 +560,7 @@ step (
 			g_incomingHeads,
 			g_incoming);
 
-	SET_COUNTER(s_ccMain, 6);
+	SET_COUNTER(s_ccMain, 7);
 
 	if(stdpEnabled) {
 		loadStdpParameters_();
@@ -510,7 +574,7 @@ step (
 				s_fired);
 	}
 
-	SET_COUNTER(s_ccMain, 7);
+	SET_COUNTER(s_ccMain, 8);
 
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

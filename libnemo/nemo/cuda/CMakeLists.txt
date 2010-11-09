@@ -64,6 +64,7 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	DeviceAssertions.cpp
 	FiringBuffer.cpp
 	Incoming.cpp
+	LocalQueue.cpp
 	Neurons.cpp
 	Mapper.cpp
 	Outgoing.cpp

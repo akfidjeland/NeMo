@@ -78,6 +78,9 @@ stepSimulation(
 		outgoing_t* d_outgoing,
 		unsigned* d_incomingHeads,
 		incoming_t* d_incoming,
+		lq_entry_t* d_lqData,
+		unsigned* d_lqFill,
+		uint64_t* d_delays,
 		unsigned long long* d_cc,
 		size_t ccPitch)
 {
@@ -97,6 +100,7 @@ stepSimulation(
 			d_fcm,
 			d_outgoingCount, d_outgoing,
 			d_incomingHeads, d_incoming,
+			d_lqData, d_lqFill, d_delays,
 			// stimulus
 			d_fstim, // firing
 			d_istim, // current

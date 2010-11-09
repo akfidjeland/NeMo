@@ -11,7 +11,6 @@
 
 #include <vector>
 #include <cuda_runtime.h>
-#include <boost/tuple/tuple_comparison.hpp>
 
 #include <nemo/util.h>
 

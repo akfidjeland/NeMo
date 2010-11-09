@@ -35,7 +35,8 @@ const char* durationNames[] = {
 	"current/firing input",
 	"random input",
 	"fire",
-	"spike scatter",
+	"local scatter",
+	"global scatter",
 	"STDP accumulation"
 };
 

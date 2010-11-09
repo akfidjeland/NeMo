@@ -109,6 +109,8 @@ class ConnectivityMatrix
 
 		void printMemoryUsage(std::ostream&) const;
 
+		const NVector<uint64_t>& delayBits() const { return m_delays; }
+
 	private:
 
 		delay_t m_maxDelay;

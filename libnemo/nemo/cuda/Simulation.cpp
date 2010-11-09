@@ -41,6 +41,7 @@ Simulation::Simulation(
 	m_conf(conf),
 	m_neurons(net, m_mapper),
 	m_cm(net, conf, m_mapper),
+	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
 	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false),
 	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false, true),
 	//! \todo allow external users to directly use the host buffer
@@ -59,6 +60,11 @@ Simulation::Simulation(
 	}
 	setPitch();
 	resetTimer();
+
+	//! \todo do m_cm size reporting here as well
+	if(conf.loggingEnabled()) {
+		std::cout << "\tLocal queue: " << m_lq.allocated() / (1<<20) << "MB\n";
+	}
 }
 
 
@@ -210,6 +216,7 @@ Simulation::setPitch()
 	m_pitch32 = m_neurons.wordPitch();
 	m_pitch64 = m_recentFiring.wordPitch();
 	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
+	checkPitch(m_pitch64, m_cm.delayBits().wordPitch());
 	checkPitch(pitch1, m_firingBuffer.wordPitch());
 	CUDA_SAFE_CALL(nv_setPitch32(m_pitch32));
 	CUDA_SAFE_CALL(nv_setPitch64(m_pitch64));
@@ -247,6 +254,11 @@ Simulation::update()
 			m_cm.outgoing(),
 			m_cm.incomingHeads(),
 			m_cm.incoming(),
+			// local spike delivery
+			m_lq.d_data(),
+			m_lq.d_fill(),
+			m_cm.delayBits().deviceData(),
+			// cycle counting
 			m_cycleCounters.data(),
 			m_cycleCounters.pitch());
 

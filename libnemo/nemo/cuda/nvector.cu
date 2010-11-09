@@ -24,5 +24,21 @@ nv_setPitch64(size_t pitch64)
 
 
 
+/*! \return 32-bit datum for a single neuron in the current partition */
+template<typename T>
+__device__
+T
+nv_load32(unsigned neuron, unsigned plane, T* g_data)
+{
+	return g_data[(plane * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch32 + neuron];
+}
 
 
+/*! \return 64-bit datum for a single neuron in the current partition */
+template<typename T>
+__device__
+T
+nv_load64(unsigned neuron, unsigned plane, T* g_data)
+{
+	return g_data[(plane * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + neuron];
+}
