@@ -38,6 +38,7 @@ NVector<T, M>::NVector(
 		} else {
 			m_hostData = boost::shared_array<T>(new T[height * m_pitch]);
 		}
+		std::fill(m_hostData.get(), m_hostData.get() + height * m_pitch, 0x0);
 	}
 }
 
