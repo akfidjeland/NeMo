@@ -277,14 +277,21 @@ runRing(unsigned ncount, nemo::Configuration conf)
 }
 
 
-BOOST_AUTO_TEST_CASE(ring_tests)
-{
+BOOST_AUTO_TEST_SUITE(ring_tests)
 	nemo::Configuration conf = configuration(false, 1024);
-	runRing(1000, conf); // less than a single partition on CUDA backend
-	runRing(1024, conf); // exactly one partition on CUDA backend
-	runRing(2000, conf); // multiple partitions on CUDA backend
-	runRing(4000, conf); // ditto
-}
+	BOOST_AUTO_TEST_CASE(n1000) {
+		runRing(1000, conf); // less than a single partition on CUDA backend
+	}
+	BOOST_AUTO_TEST_CASE(n1024) {
+		runRing(1024, conf); // exactly one partition on CUDA backend
+	}
+	BOOST_AUTO_TEST_CASE(n2000) {
+		runRing(2000, conf); // multiple partitions on CUDA backend
+	}
+	BOOST_AUTO_TEST_CASE(n4000) {
+		runRing(4000, conf); // ditto
+	}
+BOOST_AUTO_TEST_SUITE_END()
 
 
 BOOST_AUTO_TEST_CASE(compare_backends)
