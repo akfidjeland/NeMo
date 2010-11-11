@@ -363,6 +363,19 @@ destroySimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	nemo_delete_simulation(g_simulation);
 	g_simulation = NULL;
 }
+
+
+
+void
+reset(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	if(g_simulation != NULL) {
+		nemo_delete_simulation(g_simulation);
+		g_simulation = NULL;
+	}
+	clearNetwork(nlhs, plhs, nrhs, prhs);
+	resetConfiguration(nlhs, plhs, nrhs, prhs);
+}
 /* AUTO-GENERATED CODE START */
 
 void
@@ -617,7 +630,7 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 20
+#define FN_COUNT 21
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuron,
     addSynapse,
@@ -638,7 +651,8 @@ fn_ptr fn_arr[FN_COUNT] = {
     elapsedSimulation,
     resetTimer,
     createSimulation,
-    destroySimulation
+    destroySimulation,
+    reset
 };
 
 /* AUTO-GENERATED CODE END */

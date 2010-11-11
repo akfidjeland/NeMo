@@ -363,3 +363,16 @@ destroySimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	nemo_delete_simulation(g_simulation);
 	g_simulation = NULL;
 }
+
+
+
+void
+reset(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	if(g_simulation != NULL) {
+		nemo_delete_simulation(g_simulation);
+		g_simulation = NULL;
+	}
+	clearNetwork(nlhs, plhs, nrhs, prhs);
+	resetConfiguration(nlhs, plhs, nrhs, prhs);
+}

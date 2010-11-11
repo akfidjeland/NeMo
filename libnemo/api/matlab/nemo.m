@@ -50,3 +50,6 @@
 %  nemoResetTimer
 %  nemoCreateSimulation
 %  nemoDestroySimulation
+%
+% Others:
+%  nemoReset

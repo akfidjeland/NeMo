@@ -18,3 +18,4 @@ nemoElapsedSimulation.m
 nemoResetTimer.m
 nemoCreateSimulation.m
 nemoDestroySimulation.m
+nemoReset.m

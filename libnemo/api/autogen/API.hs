@@ -489,3 +489,12 @@ resetConfiguration =
 
 configuration = ApiModule "Configuration" "conf" Nothing defaultConstructor
     [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription, resetConfiguration]
+
+
+
+reset = ApiFunction "reset"
+        "Reset all NeMo state, leaving an empty network, a default configuration, and no simulation"
+        Nothing [] [] [MEX] False
+
+
+matlabExtras = ApiModule "Others" "others" Nothing defaultConstructor [reset]
