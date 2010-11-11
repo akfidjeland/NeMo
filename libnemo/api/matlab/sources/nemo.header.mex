@@ -342,11 +342,15 @@ getSimulation()
 void
 createSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
+	if(g_simulation != NULL) {
+		mexErrMsgIdAndTxt("nemo:api", "Simulation already exists. Call nemoDestroySimulation if you want to delete the existing simulation.");
+		return;
+	}
 	nemo_network_t net = getNetwork();
 	nemo_configuration_t conf = getConfiguration();
 	nemo_simulation_t sim = nemo_new_simulation(net, conf);
 	if(sim == NULL) {
-		mexErrMsgIdAndTxt("nemo:backend", "failed to create simulation: %s", nemo_strerror());
+		mexErrMsgIdAndTxt("nemo:backend", "Failed to create simulation: %s", nemo_strerror());
 	}
 	g_simulation = sim;
 	mexAtExit(deleteGlobals);
