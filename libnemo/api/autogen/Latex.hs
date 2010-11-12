@@ -91,7 +91,17 @@ inputDoc level xs = section level False "Inputs" Nothing $ description (map (go 
     where
         -- TODO: deal with optional arguments here
         go :: ApiArg -> (Doc, Doc)
-        go arg = (text $ name arg, maybe empty text $ describe arg)
+        go arg = (text $ texFormat $ name arg, maybe empty text $ describe arg)
+
+
+-- Perform replacements of TeX-specific symbols
+-- TODO: use a more general search-and-replace here
+texFormat :: String -> String
+texFormat [] = []
+texFormat [x] = [x]
+texFormat (x1:x2:xs)
+    | x1 /= '\\' && x2 == '_'= x1 : texFormat ('\\' : x2 : xs)
+    | otherwise              = x1 : texFormat (x2 : xs)
 
 
 
