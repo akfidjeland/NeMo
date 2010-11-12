@@ -316,12 +316,11 @@ scatterGlobal(unsigned cycle,
 					short delay0 = s_lq[jLq].y;
 					outgoing_t sout = outgoing(sourceNeuron, delay0, iOut, g_outgoing); // coalesced
 					unsigned targetPartition = outgoingTargetPartition(sout);
-					/*! \todo simplify incoming such that addressing only depends on targetPartition */
 					/*! \todo use consistent naming here: fill rather than count/heads */
-					size_t headsAddr = incomingCountAddr(targetPartition, writeBuffer(cycle), 0);
+					size_t headsAddr = incomingCountAddr(targetPartition, writeBuffer(cycle));
 					unsigned offset = atomicAdd(g_incomingHeads + headsAddr, 1);
 					ASSERT(offset < c_incomingPitch);
-					size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle), 0);
+					size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle));
 					g_incoming[base + offset] = make_incoming(outgoingWarpOffset(sout));
 
 					DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
@@ -364,8 +363,7 @@ gather( unsigned cycle,
 	bv_clear(s_negative);
 
 	if(threadIdx.x == 0) {
-		//! \todo simplify addressing
-		size_t addr = incomingCountAddr(CURRENT_PARTITION, readBuffer(cycle), 0);
+		size_t addr = incomingCountAddr(CURRENT_PARTITION, readBuffer(cycle));
 		s_incomingCount = g_incomingCount[addr];
 		g_incomingCount[addr] = 0;
 	}
@@ -395,7 +393,6 @@ gather( unsigned cycle,
 		__syncthreads();
 
 		if(threadIdx.x < s_groupSize) {
-			//! \todo simplify addressing
 			incoming_t sgin = getIncoming(readBuffer(cycle), group, g_incoming);
 			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
 			DEBUG_MSG_SYNAPSE("c%u w%u -> p%u\n", cycle, incomingWarpOffset(sgin), CURRENT_PARTITION);
