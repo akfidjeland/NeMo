@@ -24,9 +24,9 @@ Incoming::Incoming() : m_allocated(0) {}
 void
 Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMultiplier)
 {
-	// allocate space for the incoming count
+	// allocate space for the incoming count (double-buffered)
 	unsigned* d_count;
-	size_t len = ALIGN(partitionCount * MAX_DELAY, 32) * sizeof(unsigned);
+	size_t len = ALIGN(partitionCount * 2, 32) * sizeof(unsigned);
 	d_malloc((void**)&d_count, len, "incoming spike queue counts");
 	m_count = boost::shared_ptr<unsigned>(d_count, d_free);
 	d_memset(d_count, 0, len);
@@ -34,11 +34,11 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 
 	/* The queue has one entry for incoming spikes for each partition */
 	assert(partitionCount < MAX_PARTITION_COUNT);
-	size_t height = partitionCount * MAX_DELAY;
+	size_t height = partitionCount * 2; // double buffered
 
-	/* Each buffer entry (for a particular source partition) is of a fixed size
-	 * to simplify the rotating buffer code. This is very conservative. In fact
-	 * the buffer is large enough that every neuron can fire every cycle */
+	/* Each buffer entry (for a particular target partition) is of a fixed size.
+	 * The sizing of this is very conservative. In fact the buffer is large
+	 * enough that every neuron can fire every cycle. */
 	/*! \todo relax this constraint. We'll end up using a very large amount of
 	 * space when using a large number of partitions */
 	assert(sizeMultiplier > 0.0);

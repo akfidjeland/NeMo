@@ -363,6 +363,7 @@ gather( unsigned cycle,
 	bv_clear(s_negative);
 
 	if(threadIdx.x == 0) {
+		//! \todo use atomicExch here instead
 		size_t addr = incomingCountAddr(CURRENT_PARTITION, readBuffer(cycle));
 		s_incomingCount = g_incomingCount[addr];
 		g_incomingCount[addr] = 0;

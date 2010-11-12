@@ -33,8 +33,7 @@ __device__
 unsigned
 incomingBufferStart(unsigned targetPartition, unsigned slot)
 {
-	//! \todo remove the MAX_DELAY factor here. Then inline into caller.
-	return (targetPartition * MAX_DELAY + slot) * c_incomingPitch;
+	return (targetPartition * 2 + slot) * c_incomingPitch;
 }
 
 
@@ -55,7 +54,6 @@ __device__ incoming_t make_incoming(unsigned warpOffset) { return warpOffset; }
 __device__ unsigned incomingWarpOffset(incoming_t in) { return in; }
 
 
-
 /*! \return address into matrix with number of incoming synapse groups
  * \param slot read or write slot
  *
@@ -65,7 +63,7 @@ __device__
 size_t
 incomingCountAddr(unsigned targetPartition, unsigned slot)
 {
-	return targetPartition * MAX_DELAY + slot;
+	return targetPartition * 2 + slot;
 }
 
 
