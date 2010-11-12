@@ -44,6 +44,7 @@ const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
 
 
 __host__ cudaError setOutgoingPitch(size_t targetPitch);
+__host__ cudaError setOutgoingStep(unsigned step);
 
 
 //! \todo make these templates instead

@@ -301,27 +301,34 @@ scatterGlobal(unsigned cycle,
 		}
 		__syncthreads();
 
-		/* Now loop over all the entries we just loaded from the local queue */ 
+		/* Now loop over all the entries we just loaded from the local queue.
+		 * Read a number of entries in one go, if possible. Note that a large
+		 * spread in the range of outgoing row lengths (e.g. one extremely long
+		 * one) will adveresely affect performance here. */
 		unsigned jLqMax = min(THREADS_PER_BLOCK, nLq-bLq);
-		for(unsigned jLq = 0; jLq < jLqMax; ++jLq) {
+		for(unsigned jbLq = 0; jbLq < jLqMax; jbLq += c_outgoingStep) {
+
+			/* jLq should be in [0, 256) so that we can point to s_len
+			 * e.g.     0,8,16,24,...,248 + 0,1,...,8 */
+			unsigned jLq = jbLq + threadIdx.x / c_outgoingPitch;
 
 			/* There may be more than THREADS_PER_BLOCK entries in this
 			 * outgoing row, although the common case should be just a single
 			 * loop iteration here */
 			unsigned nOut = s_len[jLq];
-			for(unsigned bOut = 0; bOut < nOut; bOut += THREADS_PER_BLOCK) {
-
+			{
 				if(threadIdx.x < PARTITION_COUNT) {
 					s_fill[threadIdx.x] = 0;
 				}
 				__syncthreads();
 
 				/* Load row of outgoing data (specific to neuron/delay pair) */
-				unsigned iOut = bOut + threadIdx.x;
+				unsigned iOut = threadIdx.x % c_outgoingPitch;
 				unsigned targetPartition = 0;
 				unsigned warpOffset = 0;
 				unsigned localOffset = 0;
-				if(iOut < nOut) {
+				bool valid = bLq + jLq < nLq && iOut < nOut;
+				if(valid) {
 					short sourceNeuron = s_lq[jLq].x;
 					short delay0 = s_lq[jLq].y;
 					outgoing_t sout = outgoing(sourceNeuron, delay0, iOut, g_outgoing); // coalesced
@@ -339,12 +346,11 @@ scatterGlobal(unsigned cycle,
 				}
 				__syncthreads();
 
-				if(iOut < nOut) {
+				if(valid) {
 					unsigned offset = s_fill[targetPartition] + localOffset;
 					ASSERT(offset < c_incomingPitch);
 					size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle));
 					g_incoming[base + offset] = make_incoming(warpOffset);
-
 					DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
 							cycle, warpOffset,
 							CURRENT_PARTITION, sourceNeuron, targetPartition, s_lq[jLq].y,

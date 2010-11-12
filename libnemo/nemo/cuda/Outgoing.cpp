@@ -99,7 +99,16 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	if(d_arr != NULL && !h_arr.empty()) {
 		memcpyToDevice(d_arr, h_arr, height * wpitch);
 	}
+
 	CUDA_SAFE_CALL(setOutgoingPitch(wpitch));
+
+	/* scatterLocal assumes that wpitch <= THREADS_PER_BLOCK. It would possible
+	 * to write this in order to handle the other case as well, with different
+	 * looping logic. Separate kernels might be more sensible. */
+	if(wpitch > THREADS_PER_BLOCK) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Outgoing pitch too wide");
+	}
+	CUDA_SAFE_CALL(setOutgoingStep(THREADS_PER_BLOCK / wpitch));
 
 	// allocate device memory for row lengths
 	unsigned* d_rowLength = NULL;
