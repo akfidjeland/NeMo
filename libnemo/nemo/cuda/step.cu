@@ -258,9 +258,11 @@ scatterGlobal(unsigned cycle,
 		lq_entry_t* g_lq,
 		unsigned* g_outgoingCount,
 		outgoing_t* g_outgoing,
-		unsigned* g_incomingHeads,
+		unsigned* g_fill,
 		incoming_t* g_incoming)
 {
+	__shared__ unsigned s_fill[MAX_PARTITION_COUNT]; // 512
+
 	/* Instead of iterating over fired neurons, load all fired data from a
 	 * single local queue entry. Iterate over the neuron/delay pairs stored
 	 * there. */
@@ -309,22 +311,42 @@ scatterGlobal(unsigned cycle,
 			unsigned nOut = s_len[jLq];
 			for(unsigned bOut = 0; bOut < nOut; bOut += THREADS_PER_BLOCK) {
 
+				if(threadIdx.x < PARTITION_COUNT) {
+					s_fill[threadIdx.x] = 0;
+				}
+				__syncthreads();
+
 				/* Load row of outgoing data (specific to neuron/delay pair) */
 				unsigned iOut = bOut + threadIdx.x;
+				unsigned targetPartition = 0;
+				unsigned warpOffset = 0;
+				unsigned localOffset = 0;
 				if(iOut < nOut) {
 					short sourceNeuron = s_lq[jLq].x;
 					short delay0 = s_lq[jLq].y;
 					outgoing_t sout = outgoing(sourceNeuron, delay0, iOut, g_outgoing); // coalesced
-					unsigned targetPartition = outgoingTargetPartition(sout);
-					/*! \todo use consistent naming here: fill rather than count/heads */
-					size_t headsAddr = incomingCountAddr(targetPartition, writeBuffer(cycle));
-					unsigned offset = atomicAdd(g_incomingHeads + headsAddr, 1);
+					targetPartition = outgoingTargetPartition(sout);
+					warpOffset = outgoingWarpOffset(sout);
+					localOffset = atomicAdd(s_fill + targetPartition, 1);
+					ASSERT(targetPartition < PARTITION_COUNT);
+				}
+				__syncthreads();
+
+				/* Update s_fill to store actual offset */
+				if(threadIdx.x < PARTITION_COUNT) {
+					size_t fillAddr = incomingCountAddr(threadIdx.x, writeBuffer(cycle));
+					s_fill[threadIdx.x] = atomicAdd(g_fill + fillAddr, s_fill[threadIdx.x]);
+				}
+				__syncthreads();
+
+				if(iOut < nOut) {
+					unsigned offset = s_fill[targetPartition] + localOffset;
 					ASSERT(offset < c_incomingPitch);
 					size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle));
-					g_incoming[base + offset] = make_incoming(outgoingWarpOffset(sout));
+					g_incoming[base + offset] = make_incoming(warpOffset);
 
 					DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
-							cycle, outgoingWarpOffset(sout),
+							cycle, warpOffset,
 							CURRENT_PARTITION, sourceNeuron, targetPartition, s_lq[jLq].y,
 							offset, c_incomingPitch);
 					/* These memory operations are non-coalesced. However, we
@@ -332,10 +354,8 @@ scatterGlobal(unsigned cycle,
 					 * This would require 128 buffers x 32 x 4B = 16kB, so  the
 					 * whole smem on 10-series. We might be better of with a 2k
 					 * partition size. */
-					/* If we're careless with the outgoing data we could
-					 * overflow smem buffers for outgoing entries */ 
 				}
-				// flush any buffers which are full
+				__syncthreads();
 			}
 		}
 		__syncthreads(); // to protect s_len
