@@ -240,8 +240,7 @@ scatterLocal(
 				 * Managaging this data can be costly, however, as we need to
 				 * flush buffers as we go. */
 				lq_enque(neuron, cycle, delay0, s_fill, g_queue);
-				DEBUG_MSG_SYNAPSE("c%u lq: delay bits %0lx\n", cycle, delayBits);
-				DEBUG_MSG_SYNAPSE("c%u lq: add n%u d%u\n", cycle, neuron, delay0+1);
+				DEBUG_MSG_SYNAPSE("c%u[local scatter]: enque n%u d%u\n", cycle, neuron, delay0+1);
 			}
 		}
 	}
@@ -266,14 +265,14 @@ scatterGlobal(unsigned cycle,
 	/* Instead of iterating over fired neurons, load all fired data from a
 	 * single local queue entry. Iterate over the neuron/delay pairs stored
 	 * there. */
-	__shared__ unsigned nLq;
+	__shared__ unsigned s_nLq;
+
 	if(threadIdx.x == 0) {
-		nLq = lq_getAndClearCurrentFill(cycle, g_lqFill);
+		s_nLq = lq_getAndClearCurrentFill(cycle, g_lqFill);
 	}
 	__syncthreads();
-	DEBUG_THREAD_MSG(0, "c%u local queue fill = %u\n", cycle, nLq);
 
-	for(unsigned bLq = 0; bLq < nLq; bLq += THREADS_PER_BLOCK) {
+	for(unsigned bLq = 0; bLq < s_nLq; bLq += THREADS_PER_BLOCK) {
 
 		unsigned iLq = bLq + threadIdx.x;
 
@@ -285,7 +284,7 @@ scatterGlobal(unsigned cycle,
 
 		/* Load local queue entries (neuron/delay pairs) and the associated
 		 * outgoing lengths into shared memory */
-		if(iLq < nLq) {
+		if(iLq < s_nLq) {
 			ASSERT(iLq < c_lqPitch);
 			lq_entry_t entry = g_lq[lq_offset(cycle, 0) + iLq];
 			/*! \todo store precomputed address here instead of neuron/delay pair */
@@ -305,7 +304,7 @@ scatterGlobal(unsigned cycle,
 		 * Read a number of entries in one go, if possible. Note that a large
 		 * spread in the range of outgoing row lengths (e.g. one extremely long
 		 * one) will adveresely affect performance here. */
-		unsigned jLqMax = min(THREADS_PER_BLOCK, nLq-bLq);
+		unsigned jLqMax = min(THREADS_PER_BLOCK, s_nLq-bLq);
 		for(unsigned jbLq = 0; jbLq < jLqMax; jbLq += c_outgoingStep) {
 
 			/* jLq should be in [0, 256) so that we can point to s_len
@@ -316,53 +315,53 @@ scatterGlobal(unsigned cycle,
 			 * outgoing row, although the common case should be just a single
 			 * loop iteration here */
 			unsigned nOut = s_len[jLq];
-			{
-				if(threadIdx.x < PARTITION_COUNT) {
-					s_fill[threadIdx.x] = 0;
-				}
-				__syncthreads();
-
-				/* Load row of outgoing data (specific to neuron/delay pair) */
-				unsigned iOut = threadIdx.x % c_outgoingPitch;
-				unsigned targetPartition = 0;
-				unsigned warpOffset = 0;
-				unsigned localOffset = 0;
-				bool valid = bLq + jLq < nLq && iOut < nOut;
-				if(valid) {
-					short sourceNeuron = s_lq[jLq].x;
-					short delay0 = s_lq[jLq].y;
-					outgoing_t sout = outgoing(sourceNeuron, delay0, iOut, g_outgoing); // coalesced
-					targetPartition = outgoingTargetPartition(sout);
-					warpOffset = outgoingWarpOffset(sout);
-					localOffset = atomicAdd(s_fill + targetPartition, 1);
-					ASSERT(targetPartition < PARTITION_COUNT);
-				}
-				__syncthreads();
-
-				/* Update s_fill to store actual offset */
-				if(threadIdx.x < PARTITION_COUNT) {
-					size_t fillAddr = incomingCountAddr(threadIdx.x, writeBuffer(cycle));
-					s_fill[threadIdx.x] = atomicAdd(g_fill + fillAddr, s_fill[threadIdx.x]);
-				}
-				__syncthreads();
-
-				if(valid) {
-					unsigned offset = s_fill[targetPartition] + localOffset;
-					ASSERT(offset < c_incomingPitch);
-					size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle));
-					g_incoming[base + offset] = make_incoming(warpOffset);
-					DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
-							cycle, warpOffset,
-							CURRENT_PARTITION, sourceNeuron, targetPartition, s_lq[jLq].y,
-							offset, c_incomingPitch);
-					/* These memory operations are non-coalesced. However, we
-					 * might be able to stage data in smem for each partition.
-					 * This would require 128 buffers x 32 x 4B = 16kB, so  the
-					 * whole smem on 10-series. We might be better of with a 2k
-					 * partition size. */
-				}
-				__syncthreads();
+			if(threadIdx.x < PARTITION_COUNT) {
+				s_fill[threadIdx.x] = 0;
 			}
+			__syncthreads();
+
+			/* Load row of outgoing data (specific to neuron/delay pair) */
+			unsigned iOut = threadIdx.x % c_outgoingPitch;
+			unsigned targetPartition = 0;
+			unsigned warpOffset = 0;
+			unsigned localOffset = 0;
+			bool valid = bLq + jLq < s_nLq && iOut < nOut;
+			if(valid) {
+				short sourceNeuron = s_lq[jLq].x;
+				short delay0 = s_lq[jLq].y;
+				outgoing_t sout = outgoing(sourceNeuron, delay0, iOut, g_outgoing); // coalesced
+				targetPartition = outgoingTargetPartition(sout);
+				warpOffset = outgoingWarpOffset(sout);
+				localOffset = atomicAdd(s_fill + targetPartition, 1);
+				ASSERT(targetPartition < PARTITION_COUNT);
+			}
+			__syncthreads();
+
+			/* Update s_fill to store actual offset */
+			if(threadIdx.x < PARTITION_COUNT) {
+				size_t fillAddr = incomingCountAddr(threadIdx.x, writeBuffer(cycle));
+				s_fill[threadIdx.x] = atomicAdd(g_fill + fillAddr, s_fill[threadIdx.x]);
+			}
+			__syncthreads();
+
+			if(valid) {
+				unsigned offset = s_fill[targetPartition] + localOffset;
+				ASSERT(offset < c_incomingPitch);
+				size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle));
+				g_incoming[base + offset] = make_incoming(warpOffset);
+				DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
+						cycle, warpOffset,
+						CURRENT_PARTITION, sourceNeuron, targetPartition, s_lq[jLq].y,
+						offset, c_incomingPitch);
+				/* The writes to g_incoming are non-coalesced. It would be
+				 * possible to stage this data in smem for each partition.
+				 * However, this would require a fair amount of smem (*), and
+				 * handling buffer overflow is complex and introduces
+				 * sequentiality. Overall, it's probably not worth it.
+				 *
+				 * (*) 128 partitions, warp-sized buffers, 4B/entry = 16kB */
+			}
+			__syncthreads(); // to protect s_fill
 		}
 		__syncthreads(); // to protect s_len
 	}
