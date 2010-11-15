@@ -23,6 +23,16 @@
 namespace nemo {
 	namespace cuda {
 
+/*! \brief Mapping from source-neuron/target-neuron/delay to synapse group addresses
+ *
+ * This mapping is a temporary structure used during construction of the device
+ * data for the forward connectivity matrix. Synapses are organised in
+ * fixed-sized groups, where each group contains synapses sharing the same
+ * source neuron, target neuron and delay. At run-time this mapping is found in
+ * the data structure \a Outgoing.
+ *
+ * \see Outgoing
+ */
 class WarpAddressTable
 {
 	public :
@@ -59,9 +69,6 @@ class WarpAddressTable
 		row_iterator row_begin() const { return m_warps.begin(); }
 		row_iterator row_end() const { return m_warps.end(); }
 
-		unsigned warpCount() const { return m_warpCount; }
-
-		unsigned maxWarpsPerNeuron() const;
 		unsigned maxWarpsPerNeuronDelay() const;
 
 		/*! \return print histogram of sizes of each synapse
@@ -74,7 +81,6 @@ class WarpAddressTable
 
 		std::map<key, unsigned> m_rowSynapses;
 
-		std::map<DeviceIdx, unsigned> m_warpsPerNeuron;
 		std::map< boost::tuple<DeviceIdx, delay_t>, unsigned> m_warpsPerNeuronDelay;
 
 		unsigned m_warpCount;
