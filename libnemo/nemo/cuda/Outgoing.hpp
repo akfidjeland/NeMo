@@ -27,9 +27,11 @@ class Outgoing
 		/*! Set the device data containing the outgoing spike groups. */
 		Outgoing(size_t partitionCount, const class WarpAddressTable& wtable);
 
-		outgoing_t* data() const { return md_arr.get(); }
+		/*! \return device pointer to the outgoing data */
+		outgoing_t* d_data() const { return md_arr.get(); }
 
-		unsigned* count() const { return md_rowLength.get(); }
+		/*! \return device pointer to address table */
+		outgoing_addr_t* d_addr() const { return md_rowLength.get(); }
 
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
@@ -47,8 +49,11 @@ class Outgoing
 		boost::shared_ptr<outgoing_t> md_arr; // device data
 		size_t m_pitch;                       // max pitch
 
-		boost::shared_ptr<unsigned> md_rowLength; // per-neuron pitch (old format)
-		                                          // per neuron/delay pitch (new format)
+		/* Store offset/length pairs here in order to address arbitrary entries
+		 * in md_arr where the entries have variable width (for compactness).
+		 * md_rowLength have fixed-width entries so addressing is
+		 * straightforward (based on a neuron/delay pair) */
+		boost::shared_ptr<outgoing_addr_t> md_rowLength; // per neuron/delay pitch
 
 		size_t m_allocated;
 

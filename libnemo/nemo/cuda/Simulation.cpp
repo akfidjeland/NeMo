@@ -251,8 +251,8 @@ Simulation::update()
 			md_istim,
 			m_firingBuffer.d_buffer(),
 			m_cm.d_fcm(),
-			m_cm.outgoingCount(),
-			m_cm.outgoing(),
+			m_cm.d_outgoingAddr(),
+			m_cm.d_outgoing(),
 			m_cm.incomingHeads(),
 			m_cm.incoming(),
 			// local spike delivery

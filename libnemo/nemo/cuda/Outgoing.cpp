@@ -69,7 +69,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	std::vector<outgoing_t> h_arr(height * wpitch, INVALID_OUTGOING);
 
 	// allocate temporary host memory for row lengths
-	std::vector<unsigned> h_rowLength(height, 0);
+	std::vector<outgoing_addr_t> h_addr(height, make_outgoing(0,0));
 
 	// accumulate the number of incoming warps for each partition.
 	std::map<pidx_t, size_t> incoming;
@@ -84,9 +84,8 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 		delay_t delay1 = get<2>(k);
 
 		//! \todo use DeviceIdx overload here. Refactor to share with r_addr
-		size_t r_addr = outgoingCountOffset(sourcePartition, sourceNeuron, delay1-1);
 		size_t rowBegin = outgoingRow(sourcePartition, sourceNeuron, delay1-1, wpitch);
-		unsigned* col = &h_rowLength[r_addr];
+		unsigned col = 0;
 
 		/* iterate over target partitions in a row */
 		const WarpAddressTable::row_t& r = ti->second;
@@ -96,8 +95,8 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 			const std::vector<size_t>& warps = ri->second;
 			size_t len = warps.size();
 			incoming[targetPartition] += len;
-			outgoing_t* p = &h_arr[rowBegin + *col];
-			*col += len;
+			outgoing_t* p = &h_arr[rowBegin + col];
+			col += len;
 
 			/* iterate over warps specific to a target partition */
 			for(std::vector<size_t>::const_iterator wi = warps.begin();
@@ -105,6 +104,10 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 				*p = make_outgoing(targetPartition, *wi);
 			}
 		}
+
+		/* Set address info here, since both start and length are now known */
+		size_t r_addr = outgoingAddrOffset(sourcePartition, sourceNeuron, delay1-1);
+		h_addr[r_addr] = make_outgoing_addr(rowBegin, col);
 	}
 
 	/* copy table from host to device */
@@ -123,12 +126,12 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	CUDA_SAFE_CALL(setOutgoingStep(THREADS_PER_BLOCK / wpitch));
 
 	// allocate device memory for row lengths
-	unsigned* d_rowLength = NULL;
-	d_malloc((void**)&d_rowLength, height * sizeof(unsigned), "outgoing spikes (row lengths)");
-	md_rowLength = boost::shared_ptr<unsigned>(d_rowLength, d_free);
-	m_allocated += height * sizeof(unsigned);
+	outgoing_addr_t* d_addr = NULL;
+	d_malloc((void**)&d_addr, height * sizeof(outgoing_addr_t), "outgoing spikes (row lengths)");
+	md_rowLength = boost::shared_ptr<outgoing_addr_t>(d_addr, d_free);
+	m_allocated += height * sizeof(outgoing_addr_t);
 
-	memcpyToDevice(d_rowLength, h_rowLength);
+	memcpyToDevice(d_addr, h_addr);
 
 	// return maximum number of incoming groups for any one partition
 	//! \todo compute this on forward pass

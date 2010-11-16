@@ -33,6 +33,17 @@
  */
 typedef uint2 outgoing_t;
 
+/* The addresses to each neuron/delay specific entry in outgoing is stored in a
+ * seprate data structure. This is so that outgoing can be compacted. With
+ * fixed-length rows in outgoing it becomes very large indeed.
+ *
+ * The address information contains
+ *
+ * 1. the word offset to the beginning of the row (x)
+ * 1. the length (in words) of the row (y)
+ */
+typedef uint2 outgoing_addr_t;
+
 
 /*!
  * \param warpOffset
@@ -43,6 +54,9 @@ __host__ outgoing_t make_outgoing(pidx_t partition, unsigned warpOffset);
 const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
 
 
+__host__ outgoing_addr_t make_outgoing_addr(unsigned offset, unsigned len);
+
+
 __host__ cudaError setOutgoingPitch(size_t targetPitch);
 __host__ cudaError setOutgoingStep(unsigned step);
 
@@ -50,7 +64,7 @@ __host__ cudaError setOutgoingStep(unsigned step);
 //! \todo make these templates instead
 __host__ __device__
 size_t
-outgoingCountOffset(unsigned partition, short neuron, short delay);
+outgoingAddrOffset(unsigned partition, short neuron, short delay);
 
 //! \todo make this templates instead
 /* Return address at beginning of given row */

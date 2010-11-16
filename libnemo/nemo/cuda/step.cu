@@ -255,7 +255,7 @@ void
 scatterGlobal(unsigned cycle,
 		unsigned* g_lqFill,
 		lq_entry_t* g_lq,
-		unsigned* g_outgoingCount,
+		outgoing_addr_t* g_outgoingAddr,
 		outgoing_t* g_outgoing,
 		unsigned* g_fill,
 		incoming_t* g_incoming)
@@ -294,7 +294,7 @@ scatterGlobal(unsigned cycle,
 			 * offset/length pair instead */ 
 			short delay0 = entry.y;
 			/*! \todo we should be able to cache the outgoing counts */
-			s_len[threadIdx.x] = outgoingCount(entry.x, delay0, g_outgoingCount);
+			s_len[threadIdx.x] = outgoingCount(entry.x, delay0, g_outgoingAddr);
 			DEBUG_MSG_SYNAPSE("c%u[global scatter]: dequeued n%u d%u from local queue (%u warps)\n",
 					cycle, entry.x, delay0, s_len[threadIdx.x]);
 		}
@@ -488,7 +488,7 @@ step (
 		unsigned* gu_neuronState,
 		// spike delivery
 		synapse_t* g_fcm,
-		unsigned* g_outgoingCount,
+		outgoing_addr_t* g_outgoingAddr,
 		outgoing_t* g_outgoing,
 		unsigned* g_incomingHeads,
 		incoming_t* g_incoming,
@@ -600,7 +600,7 @@ step (
 	scatterGlobal(cycle,
 			g_lqFill,
 			g_lqData,
-			g_outgoingCount,
+			g_outgoingAddr,
 			g_outgoing,
 			g_incomingHeads,
 			g_incoming);

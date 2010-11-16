@@ -28,6 +28,15 @@ make_outgoing(pidx_t partition, unsigned warpOffset)
 
 
 __host__
+outgoing_addr_t
+make_outgoing_addr(unsigned offset, unsigned len)
+{
+	return make_uint2(offset, len);
+}
+
+
+
+__host__
 cudaError
 setOutgoingPitch(size_t targetPitch)
 {
@@ -47,7 +56,7 @@ __host__ __device__
 size_t
 outgoingRow(pidx_t partition, nidx_t neuron, short delay0, size_t pitch)
 {
-	return outgoingCountOffset(partition, neuron, delay0) * pitch;
+	return outgoingAddrOffset(partition, neuron, delay0) * pitch;
 }
 
 
@@ -70,7 +79,7 @@ outgoing(unsigned presynaptic, unsigned delay0,
 
 __host__ __device__
 size_t
-outgoingCountOffset(unsigned partition, short neuron, short delay0)
+outgoingAddrOffset(unsigned partition, short neuron, short delay0)
 {
 	//! \todo refactor after correctness is verified
 	return partition * (MAX_PARTITION_SIZE * MAX_DELAY)
@@ -83,10 +92,18 @@ outgoingCountOffset(unsigned partition, short neuron, short delay0)
  *		the number of jobs for a particular firing neuron in the current
  *		partition */
 __device__
-unsigned
-outgoingCount(short neuron, short delay0, unsigned* g_counts)
+outgoing_addr_t
+outgoingAddr(short neuron, short delay0, outgoing_addr_t* g_counts)
 {
-	return g_counts[outgoingCountOffset(CURRENT_PARTITION, neuron, delay0)];
+	return g_counts[outgoingAddrOffset(CURRENT_PARTITION, neuron, delay0)];
+}
+
+
+__device__
+unsigned
+outgoingCount(short neuron, short delay0, outgoing_addr_t* g_counts)
+{
+	return outgoingAddr(neuron, delay0, g_counts).y;
 }
 
 

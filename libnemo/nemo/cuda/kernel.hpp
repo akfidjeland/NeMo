@@ -41,7 +41,7 @@ stepSimulation(
 		fix_t* d_istim,
 		uint32_t* d_fout,
 		synapse_t* d_fcm,
-		unsigned* d_outgoingCount,
+		outgoing_addr_t* d_outgoingAddr,
 		outgoing_t* d_outgoing,
 		unsigned* d_incomingHeads,
 		incoming_t* d_incoming,

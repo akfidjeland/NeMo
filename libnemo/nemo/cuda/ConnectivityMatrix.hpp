@@ -90,11 +90,11 @@ class ConnectivityMatrix
 
 		/*! \return pointer to device data containing outgoing spike data for
 		 * each neuron */
-		outgoing_t* outgoing() const { return m_outgoing.data(); }
+		outgoing_t* d_outgoing() const { return m_outgoing.d_data(); }
 
 		/*! \return pointer to device data containing the number of outgoing
 		 * spike groups for each neuron */
-		unsigned* outgoingCount() const { return m_outgoing.count(); }
+		outgoing_addr_t* d_outgoingAddr() const { return m_outgoing.d_addr(); }
 
 		/*! \return pointer to device data continaing incoming spike group
 		 * buffer for each partition */
