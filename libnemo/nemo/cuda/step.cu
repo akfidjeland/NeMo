@@ -277,8 +277,11 @@ scatterGlobal(unsigned cycle,
 		unsigned iLq = bLq + threadIdx.x;
 
 		//! \todo share this memory with other stages
-		__shared__ lq_entry_t s_lq[THREADS_PER_BLOCK]; // 1KB
-		__shared__ unsigned s_len[THREADS_PER_BLOCK];  // 1KB
+#ifdef NEMO_CUDA_DEBUG_TRACE
+		__shared__ lq_entry_t s_lq[THREADS_PER_BLOCK];   // 1KB
+#endif
+		__shared__ unsigned s_offset[THREADS_PER_BLOCK]; // 1KB
+		__shared__ unsigned s_len[THREADS_PER_BLOCK];    // 1KB
 
 		s_len[threadIdx.x] = 0;
 
@@ -287,16 +290,18 @@ scatterGlobal(unsigned cycle,
 		if(iLq < s_nLq) {
 			ASSERT(iLq < c_lqPitch);
 			lq_entry_t entry = g_lq[lq_offset(cycle, 0) + iLq];
-			/*! \todo store precomputed address here instead of neuron/delay pair */
+#ifdef NEMO_CUDA_DEBUG_TRACE
 			s_lq[threadIdx.x] = entry;
-			/* For now this returns just the length. The outgoing data should
-			 * later be compacted, in which case this data should contain an
-			 * offset/length pair instead */ 
+#endif
 			short delay0 = entry.y;
-			/*! \todo we should be able to cache the outgoing counts */
-			s_len[threadIdx.x] = outgoingCount(entry.x, delay0, g_outgoingAddr);
-			DEBUG_MSG_SYNAPSE("c%u[global scatter]: dequeued n%u d%u from local queue (%u warps)\n",
-					cycle, entry.x, delay0, s_len[threadIdx.x]);
+			/* Outgoing counts is cachable. It is not too large and is runtime
+			 * constant. It is too large for constant memory however. The
+			 * alternatives are thus texture memory or the L1 cache (on Fermi) */
+			outgoing_addr_t addr = outgoingAddr(entry.x, delay0, g_outgoingAddr);
+			s_offset[threadIdx.x] = addr.x;
+			s_len[threadIdx.x] = addr.y;
+			DEBUG_MSG_SYNAPSE("c%u[global scatter]: dequeued n%u d%u from local queue (%u warps from %u)\n",
+					cycle, entry.x, delay0, s_len[threadIdx.x], s_offset[threadIdx.x]);
 		}
 		__syncthreads();
 
@@ -327,9 +332,7 @@ scatterGlobal(unsigned cycle,
 			unsigned localOffset = 0;
 			bool valid = bLq + jLq < s_nLq && iOut < nOut;
 			if(valid) {
-				short sourceNeuron = s_lq[jLq].x;
-				short delay0 = s_lq[jLq].y;
-				outgoing_t sout = outgoing(sourceNeuron, delay0, iOut, g_outgoing); // coalesced
+				outgoing_t sout = g_outgoing[s_offset[jLq] + iOut];
 				targetPartition = outgoingTargetPartition(sout);
 				warpOffset = outgoingWarpOffset(sout);
 				localOffset = atomicAdd(s_fill + targetPartition, 1);
@@ -351,7 +354,7 @@ scatterGlobal(unsigned cycle,
 				g_incoming[base + offset] = make_incoming(warpOffset);
 				DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
 						cycle, warpOffset,
-						CURRENT_PARTITION, sourceNeuron, targetPartition, s_lq[jLq].y,
+						CURRENT_PARTITION, s_lq[jLq].x, targetPartition, s_lq[jLq].y,
 						offset, c_incomingPitch);
 				/* The writes to g_incoming are non-coalesced. It would be
 				 * possible to stage this data in smem for each partition.

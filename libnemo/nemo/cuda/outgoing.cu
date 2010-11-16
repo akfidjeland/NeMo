@@ -52,6 +52,7 @@ setOutgoingStep(unsigned step)
 }
 
 
+
 __host__ __device__
 size_t
 outgoingRow(pidx_t partition, nidx_t neuron, short delay0, size_t pitch)
@@ -65,46 +66,28 @@ __device__ unsigned outgoingTargetPartition(outgoing_t out) { return out.x; }
 __device__ unsigned outgoingWarpOffset(outgoing_t out) { return out.y; }
 
 
-__device__
-outgoing_t
-outgoing(unsigned presynaptic, unsigned delay0,
-		unsigned jobIdx, outgoing_t* g_targets)
-{
-	size_t addr = outgoingRow(CURRENT_PARTITION, presynaptic, delay0, c_outgoingPitch);
-	return g_targets[addr + jobIdx];
-}
 
-
-
-
+/*! \return
+ *		Address to the address info (!) for a particular neuron/delay pair
+ */
 __host__ __device__
 size_t
 outgoingAddrOffset(unsigned partition, short neuron, short delay0)
 {
-	//! \todo refactor after correctness is verified
-	return partition * (MAX_PARTITION_SIZE * MAX_DELAY)
-		+ neuron * MAX_DELAY
-		+ delay0;
+	return (partition * MAX_PARTITION_SIZE + neuron) * MAX_DELAY + delay0;
 }
+
 
 
 /*! \return
- *		the number of jobs for a particular firing neuron in the current
- *		partition */
+ *		The address info (offset/length) required to fetch the outgoing warp
+ *		entries for a particular neuron/delay pair
+ */
 __device__
 outgoing_addr_t
-outgoingAddr(short neuron, short delay0, outgoing_addr_t* g_counts)
+outgoingAddr(short neuron, short delay0, outgoing_addr_t* g_addr)
 {
-	return g_counts[outgoingAddrOffset(CURRENT_PARTITION, neuron, delay0)];
+	return g_addr[outgoingAddrOffset(CURRENT_PARTITION, neuron, delay0)];
 }
-
-
-__device__
-unsigned
-outgoingCount(short neuron, short delay0, outgoing_addr_t* g_counts)
-{
-	return outgoingAddr(neuron, delay0, g_counts).y;
-}
-
 
 #endif

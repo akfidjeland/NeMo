@@ -57,24 +57,25 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 		return;
 	}
 
-	// allocate device memory for table
+	/* allocate device memory for table */
 	outgoing_t* d_arr = NULL;
 	d_mallocPitch((void**)&d_arr, &m_pitch, width, height, "outgoing spikes");
 	md_arr = boost::shared_ptr<outgoing_t>(d_arr, d_free);
 
 	m_allocated = m_pitch * height;
 
-	// allocate temporary host memory for table
+	/* allocate temporary host memory for table */
 	size_t wpitch = m_pitch / sizeof(outgoing_t);
 	std::vector<outgoing_t> h_arr(height * wpitch, INVALID_OUTGOING);
 
-	// allocate temporary host memory for row lengths
+	/* allocate temporary host memory for row lengths */
 	std::vector<outgoing_addr_t> h_addr(height, make_outgoing(0,0));
 
-	// accumulate the number of incoming warps for each partition.
+	/* accumulate the number of incoming warps for each partition, such that we
+	 * can size the global queue correctly */
 	std::map<pidx_t, size_t> incoming;
 
-	// fill host memory
+	/* fill host memory */
 	for(WarpAddressTable::iterator ti = wtable.begin(); ti != wtable.end(); ++ti) {
 
 		const WarpAddressTable::key& k = ti->first;
@@ -83,7 +84,6 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 		nidx_t sourceNeuron = get<1>(k);
 		delay_t delay1 = get<2>(k);
 
-		//! \todo use DeviceIdx overload here. Refactor to share with r_addr
 		size_t rowBegin = outgoingRow(sourcePartition, sourceNeuron, delay1-1, wpitch);
 		unsigned col = 0;
 
@@ -125,7 +125,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	}
 	CUDA_SAFE_CALL(setOutgoingStep(THREADS_PER_BLOCK / wpitch));
 
-	// allocate device memory for row lengths
+	/* allocate device memory for row lengths */
 	outgoing_addr_t* d_addr = NULL;
 	d_malloc((void**)&d_addr, height * sizeof(outgoing_addr_t), "outgoing spikes (row lengths)");
 	md_rowLength = boost::shared_ptr<outgoing_addr_t>(d_addr, d_free);
@@ -133,7 +133,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 
 	memcpyToDevice(d_addr, h_addr);
 
-	// return maximum number of incoming groups for any one partition
+	/* return maximum number of incoming groups for any one partition */
 	//! \todo compute this on forward pass
 	m_maxIncomingWarps = incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
 }
