@@ -55,9 +55,11 @@ class Outgoing
 		 * straightforward (based on a neuron/delay pair) */
 		boost::shared_ptr<outgoing_addr_t> md_rowLength; // per neuron/delay pitch
 
-		size_t m_allocated;
+		size_t m_allocated; // bytes
 
 		size_t m_maxIncomingWarps;
+
+		void setConstants(unsigned wpitch);
 };
 
 	} // end namespace cuda

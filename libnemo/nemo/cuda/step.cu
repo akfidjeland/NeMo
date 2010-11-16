@@ -294,14 +294,20 @@ scatterGlobal(unsigned cycle,
 			s_lq[threadIdx.x] = entry;
 #endif
 			short delay0 = entry.y;
+			ASSERT(delay0 < MAX_DELAY);
+
+			short neuron = entry.x;
+			ASSERT(neuron < MAX_PARTITION_SIZE);
+
 			/* Outgoing counts is cachable. It is not too large and is runtime
 			 * constant. It is too large for constant memory however. The
 			 * alternatives are thus texture memory or the L1 cache (on Fermi) */
-			outgoing_addr_t addr = outgoingAddr(entry.x, delay0, g_outgoingAddr);
+			outgoing_addr_t addr = outgoingAddr(neuron, delay0, g_outgoingAddr);
 			s_offset[threadIdx.x] = addr.x;
 			s_len[threadIdx.x] = addr.y;
+			ASSERT(s_len[threadIdx.x] <= c_outgoingPitch);
 			DEBUG_MSG_SYNAPSE("c%u[global scatter]: dequeued n%u d%u from local queue (%u warps from %u)\n",
-					cycle, entry.x, delay0, s_len[threadIdx.x], s_offset[threadIdx.x]);
+					cycle, neuron, delay0, s_len[threadIdx.x], s_offset[threadIdx.x]);
 		}
 		__syncthreads();
 
@@ -315,6 +321,7 @@ scatterGlobal(unsigned cycle,
 			/* jLq should be in [0, 256) so that we can point to s_len
 			 * e.g.     0,8,16,24,...,248 + 0,1,...,8 */
 			unsigned jLq = jbLq + threadIdx.x / c_outgoingPitch;
+			ASSERT(jLq < THREADS_PER_BLOCK);
 
 			/* There may be more than THREADS_PER_BLOCK entries in this
 			 * outgoing row, although the common case should be just a single
@@ -334,9 +341,10 @@ scatterGlobal(unsigned cycle,
 			if(valid) {
 				outgoing_t sout = g_outgoing[s_offset[jLq] + iOut];
 				targetPartition = outgoingTargetPartition(sout);
-				warpOffset = outgoingWarpOffset(sout);
-				localOffset = atomicAdd(s_fill + targetPartition, 1);
 				ASSERT(targetPartition < PARTITION_COUNT);
+				warpOffset = outgoingWarpOffset(sout);
+				ASSERT(warpOffset != 0);
+				localOffset = atomicAdd(s_fill + targetPartition, 1);
 			}
 			__syncthreads();
 

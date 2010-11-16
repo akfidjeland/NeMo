@@ -19,7 +19,7 @@ void
 initLog()
 {
 #if defined(NEMO_CUDA_DEBUG_TRACE) && defined(HAVE_CUPRINTF)
-	CUDA_SAFE_CALL(cudaPrintfInit());
+	CUDA_SAFE_CALL(cudaPrintfInit(1<<24));
 #endif
 }
 

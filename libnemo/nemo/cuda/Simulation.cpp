@@ -278,9 +278,6 @@ Simulation::update()
 
 	flushLog();
 	endLog();
-
-	//! \todo remove debugging code
-	// std::cerr << "end step" << std::endl;
 }
 
 

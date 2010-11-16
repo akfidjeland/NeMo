@@ -38,6 +38,19 @@ class exception : public std::runtime_error
 };
 
 
+/*! Assert condition and throw exception with the given message otherwise. Note
+ * that unlike the standard assert this function is always executed, regardless
+ * of the compilation flags */
+inline
+void
+assert_or_throw(bool cond, const char* str)
+{
+	if(!cond) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, str);
+	}
+}
+
+
 } // end namespace nemo
 
 #endif

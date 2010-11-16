@@ -89,6 +89,21 @@ value_compare(const std::pair< boost::tuple<DeviceIdx, delay_t>, unsigned>& lhs,
 }
 
 
+
+unsigned
+WarpAddressTable::warpsPerNeuronDelay(pidx_t p, nidx_t n, delay_t delay1) const
+{
+	typedef std::map< boost::tuple<DeviceIdx, delay_t>, unsigned>::const_iterator it;
+	it i = m_warpsPerNeuronDelay.find(boost::make_tuple(DeviceIdx(p,n), delay1));
+	if(i != m_warpsPerNeuronDelay.end()) {
+		return i->second;
+	} else {
+		return 0;
+	}
+}
+
+
+
 //! \todo can probably remove this
 unsigned
 WarpAddressTable::maxWarpsPerNeuronDelay() const

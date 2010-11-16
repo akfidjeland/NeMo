@@ -88,6 +88,9 @@ class WarpAddressTable
 
 		typedef row_t::const_iterator row_iterator;
 
+		unsigned warpsPerNeuronDelay(pidx_t sourcePartition,
+				nidx_t sourceNeuron, delay_t delay1) const;
+
 		unsigned maxWarpsPerNeuronDelay() const;
 
 		/*! \return print histogram of sizes of each synapse
@@ -102,6 +105,7 @@ class WarpAddressTable
 		 * the number of synapses in each row */
 		std::map<row_key, unsigned> m_rowSynapses;
 
+		//! \todo use the same key as above. Could just re-use m_rowSynapses
 		//! \todo can get rid of this one now
 		std::map< boost::tuple<DeviceIdx, delay_t>, unsigned> m_warpsPerNeuronDelay;
 

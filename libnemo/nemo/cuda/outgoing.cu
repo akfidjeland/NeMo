@@ -16,7 +16,6 @@ __constant__ size_t c_outgoingPitch;  // word pitch
 __constant__ unsigned c_outgoingStep; // number of rows we can process in a thread block
 
 
-
 __host__
 outgoing_t
 make_outgoing(pidx_t partition, unsigned warpOffset)
@@ -44,22 +43,13 @@ setOutgoingPitch(size_t targetPitch)
 }
 
 
+
 __host__
 cudaError
 setOutgoingStep(unsigned step)
 {
 	return cudaMemcpyToSymbol(c_outgoingStep, &step, sizeof(unsigned), 0, cudaMemcpyHostToDevice);
 }
-
-
-
-__host__ __device__
-size_t
-outgoingRow(pidx_t partition, nidx_t neuron, short delay0, size_t pitch)
-{
-	return outgoingAddrOffset(partition, neuron, delay0) * pitch;
-}
-
 
 
 __device__ unsigned outgoingTargetPartition(outgoing_t out) { return out.x; } 
@@ -89,5 +79,7 @@ outgoingAddr(short neuron, short delay0, outgoing_addr_t* g_addr)
 {
 	return g_addr[outgoingAddrOffset(CURRENT_PARTITION, neuron, delay0)];
 }
+
+
 
 #endif

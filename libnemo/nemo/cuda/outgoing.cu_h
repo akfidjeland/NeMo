@@ -61,15 +61,10 @@ __host__ cudaError setOutgoingPitch(size_t targetPitch);
 __host__ cudaError setOutgoingStep(unsigned step);
 
 
-//! \todo make these templates instead
+//! \todo make this a template instead
 __host__ __device__
 size_t
 outgoingAddrOffset(unsigned partition, short neuron, short delay);
 
-//! \todo make this templates instead
-/* Return address at beginning of given row */
-__host__ __device__ 
-size_t
-outgoingRow(pidx_t partition, nidx_t neuron, short delay0, size_t pitch);
 
 #endif
