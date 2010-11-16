@@ -52,6 +52,11 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	size_t height = partitionCount * MAX_PARTITION_SIZE * MAX_DELAY;
 	size_t width = wtable.maxWarpsPerNeuronDelay() * sizeof(outgoing_t);
 
+	if(width == 0) {
+		/* No synapses, so nothing to do here */
+		return;
+	}
+
 	// allocate device memory for table
 	outgoing_t* d_arr = NULL;
 	d_mallocPitch((void**)&d_arr, &m_pitch, width, height, "outgoing spikes");
@@ -70,32 +75,39 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	std::map<pidx_t, size_t> incoming;
 
 	// fill host memory
-	for(WarpAddressTable::row_iterator ri = wtable.row_begin(); ri != wtable.row_end(); ++ri) {
+	for(WarpAddressTable::iterator ti = wtable.begin(); ti != wtable.end(); ++ti) {
 
-		const WarpAddressTable::key& k = ri->first;
+		const WarpAddressTable::key& k = ti->first;
 
 		pidx_t sourcePartition = get<0>(k);
 		nidx_t sourceNeuron = get<1>(k);
-		pidx_t targetPartition = get<2>(k);
-		delay_t delay1 = get<3>(k);
+		delay_t delay1 = get<2>(k);
 
-		const WarpAddressTable::warp_set& r = ri->second;
-
-		typedef WarpAddressTable::warp_set::const_iterator warp_iterator;
-
+		//! \todo use DeviceIdx overload here. Refactor to share with r_addr
 		size_t r_addr = outgoingCountOffset(sourcePartition, sourceNeuron, delay1-1);
+		size_t rowBegin = outgoingRow(sourcePartition, sourceNeuron, delay1-1, wpitch);
+		unsigned* col = &h_rowLength[r_addr];
 
-		for(warp_iterator wi = r.begin(); wi != r.end(); ++wi) {
-			//! \todo use DeviceIdx overload here. Refactor to share with r_addr
-			size_t rowBegin = outgoingRow(sourcePartition, sourceNeuron, delay1-1, wpitch);
-			//! \todo can increment this in one go outside loop
-			size_t col = h_rowLength[r_addr]++;
-			h_arr[rowBegin + col] = make_outgoing(targetPartition, *wi);
-			incoming[targetPartition] += 1;
+		/* iterate over target partitions in a row */
+		const WarpAddressTable::row_t& r = ti->second;
+		for(WarpAddressTable::row_iterator ri = r.begin(); ri != r.end(); ++ri) {
+
+			pidx_t targetPartition = ri->first;
+			const std::vector<size_t>& warps = ri->second;
+			size_t len = warps.size();
+			incoming[targetPartition] += len;
+			outgoing_t* p = &h_arr[rowBegin + *col];
+			*col += len;
+
+			/* iterate over warps specific to a target partition */
+			for(std::vector<size_t>::const_iterator wi = warps.begin();
+					wi != warps.end(); ++wi, ++p) {
+				*p = make_outgoing(targetPartition, *wi);
+			}
 		}
 	}
 
-	// copy table from host to device
+	/* copy table from host to device */
 	if(d_arr != NULL && !h_arr.empty()) {
 		memcpyToDevice(d_arr, h_arr, height * wpitch);
 	}

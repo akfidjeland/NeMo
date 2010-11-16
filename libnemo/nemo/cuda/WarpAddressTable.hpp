@@ -11,7 +11,7 @@
  */
 
 #include <map>
-#include <set>
+#include <vector>
 
 #include <boost/tuple/tuple.hpp>
 
@@ -19,17 +19,28 @@
 //! \todo move DeviceIdx to types.hpp
 #include "Mapper.hpp"
 #include "types.h"
+#include "outgoing.cu_h"
 
 namespace nemo {
 	namespace cuda {
 
-/*! \brief Mapping from source-neuron/target-neuron/delay to synapse group addresses
+/*! \brief Mapping from source-neuron/target-neuron/delay to synapse warp addresses
  *
  * This mapping is a temporary structure used during construction of the device
- * data for the forward connectivity matrix. Synapses are organised in
- * fixed-sized groups, where each group contains synapses sharing the same
- * source neuron, target neuron and delay. At run-time this mapping is found in
- * the data structure \a Outgoing.
+ * data for the forward connectivity matrix. Synapses are organised in groups,
+ * where each group contains synapses sharing the same source neuron, target
+ * neuron and delay. Each group is in turn split into fixed-size warps, which
+ * is the basic unit for spike delivery in NeMo.
+ *
+ * The warp address table serves two purposes:
+ *
+ * 1. allocating addresses (warp index + column index) for each synapse
+ * 2. accumulate the addressing data that will be used at run-time.
+ *
+ * The warp address table is intended for incremental construction, by adding
+ * individual synapses.
+ *
+ * At run-time this mapping is found in the data structure \a Outgoing.
  *
  * \see Outgoing
  */
@@ -38,16 +49,22 @@ class WarpAddressTable
 	public :
 
 		/* Synapses are grouped into 'rows' which share the same source neuron,
-		 * target partition
+		 * target partition and delay
 		 *                   source  source  target */
-		typedef boost::tuple<pidx_t, nidx_t, pidx_t, delay_t> key;
+		typedef boost::tuple<pidx_t, nidx_t, pidx_t, delay_t> row_key;
 
-		/* Each row may be spread over a disparate set of warps */
-		typedef std::set<size_t> warp_set;
+		/* However, at run-time we get addresses only based on the source
+		 * neuron and delay. */
+		typedef boost::tuple<pidx_t, nidx_t, delay_t> key;
+
+		/* Each row may be spread over a disparate set of warps. Each target
+		 * partition may have synapses in several warps. */
+		//! \todo consider using unordered here instead (for faster lookup).
+		typedef std::map<pidx_t, std::vector<size_t> > row_t;
 
 	private :
 
-		typedef std::map<key, warp_set> warp_map;
+		typedef std::map<key, row_t> warp_map;
 
 	public :
 
@@ -64,10 +81,12 @@ class WarpAddressTable
 		 */
 		SynapseAddress addSynapse(const DeviceIdx&, pidx_t, delay_t, size_t nextFreeWarp);
 
-		typedef warp_map::const_iterator row_iterator;
+		typedef warp_map::const_iterator iterator;
 
-		row_iterator row_begin() const { return m_warps.begin(); }
-		row_iterator row_end() const { return m_warps.end(); }
+		iterator begin() const { return m_warps.begin(); }
+		iterator end() const { return m_warps.end(); }
+
+		typedef row_t::const_iterator row_iterator;
 
 		unsigned maxWarpsPerNeuronDelay() const;
 
@@ -79,8 +98,11 @@ class WarpAddressTable
 
 		warp_map m_warps;
 
-		std::map<key, unsigned> m_rowSynapses;
+		/* In order to keep track of when we need to start a new warp, store
+		 * the number of synapses in each row */
+		std::map<row_key, unsigned> m_rowSynapses;
 
+		//! \todo can get rid of this one now
 		std::map< boost::tuple<DeviceIdx, delay_t>, unsigned> m_warpsPerNeuronDelay;
 
 		unsigned m_warpCount;

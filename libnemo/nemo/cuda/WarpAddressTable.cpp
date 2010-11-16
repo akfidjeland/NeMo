@@ -28,22 +28,27 @@ WarpAddressTable::WarpAddressTable() :
 
 
 SynapseAddress
-WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, delay_t delay1, size_t nextFreeWarp)
+WarpAddressTable::addSynapse(
+		const DeviceIdx& source,
+		pidx_t targetPartition,
+		delay_t delay1,
+		size_t nextFreeWarp)
 {
-	key idx(source.partition, source.neuron, targetPartition, delay1);
-
-	unsigned& rowSynapses = m_rowSynapses[idx];
+	row_key rk(source.partition, source.neuron, targetPartition, delay1);
+	unsigned& rowSynapses = m_rowSynapses[rk];
 	unsigned column = rowSynapses % WARP_SIZE;
 	rowSynapses += 1;
 
-	warp_set& warps = m_warps[idx];
+	std::vector<size_t>& warps = m_warps[key(source.partition, source.neuron, delay1)][targetPartition];
 
 	if(column == 0) {
-		warps.insert(nextFreeWarp);
+		/* Add synapse to a new warp */
+		warps.push_back(nextFreeWarp);
 		m_warpsPerNeuronDelay[boost::make_tuple(source, delay1)] += 1;
 		m_warpCount += 1;
 		return SynapseAddress(nextFreeWarp, column);
 	} else {
+		/* Add synapse to an existing partially-filled warp */
 		return SynapseAddress(*warps.rbegin(), column);
 	}
 }
@@ -56,7 +61,7 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 	unsigned total = 0;
 	std::vector<unsigned> hist(WARP_SIZE+1, 0);
 
-	for(std::map<key, unsigned>::const_iterator i = m_rowSynapses.begin(); i != m_rowSynapses.end(); ++i) {
+	for(std::map<row_key, unsigned>::const_iterator i = m_rowSynapses.begin(); i != m_rowSynapses.end(); ++i) {
 		unsigned fullWarps = i->second / WARP_SIZE;
 		unsigned partialWarp = i->second % WARP_SIZE;
 		hist.at(WARP_SIZE) += fullWarps;
@@ -84,6 +89,7 @@ value_compare(const std::pair< boost::tuple<DeviceIdx, delay_t>, unsigned>& lhs,
 }
 
 
+//! \todo can probably remove this
 unsigned
 WarpAddressTable::maxWarpsPerNeuronDelay() const
 {

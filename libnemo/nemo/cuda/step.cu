@@ -355,11 +355,12 @@ scatterGlobal(unsigned cycle,
 						offset, c_incomingPitch);
 				/* The writes to g_incoming are non-coalesced. It would be
 				 * possible to stage this data in smem for each partition.
-				 * However, this would require a fair amount of smem (*), and
+				 * However, this would require a fair amount of smem (1), and
 				 * handling buffer overflow is complex and introduces
 				 * sequentiality. Overall, it's probably not worth it.
 				 *
-				 * (*) 128 partitions, warp-sized buffers, 4B/entry = 16kB */
+				 * (1) 128 partitions, warp-sized buffers, 4B/entry = 16KB
+				 */
 			}
 			__syncthreads(); // to protect s_fill
 		}

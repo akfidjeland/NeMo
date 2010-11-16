@@ -38,13 +38,13 @@ setDelays(const WarpAddressTable& wtable, NVector<uint64_t>* delays)
 {
 	using namespace boost::tuples;
 
-	for(WarpAddressTable::row_iterator ri = wtable.row_begin(); ri != wtable.row_end(); ++ri) {
-		const WarpAddressTable::key& k = ri->first;
+	for(WarpAddressTable::iterator i = wtable.begin(); i != wtable.end(); ++i) {
+		const WarpAddressTable::key& k = i->first;
 		pidx_t p = get<0>(k);
 		nidx_t n = get<1>(k);
-		delay_t delay = get<3>(k);
+		delay_t delay1 = get<2>(k);
 		uint64_t bits = delays->getNeuron(p, n);
-		bits |= (uint64_t(0x1) << uint64_t(delay-1));
+		bits |= (uint64_t(0x1) << uint64_t(delay1-1));
 		delays->setNeuron(p, n, bits);
 	}
 	delays->moveToDevice();
