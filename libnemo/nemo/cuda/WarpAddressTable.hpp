@@ -10,16 +10,17 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <map>
 #include <vector>
 
 #include <boost/tuple/tuple.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/functional/hash.hpp>
 
 #include <nemo/types.hpp>
 //! \todo move DeviceIdx to types.hpp
 #include "Mapper.hpp"
 #include "types.h"
-#include "outgoing.cu_h"
+
 
 namespace nemo {
 	namespace cuda {
@@ -42,6 +43,9 @@ namespace nemo {
  *
  * At runtime this mapping is found in the data structure \ref Outgoing.
  *
+ * The map structures used internally are boost::unordered_map rather than
+ * std::map as noticably speeds up the construction of the table.
+ *
  * \see nemo::cuda::Outgoing
  */
 class WarpAddressTable
@@ -59,12 +63,11 @@ class WarpAddressTable
 
 		/* Each row may be spread over a disparate set of warps. Each target
 		 * partition may have synapses in several warps. */
-		//! \todo consider using unordered here instead (for faster lookup).
-		typedef std::map<pidx_t, std::vector<size_t> > row_t;
+		typedef boost::unordered_map<pidx_t, std::vector<size_t> > row_t;
 
 	private :
 
-		typedef std::map<key, row_t> warp_map;
+		typedef boost::unordered_map<key, row_t> warp_map;
 
 	public :
 
@@ -103,16 +106,18 @@ class WarpAddressTable
 
 		/* In order to keep track of when we need to start a new warp, store
 		 * the number of synapses in each row */
-		std::map<row_key, unsigned> m_rowSynapses;
+		boost::unordered_map<row_key, unsigned> m_rowSynapses;
 
-		//! \todo use the same key as above. Could just re-use m_rowSynapses
-		//! \todo can get rid of this one now
-		std::map< boost::tuple<DeviceIdx, delay_t>, unsigned> m_warpsPerNeuronDelay;
+		boost::unordered_map<key, unsigned> m_warpsPerNeuronDelay;
 
+		//! \todo remove this
 		unsigned m_warpCount;
 };
 
+
+
 	} // end namespace cuda
 } // end namespace nemo
+
 
 #endif

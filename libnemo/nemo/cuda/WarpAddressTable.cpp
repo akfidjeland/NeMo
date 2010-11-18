@@ -16,8 +16,42 @@
 #include "WarpAddressTable.hpp"
 #include "kernel.cu_h"
 
+
+namespace boost {
+	namespace tuples {
+
+
+template<typename T1, typename T2, typename T3>
+std::size_t
+hash_value(const tuple<T1, T2, T3>& k)
+{
+	std::size_t seed = 0;
+	boost::hash_combine(seed, boost::tuples::get<0>(k));
+	boost::hash_combine(seed, boost::tuples::get<1>(k));
+	boost::hash_combine(seed, boost::tuples::get<2>(k));
+	return seed;
+}
+
+template<typename T1, typename T2, typename T3, typename T4>
+std::size_t
+hash_value(const tuple<T1, T2, T3, T4>& k)
+{
+	std::size_t seed = 0;
+	boost::hash_combine(seed, boost::tuples::get<0>(k));
+	boost::hash_combine(seed, boost::tuples::get<1>(k));
+	boost::hash_combine(seed, boost::tuples::get<2>(k));
+	boost::hash_combine(seed, boost::tuples::get<3>(k));
+	return seed;
+}
+
+	} // end namespace tuples
+} // end namespace boost
+
+
 namespace nemo {
 	namespace cuda {
+
+
 
 
 WarpAddressTable::WarpAddressTable() :
@@ -39,12 +73,13 @@ WarpAddressTable::addSynapse(
 	unsigned column = rowSynapses % WARP_SIZE;
 	rowSynapses += 1;
 
-	std::vector<size_t>& warps = m_warps[key(source.partition, source.neuron, delay1)][targetPartition];
+	key k(source.partition, source.neuron, delay1);
+	std::vector<size_t>& warps = m_warps[k][targetPartition];
 
 	if(column == 0) {
 		/* Add synapse to a new warp */
 		warps.push_back(nextFreeWarp);
-		m_warpsPerNeuronDelay[boost::make_tuple(source, delay1)] += 1;
+		m_warpsPerNeuronDelay[k] += 1;
 		m_warpCount += 1;
 		return SynapseAddress(nextFreeWarp, column);
 	} else {
@@ -61,7 +96,8 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 	unsigned total = 0;
 	std::vector<unsigned> hist(WARP_SIZE+1, 0);
 
-	for(std::map<row_key, unsigned>::const_iterator i = m_rowSynapses.begin(); i != m_rowSynapses.end(); ++i) {
+	for(boost::unordered_map<row_key, unsigned>::const_iterator i = m_rowSynapses.begin();
+			i != m_rowSynapses.end(); ++i) {
 		unsigned fullWarps = i->second / WARP_SIZE;
 		unsigned partialWarp = i->second % WARP_SIZE;
 		hist.at(WARP_SIZE) += fullWarps;
@@ -82,8 +118,8 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 
 
 bool
-value_compare(const std::pair< boost::tuple<DeviceIdx, delay_t>, unsigned>& lhs,
-		const std::pair< boost::tuple<DeviceIdx, delay_t>, unsigned>& rhs)
+value_compare(const std::pair<WarpAddressTable::key, unsigned>& lhs,
+		const std::pair<WarpAddressTable::key, unsigned>& rhs)
 {
 	return lhs.second < rhs.second;
 }
@@ -93,8 +129,8 @@ value_compare(const std::pair< boost::tuple<DeviceIdx, delay_t>, unsigned>& lhs,
 unsigned
 WarpAddressTable::warpsPerNeuronDelay(pidx_t p, nidx_t n, delay_t delay1) const
 {
-	typedef std::map< boost::tuple<DeviceIdx, delay_t>, unsigned>::const_iterator it;
-	it i = m_warpsPerNeuronDelay.find(boost::make_tuple(DeviceIdx(p,n), delay1));
+	typedef boost::unordered_map<key, unsigned>::const_iterator it;
+	it i = m_warpsPerNeuronDelay.find(key(p,n, delay1));
 	if(i != m_warpsPerNeuronDelay.end()) {
 		return i->second;
 	} else {
@@ -104,7 +140,6 @@ WarpAddressTable::warpsPerNeuronDelay(pidx_t p, nidx_t n, delay_t delay1) const
 
 
 
-//! \todo can probably remove this
 unsigned
 WarpAddressTable::maxWarpsPerNeuronDelay() const
 {
