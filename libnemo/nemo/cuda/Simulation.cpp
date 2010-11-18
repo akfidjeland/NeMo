@@ -234,6 +234,8 @@ Simulation::setPitch()
 void
 Simulation::update()
 {
+	using boost::format;
+
 	m_timer.step();
 	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
@@ -262,19 +264,28 @@ Simulation::update()
 			// cycle counting
 			m_cycleCounters.data(),
 			m_cycleCounters.pitch());
+
+	/* Get error status before checking assertions, as getting assertion data
+	 * may otherwise mask errors here */
 	cudaError_t status = cudaGetLastError();
-	if(status != cudaSuccess) {
-		throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR, cudaGetErrorString(status));
-	}
+
+	/* Check device assertions before /reporting/ errors. If we have an
+	 * assertion failure we're likely to also have an error, but we'd like to
+	 * know what the cause of it was. */
 	m_deviceAssertions.check(m_timer.elapsedSimulation());
+
+	if(status != cudaSuccess) {
+		throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR,
+				str(format("Cuda error in cycle %u: %s")
+					% m_timer.elapsedSimulation()
+					% cudaGetErrorString(status)));
+	}
 
 	m_firingBuffer.sync();
 
 	/* Must clear stimulus pointers in case the low-level interface is used and
 	 * the user does not provide any fresh stimulus */
 	clearFiringStimulus();
-
-	//m_deviceAssertions.check(m_timer.elapsedSimulation());
 
 	flushLog();
 	endLog();
