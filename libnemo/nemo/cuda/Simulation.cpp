@@ -237,6 +237,7 @@ Simulation::update()
 	m_timer.step();
 	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
+
 	::stepSimulation(
 			m_mapper.partitionCount(),
 			m_stdp,
@@ -261,6 +262,11 @@ Simulation::update()
 			// cycle counting
 			m_cycleCounters.data(),
 			m_cycleCounters.pitch());
+	cudaError_t status = cudaGetLastError();
+	if(status != cudaSuccess) {
+		throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR, cudaGetErrorString(status));
+	}
+	m_deviceAssertions.check(m_timer.elapsedSimulation());
 
 	m_firingBuffer.sync();
 
@@ -268,15 +274,13 @@ Simulation::update()
 	 * the user does not provide any fresh stimulus */
 	clearFiringStimulus();
 
-	cudaError_t status = cudaGetLastError();
-	if(status != cudaSuccess) {
-		throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR, cudaGetErrorString(status));
-	}
-
-	m_deviceAssertions.check(m_timer.elapsedSimulation());
+	//m_deviceAssertions.check(m_timer.elapsedSimulation());
 
 	flushLog();
 	endLog();
+
+	//! \todo remove debugging code
+	// std::cerr << "end step" << std::endl;
 }
 
 

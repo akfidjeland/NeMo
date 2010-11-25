@@ -28,9 +28,9 @@ WarpAddressTable::WarpAddressTable() :
 
 
 SynapseAddress
-WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, delay_t delay, size_t nextFreeWarp)
+WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, delay_t delay1, size_t nextFreeWarp)
 {
-	key idx(source.partition, source.neuron, targetPartition, delay);
+	key idx(source.partition, source.neuron, targetPartition, delay1);
 
 	unsigned& rowSynapses = m_rowSynapses[idx];
 	unsigned column = rowSynapses % WARP_SIZE;
@@ -41,6 +41,7 @@ WarpAddressTable::addSynapse(const DeviceIdx& source, pidx_t targetPartition, de
 	if(column == 0) {
 		warps.insert(nextFreeWarp);
 		m_warpsPerNeuron[source] += 1;
+		m_warpsPerNeuronDelay[boost::make_tuple(source, delay1)] += 1;
 		m_warpCount += 1;
 		return SynapseAddress(nextFreeWarp, column);
 	} else {
@@ -83,6 +84,14 @@ value_compare(const std::pair<DeviceIdx,
 }
 
 
+bool
+value_compare2(const std::pair< boost::tuple<DeviceIdx, delay_t>, unsigned>& lhs, 
+		const std::pair< boost::tuple<DeviceIdx, delay_t>, unsigned>& rhs)
+{
+	return lhs.second < rhs.second;
+}
+
+
 unsigned
 WarpAddressTable::maxWarpsPerNeuron() const
 {
@@ -90,6 +99,31 @@ WarpAddressTable::maxWarpsPerNeuron() const
 		return 0;
 	}
 	return std::max_element(m_warpsPerNeuron.begin(), m_warpsPerNeuron.end(), value_compare)->second;
+}
+
+
+unsigned
+WarpAddressTable::maxWarpsPerNeuronDelay() const
+{
+	if(m_warpsPerNeuronDelay.empty()) {
+		return 0;
+	}
+#if 0
+	std::map< boost::tuple<DeviceIdx, delay_t>, unsigned>::const_iterator entry =
+		std::max_element(
+			m_warpsPerNeuronDelay.begin(), 
+			m_warpsPerNeuronDelay.end(), value_compare2);
+	fprintf(stdout, "max for p%un%u and d%u\n",
+			entry->first.get<0>().partition,
+			entry->first.get<0>().neuron,
+			entry->first.get<1>());
+	return entry->second;
+#endif
+#if 1
+	return std::max_element(
+			m_warpsPerNeuronDelay.begin(), 
+			m_warpsPerNeuronDelay.end(), value_compare2)->second;
+#endif
 }
 
 

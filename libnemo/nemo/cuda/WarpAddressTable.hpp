@@ -62,6 +62,7 @@ class WarpAddressTable
 		unsigned warpCount() const { return m_warpCount; }
 
 		unsigned maxWarpsPerNeuron() const;
+		unsigned maxWarpsPerNeuronDelay() const;
 
 		/*! \return print histogram of sizes of each synapse
 		 * warp to stdout */
@@ -74,6 +75,7 @@ class WarpAddressTable
 		std::map<key, unsigned> m_rowSynapses;
 
 		std::map<DeviceIdx, unsigned> m_warpsPerNeuron;
+		std::map< boost::tuple<DeviceIdx, delay_t>, unsigned> m_warpsPerNeuronDelay;
 
 		unsigned m_warpCount;
 };

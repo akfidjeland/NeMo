@@ -47,7 +47,8 @@ class Outgoing
 		boost::shared_ptr<outgoing_t> md_arr; // device data
 		size_t m_pitch;                       // max pitch
 
-		boost::shared_ptr<unsigned> md_rowLength; // per-neuron pitch
+		boost::shared_ptr<unsigned> md_rowLength; // per-neuron pitch (old format)
+		                                          // per neuron/delay pitch (new format)
 
 		size_t m_allocated;
 

@@ -1,11 +1,3 @@
-/* Copyright 2010 Imperial College London
- *
- * This file is part of nemo.
- *
- * This software is licenced for non-commercial academic use under the GNU
- * General Public Licence (GPL). You should have received a copy of this
- * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
- */
 
 #include "log.cu_h"
 #include "fixedpoint.cu"
@@ -222,6 +214,7 @@ scatterLocal(
 	__shared__ unsigned s_fill[MAX_DELAY];
 
 	lq_loadQueueFill(g_fill, s_fill);
+	__syncthreads();
 
 	/*! \todo do more than one neuron at a time. We can deal with
 	 * THREADS_PER_BLOCK/MAX_DELAY per iteration. */
@@ -247,9 +240,12 @@ scatterLocal(
 				 * Managaging this data can be costly, however, as we need to
 				 * flush buffers as we go. */
 				lq_enque(neuron, cycle, delay0, s_fill, g_queue);
+				DEBUG_MSG_SYNAPSE("c%u lq: delay bits %0lx\n", cycle, delayBits);
+				DEBUG_MSG_SYNAPSE("c%u lq: add n%u d%u\n", cycle, neuron, delay0+1);
 			}
 		}
 	}
+	__syncthreads();
 	lq_storeQueueFill(s_fill, g_fill);
 }
 
@@ -257,72 +253,95 @@ scatterLocal(
 
 __device__
 void
-scatter(unsigned cycle,
-		unsigned s_firingCount,
-		nidx_dt* s_fired,
+scatterGlobal(unsigned cycle,
+		unsigned* g_lqFill,
+		lq_entry_t* g_lq,
 		unsigned* g_outgoingCount,
 		outgoing_t* g_outgoing,
 		unsigned* g_incomingHeads,
 		incoming_t* g_incoming)
 {
-	for(unsigned fidxBase = 0; fidxBase < s_firingCount;
-			fidxBase += THREADS_PER_BLOCK) {
+	/* Instead of iterating over fired neurons, load all fired data from a
+	 * single local queue entry. Iterate over the neuron/delay pairs stored
+	 * there. */
+	__shared__ unsigned nLq;
+	if(threadIdx.x == 0) {
+		nLq = lq_getAndClearCurrentFill(cycle, g_lqFill);
+	}
+	__syncthreads();
+	DEBUG_THREAD_MSG(0, "c%u local queue fill = %u\n", cycle, nLq);
 
-		// load row lengths in parallel
-		//! \note could probably use ushort here
-		__shared__ unsigned s_len[THREADS_PER_BLOCK]; // 1KB
-		unsigned fidx = fidxBase + threadIdx.x;
-		unsigned presynaptic = s_fired[fidx];
-		if(fidx < s_firingCount) {
-			s_len[threadIdx.x] = outgoingCount(presynaptic, g_outgoingCount);
+	for(unsigned bLq = 0; bLq < nLq; bLq += THREADS_PER_BLOCK) {
+
+		unsigned iLq = bLq + threadIdx.x;
+
+		//! \todo share this memory with other stages
+		__shared__ lq_entry_t s_lq[THREADS_PER_BLOCK]; // 1KB
+		__shared__ unsigned s_len[THREADS_PER_BLOCK];  // 1KB
+
+		s_len[threadIdx.x] = 0;
+
+		/* Load local queue entries (neuron/delay pairs) and the associated
+		 * outgoing lengths into shared memory */
+		if(iLq < nLq) {
+			ASSERT(iLq < c_lqPitch);
+			lq_entry_t entry = g_lq[lq_offset(cycle, 0) + iLq];
+			/*! \todo store precomputed address here instead of neuron/delay pair */
+			s_lq[threadIdx.x] = entry;
+			/* For now this returns just the length. The outgoing data should
+			 * later be compacted, in which case this data should contain an
+			 * offset/length pair instead */ 
+			short delay0 = entry.y;
+			/*! \todo we should be able to cache the outgoing counts */
+			s_len[threadIdx.x] = outgoingCount(entry.x, delay0, g_outgoingCount);
+			DEBUG_MSG_SYNAPSE("c%u[global scatter]: dequeued n%u d%u from local queue (%u warps)\n",
+					cycle, entry.x, delay0, s_len[threadIdx.x]);
 		}
 		__syncthreads();
 
-		unsigned fidxMax = min(fidxBase + THREADS_PER_BLOCK, s_firingCount);
+		/* Now loop over all the entries we just loaded from the local queue */ 
+		unsigned jLqMax = min(THREADS_PER_BLOCK, nLq-bLq);
+		for(unsigned jLq = 0; jLq < jLqMax; ++jLq) {
 
-		for(unsigned fidx = fidxBase; fidx < fidxMax; ++fidx) {
+			/* There may be more than THREADS_PER_BLOCK entries in this
+			 * outgoing row, although the common case should be just a single
+			 * loop iteration here */
+			unsigned nOut = s_len[jLq];
+			for(unsigned bOut = 0; bOut < nOut; bOut += THREADS_PER_BLOCK) {
 
-			unsigned presynaptic = s_fired[fidx];
-			ASSERT(presynaptic < MAX_PARTITION_SIZE);
-
-			unsigned len = s_len[fidx % THREADS_PER_BLOCK];
-
-			for(unsigned jobBase = 0; jobBase < len; jobBase += THREADS_PER_BLOCK) {
-
-				unsigned jobIdx = jobBase + threadIdx.x;
-
-				if(jobIdx < len) {
-
-					outgoing_t sout = outgoing(presynaptic, jobIdx, g_outgoing);
-
-					unsigned delay = outgoingDelay(sout);
-
-					ASSERT(delay > 0);
-
+				/* Load row of outgoing data (specific to neuron/delay pair) */
+				unsigned iOut = bOut + threadIdx.x;
+				if(iOut < nOut) {
+					short sourceNeuron = s_lq[jLq].x;
+					short delay0 = s_lq[jLq].y;
+					outgoing_t sout = outgoing(sourceNeuron, delay0, iOut, g_outgoing); // coalesced
 					unsigned targetPartition = outgoingTargetPartition(sout);
-					size_t headsAddr = incomingCountAddr(targetPartition, cycle, delay);
-					/*! \todo we might be able to reduce the number of atomic
-					 * operations here, by writing warps going to the same
-					 * target in the same go. This would be easier if we did
-					 * just-in-time delivery, in which case we could do
-					 * multiple smem atomics, and just a single gmem atomic */
+					/*! \todo simplify incoming such that addressing only depends on targetPartition */
+					/*! \todo use consistent naming here: fill rather than count/heads */
+					size_t headsAddr = incomingCountAddr(targetPartition, writeBuffer(cycle), 0);
 					unsigned offset = atomicAdd(g_incomingHeads + headsAddr, 1);
-
 					ASSERT(offset < c_incomingPitch);
-
-					size_t base = incomingBufferStart(targetPartition, cycle, delay);
+					size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle), 0);
 					g_incoming[base + offset] = make_incoming(outgoingWarpOffset(sout));
 
-					DEBUG_MSG_SYNAPSE("c%u spike warp p%un%u -> p%u (delay %u) (buffer entry %u/%lu)\n",
-							cycle, CURRENT_PARTITION, presynaptic, targetPartition, delay,
+					DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
+							cycle, outgoingWarpOffset(sout),
+							CURRENT_PARTITION, sourceNeuron, targetPartition, s_lq[jLq].y,
 							offset, c_incomingPitch);
+					/* These memory operations are non-coalesced. However, we
+					 * might be able to stage data in smem for each partition.
+					 * This would require 128 buffers x 32 x 4B = 16kB, so  the
+					 * whole smem on 10-series. We might be better of with a 2k
+					 * partition size. */
+					/* If we're careless with the outgoing data we could
+					 * overflow smem buffers for outgoing entries */ 
 				}
+				// flush any buffers which are full
 			}
 		}
-		__syncthreads(); // so s_len is not updated
+		__syncthreads(); // to protect s_len
 	}
 }
-
 
 
 
@@ -345,7 +364,8 @@ gather( unsigned cycle,
 	bv_clear(s_negative);
 
 	if(threadIdx.x == 0) {
-		size_t addr = incomingCountAddr(CURRENT_PARTITION, cycle, 0);
+		//! \todo simplify addressing
+		size_t addr = incomingCountAddr(CURRENT_PARTITION, readBuffer(cycle), 0);
 		s_incomingCount = g_incomingCount[addr];
 		g_incomingCount[addr] = 0;
 	}
@@ -375,7 +395,8 @@ gather( unsigned cycle,
 		__syncthreads();
 
 		if(threadIdx.x < s_groupSize) {
-			incoming_t sgin = getIncoming(cycle, group, g_incoming);
+			//! \todo simplify addressing
+			incoming_t sgin = getIncoming(readBuffer(cycle), group, g_incoming);
 			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
 			DEBUG_MSG_SYNAPSE("c%u w%u -> p%u\n", cycle, incomingWarpOffset(sgin), CURRENT_PARTITION);
 		}
@@ -400,8 +421,9 @@ gather( unsigned cycle,
 
 			if(weight != 0) {
 				addCurrent(postsynaptic, weight, s_fx_current, s_overflow, s_negative);
-				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f\n",
-						s_cycle, CURRENT_PARTITION, postsynaptic, fx_tofloat(weight));
+				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",
+						s_cycle, CURRENT_PARTITION, postsynaptic,
+						fx_tofloat(weight), (s_warpAddress[gwarp] - g_fcm) / WARP_SIZE);
 			}
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
@@ -551,10 +573,9 @@ step (
 
 	SET_COUNTER(s_ccMain, 6);
 
-	scatter(
-			cycle,
-			s_firingCount,
-			s_fired,
+	scatterGlobal(cycle,
+			g_lqFill,
+			g_lqData,
 			g_outgoingCount,
 			g_outgoing,
 			g_incomingHeads,

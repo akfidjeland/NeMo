@@ -46,7 +46,8 @@ DeviceAssertions::check(unsigned cycle) throw (nemo::exception)
 			if(line != 0) {
 				throw nemo::exception(NEMO_CUDA_ASSERTION_FAILURE,
 						str(format("Device assertion failure for partition %u thread %u in line %u during cycle %u. Only the first assertion failure is reported and the exact file is not known")
-							% partition % thread % line % cycle));
+							//% partition % thread % line % cycle));
+							% partition % thread % (line >> 16) % cycle));
 			}
 		}
 	}

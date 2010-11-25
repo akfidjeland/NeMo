@@ -13,7 +13,7 @@
 /* For L1 spike delivery we need to know to which target partitions each firing
  * neuron has outgoing synapses. We store this information in a matrix indexed
  * by partition, neuron, and delay. Each entry is a row listing partition
- * targets. Empty entries are set to -1. */
+ * targets. Empty entries are set to INVALID_OUTGOING. */
 
 #include <cuda_runtime.h>
 
@@ -25,10 +25,11 @@
  * 1. target partition
  * 2. delay
  * 3. address of the full synapse group
- * 4. bit-vector for target warps within target partitions
  *
  * We keep a 32-bit group address. This is enough for 4B warps. With a group-size
  * of 32, this is 32x as much memory as current devices can address.
+ * 
+ * new format: just partition and warp. delay is used in the index
  */
 typedef uint2 outgoing_t;
 
@@ -37,7 +38,7 @@ typedef uint2 outgoing_t;
  * \param warpOffset
  *		offset into FCM in terms of number of warps
  */
-__host__ outgoing_t make_outgoing(pidx_t partition, delay_t delay, unsigned warpOffset);
+__host__ outgoing_t make_outgoing(pidx_t partition, unsigned warpOffset);
 
 const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
 
@@ -45,10 +46,15 @@ const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
 __host__ cudaError setOutgoingPitch(size_t targetPitch);
 
 
+//! \todo make these templates instead
+__host__ __device__
+size_t
+outgoingCountOffset(unsigned partition, short neuron, short delay);
+
+//! \todo make this templates instead
 /* Return address at beginning of given row */
 __host__ __device__ 
 size_t
-outgoingRow(pidx_t partition, nidx_t neuron, size_t pitch);
-
+outgoingRow(pidx_t partition, nidx_t neuron, short delay0, size_t pitch);
 
 #endif

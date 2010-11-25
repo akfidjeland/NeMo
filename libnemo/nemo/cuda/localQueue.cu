@@ -24,13 +24,24 @@ setLocalQueuePitch(size_t pitch)
 
 
 /*! \return offset into local queue fill data (in gmem) for the current
- * partition and the given delay. */
+ * partition and the given slot. */
 __device__
 unsigned
-lq_globalFillOffset(unsigned delay0)
+lq_globalFillOffset(unsigned slot)
 {
-	return CURRENT_PARTITION * MAX_DELAY + delay0;
+	return CURRENT_PARTITION * MAX_DELAY + slot;
 }
+
+
+/*! \return queue fill for the current partition slot due for delivery now, and
+ * reset the relevant slot. */
+__device__
+unsigned
+lq_getAndClearCurrentFill(unsigned cycle, unsigned* g_fill)
+{
+	return atomicExch(g_fill + lq_globalFillOffset(cycle % MAX_DELAY), 0); 
+}
+
 
 
 /*! Load current queue fill from gmem to smem. 
@@ -41,9 +52,9 @@ __device__
 void
 lq_loadQueueFill(unsigned* g_fill, unsigned* s_fill)
 {
-	unsigned delay0 = threadIdx.x;
-	if(delay0 < MAX_DELAY) {
-		s_fill[delay0] = g_fill[lq_globalFillOffset(delay0)];
+	unsigned slot = threadIdx.x;
+	if(slot < MAX_DELAY) {
+		s_fill[slot] = g_fill[lq_globalFillOffset(slot)];
 	}
 }
 
@@ -53,9 +64,9 @@ __device__
 void
 lq_storeQueueFill(unsigned* s_fill, unsigned* g_fill)
 {
-	unsigned delay0 = threadIdx.x;
-	if(delay0 < MAX_DELAY) {
-		g_fill[lq_globalFillOffset(delay0)] = s_fill[delay0];
+	unsigned slot = threadIdx.x;
+	if(slot < MAX_DELAY) {
+		g_fill[lq_globalFillOffset(slot)] = s_fill[slot];
 	}
 }
 
@@ -64,15 +75,36 @@ lq_storeQueueFill(unsigned* s_fill, unsigned* g_fill)
 /*! \return the buffer number to use for the given delay, given current cycle */
 __device__
 unsigned
-lq_delaySlot(unsigned cycle, unsigned delay1)
+lq_delaySlot(unsigned cycle, unsigned delay0)
 {
-	return (cycle + delay1) % MAX_DELAY;
+	return (cycle + delay0) % MAX_DELAY;
+}
+
+
+/*! \return the full address to the start of a queue entry (for a
+ * partition/delay pair) given a precomputed slot number */
+__device__
+unsigned
+lq_offsetOfSlot(unsigned slot)
+{
+	ASSERT(slot < MAX_DELAY);
+	return (CURRENT_PARTITION * MAX_DELAY + slot) * c_lqPitch;
+}
+
+
+/*! \return the full address to the start of a queue entry for the current
+ * partition and the given delay (relative to the current cycle). */
+__device__
+unsigned
+lq_offset(unsigned cycle, unsigned delay0)
+{
+	return lq_offsetOfSlot(lq_delaySlot(cycle, delay0));
 }
 
 
 
-/* Return offset to next free queue slot in gmem queue for current partition
- * and the given delay
+/*! \return offset to next free queue slot in gmem queue for current partition
+ * 		and the given delay offset from the given cycle.
  *
  * \param s_fill shared memory buffer which should have been previously filled
  *        using lq_loadQueueFill
@@ -85,9 +117,12 @@ lq_nextFree(unsigned cycle, delay_t delay0, unsigned* s_fill)
 	 * queue slot (or out of the queue altogether). However, even if this is
 	 * not the case the wrap-around in the atomic increment ensures that we
 	 * just overwrite our own firing data rather than someone elses */
-	unsigned delaySlot = lq_delaySlot(cycle, delay0+1);
-	return (CURRENT_PARTITION * MAX_DELAY + delaySlot) * c_lqPitch 
-		+ atomicInc(s_fill + delaySlot, c_lqPitch-1);
+	unsigned delaySlot = lq_delaySlot(cycle, delay0);
+	ASSERT(delaySlot < MAX_DELAY);
+	ASSERT(lq_offsetOfSlot(delaySlot) < PARTITION_COUNT * MAX_DELAY * c_lqPitch);
+	unsigned next = atomicInc(s_fill + delaySlot, c_lqPitch-1);
+	ASSERT(next < c_lqPitch);
+	return lq_offsetOfSlot(delaySlot) + next;
 }
 
 

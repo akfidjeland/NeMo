@@ -18,17 +18,10 @@ __constant__ size_t c_outgoingPitch; // word pitch
 
 __host__
 outgoing_t
-make_outgoing(pidx_t partition, delay_t delay, unsigned warpOffset)
+make_outgoing(pidx_t partition, unsigned warpOffset)
 {
-	//! \todo could share pointer packing with dispatchTable code
 	assert(partition < MAX_PARTITION_COUNT);
-	assert(delay < MAX_DELAY);
-
-	unsigned targetData =
-	       ((unsigned(partition) & MASK(PARTITION_BITS)) << (DELAY_BITS))
-	     |  (unsigned(delay)     & MASK(DELAY_BITS));
-
-	return make_uint2(targetData, (unsigned) warpOffset);
+	return make_uint2(partition, (unsigned) warpOffset);
 }
 
 
@@ -45,46 +38,38 @@ setOutgoingPitch(size_t targetPitch)
 
 __host__ __device__
 size_t
-outgoingRow(pidx_t partition, nidx_t neuron, size_t pitch)
+outgoingRow(pidx_t partition, nidx_t neuron, short delay0, size_t pitch)
 {
-	//! \todo factor out addressing function and share with the 'counts' function
-	return (partition * MAX_PARTITION_SIZE + neuron) * pitch;
+	return outgoingCountOffset(partition, neuron, delay0) * pitch;
 }
 
 
 
-__device__
-unsigned
-outgoingTargetPartition(outgoing_t out)
-{
-	return unsigned((out.x >> (DELAY_BITS)) & MASK(PARTITION_BITS));
-}
-
-
-
-__device__
-unsigned
-outgoingDelay(outgoing_t out)
-{
-	return unsigned(out.x & MASK(DELAY_BITS));
-}
-
-
-
+__device__ unsigned outgoingTargetPartition(outgoing_t out) { return out.x; } 
 __device__ unsigned outgoingWarpOffset(outgoing_t out) { return out.y; }
-
 
 
 __device__
 outgoing_t
-outgoing(unsigned presynaptic,
-		unsigned jobIdx,
-		outgoing_t* g_targets)
+outgoing(unsigned presynaptic, unsigned delay0,
+		unsigned jobIdx, outgoing_t* g_targets)
 {
-	size_t addr = outgoingRow(CURRENT_PARTITION, presynaptic, c_outgoingPitch);
+	size_t addr = outgoingRow(CURRENT_PARTITION, presynaptic, delay0, c_outgoingPitch);
 	return g_targets[addr + jobIdx];
 }
 
+
+
+
+__host__ __device__
+size_t
+outgoingCountOffset(unsigned partition, short neuron, short delay0)
+{
+	//! \todo refactor after correctness is verified
+	return partition * (MAX_PARTITION_SIZE * MAX_DELAY)
+		+ neuron * MAX_DELAY
+		+ delay0;
+}
 
 
 /*! \return
@@ -92,9 +77,9 @@ outgoing(unsigned presynaptic,
  *		partition */
 __device__
 unsigned
-outgoingCount(unsigned presynaptic, unsigned* g_counts)
+outgoingCount(short neuron, short delay0, unsigned* g_counts)
 {
-	return g_counts[CURRENT_PARTITION * MAX_PARTITION_SIZE + presynaptic];
+	return g_counts[outgoingCountOffset(CURRENT_PARTITION, neuron, delay0)];
 }
 
 

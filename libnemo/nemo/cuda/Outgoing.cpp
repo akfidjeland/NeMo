@@ -44,14 +44,13 @@ compare_warp_counts(
 }
 
 
-
 void
 Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 {
 	using namespace boost::tuples;
 
-	size_t height = partitionCount * MAX_PARTITION_SIZE;
-	size_t width = wtable.maxWarpsPerNeuron() * sizeof(outgoing_t);
+	size_t height = partitionCount * MAX_PARTITION_SIZE * MAX_DELAY;
+	size_t width = wtable.maxWarpsPerNeuronDelay() * sizeof(outgoing_t);
 
 	// allocate device memory for table
 	outgoing_t* d_arr = NULL;
@@ -75,24 +74,23 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 
 		const WarpAddressTable::key& k = ri->first;
 
-		//! \todo store DeviceIdx directly
 		pidx_t sourcePartition = get<0>(k);
 		nidx_t sourceNeuron = get<1>(k);
 		pidx_t targetPartition = get<2>(k);
-		delay_t delay = get<3>(k);
+		delay_t delay1 = get<3>(k);
 
 		const WarpAddressTable::warp_set& r = ri->second;
 
 		typedef WarpAddressTable::warp_set::const_iterator warp_iterator;
 
-		//! \todo move this into shared __device__/__host__ function
-		size_t r_addr = sourcePartition * MAX_PARTITION_SIZE + sourceNeuron;
+		size_t r_addr = outgoingCountOffset(sourcePartition, sourceNeuron, delay1-1);
 
 		for(warp_iterator wi = r.begin(); wi != r.end(); ++wi) {
 			//! \todo use DeviceIdx overload here. Refactor to share with r_addr
-			size_t rowBegin = outgoingRow(sourcePartition, sourceNeuron, wpitch);
+			size_t rowBegin = outgoingRow(sourcePartition, sourceNeuron, delay1-1, wpitch);
+			//! \todo can increment this in one go outside loop
 			size_t col = h_rowLength[r_addr]++;
-			h_arr[rowBegin + col] = make_outgoing(targetPartition, delay, *wi);
+			h_arr[rowBegin + col] = make_outgoing(targetPartition, *wi);
 			incoming[targetPartition] += 1;
 		}
 	}
@@ -115,6 +113,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	//! \todo compute this on forward pass
 	m_maxIncomingWarps = incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
 }
+
 
 	} // end namespace cuda
 } // end namespace nemo
