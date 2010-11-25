@@ -8,7 +8,6 @@
  */
 
 #include <vector>
-#include <algorithm>
 #include <iostream>
 
 #include <boost/tuple/tuple_comparison.hpp>
@@ -53,14 +52,6 @@ namespace nemo {
 
 
 
-
-WarpAddressTable::WarpAddressTable() :
-	m_warpCount(0)
-{
-	;
-}
-
-
 SynapseAddress
 WarpAddressTable::addSynapse(
 		const DeviceIdx& source,
@@ -80,7 +71,6 @@ WarpAddressTable::addSynapse(
 		/* Add synapse to a new warp */
 		warps.push_back(nextFreeWarp);
 		m_warpsPerNeuronDelay[k] += 1;
-		m_warpCount += 1;
 		return SynapseAddress(nextFreeWarp, column);
 	} else {
 		/* Add synapse to an existing partially-filled warp */
@@ -117,15 +107,6 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 
 
 
-bool
-value_compare(const std::pair<WarpAddressTable::key, unsigned>& lhs,
-		const std::pair<WarpAddressTable::key, unsigned>& rhs)
-{
-	return lhs.second < rhs.second;
-}
-
-
-
 unsigned
 WarpAddressTable::warpsPerNeuronDelay(pidx_t p, nidx_t n, delay_t delay1) const
 {
@@ -136,19 +117,6 @@ WarpAddressTable::warpsPerNeuronDelay(pidx_t p, nidx_t n, delay_t delay1) const
 	} else {
 		return 0;
 	}
-}
-
-
-
-unsigned
-WarpAddressTable::maxWarpsPerNeuronDelay() const
-{
-	if(m_warpsPerNeuronDelay.empty()) {
-		return 0;
-	}
-	return std::max_element(
-			m_warpsPerNeuronDelay.begin(), 
-			m_warpsPerNeuronDelay.end(), value_compare)->second;
 }
 
 

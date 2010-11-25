@@ -71,8 +71,6 @@ class WarpAddressTable
 
 	public :
 
-		WarpAddressTable();
-
 		/*
 		 * \param nextFreeWarp
 		 * 		The next unused warp in the host FCM.
@@ -94,8 +92,6 @@ class WarpAddressTable
 		unsigned warpsPerNeuronDelay(pidx_t sourcePartition,
 				nidx_t sourceNeuron, delay_t delay1) const;
 
-		unsigned maxWarpsPerNeuronDelay() const;
-
 		/*! \return print histogram of sizes of each synapse
 		 * warp to stdout */
 		void reportWarpSizeHistogram(std::ostream& out) const;
@@ -109,9 +105,6 @@ class WarpAddressTable
 		boost::unordered_map<row_key, unsigned> m_rowSynapses;
 
 		boost::unordered_map<key, unsigned> m_warpsPerNeuronDelay;
-
-		//! \todo remove this
-		unsigned m_warpCount;
 };
 
 

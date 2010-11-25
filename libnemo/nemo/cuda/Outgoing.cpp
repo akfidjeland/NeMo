@@ -108,7 +108,8 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 			}
 		}
 
-		/* Set address info here, since both start and length are now known */
+		/* Set address info here, since both start and length are now known.
+		 * Col points to next free entry, which is also the length. */
 		size_t r_addr = outgoingAddrOffset(sourcePartition, sourceNeuron, delay1-1);
 		h_addr[r_addr] = make_outgoing_addr(rowBegin, col);
 		allocated += nWords;
