@@ -43,20 +43,48 @@ namespace nemo {
  * reverse version (connections from postsynaptic to presynaptic). The reverse
  * version may be required if synapses are modified at run time.
  *
- * The CM can have multiple planes of data, e.g. one for addressing and one for
- * synaptic weights.
- *
- * Both the forward and the reverse matrices are stored with synapses organised
- * by:
- *
- * 1. partition
- * 2. neuron
- * 3. delay
- *
  * Functions are prefixed 'f' or 'r' depending on which version it affects.
- *
  * Furthermore, functions are prefixed 'd' or 'h' depending on whether it
  * affects data on the device or on the host.
+ *
+ * \section fcm Forward connectivity
+ *
+ * In the forward connectivity matrix (FCM) each synapse is represented by two
+ * pieces of data: the synapse weight and the target neuron (within a
+ * partition). Other per-synapse data, such as source partition/neuron, target
+ * partition, and delay, are implicit in the storage, as it is used as a key.
+ *
+ * The FCM can get very large and make up a major source of memory traffic in
+ * the kernel. To facilitate coalesced access to this data we perform some
+ * grouping of synapses. A \e synapse \e group consists of all the synapses
+ * sharing the same source partition, source neuron, target partition, and
+ * delay. All synapses in such a group must be delivered during the same
+ * simulation step between the same pair of partitions. Synapse groups are
+ * further split into \e synapse \e warps which are simply groupings of \ref
+ * WARP_SIZE synapses. The synapse warp is the basic unit of spike delivery.
+ *
+ * On the device the FCM is stored as an \e s x \ref WARP_SIZE matrix, in
+ * a contigous chunk of memory. The value of \e s depends on the connectivity
+ * in the network. Each synapse warp thus has a unique index which is simply
+ * the offset from the start of the matrix. These indices are stored in the
+ * \ref nemo::cuda::Outgoing outgoing data.
+ *
+ * The size of each synapse groups is not necessarily a multiple of \ref
+ * WARP_SIZE so some memory is wasted on padding. The amount of padding varies
+ * with the network connectivity, but generally a high degree of clustering
+ * (spatially and/or temporally) will give a low amount of padding.
+ *
+ * \section rcm Reverse connectivity
+ *
+ * The reverse connectivity matrix (RCM) stores the target synapse and an
+ * accumulator variable (for STDP) for each synapse. The data are organised in
+ * rows indexed by neuron. To avoid excessive padding due to potentially
+ * variable-width rows, the RCM is split into separte chunks for each
+ * partition, each with its own pitch. This leads to a rather inelegant method
+ * for indexing the RCM. The organisation of the RCM will be changed in future
+ * versions.
+ *
+ * \todo Move reverse and forward connectivity into separate classes
  */
 class ConnectivityMatrix
 {
@@ -149,7 +177,7 @@ class ConnectivityMatrix
 				const std::vector<weight_dt>& h_weights,
 				bool logging);
 
-		/* For each neuron, record the delays for which there are /any/
+		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */
 		NVector<uint64_t> m_delays;
 

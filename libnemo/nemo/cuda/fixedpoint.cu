@@ -1,6 +1,11 @@
 #ifndef FIXED_POINT_CU
 #define FIXED_POINT_CU
 
+/*! \file fixedpoint.cu Routines for fixed point manipulation
+ *
+ * All functions are prefixed \c fx
+ */
+
 /* Copyright 2010 Imperial College London
  *
  * This file is part of nemo.
@@ -16,7 +21,8 @@
 
 #define FX_SIGN_BIT 0x80000000
 
-/* Scaling factor used for fixed-points (used for weight storage) */
+
+/*! Scaling factor used for fixed-points (used for weight storage) */
 __constant__ unsigned c_fixedPointScale;
 __constant__ unsigned c_fixedPointFractionalBits;
 
@@ -48,7 +54,8 @@ fx_tofloat(fix_t v)
 
 
 
-/*! \return saturated value with the given sign (bit 0 in 'sign') */
+/*! \return saturated value (i.e. maximally positive or maximally negative)
+ * with sign as indicated by \a negative */
 __device__
 fix_t
 fx_saturate(bool negative)
@@ -58,11 +65,13 @@ fx_saturate(bool negative)
 }
 
 
+/*! Cast fixed-point to floating point, with saturation as indicated by the
+ * flags \a overflow and \a negative */
 __device__
 float
 fx_saturatedTofloat(fix_t v, bool overflow, bool negative)
 {
-	//! \todo any way to avoid division here. Perhaps precompute the fraction here?
+	//! \todo any way to avoid division here? Perhaps precompute the fraction here?
 	//! \todo check if it makes any difference to use 1<<c here instead
 	return float(overflow ? fx_saturate(negative) : v) / c_fixedPointScale;
 }

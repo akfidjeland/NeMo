@@ -1,17 +1,21 @@
-#ifndef NEMO_CUDA_DEVICE_MEMORY_H
-#define NEMO_CUDA_DEVICE_MEMORY_H
+#ifndef NEMO_CUDA_DEVICE_MEMORY_HPP
+#define NEMO_CUDA_DEVICE_MEMORY_HPP
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Wrapper for CUDA device memory methods, with appropriate error handling.
- * This wrapper also helps to reduce cuda_runtime header dependencies. */
+/*! \file device_memory.hpp Device memory methods
+ *
+ * These are wrappers for CUDA device memory methods, with appropriate error
+ * handling. This wrapper also serves to reduce cuda_runtime header
+ * dependencies.
+ */
 
 #include <vector>
 #include <nemo/exception.hpp>
@@ -30,9 +34,11 @@ d_free(void*);
 
 /*! Allocate 2D memory on the device
  *
- * \param bytePitch actual byte pitch after allignment
- * \param width desired width in bytes
- * \param name for debugging purposes
+ * \param[out] d_ptr device pointer to allocated memory
+ * \param[in] bytePitch actual byte pitch after allignment
+ * \param[in] width desired width in bytes
+ * \param[in] height
+ * \param[in] name of data structure (for error handling/debugging purposes)
  */
 void
 d_mallocPitch(void** d_ptr, size_t* bytePitch, size_t width, size_t height, const char* name);

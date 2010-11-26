@@ -17,6 +17,21 @@
 namespace nemo {
 	namespace cuda {
 
+/*! \brief Queue for exchanging spike data between partitions
+ *
+ * This queue is used in the \ref cuda_global_delivery "global delivery step".
+ * It is a 2D grid of queues with one entry per source partition/target
+ * partition pair. Each individual queue contains warp indices and is sized
+ * pessimistically so as to support continous firing of all neurons. The total
+ * size of this data structure is thus \e pcount x \e pcount x \e max_incoming_warps.
+ *
+ * The actual queue data and the fill rate of each individual queue are stored
+ * in separate data structures on the device.
+ *
+ * The device functions for manipulating queue data are found in \ref incoming.cu.
+ *
+ * \see scatterGlobal, gather, cuda_global_delivery
+ */
 class Incoming
 {
 	public :
@@ -26,6 +41,8 @@ class Incoming
 		/*! Allocate space on device to hold the per neuron/delay incoming
 		 * spike groups
 		 *
+		 * \param partitionCount
+		 * 		Number of partitions in whole network
 		 * \param maxIncomingWarps
 		 * 		Maximum number of incoming warps (regardless of delay) for any
 		 * 		partition,

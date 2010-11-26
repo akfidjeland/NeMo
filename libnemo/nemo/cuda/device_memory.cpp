@@ -7,6 +7,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*! \file device_memory.cpp Device memory methods */
+
 #include <cuda_runtime.h>
 #include <boost/format.hpp>
 

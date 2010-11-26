@@ -1,3 +1,5 @@
+//! \file kernel.cu
+
 /* Copyright 2010 Imperial College London
  *
  * This file is part of nemo.

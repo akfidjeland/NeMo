@@ -70,6 +70,7 @@ class Neurons
 		size_t wordPitch() const;
 
 		/*!
+		 * \param idx neuron index
 		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
 		 * \return a parameter for a single neuron
 		 */
@@ -77,23 +78,28 @@ class Neurons
 
 		/* Set parameter for a single neuron
 		 *
+		 * \param idx neuron index
 		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
+		 * \param value
 		 */
 		void setParameter(const DeviceIdx& idx, int parameter, float value);
 
 		/*! Get a state variable for a single neuron
 		 *
+		 * \param idx neuron index
 		 * \param var STATE_U or STATE_V
 		 *
 		 * The first call to this function in any given cycle may take some
 		 * time, since synchronisation is needed between the host and the
 		 * device.
 		 */
-		float getState(const DeviceIdx& idx, int parameter) const;
+		float getState(const DeviceIdx& idx, int var) const;
 
 		/*! Set a state variable for a single neuron
 		 *
+		 * \param idx neuron index
 		 * \param var STATE_U or STATE_V
+		 * \param value
 		 *
 		 * The first call to this function in any given cycle may take some
 		 * time, since synchronisation is needed between the host and the

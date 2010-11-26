@@ -18,6 +18,20 @@
 namespace nemo {
 	namespace cuda {
 
+/*! \brief Runtime mapping from neuron/delay pairs to synapse warp addresses
+ *
+ * This class wraps the runtime data structures that performs this mapping,
+ * which is required during the \ref cuda_global_delivery "global spike
+ * delivery step". The synapse warp is a number of synapses which shares the
+ * same source partition, target partition, and delay, the organisation of
+ * which is found in \ref nemo::cuda::ConnectivityMatrix.
+ *
+ * The \e construction time data structure which is used to build up the
+ * mapping found herein is the \ref nemo::cuda::WarpAddressTable "warp address
+ * table".
+ *
+ * \see nemo::cuda::WarpAddressTable
+ */
 class Outgoing
 {
 	public :

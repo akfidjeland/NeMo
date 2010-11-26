@@ -48,7 +48,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::addCurrentStimulus */
 		void addCurrentStimulus(nidx_t neuron, float current);
 
-		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
+		/*! \copydoc nemo::SimulationBackend::finalizeCurrentStimulus */
 		void finalizeCurrentStimulus(size_t count);
 
 		/*! \copydoc nemo::SimulationBackend::update */

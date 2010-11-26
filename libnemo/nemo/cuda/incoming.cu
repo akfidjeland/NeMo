@@ -55,6 +55,7 @@ __device__ unsigned incomingWarpOffset(incoming_t in) { return in; }
 
 
 /*! \return address into matrix with number of incoming synapse groups
+ * \param targetPartition
  * \param slot read or write slot
  *
  * \see readBuffer writeBuffer

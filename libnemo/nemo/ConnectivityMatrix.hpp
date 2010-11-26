@@ -125,15 +125,15 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		typedef OutgoingDelays::const_iterator delay_iterator;
 
-		/*! \param neuron
-		 * 		global neuron index
+		/*! \param source
+		 * 		global neuron index of source neuron
 		 *  \return
 		 *  	iterator pointing to first delay for the \a neuron
 		 */
 		delay_iterator delay_begin(nidx_t source) const;
 
-		/*! \param neuron
-		 * 		global neuron index
+		/*! \param source
+		 * 		global neuron index of source neuron
 		 *  \return
 		 *  	iterator pointing beyond the last delay for the \a neuron
 		 */

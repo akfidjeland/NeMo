@@ -24,7 +24,7 @@
 namespace nemo {
 	namespace cuda {
 
-/*! \brief Mapping from source-neuron/target-neuron/delay to synapse warp addresses
+/*! \brief Construction-time mapping from neuron/delay to synapse warp addresses
  *
  * This mapping is a temporary structure used during construction of the device
  * data for the forward connectivity matrix. Synapses are organised in groups,
@@ -40,9 +40,9 @@ namespace nemo {
  * The warp address table is intended for incremental construction, by adding
  * individual synapses.
  *
- * At run-time this mapping is found in the data structure \a Outgoing.
+ * At runtime this mapping is found in the data structure \ref Outgoing.
  *
- * \see Outgoing
+ * \see nemo::cuda::Outgoing
  */
 class WarpAddressTable
 {

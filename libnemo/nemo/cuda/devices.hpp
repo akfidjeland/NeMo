@@ -1,6 +1,17 @@
 #ifndef NEMO_CUDA_DEVICES_HPP
 #define NEMO_CUDA_DEVICES_HPP
 
+/*! \file devices.hpp Device enumeration */
+
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of nemo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <nemo/config.h>
 
 namespace nemo {
@@ -11,7 +22,7 @@ extern "C" {
 
 typedef void cuda_set_configuration_t(nemo::ConfigurationImpl*, int);
 
-/* Choose the CUDA device to use and fill in the relevant field in the
+/*! Choose the CUDA device to use and fill in the relevant field in the
  * configuration object. If dev = -1, have the backend choose a suitable
  * device, otherwise check that the user-selected device is a valid choice */
 NEMO_CUDA_DLL_PUBLIC

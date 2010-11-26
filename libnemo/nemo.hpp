@@ -1,6 +1,8 @@
 #ifndef NEMO_HPP
 #define NEMO_HPP
 
+//! \file nemo.hpp
+
 /* Copyright 2010 Imperial College London
  *
  * This file is part of nemo.
@@ -10,10 +12,18 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*! \file nemo.hpp C++ API
+ *
+ * Top-level include file for the C++ API. This file contains a few global
+ * functions, but most functionality is found in the included classes.
+ */
+
 #include <nemo/Configuration.hpp>
 #include <nemo/Network.hpp>
 #include <nemo/Simulation.hpp>
 #include <nemo/exception.hpp>
+
+/*! \namespace nemo Top-level namespace for NeMo C++ code */
 
 namespace nemo {
 
@@ -31,12 +41,16 @@ unsigned
 cudaDeviceCount();
 
 
+/*! \return a textual description of a specific CUDA device
+ *
+ * \param device device number as allocated by NeMo. See \ref cuda_device_numbers
+ */
 NEMO_DLL_PUBLIC
 const char*
 cudaDeviceDescription(unsigned device);
 
 
-/*! \return version number of the nemo library */
+/*! \return version number of the NeMo library */
 NEMO_DLL_PUBLIC
 const char*
 version();

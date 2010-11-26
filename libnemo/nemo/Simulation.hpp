@@ -10,8 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \file Simulation.hpp
-
 #include <vector>
 #include <utility>
 #include <nemo/config.h>
@@ -25,12 +23,13 @@ class Configuration;
 
 /*! \class Simulation
  *
- * To use, create a network object using \ref nemo::Simulation::create, configure
- * it using any of the configuration commands, construct a network by adding
- * neurons and synapses, and finally run the simulation.
+ * \brief Abstract high-level interface for simulation classes
+ *
+ * Concrete instances are created using the \a nemo::simulation factory
+ * function.
  *
  * Internal errors are signaled by exceptions. Thrown exceptions are all
- * subclasses of std::exception.
+ * of the type \a nemo::exception which in turn subclass std::exception.
  *
  * \ingroup cpp-api
  */
@@ -55,7 +54,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 * 		List of neurons which fired this cycle. The referenced data is
 		 * 		valid until the next call to step.
 		 */
-		virtual const firing_output& step(const firing_stimulus&) = 0;
+		virtual const firing_output& step(const firing_stimulus& fstim) = 0;
 
 		/*! Run simulation for a single cycle (1ms) with current stimulus
 		 *
@@ -66,7 +65,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 * 		List of neurons which fired this cycle. The referenced data is
 		 * 		valid until the next call to step.
 		 */
-		virtual const firing_output& step(const current_stimulus&) = 0;
+		virtual const firing_output& step(const current_stimulus& istim) = 0;
 
 		/*! Run simulation for a single cycle (1ms) with both firing stimulus
 		 * and current stimulus
@@ -80,7 +79,9 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 * 		List of neurons which fired this cycle. The referenced data is
 		 * 		valid until the next call to step.
 		 */
-		virtual const firing_output& step(const firing_stimulus&, const current_stimulus&) = 0;
+		virtual const firing_output& step(
+					const firing_stimulus& fstim,
+					const current_stimulus& istim) = 0;
 
 		/*! Change the parameters of an existing neuron.
 		 *

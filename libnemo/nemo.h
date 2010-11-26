@@ -58,7 +58,7 @@ nemo_cuda_device_description(unsigned device, const char**);
 NEMO_DLL_PUBLIC
 nemo_configuration_t nemo_new_configuration();
 
-/*! \copydoc nemo::Network::logToStdout */
+/*! \copydoc nemo::Configuration::enableLogging */
 NEMO_DLL_PUBLIC
 nemo_status_t nemo_log_stdout(nemo_configuration_t);
 
@@ -270,9 +270,10 @@ nemo_set_neuron(nemo_simulation_t sim,
 
 /*! Get synapse target for the specified synapses
  *
+ * \param ptr
  * \param synapses list of synapse ids (\see nemo_add_synapse)
  * \param len length of \a synapses
- * \param targets (output)
+ * \param[out] targets
  * 		vector of length \a len to be set with synapse state. The memory is
  * 		managed by the simulation object and is valid until the next call to
  * 		this function.
@@ -284,9 +285,10 @@ nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsig
 
 /*! Get conductance delays for the specified synapses
  *
+ * \param ptr
  * \param synapses list of synapse ids (\see nemo_add_synapse)
  * \param len length of \a synapses
- * \param delays (output)
+ * \param[out] delays
  * 		vector of length \a len to be set with synapse state. The memory is
  * 		managed by the simulation object and is valid until the next call to
  * 		this function.
@@ -298,9 +300,10 @@ nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsign
 
 /*! Get weights for the specified synapses
  *
+ * \param ptr
  * \param synapses list of synapse ids (\see nemo_add_synapse)
  * \param len length of \a synapses
- * \param weights (output)
+ * \param[out] weights
  * 		vector of length \a len to be set with synapse state. The memory is
  * 		managed by the simulation object and is valid until the next call to
  * 		this function.
@@ -312,9 +315,10 @@ nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float
 
 /*! Get boolean plasticity status for the specified synapses
  *
+ * \param ptr
  * \param synapses list of synapse ids (\see nemo_add_synapse)
  * \param len length of \a synapses
- * \param weights (output)
+ * \param[out] plastic
  * 		vector of length \a len to be set with synapse state. The memory is
  * 		managed by the simulation object and is valid until the next call to
  * 		this function.
@@ -342,15 +346,15 @@ nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsig
 
 //! \todo change to using output arguments and return status instead.
 
-/*! \copydoc nemo::Network::elapsedWallclock */
+/*! \copydoc nemo::Simulation::elapsedWallclock */
 NEMO_DLL_PUBLIC
 nemo_status_t nemo_elapsed_wallclock(nemo_simulation_t, unsigned long*);
 
-/*! \copydoc nemo::Network::elapsedSimulation */
+/*! \copydoc nemo::Simulation::elapsedSimulation */
 NEMO_DLL_PUBLIC
 nemo_status_t nemo_elapsed_simulation(nemo_simulation_t, unsigned long*);
 
-/*! \copydoc nemo::Network::resetTimer */
+/*! \copydoc nemo::Simulation::resetTimer */
 NEMO_DLL_PUBLIC
 nemo_status_t nemo_reset_timer(nemo_simulation_t);
 

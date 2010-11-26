@@ -104,8 +104,10 @@ lq_offset(unsigned cycle, unsigned delay0)
 
 
 /*! \return offset to next free queue slot in gmem queue for current partition
- * 		and the given delay offset from the given cycle.
+ * 		and the given \a delay0 offset from the given \a cycle.
  *
+ * \param cycle
+ * \param delay0
  * \param s_fill shared memory buffer which should have been previously filled
  *        using lq_loadQueueFill
  */

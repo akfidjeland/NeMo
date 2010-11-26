@@ -17,7 +17,7 @@ namespace nemo {
 	namespace cuda {
 
 
-/*! Per-partition local queue of neuron/delay pairs 
+/*! Queue for sorting spikes temporally for each partition
  *
  * Each partition has a rotating queue with MAX_DELAY slots, each of which is
  * filled with new neuron/delay pairs during the scatter step. This local queue

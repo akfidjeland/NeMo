@@ -7,11 +7,15 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Data structures which are used for communication between different
- * partitions, need to be double buffered so as to avoid race conditions.
- * These functions return the double buffer index (0 or 1) for the given cycle,
- * for either the read or write part of the buffer */
+/*! \file double_buffer.cu Basic indexing for double buffers
+ *
+ * Data structures which are used for communication between different
+ * partitions need to be double buffered so as to avoid race conditions.  These
+ * functions return the double buffer index (0 or 1) for the given cycle, for
+ * either the read or write part of the buffer */
 
+
+/*! \return read buffer index (0 or 1) for current \a cycle */
 __device__
 unsigned
 readBuffer(unsigned cycle)
@@ -20,6 +24,7 @@ readBuffer(unsigned cycle)
 }
 
 
+/*! \return write buffer index (0 or 1) for current \a cycle */
 __device__
 unsigned
 writeBuffer(unsigned cycle)

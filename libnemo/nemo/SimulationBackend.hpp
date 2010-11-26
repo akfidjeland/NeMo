@@ -25,9 +25,11 @@ class Configuration;
 
 /*! \class SimulationBackend
  *
- * This is the lower-level interface that backends should implement. This
- * interface is not exposed in the public API, which instead uses the
- * Simulation base class interface.
+ * \brief Abstract low-level interface for simulation classes
+ *
+ * This is the lower-level interface that concrete backends should implement.
+ * This interface is not exposed in the public API, which instead uses the
+ * \a nemo::Simulation base class interface.
  */
 class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 {

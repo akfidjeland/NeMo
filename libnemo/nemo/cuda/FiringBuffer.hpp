@@ -17,16 +17,25 @@
 #include <nemo/FiringBuffer.hpp>
 #include "Mapper.hpp"
 
-//! \file FiringBuffer.hpp
-
-/*! \brief Data and functions for reading firing data from device to host
- *
- * \author Andreas Fidjeland
- */
 
 namespace nemo {
 	namespace cuda {
 
+/*! \brief Buffer transferring firing data from device to host
+ *
+ * This buffer uses pinned memory on the host as traffic through it is likely
+ * to be heavy. It is a bit-vector, i.e. a single bit of storage is used for
+ * each neuron. The size of data transfers is therefore always fixed (but
+ * small) regardless of the firing rate. The conversion from this dense format
+ * to a more user-friendly sparse format is handled internally, and the sparse
+ * data is returned using \ref readFiring.
+ *
+ * The firing buffer internally contains a queue with one entry for each
+ * cycles' worth of firing. \ref sync() enqueues a new entry to the back, while
+ * \ref readFiring deques the oldest entry from the front.
+ *
+ * On the device side, the firing buffer is filled by \ref storeFiringOutput.
+ */
 class FiringBuffer {
 
 	public:

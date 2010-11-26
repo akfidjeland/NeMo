@@ -13,14 +13,14 @@
 
 /*! Set per-neuron bit-vector for fired neurons in both shared and global memory
  *
- * \param nfired
+ * \param[in] nfired
  *		Number of neurons in current partition which fired this cycle.
- * \param s_fired
+ * \param[in] s_fired
  *		Vector of indices of the fired neuron. The first \a nfired entries
  *		should be set.
- * \param s_dfired
+ * \param[out] s_dfired
  *		Per-neuron bit-vector in shared memory for fired neurons.
- * \param g_dfired
+ * \param[out] g_dfired
  *		Per-neuron bit-vector in global memory for fired neurons.
  */
 __device__
@@ -57,8 +57,27 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
 }
 
 
-/* Add current to current vector for a particular neuron and update fixed-point
- * overflow indicators */
+/*! \brief Add input current for a particular neuron
+ *
+ * The input current is stored in shared memory in a fixed-point format. This
+ * necessitates overflow detection, so that we can use saturating arithmetic.
+ *
+ * \param[in] neuron
+ *		0-based index of the target neuron
+ * \param[in] current
+ *		current in mA in fixed-point format
+ * \param s_current
+ *		shared memory vector containing current for all neurons in partition
+ * \param[out] s_overflow
+ *		bit vector indicating overflow status for all neurons in partition
+ * \param[out] s_negative
+ *		bit vector indicating the overflow sign for all neurons in partition
+ *
+ * \pre neuron < partition size
+ * \pre all shared memory buffers have at least as many entries as partition size
+ *
+ * \todo add cross-reference to fixed-point format documentation
+ */
 __device__
 void
 addCurrent(nidx_t neuron,
@@ -77,6 +96,33 @@ addCurrent(nidx_t neuron,
 
 
 
+/*! \brief Add externally provided current stimulus
+ *
+ * The user can provide per-neuron current stimulus
+ * (\ref nemo::cuda::Simulation::addCurrentStimulus).
+ *
+ * \param[in] psize
+ *		number of neurons in current partition
+ * \param[in] pitch
+ *		pitch of g_current, i.e. distance in words between each partitions data
+ * \param[in] g_current
+ *		global memory vector containing current for all neurons in partition.
+ *		If set to NULL, no input current will be delivered.
+ * \param s_current
+ *		shared memory vector containing current for all neurons in partition
+ * \param s_overflow
+ *		bit vector indicating overflow status for all neurons in partition.
+ *		Entries here may already be set and are simply OR-ed with any new entries.
+ * \param s_negative
+ *		bit vector indicating the overflow sign for all neurons in partition
+ *		Entries here may already be set and are simply OR-ed with any new entries.
+ *
+ * \pre neuron < size of current partition
+ * \pre all shared memory buffers have at least as many entries as the size of
+ * 		the current partition
+ *
+ * \see nemo::cuda::Simulation::addCurrentStimulus
+ */
 __device__
 void
 addCurrentStimulus(unsigned psize,
@@ -102,6 +148,38 @@ addCurrentStimulus(unsigned psize,
 
 
 
+/*! Update state of all neurons
+ *
+ * Update the state of all neurons in partition according to the equations in
+ * Izhikevich's 2003 paper based on
+ *
+ * - the neuron parameters (a-d)
+ * - the neuron state (u, v)
+ * - input current (from other neurons, random input current, or externally provided)
+ * - per-neuron specific firing stimulus
+ *
+ * The neuron state is updated using the Euler method.
+ *
+ * \param[in] s_partitionSize
+ *		number of neurons in current partition
+ * \param[in] g_neuronParameters
+ *		global memory containing neuron parameters (see \ref nemo::cuda::Neurons)
+ * \param[in] g_neuronState
+ *		global memory containing neuron state (see \ref nemo::cuda::Neurons)
+ * \param[in] s_current
+ *		shared memory vector containing input current for all neurons in
+ *		partition
+ * \param[in] s_fstim
+ *		shared memory bit vector where set bits indicate neurons which should
+ *		be forced to fire
+ * \param[out] s_firingCount
+ *		output variable which will be set to the number of	neurons which fired
+ *		this cycle
+ * \param[out] s_fired
+ *		shared memory vector containing local indices of neurons which fired.
+ *		s_fired[0:s_firingCount-1] will contain valid data, whereas remaining
+ *		entries may contain garbage.
+ */
 __device__
 void
 fire(
@@ -191,14 +269,18 @@ fire(
 //=============================================================================
 
 
+
 /*! Enque all recently fired neurons in the local queue
  *
+ * See the section on \ref cuda_local_delivery "local spike delivery" for more
+ * details.
+ *
+ * \param cycle
  * \param nFired number of valid entries in s_fired
  * \param s_fired shared memory buffer containing the recently fired neurons
  * \param g_delays delay bits for each neuron
+ * \param g_fill queue fill for local queue
  * \param g_queue global memory for the local queue
- * \param s_counts shared memory buffer for the per delay-slot queue fill. This
- *        should contain at leaset MAX_DELAY elements.
  */
 __device__
 void
@@ -250,6 +332,11 @@ scatterLocal(
 
 
 
+/*! Echange spikes between partitions
+ *
+ * See the section on \ref cuda_global_delivery "global spike delivery" for
+ * more details.
+ */
 __device__
 void
 scatterGlobal(unsigned cycle,
@@ -381,6 +468,26 @@ scatterGlobal(unsigned cycle,
 
 
 
+/*! Gather incoming current from all spikes due for delivery \e now
+ *
+ * The whole spike delivery process is described in more detail in \ref
+ * cuda_delivery and cuda_gather.
+ *
+ * \param[in] cycle
+ * 		Current cycle
+ * \param[in] g_fcm
+ *		Forward connectivity matrix in global memory
+ * \param[in] g_incomingCount
+ *		Fill rate for global queue
+ * \param[in] g_incoming
+ *		Pointer to full global memory double-buffered global queue
+ * \param[out] s_current
+ *		per-neuron vector with accumulated current in fixed point format.
+ * \param[out] s_overflow
+ *		bit vector indicating overflow status for all neurons in partition.
+ * \param[out] s_negative
+ *		bit vector indicating the overflow sign for all neurons in partition
+ */
 __device__
 void
 gather( unsigned cycle,
@@ -474,17 +581,18 @@ gather( unsigned cycle,
 //=============================================================================
 
 
-/*! Combined integrate and fire using sparse connectivity matrix, a single step
- * updates the state (u and v) of each neuron and produces spikes to be used in
- * the next simulation cycle.
+/*! \brief Perform a single simulation step
  *
- * The number of neurons per block provided to the kernel is always warp-
- * aligned. This means that some threads do useless work, but at no cost. Using
- * a warp-aligned neuron number simplifies the control when the number of
- * neurons is not an exact multiple of the number of threads per block.
+ * A simulation step consists of five main parts:
  *
- * The parameters (a, b, c, and d) can be set for each individual neuron and
- * should be pre-loaded in global memory before this kernel is invoked.
+ * - gather incoming current from presynaptic firing for each neuron (\ref gather)
+ * - add externally or internally provided input current for each neuron
+ * - update the neuron state (\ref fire)
+ * - enque outgoing spikes for neurons which fired (\ref scatterLocal and \ref scatterGlobal)
+ * - accumulate STDP statistics
+ *
+ * The data structures involved in each of these stages are documentated more
+ * with the individual functions and in \ref cuda_delivery.
  */
 __global__
 void

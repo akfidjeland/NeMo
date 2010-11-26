@@ -20,37 +20,37 @@
 #include "types.h"
 
 
-/* Each outgoing spike group specifies
+/*! Each outgoing spike group specifies
  *
- * 1. target partition
- * 2. delay
- * 3. address of the full synapse group
+ * - target partition
+ * - address of the full synapse group
  *
- * We keep a 32-bit group address. This is enough for 4B warps. With a group-size
- * of 32, this is 32x as much memory as current devices can address.
- * 
- * new format: just partition and warp. delay is used in the index
+ * We keep a 32-bit group address. This is enough for 4 billion warps. With a
+ * warp-size of 32, this is 32x as much memory as current devices can address.
  */
 typedef uint2 outgoing_t;
 
-/* The addresses to each neuron/delay specific entry in outgoing is stored in a
- * seprate data structure. This is so that outgoing can be compacted. With
+/*! The addresses to each neuron/delay specific entry in outgoing is stored in
+ * a seprate data structure. This is so that outgoing can be compacted. With
  * fixed-length rows in outgoing it becomes very large indeed.
  *
  * The address information contains
  *
- * 1. the word offset to the beginning of the row (x)
- * 1. the length (in words) of the row (y)
+ * - the word offset to the beginning of the row (x)
+ * - the length (in words) of the row (y)
  */
 typedef uint2 outgoing_addr_t;
 
 
-/*!
- * \param warpOffset
- *		offset into FCM in terms of number of warps
+/*! Create a new outgoing entry
+ *
+ * \param partition source partition index
+ * \param warpOffset offset into \ref fcm FCM in terms of number of warps
  */
 __host__ outgoing_t make_outgoing(pidx_t partition, unsigned warpOffset);
 
+
+/*! Dummy outgoing entry pointing to the invalid null warp (see \ref nemo::cuda::Outgoing::init) */
 const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
 
 

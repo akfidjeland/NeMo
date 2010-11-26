@@ -1,5 +1,15 @@
-#include "devices.hpp"
+/*! \file devices.cpp Device enumeration */
 
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "devices.hpp"
 
 #include <map>
 #include <vector>
@@ -14,13 +24,26 @@
 namespace nemo {
 	namespace cuda {
 
-/* We want to present users of libnemo with a contiguous range of device indices.
- * Since the host system may have devices which are not suitable for use by
- * nemo, the device indexing may differ between nemo and the CUDA driver. We
- * refer to our own ids as *local* ids, and the CUDA ids as *driver ids.
+/*! \page cuda_device_numbers Cuda device numbers
+ *
+ * We want to present users of libnemo with a contiguous range of device
+ * indices. Since the host system may have devices which are not suitable for
+ * use by NeMo, the device indexing may differ between nemo and the CUDA
+ * driver. We refer to our own ids as \e local ids, and the CUDA ids as \e
+ * driver ids.
+ *
+ * Users of the library should use the top-level functions \ref
+ * nemo::cudaDeviceCount and \ref nemo::cudaDeviceDescription for enumeration
+ * of the devices.
  */
 
 
+/*! \brief Mapping between driver and local device indices
+ *
+ * Use \ref instance to create a (unique global) instance of the mapping.
+ *
+ * \see \ref cuda_device_numbers
+ */
 class DeviceMap
 {
 	public :
@@ -32,7 +55,7 @@ class DeviceMap
 
 		unsigned deviceCount() const { return m_devices.size(); }
 
-		/* \post the return value is a valid index in the device list */
+		/*! \post the return value is a valid index in the device list */
 		driver_id driverId(local_id) const;
 
 		void setConfiguration(ConfigurationImpl& conf, int device) const;
@@ -47,13 +70,13 @@ class DeviceMap
 
 		DeviceMap();
 
-		/* All the suitable devices, indexed by driver id */
+		/*! All the suitable devices, indexed by driver id */
 		std::map<driver_id, cudaDeviceProp> m_devices;
 
-		/* Mapping from local ids to driver ids */
+		/*! Mapping from local ids to driver ids */
 		std::vector<driver_id> m_driverIds;
 
-		/* Default device to use (local id) */
+		/*! Default device to use (local id) */
 		local_id m_defaultDevice;
 
 		bool deviceSuitable(driver_id device);
