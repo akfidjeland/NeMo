@@ -63,7 +63,7 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	CycleCounters.cpp
 	DeviceAssertions.cpp
 	FiringBuffer.cpp
-	Incoming.cpp
+	GlobalQueue.cpp
 	LocalQueue.cpp
 	Neurons.cpp
 	Mapper.cpp

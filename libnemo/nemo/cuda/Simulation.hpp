@@ -126,7 +126,7 @@ namespace nemo {
  * - neuron data (\ref Neurons)
  * - forward connectivity data (\ref nemo::cuda::ConnectivityMatrix, \ref nemo::cuda::Outgoing)
  * - reverse connectivity data (\ref RSMatrix)
- * - runtime queues (\ref nemo::cuda::LocalQueue, \ref nemo::cuda::Incoming)
+ * - runtime queues (\ref nemo::cuda::LocalQueue, \ref nemo::cuda::GlobalQueue)
  *
  * The forward connectivity data and runtime queues are used for \ref
  * cuda_delivery "spike delivery".
@@ -166,8 +166,8 @@ namespace nemo {
  *
  * The global queue is in fact a 2D grid of queues with one queue for each
  * source/target partition pair. The queue data structure itself is found in
- * \ref nemo::cuda::Incoming with the corresponding device functions found in
- * \ref incoming.cu.
+ * \ref nemo::cuda::GlobalQueue with the corresponding device functions found
+ * in \ref globalQueue.cu.
  *
  * The data that is added to the global queue in this step is the address of
  * the synapse warp, i.e. a reference to up to 32 synapses sharing the same

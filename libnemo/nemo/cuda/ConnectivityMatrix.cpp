@@ -91,7 +91,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	setDelays(wtable, &m_delays);
 
 	m_outgoing = Outgoing(mapper.partitionCount(), wtable);
-	m_incoming.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
+	m_gq.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
 
 	moveRcmToDevice();
 
@@ -264,7 +264,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 	out << "Memory usage on device:\n";
 	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
 	out << "\treverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
-	out << "\tincoming: " << (m_incoming.allocated() / MEGA) << "MB\n";
+	out << "\tglobal queue: " << (m_gq.allocated() / MEGA) << "MB\n";
 	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
 
@@ -395,7 +395,7 @@ ConnectivityMatrix::d_allocated() const
 {
 	return md_fcmAllocated
 		+ d_allocatedRCM()
-		+ m_incoming.allocated()
+		+ m_gq.allocated()
 		+ m_outgoing.allocated();
 }
 

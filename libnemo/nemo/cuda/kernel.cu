@@ -24,7 +24,7 @@
 #include "cycleCounting.cu"
 #include "applySTDP.cu"
 #include "outgoing.cu"
-#include "incoming.cu"
+#include "globalQueue.cu"
 #include "thalamicInput.cu"
 #include "nvector.cu"
 #include "stdp.cu"
@@ -78,8 +78,8 @@ stepSimulation(
 		synapse_t* d_fcm,
 		outgoing_addr_t* d_outgoingAddr,
 		outgoing_t* d_outgoing,
-		unsigned* d_incomingHeads,
-		incoming_t* d_incoming,
+		gq_entry_t* d_gqData,
+		unsigned* d_gqFill,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
 		uint64_t* d_delays,
@@ -101,7 +101,7 @@ stepSimulation(
 			// spike delivery
 			d_fcm,
 			d_outgoingAddr, d_outgoing,
-			d_incomingHeads, d_incoming,
+			d_gqData, d_gqFill,
 			d_lqData, d_lqFill, d_delays,
 			// stimulus
 			d_fstim, // firing

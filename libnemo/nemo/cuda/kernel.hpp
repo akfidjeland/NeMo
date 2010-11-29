@@ -11,7 +11,7 @@
  */
 
 #include "outgoing.cu_h"
-#include "incoming.cu_h"
+#include "globalQueue.cu_h"
 #include "localQueue.cu_h"
 #include "types.h"
 
@@ -43,8 +43,8 @@ stepSimulation(
 		synapse_t* d_fcm,
 		outgoing_addr_t* d_outgoingAddr,
 		outgoing_t* d_outgoing,
-		unsigned* d_incomingHeads,
-		incoming_t* d_incoming,
+		gq_entry_t* d_gqData,
+		unsigned* d_gqFill,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
 		uint64_t* d_delays,

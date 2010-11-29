@@ -12,7 +12,7 @@
 
 #include <cuda_runtime.h>
 
-/* The local queue contains (presynaptic) neuron/delay pairs. */
+/*! The local queue contains (presynaptic) neuron/delay pairs. */
 typedef short2 lq_entry_t;
 
 

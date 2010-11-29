@@ -7,7 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Incoming.hpp"
+#include "GlobalQueue.hpp"
 
 #include <nemo/util.h>
 
@@ -18,18 +18,18 @@
 namespace nemo {
 	namespace cuda {
 
-Incoming::Incoming() : m_allocated(0) {}
+GlobalQueue::GlobalQueue() : m_allocated(0) {}
 
 
 void
-Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMultiplier)
+GlobalQueue::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMultiplier)
 {
 	// allocate space for the incoming count (double-buffered)
-	unsigned* d_count;
+	unsigned* d_fill;
 	size_t len = ALIGN(partitionCount * 2, 32) * sizeof(unsigned);
-	d_malloc((void**)&d_count, len, "incoming spike queue counts");
-	m_count = boost::shared_ptr<unsigned>(d_count, d_free);
-	d_memset(d_count, 0, len);
+	d_malloc((void**)&d_fill, len, "incoming spike queue counts");
+	m_fill = boost::shared_ptr<unsigned>(d_fill, d_free);
+	d_memset(d_fill, 0, len);
 	m_allocated = len;
 
 	/* The queue has one entry for incoming spikes for each partition */
@@ -43,21 +43,21 @@ Incoming::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMu
 	 * space when using a large number of partitions */
 	assert(sizeMultiplier > 0.0);
 	double mult = std::min(1.0, sizeMultiplier);
-	size_t width = size_t(mult * maxIncomingWarps * sizeof(incoming_t));
+	size_t width = size_t(mult * maxIncomingWarps * sizeof(gq_entry_t));
 
-	incoming_t* d_buffer;
+	gq_entry_t* d_buffer;
 	size_t bpitch;
 
 	d_mallocPitch((void**)&d_buffer, &bpitch, width, height, "incoming spike queue");
 	m_allocated += bpitch * height;
 
-	m_buffer = boost::shared_ptr<incoming_t>(d_buffer, d_free);
+	m_buffer = boost::shared_ptr<gq_entry_t>(d_buffer, d_free);
 
 	/* We don't need to clear the queue. It will generally be full of garbage
 	 * anyway. The queue heads must be used to determine what's valid data */
 
-	size_t wpitch = bpitch / sizeof(incoming_t);
-	CUDA_SAFE_CALL(setIncomingPitch(wpitch));
+	size_t wpitch = bpitch / sizeof(gq_entry_t);
+	CUDA_SAFE_CALL(setGlobalQueuePitch(wpitch));
 }
 
 	} // end namespace cuda

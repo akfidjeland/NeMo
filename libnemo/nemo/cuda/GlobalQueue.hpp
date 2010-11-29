@@ -1,9 +1,9 @@
-#ifndef INCOMING_HPP
-#define INCOMING_HPP
+#ifndef NEMO_CUDA_GLOBAL_QUEUE_HPP
+#define NEMO_CUDA_GLOBAL_QUEUE_HPP
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
@@ -12,7 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "incoming.cu_h"
+#include "globalQueue.cu_h"
 
 namespace nemo {
 	namespace cuda {
@@ -28,15 +28,15 @@ namespace nemo {
  * The actual queue data and the fill rate of each individual queue are stored
  * in separate data structures on the device.
  *
- * The device functions for manipulating queue data are found in \ref incoming.cu.
+ * The device functions for manipulating queue data are found in \ref globalQueue.cu.
  *
  * \see scatterGlobal, gather, cuda_global_delivery
  */
-class Incoming
+class GlobalQueue
 {
 	public :
 
-		Incoming();
+		GlobalQueue();
 
 		/*! Allocate space on device to hold the per neuron/delay incoming
 		 * spike groups
@@ -47,8 +47,8 @@ class Incoming
 		 * 		Maximum number of incoming warps (regardless of delay) for any
 		 * 		partition,
 		 * \param sizeMultiplier
-		 * 		To be completely safe against buffer overflow, base incoming
-		 * 		buffer sizing on the assumption that all neurons may fire
+		 * 		To be completely safe against buffer overflow, base the global
+		 * 		queue sizing on the assumption that all neurons may fire
 		 * 		continously for some time. This is unlikely to happen in
 		 * 		practice, however, so we can relax this. The size multiplier
 		 * 		specifies how large the buffer should be wrt the most
@@ -58,22 +58,22 @@ class Incoming
 				size_t maxIncomingWarps,
 				double sizeMultiplier = 1.0);
 
-		incoming_t* buffer() const { return m_buffer.get(); }
+		/*! \return device pointer to beginning of queue data */
+		gq_entry_t* d_data() const { return m_buffer.get(); }
 
-		unsigned* heads() const { return m_count.get(); }
+		/*! \return device pointer to beginning of queue fill data */
+		unsigned* d_fill() const { return m_fill.get(); }
 
 		/*! \return bytes of allocated memory */
 		size_t allocated() const { return m_allocated; }
 
 	private :
 
-		/* On the device there a buffer for incoming spike group for each
-		 * (target) partition */
-		boost::shared_ptr<incoming_t> m_buffer;
+		boost::shared_ptr<gq_entry_t> m_buffer;
 
 		/* At run-time, we keep track of how many incoming spike groups are
 		 * queued for each target partition */
-		boost::shared_ptr<unsigned> m_count;
+		boost::shared_ptr<unsigned> m_fill;
 
 		size_t m_allocated;
 };

@@ -24,7 +24,7 @@
 #include "kernel.cu_h"
 #include "Mapper.hpp"
 #include "Outgoing.hpp"
-#include "Incoming.hpp"
+#include "GlobalQueue.hpp"
 #include "WarpAddressTable.hpp"
 #include "NVector.hpp"
 
@@ -124,13 +124,11 @@ class ConnectivityMatrix
 		 * spike groups for each neuron */
 		outgoing_addr_t* d_outgoingAddr() const { return m_outgoing.d_addr(); }
 
-		/*! \return pointer to device data continaing incoming spike group
-		 * buffer for each partition */
-		incoming_t* incoming() const { return m_incoming.buffer(); }
+		/*! \copydoc nemo::cuda::GlobalQueue::d_data */
+		gq_entry_t* d_gqData() const { return m_gq.d_data(); }
 
-		/*! \return pointer to device data containing the queue heads (i.e.
-		 * the fill) for the incoming spike buffer */
-		unsigned* incomingHeads() const { return m_incoming.heads(); }
+		/*! \copydoc nemo::cuda::GlobalQueue::d_fill */
+		unsigned* d_gqFill() const { return m_gq.d_fill(); }
 
 		/*! \return number of fractional bits used for weights. */
 		unsigned fractionalBits() const { return m_fractionalBits; }
@@ -185,8 +183,8 @@ class ConnectivityMatrix
 		 * for each neuron */
 		Outgoing m_outgoing;
 
-		/* We also need device memory for the firing queue */
-		Incoming m_incoming;
+		/* We also need device memory for the global queue */
+		GlobalQueue m_gq;
 
 		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;

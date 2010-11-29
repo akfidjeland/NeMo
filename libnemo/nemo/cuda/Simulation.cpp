@@ -253,8 +253,8 @@ Simulation::update()
 			m_cm.d_fcm(),
 			m_cm.d_outgoingAddr(),
 			m_cm.d_outgoing(),
-			m_cm.incomingHeads(),
-			m_cm.incoming(),
+			m_cm.d_gqData(),
+			m_cm.d_gqFill(),
 			// local spike delivery
 			m_lq.d_data(),
 			m_lq.d_fill(),

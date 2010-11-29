@@ -344,8 +344,8 @@ scatterGlobal(unsigned cycle,
 		lq_entry_t* g_lq,
 		outgoing_addr_t* g_outgoingAddr,
 		outgoing_t* g_outgoing,
-		unsigned* g_fill,
-		incoming_t* g_incoming)
+		unsigned* g_gqFill,
+		gq_entry_t* g_gqData)
 {
 	__shared__ unsigned s_fill[MAX_PARTITION_COUNT]; // 512
 
@@ -437,22 +437,22 @@ scatterGlobal(unsigned cycle,
 
 			/* Update s_fill to store actual offset */
 			if(threadIdx.x < PARTITION_COUNT) {
-				size_t fillAddr = incomingCountAddr(threadIdx.x, writeBuffer(cycle));
-				s_fill[threadIdx.x] = atomicAdd(g_fill + fillAddr, s_fill[threadIdx.x]);
+				size_t fillAddr = gq_fillOffset(threadIdx.x, writeBuffer(cycle));
+				s_fill[threadIdx.x] = atomicAdd(g_gqFill + fillAddr, s_fill[threadIdx.x]);
 			}
 			__syncthreads();
 
 			if(valid) {
 				unsigned offset = s_fill[targetPartition] + localOffset;
 				ASSERT(offset < c_incomingPitch);
-				size_t base = incomingBufferStart(targetPartition, writeBuffer(cycle));
-				g_incoming[base + offset] = make_incoming(warpOffset);
+				size_t base = gq_bufferStart(targetPartition, writeBuffer(cycle));
+				g_gqData[base + offset] = warpOffset;
 				DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
 						cycle, warpOffset,
 						CURRENT_PARTITION, s_lq[jLq].x, targetPartition, s_lq[jLq].y,
 						offset, c_incomingPitch);
-				/* The writes to g_incoming are non-coalesced. It would be
-				 * possible to stage this data in smem for each partition.
+				/* The writes to the global queue are non-coalesced. It would
+				 * be possible to stage this data in smem for each partition.
 				 * However, this would require a fair amount of smem (1), and
 				 * handling buffer overflow is complex and introduces
 				 * sequentiality. Overall, it's probably not worth it.
@@ -477,9 +477,9 @@ scatterGlobal(unsigned cycle,
  * 		Current cycle
  * \param[in] g_fcm
  *		Forward connectivity matrix in global memory
- * \param[in] g_incomingCount
+ * \param[in] g_gqFill
  *		Fill rate for global queue
- * \param[in] g_incoming
+ * \param[in] g_gqData
  *		Pointer to full global memory double-buffered global queue
  * \param[out] s_current
  *		per-neuron vector with accumulated current in fixed point format.
@@ -492,8 +492,8 @@ __device__
 void
 gather( unsigned cycle,
 		synapse_t* g_fcm,
-		unsigned* g_incomingCount,
-		incoming_t* g_incoming,
+		gq_entry_t* g_gqData,
+		unsigned* g_gqFill,
 		float* s_current,
 		uint32_t* s_overflow, // 1b per neuron overflow detection
 		uint32_t* s_negative) // ditto
@@ -508,9 +508,9 @@ gather( unsigned cycle,
 
 	if(threadIdx.x == 0) {
 		//! \todo use atomicExch here instead
-		size_t addr = incomingCountAddr(CURRENT_PARTITION, readBuffer(cycle));
-		s_incomingCount = g_incomingCount[addr];
-		g_incomingCount[addr] = 0;
+		size_t addr = gq_fillOffset(CURRENT_PARTITION, readBuffer(cycle));
+		s_incomingCount = g_gqFill[addr];
+		g_gqFill[addr] = 0;
 	}
 	__syncthreads();
 
@@ -538,9 +538,9 @@ gather( unsigned cycle,
 		__syncthreads();
 
 		if(threadIdx.x < s_groupSize) {
-			incoming_t sgin = getIncoming(readBuffer(cycle), group, g_incoming);
-			s_warpAddress[threadIdx.x] = g_fcm + incomingWarpOffset(sgin) * WARP_SIZE;
-			DEBUG_MSG_SYNAPSE("c%u w%u -> p%u\n", cycle, incomingWarpOffset(sgin), CURRENT_PARTITION);
+			gq_entry_t sgin = gq_read(readBuffer(cycle), group, g_gqData);
+			s_warpAddress[threadIdx.x] = g_fcm + gq_warpOffset(sgin) * WARP_SIZE;
+			DEBUG_MSG_SYNAPSE("c%u w%u -> p%u\n", cycle, gq_warpOffset(sgin), CURRENT_PARTITION);
 		}
 
 		__syncthreads();
@@ -609,8 +609,8 @@ step (
 		synapse_t* g_fcm,
 		outgoing_addr_t* g_outgoingAddr,
 		outgoing_t* g_outgoing,
-		unsigned* g_incomingHeads,
-		incoming_t* g_incoming,
+		gq_entry_t* g_gqData,      // pitch = c_gqPitch
+		unsigned* g_gqFill,
 		lq_entry_t* g_lqData,      // pitch = c_lqPitch
 		unsigned* g_lqFill,
 		uint64_t* g_delays,        // pitch = c_pitch64
@@ -673,7 +673,7 @@ step (
 	uint32_t* s_overflow = s_N1A;
 	uint32_t* s_negative = s_N1B;
 
-	gather(cycle, g_fcm, g_incomingHeads, g_incoming, s_current, s_overflow, s_negative);
+	gather(cycle, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
 
 	SET_COUNTER(s_ccMain, 2);
 
@@ -721,8 +721,8 @@ step (
 			g_lqData,
 			g_outgoingAddr,
 			g_outgoing,
-			g_incomingHeads,
-			g_incoming);
+			g_gqFill,
+			g_gqData);
 
 	SET_COUNTER(s_ccMain, 7);
 
