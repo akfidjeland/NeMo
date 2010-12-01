@@ -99,7 +99,7 @@ class NEMO_DLL_PUBLIC Configuration
 
 	private:
 
-		friend NEMO_DLL_PUBLIC SimulationBackend* simulationBackend(const Network&, const Configuration&);
+		friend SimulationBackend* simulationBackend(const Network&, const Configuration&);
 		friend class nemo::mpi::Master;
 		friend class nemo::mpi::Worker;
 

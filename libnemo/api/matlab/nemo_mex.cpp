@@ -1,5 +1,6 @@
 #include <vector>
 #include <algorithm>
+#include <iterator>
 #include <string>
 
 #include <boost/numeric/conversion/cast.hpp>
