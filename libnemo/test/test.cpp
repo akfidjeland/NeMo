@@ -12,6 +12,7 @@
 
 #include "test.hpp"
 #include "utils.hpp"
+#include "rtest.hpp"
 
 
 typedef boost::mt19937 rng_t;
@@ -609,3 +610,11 @@ BOOST_AUTO_TEST_SUITE(set_neuron)
 		testSetNeuron(NEMO_BACKEND_CPU);
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(regression)
+	BOOST_AUTO_TEST_CASE(torus) {
+		runTorus(false);
+	}
+BOOST_AUTO_TEST_SUITE_END()
+
+

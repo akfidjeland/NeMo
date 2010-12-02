@@ -1,6 +1,5 @@
 /* Test that we get the same result as previous runs */
 
-#include <cstring>
 #include <iostream>
 #include <fstream>
 
@@ -11,7 +10,7 @@
 #include <examples.hpp>
 
 #include "utils.hpp"
-
+#include "rtest.hpp"
 
 
 void
@@ -85,37 +84,5 @@ void runTorus(bool creating)
 		boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
 		run(torus.get(), NEMO_BACKEND_CUDA, 4, "test-cuda-stdp.dat", stdp, creating);
 		run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu-stdp.dat", stdp, creating);
-	}
-}
-
-
-void
-checkData()
-{
-	runTorus(false);
-}
-
-
-
-bool
-init_unit_test_suite()
-{
-	boost::unit_test::test_suite* ts = BOOST_TEST_SUITE("rtest");
-	ts->add(BOOST_TEST_CASE(&checkData));
-	boost::unit_test::framework::master_test_suite().add(ts);
-	return true;
-}
-
-
-int
-main(int argc, char* argv[])
-{
-	bool creating = argc == 2 && strcmp(argv[1], "create") == 0;
-	if(creating) {
-		runTorus(true);
-		std::cerr << "re-generated data";
-		return 0;
-	} else {
-		return ::boost::unit_test::unit_test_main(&init_unit_test_suite, argc, argv);
 	}
 }
