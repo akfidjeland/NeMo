@@ -12,7 +12,7 @@
 %		fired = nemoStep();
 %	end;
 %	nemoDestroySimulation();
-
+%
 % The directory containing the Matlab API for NeMo also contains an example
 % (example.m) showing how NeMo can be used from Matlab.
 %
