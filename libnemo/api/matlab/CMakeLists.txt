@@ -14,15 +14,28 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 	# The input sources to MEX is mostly auto-generated. This is not part of
 	# the main build process since user builds should not need to do this.
 
-	IF(MEXEXT STREQUAL MEXEXT-NOTFOUND)
-		MESSAGE(ERROR "Could not find mexext, so cannot determine correct MEX extension")
-	ENDIF(MEXEXT STREQUAL MEXEXT-NOTFOUND)
-
-	EXECUTE_PROCESS(
-		COMMAND ${MEXEXT}
-		OUTPUT_VARIABLE SUFFIX
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
+	IF(MEXEXT)
+		# Set the MEX extension automatically
+		EXECUTE_PROCESS(
+			COMMAND ${MEXEXT}
+			OUTPUT_VARIABLE SUFFIX
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+	ELSE(MEXEXT)
+		# No mexext utility available so set extension by hand. Old versions of
+		# Matlab lack the utility.
+		IF(MEX_LIB_SUFFIX)
+			# User has already set this by hand
+			SET(SUFFIX ${MEX_LIB_SUFFIX})
+		ELSE(MEX_LIB_SUFFIX)
+			# Ask user to set the variable
+			MESSAGE(ERROR "Could not find the mexext utility. Set the MEX library extension on your platform by hand (in variable MEX_LIB_SUFFIX)")
+			SET(MEX_LIB_SUFFIX "MEX_LIB_SUFFIX-NOTFOUND"
+				CACHE
+				STRING "Mex library extension on this platform (e.g. dll, mexa64, etc.)"
+			)
+		ENDIF(MEX_LIB_SUFFIX)
+	ENDIF(MEXEXT)
 
 	SET(MEX_INCLUDES
 		-I${CMAKE_SOURCE_DIR}
