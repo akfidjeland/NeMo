@@ -403,7 +403,7 @@ nemo_backend(nemo_configuration_t conf, backend_t* backend)
 nemo_status_t
 nemo_backend_description(nemo_configuration_t conf, const char** descr)
 {
-	CATCH(Configuration, conf, backendDescription().c_str(), *descr);
+	CATCH(Configuration, conf, backendDescription(), *descr);
 }
 
 

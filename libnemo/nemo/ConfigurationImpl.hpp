@@ -75,8 +75,8 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		void setBackend(backend_t backend);
 		backend_t backend() const { return m_backend; }
 
-		void setBackendDescription(const std::string& descr) { m_backendDescription = descr; }
-		std::string backendDescription() const { return m_backendDescription; }
+		void setBackendDescription(const char* descr) { m_backendDescription.assign(descr); }
+		const char* backendDescription() const { return m_backendDescription.c_str(); }
 
 	private:
 

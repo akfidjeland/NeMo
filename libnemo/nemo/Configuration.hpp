@@ -95,7 +95,7 @@ class NEMO_DLL_PUBLIC Configuration
 		int cpuThreadCount() const;
 
 		/*! \return description of the chosen backend */
-		std::string backendDescription() const;
+		const char* backendDescription() const;
 
 	private:
 

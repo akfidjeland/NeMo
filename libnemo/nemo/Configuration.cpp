@@ -137,7 +137,7 @@ Configuration::cpuThreadCount() const
 
 
 
-std::string
+const char*
 Configuration::backendDescription() const
 {
 	return m_impl->backendDescription();
@@ -161,7 +161,7 @@ Configuration::setBackendDescription()
 			if(tcount == 1) {
 				m_impl->setBackendDescription("CPU backend (single-threaded)");
 			} else {
-				m_impl->setBackendDescription(str(format("CPU backend (%u threads)") % tcount));
+				m_impl->setBackendDescription(str(format("CPU backend (%u threads)") % tcount).c_str());
 			}
 			break;
 		default :
