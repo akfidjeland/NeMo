@@ -15,7 +15,10 @@
 
 #include <map>
 #include <vector>
+#include <deque>
+
 #include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <nemo/types.hpp>
 #include <nemo/network/Generator.hpp>
@@ -142,7 +145,7 @@ class ConnectivityMatrix
 		delay_t m_maxDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source
-		 * partition, and delay. The reverse connectivity is stored sepearately
+		 * partition, and delay. The reverse connectivity is stored separately
 		 * for each partition */
 		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
 		rcm_t m_rsynapses;
@@ -203,8 +206,8 @@ class ConnectivityMatrix
 		 * Neuron indices are global rather than the partition/neuron scheme
 		 * used on the device, so no decoding needs to take place at run-time.
 		 */
-		typedef std::vector<AxonTerminalAux> aux_row;
-		typedef std::map<nidx_t, aux_row> aux_map;
+		typedef std::deque<AxonTerminalAux> aux_row;
+		typedef boost::unordered_map<nidx_t, aux_row> aux_map;
 		aux_map m_cmAux;
 
 		void addAuxTerminal(const Synapse&, size_t addr);

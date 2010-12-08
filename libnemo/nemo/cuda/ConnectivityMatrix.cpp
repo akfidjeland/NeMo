@@ -280,11 +280,12 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 void
 ConnectivityMatrix::addAuxTerminal(const Synapse& s, size_t addr)
 {
+	id32_t id = s.id();
 	aux_row& row= m_cmAux[s.source];
-	if(s.id() >= row.size()) {
-		row.resize(s.id()+1);
+	if(id >= row.size()) {
+		row.resize(id+1);
 	}
-	row.at(s.id()) = AxonTerminalAux(s, addr);
+	row.at(id) = AxonTerminalAux(s, addr);
 #ifndef NDEBUG
 	m_synapsesPerNeuron[s.source] += 1;
 #endif
@@ -327,7 +328,7 @@ template<typename T>
 const std::vector<T>&
 getSynapseState(
 		const std::vector<synapse_id>& synapses,
-		const std::map<nidx_t, std::vector<AxonTerminalAux> >& cm,
+		const boost::unordered_map<nidx_t, std::deque<AxonTerminalAux> >& cm,
 		std::const_mem_fun_ref_t<T, AxonTerminalAux> fun,
 		std::vector<T>& out)
 {
@@ -336,7 +337,7 @@ getSynapseState(
 	out.resize(synapses.size());
 	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
 		synapse_id id = synapses.at(i);
-		std::map<nidx_t, std::vector<AxonTerminalAux> >::const_iterator it = cm.find(neuronIndex(id));
+		boost::unordered_map<nidx_t, std::deque<AxonTerminalAux> >::const_iterator it = cm.find(neuronIndex(id));
 		if(it == cm.end()) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid neuron id (%u) in synapse query") % neuronIndex(id)));
