@@ -55,7 +55,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const mapper_t& mapper) :
 	m_mapper(mapper),
 	m_fractionalBits(conf.fractionalBits()),
-	m_maxDelay(0)
+	m_maxDelay(0),
+	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
 	if(conf.stdpFunction()) {
 		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
@@ -82,7 +83,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const mapper_t& mapper) :
 	m_mapper(mapper),
 	m_fractionalBits(conf.fractionalBits()),
-	m_maxDelay(0)
+	m_maxDelay(0),
+	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
 	if(conf.stdpFunction()) {
 		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
@@ -117,8 +119,10 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 		m_racc[target].push_back(RSynapse(source, delay, sidx));
 	}
 
-	aux_row& auxRow = m_cmAux[source];
-	insert(s.id(), AxonTerminalAux(sidx, delay, plastic != 0), auxRow);
+	if(!m_writeOnlySynapses) {
+		aux_row& auxRow = m_cmAux[source];
+		insert(s.id(), AxonTerminalAux(sidx, delay, plastic != 0), auxRow);
+	}
 }
 
 
@@ -292,6 +296,11 @@ ConnectivityMatrix::axonTerminalAux(nidx_t neuron, id32_t synapse) const
 {
 	using boost::format;
 
+	if(m_writeOnlySynapses) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"Cannot read synapse state if simulation configured with write-only synapses");
+	}
+
 	aux_map::const_iterator it = m_cmAux.find(neuron);
 	if(it == m_cmAux.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
@@ -305,7 +314,7 @@ ConnectivityMatrix::axonTerminalAux(nidx_t neuron, id32_t synapse) const
 const AxonTerminalAux&
 ConnectivityMatrix::axonTerminalAux(const synapse_id& id) const
 {
-	return  axonTerminalAux(m_mapper.localIdx(neuronIndex(id)), synapseIndex(id));
+	return axonTerminalAux(m_mapper.localIdx(neuronIndex(id)), synapseIndex(id));
 }
 
 

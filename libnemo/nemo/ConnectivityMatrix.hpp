@@ -216,6 +216,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/* Look up auxillary synapse data and report invalid lookups */
 		const AxonTerminalAux& axonTerminalAux(nidx_t neuron, id32_t synapse) const;
 		const AxonTerminalAux& axonTerminalAux(const synapse_id&) const;
+
+		bool m_writeOnlySynapses;
 };
 
 
