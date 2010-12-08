@@ -24,6 +24,10 @@ namespace nemo {
 	namespace network {
 
 
+NetworkImpl::axon_t programmatic::synapse_iterator::s_axon;
+NetworkImpl::bundle_t programmatic::synapse_iterator::s_bundle;
+
+
 NetworkImpl::NetworkImpl() :
 	m_minIdx(std::numeric_limits<int>::max()),
 	m_maxIdx(std::numeric_limits<int>::min()),
@@ -179,8 +183,10 @@ NetworkImpl::synapse_begin() const
 	fcm_t::const_iterator ni = m_fcm.begin();
 	fcm_t::const_iterator ni_end = m_fcm.end();
 
-	axon_t::const_iterator bi, bi_end;
-	bundle_t::const_iterator si, si_end;
+	axon_t::const_iterator bi = programmatic::synapse_iterator::defaultBi();
+	axon_t::const_iterator bi_end = programmatic::synapse_iterator::defaultBi();
+	bundle_t::const_iterator si = programmatic::synapse_iterator::defaultSi();
+	bundle_t::const_iterator si_end = programmatic::synapse_iterator::defaultSi();
 
 	if(ni != ni_end) {
 		bi = ni->second.begin();
@@ -199,8 +205,8 @@ synapse_iterator
 NetworkImpl::synapse_end() const
 {
 	fcm_t::const_iterator ni = m_fcm.end();
-	axon_t::const_iterator bi;
-	bundle_t::const_iterator si;
+	axon_t::const_iterator bi = programmatic::synapse_iterator::defaultBi();
+	bundle_t::const_iterator si = programmatic::synapse_iterator::defaultSi();
 
 	if(m_fcm.begin() != ni) {
 		const axon_t& axon = m_fcm.rbegin()->second;

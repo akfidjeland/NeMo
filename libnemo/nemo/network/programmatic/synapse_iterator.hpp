@@ -76,6 +76,9 @@ class NEMO_BASE_DLL_PUBLIC synapse_iterator : public abstract_synapse_iterator
 			return !(*this == rhs);
 		}
 
+		static NetworkImpl::axon_t::const_iterator defaultBi() { return s_axon.end(); }
+		static NetworkImpl::bundle_t::const_iterator defaultSi() { return s_bundle.end(); }
+
 	private :
 
 		NetworkImpl::fcm_t::const_iterator ni;
@@ -84,6 +87,9 @@ class NEMO_BASE_DLL_PUBLIC synapse_iterator : public abstract_synapse_iterator
 		NetworkImpl::axon_t::const_iterator bi_end;
 		NetworkImpl::bundle_t::const_iterator si;
 		NetworkImpl::bundle_t::const_iterator si_end;
+
+		static NetworkImpl::axon_t s_axon;
+		static NetworkImpl::bundle_t s_bundle;
 
 		mutable value_type m_data;
 };
