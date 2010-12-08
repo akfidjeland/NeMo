@@ -410,11 +410,26 @@ testGetSynapses(backend_t backend, bool stdp)
 }
 
 
+void
+testWriteOnlySynapses(backend_t backend)
+{
+	bool stdp = false;
+	nemo::Configuration conf = configuration(stdp, 1024, backend);
+	conf.setWriteOnlySynapses();
+	boost::scoped_ptr<nemo::Network> net(createRing(10, 0, true));
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+	sim->step();
+	std::vector<synapse_id> ids = synapseIds(0, 1);
+	BOOST_REQUIRE_THROW(sim->getWeights(ids) ,nemo::exception);
+}
+
+
 /* The network should contain the same synapses before and after setting up the
  * simulation. The order of the synapses may differ, though. */
 BOOST_AUTO_TEST_SUITE(get_synapses);
 	TEST_ALL_BACKENDS_N(nostdp, testGetSynapses, false)
 	TEST_ALL_BACKENDS_N(stdp, testGetSynapses, true)
+	TEST_ALL_BACKENDS(write_only, testWriteOnlySynapses)
 BOOST_AUTO_TEST_SUITE_END();
 
 
