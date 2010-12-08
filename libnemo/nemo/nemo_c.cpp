@@ -407,6 +407,13 @@ nemo_backend_description(nemo_configuration_t conf, const char** descr)
 }
 
 
+nemo_status_t
+nemo_set_write_only_synapses(nemo_configuration_t conf)
+{
+	CATCH_(Configuration, conf, setWriteOnlySynapses());
+}
+
+
 const char*
 nemo_strerror()
 {
