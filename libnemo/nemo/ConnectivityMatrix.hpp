@@ -199,6 +199,13 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::vector<float> m_queriedWeights;
 		std::vector<unsigned char> m_queriedPlastic;
 
+		/*! \todo We could save both time and space here by doing the same as
+		 * in the cuda backend, namely
+		 *
+		 * 1. making use of the writeOnlySynapses flag
+		 * 2. make the aux_map use unordered_map
+		 */
+
 		/* Additional synapse data which is only needed for runtime queries.
 		 * This is kept separate from m_cm so that we can make m_cm fast and
 		 * compact. The query information is not crucial for performance.  */

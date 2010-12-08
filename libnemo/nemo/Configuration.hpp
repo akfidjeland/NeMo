@@ -66,6 +66,16 @@ class NEMO_DLL_PUBLIC Configuration
 				float minWeight,
 				float maxWeight);
 
+		/*! Make the synapses write-only
+		 *
+		 * By default synapse state can be read back at run-time. This may
+		 * require setting up data structures of considerable size before
+		 * starting the simulation. If the synapse state is not required at
+		 * run-time, specify that synapses are write-only in order to save
+		 * memory. By default synapses are readable */
+		void setWriteOnlySynapses();
+		bool writeOnlySynapses() const;
+
 		/*! Specify that the CUDA backend should be used and optionally specify
 		 * a desired device. If the (default) device value of -1 is used the
 		 * backend will choose the best available device.

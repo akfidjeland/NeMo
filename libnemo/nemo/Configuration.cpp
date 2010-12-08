@@ -88,6 +88,22 @@ Configuration::setStdpFunction(
 }
 
 
+
+void
+Configuration::setWriteOnlySynapses()
+{
+	m_impl->setWriteOnlySynapses();
+}
+
+
+bool
+Configuration::writeOnlySynapses() const
+{
+	return m_impl->writeOnlySynapses();
+}
+
+
+
 void
 Configuration::setCpuBackend(int threadCount)
 {

@@ -129,6 +129,7 @@ nemo::Configuration
 configuration(bool stdp, bool log)
 {
 	nemo::Configuration conf;
+	conf.setWriteOnlySynapses();
 
 	if(log) {
 		conf.enableLogging();

@@ -18,6 +18,7 @@ namespace nemo {
 
 ConfigurationImpl::ConfigurationImpl() :
 	m_logging(false),
+	m_writeOnlySynapses(false),
 	m_fractionalBits(20),
 	// m_cpuThreadCount(0), // set properly by interface class ctor
 	m_cudaPartitionSize(0),

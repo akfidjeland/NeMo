@@ -63,6 +63,12 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		const boost::optional<StdpFunction>& stdpFunction() const { return m_stdpFn; }
 
+		/*! \copydoc nemo::Configuration::setWriteOnlySynapses */
+		void setWriteOnlySynapses() { m_writeOnlySynapses = true; }
+
+		/*! \copydoc nemo::Configuration::writeOnlySynapses */
+		bool writeOnlySynapses() const { return m_writeOnlySynapses; }
+
 		void setFractionalBits(unsigned bits);
 
 		/*! \return the number of fractional bits. If the user has not
@@ -82,6 +88,8 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		bool m_logging;
 		boost::optional<StdpFunction> m_stdpFn;
+
+		bool m_writeOnlySynapses;
 
 		int m_fractionalBits;
 		static const int s_defaultFractionalBits = -1;

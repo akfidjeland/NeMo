@@ -168,7 +168,6 @@ class ConnectivityMatrix
 		size_t createFcm(
 				const nemo::network::Generator& net,
 				const Mapper&,
-				size_t partitionSize,
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& targets,
 				std::vector<weight_dt>& weights);
@@ -209,6 +208,12 @@ class ConnectivityMatrix
 		typedef std::deque<AxonTerminalAux> aux_row;
 		typedef boost::unordered_map<nidx_t, aux_row> aux_map;
 		aux_map m_cmAux;
+
+		/* The data required for reading back synapses is quite costly, since
+		 * it is essentially a full copy of the FCM. In cases where this data
+		 * is not needed it therefore makes sense to never construct this data
+		 * in the first place. This can be set via a configuration option*/
+		bool m_writeOnlySynapses;
 
 		void addAuxTerminal(const Synapse&, size_t addr);
 

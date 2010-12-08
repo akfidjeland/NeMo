@@ -60,7 +60,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
 	m_delays(mapper.partitionCount(), mapper.partitionSize(), true, false),
-	m_fractionalBits(~0)
+	m_fractionalBits(conf.fractionalBits()),
+	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> h_targets(WARP_SIZE, f_nullSynapse());
@@ -68,7 +69,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	bool logging = conf.loggingEnabled();
 
-	m_fractionalBits = conf.fractionalBits();
 
 	if(logging) {
 		//! \todo log to correct output stream
@@ -81,7 +81,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(net, mapper, conf.cudaPartitionSize(), wtable, h_targets, mh_weights);
+	size_t totalWarps = createFcm(net, mapper, wtable, h_targets, mh_weights);
 
 	verifySynapseTerminals(m_cmAux, mapper);
 
@@ -142,7 +142,9 @@ ConnectivityMatrix::addSynapse(
 	h_targets.at(f_addr) = d_target.neuron;
 	h_weights.at(f_addr) = fx_toFix(s.weight(), m_fractionalBits);
 
-	addAuxTerminal(s, f_addr);
+	if(!m_writeOnlySynapses) {
+		addAuxTerminal(s, f_addr);
+	}
 
 	/*! \todo simplify RCM structure, using a format similar to the FCM */
 	//! \todo only need to set this if stdp is enabled
@@ -161,7 +163,6 @@ size_t
 ConnectivityMatrix::createFcm(
 		const network::Generator& net,
 		const Mapper& mapper,
-		size_t partitionSize,
 		WarpAddressTable& wtable,
 		std::vector<synapse_t>& h_targets,
 		std::vector<weight_dt>& h_weights)
@@ -179,7 +180,11 @@ ConnectivityMatrix::createFcm(
 
 /*! \note We could verify the synapse terminals during FCM construction. This
  * was found to be somewhat slower, however, as we then end up performing
- * around twice as many checks (since each source is tested many times). */
+ * around twice as many checks (since each source is tested many times).
+ *
+ * If synapses are configured to be write-only, this check will pass, since the
+ * CM is empty.
+ */
 void
 ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapper)
 {
@@ -311,6 +316,11 @@ ConnectivityMatrix::syncWeights(cycle_t cycle, const std::vector<synapse_id>& sy
 const std::vector<float>&
 ConnectivityMatrix::getWeights(cycle_t cycle, const std::vector<synapse_id>& synapses)
 {
+	if(m_writeOnlySynapses) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"Cannot read synapse state if simulation configured with write-only synapses");
+	}
+
 	m_queriedWeights.resize(synapses.size());
 	const std::vector<weight_dt>& h_weights = syncWeights(cycle, synapses);
 	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
@@ -327,12 +337,18 @@ ConnectivityMatrix::getWeights(cycle_t cycle, const std::vector<synapse_id>& syn
 template<typename T>
 const std::vector<T>&
 getSynapseState(
+		bool writeOnlySynapses,
 		const std::vector<synapse_id>& synapses,
 		const boost::unordered_map<nidx_t, std::deque<AxonTerminalAux> >& cm,
 		std::const_mem_fun_ref_t<T, AxonTerminalAux> fun,
 		std::vector<T>& out)
 {
 	using boost::format;
+
+	if(writeOnlySynapses) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"Cannot read synapse state if simulation configured with write-only synapses");
+	}
 
 	out.resize(synapses.size());
 	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
@@ -352,21 +368,24 @@ getSynapseState(
 const std::vector<unsigned>&
 ConnectivityMatrix::getTargets(const std::vector<synapse_id>& synapses)
 {
-	return getSynapseState(synapses, m_cmAux, std::mem_fun_ref(&AxonTerminalAux::target), m_queriedTargets);
+	return getSynapseState(m_writeOnlySynapses, synapses, m_cmAux,
+			std::mem_fun_ref(&AxonTerminalAux::target), m_queriedTargets);
 }
 
 
 const std::vector<unsigned>&
 ConnectivityMatrix::getDelays(const std::vector<synapse_id>& synapses)
 {
-	return getSynapseState(synapses, m_cmAux, std::mem_fun_ref(&AxonTerminalAux::delay), m_queriedDelays);
+	return getSynapseState(m_writeOnlySynapses, synapses, m_cmAux,
+			std::mem_fun_ref(&AxonTerminalAux::delay), m_queriedDelays);
 }
 
 
 const std::vector<unsigned char>&
 ConnectivityMatrix::getPlastic(const std::vector<synapse_id>& synapses)
 {
-	return getSynapseState(synapses, m_cmAux, std::mem_fun_ref(&AxonTerminalAux::plastic), m_queriedPlastic);
+	return getSynapseState(m_writeOnlySynapses, synapses, m_cmAux,
+			std::mem_fun_ref(&AxonTerminalAux::plastic), m_queriedPlastic);
 }
 
 
