@@ -93,39 +93,89 @@ NetworkImpl::addSynapse(
 }
 
 
-
-void
-NetworkImpl::getSynapses(
-		unsigned source,
-		std::vector<unsigned>& targets,
-		std::vector<unsigned>& delays,
-		std::vector<float>& weights,
-		std::vector<unsigned char>& plastic) const
+NetworkImpl::fcm_t::const_iterator
+NetworkImpl::getSourceIterator(unsigned source) const
 {
 	using boost::format;
-
 	fcm_t::const_iterator i_src = m_fcm.find(source);
 	if(i_src == m_fcm.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("synapses of non-existing neuron (%u) requested") % source));
 	}
+	return i_src;
+}
 
-	targets.clear();
-	delays.clear();
-	weights.clear();
-	plastic.clear();
 
+
+/* The synapse getters could do caching etc., but this is only really used in
+ * testing, so is not optimised */
+
+const std::vector<unsigned>&
+NetworkImpl::getTargets(unsigned source) const
+{
+	fcm_t::const_iterator i_src = getSourceIterator(source);
+	m_queriedTargets.clear();
+	const axon_t& axon = i_src->second;
+	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
+		const bundle_t& bundle = i_axon->second;
+		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
+			m_queriedTargets.push_back(s->target);
+		}
+	}
+	return m_queriedTargets;
+}
+
+
+
+const std::vector<unsigned>&
+NetworkImpl::getDelays(unsigned source) const
+{
+	fcm_t::const_iterator i_src = getSourceIterator(source);
+	m_queriedDelays.clear();
 	const axon_t& axon = i_src->second;
 	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
 		unsigned delay = i_axon->first;
 		const bundle_t& bundle = i_axon->second;
 		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
-			targets.push_back(s->target);
-			delays.push_back(delay);
-			weights.push_back(s->weight);
-			plastic.push_back(s->plastic);
+			m_queriedDelays.push_back(delay);
 		}
 	}
+	return m_queriedDelays;
+
+}
+
+
+
+const std::vector<float>&
+NetworkImpl::getWeights(unsigned source) const
+{
+	fcm_t::const_iterator i_src = getSourceIterator(source);
+	m_queriedWeights.clear();
+	const axon_t& axon = i_src->second;
+	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
+		const bundle_t& bundle = i_axon->second;
+		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
+			m_queriedWeights.push_back(s->weight);
+		}
+	}
+	return m_queriedWeights;
+}
+
+
+
+const std::vector<unsigned char>&
+NetworkImpl::getPlastic(unsigned source) const
+{
+	fcm_t::const_iterator i_src = getSourceIterator(source);
+	m_queriedPlastic.clear();
+	const axon_t& axon = i_src->second;
+	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
+		const bundle_t& bundle = i_axon->second;
+		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
+			m_queriedPlastic.push_back(s->plastic);
+		}
+	}
+	return m_queriedPlastic;
 }
 
 

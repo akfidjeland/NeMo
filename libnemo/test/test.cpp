@@ -390,25 +390,21 @@ testGetSynapses(const nemo::Network& net,
 {
 	unsigned fbits = 20;
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
-
-	std::vector<unsigned> ntargets;
-	std::vector<unsigned> ndelays;
 	std::vector<float> nweights;
-	std::vector<unsigned char> nplastic;
 
 	for(unsigned src = n0, src_end = n0 + net.neuronCount(); src < src_end; ++src) {
 
 		std::vector<synapse_id> ids = synapseIds(src, m);
 
-		net.getSynapses(src, ntargets, ndelays, nweights, nplastic);
+		nweights = net.getWeights(src);
 		for(std::vector<float>::iterator i = nweights.begin(); i != nweights.end(); ++i) {
 			*i = fx_toFloat(fx_toFix(*i, fbits), fbits);
 		}
 
 		sortAndCompare(sim->getWeights(ids), nweights);
-		sortAndCompare(sim->getTargets(ids), ntargets);
-		sortAndCompare(sim->getDelays(ids), ndelays);
-		sortAndCompare(sim->getPlastic(ids), nplastic);
+		sortAndCompare(sim->getTargets(ids), net.getTargets(src));
+		sortAndCompare(sim->getDelays(ids), net.getDelays(src));
+		sortAndCompare(sim->getPlastic(ids), net.getPlastic(src));
 	}
 }
 

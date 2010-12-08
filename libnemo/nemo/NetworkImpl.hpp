@@ -54,12 +54,30 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 				float weight,
 				unsigned char plastic);
 
-		void getSynapses(
-				unsigned source,
-				std::vector<unsigned>& targets,
-				std::vector<unsigned>& delays,
-				std::vector<float>& weights,
-				std::vector<unsigned char>& plastic) const;
+		/*! \return
+		 * 		target neurons for the specified synapses. The reference is
+		 * 		valid until the next call to this function.
+		 */
+		const std::vector<unsigned>& getTargets(unsigned source) const;
+
+		/*! \return
+		 * 		conductance delays for the specified synapses. The reference is
+		 * 		valid until the next call to this function.
+		 */
+		const std::vector<unsigned>& getDelays(unsigned source) const;
+
+		/*! \return
+		 * 		synaptic weights for the specified synapses. The reference is
+		 * 		valid until the next call to this function.
+		 */
+		const std::vector<float>& getWeights(unsigned source) const;
+
+		/*! \return
+		 * 		plasticity status for the specified synapses. The reference is
+		 * 		valid until the next call to this function.
+		 */
+		const std::vector<unsigned char>& getPlastic(unsigned source) const;
+
 
 		/* pre: network is not empty */
 		nidx_t minNeuronIndex() const;
@@ -111,6 +129,15 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		friend class nemo::mpi::Master;
 
 		friend class programmatic::synapse_iterator;
+
+		/* Internal buffers for synapse queries */
+		mutable std::vector<unsigned> m_queriedTargets;
+		mutable std::vector<unsigned> m_queriedDelays;
+		mutable std::vector<float> m_queriedWeights;
+		mutable std::vector<unsigned char> m_queriedPlastic;
+
+		fcm_t::const_iterator getSourceIterator(unsigned source) const;
+
 };
 
 	} // end namespace network

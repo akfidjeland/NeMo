@@ -39,15 +39,34 @@ Network::addSynapse(
 
 
 
-void
-Network::getSynapses(
-		unsigned source,
-		std::vector<unsigned>& targets,
-		std::vector<unsigned>& delays,
-		std::vector<float>& weights,
-		std::vector<unsigned char>& plastic) const
+const std::vector<unsigned>&
+Network::getTargets(unsigned source) const
 {
-	m_impl->getSynapses(source, targets, delays, weights, plastic);
+	return m_impl->getTargets(source);
+}
+
+
+
+const std::vector<unsigned>&
+Network::getDelays(unsigned source) const
+{
+	return m_impl->getDelays(source);
+}
+
+
+
+const std::vector<float>&
+Network::getWeights(unsigned source) const
+{
+	return m_impl->getWeights(source);
+}
+
+
+
+const std::vector<unsigned char>&
+Network::getPlastic(unsigned source) const
+{
+	return m_impl->getPlastic(source);
 }
 
 
