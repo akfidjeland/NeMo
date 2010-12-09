@@ -505,6 +505,16 @@ backendDescription(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+setWriteOnlySynapses(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 0);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus(nemo_set_write_only_synapses(getConfiguration()));
+}
+
+
+
+void
 step(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 3);
@@ -635,7 +645,7 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 21
+#define FN_COUNT 22
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuron,
     addSynapse,
@@ -645,6 +655,7 @@ fn_ptr fn_arr[FN_COUNT] = {
     setCudaBackend,
     setStdpFunction,
     backendDescription,
+    setWriteOnlySynapses,
     resetConfiguration,
     step,
     applyStdp,

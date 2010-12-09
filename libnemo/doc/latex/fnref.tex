@@ -178,6 +178,7 @@ conf = nemoConfiguration()
 \item \hyperref[fn: setCudaBackend]{setCudaBackend}
 \item \hyperref[fn: setStdpFunction]{setStdpFunction}
 \item \hyperref[fn: backendDescription]{backendDescription}
+\item \hyperref[fn: setWriteOnlySynapses]{setWriteOnlySynapses}
 \item \hyperref[fn: resetConfiguration]{resetConfiguration}
 \end{itemize}
 \clearpage
@@ -298,6 +299,30 @@ description = conf.backendDescription()
 \item[description] Textual description of the currently selected backend
 \end{description}
 The backend can be changed using setCudaBackend or setCpuBackend
+
+\clearpage
+\subsubsection*{Configuration::setWriteOnlySynapses}
+\label{fn: setWriteOnlySynapses}
+Specify that synapses will not be read back at run-time
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+void
+Configuration::setWriteOnlySynapses()
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_set_write_only_synapses(nemo_configuration_t conf)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+conf.setWriteOnlySynapses()
+\end{lstlisting}
+By default synapse state can be read back at run-time. This may require setting up data structures of considerable size before starting the simulation. If the synapse state is not required at run-time, specify that synapses are write-only in order to save memory and setup time. By default synapses are readable
 
 \clearpage
 \subsubsection*{Configuration::resetConfiguration}

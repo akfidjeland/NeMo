@@ -11,5 +11,5 @@ function plastic = nemoGetPlastic(synapses)
 % Outputs:
 %   plastic - plasticity status of the specified synpases
 %    
-    plastic = nemo_mex(uint32(14), uint64(synapses));
+    plastic = nemo_mex(uint32(15), uint64(synapses));
 end

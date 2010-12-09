@@ -6,5 +6,5 @@ function nemoCreateSimulation()
 %  
 % Initialise simulation data, but do not start running. Call step to
 % run simulation. The initialisation step can be time-consuming.
-    nemo_mex(uint32(18));
+    nemo_mex(uint32(19));
 end

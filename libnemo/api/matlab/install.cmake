@@ -6,6 +6,7 @@ nemoSetCpuBackend.m
 nemoSetCudaBackend.m
 nemoSetStdpFunction.m
 nemoBackendDescription.m
+nemoSetWriteOnlySynapses.m
 nemoResetConfiguration.m
 nemoStep.m
 nemoApplyStdp.m

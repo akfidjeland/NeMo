@@ -36,6 +36,7 @@
 %  nemoSetCudaBackend
 %  nemoSetStdpFunction
 %  nemoBackendDescription
+%  nemoSetWriteOnlySynapses
 %  nemoResetConfiguration
 %
 % Simulation:
