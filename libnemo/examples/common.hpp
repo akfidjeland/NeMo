@@ -18,8 +18,10 @@
  * 		not checked.
  * \param stdp
  * 		Period (in ms) between STDP applications. If 0, run without STDP.
+ * \param csv
+ * 		Output a compact CSV format instead of regular format
  */
-void benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp=0);
+void benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp=0, bool csv=false);
 
 
 /*! Run simulation for some time, writing data to output stream

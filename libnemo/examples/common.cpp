@@ -6,9 +6,11 @@
 
 
 void
-benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
+benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp, bool csv)
 {
 	const unsigned MS_PER_SECOND = 1000;
+
+	bool verbose = !csv;
 
 #ifdef NEMO_TIMING_ENABLED
 	sim->resetTimer();
@@ -17,7 +19,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 	unsigned t = 0;
 
 	/* Run for a few seconds to warm up the network */
-	std::cout << "Running simulation (warming up)...";
+	if(verbose)
+		std::cout << "Running simulation (warming up)...";
 	for(unsigned s=0; s < 5; ++s) {
 		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms, ++t) {
 			sim->step();
@@ -27,17 +30,21 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 		}
 	}
 #ifdef NEMO_TIMING_ENABLED
-	std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
+	if(verbose)
+		std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
 	sim->resetTimer();
 #endif
-	std::cout << std::endl;
+	if(verbose)
+		std::cout << std::endl;
 
 	unsigned seconds = 10;
 
 	/* Run once without reading data back, in order to estimate PCIe overhead */ 
-	std::cout << "Running simulation (without reading data back)...";
+	if(verbose)
+		std::cout << "Running simulation (without reading data back)...";
 	for(unsigned s=0; s < seconds; ++s) {
-		std::cout << s << " ";
+		if(verbose)
+			std::cout << s << " ";
 		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms, ++t) {
 			sim->step();
 		}
@@ -48,14 +55,17 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 #ifdef NEMO_TIMING_ENABLED
 	long int elapsedTiming = sim->elapsedWallclock();
 	sim->resetTimer();
-	std::cout << "[" << elapsedTiming << "ms elapsed]";
+	if(verbose)
+		std::cout << "[" << elapsedTiming << "ms elapsed]";
 #endif
-	std::cout << std::endl;
-
-	std::cout << "Running simulation (gathering performance data)...";
+	if(verbose) {
+		std::cout << std::endl;
+		std::cout << "Running simulation (gathering performance data)...";
+	}
 	unsigned long nfired = 0;
 	for(unsigned s=0; s < seconds; ++s) {
-		std::cout << s << " ";
+		if(verbose)
+			std::cout << s << " ";
 		for(unsigned ms=0; ms<1000; ++ms, ++t) {
 			const std::vector<unsigned>& fired = sim->step();
 			nfired += fired.size();
@@ -66,9 +76,11 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 	}
 #ifdef NEMO_TIMING_ENABLED
 	long int elapsedData = sim->elapsedWallclock();
-	std::cout << "[" << elapsedData << "ms elapsed]";
+	if(verbose)
+		std::cout << "[" << elapsedData << "ms elapsed]";
 #endif
-	std::cout << std::endl;
+	if(verbose)
+		std::cout << std::endl;
 
 	unsigned long narrivals = nfired * m;
 	double f = (double(nfired) / n) / double(seconds);
@@ -83,16 +95,28 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp)
 	double speedupPCI = double(seconds*MS_PER_SECOND)/elapsedData;
 #endif
 
-	std::cout << "Total firings: " << nfired << std::endl;
-	std::cout << "Avg. firing rate: " << f << "Hz\n";
-	std::cout << "Spike arrivals: " << narrivals << std::endl;
+	if(verbose) {
+		std::cout << "Total firings: " << nfired << std::endl;
+		std::cout << "Avg. firing rate: " << f << "Hz\n";
+		std::cout << "Spike arrivals: " << narrivals << std::endl;
 #ifdef NEMO_TIMING_ENABLED
-	std::cout << "Performace both with and without PCI traffic overheads:\n";
-	std::cout << "Approx. throughput: " << throughputPCI/1000000 << "/"
-			<< throughputNoPCI/1000000 << "Ma/s (million spike arrivals per second)\n";
-	std::cout << "Speedup wrt real-time: " << speedupPCI << "/"
-			<< speedupNoPCI << std::endl;
+		std::cout << "Performace both with and without PCI traffic overheads:\n";
+		std::cout << "Approx. throughput: " << throughputPCI/1000000 << "/"
+				<< throughputNoPCI/1000000 << "Ma/s (million spike arrivals per second)\n";
+		std::cout << "Speedup wrt real-time: " << speedupPCI << "/"
+				<< speedupNoPCI << std::endl;
 #endif
+	}
+
+	if(csv) {
+		std::string sep = ", ";
+		// raw data
+		std::cout << n << sep << m << sep << seconds*MS_PER_SECOND
+			<< sep << elapsedData << sep << stdp << sep << nfired;
+		// derived data. Not strictly needed, at least if out-degree is fixed.
+		std::cout << sep << narrivals << sep << f << sep << speedupPCI
+			<< sep << throughputPCI/1000000 << std::endl;
+	}
 }
 
 
@@ -181,6 +205,7 @@ commonOptions()
 		("output-file,o", po::value<std::string>(), "output file for firing data")
 		("list-devices", "print the available simulation devices")
 		("benchmark", "report performance results instead of returning firing")
+		("csv", "when benchmarking, output a compact CSV format with the following fields: neurons, synapses, simulation time (ms), wallclock time (ms), STDP enabled, fired neurons, PSPs generated, average firing rate, speedup wrt real-time, throughput (million PSPs/second")
 	;
 
 	return desc;

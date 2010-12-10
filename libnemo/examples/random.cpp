@@ -117,6 +117,7 @@ main(int argc, char* argv[])
 		unsigned stdp = vm["stdp"].as<unsigned>();
 		unsigned verbose = vm["verbose"].as<unsigned>();
 		bool runBenchmark = vm.count("benchmark") != 0;
+		bool csv = vm.count("csv") != 0;
 
 		std::ofstream file;
 		std::string filename;
@@ -137,7 +138,7 @@ main(int argc, char* argv[])
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 		LOG(verbose, "Running simulation");
 		if(runBenchmark) {
-			benchmark(sim.get(), ncount, scount, stdp);
+			benchmark(sim.get(), ncount, scount, stdp, csv);
 		} else {
 			simulate(sim.get(), duration, stdp, out);
 		}
