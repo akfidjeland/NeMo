@@ -160,10 +160,10 @@ RSMatrix::d_faddress() const
 }
 
 
-float*
+weight_dt*
 RSMatrix::d_stdp() const
 {
-	return (float*) m_deviceData.get() + RCM_STDP * planeSize();
+	return (weight_dt*) m_deviceData.get() + RCM_STDP * planeSize();
 }
 
 	} // end namespace cuda

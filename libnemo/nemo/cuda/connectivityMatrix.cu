@@ -113,27 +113,26 @@ r_delay0(unsigned rsynapse)
 
 /* To improve packing of data in the connectivity matrix, we use different
  * pitches for each partition */
-//! \todo store offset instead of pointers
-__constant__ DEVICE_UINT_PTR_T cr_pitch[MAX_THREAD_BLOCKS];
+__constant__ size_t cr_pitch[MAX_THREAD_BLOCKS];
 
 /* We also need to store the start of each partitions reverse connectivity
  * data, to support fast lookup. This data should nearly always be in the
  * constant cache */
-__constant__ DEVICE_UINT_PTR_T cr_address[MAX_THREAD_BLOCKS];
+__constant__ uint32_t* cr_address[MAX_THREAD_BLOCKS];
 
 /* Ditto for the STDP accumulators */
-__constant__ DEVICE_UINT_PTR_T cr_stdp[MAX_THREAD_BLOCKS];
+__constant__ weight_dt* cr_stdp[MAX_THREAD_BLOCKS];
 
 /* Ditto for the forward synapse offset */
-__constant__ DEVICE_UINT_PTR_T cr_faddress[MAX_THREAD_BLOCKS];
+__constant__ uint32_t* cr_faddress[MAX_THREAD_BLOCKS];
 
 
 
-#define SET_CR_ADDRESS_VECTOR(symbol, vec, len)                                \
-    err = cudaMemcpyToSymbol(symbol, vec,                                      \
-            len * sizeof(DEVICE_UINT_PTR_T), 0, cudaMemcpyHostToDevice);       \
-    if(cudaSuccess != err) {                                                   \
-        return err;                                                            \
+#define SET_CR_ADDRESS_VECTOR(symbol, vec, len, type)                         \
+    err = cudaMemcpyToSymbol(symbol, vec,                                     \
+            len * sizeof(type), 0, cudaMemcpyHostToDevice);                   \
+    if(cudaSuccess != err) {                                                  \
+        return err;                                                           \
     }
 
 
@@ -141,18 +140,18 @@ __constant__ DEVICE_UINT_PTR_T cr_faddress[MAX_THREAD_BLOCKS];
 __host__
 cudaError
 configureReverseAddressing(
-        DEVICE_UINT_PTR_T* r_pitch,
-        DEVICE_UINT_PTR_T* r_address,
-        DEVICE_UINT_PTR_T* r_stdp,
-        DEVICE_UINT_PTR_T* r_faddress,
+        size_t* r_pitch,
+        uint32_t* const* r_address,
+        weight_dt* const* r_stdp,
+        uint32_t* const* r_faddress,
 		size_t len)
 {
 	cudaError err;
 	//! \todo extend vectors and fill with NULLs
-	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch, len);
-	SET_CR_ADDRESS_VECTOR(cr_address, r_address, len);
-	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp, len);
-	SET_CR_ADDRESS_VECTOR(cr_faddress, r_faddress, len);
+	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch, len, size_t);
+	SET_CR_ADDRESS_VECTOR(cr_address, r_address, len, uint32_t*);
+	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp, len, weight_dt*);
+	SET_CR_ADDRESS_VECTOR(cr_faddress, r_faddress, len, uint32_t*);
 	return cudaSuccess;
 }
 

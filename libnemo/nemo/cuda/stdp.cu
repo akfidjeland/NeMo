@@ -276,9 +276,9 @@ updateSTDP_(
 	uint64_t* g_recentFiring,
 	size_t pitch64,
 	unsigned partitionSize,
-	DEVICE_UINT_PTR_T* cr_address,
-	DEVICE_UINT_PTR_T* cr_stdp,
-	DEVICE_UINT_PTR_T* cr_pitch,
+	uint32_t** cr_address,
+	weight_dt** cr_stdp,
+	size_t* cr_pitch,
 	nidx_dt* s_firingIdx) // s_NIdx, so can handle /all/ neurons firing
 {
 	/* Determine what postsynaptic neurons needs processing in small batches */
@@ -328,7 +328,7 @@ updateSTDP_(
 					/* nvcc will warn that gr_address defaults to gmem, as it
 					 * is not clear what address space it belongs to. That's
 					 * ok; this is global memory */
-					uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
+					uint32_t* gr_address = cr_address[CURRENT_PARTITION];
 					uint32_t r_sdata = gr_address[r_offset];
 
 					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
@@ -342,7 +342,7 @@ updateSTDP_(
 						//! \todo perhaps stage diff in output buffers
 						//! \todo add saturating arithmetic here
 						if(w_diff != 0) {
-							((weight_dt*) cr_stdp[CURRENT_PARTITION])[r_offset] += w_diff;
+							cr_stdp[CURRENT_PARTITION][r_offset] += w_diff;
 						}
 					}
 				}

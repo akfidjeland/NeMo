@@ -193,10 +193,10 @@ class ConnectivityMatrix
 
 		/* Per-partition addressing of RCM */
 		void moveRcmToDevice();
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionPitch() const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionAddress() const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionStdp() const;
-		const std::vector<DEVICE_UINT_PTR_T> r_partitionFAddress() const;
+		std::vector<size_t> r_partitionPitch() const;
+		std::vector<uint32_t*> r_partitionAddress() const;
+		std::vector<weight_dt*> r_partitionStdp() const;
+		std::vector<uint32_t*> r_partitionFAddress() const;
 
 		/* Additional synapse data which is only needed for runtime queries.
 		 * Static FCM data for each neuron, required for synapse queries.

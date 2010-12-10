@@ -47,10 +47,10 @@ unsigned r_delay1(unsigned rsynapse);
 
 cudaError
 configureReverseAddressing(
-        DEVICE_UINT_PTR_T* r_pitch,
-        DEVICE_UINT_PTR_T* r_address,
-        DEVICE_UINT_PTR_T* r_stdp,
-        DEVICE_UINT_PTR_T* r_faddress,
+        size_t* r_pitch,
+        uint32_t* const* r_address,
+        weight_dt* const* r_stdp,
+        uint32_t* const* r_faddress,
 		size_t len);
 
 #endif

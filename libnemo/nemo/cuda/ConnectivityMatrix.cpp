@@ -246,13 +246,14 @@ ConnectivityMatrix::moveRcmToDevice()
 		i->second->moveToDevice();
 	}
 
+	std::vector<size_t> rpitch = r_partitionPitch();
 	CUDA_SAFE_CALL(
 		configureReverseAddressing(
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionPitch()[0]),
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionAddress()[0]),
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionStdp()[0]),
-				const_cast<DEVICE_UINT_PTR_T*>(&r_partitionFAddress()[0]),
-				r_partitionPitch().size());
+				&rpitch[0],
+				&r_partitionAddress()[0],
+				&r_partitionStdp()[0],
+				&r_partitionFAddress()[0],
+				rpitch.size())
 	);
 }
 
@@ -401,50 +402,28 @@ ConnectivityMatrix::d_allocated() const
 
 
 
-/* Pack a device pointer to a 32-bit value */
-//! \todo replace with non-template version
-template<typename T>
-DEVICE_UINT_PTR_T
-devicePointer(T ptr)
-{
-	uint64_t ptr64 = (uint64_t) ptr;
-#ifndef __DEVICE_EMULATION__
-	//! \todo: look up this data at runtime
-	//! \todo assert that we can fit all device addresses in 32b address.
-	const uint64_t MAX_ADDRESS = 4294967296LL; // on device
-	if(ptr64 >= MAX_ADDRESS) {
-		throw std::range_error("Device pointer larger than 32 bits");
-	}
-#endif
-	return (DEVICE_UINT_PTR_T) ptr64;
-
-}
-
-
-
 /* Map function over vector of reverse synapse matrix */
 template<typename T, class S>
-const std::vector<DEVICE_UINT_PTR_T>
+std::vector<T>
 mapDevicePointer(const std::map<pidx_t, S*>& vec, std::const_mem_fun_t<T, S> fun)
 {
 	if(vec.size() == 0) {
-		return std::vector<DEVICE_UINT_PTR_T>();
+		return std::vector<T>();
 	}
 
 	pidx_t maxPartitionIdx = vec.rbegin()->first;
 
-	std::vector<DEVICE_UINT_PTR_T> ret(maxPartitionIdx+1, 0);
+	std::vector<T> ret(maxPartitionIdx+1, 0);
 	for(typename std::map<pidx_t, S*>::const_iterator i = vec.begin();
 			i != vec.end(); ++i) {
-		T ptr = fun(i->second);
-		ret.at(i->first) = devicePointer(ptr);
+		ret.at(i->first) = fun(i->second);
 	}
 	return ret;
 }
 
 
 
-const std::vector<DEVICE_UINT_PTR_T>
+std::vector<size_t>
 ConnectivityMatrix::r_partitionPitch() const
 {
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::pitch));
@@ -452,7 +431,7 @@ ConnectivityMatrix::r_partitionPitch() const
 
 
 
-const std::vector<DEVICE_UINT_PTR_T>
+std::vector<uint32_t*>
 ConnectivityMatrix::r_partitionAddress() const
 {
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_address));
@@ -460,7 +439,7 @@ ConnectivityMatrix::r_partitionAddress() const
 
 
 
-const std::vector<DEVICE_UINT_PTR_T>
+std::vector<weight_dt*>
 ConnectivityMatrix::r_partitionStdp() const
 {
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_stdp));
@@ -468,7 +447,7 @@ ConnectivityMatrix::r_partitionStdp() const
 
 
 
-const std::vector<DEVICE_UINT_PTR_T>
+std::vector<uint32_t*>
 ConnectivityMatrix::r_partitionFAddress() const
 {
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));

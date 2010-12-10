@@ -63,7 +63,7 @@ class RSMatrix
 		uint32_t* d_address() const;
 
 		/*! \return device address of STDP accumulator matrix */
-		float* d_stdp() const;
+		weight_dt* d_stdp() const;
 
 		uint32_t* d_faddress() const;
 
