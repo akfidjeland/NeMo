@@ -113,18 +113,18 @@ r_delay0(unsigned rsynapse)
 
 /* To improve packing of data in the connectivity matrix, we use different
  * pitches for each partition */
-__constant__ size_t cr_pitch[MAX_THREAD_BLOCKS];
+__constant__ size_t cr_pitch[MAX_PARTITION_COUNT];
 
 /* We also need to store the start of each partitions reverse connectivity
  * data, to support fast lookup. This data should nearly always be in the
  * constant cache */
-__constant__ uint32_t* cr_address[MAX_THREAD_BLOCKS];
+__constant__ uint32_t* cr_address[MAX_PARTITION_COUNT];
 
 /* Ditto for the STDP accumulators */
-__constant__ weight_dt* cr_stdp[MAX_THREAD_BLOCKS];
+__constant__ weight_dt* cr_stdp[MAX_PARTITION_COUNT];
 
 /* Ditto for the forward synapse offset */
-__constant__ uint32_t* cr_faddress[MAX_THREAD_BLOCKS];
+__constant__ uint32_t* cr_faddress[MAX_PARTITION_COUNT];
 
 
 
