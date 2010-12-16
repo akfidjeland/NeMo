@@ -70,11 +70,10 @@ FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 
 # On windows just put everyting in one directory
+SET(INSTALL_INCLUDE_DIR include)
 IF(WIN32)
-	SET(INSTALL_INCLUDE_DIR .)
-	SET(INSTALL_LIB_DIR .)
+	SET(INSTALL_LIB_DIR bin)
 ELSE(WIN32)
-	SET(INSTALL_INCLUDE_DIR include)
 	SET(INSTALL_LIB_DIR lib)
 ENDIF(WIN32)
 
@@ -91,10 +90,16 @@ INSTALL(FILES nemo.h nemo.hpp DESTINATION ${INSTALL_INCLUDE_DIR})
 
 
 IF(WIN32)
-	SET(CPACK_GENERATOR "ZIP" "NSIS")
-	# TODO: add system variable NEMO_ROOT
-	# TODO: add NEMO_ROOT to system PATH (if it's not already there)
+	SET(CPACK_GENERATOR "NSIS")
+	# Not that for the path setting to work, the libraries *must* be in the bin
+	# folder, as CMake is hard-coded this way.
 	SET(CPACK_NSIS_MODIFY_PATH ON)
+	# By default CMake puts the installed version into a directory which
+	# includes the version in the name. We can reasonably assume that users
+	# won't have more than a single version installed at a time, so always
+	# install into the same directory, to make upgrades easier.
+	SET(CPACK_PACKAGE_INSTALL_DIRECTORY "NeMo")
+	# TODO: Could add links to manual here using CPACK_NSIS_MENU_LINKS. Did not immideatly work
 ENDIF(WIN32)
 SET(CPACK_SOURCE_GENERATOR "TGZ" "ZIP")
 

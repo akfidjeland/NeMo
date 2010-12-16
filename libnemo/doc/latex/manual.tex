@@ -560,7 +560,7 @@ These errors use identifier
 
 The Matlab path must contain the directory with the m-files
 	defining the three classes and the MEX library that interfaces with libnemo.
-On Windows this directory defaults to \file{C:\textbackslash Program Files\textbackslash nemo-<version>\textbackslash Matlab},
+On Windows this directory defaults to \file{C:\textbackslash Program Files\textbackslash NeMo\textbackslash Matlab},
 and on Linux to \file{/usr/share/nemo/matlab}.
 Use \code{addpath} from within Matlab to set the path.
 
@@ -610,8 +610,11 @@ for ms=1:1000
 \label{installation:windows}
 
 The easiest way to install is to use the precompiled library (NSIS installer).
-Both header (C and \cpp) and library files are stored in \directory{c:\textbackslash Program Files\textbackslash nemo-<version>}.
-Python bindings, Matlab bindings, and examples are stored in subdirectories of this.
+This installs \nemo\ to \directory{C:\textbackslash Program Files\textbackslash NeMo},
+	with
+		libraries in the \directory{bin} subdirectory and
+		headers in the \directory{include} subdirectory,
+Python bindings, Matlab bindings, and examples are stored in separate subdirectories.
 
 Alternatively, the library can be built from source using \command{cmake} to generate a Visual Studio project file,
 	and then building from within Visual Studio.
