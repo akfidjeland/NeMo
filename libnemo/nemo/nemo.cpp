@@ -4,9 +4,11 @@
 
 #include <nemo/config.h>
 
+#ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 #include "dyn_load.hpp"
 #include <boost/format.hpp>
+#endif
 #endif
 
 #include <nemo/internals.hpp>
@@ -22,6 +24,7 @@
 
 namespace nemo {
 
+#ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 
 dl_handle libcuda = NULL;
@@ -54,7 +57,7 @@ loadCudaLibrary()
 	return libcuda;
 }
 
-
+#endif
 #endif
 
 

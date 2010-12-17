@@ -550,6 +550,8 @@ Help is available for each class and for each function using Matlab's regular he
 	i.e. via calls such as
 		\code{help nemoNetwork} 
 		and \code{help addNeuron} (or \code{help nemoNetwork/addNeuron}).
+A top-level help entry is available under \code{help nemo},
+	which gives a brief overview and lists the available functions.
 
 Internal \nemo\ errors result in regular Matlab errors,
 	(i.e. as when \code{error} is called in a script).
@@ -576,7 +578,7 @@ different from the default \cpp\ standard libraries on the system (which \nemo\ 
 This can be fixed by setting \code{LD\_PRELOAD} by doing something like this
 
 \begin{shell}
-export LD_PRELOAD='/lib/libgcc_s.so.1:/usr/lib/libstdc++.so.6.0.13
+export LD_PRELOAD=/lib/libgcc_s.so.1:/usr/lib/libstdc++.so.6.0.13
 \end{shell}
 
 before starting Matlab.
@@ -639,8 +641,8 @@ Additionally the following dependencies may be needed depending on what \command
 Feature & \command{cmake} option & Dependency \\
 \hline
 CUDA backend & \command{NEMO\_CUDA\_ENABLED} & Cuda toolkit \\
-\hspace{2em}dynamic loading & \command{NEMO\_CUDA\_ENABLED} & \command{libltdl} (on Linux only) \\
-Timing function & \command{NEMO\_TIMING\_ENABLED} & boost date\_time \\ 
+\hspace{2em}dynamic loading & \command{NEMO\_CUDA\_DYNAMIC\_LOADING} & \command{libltdl} (on Linux only) \\
+Timing functions & \command{NEMO\_TIMING\_ENABLED} & boost date\_time \\
 Python bindings & \command{NEMO\_PYTHON\_ENABLED} & boost python \\
 Matlab bindings & \command{NEMO\_MATLAB\_ENABLED} & Matlab (including \command{mex} compiler) \\
 Example programs & \command{NEMO\_EXAMPLES\_ENABLED} & boost program\_options \\ 
