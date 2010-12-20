@@ -149,9 +149,34 @@ simulateToFile(nemo::Simulation* sim, unsigned time_ms, unsigned stdp, const cha
 
 
 
-nemo::Configuration
-configuration(bool stdp, bool log)
+void
+setStandardStdpFunction(nemo::Configuration& conf)
 {
+	std::vector<float> pre(20);
+	std::vector<float> post(20);
+	for(unsigned i = 0; i < 20; ++i) {
+		float dt = float(i + 1);
+		pre.at(i) = 0.1f * expf(-dt / 20.0f);
+		post.at(i) = -0.08f * expf(-dt / 20.0f);
+	}
+	conf.setStdpFunction(pre, post, -1.0f, 1.0f);
+}
+
+
+
+nemo::Configuration
+configuration(boost::program_options::variables_map& opts)
+{
+	bool stdp = opts["stdp"].as<unsigned>() != 0;
+	bool log = opts["verbose"].as<unsigned>() >= 2;
+	bool cpu = opts.count("cpu") != 0;
+	bool cuda = opts.count("cuda") != 0;
+
+	if(cpu && cuda) {
+		std::cerr << "Multiple backends selected on command line\n";
+		exit(-1);
+	}
+
 	nemo::Configuration conf;
 	conf.setWriteOnlySynapses();
 
@@ -160,32 +185,16 @@ configuration(bool stdp, bool log)
 	}
 
 	if(stdp) {
-		std::vector<float> pre(20);
-		std::vector<float> post(20);
-		for(unsigned i = 0; i < 20; ++i) {
-			float dt = float(i + 1);
-			pre.at(i) = 0.1f * expf(-dt / 20.0f);
-			post.at(i) = -0.08f * expf(-dt / 20.0f);
-		}
-		conf.setStdpFunction(pre, post, -1.0f, 1.0f);
+		setStandardStdpFunction(conf);
 	}
 
-	return conf;
-}
-
-
-
-nemo::Configuration
-configuration(bool stdp, backend_t backend, bool log)
-{
-	nemo::Configuration conf = configuration(stdp, log);
-	switch(backend) {
-		case NEMO_BACKEND_CPU: conf.setCpuBackend(); break;
-		case NEMO_BACKEND_CUDA: conf.setCudaBackend(); break;
-		default:
-			std::cerr << "Invalid backend specified\n";
-			exit(-1);
+	if(cpu) {
+		conf.setCpuBackend();
+	} else if(cuda) {
+		conf.setCudaBackend();
 	}
+	// otherwise just go with the default backend
+
 	return conf;
 }
 
@@ -201,6 +210,8 @@ commonOptions()
 		("help,h", "print this message")
 		("duration,t", po::value<unsigned>()->default_value(1000), "duration of simulation (ms)")
 		("stdp", po::value<unsigned>()->default_value(0), "STDP application period (ms). If 0 do not use STDP")
+		("cpu", "Use the CPU backend")
+		("cuda", "Use the CUDA backend (default device)")
 		("verbose,v", po::value<unsigned>()->default_value(0), "Set verbosity level")
 		("output-file,o", po::value<std::string>(), "output file for firing data")
 		("list-devices", "print the available simulation devices")

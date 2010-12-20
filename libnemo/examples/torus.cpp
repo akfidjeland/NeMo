@@ -334,7 +334,7 @@ main(int argc, char* argv[])
 		LOG(verbose, "Constructing network");
 		boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, stdp != 0, sigma, verbose >= 1));
 		LOG(verbose, "Creating configuration");
-		nemo::Configuration conf = configuration(stdp != 0, verbose >= 2);
+		nemo::Configuration conf = configuration(vm);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription());
 		LOG(verbose, "Creating simulation\n");
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));

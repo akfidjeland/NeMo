@@ -44,14 +44,9 @@ void
 simulateToFile(nemo::Simulation* sim, unsigned time_ms, unsigned stdp, const char* firingFile);
 
 
-/*! \return a 'standard' configuration using the default backend and STDP
- * optionally enabled. */
-nemo::Configuration configuration(bool stdp, bool log=false);
-
-
-/*! \return a 'standard' configuration with the specified backend and STDP
- * optionally enabled. */
-nemo::Configuration configuration(bool stdp, backend_t backend, bool log=false);
+/*! \return configuration with STDP, logging, and backend possibly set via
+ * command-line parameters */
+nemo::Configuration configuration(boost::program_options::variables_map& opts);
 
 
 /* Return common program options */
