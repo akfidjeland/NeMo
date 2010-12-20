@@ -75,14 +75,18 @@ void runTorus(bool creating)
 	{
 		bool stdp = false;
 		boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
+#ifdef NEMO_CUDA_ENABLED
 		run(torus.get(), NEMO_BACKEND_CUDA, 4, "test-cuda.dat", stdp, creating);
+#endif
 		run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu.dat", stdp, creating);
 	}
 
 	{
 		bool stdp = true;
 		boost::scoped_ptr<nemo::Network> torus(nemo::torus::construct(4, 1000, stdp, 64, false));
+#ifdef NEMO_CUDA_ENABLED
 		run(torus.get(), NEMO_BACKEND_CUDA, 4, "test-cuda-stdp.dat", stdp, creating);
+#endif
 		run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu-stdp.dat", stdp, creating);
 	}
 }

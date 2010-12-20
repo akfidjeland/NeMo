@@ -15,6 +15,38 @@
 #include "rtest.hpp"
 
 
+/* For a number of tests, we want to run both CUDA and CPU versions with the
+ * same parameters. */
+#ifdef NEMO_CUDA_ENABLED
+
+// unary function
+#define TEST_ALL_BACKENDS(name, fn)                                           \
+    BOOST_AUTO_TEST_SUITE(name)                                               \
+    BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU); }                       \
+    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CPU); }                      \
+    BOOST_AUTO_TEST_SUITE_END()
+
+// n-ary function for n >= 2
+#define TEST_ALL_BACKENDS_N(name, fn,...)                                     \
+    BOOST_AUTO_TEST_SUITE(name)                                               \
+    BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }          \
+    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }         \
+    BOOST_AUTO_TEST_SUITE_END()
+
+#else
+
+#define TEST_ALL_BACKENDS(name, fn)                                           \
+    BOOST_AUTO_TEST_SUITE(name)                                               \
+    BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU); }                       \
+    BOOST_AUTO_TEST_SUITE_END()
+
+#define TEST_ALL_BACKENDS_N(name, fn,...)                                     \
+    BOOST_AUTO_TEST_SUITE(name)                                               \
+    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }         \
+    BOOST_AUTO_TEST_SUITE_END()
+
+#endif
+
 typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
@@ -122,32 +154,10 @@ BOOST_AUTO_TEST_CASE(simulation_unary_network)
 	runSimple(0, 1);
 }
 
+
 BOOST_AUTO_TEST_SUITE(networks)
-
-	BOOST_AUTO_TEST_SUITE(no_outgoing)
-
-		BOOST_AUTO_TEST_CASE(cpu) {
-			no_outgoing::run(NEMO_BACKEND_CPU);
-		}
-
-		BOOST_AUTO_TEST_CASE(cuda) {
-			no_outgoing::run(NEMO_BACKEND_CUDA);
-		}
-
-	BOOST_AUTO_TEST_SUITE_END()
-
-	BOOST_AUTO_TEST_SUITE(invalid_targets)
-
-		BOOST_AUTO_TEST_CASE(cpu) {
-			invalid_targets::run(NEMO_BACKEND_CPU);
-		}
-
-		BOOST_AUTO_TEST_CASE(cuda) {
-			invalid_targets::run(NEMO_BACKEND_CUDA);
-		}
-
-	BOOST_AUTO_TEST_SUITE_END()
-
+	TEST_ALL_BACKENDS(no_outgoing, no_outgoing::run)
+	TEST_ALL_BACKENDS(invalid_targets, invalid_targets::run)
 BOOST_AUTO_TEST_SUITE_END()
 
 
@@ -203,17 +213,7 @@ testFiringStimulus(backend_t backend)
 }
 
 
-BOOST_AUTO_TEST_SUITE(fstim)
-
-	BOOST_AUTO_TEST_CASE(cuda) {
-		testFiringStimulus(NEMO_BACKEND_CUDA);
-	}
-
-	BOOST_AUTO_TEST_CASE(cpu) {
-		testFiringStimulus(NEMO_BACKEND_CPU);
-	}
-
-BOOST_AUTO_TEST_SUITE_END()
+TEST_ALL_BACKENDS(fstim, testFiringStimulus)
 
 
 void
@@ -245,17 +245,7 @@ testCurrentStimulus(backend_t backend)
 }
 
 
-BOOST_AUTO_TEST_SUITE(istim)
-
-	BOOST_AUTO_TEST_CASE(cuda) {
-		testCurrentStimulus(NEMO_BACKEND_CUDA);
-	}
-
-	BOOST_AUTO_TEST_CASE(cpu) {
-		testCurrentStimulus(NEMO_BACKEND_CPU);
-	}
-
-BOOST_AUTO_TEST_SUITE_END()
+TEST_ALL_BACKENDS(istim, testCurrentStimulus)
 
 
 void
@@ -295,15 +285,18 @@ BOOST_AUTO_TEST_SUITE(ring_tests)
 BOOST_AUTO_TEST_SUITE_END()
 
 
+#ifdef NEMO_CUDA_ENABLED
 BOOST_AUTO_TEST_CASE(compare_backends)
 {
 	nemo::Network* net = nemo::random::construct(4000, 1000, false);
 	runBackendComparisions(net);
 	delete net;
 }
+#endif
 
 
 
+#ifdef NEMO_CUDA_ENABLED
 BOOST_AUTO_TEST_CASE(mapping_tests_random)
 {
 	// only need to create the network once
@@ -311,9 +304,11 @@ BOOST_AUTO_TEST_CASE(mapping_tests_random)
 	runComparisions(net);
 	delete net;
 }
+#endif
 
 
 
+#ifdef NEMO_CUDA_ENABLED
 BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 {
 	//! \todo run for larger networks as well
@@ -328,7 +323,7 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 	runComparisions(net);
 	delete net;
 }
-
+#endif
 
 
 void
@@ -364,17 +359,8 @@ testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 
 
 BOOST_AUTO_TEST_SUITE(non_contigous_indices)
-
-	BOOST_AUTO_TEST_CASE(cpu) {
-		testNonContigousNeuronIndices(NEMO_BACKEND_CPU, 1);
-		testNonContigousNeuronIndices(NEMO_BACKEND_CPU, 1000000);
-	}
-
-	BOOST_AUTO_TEST_CASE(cuda) {
-		testNonContigousNeuronIndices(NEMO_BACKEND_CUDA, 1);
-		testNonContigousNeuronIndices(NEMO_BACKEND_CUDA, 1000000);
-	}
-
+	TEST_ALL_BACKENDS_N(low, testNonContigousNeuronIndices, 1)
+	TEST_ALL_BACKENDS_N(high, testNonContigousNeuronIndices, 1000000)
 BOOST_AUTO_TEST_SUITE_END()
 
 
@@ -427,17 +413,8 @@ testGetSynapses(backend_t backend, bool stdp)
 /* The network should contain the same synapses before and after setting up the
  * simulation. The order of the synapses may differ, though. */
 BOOST_AUTO_TEST_SUITE(get_synapses);
-
-	BOOST_AUTO_TEST_CASE(cuda) {
-		testGetSynapses(NEMO_BACKEND_CUDA, false);
-		testGetSynapses(NEMO_BACKEND_CUDA, true);
-	}
-
-	BOOST_AUTO_TEST_CASE(cpu) {
-		testGetSynapses(NEMO_BACKEND_CPU, false);
-		testGetSynapses(NEMO_BACKEND_CPU, true);
-	}
-
+	TEST_ALL_BACKENDS_N(nostdp, testGetSynapses, false)
+	TEST_ALL_BACKENDS_N(stdp, testGetSynapses, true)
 BOOST_AUTO_TEST_SUITE_END();
 
 
@@ -445,43 +422,11 @@ void testStdp(backend_t backend, bool noiseConnections, float reward);
 void testInvalidStdpUsage(backend_t);
 
 BOOST_AUTO_TEST_SUITE(stdp);
-
-	BOOST_AUTO_TEST_SUITE(cuda);
-
-		BOOST_AUTO_TEST_CASE(integral) {
-			testStdp(NEMO_BACKEND_CUDA, false, 1.0);
-			testStdp(NEMO_BACKEND_CUDA, true, 1.0);
-		}
-
-		BOOST_AUTO_TEST_CASE(fractional) {
-			testStdp(NEMO_BACKEND_CUDA, false, 0.8);
-			testStdp(NEMO_BACKEND_CUDA, true, 0.8);
-		}
-
-		BOOST_AUTO_TEST_CASE(error) {
-			testInvalidStdpUsage(NEMO_BACKEND_CUDA);
-		}
-
-	BOOST_AUTO_TEST_SUITE_END();
-
-	BOOST_AUTO_TEST_SUITE(cpu);
-
-		BOOST_AUTO_TEST_CASE(integral) {
-			testStdp(NEMO_BACKEND_CPU, false, 1.0);
-			testStdp(NEMO_BACKEND_CPU, true, 1.0);
-		}
-
-		BOOST_AUTO_TEST_CASE(fractional) {
-			testStdp(NEMO_BACKEND_CPU, false, 0.8);
-			testStdp(NEMO_BACKEND_CPU, true, 0.8);
-		}
-
-		BOOST_AUTO_TEST_CASE(error) {
-			testInvalidStdpUsage(NEMO_BACKEND_CPU);
-		}
-
-	BOOST_AUTO_TEST_SUITE_END();
-
+	TEST_ALL_BACKENDS_N(simple, testStdp, false, 1.0)
+	TEST_ALL_BACKENDS_N(noisy, testStdp, true, 1.0)
+	TEST_ALL_BACKENDS_N(simple_fractional_reward, testStdp, false, 0.8)
+	TEST_ALL_BACKENDS_N(noise_fractional_reward, testStdp, true, 0.9)
+	TEST_ALL_BACKENDS(invalid, testInvalidStdpUsage)
 BOOST_AUTO_TEST_SUITE_END();
 
 
@@ -512,11 +457,13 @@ testHighFiring(backend_t backend, bool stdp)
 
 /* The firing queue should be able to handle all firing rates. It might be best
  * to enable device assertions for this test.  */
+#ifdef NEMO_CUDA_ENABLED
 BOOST_AUTO_TEST_SUITE(high_firing)
 	BOOST_AUTO_TEST_CASE(cuda) {
 		testHighFiring(NEMO_BACKEND_CUDA, false);
 	}
 BOOST_AUTO_TEST_SUITE_END()
+#endif
 
 
 
@@ -537,16 +484,7 @@ testVProbe(backend_t backend)
 }
 
 
-
-BOOST_AUTO_TEST_SUITE(vprobe)
-	BOOST_AUTO_TEST_CASE(cuda) {
-		testVProbe(NEMO_BACKEND_CUDA);
-	}
-	BOOST_AUTO_TEST_CASE(cpu) {
-		testVProbe(NEMO_BACKEND_CPU);
-	}
-BOOST_AUTO_TEST_SUITE_END()
-
+TEST_ALL_BACKENDS(vprobe, testVProbe)
 
 
 void
@@ -598,19 +536,10 @@ testSetNeuron(backend_t backend)
 
 
 
-BOOST_AUTO_TEST_SUITE(set_neuron)
-	BOOST_AUTO_TEST_CASE(cuda) {
-		testSetNeuron(NEMO_BACKEND_CUDA);
-	}
-	BOOST_AUTO_TEST_CASE(cpu) {
-		testSetNeuron(NEMO_BACKEND_CPU);
-	}
-BOOST_AUTO_TEST_SUITE_END()
+TEST_ALL_BACKENDS(set_neuron, testSetNeuron)
 
 BOOST_AUTO_TEST_SUITE(regression)
 	BOOST_AUTO_TEST_CASE(torus) {
 		runTorus(false);
 	}
 BOOST_AUTO_TEST_SUITE_END()
-
-

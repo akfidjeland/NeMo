@@ -29,7 +29,13 @@ void
 setBackend(backend_t, nemo::Configuration& conf);
 
 nemo::Configuration
-configuration(bool stdp, unsigned partitionSize, backend_t backend = NEMO_BACKEND_CUDA);
+configuration(bool stdp, unsigned partitionSize,
+#ifdef NEMO_CUDA_ENABLED
+		backend_t backend = NEMO_BACKEND_CUDA
+#else
+		backend_t backend = NEMO_BACKEND_CPU
+#endif
+		);
 
 /* Add a 'standard' excitatory neuron with fixed parameters */
 void

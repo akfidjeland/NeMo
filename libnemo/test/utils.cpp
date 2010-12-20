@@ -81,8 +81,7 @@ setBackend(backend_t backend, nemo::Configuration& conf)
 
 
 nemo::Configuration
-configuration(bool stdp, unsigned partitionSize,
-		backend_t backend = NEMO_BACKEND_CUDA)
+configuration(bool stdp, unsigned partitionSize, backend_t backend)
 {
 	nemo::Configuration conf;
 
