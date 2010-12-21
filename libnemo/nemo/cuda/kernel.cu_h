@@ -17,7 +17,7 @@
 
 #define THREADS_PER_BLOCK 256
 
-#define DELAY_BITS 5
+#define DELAY_BITS 6
 #define MAX_DELAY (1<<DELAY_BITS)
 #define MAX_STDP_DELAY MAX_DELAY
 #define STDP_WINDOW_SIZE 64
@@ -25,7 +25,7 @@
 #define NEURON_BITS 10
 #define MAX_PARTITION_SIZE (1<<NEURON_BITS)
 
-#define PARTITION_BITS 7
+#define PARTITION_BITS 10
 
 /*! We use one partition per thread block, so this is also the maximum number
  * of thread blocks */
