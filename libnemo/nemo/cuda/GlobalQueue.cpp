@@ -7,6 +7,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/format.hpp>
+
 #include "GlobalQueue.hpp"
 
 #include <nemo/util.h>
@@ -24,6 +26,8 @@ GlobalQueue::GlobalQueue() : m_allocated(0) {}
 void
 GlobalQueue::allocate(size_t partitionCount, size_t maxIncomingWarps, double sizeMultiplier)
 {
+	using boost::format;
+
 	// allocate space for the incoming count (double-buffered)
 	unsigned* d_fill;
 	size_t len = ALIGN(partitionCount * 2, 32) * sizeof(unsigned);
@@ -33,7 +37,11 @@ GlobalQueue::allocate(size_t partitionCount, size_t maxIncomingWarps, double siz
 	m_allocated = len;
 
 	/* The queue has one entry for incoming spikes for each partition */
-	assert(partitionCount < MAX_PARTITION_COUNT);
+	if(partitionCount > MAX_PARTITION_COUNT) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Network contains %u partitions, but kernel supports at most %u")
+					% partitionCount % MAX_PARTITION_COUNT));
+	}
 	size_t height = partitionCount * 2; // double buffered
 
 	/* Each buffer entry (for a particular target partition) is of a fixed size.

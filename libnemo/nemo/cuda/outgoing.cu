@@ -16,24 +16,6 @@ __constant__ size_t c_outgoingPitch;  // word pitch
 __constant__ unsigned c_outgoingStep; // number of rows we can process in a thread block
 
 
-__host__
-outgoing_t
-make_outgoing(pidx_t partition, unsigned warpOffset)
-{
-	assert(partition < MAX_PARTITION_COUNT);
-	return make_uint2(partition, (unsigned) warpOffset);
-}
-
-
-
-__host__
-outgoing_addr_t
-make_outgoing_addr(unsigned offset, unsigned len)
-{
-	return make_uint2(offset, len);
-}
-
-
 
 __host__
 cudaError

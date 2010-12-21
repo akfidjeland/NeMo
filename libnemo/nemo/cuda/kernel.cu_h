@@ -18,7 +18,7 @@
 #define THREADS_PER_BLOCK 256
 
 #define DELAY_BITS 5
-#define MAX_DELAY (1<<5)
+#define MAX_DELAY (1<<DELAY_BITS)
 #define MAX_STDP_DELAY MAX_DELAY
 #define STDP_WINDOW_SIZE 64
 
@@ -30,13 +30,6 @@
 /*! We use one partition per thread block, so this is also the maximum number
  * of thread blocks */
 #define MAX_PARTITION_COUNT (1<<PARTITION_BITS)
-
-//! \todo move some of this to connectivityMatrix
-#define SYNAPSE_BITS (32-NEURON_BITS-PARTITION_BITS-DELAY_BITS)
-#define MAX_SYNAPSES_PER_DELAY (1<<SYNAPSE_BITS)
-
-#define SYNAPSE_WARP_BITS 8
-#define MAX_SYNAPSE_WARPS (1<<SYNAPSE_WARP_BITS)
 
 // Note that this warp count may not be correct, although it matches the warp
 // count for current high-end devices

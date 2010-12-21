@@ -10,10 +10,10 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* For L1 spike delivery we need to know to which target partitions each firing
- * neuron has outgoing synapses. We store this information in a matrix indexed
- * by partition, neuron, and delay. Each entry is a row listing partition
- * targets. Empty entries are set to INVALID_OUTGOING. */
+/*! \file outgoing.cu_h Outgoing data (kernel functions)
+ *
+ * \see nemo::cuda::Outgoing for more details
+ */
 
 #include <cuda_runtime.h>
 
@@ -42,19 +42,8 @@ typedef uint2 outgoing_t;
 typedef uint2 outgoing_addr_t;
 
 
-/*! Create a new outgoing entry
- *
- * \param partition source partition index
- * \param warpOffset offset into \ref fcm FCM in terms of number of warps
- */
-__host__ outgoing_t make_outgoing(pidx_t partition, unsigned warpOffset);
-
-
 /*! Dummy outgoing entry pointing to the invalid null warp (see \ref nemo::cuda::Outgoing::init) */
 const outgoing_t INVALID_OUTGOING = make_uint2(0, 0);
-
-
-__host__ outgoing_addr_t make_outgoing_addr(unsigned offset, unsigned len);
 
 
 __host__ cudaError setOutgoingPitch(size_t targetPitch);

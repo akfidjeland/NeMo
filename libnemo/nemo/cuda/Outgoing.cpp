@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <cuda_runtime.h>
+#include <boost/format.hpp>
 
 #include <nemo/util.h>
 #include <nemo/bitops.h>
@@ -45,6 +46,37 @@ compare_warp_counts(
 }
 
 
+
+/*! Create a new outgoing entry
+ *
+ * \param partition source partition index
+ * \param warpOffset offset into \ref fcm FCM in terms of number of warps
+ */
+inline
+outgoing_t
+make_outgoing(pidx_t partition, unsigned warpOffset)
+{
+	using boost::format;
+
+	if(partition > MAX_PARTITION_COUNT) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Partition index (%u) out of bounds. Kernel supports at most %u partitions")
+					% partition % MAX_PARTITION_COUNT));
+	}
+
+	return make_uint2(partition, (unsigned) warpOffset);
+}
+
+
+
+outgoing_addr_t
+make_outgoing_addr(unsigned offset, unsigned len)
+{
+	return make_uint2(offset, len);
+}
+
+
+
 void
 Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 {
@@ -57,7 +89,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	d_malloc((void**)&d_addr, height * sizeof(outgoing_addr_t), "outgoing spikes (row lengths)");
 	md_rowLength = boost::shared_ptr<outgoing_addr_t>(d_addr, d_free);
 	m_allocated = height * sizeof(outgoing_addr_t);
-	std::vector<outgoing_addr_t> h_addr(height, make_outgoing(0,0));
+	std::vector<outgoing_addr_t> h_addr(height, make_outgoing_addr(0,0));
 
 	/* allocate temporary host memory for table */
 	std::vector<outgoing_t> h_data;
