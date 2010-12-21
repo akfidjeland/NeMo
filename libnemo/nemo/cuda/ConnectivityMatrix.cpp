@@ -120,6 +120,11 @@ ConnectivityMatrix::addSynapse(
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Neuron %u has synapses with delay < 1 (%u)") % s.source % s.delay));
 	}
+	if(s.delay > MAX_DELAY) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Neuron %u has synapses with delay %ums. The CUDA backend supports a maximum of %ums")
+						% s.source % s.delay % MAX_DELAY));
+	}
 
 	DeviceIdx d_target = mapper.deviceIdx(s.target());
 	DeviceIdx d_source = mapper.deviceIdx(s.source);
