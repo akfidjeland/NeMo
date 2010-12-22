@@ -114,23 +114,36 @@ stepSimulation(
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	step<<<dimGrid, dimBlock>>>(
-			stdpEnabled,
+	gather_<<<dimGrid, dimBlock>>>(
 			thalamicInputEnabled,
+			cycle,
+			// neuron data
+			df_neuronParameters,
+			du_neuronState,
+			// spike delivery
+			d_fcm,
+			d_gqData, d_gqFill,
+			// cycle counting
+#ifdef NEMO_CUDA_KERNEL_TIMING
+			d_cc, ccPitch,
+#endif
+			// stimulus
+			d_istim,   // external input current
+			d_current); // internal input current
+
+	fireAndScatter<<<dimGrid, dimBlock>>>(
+			stdpEnabled,
 			cycle,
 			d_recentFiring,
 			// neuron data
 			df_neuronParameters,
 			df_neuronState,
-			du_neuronState,
 			// spike delivery
-			d_fcm,
 			d_outgoingAddr, d_outgoing,
 			d_gqData, d_gqFill,
 			d_lqData, d_lqFill, d_delays,
 			// stimulus
 			d_fstim, // firing stimulus
-			d_istim, // external input current
 			d_current, // internal input current
 			// cycle counting
 #ifdef NEMO_CUDA_KERNEL_TIMING

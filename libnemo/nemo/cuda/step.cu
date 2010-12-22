@@ -617,71 +617,42 @@ gather( unsigned cycle,
  */
 __global__
 void
-step (
-		bool stdpEnabled,
+gather_(
 		bool thalamicInputEnabled,
 		uint32_t cycle,
-		uint64_t* g_recentFiring,
 		// neuron state
 		float* gf_neuronParameters,
-		float* gf_neuronState,
 		unsigned* gu_neuronState,
 		// spike delivery
 		synapse_t* g_fcm,
-		outgoing_addr_t* g_outgoingAddr,
-		outgoing_t* g_outgoing,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
 		unsigned* g_gqFill,
-		lq_entry_t* g_lqData,      // pitch = c_lqPitch
-		unsigned* g_lqFill,
-		uint64_t* g_delays,        // pitch = c_pitch64
-		// firing stimulus
-		uint32_t* g_fstim,
-		fix_t* g_istim,
-		float* g_current,
+		//! \todo fix the cycle counters here
 #ifdef NEMO_CUDA_KERNEL_TIMING
 		// cycle counting
 		cycle_counter_t* g_cycleCounters,
 		//! \todo move to cmem
 		size_t ccPitch,
 #endif
-		uint32_t* firingOutput) // already offset to current cycle
+		//! \todo just load this directly in the fire step
+		fix_t* g_istim,
+		float* g_current)
 {
-	SET_COUNTER(s_ccMain, 0);
+	SET_COUNTER(s_ccGather, 0);
 
-	/* Per-neuron buffers */
-
-	/* We're re-using the same bit of shared memory here for both the current
-	 * (per-neuron) and the list of firing (per *fired*-neuron). These are both
-	 * used in the firing step (with different addressing). We end up writing
-	 * firing data to the lower part of this array while the upper region still
-	 * contains unconsumed current. This is safe since the read part s_fired is
-	 * offset from the start, and we use a synchronisation in the fire step.
-	 * See notes there as well.
-	 *
-	 * While this might seem borderline insane, it frees up
-	 * 4*MAX_PARTITION_SIZE bytes of shared memory, which is a big deal */
-	__shared__ uint32_t s_N32[MAX_PARTITION_SIZE + THREADS_PER_BLOCK];
-	float* s_current = (float*) s_N32 + THREADS_PER_BLOCK;
-	nidx_dt* s_fired = (nidx_dt*) s_N32;
-
-	// in practice the above works out the same as
-	//__shared__ float s_current[MAX_PARTITION_SIZE];
-	//__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
+	__shared__ float s_current[MAX_PARTITION_SIZE];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
-	__shared__ uint32_t s_N1A[S_BV_PITCH];
-	__shared__ uint32_t s_N1B[S_BV_PITCH];
+	__shared__ uint32_t s_overflow[S_BV_PITCH];
+	__shared__ uint32_t s_negative[S_BV_PITCH];
 
 	/* Per-partition parameters */
 	__shared__ unsigned s_partitionSize;
-	__shared__ unsigned s_firingCount;
 
 	if(threadIdx.x == 0) {
 #ifdef NEMO_CUDA_DEBUG_TRACE
 		s_cycle = cycle;
 #endif
-		s_firingCount = 0;
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
     }
 	__syncthreads();
@@ -689,19 +660,16 @@ step (
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
 		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
 	}
-	SET_COUNTER(s_ccMain, 1);
-
-	uint32_t* s_overflow = s_N1A;
-	uint32_t* s_negative = s_N1B;
+	SET_COUNTER(s_ccGather, 1);
 
 	gather(cycle, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
 
-	SET_COUNTER(s_ccMain, 2);
+	SET_COUNTER(s_ccGather, 2);
 
 	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, (fix_t*) s_current, s_overflow, s_negative);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
-	SET_COUNTER(s_ccMain, 3);
+	SET_COUNTER(s_ccGather, 3);
 
 	/* Generating random input current really ought to be done /before/
 	 * providing the input current (for better performance in MPI backend).
@@ -715,7 +683,55 @@ step (
 
 	storeAccumulatedCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
 
-	SET_COUNTER(s_ccMain, 4);
+	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
+}
+
+
+
+__global__
+void
+fireAndScatter (
+		bool stdpEnabled,
+		uint32_t cycle,
+		uint64_t* g_recentFiring,
+		// neuron state
+		float* gf_neuronParameters,
+		float* gf_neuronState,
+		// spike delivery
+		outgoing_addr_t* g_outgoingAddr,
+		outgoing_t* g_outgoing,
+		gq_entry_t* g_gqData,      // pitch = c_gqPitch
+		unsigned* g_gqFill,
+		lq_entry_t* g_lqData,      // pitch = c_lqPitch
+		unsigned* g_lqFill,
+		uint64_t* g_delays,        // pitch = c_pitch64
+		// firing stimulus
+		uint32_t* g_fstim,
+		float* g_current,
+#ifdef NEMO_CUDA_KERNEL_TIMING
+		// cycle counting
+		cycle_counter_t* g_cycleCounters,
+		//! \todo move to cmem
+		size_t ccPitch,
+#endif
+		uint32_t* firingOutput) // already offset to current cycle
+{
+	SET_COUNTER(s_ccMain, 0);
+
+	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
+	__shared__ uint32_t s_N1A[S_BV_PITCH];
+
+	__shared__ unsigned s_firingCount;
+	__shared__ unsigned s_partitionSize;
+
+	if(threadIdx.x == 0) {
+#ifdef NEMO_CUDA_DEBUG_TRACE
+		s_cycle = cycle;
+#endif
+		s_firingCount = 0;
+		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+    }
+	__syncthreads();
 
 	uint32_t* s_fstim = s_N1A;
 	loadFiringInput(g_fstim, s_fstim);
@@ -733,11 +749,11 @@ step (
 	uint32_t* s_dfired = s_N1A;
 	storeFiringOutput(s_firingCount, s_fired, s_dfired, firingOutput);
 
-	SET_COUNTER(s_ccMain, 5);
+	SET_COUNTER(s_ccMain, 1);
 
 	scatterLocal(cycle, s_firingCount, s_fired, g_delays, g_lqFill, g_lqData);
 
-	SET_COUNTER(s_ccMain, 6);
+	SET_COUNTER(s_ccMain, 2);
 
 	scatterGlobal(cycle,
 			g_lqFill,
@@ -747,7 +763,7 @@ step (
 			g_gqFill,
 			g_gqData);
 
-	SET_COUNTER(s_ccMain, 7);
+	SET_COUNTER(s_ccMain, 3);
 
 	if(stdpEnabled) {
 		loadStdpParameters_();
@@ -761,7 +777,7 @@ step (
 				s_fired);
 	}
 
-	SET_COUNTER(s_ccMain, 8);
+	SET_COUNTER(s_ccMain, 4);
 
 	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

@@ -15,6 +15,7 @@
 /* Each kernel has a separate cycle counter */
 #ifdef NEMO_CUDA_KERNEL_TIMING
 __shared__ clock_t s_ccMain[CC_MAIN_COUNT];
+__shared__ clock_t s_ccGather[CC_GATHER_COUNT];
 //! \todo don't allocate this memory if STDP not enabled
 __shared__ clock_t s_ccApplySTDP[CC_STDP_APPLY_COUNT];
 #endif
