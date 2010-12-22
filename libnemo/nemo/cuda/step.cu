@@ -25,7 +25,7 @@
  */
 __device__
 void
-storeDenseFiringOutput(unsigned nfired, nidx_dt* s_fired,
+storeDenseFiring(unsigned nfired, nidx_dt* s_fired,
 		uint32_t* s_dfired, uint32_t* g_dfired)
 {
 	bv_clear_(s_dfired);
@@ -38,6 +38,22 @@ storeDenseFiringOutput(unsigned nfired, nidx_dt* s_fired,
 	__syncthreads();
 
 	bv_copy(s_dfired, g_dfired + CURRENT_PARTITION * c_bv_pitch);
+}
+
+
+
+/*! Load per-neuron bit-vector for fired neurons from global memory
+ *
+ * \param[in] g_dfired
+ *		Per-neuron bit-vector in global memory for fired neurons.
+ * \param[out] s_dfired
+ *		Per-neuron bit-vector in shared memory for fired neurons.
+ */
+__device__
+void
+loadDenseFiring(uint32_t* g_dfired, uint32_t* s_dfired)
+{
+	bv_copy(g_dfired + CURRENT_PARTITION * c_bv_pitch, s_dfired);
 }
 
 
@@ -86,15 +102,14 @@ __device__
 void
 loadSparseFiring(unsigned* g_nFired, nidx_dt* g_fired, unsigned* s_nFired, nidx_dt* s_fired)
 {
-	__shared__ unsigned nFired;
 	if(threadIdx.x == 0) {
-		nFired = g_nFired[CURRENT_PARTITION];
+		*s_nFired = g_nFired[CURRENT_PARTITION];
 	}
 	__syncthreads();
 
-	for(unsigned b=0; b < nFired; b += THREADS_PER_BLOCK) {
+	for(unsigned b=0; b < *s_nFired; b += THREADS_PER_BLOCK) {
 		unsigned i = b + threadIdx.x;
-		if(i < nFired) {
+		if(i < *s_nFired) {
 			s_fired[i] = g_fired[CURRENT_PARTITION * c_pitch32 + i];
 		}
 	}
@@ -521,7 +536,7 @@ fireAndScatter (
 	__syncthreads();
 
 	uint32_t* s_dfired = s_N1A;
-	storeDenseFiringOutput(s_nFired, s_fired, s_dfired, g_firingOutput);
+	storeDenseFiring(s_nFired, s_fired, s_dfired, g_firingOutput);
 	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
 
 	// add kernel boundary here
@@ -538,6 +553,10 @@ fireAndScatter (
 			g_gqFill,
 			g_gqData);
 
+
+	/*! \todo make this a separate kernel, and do
+	 * conditional on host side. */
+	loadDenseFiring(g_firingOutput, s_dfired);
 	if(stdpEnabled) {
 		loadStdpParameters_();
 		updateSTDP_(
