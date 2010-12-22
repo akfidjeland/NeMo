@@ -228,18 +228,35 @@ Simulation::setPitch()
 // STDP
 //-----------------------------------------------------------------------------
 
+
+void
+Simulation::runKernel(cudaError_t status)
+{
+	using boost::format;
+
+	/* Check device assertions before /reporting/ errors. If we have an
+	 * assertion failure we're likely to also have an error, but we'd like to
+	 * know what the cause of it was. */
+	m_deviceAssertions.check(m_timer.elapsedSimulation());
+
+	if(status != cudaSuccess) {
+		throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR,
+				str(format("Cuda error in cycle %u: %s")
+					% m_timer.elapsedSimulation()
+					% cudaGetErrorString(status)));
+	}
+}
+
+
+
 void
 Simulation::gather()
 {
-	//! \todo add fixed wrapper to handle
-	// 1. device assertions
-	// 2. errors
-
 	m_timer.step();
 	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
 
-	::gather(
+	runKernel(::gather(
 			m_mapper.partitionCount(),
 			m_neurons.rngEnabled(),
 			m_timer.elapsedSimulation(),
@@ -249,16 +266,14 @@ Simulation::gather()
 			m_current.deviceData(),
 			m_cm.d_fcm(),
 			m_cm.d_gqData(),
-			m_cm.d_gqFill());
+			m_cm.d_gqFill()));
 }
 
 
 void
 Simulation::update()
 {
-	using boost::format;
-
-	::stepSimulation(
+	runKernel(::stepSimulation(
 			m_mapper.partitionCount(),
 			m_stdp,
 			m_timer.elapsedSimulation(),
@@ -278,23 +293,7 @@ Simulation::update()
 			m_cm.delayBits().deviceData(),
 			// cycle counting
 			m_cycleCounters.data(),
-			m_cycleCounters.pitch());
-
-	/* Get error status before checking assertions, as getting assertion data
-	 * may otherwise mask errors here */
-	cudaError_t status = cudaGetLastError();
-
-	/* Check device assertions before /reporting/ errors. If we have an
-	 * assertion failure we're likely to also have an error, but we'd like to
-	 * know what the cause of it was. */
-	m_deviceAssertions.check(m_timer.elapsedSimulation());
-
-	if(status != cudaSuccess) {
-		throw nemo::exception(NEMO_CUDA_INVOCATION_ERROR,
-				str(format("Cuda error in cycle %u: %s")
-					% m_timer.elapsedSimulation()
-					% cudaGetErrorString(status)));
-	}
+			m_cycleCounters.pitch()));
 
 	m_firingBuffer.sync();
 

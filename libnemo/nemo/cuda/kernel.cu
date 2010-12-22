@@ -87,7 +87,7 @@ applyStdp(
 /*! Wrapper for the __global__ call that performs a single simulation step */
 //! \todo use consistent argument ordering
 __host__
-void
+cudaError_t
 stepSimulation(
 		unsigned partitionCount,
 		bool stdpEnabled,
@@ -130,4 +130,6 @@ stepSimulation(
 			d_cc, ccPitch,
 #endif
 			d_fout);
+
+	return cudaGetLastError();
 }

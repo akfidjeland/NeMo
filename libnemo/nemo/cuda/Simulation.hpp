@@ -320,6 +320,8 @@ class Simulation : public nemo::SimulationBackend
 		 * separately from the step, hence member variables */
 		uint32_t* md_fstim;
 		fix_t* md_istim;
+
+		void runKernel(cudaError_t);
 };
 
 	} // end namespace cuda

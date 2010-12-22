@@ -29,7 +29,7 @@ applyStdp(
 		float reward);
 
 
-void
+cudaError_t
 gather( unsigned partitionCount,
 		bool thalamicInputEnabled,
 		unsigned cycle,
@@ -42,7 +42,7 @@ gather( unsigned partitionCount,
 		unsigned* d_gqFill);
 
 
-void
+cudaError_t
 stepSimulation(
 		unsigned partitionCount,
 		bool stdpEnabled,

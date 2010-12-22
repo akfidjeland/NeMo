@@ -297,7 +297,7 @@ gather( bool thalamicInputEnabled,
 
 
 __host__
-void
+cudaError_t
 gather( unsigned partitionCount,
 		bool thalamicInputEnabled,
 		unsigned cycle,
@@ -320,4 +320,6 @@ gather( unsigned partitionCount,
 			d_fcm, d_gqData, d_gqFill,
 			d_istim,    // external input current
 			d_current); // internal input current
+
+	return cudaGetLastError();
 }
