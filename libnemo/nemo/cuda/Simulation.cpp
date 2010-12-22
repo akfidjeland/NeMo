@@ -77,7 +77,6 @@ Simulation::~Simulation()
 
 
 
-
 void
 Simulation::configureStdp()
 {
@@ -275,15 +274,22 @@ Simulation::gather()
 void
 Simulation::update()
 {
-	runKernel(::stepSimulation(
+	runKernel(::fire(
 			m_mapper.partitionCount(),
-			m_stdp,
 			m_timer.elapsedSimulation(),
-			m_recentFiring.deviceData(),
 			m_neurons.df_parameters(),
 			m_neurons.df_state(),
 			md_fstim,
 			m_current.deviceData(),
+			m_firingBuffer.d_buffer(),
+			md_nFired.get(),
+			m_fired.deviceData()));
+
+	runKernel(::scatter(
+			m_mapper.partitionCount(),
+			m_stdp,
+			m_timer.elapsedSimulation(),
+			m_recentFiring.deviceData(),
 			// firing buffers
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
@@ -296,11 +302,9 @@ Simulation::update()
 			// local spike delivery
 			m_lq.d_data(),
 			m_lq.d_fill(),
-			m_cm.delayBits().deviceData(),
-			// cycle counting
-			m_cycleCounters.data(),
-			m_cycleCounters.pitch()));
+			m_cm.delayBits().deviceData()));
 
+	//! \todo make sure this runs in parallel with scatter.
 	m_firingBuffer.sync();
 
 	/* Must clear stimulus pointers in case the low-level interface is used and

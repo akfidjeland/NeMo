@@ -42,17 +42,25 @@ gather( unsigned partitionCount,
 		unsigned* d_gqFill);
 
 
+
 cudaError_t
-stepSimulation(
-		unsigned partitionCount,
-		bool stdpEnabled,
+fire(	unsigned partitionCount,
 		unsigned cycle,
-		uint64_t* d_recentFiring,
 		float* df_neuronParameters,
 		float* df_neuronState,
 		uint32_t* d_fstim,
 		float* d_current,
 		uint32_t* d_fout,
+		unsigned* d_nFired,
+		nidx_dt* d_fired);
+
+
+cudaError_t
+scatter(unsigned partitionCount,
+		bool stdpEnabled,
+		unsigned cycle,
+		uint64_t* d_recentFiring,
+		uint32_t* d_dfired,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
@@ -61,9 +69,7 @@ stepSimulation(
 		unsigned* d_gqFill,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
-		uint64_t* d_delays,
-		cycle_counter_t* d_cc,
-		size_t ccPitch);
+		uint64_t* d_delays);
 
 
 cudaError

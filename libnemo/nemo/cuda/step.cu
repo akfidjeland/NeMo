@@ -477,36 +477,17 @@ scatterGlobal(unsigned cycle,
 
 __global__
 void
-fireAndScatter (
-		bool stdpEnabled,
-		uint32_t cycle,
-		uint64_t* g_recentFiring,
+fire( 	uint32_t cycle,
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
-		// spike delivery
-		outgoing_addr_t* g_outgoingAddr,
-		outgoing_t* g_outgoing,
-		gq_entry_t* g_gqData,      // pitch = c_gqPitch
-		unsigned* g_gqFill,
-		lq_entry_t* g_lqData,      // pitch = c_lqPitch
-		unsigned* g_lqFill,
-		uint64_t* g_delays,        // pitch = c_pitch64
 		// firing stimulus
 		uint32_t* g_fstim,
 		float* g_current,
-#ifdef NEMO_CUDA_KERNEL_TIMING
-		// cycle counting
-		cycle_counter_t* g_cycleCounters,
-		//! \todo move to cmem
-		size_t ccPitch,
-#endif
 		uint32_t* g_firingOutput, // dense output, already offset to current cycle
 		unsigned* g_nFired,       // device-only buffer
 		nidx_dt* g_fired)         // device-only buffer, sparse output
 {
-	SET_COUNTER(s_ccMain, 0);
-
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 	__shared__ uint32_t s_N1A[S_BV_PITCH];
 
@@ -538,8 +519,29 @@ fireAndScatter (
 	uint32_t* s_dfired = s_N1A;
 	storeDenseFiring(s_nFired, s_fired, s_dfired, g_firingOutput);
 	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
+}
 
-	// add kernel boundary here
+
+
+__global__
+void
+scatter(bool stdpEnabled,
+		uint32_t cycle,
+		uint64_t* g_recentFiring,
+		outgoing_addr_t* g_outgoingAddr,
+		outgoing_t* g_outgoing,
+		gq_entry_t* g_gqData,      // pitch = c_gqPitch
+		unsigned* g_gqFill,
+		lq_entry_t* g_lqData,      // pitch = c_lqPitch
+		unsigned* g_lqFill,
+		uint64_t* g_delays,        // pitch = c_pitch64
+		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
+		unsigned* g_nFired,        // device-only buffer.
+		nidx_dt* g_fired)          // device-only buffer, sparse output. pitch = c_pitch32.
+{
+	__shared__ unsigned s_nFired;
+	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
+	__shared__ uint32_t s_dfired[S_BV_PITCH];
 
 	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
 
@@ -553,18 +555,17 @@ fireAndScatter (
 			g_gqFill,
 			g_gqData);
 
-
 	/*! \todo make this a separate kernel, and do
 	 * conditional on host side. */
-	loadDenseFiring(g_firingOutput, s_dfired);
 	if(stdpEnabled) {
+		loadDenseFiring(g_dfired, s_dfired);
 		loadStdpParameters_();
 		updateSTDP_(
 				cycle,
 				s_dfired,
 				g_recentFiring,
 				c_pitch64,
-				s_partitionSize,
+				c_partitionSize[CURRENT_PARTITION],
 				cr_address, cr_stdp, cr_pitch,
 				s_fired);
 	}

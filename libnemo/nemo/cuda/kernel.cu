@@ -88,16 +88,38 @@ applyStdp(
 //! \todo use consistent argument ordering
 __host__
 cudaError_t
-stepSimulation(
-		unsigned partitionCount,
-		bool stdpEnabled,
+fire( 	unsigned partitionCount,
 		unsigned cycle,
-		uint64_t* d_recentFiring,
 		float* df_neuronParameters,
 		float* df_neuronState,
 		uint32_t* d_fstim,
 		float* d_current,
 		uint32_t* d_fout,
+		unsigned* d_nFired,
+		nidx_dt* d_fired)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(partitionCount);
+
+	fire<<<dimGrid, dimBlock>>>(
+			cycle,
+			df_neuronParameters, df_neuronState,
+			d_fstim,   // firing stimulus
+			d_current, // internal input current
+			d_fout, d_nFired, d_fired);
+
+	return cudaGetLastError();
+}
+
+
+
+__host__
+cudaError_t
+scatter(unsigned partitionCount,
+		bool stdpEnabled,
+		unsigned cycle,
+		uint64_t* d_recentFiring,
+		uint32_t* d_dfired,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
@@ -106,32 +128,19 @@ stepSimulation(
 		unsigned* d_gqFill,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
-		uint64_t* d_delays,
-		cycle_counter_t* d_cc,
-		size_t ccPitch)
+		uint64_t* d_delays)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	fireAndScatter<<<dimGrid, dimBlock>>>(
-			stdpEnabled,
-			cycle,
-			d_recentFiring,
-			// neuron data
-			df_neuronParameters,
-			df_neuronState,
+	scatter<<<dimGrid, dimBlock>>>(
+			stdpEnabled, cycle, d_recentFiring,
 			// spike delivery
 			d_outgoingAddr, d_outgoing,
 			d_gqData, d_gqFill,
 			d_lqData, d_lqFill, d_delays,
-			// stimulus
-			d_fstim, // firing stimulus
-			d_current, // internal input current
-			// cycle counting
-#ifdef NEMO_CUDA_KERNEL_TIMING
-			d_cc, ccPitch,
-#endif
-			d_fout, d_nFired, d_fired);
+			// firing data
+			d_dfired, d_nFired, d_fired);
 
 	return cudaGetLastError();
 }
