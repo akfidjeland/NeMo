@@ -46,6 +46,8 @@ Simulation::Simulation(
 	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
 	m_current(m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingBuffer(m_mapper),
+	m_fired(m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
+	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), "Fired count")),
 	m_cycleCounters(m_mapper.partitionCount(), conf.stdpFunction()),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_pitch32(0),
@@ -282,7 +284,11 @@ Simulation::update()
 			m_neurons.df_state(),
 			md_fstim,
 			m_current.deviceData(),
+			// firing buffers
 			m_firingBuffer.d_buffer(),
+			md_nFired.get(),
+			m_fired.deviceData(),
+			// outgoing
 			m_cm.d_outgoingAddr(),
 			m_cm.d_outgoing(),
 			m_cm.d_gqData(),

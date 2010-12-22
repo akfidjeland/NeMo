@@ -25,7 +25,7 @@
  */
 __device__
 void
-storeFiringOutput(unsigned nfired, nidx_dt* s_fired,
+storeDenseFiringOutput(unsigned nfired, nidx_dt* s_fired,
 		uint32_t* s_dfired, uint32_t* g_dfired)
 {
 	bv_clear_(s_dfired);
@@ -38,6 +38,67 @@ storeFiringOutput(unsigned nfired, nidx_dt* s_fired,
 	__syncthreads();
 
 	bv_copy(s_dfired, g_dfired + CURRENT_PARTITION * c_bv_pitch);
+}
+
+
+
+/*! Store sparse firing in global memory buffer
+ *
+ * The global memory roundtrip is required to support having 'fire' and
+ * 'scatter' in separate kernels.
+ *
+ * \param[in] nFired number of neurons in this partition which fired this cycle
+ * \param[in] s_fired shared memory vector of the relevant neuron indices.
+ * \param[out] g_nFired global memory per-partition vector of firing counts
+ * \param[out] g_fired global memory per-neuron vector of fired neuron indices.
+ * 		For each partition, only the first \a nFired entries contain valid data.
+ */
+__device__
+void
+storeSparseFiring(unsigned nFired, nidx_dt* s_fired, unsigned* g_nFired, nidx_dt* g_fired)
+{
+	for(unsigned b=0; b < nFired; b += THREADS_PER_BLOCK) {
+		unsigned i = b + threadIdx.x;
+		if(i < nFired) {
+			g_fired[CURRENT_PARTITION * c_pitch32 + i] = s_fired[i];
+		}
+	}
+
+	if(threadIdx.x == 0) {
+		g_nFired[CURRENT_PARTITION] = nFired;
+	}
+}
+
+
+
+/*! Load sparse firing from global memory buffer
+ *
+ * The global memory roundtrip is required to support having 'fire' and
+ * 'scatter' in separate kernels.
+ *
+ * \param[in] g_nFired global memory per-partition vector of firing counts
+ * \param[in] g_fired global memory per-neuron vector of fired neuron indices.
+ * \param[out] s_nFired number of neurons in this partition which fired this cycle
+ * \param[out] s_fired shared memory vector of the relevant neuron indices.
+ * 		Only the first \a nFired entries contain valid data.
+ */
+__device__
+void
+loadSparseFiring(unsigned* g_nFired, nidx_dt* g_fired, unsigned* s_nFired, nidx_dt* s_fired)
+{
+	__shared__ unsigned nFired;
+	if(threadIdx.x == 0) {
+		nFired = g_nFired[CURRENT_PARTITION];
+	}
+	__syncthreads();
+
+	for(unsigned b=0; b < nFired; b += THREADS_PER_BLOCK) {
+		unsigned i = b + threadIdx.x;
+		if(i < nFired) {
+			s_fired[i] = g_fired[CURRENT_PARTITION * c_pitch32 + i];
+		}
+	}
+	__syncthreads();
 }
 
 
@@ -82,12 +143,12 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
  * \param[in] s_fstim
  *		shared memory bit vector where set bits indicate neurons which should
  *		be forced to fire
- * \param[out] s_firingCount
+ * \param[out] s_nFired
  *		output variable which will be set to the number of	neurons which fired
  *		this cycle
  * \param[out] s_fired
  *		shared memory vector containing local indices of neurons which fired.
- *		s_fired[0:s_firingCount-1] will contain valid data, whereas remaining
+ *		s_fired[0:s_nFired-1] will contain valid data, whereas remaining
  *		entries may contain garbage.
  */
 __device__
@@ -101,7 +162,7 @@ fire(
 	// buffers
 	uint32_t* s_fstim,
 	// output
-	unsigned* s_firingCount,
+	unsigned* s_nFired,
 	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
 	size_t neuronParametersSize = PARTITION_COUNT * c_pitch32;
@@ -152,7 +213,7 @@ fire(
 						s_cycle, CURRENT_PARTITION, neuron, forceFiring);
 
 				//! \todo consider *only* updating this here, and setting u and v separately
-				unsigned i = atomicAdd(s_firingCount, 1);
+				unsigned i = atomicAdd(s_nFired, 1);
 
 				/* can overwrite current as long as i < neuron. See notes below
 				 * on synchronisation and declaration of s_current/s_fired. */
@@ -425,21 +486,23 @@ fireAndScatter (
 		//! \todo move to cmem
 		size_t ccPitch,
 #endif
-		uint32_t* firingOutput) // already offset to current cycle
+		uint32_t* g_firingOutput, // dense output, already offset to current cycle
+		unsigned* g_nFired,       // device-only buffer
+		nidx_dt* g_fired)         // device-only buffer, sparse output
 {
 	SET_COUNTER(s_ccMain, 0);
 
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 	__shared__ uint32_t s_N1A[S_BV_PITCH];
 
-	__shared__ unsigned s_firingCount;
+	__shared__ unsigned s_nFired;
 	__shared__ unsigned s_partitionSize;
 
 	if(threadIdx.x == 0) {
 #ifdef NEMO_CUDA_DEBUG_TRACE
 		s_cycle = cycle;
 #endif
-		s_firingCount = 0;
+		s_nFired = 0;
 		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
     }
 	__syncthreads();
@@ -452,19 +515,20 @@ fireAndScatter (
 			gf_neuronState + CURRENT_PARTITION * c_pitch32,
 			g_current + CURRENT_PARTITION * c_pitch32,
 			s_fstim,
-			&s_firingCount,
+			&s_nFired,
 			s_fired);
 
 	__syncthreads();
 
 	uint32_t* s_dfired = s_N1A;
-	storeFiringOutput(s_firingCount, s_fired, s_dfired, firingOutput);
+	storeDenseFiringOutput(s_nFired, s_fired, s_dfired, g_firingOutput);
+	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
 
-	SET_COUNTER(s_ccMain, 1);
+	// add kernel boundary here
 
-	scatterLocal(cycle, s_firingCount, s_fired, g_delays, g_lqFill, g_lqData);
+	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
 
-	SET_COUNTER(s_ccMain, 2);
+	scatterLocal(cycle, s_nFired, s_fired, g_delays, g_lqFill, g_lqData);
 
 	scatterGlobal(cycle,
 			g_lqFill,
@@ -473,8 +537,6 @@ fireAndScatter (
 			g_outgoing,
 			g_gqFill,
 			g_gqData);
-
-	SET_COUNTER(s_ccMain, 3);
 
 	if(stdpEnabled) {
 		loadStdpParameters_();
@@ -487,8 +549,4 @@ fireAndScatter (
 				cr_address, cr_stdp, cr_pitch,
 				s_fired);
 	}
-
-	SET_COUNTER(s_ccMain, 4);
-
-	WRITE_COUNTERS(s_ccMain, g_cycleCounters, ccPitch, CC_MAIN_COUNT);
 }

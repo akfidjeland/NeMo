@@ -18,6 +18,7 @@
  */
 
 #include <vector>
+#include <boost/shared_array.hpp>
 #include <nemo/exception.hpp>
 
 namespace nemo {
@@ -30,6 +31,21 @@ d_malloc(void** d_ptr, size_t sz, const char* name);
 
 void
 d_free(void*);
+
+
+/*! Allocate memory block and put in smart pointer
+ *
+ * \param len length in /words/
+ * \param name name of data structure (for error reporting)
+ */
+template<typename T>
+boost::shared_array<T>
+d_array(size_t len, const char* name)
+{
+	void* d_ptr = NULL;
+	d_malloc(&d_ptr, len * sizeof(T), name);
+	return boost::shared_array<T>(static_cast<T*>(d_ptr), d_free);
+}
 
 
 /*! Allocate 2D memory on the device

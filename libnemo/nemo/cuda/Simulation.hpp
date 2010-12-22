@@ -301,6 +301,11 @@ class Simulation : public nemo::SimulationBackend
 		 * required per neuron (regardless of whether or not it's firing */
 		FiringBuffer m_firingBuffer;
 
+		/* The simulation also needs to store sparse firing data between kernel
+		 * calls */
+		NVector<nidx_dt> m_fired;
+		boost::shared_array<unsigned> md_nFired;
+
 		CycleCounters m_cycleCounters;
 
 		DeviceAssertions m_deviceAssertions;

@@ -53,6 +53,8 @@ stepSimulation(
 		uint32_t* d_fstim,
 		float* d_current,
 		uint32_t* d_fout,
+		unsigned* d_nFired,
+		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
 		outgoing_t* d_outgoing,
 		gq_entry_t* d_gqData,

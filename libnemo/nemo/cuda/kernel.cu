@@ -98,6 +98,8 @@ stepSimulation(
 		uint32_t* d_fstim,
 		float* d_current,
 		uint32_t* d_fout,
+		unsigned* d_nFired,
+		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
 		outgoing_t* d_outgoing,
 		gq_entry_t* d_gqData,
@@ -129,7 +131,7 @@ stepSimulation(
 #ifdef NEMO_CUDA_KERNEL_TIMING
 			d_cc, ccPitch,
 #endif
-			d_fout);
+			d_fout, d_nFired, d_fired);
 
 	return cudaGetLastError();
 }
