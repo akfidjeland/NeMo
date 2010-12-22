@@ -239,20 +239,30 @@ Simulation::update()
 	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
 
+	::gather(
+			m_mapper.partitionCount(),
+			m_neurons.rngEnabled(),
+			m_timer.elapsedSimulation(),
+			m_neurons.df_parameters(),
+			m_neurons.du_state(),
+			md_istim,
+			m_current.deviceData(),
+			m_cm.d_fcm(),
+			m_cm.d_gqData(),
+			m_cm.d_gqFill());
+
+	//! \todo perform copy here
+
 	::stepSimulation(
 			m_mapper.partitionCount(),
 			m_stdp,
-			m_neurons.rngEnabled(),
 			m_timer.elapsedSimulation(),
 			m_recentFiring.deviceData(),
 			m_neurons.df_parameters(),
 			m_neurons.df_state(),
-			m_neurons.du_state(),
 			md_fstim,
-			md_istim,
 			m_current.deviceData(),
 			m_firingBuffer.d_buffer(),
-			m_cm.d_fcm(),
 			m_cm.d_outgoingAddr(),
 			m_cm.d_outgoing(),
 			m_cm.d_gqData(),

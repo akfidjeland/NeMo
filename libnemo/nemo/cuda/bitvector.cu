@@ -13,6 +13,8 @@
 #include "bitvector.cu_h"
 #include "types.h"
 
+#include "device_assert.cu"
+
 
 // pitch for global memory bit-vectors
 __constant__ size_t c_bv_pitch;

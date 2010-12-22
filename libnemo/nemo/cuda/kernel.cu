@@ -12,10 +12,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <nemo/fixedpoint.hpp>
-
 #include "kernel.cu_h"
 #include "log.cu_h"
+
 
 /*! Per-partition size
  *
@@ -25,18 +24,20 @@
  */
 __constant__ unsigned c_partitionSize[MAX_PARTITION_COUNT];
 
+
 #include "device_assert.cu"
 #include "bitvector.cu"
 #include "double_buffer.cu"
 #include "connectivityMatrix.cu"
 #include "cycleCounting.cu"
-#include "applySTDP.cu"
 #include "outgoing.cu"
 #include "globalQueue.cu"
-#include "thalamicInput.cu"
 #include "nvector.cu"
 #include "stdp.cu"
 #include "step.cu"
+
+#include "applySTDP.cu"
+#include "gather.cu"
 
 
 /*! Set partition size for each partition in constant memory
@@ -90,17 +91,13 @@ void
 stepSimulation(
 		unsigned partitionCount,
 		bool stdpEnabled,
-		bool thalamicInputEnabled,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
 		float* df_neuronParameters,
 		float* df_neuronState,
-		unsigned* du_neuronState,
 		uint32_t* d_fstim,
-		fix_t* d_istim,
 		float* d_current,
 		uint32_t* d_fout,
-		synapse_t* d_fcm,
 		outgoing_addr_t* d_outgoingAddr,
 		outgoing_t* d_outgoing,
 		gq_entry_t* d_gqData,
@@ -113,23 +110,6 @@ stepSimulation(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-
-	gather_<<<dimGrid, dimBlock>>>(
-			thalamicInputEnabled,
-			cycle,
-			// neuron data
-			df_neuronParameters,
-			du_neuronState,
-			// spike delivery
-			d_fcm,
-			d_gqData, d_gqFill,
-			// cycle counting
-#ifdef NEMO_CUDA_KERNEL_TIMING
-			d_cc, ccPitch,
-#endif
-			// stimulus
-			d_istim,   // external input current
-			d_current); // internal input current
 
 	fireAndScatter<<<dimGrid, dimBlock>>>(
 			stdpEnabled,

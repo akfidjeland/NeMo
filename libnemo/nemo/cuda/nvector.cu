@@ -1,6 +1,18 @@
-/* Access functions for per-neuron data.
+#ifndef NEMO_CUDA_NVECTOR_CU
+#define NEMO_CUDA_NVECTOR_CU
+
+/*! \file nvector.cu Access functions for per-neuron data.
  *
  * See NVector.hpp/NVector.ipp for host-side functionality
+ */
+
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of nemo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
 __constant__ size_t c_pitch32;
@@ -42,3 +54,5 @@ nv_load64(unsigned neuron, unsigned plane, T* g_data)
 {
 	return g_data[(plane * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + neuron];
 }
+
+#endif

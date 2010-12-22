@@ -1,6 +1,8 @@
 #ifndef KERNEL_HPP
 #define KERNEL_HPP
 
+/*! \file kernel.hpp Prototypes for kernel calls */
+
 /* Copyright 2010 Imperial College London
  *
  * This file is part of nemo.
@@ -28,20 +30,29 @@ applyStdp(
 
 
 void
+gather( unsigned partitionCount,
+		bool thalamicInputEnabled,
+		unsigned cycle,
+		float* df_neuronParameters,
+		unsigned* du_neuronState,
+		fix_t* d_istim,
+		float* d_current,
+		synapse_t* d_fcm,
+		gq_entry_t* d_gqData,
+		unsigned* d_gqFill);
+
+
+void
 stepSimulation(
 		unsigned partitionCount,
 		bool stdpEnabled,
-		bool thalamicInputEnabled,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
 		float* df_neuronParameters,
 		float* df_neuronState,
-		unsigned* du_neuronState,
 		uint32_t* d_fstim,
-		fix_t* d_istim,
 		float* d_current,
 		uint32_t* d_fout,
-		synapse_t* d_fcm,
 		outgoing_addr_t* d_outgoingAddr,
 		outgoing_t* d_outgoing,
 		gq_entry_t* d_gqData,
@@ -51,6 +62,7 @@ stepSimulation(
 		uint64_t* d_delays,
 		cycle_counter_t* d_cc,
 		size_t ccPitch);
+
 
 cudaError
 configureStdp(

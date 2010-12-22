@@ -1,3 +1,6 @@
+#ifndef NEMO_CUDA_DOUBLE_BUFFER_CU
+#define NEMO_CUDA_DOUBLE_BUFFER_CU
+
 /* Copyright 2010 Imperial College London
  *
  * This file is part of nemo.
@@ -32,3 +35,4 @@ writeBuffer(unsigned cycle)
     return cycle & 0x1;
 }
 
+#endif

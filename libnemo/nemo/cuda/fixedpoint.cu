@@ -15,9 +15,12 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "device_assert.cu"
+#include <nemo/fixedpoint.hpp>
+
 #include "types.h"
 #include "log.cu_h"
+
+#include "device_assert.cu"
 
 #define FX_SIGN_BIT 0x80000000
 
