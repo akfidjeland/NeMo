@@ -215,6 +215,9 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::finalizeCurrentStimulus */
 		void finalizeCurrentStimulus(size_t count);
 
+		/*! \copydoc nemo::SimulationBackend::gather */
+		void gather();
+
 		/*! \copydoc nemo::SimulationBackend::update */
 		void update();
 

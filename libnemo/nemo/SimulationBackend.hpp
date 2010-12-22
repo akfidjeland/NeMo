@@ -92,6 +92,10 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 */
 		virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
 
+		/*! Perform that 'gather' part of the simulation step, i.e. compute the
+		 * incoming current for each neuron */
+		virtual void gather() = 0;
+
 		/*! Perform a single simulation step, using any stimuli (firing
 		 * and current) provided by the caller after the previous call
 		 * to step */

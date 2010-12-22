@@ -338,6 +338,7 @@ Worker::runSimulation(
 		STEP("firing stimulus", sim->setFiringStimulus(masterReq.fstim));
 		STEP("current stimulus", sim->setCurrentStimulus(istim));
 		//! \todo split up step and only do neuron update here
+		STEP("gather (kernel)", sim->gather());
 		STEP("step", sim->update());
 		STEP("read firing", FiredList fired = sim->readFiring());
 		//! \note take care here: fired contains reference to internal buffers in sim.

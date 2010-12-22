@@ -228,12 +228,12 @@ Simulation::setPitch()
 // STDP
 //-----------------------------------------------------------------------------
 
-
-
 void
-Simulation::update()
+Simulation::gather()
 {
-	using boost::format;
+	//! \todo add fixed wrapper to handle
+	// 1. device assertions
+	// 2. errors
 
 	m_timer.step();
 	m_neurons.step(m_timer.elapsedSimulation());
@@ -250,8 +250,13 @@ Simulation::update()
 			m_cm.d_fcm(),
 			m_cm.d_gqData(),
 			m_cm.d_gqFill());
+}
 
-	//! \todo perform copy here
+
+void
+Simulation::update()
+{
+	using boost::format;
 
 	::stepSimulation(
 			m_mapper.partitionCount(),
