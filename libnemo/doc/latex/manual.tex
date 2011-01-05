@@ -611,7 +611,7 @@ for ms=1:1000
 \subsection{Windows}
 \label{installation:windows}
 
-The easiest way to install is to use the precompiled library (NSIS installer).
+The easiest way to install is by using the precompiled library (NSIS installer).
 This installs \nemo\ to \directory{C:\textbackslash Program Files\textbackslash NeMo},
 	with
 		libraries in the \directory{bin} subdirectory and
@@ -619,7 +619,7 @@ This installs \nemo\ to \directory{C:\textbackslash Program Files\textbackslash 
 Python bindings, Matlab bindings, and examples are stored in separate subdirectories.
 
 Alternatively, the library can be built from source using \command{cmake} to generate a Visual Studio project file,
-	and then building from within Visual Studio.
+	and then building from within Visual Studio (see Section~\ref{source_build}).
 Builds in Cygwin or MSys/MinGW have not been tested.
 
 \subsection{Linux}
@@ -629,19 +629,30 @@ There are no precompiled binaries for linux,
 By default,
 	headers are installed to \file{/usr/local/include},
 	the library files to \file{/usr/local/lib},
-	Python bindings, Matlab bindings, examples and documentation to subdirectories of \directory{/usr/loca/share/nemo}.
+	Python bindings, Matlab bindings, examples and documentation to subdirectories of \directory{/usr/local/share/nemo}.
+
+\subsection{OSX}
+
+The easiest way to install is by using the precompiled library (PackageMaker installer).
+By default,
+	headers are installed to \directory{/usr/include},
+	library files are installed to \directory{/usr/lib},
+	while
+	Python bindings, Matlab bindings, examples and documentation are found in subdirectories of \directory{/usr/share/nemo}.
+Alternatively, the library can be built from source using \command{cmake} and the GNU build tools (see Section~\ref{source_build}).
 
 \subsection{Building from source}
+\label{source_build}
 
 \nemo\ relies on the boost headers.
-Additionally the following dependencies may be needed depending on what \command{cmake} configuration options are loaded: 
+Additionally the following dependencies may be needed depending on what \command{cmake} configuration options are set: 
 
 \begin{tabular}{p{.3\textwidth}lp{.3\textwidth}}
 \hline
 Feature & \command{cmake} option & Dependency \\
 \hline
 CUDA backend & \command{NEMO\_CUDA\_ENABLED} & Cuda toolkit \\
-\hspace{2em}dynamic loading & \command{NEMO\_CUDA\_DYNAMIC\_LOADING} & \command{libltdl} (on Linux only) \\
+\hspace{2em}dynamic loading & \command{NEMO\_CUDA\_DYNAMIC\_LOADING} & \command{libltdl} (Linux/OSX) \\
 Timing functions & \command{NEMO\_TIMING\_ENABLED} & boost date\_time \\
 Python bindings & \command{NEMO\_PYTHON\_ENABLED} & boost python \\
 Matlab bindings & \command{NEMO\_MATLAB\_ENABLED} & Matlab (including \command{mex} compiler) \\
@@ -662,6 +673,11 @@ cmake ..
 make
 sudo make install
 \end{shell}
+
+% TODO:
+% add section on common build issues.
+% LTDL variables not set: install libltdl or disable DYNAMIC LOADING.
+
 
 
 
