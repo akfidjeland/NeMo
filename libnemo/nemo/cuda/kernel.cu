@@ -33,8 +33,9 @@ __constant__ unsigned c_partitionSize[MAX_PARTITION_COUNT];
 #include "outgoing.cu"
 #include "globalQueue.cu"
 #include "nvector.cu"
-#include "stdp.cu"
+#include "scatter.cu"
 #include "step.cu"
+
 
 #include "applySTDP.cu"
 #include "gather.cu"
