@@ -33,12 +33,11 @@ __constant__ unsigned c_partitionSize[MAX_PARTITION_COUNT];
 #include "outgoing.cu"
 #include "globalQueue.cu"
 #include "nvector.cu"
-#include "scatter.cu"
-#include "step.cu"
 
-
-#include "applySTDP.cu"
 #include "gather.cu"
+#include "fire.cu"
+#include "scatter.cu"
+#include "applySTDP.cu"
 
 
 /*! Set partition size for each partition in constant memory
