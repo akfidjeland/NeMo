@@ -34,7 +34,7 @@
  */
 __global__
 void
-applySTDP_(
+applyStdp(
 #ifdef NEMO_CUDA_KERNEL_TIMING
 	cycle_counter_t* g_cc,
 	size_t ccPitch,
@@ -120,5 +120,32 @@ applySTDP_(
 	SET_COUNTER(s_ccApplySTDP, 1);
 	WRITE_COUNTERS(s_ccApplySTDP, g_cc, ccPitch, 2);
 }
+
+
+__host__
+void
+applyStdp(
+		cycle_counter_t* d_cc,
+		size_t ccPitch,
+		unsigned partitionCount,
+		unsigned fractionalBits,
+		synapse_t* d_fcm,
+		float maxWeight,
+		float minWeight,
+		float reward)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(partitionCount);
+
+	applyStdp<<<dimGrid, dimBlock>>>(
+#ifdef NEMO_CUDA_KERNEL_TIMING
+			d_cc, ccPitch,
+#endif
+			d_fcm,
+			fx_toFix(reward, fractionalBits),
+			fx_toFix(maxWeight, fractionalBits),
+			fx_toFix(minWeight, fractionalBits));
+}
+
 
 #endif

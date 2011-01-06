@@ -271,4 +271,34 @@ fire( 	uint32_t cycle,
 	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
 }
 
+
+
+/*! Wrapper for the __global__ call that performs a single simulation step */
+__host__
+cudaError_t
+fire( 	unsigned partitionCount,
+		unsigned cycle,
+		float* df_neuronParameters,
+		float* df_neuronState,
+		uint32_t* d_fstim,
+		float* d_current,
+		uint32_t* d_fout,
+		unsigned* d_nFired,
+		nidx_dt* d_fired)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(partitionCount);
+
+	fire<<<dimGrid, dimBlock>>>(
+			cycle,
+			df_neuronParameters, df_neuronState,
+			d_fstim,   // firing stimulus
+			d_current, // internal input current
+			d_fout, d_nFired, d_fired);
+
+	return cudaGetLastError();
+}
+
+
+
 #endif

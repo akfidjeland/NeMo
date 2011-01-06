@@ -407,4 +407,23 @@ updateStdp(
 			s_fired);
 }
 
+
+
+__host__
+cudaError_t
+updateStdp(
+		unsigned partitionCount,
+		unsigned cycle,
+		uint64_t* d_recentFiring,
+		uint32_t* d_dfired,
+		unsigned* d_nFired,
+		nidx_dt* d_fired)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(partitionCount);
+	updateStdp<<<dimGrid, dimBlock>>>(cycle, d_recentFiring, d_dfired, d_nFired, d_fired);
+	return cudaGetLastError();
+}
+
+
 #endif

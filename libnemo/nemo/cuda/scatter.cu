@@ -276,4 +276,35 @@ scatter(uint32_t cycle,
 }
 
 
+
+__host__
+cudaError_t
+scatter(unsigned partitionCount,
+		unsigned cycle,
+		unsigned* d_nFired,
+		nidx_dt* d_fired,
+		outgoing_addr_t* d_outgoingAddr,
+		outgoing_t* d_outgoing,
+		gq_entry_t* d_gqData,
+		unsigned* d_gqFill,
+		lq_entry_t* d_lqData,
+		unsigned* d_lqFill,
+		uint64_t* d_delays)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(partitionCount);
+
+	scatter<<<dimGrid, dimBlock>>>(
+			cycle,
+			// spike delivery
+			d_outgoingAddr, d_outgoing,
+			d_gqData, d_gqFill,
+			d_lqData, d_lqFill, d_delays,
+			// firing data
+			d_nFired, d_fired);
+
+	return cudaGetLastError();
+}
+
+
 #endif
