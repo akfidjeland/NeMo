@@ -127,6 +127,7 @@ nemo_backend_description(nemo_configuration_t conf, const char** descr);
 
 
 /*! \copydoc nemo::Configuration::setWriteOnlySynapses */
+NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_write_only_synapses(nemo_configuration_t conf);
 
