@@ -37,6 +37,7 @@ __constant__ unsigned c_partitionSize[MAX_PARTITION_COUNT];
 #include "gather.cu"
 #include "fire.cu"
 #include "scatter.cu"
+#include "stdp.cu"
 #include "applySTDP.cu"
 
 
@@ -116,10 +117,7 @@ fire( 	unsigned partitionCount,
 __host__
 cudaError_t
 scatter(unsigned partitionCount,
-		bool stdpEnabled,
 		unsigned cycle,
-		uint64_t* d_recentFiring,
-		uint32_t* d_dfired,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
@@ -134,13 +132,31 @@ scatter(unsigned partitionCount,
 	dim3 dimGrid(partitionCount);
 
 	scatter<<<dimGrid, dimBlock>>>(
-			stdpEnabled, cycle, d_recentFiring,
+			cycle,
 			// spike delivery
 			d_outgoingAddr, d_outgoing,
 			d_gqData, d_gqFill,
 			d_lqData, d_lqFill, d_delays,
 			// firing data
-			d_dfired, d_nFired, d_fired);
+			d_nFired, d_fired);
 
+	return cudaGetLastError();
+}
+
+
+
+__host__
+cudaError_t
+updateStdp(
+		unsigned partitionCount,
+		unsigned cycle,
+		uint64_t* d_recentFiring,
+		uint32_t* d_dfired,
+		unsigned* d_nFired,
+		nidx_dt* d_fired)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(partitionCount);
+	updateStdp<<<dimGrid, dimBlock>>>(cycle, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }

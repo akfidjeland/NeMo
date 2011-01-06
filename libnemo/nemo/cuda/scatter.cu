@@ -10,10 +10,9 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "localQueue.cu"
-#include "stdp.cu"
-
 /*! \file scatter.cu Spike scatter kernel */
+
+#include "localQueue.cu"
 
 
 /*! Load sparse firing from global memory buffer
@@ -247,29 +246,9 @@ scatterGlobal(unsigned cycle,
 
 
 
-/*! Load per-neuron bit-vector for fired neurons from global memory
- *
- * \param[in] g_dfired
- *		Per-neuron bit-vector in global memory for fired neurons.
- * \param[out] s_dfired
- *		Per-neuron bit-vector in shared memory for fired neurons.
- *
- * \see storeDenseFiring
- */
-__device__
-void
-loadDenseFiring(uint32_t* g_dfired, uint32_t* s_dfired)
-{
-	bv_copy(g_dfired + CURRENT_PARTITION * c_bv_pitch, s_dfired);
-}
-
-
-
 __global__
 void
-scatter(bool stdpEnabled,
-		uint32_t cycle,
-		uint64_t* g_recentFiring,
+scatter(uint32_t cycle,
 		outgoing_addr_t* g_outgoingAddr,
 		outgoing_t* g_outgoing,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
@@ -277,13 +256,11 @@ scatter(bool stdpEnabled,
 		lq_entry_t* g_lqData,      // pitch = c_lqPitch
 		unsigned* g_lqFill,
 		uint64_t* g_delays,        // pitch = c_pitch64
-		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
 		unsigned* g_nFired,        // device-only buffer.
 		nidx_dt* g_fired)          // device-only buffer, sparse output. pitch = c_pitch32.
 {
 	__shared__ unsigned s_nFired;
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
-	__shared__ uint32_t s_dfired[S_BV_PITCH];
 
 	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
 
@@ -296,21 +273,7 @@ scatter(bool stdpEnabled,
 			g_outgoing,
 			g_gqFill,
 			g_gqData);
-
-	/*! \todo make this a separate kernel, and do
-	 * conditional on host side. */
-	if(stdpEnabled) {
-		loadDenseFiring(g_dfired, s_dfired);
-		loadStdpParameters_();
-		updateSTDP_(
-				cycle,
-				s_dfired,
-				g_recentFiring,
-				c_pitch64,
-				c_partitionSize[CURRENT_PARTITION],
-				cr_address, cr_stdp, cr_pitch,
-				s_fired);
-	}
 }
+
 
 #endif

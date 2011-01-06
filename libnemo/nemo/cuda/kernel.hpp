@@ -57,10 +57,7 @@ fire(	unsigned partitionCount,
 
 cudaError_t
 scatter(unsigned partitionCount,
-		bool stdpEnabled,
 		unsigned cycle,
-		uint64_t* d_recentFiring,
-		uint32_t* d_dfired,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
@@ -70,6 +67,16 @@ scatter(unsigned partitionCount,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
 		uint64_t* d_delays);
+
+
+cudaError_t
+updateStdp(
+		unsigned partitionCount,
+		unsigned cycle,
+		uint64_t* d_recentFiring,
+		uint32_t* d_dfired,
+		unsigned* d_nFired,
+		nidx_dt* d_fired);
 
 
 cudaError

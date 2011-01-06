@@ -1,11 +1,16 @@
+#ifndef NEMO_CUDA_STDP_CU
+#define NEMO_CUDA_STDP_CU
+
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
+
+/*! \file stdp.cu STDP update kernel */
 
 #include "log.cu_h"
 #include "device_assert.cu"
@@ -352,3 +357,54 @@ updateSTDP_(
 		__syncthreads();
 	}
 }
+
+
+
+/*! Load per-neuron bit-vector for fired neurons from global memory
+ *
+ * \param[in] g_dfired
+ *		Per-neuron bit-vector in global memory for fired neurons.
+ * \param[out] s_dfired
+ *		Per-neuron bit-vector in shared memory for fired neurons.
+ *
+ * \see storeDenseFiring
+ */
+__device__
+void
+loadDenseFiring(uint32_t* g_dfired, uint32_t* s_dfired)
+{
+	bv_copy(g_dfired + CURRENT_PARTITION * c_bv_pitch, s_dfired);
+}
+
+
+
+__global__
+void
+updateStdp(
+		uint32_t cycle,
+		uint64_t* g_recentFiring,
+		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
+		unsigned* g_nFired,        // device-only buffer.
+		nidx_dt* g_fired)          // device-only buffer, sparse output. pitch = c_pitch32.
+{
+	__shared__ unsigned s_nFired;
+	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
+	__shared__ uint32_t s_dfired[S_BV_PITCH];
+
+	/* If the STDP update kernel is merged with the scatter
+	 * kernel, we'd only need to load this once per simulation
+	 * step, rather than twice. */
+	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
+	loadDenseFiring(g_dfired, s_dfired);
+	loadStdpParameters_();
+	updateSTDP_(
+			cycle,
+			s_dfired,
+			g_recentFiring,
+			c_pitch64,
+			c_partitionSize[CURRENT_PARTITION],
+			cr_address, cr_stdp, cr_pitch,
+			s_fired);
+}
+
+#endif

@@ -287,11 +287,8 @@ Simulation::update()
 
 	runKernel(::scatter(
 			m_mapper.partitionCount(),
-			m_stdp,
 			m_timer.elapsedSimulation(),
-			m_recentFiring.deviceData(),
 			// firing buffers
-			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
 			m_fired.deviceData(),
 			// outgoing
@@ -303,6 +300,16 @@ Simulation::update()
 			m_lq.d_data(),
 			m_lq.d_fill(),
 			m_cm.delayBits().deviceData()));
+
+	if(m_stdp) {
+		runKernel(::updateStdp(
+			m_mapper.partitionCount(),
+			m_timer.elapsedSimulation(),
+			m_recentFiring.deviceData(),
+			m_firingBuffer.d_buffer(),
+			md_nFired.get(),
+			m_fired.deviceData()));
+	}
 
 	//! \todo make sure this runs in parallel with scatter.
 	m_firingBuffer.sync();
