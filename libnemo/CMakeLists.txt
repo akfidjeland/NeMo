@@ -120,6 +120,7 @@ SET(CPACK_SOURCE_IGNORE_FILES
 	mpi
 	api/autogen
 	api/matlab/sources
+	COPYING.txt README.txt # symlinks
 	"tmp.*"
 	${CPACK_SOURCE_IGNORE_FILES})
 
