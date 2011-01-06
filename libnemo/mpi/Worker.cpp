@@ -339,7 +339,8 @@ Worker::runSimulation(
 		STEP("current stimulus", sim->setCurrentStimulus(istim));
 		//! \todo split up step and only do neuron update here
 		STEP("gather (kernel)", sim->gather());
-		STEP("step", sim->update());
+		STEP("step", sim->fire());
+		STEP("scatter (kernel)", sim->scatter());
 		STEP("read firing", FiredList fired = sim->readFiring());
 		//! \note take care here: fired contains reference to internal buffers in sim.
 		STEP("buffer scatter data", bufferScatterData(fired.neurons, obufs));

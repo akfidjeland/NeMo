@@ -218,8 +218,11 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::gather */
 		void gather();
 
-		/*! \copydoc nemo::SimulationBackend::update */
-		void update();
+		/*! \copydoc nemo::SimulationBackend::fire */
+		void fire();
+
+		/*! \copydoc nemo::SimulationBackend::scatter */
+		void scatter();
 
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();

@@ -92,14 +92,18 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 */
 		virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
 
-		/*! Perform that 'gather' part of the simulation step, i.e. compute the
+		/*! Perform the 'gather' part of the simulation step, i.e. compute the
 		 * incoming current for each neuron */
 		virtual void gather() = 0;
 
-		/*! Perform a single simulation step, using any stimuli (firing
-		 * and current) provided by the caller after the previous call
-		 * to step */
-		virtual void update() = 0;
+		/*! Perform the 'fire' part of the simulation step, i.e. compute the
+		 * next neuron state and determine what neurons fired. This may use
+		 * user-provided stimuli provided since the last call to 'fire' */
+		virtual void fire() = 0;
+
+		/*! Perform the 'scatter' and 'updateStdp' parts of
+		 * the simulation step */
+		virtual void scatter() = 0;
 
 		/*! \copydoc nemo::Simulation::step */
 		const firing_output& step();

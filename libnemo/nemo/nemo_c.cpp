@@ -268,7 +268,9 @@ step(nemo::SimulationBackend* sim,
 		sim->addCurrentStimulus(istim_nidx[i], istim_current[i]);
 	}
 	sim->finalizeCurrentStimulus(istim_len);
-	sim->update();
+	sim->gather();
+	sim->fire();
+	sim->scatter();
 	const std::vector<unsigned>& fired_ = sim->readFiring().neurons;
 	if(fired != NULL) {
 		*fired = fired_.empty() ? NULL : const_cast<unsigned*>(&fired_[0]);

@@ -272,7 +272,7 @@ Simulation::gather()
 
 
 void
-Simulation::update()
+Simulation::fire()
 {
 	runKernel(::fire(
 			m_mapper.partitionCount(),
@@ -284,7 +284,13 @@ Simulation::update()
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
 			m_fired.deviceData()));
+}
 
+
+
+void
+Simulation::scatter()
+{
 	runKernel(::scatter(
 			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),

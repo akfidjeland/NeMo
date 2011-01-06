@@ -25,7 +25,8 @@ SimulationBackend::step()
 	initCurrentStimulus(0);
 	finalizeCurrentStimulus(0);
 	gather();
-	update();
+	fire();
+	scatter();
 	return readFiring().neurons;
 }
 
@@ -37,7 +38,8 @@ SimulationBackend::step(const firing_stimulus& fstim)
 	finalizeCurrentStimulus(0);
 	gather();
 	setFiringStimulus(fstim);
-	update();
+	fire();
+	scatter();
 	return readFiring().neurons;
 }
 
@@ -52,7 +54,8 @@ SimulationBackend::step(const current_stimulus& istim)
 	}
 	finalizeCurrentStimulus(istim.size());
 	gather();
-	update();
+	fire();
+	scatter();
 	return readFiring().neurons;
 }
 
@@ -68,7 +71,8 @@ SimulationBackend::step(const firing_stimulus& fstim, const current_stimulus& is
 	finalizeCurrentStimulus(istim.size());
 	gather();
 	setFiringStimulus(fstim);
-	update();
+	fire();
+	scatter();
 	return readFiring().neurons;
 }
 
