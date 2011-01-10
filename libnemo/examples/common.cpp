@@ -2,7 +2,12 @@
 #include <fstream>
 #include <cmath>
 
+#include <boost/random.hpp>
+
 #include "common.hpp"
+
+typedef boost::mt19937 rng_t;
+typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 
 void
@@ -13,8 +18,13 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	unsigned stdp = vm["stdp"].as<unsigned>();
 	bool csv = vm.count("csv") != 0;
 	bool verbose = !csv;
+	bool provideFiringStimulus = vm.count("fstim") != 0;
+	bool provideCurrentStimulus = vm.count("istim") != 0;
 
 	const unsigned MS_PER_SECOND = 1000;
+
+	rng_t rng;
+	uirng_t randomNeuron(rng, boost::uniform_int<>(0, n-1));
 
 #ifdef NEMO_TIMING_ENABLED
 	sim->resetTimer();
@@ -45,12 +55,27 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 		std::cout << std::endl;
 		std::cout << "Running simulation (gathering performance data)...";
 	}
+
+	nemo::Simulation::firing_stimulus firingStimulus;
+	nemo::Simulation::current_stimulus currentStimulus;
+
 	unsigned long nfired = 0;
 	for(unsigned s=0; s < seconds; ++s) {
 		if(verbose)
 			std::cout << s << " ";
 		for(unsigned ms=0; ms<1000; ++ms, ++t) {
-			const std::vector<unsigned>& fired = sim->step();
+
+			if(provideFiringStimulus) {
+				firingStimulus.resize(1);
+				firingStimulus[0] = randomNeuron();
+			}
+
+			if(provideCurrentStimulus) {
+				currentStimulus.resize(1);
+				currentStimulus[0] = std::make_pair(randomNeuron(), 0.001f);
+			}
+
+			const std::vector<unsigned>& fired = sim->step(firingStimulus, currentStimulus);
 			nfired += fired.size();
 		}
 		if(stdp && t % stdp == 0) {
@@ -196,6 +221,8 @@ commonOptions()
 		("list-devices", "print the available simulation devices")
 		("benchmark", "report performance results instead of returning firing")
 		("csv", "when benchmarking, output a compact CSV format with the following fields: neurons, synapses, simulation time (ms), wallclock time (ms), STDP enabled, fired neurons, PSPs generated, average firing rate, speedup wrt real-time, throughput (million PSPs/second")
+		("fstim", "provide (very weak) firing stimulus, for benchmarking purposes")
+		("istim", "provide (very weak) current stimulus, for benchmarking purposes")
 	;
 
 	return desc;
