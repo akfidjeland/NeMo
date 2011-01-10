@@ -42,7 +42,7 @@ Simulation::Simulation(
 	m_cm(net, conf, m_mapper),
 	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
 	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false),
-	m_firingStimulus(m_mapper.partitionCount(), BV_WORD_PITCH, false, true),
+	m_firingStimulus(m_mapper.partitionCount()),
 	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
 	m_current(m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingBuffer(m_mapper),
@@ -53,7 +53,6 @@ Simulation::Simulation(
 	m_pitch32(0),
 	m_pitch64(0),
 	m_stdp(conf.stdpFunction()),
-	md_fstim(NULL),
 	md_istim(NULL),
 	m_streamCompute(0),
 	m_streamCopy(0)
@@ -110,34 +109,7 @@ Simulation::configureStdp()
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
-	if(nidx.empty()) {
-		md_fstim = NULL;
-		return;
-	}
-
-	//! \todo use internal host buffer with pinned memory instead
-	size_t pitch = m_firingStimulus.wordPitch();
-	std::vector<uint32_t> hostArray(m_firingStimulus.size(), 0);
-
-	for(std::vector<unsigned>::const_iterator i = nidx.begin();
-			i != nidx.end(); ++i) {
-		//! \todo should check that this neuron exists
-		DeviceIdx dev = m_mapper.deviceIdx(*i);
-		size_t word = dev.partition * pitch + dev.neuron / 32;
-		size_t bit = dev.neuron % 32;
-		hostArray[word] |= 1 << bit;
-	}
-
-	memcpyToDevice(m_firingStimulus.deviceData(), hostArray, m_mapper.partitionCount() * pitch);
-	md_fstim = m_firingStimulus.deviceData();
-}
-
-
-
-void
-Simulation::clearFiringStimulus()
-{
-	md_fstim = NULL;
+	m_firingStimulus.set(m_mapper, nidx);
 }
 
 
@@ -283,7 +255,7 @@ Simulation::fire()
 			m_timer.elapsedSimulation(),
 			m_neurons.df_parameters(),
 			m_neurons.df_state(),
-			md_fstim,
+			m_firingStimulus.d_buffer(),
 			m_current.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
@@ -329,7 +301,8 @@ Simulation::postfire()
 
 	/* Must clear stimulus pointers in case the low-level interface is used and
 	 * the user does not provide any fresh stimulus */
-	clearFiringStimulus();
+	//! \todo make this a kind of step function instead?
+	m_firingStimulus.reset();
 
 	flushLog();
 	endLog();

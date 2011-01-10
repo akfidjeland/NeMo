@@ -26,6 +26,7 @@
 #include "ConnectivityMatrix.hpp"
 #include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
+#include "FiringStimulus.hpp"
 #include "FiringBuffer.hpp"
 #include "Neurons.hpp"
 #include "LocalQueue.hpp"
@@ -71,6 +72,7 @@ namespace nemo {
  *   repectively global memory, shared memory and constant memory.
  * - The prefixes \c i_ and \c f_ denote integer and floating point data.
  * - The prefixes \c f_ and \c r_ denote forward and reverse connectivity data.
+ * - The prefixes \c w_ and \c b_ denote word and byte sizes respectivly
  *
  * Prefixes are combined where applicable, such that the prefix \c df denotes
  * device data for forwared connectivity.
@@ -293,9 +295,7 @@ class Simulation : public nemo::SimulationBackend
 
 		NVector<uint64_t, 2> m_recentFiring;
 
-		/* Densely packed, one bit per neuron */
-		NVector<uint32_t> m_firingStimulus;
-		void clearFiringStimulus();
+		FiringStimulus m_firingStimulus;
 
 		NVector<fix_t> m_currentStimulus; // user-provided
 		NVector<float> m_current;         // driven by simulation
@@ -326,7 +326,6 @@ class Simulation : public nemo::SimulationBackend
 
 		/* Device pointers to simulation stimulus. The stimulus may be set
 		 * separately from the step, hence member variables */
-		uint32_t* md_fstim;
 		fix_t* md_istim;
 
 		void runKernel(cudaError_t);
