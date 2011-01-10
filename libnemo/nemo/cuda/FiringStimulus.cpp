@@ -11,6 +11,7 @@
 
 #include "FiringStimulus.hpp"
 #include "device_memory.hpp"
+#include "exception.hpp"
 #include "bitvector.cu_h"
 
 
@@ -41,7 +42,10 @@ FiringStimulus::FiringStimulus(size_t partitionCount) :
 
 
 void
-FiringStimulus::set(const Mapper& mapper, const std::vector<unsigned>& nidx)
+FiringStimulus::set(
+		const Mapper& mapper,
+		const std::vector<unsigned>& nidx,
+		cudaStream_t stream)
 {
 	m_haveStimulus = !nidx.empty();
 
@@ -59,7 +63,9 @@ FiringStimulus::set(const Mapper& mapper, const std::vector<unsigned>& nidx)
 			mh_arr[word] |= 1 << bit;
 		}
 
-		memcpyToDevice(md_arr.get(), mh_arr.get(), mw_allocated);
+		CUDA_SAFE_CALL(cudaMemcpyAsync(
+					md_arr.get(), mh_arr.get(), mw_allocated*sizeof(uint32_t),
+					cudaMemcpyHostToDevice, stream));
 	}
 }
 

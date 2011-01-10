@@ -66,6 +66,7 @@ Simulation::Simulation(
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCopy));
 	CUDA_SAFE_CALL(cudaEventCreate(&m_eventFireDone));
+	CUDA_SAFE_CALL(cudaEventCreate(&m_firingStimulusDone));
 
 	//! \todo do m_cm size reporting here as well
 	if(conf.loggingEnabled()) {
@@ -109,7 +110,8 @@ Simulation::configureStdp()
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& nidx)
 {
-	m_firingStimulus.set(m_mapper, nidx);
+	m_firingStimulus.set(m_mapper, nidx, m_streamCopy);
+	CUDA_SAFE_CALL(cudaEventRecord(m_firingStimulusDone, m_streamCopy));
 }
 
 
@@ -249,6 +251,7 @@ Simulation::prefire()
 void
 Simulation::fire()
 {
+	CUDA_SAFE_CALL(cudaEventSynchronize(m_firingStimulusDone));
 	runKernel(::fire(
 			m_streamCompute,
 			m_mapper.partitionCount(),
@@ -406,6 +409,7 @@ void
 Simulation::finishSimulation()
 {
 	cudaEventDestroy(m_eventFireDone);
+	cudaEventDestroy(m_firingStimulusDone);
 	if(m_streamCompute)
 		cudaStreamDestroy(m_streamCompute);
 	if(m_streamCopy)

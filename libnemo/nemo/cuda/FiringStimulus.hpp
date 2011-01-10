@@ -13,6 +13,8 @@
 #include <vector>
 #include <boost/shared_array.hpp>
 
+#include <cuda_runtime.h>
+
 #include "Mapper.hpp"
 
 namespace nemo {
@@ -26,7 +28,9 @@ namespace nemo {
  * Usage:
  * \code
  * for(<every simulation cycle>) {
- *     fstim.set(mapper, <stimulus vector>);
+ *     fstim.set(mapper, <stimulus vector>, stream);
+ *     ... do whatever
+ *     cudaEventSynchronize(event);
  *     ... perform fire step
  *     fstim.reset()
  * \endcode
@@ -38,8 +42,9 @@ class FiringStimulus
 		FiringStimulus(size_t partitionCount);
 
 		/*! Initiate transfer of firing stimulus from host to device, recording 
-		 * event when the transfer is done */
-		void set(const Mapper& mapper, const std::vector<unsigned>& nidx);
+		 * event when the transfer is done. The copy is asynchrous, i.e. the
+		 * host can continue working while the copy takes place. */
+		void set(const Mapper& mapper, const std::vector<unsigned>& nidx, cudaStream_t);
 
 		//! \todo replace by a step function
 		void reset();

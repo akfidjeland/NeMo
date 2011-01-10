@@ -334,6 +334,7 @@ class Simulation : public nemo::SimulationBackend
 		cudaStream_t m_streamCopy;
 
 		cudaEvent_t m_eventFireDone;
+		cudaEvent_t m_firingStimulusDone;
 };
 
 	} // end namespace cuda
