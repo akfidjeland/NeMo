@@ -9,12 +9,15 @@
 
 #include <string.h>
 
-#include "FiringBuffer.hpp"
-#include "bitvector.cu_h"
 #include "device_memory.hpp"
+#include "exception.hpp"
+#include "FiringBuffer.hpp"
+
+#include "bitvector.cu_h"
 
 namespace nemo {
 	namespace cuda {
+
 
 FiringBuffer::FiringBuffer(const Mapper& mapper):
 	m_pitch(0),
@@ -37,15 +40,28 @@ FiringBuffer::FiringBuffer(const Mapper& mapper):
 	mallocPinned((void**) &h_buffer, md_allocated);
 	mh_buffer = boost::shared_ptr<uint32_t>(h_buffer, freePinned);
 	memset(h_buffer, 0, md_allocated);
+
+	CUDA_SAFE_CALL(cudaEventCreate(&m_copyDone));
+}
+
+
+
+FiringBuffer::~FiringBuffer()
+{
+	cudaEventDestroy(m_copyDone);
 }
 
 
 
 void
-FiringBuffer::sync()
+FiringBuffer::sync(cudaStream_t stream)
 {
-	memcpyFromDevice(mh_buffer.get(), md_buffer.get(),
-				m_mapper.partitionCount() * m_pitch);
+	CUDA_SAFE_CALL(cudaMemcpyAsync(mh_buffer.get(), md_buffer.get(),
+			m_mapper.partitionCount() * m_pitch * sizeof(uint32_t),
+			cudaMemcpyDeviceToHost,
+			stream));
+	CUDA_SAFE_CALL(cudaEventRecord(m_copyDone, stream));
+	CUDA_SAFE_CALL(cudaEventSynchronize(m_copyDone));
 	populateSparse(mh_buffer.get());
 }
 

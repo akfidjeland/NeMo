@@ -298,7 +298,8 @@ gather( bool thalamicInputEnabled,
 
 __host__
 cudaError_t
-gather( unsigned partitionCount,
+gather( cudaStream_t stream,
+		unsigned partitionCount,
 		bool thalamicInputEnabled,
 		unsigned cycle,
 		float* df_neuronParameters,
@@ -312,7 +313,7 @@ gather( unsigned partitionCount,
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	gather<<<dimGrid, dimBlock>>>(
+	gather<<<dimGrid, dimBlock, 0, stream>>>(
 			thalamicInputEnabled, cycle,
 			// neuron data
 			df_neuronParameters, du_neuronState,

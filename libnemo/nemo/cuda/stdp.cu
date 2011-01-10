@@ -412,6 +412,7 @@ updateStdp(
 __host__
 cudaError_t
 updateStdp(
+		cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned cycle,
 		uint64_t* d_recentFiring,
@@ -421,7 +422,7 @@ updateStdp(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	updateStdp<<<dimGrid, dimBlock>>>(cycle, d_recentFiring, d_dfired, d_nFired, d_fired);
+	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }
 

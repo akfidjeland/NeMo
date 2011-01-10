@@ -92,18 +92,35 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 */
 		virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
 
-		/*! Perform the 'gather' part of the simulation step, i.e. compute the
-		 * incoming current for each neuron */
-		virtual void gather() = 0;
+		/*! Perform the first of three parts of the simulation step. This includes
+		 *
+		 * 1. any setup
+		 * 2. compute incoming current for each neuron
+		 *
+		 * For the CUDA backend this call is asynchronous.
+		 */
+		virtual void prefire() = 0;
 
 		/*! Perform the 'fire' part of the simulation step, i.e. compute the
 		 * next neuron state and determine what neurons fired. This may use
-		 * user-provided stimuli provided since the last call to 'fire' */
+		 * user-provided stimuli provided since the last call to 'fire'.
+		 *
+		 * For the CUDA backend this also performs host-to-device copy for
+		 * input stimulus */
 		virtual void fire() = 0;
 
-		/*! Perform the 'scatter' and 'updateStdp' parts of
-		 * the simulation step */
-		virtual void scatter() = 0;
+		/*! Perform the third of three parts of the simulation step. This
+		 * includes:
+		 *
+		 * 1. 'scatter', i.e. distributing spikes from fired neurons
+		 * 2. update STDP statistics
+		 * 3. copy firing data from simulation
+		 *
+		 * For the CUDA backend this call is partially asyncrhonous. The first
+		 * two parts are run in the background and the function returns once
+		 * the device-to-host copy is completed.
+		 */
+		virtual void postfire() = 0;
 
 		/*! \copydoc nemo::Simulation::step */
 		const firing_output& step();

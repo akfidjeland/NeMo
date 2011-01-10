@@ -125,6 +125,7 @@ applyStdp(
 __host__
 void
 applyStdp(
+		cudaStream_t stream,
 		cycle_counter_t* d_cc,
 		size_t ccPitch,
 		unsigned partitionCount,
@@ -137,7 +138,7 @@ applyStdp(
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	applyStdp<<<dimGrid, dimBlock>>>(
+	applyStdp<<<dimGrid, dimBlock, 0, stream>>>(
 #ifdef NEMO_CUDA_KERNEL_TIMING
 			d_cc, ccPitch,
 #endif

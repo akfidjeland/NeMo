@@ -54,13 +54,19 @@ Simulation::Simulation(
 	m_pitch64(0),
 	m_stdp(conf.stdpFunction()),
 	md_fstim(NULL),
-	md_istim(NULL)
+	md_istim(NULL),
+	m_streamCompute(0),
+	m_streamCopy(0)
 {
 	if(m_stdp) {
 		configureStdp();
 	}
 	setPitch();
 	resetTimer();
+
+	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
+	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCopy));
+	CUDA_SAFE_CALL(cudaEventCreate(&m_eventFireDone));
 
 	//! \todo do m_cm size reporting here as well
 	if(conf.loggingEnabled()) {
@@ -225,10 +231,6 @@ Simulation::setPitch()
 
 
 
-//-----------------------------------------------------------------------------
-// STDP
-//-----------------------------------------------------------------------------
-
 
 void
 Simulation::runKernel(cudaError_t status)
@@ -251,13 +253,14 @@ Simulation::runKernel(cudaError_t status)
 
 
 void
-Simulation::gather()
+Simulation::prefire()
 {
 	m_timer.step();
 	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
 
 	runKernel(::gather(
+			m_streamCompute,
 			m_mapper.partitionCount(),
 			m_neurons.rngEnabled(),
 			m_timer.elapsedSimulation(),
@@ -275,6 +278,7 @@ void
 Simulation::fire()
 {
 	runKernel(::fire(
+			m_streamCompute,
 			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
 			m_neurons.df_parameters(),
@@ -284,14 +288,16 @@ Simulation::fire()
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
 			m_fired.deviceData()));
+	cudaEventRecord(m_eventFireDone, m_streamCompute);
 }
 
 
 
 void
-Simulation::scatter()
+Simulation::postfire()
 {
 	runKernel(::scatter(
+			m_streamCompute,
 			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
 			// firing buffers
@@ -309,6 +315,7 @@ Simulation::scatter()
 
 	if(m_stdp) {
 		runKernel(::updateStdp(
+			m_streamCompute,
 			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
 			m_recentFiring.deviceData(),
@@ -317,8 +324,8 @@ Simulation::scatter()
 			m_fired.deviceData()));
 	}
 
-	//! \todo make sure this runs in parallel with scatter.
-	m_firingBuffer.sync();
+	cudaEventSynchronize(m_eventFireDone);
+	m_firingBuffer.sync(m_streamCopy);
 
 	/* Must clear stimulus pointers in case the low-level interface is used and
 	 * the user does not provide any fresh stimulus */
@@ -343,6 +350,7 @@ Simulation::applyStdp(float reward)
 	} else  {
 		initLog();
 		::applyStdp(
+				m_streamCompute,
 				m_cycleCounters.dataApplySTDP(),
 				m_cycleCounters.pitchApplySTDP(),
 				m_mapper.partitionCount(),
@@ -424,6 +432,12 @@ Simulation::getMembranePotential(unsigned neuron) const
 void
 Simulation::finishSimulation()
 {
+	cudaEventDestroy(m_eventFireDone);
+	if(m_streamCompute)
+		cudaStreamDestroy(m_streamCompute);
+	if(m_streamCopy)
+		cudaStreamDestroy(m_streamCopy);
+
 	//! \todo perhaps clear device data here instead of in dtor
 	if(m_conf.loggingEnabled()) {
 		m_cycleCounters.printCounters(std::cout);

@@ -279,7 +279,8 @@ scatter(uint32_t cycle,
 
 __host__
 cudaError_t
-scatter(unsigned partitionCount,
+scatter(cudaStream_t stream,
+		unsigned partitionCount,
 		unsigned cycle,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
@@ -294,7 +295,7 @@ scatter(unsigned partitionCount,
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	scatter<<<dimGrid, dimBlock>>>(
+	scatter<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle,
 			// spike delivery
 			d_outgoingAddr, d_outgoing,

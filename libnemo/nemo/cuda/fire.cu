@@ -276,7 +276,8 @@ fire( 	uint32_t cycle,
 /*! Wrapper for the __global__ call that performs a single simulation step */
 __host__
 cudaError_t
-fire( 	unsigned partitionCount,
+fire( 	cudaStream_t stream,
+		unsigned partitionCount,
 		unsigned cycle,
 		float* df_neuronParameters,
 		float* df_neuronState,
@@ -289,7 +290,7 @@ fire( 	unsigned partitionCount,
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	fire<<<dimGrid, dimBlock>>>(
+	fire<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle,
 			df_neuronParameters, df_neuronState,
 			d_fstim,   // firing stimulus

@@ -13,6 +13,8 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
+#include <cuda_runtime.h>
+
 #include <nemo/internal_types.h>
 #include <nemo/FiringBuffer.hpp>
 #include "Mapper.hpp"
@@ -43,9 +45,11 @@ class FiringBuffer {
 		/*! Set up data on both host and device for probing firing */
 		FiringBuffer(const Mapper& mapper);
 
+		~FiringBuffer();
+
 		/*! Read firing data from device to host buffer. This should be called
-		 * every simulation cycle */
-		void sync();
+		 * every simulation cycle. */
+		void sync(cudaStream_t stream);
 
 		/*! Return oldest buffered cycle's worth of firing */
 		FiredList readFiring();
@@ -72,6 +76,8 @@ class FiringBuffer {
 		Mapper m_mapper;
 
 		nemo::FiringBuffer m_outputBuffer;
+
+		cudaEvent_t m_copyDone;
 };
 
 	} // end namespace cuda

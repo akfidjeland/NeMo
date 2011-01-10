@@ -51,14 +51,14 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::finalizeCurrentStimulus */
 		void finalizeCurrentStimulus(size_t count);
 
-		/*! \copydoc nemo::SimulationBackend::gather */
-		void gather() { }
+		/*! \copydoc nemo::SimulationBackend::prefire */
+		void prefire() { }
 
 		/*! \copydoc nemo::SimulationBackend::fire */
 		void fire();
 
-		/*! \copydoc nemo::SimulationBackend::gather */
-		void scatter() { }
+		/*! \copydoc nemo::SimulationBackend::postfire */
+		void postfire() { }
 
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();

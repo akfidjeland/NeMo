@@ -215,14 +215,14 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::finalizeCurrentStimulus */
 		void finalizeCurrentStimulus(size_t count);
 
-		/*! \copydoc nemo::SimulationBackend::gather */
-		void gather();
+		/*! \copydoc nemo::SimulationBackend::prefire */
+		void prefire();
 
 		/*! \copydoc nemo::SimulationBackend::fire */
 		void fire();
 
-		/*! \copydoc nemo::SimulationBackend::scatter */
-		void scatter();
+		/*! \copydoc nemo::SimulationBackend::postfire */
+		void postfire();
 
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();
@@ -330,6 +330,11 @@ class Simulation : public nemo::SimulationBackend
 		fix_t* md_istim;
 
 		void runKernel(cudaError_t);
+
+		cudaStream_t m_streamCompute;
+		cudaStream_t m_streamCopy;
+
+		cudaEvent_t m_eventFireDone;
 };
 
 	} // end namespace cuda
