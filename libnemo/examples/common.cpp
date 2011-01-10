@@ -34,30 +34,9 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp, bool csv
 		std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
 	sim->resetTimer();
 #endif
-	if(verbose)
-		std::cout << std::endl;
 
 	unsigned seconds = 10;
 
-	/* Run once without reading data back, in order to estimate PCIe overhead */ 
-	if(verbose)
-		std::cout << "Running simulation (without reading data back)...";
-	for(unsigned s=0; s < seconds; ++s) {
-		if(verbose)
-			std::cout << s << " ";
-		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms, ++t) {
-			sim->step();
-		}
-		if(stdp && t % stdp == 0) {
-			sim->applyStdp(1.0);
-		}
-	}
-#ifdef NEMO_TIMING_ENABLED
-	long int elapsedTiming = sim->elapsedWallclock();
-	sim->resetTimer();
-	if(verbose)
-		std::cout << "[" << elapsedTiming << "ms elapsed]";
-#endif
 	if(verbose) {
 		std::cout << std::endl;
 		std::cout << "Running simulation (gathering performance data)...";
@@ -88,11 +67,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp, bool csv
 #ifdef NEMO_TIMING_ENABLED
 	/* Throughput is measured in terms of the number of spike arrivals per
 	 * wall-clock second */
-	unsigned long throughputNoPCI = MS_PER_SECOND * narrivals / elapsedTiming;
-	unsigned long throughputPCI = MS_PER_SECOND * narrivals / elapsedData;
-
-	double speedupNoPCI = double(seconds*MS_PER_SECOND)/elapsedTiming;
-	double speedupPCI = double(seconds*MS_PER_SECOND)/elapsedData;
+	unsigned long throughput = MS_PER_SECOND * narrivals / elapsedData;
+	double speedup = double(seconds*MS_PER_SECOND)/elapsedData;
 #endif
 
 	if(verbose) {
@@ -101,10 +77,9 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp, bool csv
 		std::cout << "Spike arrivals: " << narrivals << std::endl;
 #ifdef NEMO_TIMING_ENABLED
 		std::cout << "Performace both with and without PCI traffic overheads:\n";
-		std::cout << "Approx. throughput: " << throughputPCI/1000000 << "/"
-				<< throughputNoPCI/1000000 << "Ma/s (million spike arrivals per second)\n";
-		std::cout << "Speedup wrt real-time: " << speedupPCI << "/"
-				<< speedupNoPCI << std::endl;
+		std::cout << "Approx. throughput: " << throughput/1000000
+				<< "Ma/s (million spike arrivals per second)\n";
+		std::cout << "Speedup wrt real-time: " << speedup << std::endl;
 #endif
 	}
 
@@ -114,8 +89,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp, bool csv
 		std::cout << n << sep << m << sep << seconds*MS_PER_SECOND
 			<< sep << elapsedData << sep << stdp << sep << nfired;
 		// derived data. Not strictly needed, at least if out-degree is fixed.
-		std::cout << sep << narrivals << sep << f << sep << speedupPCI
-			<< sep << throughputPCI/1000000 << std::endl;
+		std::cout << sep << narrivals << sep << f << sep << speedup
+			<< sep << throughput/1000000 << std::endl;
 	}
 }
 
