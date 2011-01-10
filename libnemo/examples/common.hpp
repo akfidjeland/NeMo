@@ -21,7 +21,8 @@
  * \param csv
  * 		Output a compact CSV format instead of regular format
  */
-void benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp=0, bool csv=false);
+void benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
+				boost::program_options::variables_map& opts);
 
 
 /*! Run simulation for some time, writing data to output stream

@@ -6,11 +6,15 @@
 
 
 void
-benchmark(nemo::Simulation* sim, unsigned n, unsigned m, unsigned stdp, bool csv)
+benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
+				boost::program_options::variables_map& vm)
 {
-	const unsigned MS_PER_SECOND = 1000;
 
+	unsigned stdp = vm["stdp"].as<unsigned>();
+	bool csv = vm.count("csv") != 0;
 	bool verbose = !csv;
+
+	const unsigned MS_PER_SECOND = 1000;
 
 #ifdef NEMO_TIMING_ENABLED
 	sim->resetTimer();

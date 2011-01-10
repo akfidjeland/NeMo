@@ -314,7 +314,6 @@ main(int argc, char* argv[])
 		unsigned duration = vm["duration"].as<unsigned>();
 		unsigned verbose = vm["verbose"].as<unsigned>();
 		bool runBenchmark = vm.count("benchmark") != 0;
-		bool csv = vm.count("csv") != 0;
 
 		assert(sigma >= PATCH_WIDTH/2);
 
@@ -341,7 +340,7 @@ main(int argc, char* argv[])
 		LOG(verbose, "Running simulation");
 
 		if(runBenchmark) {
-			benchmark(sim.get(), pcount*PATCH_SIZE, m, stdp, csv);
+			benchmark(sim.get(), pcount*PATCH_SIZE, m, vm);
 		} else {
 			simulate(sim.get(), duration, stdp, out);
 		}
