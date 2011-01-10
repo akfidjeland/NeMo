@@ -67,6 +67,7 @@ Simulation::Simulation(
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCopy));
 	CUDA_SAFE_CALL(cudaEventCreate(&m_eventFireDone));
 	CUDA_SAFE_CALL(cudaEventCreate(&m_firingStimulusDone));
+	CUDA_SAFE_CALL(cudaEventCreate(&m_currentStimulusDone));
 
 	//! \todo do m_cm size reporting here as well
 	if(conf.loggingEnabled()) {
@@ -140,8 +141,9 @@ void
 Simulation::finalizeCurrentStimulus(size_t count)
 {
 	if(count > 0) {
-		m_currentStimulus.copyToDevice();
+		m_currentStimulus.copyToDeviceAsync(m_streamCopy);
 		md_istim = m_currentStimulus.deviceData();
+		CUDA_SAFE_CALL(cudaEventRecord(m_currentStimulusDone, m_streamCopy));
 	} else {
 		md_istim = NULL;
 	}
@@ -157,8 +159,9 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 		return;
 	}
 	m_currentStimulus.set(current);
-	m_currentStimulus.copyToDevice();
+	m_currentStimulus.copyToDeviceAsync(m_streamCopy);
 	md_istim = m_currentStimulus.deviceData();
+	CUDA_SAFE_CALL(cudaEventRecord(m_currentStimulusDone, m_streamCopy));
 }
 
 
@@ -252,6 +255,7 @@ void
 Simulation::fire()
 {
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_firingStimulusDone));
+	CUDA_SAFE_CALL(cudaEventSynchronize(m_currentStimulusDone));
 	runKernel(::fire(
 			m_streamCompute,
 			m_mapper.partitionCount(),
@@ -410,6 +414,7 @@ Simulation::finishSimulation()
 {
 	cudaEventDestroy(m_eventFireDone);
 	cudaEventDestroy(m_firingStimulusDone);
+	cudaEventDestroy(m_currentStimulusDone);
 	if(m_streamCompute)
 		cudaStreamDestroy(m_streamCompute);
 	if(m_streamCopy)

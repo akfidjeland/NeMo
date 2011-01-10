@@ -86,6 +86,9 @@ class NVector
 		
 		/*! Copy entire host buffer to the device */
 		void copyToDevice();
+
+		/*! Asynchronously copy to device */
+		void copyToDeviceAsync(cudaStream_t);
 		
 		/*! Set row of data (in host buffer) for a single partition */ 
 		//! \todo change parameter order, with vector first

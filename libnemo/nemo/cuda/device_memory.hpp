@@ -19,6 +19,8 @@
 
 #include <vector>
 #include <boost/shared_array.hpp>
+#include <cuda_runtime.h>
+
 #include <nemo/exception.hpp>
 
 namespace nemo {
@@ -71,6 +73,20 @@ memcpyToDevice(T* dst, const T* src, size_t words)
 {
 	memcpyBytesToDevice((void*)dst, (void*)src, words * sizeof(T));
 }
+
+
+
+void
+memcpyBytesToDeviceAsync(void* dst, const void* src, size_t count, cudaStream_t stream);
+
+
+template<typename T>
+void
+memcpyToDeviceAsync(T* dst, const T* src, size_t words, cudaStream_t stream)
+{
+	memcpyBytesToDeviceAsync((void*)dst, (void*)src, words * sizeof(T), stream);
+}
+
 
 
 /*

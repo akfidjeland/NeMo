@@ -121,6 +121,14 @@ NVector<T, M>::copyToDevice()
 
 
 template<typename T, int M>
+void
+NVector<T, M>::copyToDeviceAsync(cudaStream_t stream)
+{
+	memcpyToDeviceAsync(m_deviceData.get(), m_hostData.get(), M * size(), stream);
+}
+
+
+template<typename T, int M>
 size_t
 NVector<T, M>::offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const
 {

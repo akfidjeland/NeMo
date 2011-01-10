@@ -335,6 +335,7 @@ class Simulation : public nemo::SimulationBackend
 
 		cudaEvent_t m_eventFireDone;
 		cudaEvent_t m_firingStimulusDone;
+		cudaEvent_t m_currentStimulusDone;
 };
 
 	} // end namespace cuda

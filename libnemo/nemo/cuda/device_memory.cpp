@@ -9,7 +9,6 @@
 
 /*! \file device_memory.cpp Device memory methods */
 
-#include <cuda_runtime.h>
 #include <boost/format.hpp>
 
 #include "device_memory.hpp"
@@ -77,6 +76,13 @@ void
 memcpyBytesToDevice(void* dst, const void* src, size_t bytes)
 {
 	safeCall(cudaMemcpy(dst, src, bytes, cudaMemcpyHostToDevice));
+}
+
+
+void
+memcpyBytesToDeviceAsync(void* dst, const void* src, size_t bytes, cudaStream_t stream)
+{
+	safeCall(cudaMemcpyAsync(dst, src, bytes, cudaMemcpyHostToDevice, stream));
 }
 
 
