@@ -122,6 +122,9 @@ void
 memcpyBytesFromDevice(void* dst, const void* src, size_t bytes);
 
 
+void
+memcpyBytesFromDeviceAsync(void* dst, const void* src, size_t bytes, cudaStream_t stream);
+
 
 template<typename T>
 void
@@ -130,6 +133,14 @@ memcpyFromDevice(T* dst, const T* src, size_t words)
 	memcpyBytesFromDevice((void*)dst, (void*)src, words * sizeof(T));
 }
 
+
+
+template<typename T>
+void
+memcpyFromDeviceAsync(T* dst, const T* src, size_t words, cudaStream_t stream)
+{
+	memcpyBytesFromDeviceAsync((void*)dst, (void*)src, words * sizeof(T), stream);
+}
 
 /* \param count
  * 		Number of elements to copy from device into vector

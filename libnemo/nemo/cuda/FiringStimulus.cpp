@@ -11,7 +11,6 @@
 
 #include "FiringStimulus.hpp"
 #include "device_memory.hpp"
-#include "exception.hpp"
 #include "bitvector.cu_h"
 
 
@@ -63,9 +62,7 @@ FiringStimulus::set(
 			mh_arr[word] |= 1 << bit;
 		}
 
-		CUDA_SAFE_CALL(cudaMemcpyAsync(
-					md_arr.get(), mh_arr.get(), mw_allocated*sizeof(uint32_t),
-					cudaMemcpyHostToDevice, stream));
+		memcpyToDeviceAsync(md_arr.get(), mh_arr.get(), mw_allocated, stream);
 	}
 }
 

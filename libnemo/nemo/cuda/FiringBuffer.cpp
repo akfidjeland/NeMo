@@ -56,10 +56,8 @@ FiringBuffer::~FiringBuffer()
 void
 FiringBuffer::sync(cudaStream_t stream)
 {
-	CUDA_SAFE_CALL(cudaMemcpyAsync(mh_buffer.get(), md_buffer.get(),
-			m_mapper.partitionCount() * m_pitch * sizeof(uint32_t),
-			cudaMemcpyDeviceToHost,
-			stream));
+	memcpyFromDeviceAsync(mh_buffer.get(), md_buffer.get(),
+			m_mapper.partitionCount() * m_pitch, stream);
 	CUDA_SAFE_CALL(cudaEventRecord(m_copyDone, stream));
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_copyDone));
 	populateSparse(mh_buffer.get());

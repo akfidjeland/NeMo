@@ -94,6 +94,13 @@ memcpyBytesFromDevice(void* dst, const void* src, size_t bytes)
 
 
 void
+memcpyBytesFromDeviceAsync(void* dst, const void* src, size_t bytes, cudaStream_t stream)
+{
+	safeCall(cudaMemcpyAsync(dst, src, bytes, cudaMemcpyDeviceToHost, stream));
+}
+
+
+void
 d_memset(void* d_ptr, int value, size_t count)
 {
 	safeCall(cudaMemset(d_ptr, value, count));
