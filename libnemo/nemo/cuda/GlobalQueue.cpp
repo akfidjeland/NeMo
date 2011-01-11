@@ -20,7 +20,7 @@
 namespace nemo {
 	namespace cuda {
 
-GlobalQueue::GlobalQueue() : m_allocated(0) {}
+GlobalQueue::GlobalQueue() : mb_allocated(0) {}
 
 
 void
@@ -29,12 +29,12 @@ GlobalQueue::allocate(size_t partitionCount, size_t maxIncomingWarps, double siz
 	using boost::format;
 
 	// allocate space for the incoming count (double-buffered)
-	unsigned* d_fill;
+	void* d_fill;
 	size_t len = ALIGN(partitionCount * 2, 32) * sizeof(unsigned);
-	d_malloc((void**)&d_fill, len, "incoming spike queue counts");
-	m_fill = boost::shared_ptr<unsigned>(d_fill, d_free);
+	d_malloc(&d_fill, len, "global queue fill");
+	md_fill = boost::shared_ptr<unsigned>(static_cast<unsigned*>(d_fill), d_free);
 	d_memset(d_fill, 0, len);
-	m_allocated = len;
+	mb_allocated = len;
 
 	/* The queue has one entry for incoming spikes for each partition */
 	if(partitionCount > MAX_PARTITION_COUNT) {
@@ -53,13 +53,13 @@ GlobalQueue::allocate(size_t partitionCount, size_t maxIncomingWarps, double siz
 	double mult = std::min(1.0, sizeMultiplier);
 	size_t width = size_t(mult * maxIncomingWarps * sizeof(gq_entry_t));
 
-	gq_entry_t* d_buffer;
+	void* d_buffer;
 	size_t bpitch;
 
-	d_mallocPitch((void**)&d_buffer, &bpitch, width, height, "incoming spike queue");
-	m_allocated += bpitch * height;
+	d_mallocPitch(&d_buffer, &bpitch, width, height, "global queue");
+	mb_allocated += bpitch * height;
 
-	m_buffer = boost::shared_ptr<gq_entry_t>(d_buffer, d_free);
+	md_buffer = boost::shared_ptr<gq_entry_t>(static_cast<gq_entry_t*>(d_buffer), d_free);
 
 	/* We don't need to clear the queue. It will generally be full of garbage
 	 * anyway. The queue heads must be used to determine what's valid data */

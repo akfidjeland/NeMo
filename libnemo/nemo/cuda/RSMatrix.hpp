@@ -54,10 +54,10 @@ class RSMatrix
 		void clearStdpAccumulator();
 
 		/*! \return bytes allocated on the device */
-		size_t d_allocated() const;
+		size_t d_allocated() const { return mb_allocated; }
 
 		/*! \return word pitch, i.e. max number of synapses per neuron */
-		size_t pitch() const { return m_pitch; }
+		size_t pitch() const { return mw_pitch; }
 
 		/*! \return device address of reverse address matrix */
 		uint32_t* d_address() const;
@@ -69,8 +69,7 @@ class RSMatrix
 
 	private:
 
-		//! \todo rename
-		boost::shared_ptr<uint32_t> m_deviceData;
+		boost::shared_ptr<uint32_t> md_data;
 
 		typedef std::vector< std::vector<uint32_t> > host_plane;
 
@@ -82,10 +81,10 @@ class RSMatrix
 
 		size_t m_partitionSize;
 
-		size_t m_pitch;
+		size_t mw_pitch;
 
 		/* Number of bytes of allocated device memory */
-		size_t m_allocated;
+		size_t mb_allocated;
 
 		/* Indices of the two planes of the matrix */
 		enum {

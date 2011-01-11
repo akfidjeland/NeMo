@@ -21,25 +21,25 @@ namespace nemo {
 
 FiringBuffer::FiringBuffer(const Mapper& mapper):
 	m_pitch(0),
-	md_allocated(0),
+	mb_allocated(0),
 	m_mapper(mapper)
 {
 	size_t width = BV_BYTE_PITCH;
 	size_t height = m_mapper.partitionCount();
 
 	size_t bytePitch;
-	uint32_t* d_buffer;
-	d_mallocPitch((void**)(&d_buffer), &bytePitch, width, height, "firing output");
-	md_buffer = boost::shared_ptr<uint32_t>(d_buffer, d_free);
-	d_memset2D(d_buffer, bytePitch, 0, height);
+	void* d_buffer;
+	d_mallocPitch(&d_buffer, &bytePitch, width, height, "firing output");
+	md_buffer = boost::shared_ptr<uint32_t>(static_cast<uint32_t*>(d_buffer), d_free);
+	d_memset2D(md_buffer.get(), bytePitch, 0, height);
 	m_pitch = bytePitch / sizeof(uint32_t);
 
-	size_t md_allocated = bytePitch * height;
-	uint32_t* h_buffer;
+	size_t mb_allocated = bytePitch * height;
+	void* h_buffer;
 
-	mallocPinned((void**) &h_buffer, md_allocated);
-	mh_buffer = boost::shared_ptr<uint32_t>(h_buffer, freePinned);
-	memset(h_buffer, 0, md_allocated);
+	mallocPinned(&h_buffer, mb_allocated);
+	mh_buffer = boost::shared_ptr<uint32_t>(static_cast<uint32_t*>(h_buffer), freePinned);
+	memset(mh_buffer.get(), 0, mb_allocated);
 
 	CUDA_SAFE_CALL(cudaEventCreate(&m_copyDone));
 }

@@ -231,15 +231,15 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	md_fcmPlaneSize = totalWarps * WARP_SIZE;
 	size_t bytes = md_fcmPlaneSize * 2 * sizeof(synapse_t);
 
-	synapse_t* d_data;
-	d_malloc((void**) &d_data, bytes, "fcm");
-	md_fcm = boost::shared_ptr<synapse_t>(d_data, d_free);
+	void* d_fcm;
+	d_malloc(&d_fcm, bytes, "fcm");
+	md_fcm = boost::shared_ptr<synapse_t>(static_cast<synapse_t*>(d_fcm), d_free);
 	md_fcmAllocated = bytes;
 
 	CUDA_SAFE_CALL(setFcmPlaneSize(md_fcmPlaneSize));
 
-	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
-	memcpyToDevice(d_data + md_fcmPlaneSize * FCM_WEIGHT,
+	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
+	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_WEIGHT,
 			reinterpret_cast<const synapse_t*>(&h_weights[0]), md_fcmPlaneSize);
 }
 

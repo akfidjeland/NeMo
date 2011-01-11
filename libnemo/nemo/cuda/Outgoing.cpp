@@ -85,9 +85,10 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	size_t height = partitionCount * MAX_PARTITION_SIZE * MAX_DELAY;
 
 	/* allocate device and host memory for row lengths */
-	outgoing_addr_t* d_addr = NULL;
-	d_malloc((void**)&d_addr, height * sizeof(outgoing_addr_t), "outgoing spikes (row lengths)");
-	md_rowLength = boost::shared_ptr<outgoing_addr_t>(d_addr, d_free);
+	void* d_addr = NULL;
+	d_malloc(&d_addr, height * sizeof(outgoing_addr_t), "outgoing spikes (row lengths)");
+	md_rowLength = boost::shared_ptr<outgoing_addr_t>(
+			static_cast<outgoing_addr_t*>(d_addr), d_free);
 	m_allocated = height * sizeof(outgoing_addr_t);
 	std::vector<outgoing_addr_t> h_addr(height, make_outgoing_addr(0,0));
 
@@ -147,14 +148,14 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 		allocated += nWords;
 	}
 
-	memcpyToDevice(d_addr, h_addr);
+	memcpyToDevice(md_rowLength.get(), h_addr);
 
 	/* allocate device memory for table */
 	if(allocated != 0) {
-		outgoing_t* d_data = NULL;
-		d_malloc((void**)&d_data, allocated*sizeof(outgoing_t), "outgoing spikes");
-		md_arr = boost::shared_ptr<outgoing_t>(d_data, d_free);
-		memcpyToDevice(d_data, h_data, allocated);
+		void* d_arr = NULL;
+		d_malloc(&d_arr, allocated*sizeof(outgoing_t), "outgoing spikes");
+		md_arr = boost::shared_ptr<outgoing_t>(static_cast<outgoing_t*>(d_arr), d_free);
+		memcpyToDevice(md_arr.get(), h_data, allocated);
 		m_allocated += allocated * sizeof(outgoing_t);
 	}
 

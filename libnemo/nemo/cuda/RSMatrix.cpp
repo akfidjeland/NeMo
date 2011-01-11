@@ -24,8 +24,8 @@ RSMatrix::RSMatrix(size_t partitionSize) :
 	mh_source(partitionSize),
 	mh_sourceAddress(partitionSize),
 	m_partitionSize(partitionSize),
-	m_pitch(0),
-	m_allocated(0)
+	mw_pitch(0),
+	mb_allocated(0)
 { }
 
 
@@ -38,15 +38,16 @@ RSMatrix::allocateDeviceMemory()
 	size_t height = RCM_SUBMATRICES * m_partitionSize;
 	size_t bytePitch = 0;
 
-	uint32_t* deviceData = NULL;
-	d_mallocPitch((void**) &deviceData, &bytePitch, desiredPitch, height, "rcm synapse group");
-	m_pitch = bytePitch / sizeof(uint32_t);
-	m_allocated = bytePitch * height;
+	void* d_data = NULL;
+	d_mallocPitch(&d_data, &bytePitch, desiredPitch, height, "rcm synapse group");
+	md_data = boost::shared_ptr<uint32_t>(static_cast<uint32_t*>(d_data) , d_free);
 
-	d_memset2D((void*) deviceData, bytePitch, 0, height);
+	mw_pitch = bytePitch / sizeof(uint32_t);
+	mb_allocated = bytePitch * height;
 
-	m_deviceData = boost::shared_ptr<uint32_t>(deviceData , d_free);
-	return m_deviceData;
+	d_memset2D((void*) md_data.get(), bytePitch, 0, height);
+
+	return md_data;
 }
 
 
@@ -54,7 +55,7 @@ RSMatrix::allocateDeviceMemory()
 bool
 RSMatrix::onDevice() const
 {
-	return m_deviceData.get() != NULL;
+	return md_data.get() != NULL;
 }
 
 
@@ -62,7 +63,7 @@ RSMatrix::onDevice() const
 size_t
 RSMatrix::planeSize() const
 {
-	return m_partitionSize * m_pitch;
+	return m_partitionSize * mw_pitch;
 }
 
 
@@ -89,7 +90,7 @@ RSMatrix::moveToDevice(
 	/* We only need to store the addresses on the host side */
 	std::vector<uint32_t> buf(planeSize(), defaultValue);
 	for(host_plane::const_iterator n = h_mem.begin(); n != h_mem.end(); ++n) {
-		size_t offset = (n - h_mem.begin()) * m_pitch;
+		size_t offset = (n - h_mem.begin()) * mw_pitch;
 		std::copy(n->begin(), n->end(), buf.begin() + offset);
 	}
 	h_mem.clear();
@@ -132,15 +133,7 @@ RSMatrix::clearStdpAccumulator()
 		throw nemo::exception(NEMO_LOGIC_ERROR,
 				"attempting to clear STDP array before device memory allocated");
 	}
-	d_memset2D(d_stdp(), m_pitch*sizeof(uint32_t), 0, m_partitionSize);
-}
-
-
-
-size_t
-RSMatrix::d_allocated() const
-{
-	return m_allocated;
+	d_memset2D(d_stdp(), mw_pitch*sizeof(uint32_t), 0, m_partitionSize);
 }
 
 
@@ -148,7 +141,7 @@ RSMatrix::d_allocated() const
 uint32_t*
 RSMatrix::d_address() const
 {
-	return m_deviceData.get() + RCM_ADDRESS * planeSize();
+	return md_data.get() + RCM_ADDRESS * planeSize();
 }
 
 
@@ -156,14 +149,14 @@ RSMatrix::d_address() const
 uint32_t*
 RSMatrix::d_faddress() const
 {
-	return m_deviceData.get() + RCM_FADDRESS * planeSize();
+	return md_data.get() + RCM_FADDRESS * planeSize();
 }
 
 
 weight_dt*
 RSMatrix::d_stdp() const
 {
-	return (weight_dt*) m_deviceData.get() + RCM_STDP * planeSize();
+	return (weight_dt*) md_data.get() + RCM_STDP * planeSize();
 }
 
 	} // end namespace cuda

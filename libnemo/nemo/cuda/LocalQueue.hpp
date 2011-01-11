@@ -40,7 +40,7 @@ class LocalQueue
 		unsigned* d_fill() const { return md_fill.get(); }
 
 		/*! \return bytes of allocated memory */
-		size_t allocated() const { return m_allocated; }
+		size_t allocated() const { return mb_allocated; }
 
 	private :
 
@@ -52,7 +52,7 @@ class LocalQueue
 		 * queued for each target partition */
 		boost::shared_ptr<unsigned> md_fill;
 
-		size_t m_allocated;
+		size_t mb_allocated;
 };
 
 	} // end namespace cuda

@@ -59,23 +59,23 @@ class GlobalQueue
 				double sizeMultiplier = 1.0);
 
 		/*! \return device pointer to beginning of queue data */
-		gq_entry_t* d_data() const { return m_buffer.get(); }
+		gq_entry_t* d_data() const { return md_buffer.get(); }
 
 		/*! \return device pointer to beginning of queue fill data */
-		unsigned* d_fill() const { return m_fill.get(); }
+		unsigned* d_fill() const { return md_fill.get(); }
 
 		/*! \return bytes of allocated memory */
-		size_t allocated() const { return m_allocated; }
+		size_t allocated() const { return mb_allocated; }
 
 	private :
 
-		boost::shared_ptr<gq_entry_t> m_buffer;
+		boost::shared_ptr<gq_entry_t> md_buffer;
 
 		/* At run-time, we keep track of how many incoming spike groups are
 		 * queued for each target partition */
-		boost::shared_ptr<unsigned> m_fill;
+		boost::shared_ptr<unsigned> md_fill;
 
-		size_t m_allocated;
+		size_t mb_allocated;
 };
 
 	} // end namespace cuda

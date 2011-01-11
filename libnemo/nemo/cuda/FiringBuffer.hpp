@@ -58,7 +58,7 @@ class FiringBuffer {
 		uint32_t* d_buffer() const { return md_buffer.get(); }
 
 		/*! \return bytes of allocated device memory */
-		size_t d_allocated() const { return md_allocated; }
+		size_t d_allocated() const { return mb_allocated; }
 
 		size_t wordPitch() const { return m_pitch; }
 
@@ -69,7 +69,7 @@ class FiringBuffer {
 		boost::shared_ptr<uint32_t> mh_buffer; // pinned, same size as device buffer
 		size_t m_pitch; // in words
 
-		size_t md_allocated;
+		size_t mb_allocated;
 
 		void populateSparse(const uint32_t* hostBuffer);
 

@@ -20,7 +20,7 @@ namespace nemo {
 
 
 LocalQueue::LocalQueue(size_t partitionCount, size_t partitionSize) :
-	m_allocated(0)
+	mb_allocated(0)
 {
 	/* In the worst case all neurons have synapses at all delays and all
 	 * neurons constantly fire. In practice this will be approximately
@@ -41,18 +41,18 @@ LocalQueue::LocalQueue(size_t partitionCount, size_t partitionSize) :
 	size_t height = partitionCount * MAX_DELAY;
 
 	/* allocate space for the queue fill */
-	unsigned* d_count;
+	void* d_fill;
 	size_t len = height * sizeof(unsigned);
-	d_malloc((void**)&d_count, len, "neuron queue fill");
-	md_fill = boost::shared_ptr<unsigned>(d_count, d_free);
-	d_memset(d_count, 0, len);
-	m_allocated += len;
+	d_malloc(&d_fill, len, "local queue fill");
+	md_fill = boost::shared_ptr<unsigned>(static_cast<unsigned*>(d_fill), d_free);
+	d_memset(d_fill, 0, len);
+	mb_allocated += len;
 
-	lq_entry_t* d_buffer;
+	void* d_data;
 	size_t bpitch;
-	d_mallocPitch((void**)&d_buffer, &bpitch, width, height, "neuron queue");
-	m_allocated += bpitch * height;
-	md_data = boost::shared_ptr<lq_entry_t>(d_buffer, d_free);
+	d_mallocPitch(&d_data, &bpitch, width, height, "local queue");
+	mb_allocated += bpitch * height;
+	md_data = boost::shared_ptr<lq_entry_t>(static_cast<lq_entry_t*>(d_data), d_free);
 
 	/* We don't need to clear the queue. It will generally be full of garbage
 	 * anyway. The queue fill struct must be used to determine what's valid
