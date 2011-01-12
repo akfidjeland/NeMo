@@ -10,7 +10,7 @@
 
 /*! \brief Widget for plotting firing data
  *
- * Firing data can arrive at different rates. The data is plotted at *at most*
+ * Firing data can arrive at different rates. The data is plotted at /at most/
  * the framerate specified in the ctor. 
  *
  * \author Andreas Fidjeland
@@ -27,8 +27,8 @@ class FiringPlot : public QWidget
 
 	public slots :
 
-		/* Increment time, any new spikes are should only have time-stamps
-		 * *after* the current time after the update */  
+		/*! Increment time, any new spikes should only have time-stamps /after/
+		 * the current time after the update */
 		void incrementTime(int cycles=1);
 
 		/*! Spikes are ignored if they are out of bounds, either spatially or

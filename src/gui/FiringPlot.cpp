@@ -15,10 +15,9 @@ FiringPlot::FiringPlot(int fps, QWidget* parent) :
 	m_fps(fps),
 	m_updates(0),
 	m_fbuffer(1), //! \todo set this based on size
-	m_neuronCount(1000),
-	//m_neuronCount(250),
+	m_neuronCount(0),
 	m_yscale(1.0),
-	m_temporalResolution(5),
+	m_temporalResolution(10),
 	m_cycle(-1),
 	m_fillBuffer(0),
 	m_fillCycle(0),
@@ -75,16 +74,26 @@ FiringPlot::readStdin()
 		int neuron, cycle;
 		stream >> cycle;
 		stream >> neuron;
+		if(cycle < m_cycle) {
+			/* This is probably not the most sensible way to exit this loop.
+			 * Using stream.atEnd() does not work for stdin.  Using readLine
+			 * and then line.isNull could work, but we'd have to parse that
+			 * separately. It seems that stdin gives us all zeros when there's
+			 * no more data, so current implementation should work in most
+			 * cases. */
+			break;
+		}
 		if(cycle > m_cycle) {
 			//! \todo use setTime instead?
 			incrementTime(cycle - m_cycle);
 			// wait for repaint!
 			//msleep(1);
 		}
-		if(neuron != -1)
+		if(neuron != -1) {
 			addSpike(cycle, neuron);
-		//! \todo check stream status
-	} while (1); // (!line.isNull());
+		}
+	} while (1);
+
 	std::cerr << "Stopped processing\n";
 }
 
@@ -108,14 +117,14 @@ FiringPlot::incrementTime(int cycles)
 		m_fillBuffer = (m_fillBuffer + 1) % m_fbuffer.size();
 
 		QImage& buffer = m_fbuffer[m_fillBuffer];
+		//! \todo the fill seems to have no effect. Find out why and then remove.
 		buffer.fill(Qt::black);
-
-		QPen pen(Qt::red);
-		pen.setWidth(2);
 
 		if(m_fillPainter.isActive()){
 			m_fillPainter.end();
 		}
+		QPen pen(Qt::red);
+		pen.setWidth(2);
 		m_fillPainter.begin(&buffer);
 		m_fillPainter.setPen(pen);
 		m_fillPainter.scale(1.0, m_yscale);
@@ -167,7 +176,10 @@ FiringPlot::resizeBuffers()
 	//int bufferCount = widgetWidth / bufferWidth;
 	int bufferCount = width() / bufferWidth;
 
-	m_yscale = qreal(bufferHeight) / qreal(m_neuronCount);
+	/*! \note if there are more neurons than there are pixels in the
+	 * y-dimension, we might end up with spikes having less than a pixel in
+	 * which case they are not visible. */
+	m_yscale = std::max(1.0, qreal(bufferHeight) / qreal(m_neuronCount));
 
 	//! \todo resize existing data in the pipeline?
 	m_fbuffer.clear();
