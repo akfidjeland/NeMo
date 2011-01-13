@@ -364,6 +364,12 @@ Simulation::setNeuron(unsigned g_idx,
 }
 
 
+const std::vector<synapse_id>&
+Simulation::getSynapsesFrom(unsigned neuron)
+{
+	return m_cm.getSynapsesFrom(neuron);
+}
+
 
 const std::vector<unsigned>&
 Simulation::getTargets(const std::vector<synapse_id>& synapses)

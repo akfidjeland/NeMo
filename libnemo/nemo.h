@@ -304,6 +304,21 @@ nemo_status_t
 nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[]);
 
 
+/*! Get synapse ids for synapses with the given source id
+ *
+ * \param ptr
+ * \param source source neuron id
+ * \param[out] synapses array of synapse ids
+ * \param[out] len length of \a synapses array
+ *
+ * The output array is only valid until the next call to
+ * \a nemo_get_synapses_from
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapses_from(nemo_simulation_t ptr, unsigned source, synapse_id *synapses[], size_t* len);
+
+
 /*! Get weights for the specified synapses
  *
  * \param ptr

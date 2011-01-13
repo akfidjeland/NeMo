@@ -206,7 +206,7 @@ nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v)
 
 
 nemo_status_t
-nemo_set_neuron(nemo_network_t sim,
+nemo_set_neuron(nemo_simulation_t sim,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
@@ -214,6 +214,35 @@ nemo_set_neuron(nemo_network_t sim,
 	CATCH_(Simulation, sim, setNeuron(idx, a, b, c, d, u, v, sigma));
 }
 
+
+void
+getSynapsesFrom(
+		nemo::Simulation* sim,
+		unsigned source,
+		synapse_id *synapses[],
+		size_t* len)
+{
+	const std::vector<synapse_id>& ids = sim->getSynapsesFrom(source);
+	if(g_lastCallStatus == NEMO_OK && !ids.empty()) {
+		*synapses = const_cast<synapse_id*>(&ids[0]);
+		*len = ids.size();
+	} else {
+		*synapses = NULL;
+		*len = 0;
+	}
+}
+
+
+nemo_status_t
+nemo_get_synapses_from(nemo_simulation_t ptr,
+		unsigned source,
+		synapse_id *synapses[],
+		size_t* len)
+{
+	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
+	CALL(getSynapsesFrom(sim, source, synapses, len));
+	return g_lastCallStatus;
+}
 
 
 #define GET_SYNAPSE_STATE(T, ptr, call, synapses, len, ret)                   \

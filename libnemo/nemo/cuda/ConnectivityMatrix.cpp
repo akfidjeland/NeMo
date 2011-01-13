@@ -303,6 +303,39 @@ ConnectivityMatrix::addAuxTerminal(const Synapse& s, size_t addr)
 
 
 
+const std::vector<synapse_id>&
+ConnectivityMatrix::getSynapsesFrom(unsigned source)
+{
+	using boost::format;
+
+	if(m_writeOnlySynapses) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"Cannot read synapse state if simulation configured with write-only synapses");
+	}
+
+	/* The relevant data is stored in the auxillary synapse map, which is
+	 * already indexed in global neuron indices. Therefore, no need to map into
+	 * device ids */
+	aux_map::const_iterator iRow = m_cmAux.find(source);
+	if(iRow == m_cmAux.end()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid source neuron id (%u) in synapse id query") % source));
+	}
+
+	/* Synapse ids are consecutive */
+	size_t nSynapses = iRow->second.size();
+	m_queriedSynapseIds.resize(nSynapses);
+
+	for(size_t iSynapse = 0; iSynapse < nSynapses; ++iSynapse) {
+		m_queriedSynapseIds[iSynapse] = make_synapse_id(source, iSynapse);
+	}
+
+	return m_queriedSynapseIds;
+}
+
+
+
+
 const std::vector<weight_dt>&
 ConnectivityMatrix::syncWeights(cycle_t cycle, const std::vector<synapse_id>& synapses)
 {

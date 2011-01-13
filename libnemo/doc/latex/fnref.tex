@@ -374,6 +374,7 @@ sim = nemoSimulation(net, conf)
 \begin{itemize}
 \item \hyperref[fn: step]{step}
 \item \hyperref[fn: applyStdp]{applyStdp}
+\item \hyperref[fn: getSynapsesFrom]{getSynapsesFrom}
 \item \hyperref[fn: getTargets]{getTargets}
 \item \hyperref[fn: getDelays]{getDelays}
 \item \hyperref[fn: getWeights]{getWeights}
@@ -447,6 +448,38 @@ sim.applyStdp(reward)
 \paragraph{Inputs}
 \begin{description}
 \item[reward] Multiplier for the accumulated weight change
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::getSynapsesFrom}
+\label{fn: getSynapsesFrom}
+return the synapse ids for all synapses with the given source neuron
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+const vector<uint64_t>&
+Simulation::getSynapsesFrom(unsigned source)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_get_synapses_from(nemo_simulation_t sim, unsigned source, 
+        uint64_t* synapses[], size_t* synapses_len)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+synapses = sim.getSynapsesFrom(source)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[source] source neuron index
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[synapses] synapse ids
 \end{description}
 
 \clearpage

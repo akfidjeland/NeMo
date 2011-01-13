@@ -42,6 +42,7 @@
 % Simulation:
 %  nemoStep
 %  nemoApplyStdp
+%  nemoGetSynapsesFrom
 %  nemoGetTargets
 %  nemoGetDelays
 %  nemoGetWeights

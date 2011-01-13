@@ -8,5 +8,5 @@ function elapsed = nemoElapsedWallclock()
 %   elapsed - number of milliseconds of wall-clock time elapsed since
 %             first simulation step (or last timer reset)
 %    
-    elapsed = nemo_mex(uint32(16));
+    elapsed = nemo_mex(uint32(17));
 end

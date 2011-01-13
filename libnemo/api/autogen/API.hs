@@ -320,6 +320,15 @@ applyStdp =
         [] False
 
 
+getSynapsesFrom =
+    ApiFunction "getSynapsesFrom"
+        "return the synapse ids for all synapses with the given source neuron"
+        Nothing
+        [   ApiArg "synapses" (Just "synapse ids") (Vector ApiUInt64 ExplicitLength)]
+        [   Required (ApiArg "source" (Just "source neuron index") (Scalar ApiUInt))]
+        []
+        False -- TODO: vectorize?
+
 
 getTargets =
     let synapses = Required $ ApiArg "synapses"
@@ -417,7 +426,7 @@ simulation =
     ApiModule "Simulation" "sim"
         (Just "A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.")
         (Factory [network, configuration])
-        [step, applyStdp, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
+        [step, applyStdp, getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
 
 
 setCpuBackend =

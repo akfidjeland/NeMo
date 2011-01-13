@@ -11,6 +11,6 @@ main = do
     Latex.generate False api "../../doc/latex/fnref.tex"
     Matlab.generate $ api ++ [matlabExtras]
     -- Haskell.generate api
-    -- Python.generate api
+    Python.generate api
     where
         api = [network, configuration, simulation]

@@ -74,6 +74,9 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::getMembranePotential */
 		float getMembranePotential(unsigned neuron) const;
 
+		/*! \copydoc nemo::Simulation::getSynapsesFrom */
+		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
+
 		/*! \copydoc nemo::Simulation::getTargets */
 		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
 

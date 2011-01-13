@@ -551,6 +551,25 @@ applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+getSynapsesFrom(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    uint64_t* synapses;
+    size_t synapses_len;
+    checkNemoStatus( 
+            nemo_get_synapses_from( 
+                    getSimulation(), 
+                    scalar<unsigned,uint32_t>(prhs[1]), 
+                    &synapses, &synapses_len 
+            ) 
+    );
+    returnVector<uint64_t, uint64_t>(plhs, 0, synapses, synapses_len);
+}
+
+
+
+void
 getTargets(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
@@ -645,7 +664,7 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 22
+#define FN_COUNT 23
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuron,
     addSynapse,
@@ -659,6 +678,7 @@ fn_ptr fn_arr[FN_COUNT] = {
     resetConfiguration,
     step,
     applyStdp,
+    getSynapsesFrom,
     getTargets,
     getDelays,
     getWeights,

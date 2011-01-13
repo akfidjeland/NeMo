@@ -114,6 +114,12 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		virtual float getMembranePotential(unsigned neuron) const = 0;
 
 		/*! \return
+		 * 		vector of synapse ids for all synapses with the given source
+		 * 		neuron
+		 */
+		virtual const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron) = 0;
+
+		/*! \return
 		 * 		target neurons for the specified synapses. The reference is
 		 * 		valid until the next call to this function.
 		 */

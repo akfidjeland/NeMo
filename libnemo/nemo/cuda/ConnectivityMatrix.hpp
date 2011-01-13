@@ -100,6 +100,9 @@ class ConnectivityMatrix
 
 		delay_t maxDelay() const { return m_maxDelay; }
 
+		/*! \copydoc nemo::Simulation::getSynapsesFrom */
+		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
+
 		/*! \copydoc nemo::Simulation::getTargets */
 		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
 
@@ -223,6 +226,7 @@ class ConnectivityMatrix
 #endif
 
 		/* Internal buffers for synapse queries */
+		std::vector<synapse_id> m_queriedSynapseIds;
 		std::vector<unsigned> m_queriedTargets;
 		std::vector<unsigned> m_queriedDelays;
 		std::vector<float> m_queriedWeights;

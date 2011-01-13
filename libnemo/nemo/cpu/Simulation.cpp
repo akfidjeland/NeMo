@@ -373,6 +373,14 @@ Simulation::getMembranePotential(unsigned neuron) const
 
 
 
+const std::vector<synapse_id>&
+Simulation::getSynapsesFrom(unsigned neuron)
+{
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "getSynapsesFrom not supported in CPU backend");
+}
+
+
+
 const std::vector<unsigned>&
 Simulation::getTargets(const std::vector<synapse_id>& synapses)
 {
