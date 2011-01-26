@@ -98,6 +98,8 @@ class ConnectivityMatrix
 				const nemo::ConfigurationImpl&,
 				const Mapper&);
 
+		~ConnectivityMatrix();
+
 		delay_t maxDelay() const { return m_maxDelay; }
 
 		/*! \copydoc nemo::Simulation::getSynapsesFrom */

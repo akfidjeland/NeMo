@@ -103,6 +103,15 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 
 
+ConnectivityMatrix::~ConnectivityMatrix()
+{
+	for(rcm_t::iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
+		delete(i->second);
+	}
+}
+
+
+
 void
 ConnectivityMatrix::addSynapse(
 		const Synapse& s,
