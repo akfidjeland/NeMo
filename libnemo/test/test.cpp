@@ -420,7 +420,29 @@ testWriteOnlySynapses(backend_t backend)
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 	sim->step();
 	std::vector<synapse_id> ids = synapseIds(0, 1);
-	BOOST_REQUIRE_THROW(sim->getWeights(ids) ,nemo::exception);
+	BOOST_REQUIRE_THROW(sim->getWeights(ids),nemo::exception);
+}
+
+
+
+void
+testGetSynapsesFromUnconnectedNeuron(backend_t backend)
+{
+	nemo::Network net;
+	for(int nidx = 0; nidx < 4; ++nidx) {
+		net.addNeuron(nidx, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
+	}
+	nemo::Configuration conf = configuration(false, 1024, backend);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
+	sim->step();
+
+	/* If neuron is invalid we should throw */
+	BOOST_REQUIRE_THROW(sim->getSynapsesFrom(4), nemo::exception);
+
+	/* However, if neuron is unconnected, we should get an empty list */
+	std::vector<synapse_id> ids;
+	BOOST_REQUIRE_NO_THROW(ids = sim->getSynapsesFrom(3));
+	BOOST_REQUIRE(ids.size() == 0);
 }
 
 
@@ -430,6 +452,7 @@ BOOST_AUTO_TEST_SUITE(get_synapses);
 	TEST_ALL_BACKENDS_N(nostdp, testGetSynapses, false)
 	TEST_ALL_BACKENDS_N(stdp, testGetSynapses, true)
 	TEST_ALL_BACKENDS(write_only, testWriteOnlySynapses)
+	TEST_ALL_BACKENDS(from_unconnected, testGetSynapsesFromUnconnectedNeuron)
 BOOST_AUTO_TEST_SUITE_END();
 
 
