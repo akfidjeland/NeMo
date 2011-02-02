@@ -551,6 +551,32 @@ applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    size_t elems = vectorDimension(8, prhs + 1);
+    checkInputCount(nrhs, 8);
+    checkOutputCount(nlhs, 0);
+    void* hdl = getSimulation();
+    for(size_t i=0; i<elems; ++i){
+        checkNemoStatus( 
+                nemo_set_neuron( 
+                        hdl, 
+                        scalarAt<unsigned,uint32_t>(prhs[1], i), 
+                        scalarAt<float,double>(prhs[2], i), 
+                        scalarAt<float,double>(prhs[3], i), 
+                        scalarAt<float,double>(prhs[4], i), 
+                        scalarAt<float,double>(prhs[5], i), 
+                        scalarAt<float,double>(prhs[6], i), 
+                        scalarAt<float,double>(prhs[7], i), 
+                        scalarAt<float,double>(prhs[8], i) 
+                ) 
+        );
+    }
+}
+
+
+
+void
 getSynapsesFrom(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
@@ -664,7 +690,7 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 23
+#define FN_COUNT 24
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuron,
     addSynapse,
@@ -678,6 +704,7 @@ fn_ptr fn_arr[FN_COUNT] = {
     resetConfiguration,
     step,
     applyStdp,
+    setNeuron,
     getSynapsesFrom,
     getTargets,
     getDelays,

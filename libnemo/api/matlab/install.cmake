@@ -10,6 +10,7 @@ nemoSetWriteOnlySynapses.m
 nemoResetConfiguration.m
 nemoStep.m
 nemoApplyStdp.m
+nemoSetNeuron.m
 nemoGetSynapsesFrom.m
 nemoGetTargets.m
 nemoGetDelays.m

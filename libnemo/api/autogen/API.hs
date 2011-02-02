@@ -289,7 +289,6 @@ network =
         [addNeuron, addSynapse, neuronCount, clearNetwork]
 
 
-
 step =
     let istim = Required $ ApiArg "istim_current"
                     (Just "The corresponding list of current input")
@@ -318,6 +317,24 @@ applyStdp =
                 (Just "Multiplier for the accumulated weight change")
                 (Scalar ApiFloat)) ]
         [] False
+
+
+setNeuron =
+    ApiFunction "setNeuron"
+        "modify a neuron during simulation"
+        Nothing
+        []
+        [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
+            Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
+            Required (ApiArg "b" (Just "Sensitivity to sub-threshold fluctuations in the membrane potential v") (Scalar ApiFloat)),
+            Required (ApiArg "c" (Just "After-spike value of the membrane potential v") (Scalar ApiFloat)),
+            Required (ApiArg "d" (Just "After-spike reset of the recovery variable u") (Scalar ApiFloat)),
+            Required (ApiArg "u" (Just "Initial value for the membrane recovery variable") (Scalar ApiFloat)),
+            Required (ApiArg "v" (Just "Initial value for the membrane potential") (Scalar ApiFloat)),
+            Required (ApiArg "sigma" (Just "Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated") (Scalar ApiFloat))
+        ]
+        [] True
+
 
 
 getSynapsesFrom =
@@ -426,7 +443,7 @@ simulation =
     ApiModule "Simulation" "sim"
         (Just "A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.")
         (Factory [network, configuration])
-        [step, applyStdp, getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
+        [step, applyStdp, setNeuron, getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
 
 
 setCpuBackend =

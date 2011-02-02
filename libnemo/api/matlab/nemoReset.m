@@ -4,5 +4,5 @@ function nemoReset()
 % Synopsis:
 %   nemoReset()
 %  
-    nemo_mex(uint32(22));
+    nemo_mex(uint32(23));
 end

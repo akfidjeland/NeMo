@@ -11,5 +11,5 @@ function delays = nemoGetDelays(synapses)
 % Outputs:
 %   delays  - conductance delays of the specified synpases
 %    
-    delays = nemo_mex(uint32(14), uint64(synapses));
+    delays = nemo_mex(uint32(15), uint64(synapses));
 end
