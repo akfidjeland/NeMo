@@ -23,14 +23,14 @@
 #define TEST_ALL_BACKENDS(name, fn)                                           \
     BOOST_AUTO_TEST_SUITE(name)                                               \
     BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU); }                       \
-    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CPU); }                      \
+    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CUDA); }                      \
     BOOST_AUTO_TEST_SUITE_END()
 
 // n-ary function for n >= 2
 #define TEST_ALL_BACKENDS_N(name, fn,...)                                     \
     BOOST_AUTO_TEST_SUITE(name)                                               \
     BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }          \
-    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }         \
+    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CUDA, __VA_ARGS__); }         \
     BOOST_AUTO_TEST_SUITE_END()
 
 #else
