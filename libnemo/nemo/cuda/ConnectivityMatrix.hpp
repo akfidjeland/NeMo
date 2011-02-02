@@ -147,6 +147,8 @@ class ConnectivityMatrix
 
 	private:
 
+		const Mapper& m_mapper;
+
 		delay_t m_maxDelay;
 
 		/* For STDP we need a reverse matrix storing source neuron, source

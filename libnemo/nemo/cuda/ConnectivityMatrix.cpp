@@ -55,6 +55,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf,
 		const Mapper& mapper) :
+	m_mapper(mapper),
 	m_maxDelay(0),
 	mh_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
@@ -295,7 +296,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
  * (global) synapse ids, and are thus filled in a random order. To populate
  * these in a single pass over the input, resize on insertion.  The synapse ids
  * are required to form a contigous range, so every element should be assigned
- * exactly once.  */
+ * exactly once. */
 void
 ConnectivityMatrix::addAuxTerminal(const Synapse& s, size_t addr)
 {
@@ -325,14 +326,19 @@ ConnectivityMatrix::getSynapsesFrom(unsigned source)
 	/* The relevant data is stored in the auxillary synapse map, which is
 	 * already indexed in global neuron indices. Therefore, no need to map into
 	 * device ids */
+	size_t nSynapses = 0;
 	aux_map::const_iterator iRow = m_cmAux.find(source);
 	if(iRow == m_cmAux.end()) {
-		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Invalid source neuron id (%u) in synapse id query") % source));
+		if(!m_mapper.validGlobal(source)) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid source neuron id (%u) in synapse id query") % source));
+		}
+		/* else just leave nSynapses at zero */
+	} else {
+		/* Synapse ids are consecutive */
+		nSynapses = iRow->second.size();
 	}
 
-	/* Synapse ids are consecutive */
-	size_t nSynapses = iRow->second.size();
 	m_queriedSynapseIds.resize(nSynapses);
 
 	for(size_t iSynapse = 0; iSynapse < nSynapses; ++iSynapse) {
