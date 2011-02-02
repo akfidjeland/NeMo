@@ -577,6 +577,25 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+getMembranePotential(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    size_t elems = vectorDimension(1, prhs + 1);
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    allocateOutputVector<double>(plhs, 0, elems);
+    void* hdl = getSimulation();
+    for(size_t i=0; i<elems; ++i){
+        float v;
+        checkNemoStatus( 
+                nemo_get_membrane_potential(hdl, scalarAt<unsigned,uint32_t>(prhs[1], i), &v) 
+        );
+        returnScalarAt<float, double>(plhs, 0, i, v);
+    }
+}
+
+
+
+void
 getSynapsesFrom(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 1);
@@ -690,7 +709,7 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 24
+#define FN_COUNT 25
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuron,
     addSynapse,
@@ -705,6 +724,7 @@ fn_ptr fn_arr[FN_COUNT] = {
     step,
     applyStdp,
     setNeuron,
+    getMembranePotential,
     getSynapsesFrom,
     getTargets,
     getDelays,

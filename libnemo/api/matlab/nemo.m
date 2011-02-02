@@ -43,6 +43,7 @@
 %  nemoStep
 %  nemoApplyStdp
 %  nemoSetNeuron
+%  nemoGetMembranePotential
 %  nemoGetSynapsesFrom
 %  nemoGetTargets
 %  nemoGetDelays

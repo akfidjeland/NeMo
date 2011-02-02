@@ -11,6 +11,7 @@ nemoResetConfiguration.m
 nemoStep.m
 nemoApplyStdp.m
 nemoSetNeuron.m
+nemoGetMembranePotential.m
 nemoGetSynapsesFrom.m
 nemoGetTargets.m
 nemoGetDelays.m

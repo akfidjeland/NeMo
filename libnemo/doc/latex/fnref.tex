@@ -375,6 +375,7 @@ sim = nemoSimulation(net, conf)
 \item \hyperref[fn: step]{step}
 \item \hyperref[fn: applyStdp]{applyStdp}
 \item \hyperref[fn: setNeuron]{setNeuron}
+\item \hyperref[fn: getMembranePotential]{getMembranePotential}
 \item \hyperref[fn: getSynapsesFrom]{getSynapsesFrom}
 \item \hyperref[fn: getTargets]{getTargets}
 \item \hyperref[fn: getDelays]{getDelays}
@@ -485,6 +486,37 @@ sim.setNeuron(idx, a, b, c, d, u, v, sigma)
 \item[u] Initial value for the membrane recovery variable
 \item[v] Initial value for the membrane potential
 \item[sigma] Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated
+\end{description}
+
+\clearpage
+\subsubsection*{Simulation::getMembranePotential}
+\label{fn: getMembranePotential}
+get membane potential of a neuron
+
+
+\noindent C++:
+\begin{lstlisting}[aboveskip=2pt]
+float
+Simulation::getMembranePotential(unsigned idx)
+\end{lstlisting}
+
+\noindent C:
+\begin{lstlisting}[aboveskip=2pt]
+nemo_status_t
+nemo_get_membrane_potential(nemo_simulation_t sim, unsigned idx, float* v)
+\end{lstlisting}
+
+\noindent Matlab:
+\begin{lstlisting}[aboveskip=2pt]
+v = sim.getMembranePotential(idx)
+\end{lstlisting}
+\paragraph{Inputs}
+\begin{description}
+\item[idx] neuron index
+\end{description}
+\paragraph{Outputs}
+\begin{description}
+\item[v] membrane potential
 \end{description}
 
 \clearpage

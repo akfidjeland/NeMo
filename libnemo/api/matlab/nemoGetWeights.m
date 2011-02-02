@@ -11,5 +11,5 @@ function weights = nemoGetWeights(synapses)
 % Outputs:
 %   weights - weights of the specified synapses
 %    
-    weights = nemo_mex(uint32(16), uint64(synapses));
+    weights = nemo_mex(uint32(17), uint64(synapses));
 end

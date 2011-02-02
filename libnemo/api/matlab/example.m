@@ -67,6 +67,12 @@ for s=0:4
 	% Change neuron parameter during simulation
 	nemoSetNeuron(50, 0.05, 0.25, -70, 2, -70*0.05, -70, 2 * rand);
 
+	% Read back membrane potential of a single neuron
+	v = nemoGetMembranePotential(100)
+
+	% Read back membrane potential of a couple of neurons
+	v = nemoGetMembranePotential([101, 105])
+
 	nemoApplyStdp(1.0);
 end
 elapsed = nemoElapsedWallclock

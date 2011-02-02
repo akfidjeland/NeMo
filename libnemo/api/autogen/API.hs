@@ -336,6 +336,16 @@ setNeuron =
         [] True
 
 
+getMembranePotential =
+    ApiFunction "getMembranePotential"
+        "get membane potential of a neuron"
+        Nothing
+        [   ApiArg "v" (Just "membrane potential") (Scalar ApiFloat) ]
+        [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)) ]
+        []
+        True
+
+
 
 getSynapsesFrom =
     ApiFunction "getSynapsesFrom"
@@ -443,7 +453,7 @@ simulation =
     ApiModule "Simulation" "sim"
         (Just "A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.")
         (Factory [network, configuration])
-        [step, applyStdp, setNeuron, getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
+        [step, applyStdp, setNeuron, getMembranePotential, getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
 
 
 setCpuBackend =
