@@ -84,18 +84,11 @@ Neurons::d_allocated() const
 void
 Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
 {
-	if(maxPartitionNeuron.size() == 0) {
-		return;
-	}
-
-	size_t maxPidx = maxPartitionNeuron.rbegin()->first;
-	std::vector<unsigned> partitionSizes(maxPidx+1, 0);
-
+	std::vector<unsigned> partitionSizes(MAX_PARTITION_COUNT, 0);
 	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
 			i != maxPartitionNeuron.end(); ++i) {
 		partitionSizes.at(i->first) = i->second + 1;
 	}
-
 	CUDA_SAFE_CALL(configurePartitionSize(&partitionSizes[0], partitionSizes.size()));
 }
 

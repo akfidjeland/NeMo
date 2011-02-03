@@ -47,8 +47,7 @@ __host__
 cudaError
 configurePartitionSize(const unsigned* d_partitionSize, size_t len)
 {
-	//! \todo set padding to zero
-	assert(len <= MAX_PARTITION_COUNT);
+	assert(len == MAX_PARTITION_COUNT);
 	return cudaMemcpyToSymbol(
 			c_partitionSize,
 			(void*) d_partitionSize,
