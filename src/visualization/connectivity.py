@@ -82,9 +82,8 @@ def color_map():
     return colors
 
 
-def plot_connectivity(infile, outfile, title, use_legend):
-    size = parse_header(infile)
-    m = parse_data(infile, size)
+
+def plot(size, m, outfile=None, title=None, use_legend=False):
     pylab.figure(1)
     colors = color_map()
     max_elem = abs(m).max()
@@ -97,6 +96,12 @@ def plot_connectivity(infile, outfile, title, use_legend):
         pylab.savefig(outfile)
     else:
         pylab.show()
+
+
+def plot_file(infile, outfile, title, use_legend):
+    size = parse_header(infile)
+    m = parse_data(infile, size)
+    plot(size, m, outfile, title, use_legend)
 
 
 if __name__ == "__main__":
@@ -127,4 +132,4 @@ if __name__ == "__main__":
 		elif opt in ("--nolegend"):
 			use_legend = False
 
-	plot_connectivity(infile, outfile, title, use_legend)
+	plot_file(infile, outfile, title, use_legend)
