@@ -121,7 +121,7 @@ addCurrentStimulus(unsigned psize,
  */
 __device__
 void
-copyCurrent(unsigned nNeurons, float* current_in, float* current_out)
+copyCurrent(unsigned nNeurons, fix_t* current_in, fix_t* current_out)
 {
 	for(unsigned bNeuron=0; bNeuron < nNeurons; bNeuron += THREADS_PER_BLOCK) {
 		unsigned neuron = bNeuron + threadIdx.x;
@@ -157,13 +157,12 @@ gather( unsigned cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,
 		unsigned* g_gqFill,
-		float* s_current,
+		fix_t* s_current,
 		uint32_t* s_overflow, // 1b per neuron overflow detection
 		uint32_t* s_negative) // ditto
 {
 	//! \todo move init of current to here, so that we can ensure that it's zero
 	/* Update incoming current in-place in fixed-point format */
-	fix_t* s_fx_current = (fix_t*) s_current;
 	__shared__ unsigned s_incomingCount;
 
 	bv_clear(s_overflow);
@@ -225,7 +224,7 @@ gather( unsigned cycle,
 			}
 
 			if(weight != 0) {
-				addCurrent(postsynaptic, weight, s_fx_current, s_overflow, s_negative);
+				addCurrent(postsynaptic, weight, s_current, s_overflow, s_negative);
 				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",
 						s_cycle, CURRENT_PARTITION, postsynaptic,
 						fx_tofloat(weight), (s_warpAddress[gwarp] - g_fcm) / WARP_SIZE);
@@ -240,15 +239,12 @@ gather( unsigned cycle,
 __global__
 void
 gather( uint32_t cycle,
-		// spike delivery
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
 		unsigned* g_gqFill,
-		//! \todo just load this directly in the fire step
-		fix_t* g_istim,
-		float* g_current)
+		fix_t* g_current)
 {
-	__shared__ float s_current[MAX_PARTITION_SIZE];
+	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
 	__shared__ uint32_t s_overflow[S_BV_PITCH];
@@ -266,13 +262,10 @@ gather( uint32_t cycle,
 	__syncthreads();
 
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
-		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
+		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0U;
 	}
 
 	gather(cycle, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
-
-	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, (fix_t*) s_current, s_overflow, s_negative);
-	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
 	/* Write back to global memory The global memory roundtrip is so that the
 	 * gather and fire steps can be done in separate kernel invocations. */
@@ -286,20 +279,13 @@ cudaError_t
 gather( cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned cycle,
-		fix_t* d_istim,
-		float* d_current,
+		fix_t* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
 		unsigned* d_gqFill)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-
-	gather<<<dimGrid, dimBlock, 0, stream>>>(
-			cycle,
-			d_fcm, d_gqData, d_gqFill,
-			d_istim,    // external input current
-			d_current); // internal input current
-
+	gather<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_fcm, d_gqData, d_gqFill, d_current);
 	return cudaGetLastError();
 }

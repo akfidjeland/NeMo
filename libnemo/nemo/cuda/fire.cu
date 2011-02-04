@@ -236,13 +236,18 @@ fire( 	uint32_t cycle,
 		unsigned* gu_neuronState,
 		// firing stimulus
 		uint32_t* g_fstim,
-		float* g_current,
+		fix_t* g_istim,
+		fix_t* g_current,
 		uint32_t* g_firingOutput, // dense output, already offset to current cycle
 		unsigned* g_nFired,       // device-only buffer
 		nidx_dt* g_fired)         // device-only buffer, sparse output
 {
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 	__shared__ uint32_t s_N1A[S_BV_PITCH];
+
+	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
+	__shared__ uint32_t s_overflow[S_BV_PITCH];
+	__shared__ uint32_t s_negative[S_BV_PITCH];
 
 	__shared__ unsigned s_nFired;
 	__shared__ unsigned s_partitionSize;
@@ -256,28 +261,34 @@ fire( 	uint32_t cycle,
     }
 	__syncthreads();
 
+	bv_clear(s_overflow);
+	bv_clear(s_negative);
+
 	uint32_t* s_fstim = s_N1A;
 	loadFiringInput(g_fstim, s_fstim);
 
-	__shared__ float s_current[MAX_PARTITION_SIZE];
+	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
 	copyCurrent(s_partitionSize,
 			g_current + CURRENT_PARTITION * c_pitch32,
 			s_current);
 	__syncthreads();
+
+	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, s_current, s_overflow, s_negative);
+	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current);
 
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the fire kernel),
 	 * is smaller. */
 	if(thalamicInputEnabled) {
 		thalamicInput(s_partitionSize, c_pitch32,
-				gu_neuronState, gf_neuronParameters, s_current);
+				gu_neuronState, gf_neuronParameters, (float*) s_current);
 	}
 	__syncthreads();
 
 	fire( s_partitionSize,
 			gf_neuronParameters + CURRENT_PARTITION * c_pitch32,
 			gf_neuronState + CURRENT_PARTITION * c_pitch32,
-			s_current,
+			(float*) s_current,
 			s_fstim,
 			&s_nFired,
 			s_fired);
@@ -302,7 +313,8 @@ fire( 	cudaStream_t stream,
 		float* df_neuronState,
 		unsigned* du_neuronState,
 		uint32_t* d_fstim,
-		float* d_current,
+		fix_t* d_istim,
+		fix_t* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
 		nidx_dt* d_fired)
@@ -314,6 +326,7 @@ fire( 	cudaStream_t stream,
 			cycle, thalamicInputEnabled,
 			df_neuronParameters, df_neuronState, du_neuronState,
 			d_fstim,   // firing stimulus
+			d_istim,   // current stimulus
 			d_current, // internal input current
 			d_fout, d_nFired, d_fired);
 
