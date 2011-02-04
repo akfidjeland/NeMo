@@ -19,7 +19,6 @@
 #include "fixedpoint.cu"
 #include "globalQueue.cu"
 #include "nvector.cu"
-#include "thalamicInput.cu"
 
 
 /*! \brief Add input current for a particular neuron
@@ -113,22 +112,20 @@ addCurrentStimulus(unsigned psize,
 
 
 
-/*! Write all per-neuron accumulated current to global memory
+/*! Copy per-neuron accumulated current between two memory areas
  *
- * The global memory roundtrip is so that the accumulation and fire steps can
- * be done in separate kernel invocations.
+ * \param[in] current_in Per-neuron accumulated current (shared or global memory)
+ * \param[out] current_out Per-neuron accumulated current (shared or global memory)
  *
- * \param[in] s_current Per-neuron accumulated current
- * \param[out] g_current Per-neuron accumulated current (with correct partition offset in gmem)
-
+ * Global memory arguments must be offset to the appropriate partition.
  */
 __device__
 void
-storeAccumulatedCurrent(unsigned nNeurons, float* s_current, float* g_current)
+copyCurrent(unsigned nNeurons, fix_t* current_in, fix_t* current_out)
 {
 	for(unsigned bNeuron=0; bNeuron < nNeurons; bNeuron += THREADS_PER_BLOCK) {
 		unsigned neuron = bNeuron + threadIdx.x;
-		g_current[neuron] = s_current[neuron];
+		current_out[neuron] = current_in[neuron];
 	}
 }
 
@@ -160,13 +157,12 @@ gather( unsigned cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,
 		unsigned* g_gqFill,
-		float* s_current,
+		fix_t* s_current,
 		uint32_t* s_overflow, // 1b per neuron overflow detection
 		uint32_t* s_negative) // ditto
 {
 	//! \todo move init of current to here, so that we can ensure that it's zero
 	/* Update incoming current in-place in fixed-point format */
-	fix_t* s_fx_current = (fix_t*) s_current;
 	__shared__ unsigned s_incomingCount;
 
 	bv_clear(s_overflow);
@@ -228,7 +224,7 @@ gather( unsigned cycle,
 			}
 
 			if(weight != 0) {
-				addCurrent(postsynaptic, weight, s_fx_current, s_overflow, s_negative);
+				addCurrent(postsynaptic, weight, s_current, s_overflow, s_negative);
 				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",
 						s_cycle, CURRENT_PARTITION, postsynaptic,
 						fx_tofloat(weight), (s_warpAddress[gwarp] - g_fcm) / WARP_SIZE);
@@ -242,20 +238,13 @@ gather( unsigned cycle,
 
 __global__
 void
-gather( bool thalamicInputEnabled,
-		uint32_t cycle,
-		// neuron state
-		float* gf_neuronParameters,
-		unsigned* gu_neuronState,
-		// spike delivery
+gather( uint32_t cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
 		unsigned* g_gqFill,
-		//! \todo just load this directly in the fire step
-		fix_t* g_istim,
-		float* g_current)
+		fix_t* g_current)
 {
-	__shared__ float s_current[MAX_PARTITION_SIZE];
+	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
 	__shared__ uint32_t s_overflow[S_BV_PITCH];
@@ -273,25 +262,14 @@ gather( bool thalamicInputEnabled,
 	__syncthreads();
 
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
-		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0.0f;
+		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0U;
 	}
 
 	gather(cycle, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
 
-	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, (fix_t*) s_current, s_overflow, s_negative);
-	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
-
-	/* Generating random input current really ought to be done /before/
-	 * providing the input current (for better performance in MPI backend).
-	 * However, we need to either provide fixed-point random input or do an
-	 * additional conversion inside the thalamic input code in order for this
-	 * to work. */
-	if(thalamicInputEnabled) {
-		thalamicInput(s_partitionSize, c_pitch32,
-				gu_neuronState, gf_neuronParameters, s_current);
-	}
-
-	storeAccumulatedCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
+	/* Write back to global memory The global memory roundtrip is so that the
+	 * gather and fire steps can be done in separate kernel invocations. */
+	copyCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
 }
 
 
@@ -300,27 +278,14 @@ __host__
 cudaError_t
 gather( cudaStream_t stream,
 		unsigned partitionCount,
-		bool thalamicInputEnabled,
 		unsigned cycle,
-		float* df_neuronParameters,
-		unsigned* du_neuronState,
-		fix_t* d_istim,
-		float* d_current,
+		fix_t* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
 		unsigned* d_gqFill)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-
-	gather<<<dimGrid, dimBlock, 0, stream>>>(
-			thalamicInputEnabled, cycle,
-			// neuron data
-			df_neuronParameters, du_neuronState,
-			// spike delivery
-			d_fcm, d_gqData, d_gqFill,
-			d_istim,    // external input current
-			d_current); // internal input current
-
+	gather<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_fcm, d_gqData, d_gqFill, d_current);
 	return cudaGetLastError();
 }

@@ -33,12 +33,8 @@ applyStdp(
 cudaError_t
 gather( cudaStream_t stream,
 		unsigned partitionCount,
-		bool thalamicInputEnabled,
 		unsigned cycle,
-		float* df_neuronParameters,
-		unsigned* du_neuronState,
-		fix_t* d_istim,
-		float* d_current,
+		fix_t* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
 		unsigned* d_gqFill);
@@ -49,10 +45,13 @@ cudaError_t
 fire(	cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned cycle,
+		bool thalamicInputEnabled,
 		float* df_neuronParameters,
 		float* df_neuronState,
+		unsigned* du_neuronState,
 		uint32_t* d_fstim,
-		float* d_current,
+		fix_t* d_istim,
+		fix_t* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
 		nidx_dt* d_fired);
