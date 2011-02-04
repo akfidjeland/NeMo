@@ -19,7 +19,6 @@
 #include "fixedpoint.cu"
 #include "globalQueue.cu"
 #include "nvector.cu"
-#include "thalamicInput.cu"
 
 
 /*! \brief Add input current for a particular neuron
@@ -113,22 +112,20 @@ addCurrentStimulus(unsigned psize,
 
 
 
-/*! Write all per-neuron accumulated current to global memory
+/*! Copy per-neuron accumulated current between two memory areas
  *
- * The global memory roundtrip is so that the accumulation and fire steps can
- * be done in separate kernel invocations.
+ * \param[in] current_in Per-neuron accumulated current (shared or global memory)
+ * \param[out] current_out Per-neuron accumulated current (shared or global memory)
  *
- * \param[in] s_current Per-neuron accumulated current
- * \param[out] g_current Per-neuron accumulated current (with correct partition offset in gmem)
-
+ * Global memory arguments must be offset to the appropriate partition.
  */
 __device__
 void
-storeAccumulatedCurrent(unsigned nNeurons, float* s_current, float* g_current)
+copyCurrent(unsigned nNeurons, float* current_in, float* current_out)
 {
 	for(unsigned bNeuron=0; bNeuron < nNeurons; bNeuron += THREADS_PER_BLOCK) {
 		unsigned neuron = bNeuron + threadIdx.x;
-		g_current[neuron] = s_current[neuron];
+		current_out[neuron] = current_in[neuron];
 	}
 }
 
@@ -242,11 +239,7 @@ gather( unsigned cycle,
 
 __global__
 void
-gather( bool thalamicInputEnabled,
-		uint32_t cycle,
-		// neuron state
-		float* gf_neuronParameters,
-		unsigned* gu_neuronState,
+gather( uint32_t cycle,
 		// spike delivery
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
@@ -281,17 +274,9 @@ gather( bool thalamicInputEnabled,
 	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, (fix_t*) s_current, s_overflow, s_negative);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, (fix_t*) s_current, s_current);
 
-	/* Generating random input current really ought to be done /before/
-	 * providing the input current (for better performance in MPI backend).
-	 * However, we need to either provide fixed-point random input or do an
-	 * additional conversion inside the thalamic input code in order for this
-	 * to work. */
-	if(thalamicInputEnabled) {
-		thalamicInput(s_partitionSize, c_pitch32,
-				gu_neuronState, gf_neuronParameters, s_current);
-	}
-
-	storeAccumulatedCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
+	/* Write back to global memory The global memory roundtrip is so that the
+	 * gather and fire steps can be done in separate kernel invocations. */
+	copyCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
 }
 
 
@@ -300,10 +285,7 @@ __host__
 cudaError_t
 gather( cudaStream_t stream,
 		unsigned partitionCount,
-		bool thalamicInputEnabled,
 		unsigned cycle,
-		float* df_neuronParameters,
-		unsigned* du_neuronState,
 		fix_t* d_istim,
 		float* d_current,
 		synapse_t* d_fcm,
@@ -314,10 +296,7 @@ gather( cudaStream_t stream,
 	dim3 dimGrid(partitionCount);
 
 	gather<<<dimGrid, dimBlock, 0, stream>>>(
-			thalamicInputEnabled, cycle,
-			// neuron data
-			df_neuronParameters, du_neuronState,
-			// spike delivery
+			cycle,
 			d_fcm, d_gqData, d_gqFill,
 			d_istim,    // external input current
 			d_current); // internal input current
