@@ -146,8 +146,8 @@ configureReverseAddressing(
         uint32_t* const* r_faddress,
 		size_t len)
 {
+	assert(len == MAX_PARTITION_COUNT);
 	cudaError err;
-	//! \todo extend vectors and fill with NULLs
 	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch, len, size_t);
 	SET_CR_ADDRESS_VECTOR(cr_address, r_address, len, uint32_t*);
 	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp, len, weight_dt*);

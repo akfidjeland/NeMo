@@ -154,6 +154,7 @@ ConnectivityMatrix::addSynapse(
 	size_t f_addr = addr.row * WARP_SIZE + addr.synapse;
 	//! \todo range check this address
 
+	assert(d_target.neuron < MAX_PARTITION_SIZE);
 	h_targets.at(f_addr) = d_target.neuron;
 	h_weights.at(f_addr) = fx_toFix(s.weight(), m_fractionalBits);
 
@@ -258,15 +259,12 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 void
 ConnectivityMatrix::moveRcmToDevice()
 {
-	if(m_rsynapses.size() == 0) {
-		return;
-	}
-
 	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
 		i->second->moveToDevice();
 	}
 
 	std::vector<size_t> rpitch = r_partitionPitch();
+
 	CUDA_SAFE_CALL(
 		configureReverseAddressing(
 				&rpitch[0],
@@ -480,13 +478,8 @@ template<typename T, class S>
 std::vector<T>
 mapDevicePointer(const std::map<pidx_t, S*>& vec, std::const_mem_fun_t<T, S> fun)
 {
-	if(vec.size() == 0) {
-		return std::vector<T>();
-	}
-
-	pidx_t maxPartitionIdx = vec.rbegin()->first;
-
-	std::vector<T> ret(maxPartitionIdx+1, 0);
+	/* Always fill this in with zeros. */
+	std::vector<T> ret(MAX_PARTITION_COUNT, T(0));
 	for(typename std::map<pidx_t, S*>::const_iterator i = vec.begin();
 			i != vec.end(); ++i) {
 		ret.at(i->first) = fun(i->second);

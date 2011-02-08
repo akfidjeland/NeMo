@@ -50,6 +50,7 @@ addCurrent(nidx_t neuron,
 		uint32_t* s_overflow,
 		uint32_t* s_negative)
 {
+	ASSERT(neuron < MAX_PARTITION_SIZE);
 	bool overflow = fx_atomicAdd(s_current + neuron, current);
 	bv_atomicSetPredicated(overflow, neuron, s_overflow);
 	bv_atomicSetPredicated(overflow && fx_isNegative(current), neuron, s_negative);
@@ -165,6 +166,7 @@ gather( unsigned cycle,
 	/* Update incoming current in-place in fixed-point format */
 	__shared__ unsigned s_incomingCount;
 
+	//! \todo declare bit vectors here instead
 	bv_clear(s_overflow);
 	bv_clear(s_negative);
 
@@ -176,6 +178,7 @@ gather( unsigned cycle,
 	}
 	__syncthreads();
 
+	/* Process the incoming warps in fixed size groups */
 	/*! \note Could use THREADS_PER_BLOCK here, but we're bit low on shared
 	 * memory. */
 #define GROUP_SIZE 128
@@ -186,13 +189,14 @@ gather( unsigned cycle,
 	//! \todo rename variables here
 	for(unsigned groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
 
-		__shared__ unsigned s_groupSize;
-
 		unsigned group = groupBase + threadIdx.x;
 
+		/* In each loop iteration we process /up to/ GROUP_SIZE warps. For the
+		 * last iteration of the outer loop we process fewer */
+		__shared__ unsigned s_groupSize;
 		if(threadIdx.x == 0) {
 			s_groupSize =
-				(group + GROUP_SIZE) > s_incomingCount
+				(groupBase + GROUP_SIZE) > s_incomingCount
 				? s_incomingCount % GROUP_SIZE
 				: GROUP_SIZE;
 			DEBUG_MSG_SYNAPSE("c%u: group size=%u, incoming=%u\n", cycle, s_groupSize, s_incomingCount);
@@ -264,6 +268,7 @@ gather( uint32_t cycle,
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
 		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0U;
 	}
+	__syncthreads();
 
 	gather(cycle, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
 
@@ -271,6 +276,7 @@ gather( uint32_t cycle,
 	 * gather and fire steps can be done in separate kernel invocations. */
 	copyCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
 }
+
 
 
 

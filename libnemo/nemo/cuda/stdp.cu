@@ -180,7 +180,7 @@ closestPostFire(uint64_t spikes)
 
 
 
-#ifdef NEMO_CUDA_DEBUG_TRACE
+#if NEMO_CUDA_DEBUG_TRACE >= 0x8
 
 __device__
 void
@@ -238,7 +238,7 @@ updateRegion(
 		}
 		// if neither is applicable dt_post == dt_pre
 	}
-#ifdef NEMO_CUDA_DEBUG_TRACE
+#if NEMO_CUDA_DEBUG_TRACE >= 0x8
 	logStdp(dt_log, w_diff, targetNeuron, r_synapse);
 #endif
 	return w_diff;
@@ -327,9 +327,11 @@ updateSTDP_(
 			for(unsigned sbase = 0; sbase < r_maxSynapses; sbase += THREADS_PER_BLOCK) {
 
 				unsigned r_sidx = sbase + threadIdx.x;
+
 				if(r_sidx < r_maxSynapses) {
 
 					size_t r_offset = target * r_maxSynapses + r_sidx;
+
 					/* nvcc will warn that gr_address defaults to gmem, as it
 					 * is not clear what address space it belongs to. That's
 					 * ok; this is global memory */

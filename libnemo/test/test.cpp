@@ -23,14 +23,14 @@
 #define TEST_ALL_BACKENDS(name, fn)                                           \
     BOOST_AUTO_TEST_SUITE(name)                                               \
     BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU); }                       \
-    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CUDA); }                      \
+    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CUDA); }                     \
     BOOST_AUTO_TEST_SUITE_END()
 
 // n-ary function for n >= 2
 #define TEST_ALL_BACKENDS_N(name, fn,...)                                     \
     BOOST_AUTO_TEST_SUITE(name)                                               \
     BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }          \
-    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CUDA, __VA_ARGS__); }         \
+    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CUDA, __VA_ARGS__); }        \
     BOOST_AUTO_TEST_SUITE_END()
 
 #else
@@ -300,9 +300,8 @@ BOOST_AUTO_TEST_CASE(compare_backends)
 BOOST_AUTO_TEST_CASE(mapping_tests_random)
 {
 	// only need to create the network once
-	nemo::Network* net = nemo::random::construct(1000, 1000, false);
-	runComparisions(net);
-	delete net;
+	boost::scoped_ptr<nemo::Network> net(nemo::random::construct(1000, 1000, true));
+	runComparisions(net.get());
 }
 #endif
 
@@ -459,12 +458,30 @@ BOOST_AUTO_TEST_SUITE_END();
 void testStdp(backend_t backend, bool noiseConnections, float reward);
 void testInvalidStdpUsage(backend_t);
 
+
+void
+testStdpWithAllStatic(backend_t backend)
+{
+	boost::scoped_ptr<nemo::Network> net(nemo::random::construct(1000, 1000, false));
+	nemo::Configuration conf = configuration(true, 1024, backend);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+	for(unsigned s=0; s<4; ++s) {
+		for(unsigned ms=0; ms<1000; ++ms) {
+			sim->step();
+		}
+		sim->applyStdp(1.0);
+	}
+}
+
+
+
 BOOST_AUTO_TEST_SUITE(stdp);
 	TEST_ALL_BACKENDS_N(simple, testStdp, false, 1.0)
 	TEST_ALL_BACKENDS_N(noisy, testStdp, true, 1.0)
 	TEST_ALL_BACKENDS_N(simple_fractional_reward, testStdp, false, 0.8)
 	TEST_ALL_BACKENDS_N(noise_fractional_reward, testStdp, true, 0.9)
 	TEST_ALL_BACKENDS(invalid, testInvalidStdpUsage)
+	TEST_ALL_BACKENDS(all_static, testStdpWithAllStatic)
 BOOST_AUTO_TEST_SUITE_END();
 
 

@@ -222,13 +222,14 @@ scatterGlobal(unsigned cycle,
 
 			if(valid) {
 				unsigned offset = s_fill[targetPartition] + localOffset;
-				ASSERT(offset < c_incomingPitch);
 				size_t base = gq_bufferStart(targetPartition, writeBuffer(cycle));
+				ASSERT(offset < c_gqPitch);
+				ASSERT(base < 2 * PARTITION_COUNT * c_gqPitch);
 				g_gqData[base + offset] = warpOffset;
 				DEBUG_MSG_SYNAPSE("c%u[global scatter]: enqueued warp %u (p%un%u -> p%u with d%u) to global queue (buffer entry %u/%lu)\n",
 						cycle, warpOffset,
 						CURRENT_PARTITION, s_lq[jLq].x, targetPartition, s_lq[jLq].y,
-						offset, c_incomingPitch);
+						offset, c_gqPitch);
 				/* The writes to the global queue are non-coalesced. It would
 				 * be possible to stage this data in smem for each partition.
 				 * However, this would require a fair amount of smem (1), and
