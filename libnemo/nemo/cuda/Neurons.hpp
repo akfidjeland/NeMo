@@ -74,7 +74,7 @@ class Neurons
 		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
 		 * \return a parameter for a single neuron
 		 */
-		float getParameter(const DeviceIdx& idx, int parameter) const;
+		float getParameter(const DeviceIdx& idx, unsigned parameter) const;
 
 		/* Set parameter for a single neuron
 		 *
@@ -82,7 +82,7 @@ class Neurons
 		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
 		 * \param value
 		 */
-		void setParameter(const DeviceIdx& idx, int parameter, float value);
+		void setParameter(const DeviceIdx& idx, unsigned parameter, float value);
 
 		/*! Get a state variable for a single neuron
 		 *
@@ -93,7 +93,7 @@ class Neurons
 		 * time, since synchronisation is needed between the host and the
 		 * device.
 		 */
-		float getState(const DeviceIdx& idx, int var) const;
+		float getState(const DeviceIdx& idx, unsigned var) const;
 
 		/*! Set a state variable for a single neuron
 		 *
@@ -106,11 +106,15 @@ class Neurons
 		 * device. Additionaly, the next simulation step will involve copying
 		 * data from host *to* device.
 		 */
-		void setState(const DeviceIdx& idx, int var, float value);
+		void setState(const DeviceIdx& idx, unsigned var, float value);
 
 		bool rngEnabled() const { return m_rngEnabled; }
 
 	private:
+
+		const unsigned mf_nParams;
+		const unsigned mf_nStateVars;
+		const unsigned mu_nStateVars;
 
 		/* Neuron parameters do not change at run-time (unless the user
 		 * specifically does it through \a setParameter) */

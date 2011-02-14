@@ -11,6 +11,8 @@
 
 #include <vector>
 
+#include <boost/format.hpp>
+
 #include <nemo/network/Generator.hpp>
 #include <nemo/RNG.hpp>
 
@@ -24,6 +26,10 @@ namespace nemo {
 
 
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
+	//! \todo set these sizes based on configuration
+	mf_nParams(NEURON_FLOAT_PARAM_COUNT),
+	mf_nStateVars(NEURON_FLOAT_STATE_COUNT),
+	mu_nStateVars(NEURON_UNSIGNED_STATE_COUNT),
 	mf_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mf_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mu_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
@@ -122,17 +128,32 @@ Neurons::step(cycle_t cycle)
 
 
 
-float
-Neurons::getParameter(const DeviceIdx& idx, int parameter) const
+inline
+void
+verifyParameterIndex(unsigned parameter, unsigned maxParameter)
 {
+	using boost::format;
+	if(parameter >= maxParameter) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid neuron parameter index (%u)") % parameter));
+	}
+}
+
+
+
+float
+Neurons::getParameter(const DeviceIdx& idx, unsigned parameter) const
+{
+	verifyParameterIndex(parameter, mf_nParams);
 	return mf_param.getNeuron(idx.partition, idx.neuron, parameter);
 }
 
 
 
 void
-Neurons::setParameter(const DeviceIdx& idx, int parameter, float value)
+Neurons::setParameter(const DeviceIdx& idx, unsigned parameter, float value)
 {
+	verifyParameterIndex(parameter, mf_nParams);
 	mf_param.setNeuron(idx.partition, idx.neuron, value, parameter);
 	mf_paramDirty = true;
 }
@@ -150,20 +171,34 @@ Neurons::readStateFromDevice() const
 
 
 
-float
-Neurons::getState(const DeviceIdx& idx, int parameter) const
+inline
+void
+verifyStateVariableIndex(unsigned var, unsigned maxVar)
 {
+	using boost::format;
+	if(var >= maxVar) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid neuron state variable index (%u)") % var));
+	}
+}
+
+
+float
+Neurons::getState(const DeviceIdx& idx, unsigned var) const
+{
+	verifyStateVariableIndex(var, mf_nStateVars);
 	readStateFromDevice();
-	return mf_state.getNeuron(idx.partition, idx.neuron, parameter);
+	return mf_state.getNeuron(idx.partition, idx.neuron, var);
 }
 
 
 
 void
-Neurons::setState(const DeviceIdx& idx, int parameter, float value)
+Neurons::setState(const DeviceIdx& idx, unsigned var, float value)
 {
+	verifyStateVariableIndex(var, mf_nStateVars);
 	readStateFromDevice();
-	mf_state.setNeuron(idx.partition, idx.neuron, value, parameter);
+	mf_state.setNeuron(idx.partition, idx.neuron, value, var);
 	mf_stateDirty = true;
 }
 
