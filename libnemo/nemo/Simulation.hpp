@@ -108,6 +108,15 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 *
 		 * \{ */
 
+		/*!
+		 * \param neuron neuron index
+		 * \param var variable index
+		 * \return state variable \a n.
+		 *
+		 * For the Izhikevich model 0 = u, 1 = v
+		 */
+		virtual float getNeuronState(unsigned neuron, unsigned var) const = 0;
+
 		/*! \return
 		 * 		membrane potential of the specified neuron
 		 */

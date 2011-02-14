@@ -71,6 +71,9 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
+		/*! \copydoc nemo::Simulation::getNeuronState */
+		float getNeuronState(unsigned neuron, unsigned var) const;
+
 		/*! \copydoc nemo::Simulation::getMembranePotential */
 		float getMembranePotential(unsigned neuron) const;
 

@@ -366,6 +366,14 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 float
+Simulation::getNeuronState(unsigned neuron, unsigned var) const
+{
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "getNeuronState not supported in CPU backend");
+}
+
+
+
+float
 Simulation::getMembranePotential(unsigned neuron) const
 {
 	return m_v.at(m_mapper.localIdx(neuron));
