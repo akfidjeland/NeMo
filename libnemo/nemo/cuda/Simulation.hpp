@@ -232,6 +232,9 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::getNeuronState */
 		float getNeuronState(unsigned neuron, unsigned var) const;
 
+		/*! \copydoc nemo::Simulation::getNeuronState */
+		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
+
 		/*! \copydoc nemo::Simulation::getMembranePotential */
 		float getMembranePotential(unsigned neuron) const;
 

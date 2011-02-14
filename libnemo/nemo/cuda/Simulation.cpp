@@ -415,6 +415,14 @@ Simulation::getNeuronState(unsigned neuron, unsigned var) const
 
 
 float
+Simulation::getNeuronParameter(unsigned neuron, unsigned parameter) const
+{
+	return m_neurons.getParameter(m_mapper.deviceIdx(neuron), parameter);
+}
+
+
+
+float
 Simulation::getMembranePotential(unsigned neuron) const
 {
 	return m_neurons.getState(m_mapper.deviceIdx(neuron), STATE_V);

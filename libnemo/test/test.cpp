@@ -592,6 +592,8 @@ testSetNeuron(backend_t backend)
 
 	{
 		boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
+		BOOST_REQUIRE(sim->getNeuronState(0, 0) == u);
+		BOOST_REQUIRE(sim->getNeuronState(0, 1) == v);
 		/* Marginally change the 'c' parameter. This is only used if the neuron
 		 * fires (which it shouldn't do this cycle). This modification
 		 * therefore should not affect the simulation result (here measured via
@@ -599,6 +601,11 @@ testSetNeuron(backend_t backend)
 		sim->setNeuron(0, a, b, c+1.0f, d, u, v, sigma);
 		sim->step();
 		BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 0) == a);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 1) == b);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 2) == c+1.0f);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 3) == d);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 4) == sigma);
 	}
 
 	{

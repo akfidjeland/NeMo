@@ -8,6 +8,7 @@
 #ifdef NEMO_CPU_MULTITHREADED
 #include <boost/thread.hpp>
 #endif
+#include <boost/format.hpp>
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -366,11 +367,42 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 float
-Simulation::getNeuronState(unsigned neuron, unsigned var) const
+Simulation::getNeuronState(unsigned gidx, unsigned var) const
 {
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "getNeuronState not supported in CPU backend");
+	using boost::format;
+
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	nidx_t lidx = m_mapper.localIdx(gidx);
+	switch(var) {
+		case 0: return m_u.at(lidx);
+		case 1: return m_v.at(lidx);
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron state variable index (%u)") % var));
+	}
 }
 
+
+
+float
+Simulation::getNeuronParameter(unsigned gidx, unsigned param) const
+{
+	using boost::format;
+
+	nidx_t lidx = m_mapper.localIdx(gidx);
+
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	switch(param) {
+		case 0: return m_a.at(lidx);
+		case 1: return m_b.at(lidx);
+		case 2: return m_c.at(lidx);
+		case 3: return m_d.at(lidx);
+		case 4: return m_sigma.at(lidx);
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron parameter index (%u)") % param));
+	}
+}
 
 
 float
