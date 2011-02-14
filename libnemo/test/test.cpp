@@ -542,6 +542,9 @@ testVProbe(backend_t backend)
 TEST_ALL_BACKENDS(vprobe, testVProbe)
 
 
+
+/* Both the simulation and network classes have neuron setters. Here we perform
+ * the same test for both. */
 void
 testSetNeuron(backend_t backend)
 {
@@ -555,7 +558,15 @@ testSetNeuron(backend_t backend)
 
 	/* Create a minimal network with a single neuron */
 	nemo::Network net;
-	net.addNeuron(0, a, b, c, d, u, v, sigma);
+
+	/* setNeuron should only succeed for existing neurons */
+	BOOST_REQUIRE_THROW(net.setNeuron(0, a, b, c, d, u, v, sigma), nemo::exception);
+
+	net.addNeuron(0, a, b, c-0.1, d, u, v-1.0, sigma);
+
+	BOOST_REQUIRE_NO_THROW(net.setNeuron(0, a, b, c, d, u, v, sigma));
+
+	//! \todo try reading back the state and verify that it is as expected.
 
 	nemo::Configuration conf = configuration(false, 1024, backend);
 

@@ -62,6 +62,31 @@ NetworkImpl::addNeuron(nidx_t nidx, const Neuron<float>& n)
 
 
 
+void
+NetworkImpl::setNeuron(unsigned nidx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	setNeuron(nidx, Neuron<float>(a, b, c, d, u, v, sigma));
+}
+
+
+
+void
+NetworkImpl::setNeuron(nidx_t nidx, const Neuron<float>& n)
+{
+	using boost::format;
+	if(m_neurons.find(nidx) == m_neurons.end()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Attemt to modify non-existing neuron %u") % nidx));
+	}
+	m_maxIdx = std::max(m_maxIdx, int(nidx));
+	m_minIdx = std::min(m_minIdx, int(nidx));
+	m_neurons[nidx] = n;
+}
+
+
+
 synapse_id
 NetworkImpl::addSynapse(
 		unsigned source,
@@ -91,6 +116,7 @@ NetworkImpl::addSynapse(
 
 	return make_synapse_id(source, id);
 }
+
 
 
 NetworkImpl::fcm_t::const_iterator

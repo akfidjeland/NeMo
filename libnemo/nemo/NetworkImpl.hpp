@@ -41,12 +41,21 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 
 		NetworkImpl();
 
+		/*! \copydoc nemo::Network::addNeuron */
 		void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
 		void addNeuron(nidx_t nidx, const Neuron<float>&);
 
+		/*! \copydoc nemo::Network::setNeuron */
+		void setNeuron(unsigned idx,
+				float a, float b, float c, float d,
+				float u, float v, float sigma);
+
+		void setNeuron(nidx_t nidx, const Neuron<float>& n);
+
+		/*! \copydoc nemo::Network::addSynapse */
 		synapse_id addSynapse(
 				unsigned source,
 				unsigned target,

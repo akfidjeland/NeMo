@@ -26,6 +26,17 @@ Network::addNeuron(unsigned idx,
 }
 
 
+
+void
+Network::setNeuron(unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	m_impl->setNeuron(idx, a, b, c, d, u, v, sigma);
+}
+
+
+
 synapse_id
 Network::addSynapse(
 		unsigned source,

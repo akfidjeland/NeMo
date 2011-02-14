@@ -67,6 +67,14 @@ class NEMO_BASE_DLL_PUBLIC Network
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
+		/*! Change parameters/state variables of a single existing neuron
+		 *
+		 * The parameters are the same as for \a nemo::Network::addNeuron
+		 */
+		void setNeuron(unsigned idx,
+				float a, float b, float c, float d,
+				float u, float v, float sigma);
+
 		/* Add a single synapse and return its unique id */
 		synapse_id addSynapse(
 				unsigned source,
@@ -74,6 +82,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 				unsigned delay,
 				float weight,
 				unsigned char plastic);
+
 
 		/* synapse getter intended for testing only... */
 
