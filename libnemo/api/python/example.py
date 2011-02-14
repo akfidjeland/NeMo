@@ -68,17 +68,17 @@ def run_random(ncount, scount, duration=1000):
     sim = nemo.Simulation(net, conf)
     print "run simulation"
     for t in range(duration):
+        # with firing and current stimulus
+        # fired = sim.step([2, 4, 5], [(6, 20.0), (7, -5.0)])
         fired = sim.step()
         print t, ":", fired
 
-    # TODO: move this to test code
     # Read back a few synapse values.
-    # TODO: use synapse_id getters for this
-    synapses = range(10) # relies on internals of Id allocation: neuron 0, first 10 synapses
-    print sim.get_targets(synapses);
-    print sim.get_delays(synapses);
-    print sim.get_weights(synapses);
-    print sim.get_plastic(synapses);
+    ids = sim.get_synapses_from(0)
+    print sim.get_targets(ids);
+    print sim.get_delays(ids);
+    print sim.get_weights(ids);
+    print sim.get_plastic(ids);
 
 
 
