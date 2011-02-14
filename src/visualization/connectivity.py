@@ -83,7 +83,7 @@ def color_map():
 
 
 
-def plot(size, m, outfile=None, title=None, use_legend=False):
+def plot(m, outfile=None, title=None, use_legend=False):
     pylab.figure(1)
     colors = color_map()
     max_elem = abs(m).max()
@@ -101,7 +101,7 @@ def plot(size, m, outfile=None, title=None, use_legend=False):
 def plot_file(infile, outfile, title, use_legend):
     size = parse_header(infile)
     m = parse_data(infile, size)
-    plot(size, m, outfile, title, use_legend)
+    plot(m, outfile, title, use_legend)
 
 
 if __name__ == "__main__":
