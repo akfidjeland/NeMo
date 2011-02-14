@@ -83,6 +83,23 @@ class NEMO_BASE_DLL_PUBLIC Network
 				float weight,
 				unsigned char plastic);
 
+		/*!
+		 * \param neuron neuron index
+		 * \param var variable index
+		 * \return state variable \a n.
+		 *
+		 * For the Izhikevich model 0 = u, 1 = v
+		 */
+		float getNeuronState(unsigned neuron, unsigned var) const;
+
+		/*!
+		 * \param neuron neuron index
+		 * \param param parameter index
+		 * \return parameter \a n.
+		 *
+		 * For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
+		 */
+		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
 
 		/* synapse getter intended for testing only... */
 

@@ -37,6 +37,23 @@ Network::setNeuron(unsigned idx,
 
 
 
+
+float
+Network::getNeuronState(unsigned neuron, unsigned var) const
+{
+	return m_impl->getNeuronState(neuron, var);
+}
+
+
+
+float
+Network::getNeuronParameter(unsigned neuron, unsigned parameter) const
+{
+	return m_impl->getNeuronParameter(neuron, parameter);
+}
+
+
+
 synapse_id
 Network::addSynapse(
 		unsigned source,

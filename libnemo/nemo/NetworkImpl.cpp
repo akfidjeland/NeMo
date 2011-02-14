@@ -119,6 +119,60 @@ NetworkImpl::addSynapse(
 
 
 
+const NetworkImpl::neuron_t&
+NetworkImpl::getNeuron(unsigned nidx) const
+{
+	using boost::format;
+
+	std::map<nidx_t, neuron_t>::const_iterator i = m_neurons.find(nidx);
+	if(i == m_neurons.end()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Unknown neuron index %u") % nidx));
+	}
+	return i->second;
+}
+
+
+
+float
+NetworkImpl::getNeuronState(unsigned nidx, unsigned var) const
+{
+	using boost::format;
+
+	const neuron_t& neuron = getNeuron(nidx);
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	switch(var) {
+		case 0: return neuron.u;
+		case 1: return neuron.v;
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron state variable index (%u)") % var));
+	}
+}
+
+
+
+float
+NetworkImpl::getNeuronParameter(unsigned nidx, unsigned parameter) const
+{
+	using boost::format;
+
+	const neuron_t& neuron = getNeuron(nidx);
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	switch(parameter) {
+		case 0: return neuron.a;
+		case 1: return neuron.b;
+		case 2: return neuron.c;
+		case 3: return neuron.d;
+		case 4: return neuron.sigma;
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron parameter index (%u)") % parameter));
+	}
+}
+
+
+
 NetworkImpl::fcm_t::const_iterator
 NetworkImpl::getSourceIterator(unsigned source) const
 {

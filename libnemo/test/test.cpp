@@ -564,9 +564,22 @@ testSetNeuron(backend_t backend)
 
 	net.addNeuron(0, a, b, c-0.1, d, u, v-1.0, sigma);
 
-	BOOST_REQUIRE_NO_THROW(net.setNeuron(0, a, b, c, d, u, v, sigma));
+	/* Invalid neuron */
+	BOOST_REQUIRE_THROW(net.getNeuronParameter(1, 0), nemo::exception);
+	BOOST_REQUIRE_THROW(net.getNeuronState(1, 0), nemo::exception);
 
-	//! \todo try reading back the state and verify that it is as expected.
+	/* Invalid parameter */
+	BOOST_REQUIRE_THROW(net.getNeuronParameter(0, 5), nemo::exception);
+	BOOST_REQUIRE_THROW(net.getNeuronState(0, 2), nemo::exception);
+
+	BOOST_REQUIRE_NO_THROW(net.setNeuron(0, a, b, c, d, u, v, sigma));
+	BOOST_REQUIRE(net.getNeuronParameter(0, 0) == a);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 1) == b);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 2) == c);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 3) == d);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 4) == sigma);
+	BOOST_REQUIRE(net.getNeuronState(0, 0) == u);
+	BOOST_REQUIRE(net.getNeuronState(0, 1) == v);
 
 	nemo::Configuration conf = configuration(false, 1024, backend);
 
