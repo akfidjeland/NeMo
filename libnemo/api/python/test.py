@@ -1,9 +1,27 @@
 #!/usr/bin/env python
 
 import unittest
+import random
 import nemo
 
+def randomSource():
+    return random.randint(0, 999)
+
+def randomTarget():
+    return randomSource()
+
+def randomDelay():
+    return random.randint(1, 20)
+
+def randomWeight():
+    return random.uniform(-1.0, 1.0)
+
+def randomPlastic():
+    return random.choice([True, False])
+
+
 class TestFunctions(unittest.TestCase):
+
 
     def test_network_set_neuron(self):
         """ create a simple network and make sure we can get and set parameters
@@ -77,6 +95,29 @@ class TestFunctions(unittest.TestCase):
         self.assertRaises(RuntimeError, net.set_neuron_parameter, 0, 5, 0.0) # parameter
         self.assertRaises(RuntimeError, net.set_neuron_state, 0, 2, 0.0)     # state
 
+    def test_add_synapse(self):
+        """ The add_synapse method supports either vector or scalar input. This
+        test calls set_synapse in a large number of ways, checking for
+        catastrophics failures in the boost::python layer """
+
+        def arg(vlen, gen):
+            """ Return either a fixed-length vector or a scalar, with values
+            drawn from 'gen'"""
+            vector = random.choice([True, False])
+            if vector:
+                return [gen() for n in range(vlen)]
+            else:
+                return gen()
+
+        net = nemo.Network()
+        for test in range(1000):
+            vlen = random.randint(2, 500)
+            source = arg(vlen, randomSource)
+            target = arg(vlen, randomTarget)
+            delay = arg(vlen, randomDelay)
+            weight = arg(vlen, randomWeight)
+            plastic = arg(vlen, randomPlastic)
+            net.add_synapse(source, target, delay, weight, plastic)
 
 
 if __name__ == '__main__':

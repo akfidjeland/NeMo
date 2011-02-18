@@ -1,5 +1,6 @@
 #include <sstream>
 #include <iterator>
+#include <stdexcept>
 
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
@@ -161,6 +162,61 @@ struct from_py_list
 
 
 
+/*!
+ * Determine if input is scalar or vector. If it is a vector, verify that the
+ * vector length is the same as other vectors (whose length is already set in
+ * \a vectorLength.
+ *
+ * \param obj either a scalar or a vector
+ * \param vectorLength length of any other vectors in the same parameter list,
+ * 		or '1' if there are no others.
+ * \return true if the object is vector (Python list), false if it's a scalar
+ */
+inline
+bool
+checkInputVector(PyObject* obj, unsigned &vectorLength)
+{
+	unsigned length = PyList_Check(obj) ? PyList_Size(obj) : 1;
+	if(length > 1) {
+		if(vectorLength > 1 && length != vectorLength) {
+			throw std::invalid_argument("input vectors of different length");
+		}
+		vectorLength = length;
+	}
+	return length > 1;
+}
+
+
+
+/*! Add one or more synapses
+ *
+ * The arguments (other than net) may be either scalar or vector. All vectors
+ * must be of the same length. If any of the inputs are vectors, the scalar
+ * arguments are replicated for each synapse.
+ */
+void
+add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
+		PyObject* delays, PyObject* weights, PyObject* plastics)
+{
+	unsigned len = 1;
+
+	bool vectorSources = checkInputVector(sources, len);
+	bool vectorTargets = checkInputVector(targets, len);
+	bool vectorDelays = checkInputVector(delays, len);
+	bool vectorWeights = checkInputVector(weights, len);
+	bool vectorPlastics = checkInputVector(plastics, len);
+
+	for(unsigned i=0; i != len; ++i) {
+		unsigned source = extract<unsigned>(vectorSources ? PyList_GetItem(sources, i) : sources);
+		unsigned target = extract<unsigned>(vectorTargets ? PyList_GetItem(targets, i) : targets);
+		unsigned delay = extract<unsigned>(vectorDelays ? PyList_GetItem(delays, i) : delays);
+		float weight = extract<float>(vectorWeights ? PyList_GetItem(weights, i) : weights);
+		unsigned char plastic = extract<unsigned char>(vectorPlastics ? PyList_GetItem(plastics, i) : plastics);
+		net.addSynapse(source, target, delay, weight, plastic);
+	}
+}
+
+
 
 /* This wrappers for overloads of nemo::Simulation::step */
 const std::vector<unsigned>&
@@ -245,7 +301,7 @@ BOOST_PYTHON_MODULE(nemo)
 
 	class_<nemo::Network, boost::noncopyable>("Network")
 		.def("add_neuron", &nemo::Network::addNeuron, NETWORK_ADD_NEURON_DOC)
-		.def("add_synapse", &nemo::Network::addSynapse, NETWORK_ADD_SYNAPSE_DOC)
+		.def("add_synapse", add_synapse, NETWORK_ADD_SYNAPSE_DOC)
 		.def("set_neuron", &nemo::Network::setNeuron, NETWORK_SET_NEURON_DOC)
 		.def("get_neuron_state", &nemo::Network::getNeuronState, NETWORK_GET_NEURON_STATE_DOC)
 		.def("get_neuron_parameter", &nemo::Network::getNeuronParameter, NETWORK_GET_NEURON_PARAMETER_DOC)
