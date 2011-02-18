@@ -283,6 +283,43 @@ ConnectivityMatrix::applyStdp(float reward)
 
 
 
+const std::vector<synapse_id>&
+ConnectivityMatrix::getSynapsesFrom(unsigned source)
+{
+	using boost::format;
+
+	if(m_writeOnlySynapses) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"Cannot read synapse state if simulation configured with write-only synapses");
+	}
+
+	/* The relevant data is stored in the auxillary synapse map, which is
+	 * already indexed in global neuron indices. Therefore, no need to map into
+	 * local ids */
+	size_t nSynapses = 0;
+	aux_map::const_iterator iRow = m_cmAux.find(source);
+	if(iRow == m_cmAux.end()) {
+		if(!m_mapper.validGlobal(source)) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid source neuron id (%u) in synapse id query") % source));
+		}
+		/* else just leave nSynapses at zero */
+	} else {
+		/* Synapse ids are consecutive */
+		nSynapses = iRow->second.size();
+	}
+
+	m_queriedSynapseIds.resize(nSynapses);
+
+	for(size_t iSynapse = 0; iSynapse < nSynapses; ++iSynapse) {
+		m_queriedSynapseIds[iSynapse] = make_synapse_id(source, iSynapse);
+	}
+
+	return m_queriedSynapseIds;
+}
+
+
+
 const Row&
 ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 {

@@ -106,6 +106,8 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * thus provide an appropriate mapping of either index. */
 		void addSynapse(nidx_t source, nidx_t target, const Synapse&);
 
+		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
+
 		/*! \return all synapses for a given source and delay */
 		const Row& getRow(nidx_t source, delay_t) const;
 
@@ -194,6 +196,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		fix_t* weight(const RSynapse&) const;
 
 		/* Internal buffers for synapse queries */
+		std::vector<synapse_id> m_queriedSynapseIds;
 		std::vector<unsigned> m_queriedTargets;
 		std::vector<unsigned> m_queriedDelays;
 		std::vector<float> m_queriedWeights;
