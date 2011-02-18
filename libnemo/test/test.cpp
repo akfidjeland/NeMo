@@ -599,7 +599,6 @@ testSetNeuron(backend_t backend)
 	net.setNeuronParameter(0, 4, sigma);
 	BOOST_REQUIRE(net.getNeuronParameter(0, 4) == sigma);
 
-
 	net.setNeuronState(0, 0, u);
 	BOOST_REQUIRE(net.getNeuronState(0, 0) == u);
 
@@ -648,10 +647,14 @@ testSetNeuron(backend_t backend)
 		/* Invalid neuron */
 		BOOST_REQUIRE_THROW(sim->setNeuronParameter(1, 0, 0.0f), nemo::exception);
 		BOOST_REQUIRE_THROW(sim->setNeuronState(1, 0, 0.0f), nemo::exception);
+		BOOST_REQUIRE_THROW(sim->getNeuronParameter(1, 0), nemo::exception);
+		BOOST_REQUIRE_THROW(sim->getNeuronState(1, 0), nemo::exception);
 
 		/* Invalid parameter */
 		BOOST_REQUIRE_THROW(sim->setNeuronParameter(0, 5, 0.0f), nemo::exception);
 		BOOST_REQUIRE_THROW(sim->setNeuronState(0, 2, 0.0f), nemo::exception);
+		BOOST_REQUIRE_THROW(sim->getNeuronParameter(0, 5), nemo::exception);
+		BOOST_REQUIRE_THROW(sim->getNeuronState(0, 2), nemo::exception);
 	}
 
 	float v0 = 0.0f;

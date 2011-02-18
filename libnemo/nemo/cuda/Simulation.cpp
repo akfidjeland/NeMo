@@ -426,7 +426,7 @@ Simulation::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
 float
 Simulation::getNeuronState(unsigned neuron, unsigned var) const
 {
-	return m_neurons.getState(m_mapper.deviceIdx(neuron), var);
+	return m_neurons.getState(m_mapper.existingDeviceIdx(neuron), var);
 }
 
 
@@ -434,7 +434,7 @@ Simulation::getNeuronState(unsigned neuron, unsigned var) const
 float
 Simulation::getNeuronParameter(unsigned neuron, unsigned parameter) const
 {
-	return m_neurons.getParameter(m_mapper.deviceIdx(neuron), parameter);
+	return m_neurons.getParameter(m_mapper.existingDeviceIdx(neuron), parameter);
 }
 
 

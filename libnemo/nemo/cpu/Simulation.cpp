@@ -418,16 +418,16 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 
 float
-Simulation::getNeuronState(unsigned gidx, unsigned var) const
+Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 {
 	using boost::format;
 
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
-	nidx_t lidx = m_mapper.localIdx(gidx);
+	nidx_t l_idx = validLocalIndex(g_idx);
 	switch(var) {
-		case 0: return m_u.at(lidx);
-		case 1: return m_v.at(lidx);
+		case 0: return m_u.at(l_idx);
+		case 1: return m_v.at(l_idx);
 		default: throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid neuron state variable index (%u)") % var));
 	}
@@ -436,20 +436,20 @@ Simulation::getNeuronState(unsigned gidx, unsigned var) const
 
 
 float
-Simulation::getNeuronParameter(unsigned gidx, unsigned param) const
+Simulation::getNeuronParameter(unsigned g_idx, unsigned param) const
 {
 	using boost::format;
 
-	nidx_t lidx = m_mapper.localIdx(gidx);
+	nidx_t l_idx = validLocalIndex(g_idx);
 
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(param) {
-		case 0: return m_a.at(lidx);
-		case 1: return m_b.at(lidx);
-		case 2: return m_c.at(lidx);
-		case 3: return m_d.at(lidx);
-		case 4: return m_sigma.at(lidx);
+		case 0: return m_a.at(l_idx);
+		case 1: return m_b.at(l_idx);
+		case 2: return m_c.at(l_idx);
+		case 3: return m_d.at(l_idx);
+		case 4: return m_sigma.at(l_idx);
 		default: throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid neuron parameter index (%u)") % param));
 	}
@@ -457,9 +457,9 @@ Simulation::getNeuronParameter(unsigned gidx, unsigned param) const
 
 
 float
-Simulation::getMembranePotential(unsigned neuron) const
+Simulation::getMembranePotential(unsigned g_idx) const
 {
-	return m_v.at(m_mapper.localIdx(neuron));
+	return m_v.at(m_mapper.localIdx(g_idx));
 }
 
 
