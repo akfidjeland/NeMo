@@ -134,6 +134,14 @@ NetworkImpl::getNeuron(unsigned nidx) const
 
 
 
+NetworkImpl::neuron_t&
+NetworkImpl::getNeuron(unsigned idx)
+{
+	return const_cast<neuron_t&>(static_cast<const NetworkImpl*>(this)->getNeuron(idx));
+}
+
+
+
 float
 NetworkImpl::getNeuronState(unsigned nidx, unsigned var) const
 {
@@ -166,6 +174,45 @@ NetworkImpl::getNeuronParameter(unsigned nidx, unsigned parameter) const
 		case 2: return neuron.c;
 		case 3: return neuron.d;
 		case 4: return neuron.sigma;
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron parameter index (%u)") % parameter));
+	}
+}
+
+
+
+void
+NetworkImpl::setNeuronState(unsigned nidx, unsigned var, float val)
+{
+	using boost::format;
+
+	neuron_t& neuron = getNeuron(nidx);
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	switch(var) {
+		case 0: neuron.u = val; break;
+		case 1: neuron.v = val; break;
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron state variable index (%u)") % var));
+	}
+}
+
+
+
+void
+NetworkImpl::setNeuronParameter(unsigned nidx, unsigned parameter, float val)
+{
+	using boost::format;
+
+	neuron_t& neuron = getNeuron(nidx);
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	switch(parameter) {
+		case 0: neuron.a = val; break;
+		case 1: neuron.b = val; break;
+		case 2: neuron.c = val; break;
+		case 3: neuron.d = val; break;
+		case 4: neuron.sigma = val; break;
 		default: throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid neuron parameter index (%u)") % parameter));
 	}

@@ -37,7 +37,6 @@ Network::setNeuron(unsigned idx,
 
 
 
-
 float
 Network::getNeuronState(unsigned neuron, unsigned var) const
 {
@@ -50,6 +49,22 @@ float
 Network::getNeuronParameter(unsigned neuron, unsigned parameter) const
 {
 	return m_impl->getNeuronParameter(neuron, parameter);
+}
+
+
+
+void
+Network::setNeuronState(unsigned neuron, unsigned var, float val)
+{
+	return m_impl->setNeuronState(neuron, var, val);
+}
+
+
+
+void
+Network::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
+{
+	return m_impl->setNeuronParameter(neuron, parameter, val);
 }
 
 

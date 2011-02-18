@@ -572,14 +572,47 @@ testSetNeuron(backend_t backend)
 	BOOST_REQUIRE_THROW(net.getNeuronParameter(0, 5), nemo::exception);
 	BOOST_REQUIRE_THROW(net.getNeuronState(0, 2), nemo::exception);
 
-	BOOST_REQUIRE_NO_THROW(net.setNeuron(0, a, b, c, d, u, v, sigma));
+	float e = 0.1;
+	BOOST_REQUIRE_NO_THROW(net.setNeuron(0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e));
+	BOOST_REQUIRE(net.getNeuronParameter(0, 0) == a-e);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 1) == b-e);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 2) == c-e);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 3) == d-e);
+	BOOST_REQUIRE(net.getNeuronParameter(0, 4) == sigma-e);
+	BOOST_REQUIRE(net.getNeuronState(0, 0) == u-e);
+	BOOST_REQUIRE(net.getNeuronState(0, 1) == v-e);
+
+	/* Try setting individual parameters */
+
+	net.setNeuronParameter(0, 0, a);
 	BOOST_REQUIRE(net.getNeuronParameter(0, 0) == a);
+
+	net.setNeuronParameter(0, 1, b);
 	BOOST_REQUIRE(net.getNeuronParameter(0, 1) == b);
+
+	net.setNeuronParameter(0, 2, c);
 	BOOST_REQUIRE(net.getNeuronParameter(0, 2) == c);
+
+	net.setNeuronParameter(0, 3, d);
 	BOOST_REQUIRE(net.getNeuronParameter(0, 3) == d);
+
+	net.setNeuronParameter(0, 4, sigma);
 	BOOST_REQUIRE(net.getNeuronParameter(0, 4) == sigma);
+
+
+	net.setNeuronState(0, 0, u);
 	BOOST_REQUIRE(net.getNeuronState(0, 0) == u);
+
+	net.setNeuronState(0, 1, v);
 	BOOST_REQUIRE(net.getNeuronState(0, 1) == v);
+
+	/* Invalid neuron */
+	BOOST_REQUIRE_THROW(net.setNeuronParameter(1, 0, 0.0f), nemo::exception);
+	BOOST_REQUIRE_THROW(net.setNeuronState(1, 0, 0.0f), nemo::exception);
+
+	/* Invalid parameter */
+	BOOST_REQUIRE_THROW(net.setNeuronParameter(0, 5, 0.0f), nemo::exception);
+	BOOST_REQUIRE_THROW(net.setNeuronState(0, 2, 0.0f), nemo::exception);
 
 	nemo::Configuration conf = configuration(false, 1024, backend);
 

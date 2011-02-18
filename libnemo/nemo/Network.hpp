@@ -101,6 +101,26 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 */
 		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
 
+		/*! Change a single parameter for an existing neuron
+		 *
+		 * \param neuron neuron index
+		 * \param param parameter index
+		 * \param val new value of the state variable
+		 *
+		 * For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
+		 */
+		void setNeuronParameter(unsigned neuron, unsigned var, float val);
+
+		/*! Change a single state variable for an existing neuron
+		 *
+		 * \param neuron neuron index
+		 * \param var state variable index
+		 * \param val new value of the state variable
+		 *
+		 * For the Izhikevich model variable indices 0 = u, 1 = v
+		 */
+		void setNeuronState(unsigned neuron, unsigned var, float val);
+
 		/* synapse getter intended for testing only... */
 
 		/*! \return

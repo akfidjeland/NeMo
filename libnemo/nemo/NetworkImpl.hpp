@@ -69,6 +69,12 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		/*! \copydoc nemo::Network::getNeuronParameter */
 		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
 
+		/*! \copydoc nemo::Network::setNeuronState */
+		void setNeuronParameter(unsigned neuron, unsigned var, float val);
+
+		/*! \copydoc nemo::Network::setNeuronParameter */
+		void setNeuronState(unsigned neuron, unsigned var, float val);
+
 		/*! \return
 		 * 		target neurons for the specified synapses. The reference is
 		 * 		valid until the next call to this function.
@@ -121,6 +127,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		 * Throws if neuron does not exist
 		 * */
 		const neuron_t& getNeuron(unsigned idx) const;
+		neuron_t& getNeuron(unsigned idx);
 
 		typedef AxonTerminal synapse_t;
 		typedef std::vector<synapse_t> bundle_t;
