@@ -259,7 +259,6 @@ addNeuron =
 
 
 
--- TODO: add return here
 addSynapse =
     ApiFunction
         "addSynapse"
@@ -275,6 +274,62 @@ addSynapse =
         [] True
 
 
+netGetNeuronState = getNeuronState "get neuron state variable during construction"
+simGetNeuronState = getNeuronState "get neuron state variable during simulation"
+
+getNeuronState descr =
+    ApiFunction "getNeuronState"
+        descr
+        (Just "For the Izhikevich model: 0=u, 1=v")
+        [   ApiArg "val" (Just "value of the relevant variable") (Scalar ApiFloat) ]
+        [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)) ]
+        []
+        False
+
+netGetNeuronParameter = getNeuronParameter "get neuron parameter during construction"
+simGetNeuronParameter = getNeuronParameter "get neuron parameter during simulation"
+
+getNeuronParameter descr =
+    ApiFunction "getNeuronParameter"
+        descr
+        (Just "The neuron parameters do not change during simulation. For the Izhikevich model: 0=a, 1=b, 2=c, 3=d")
+        [   ApiArg "val" (Just "value of the neuron parameter") (Scalar ApiFloat) ]
+        [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)) ]
+        []
+        False
+
+
+netSetNeuronState = setNeuronState "set neuron state variable during construction"
+simSetNeuronState = setNeuronState "set neuron state variable during simulation"
+
+setNeuronState descr =
+    ApiFunction "setNeuronState"
+        descr
+        (Just "For the Izhikevich model: 0=u, 1=v")
+        []
+        [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)),
+            Required (ApiArg "val" (Just "value of the relevant variable") (Scalar ApiFloat)) ]
+        []
+        False
+
+
+netSetNeuronParameter = setNeuronParameter "set neuron parameter during construction"
+simSetNeuronParameter = setNeuronParameter "set neuron parameter during simulation"
+
+setNeuronParameter descr =
+    ApiFunction "setNeuronParameter"
+        descr
+        (Just "The neuron parameters do not change during simulation. For the Izhikevich model: 0=a, 1=b, 2=c, 3=d")
+        []
+        [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)),
+            Required (ApiArg "val" (Just "value of the neuron parameter") (Scalar ApiFloat)) ]
+        []
+        False
+
 neuronCount =
     ApiFunction
         "neuronCount"
@@ -286,7 +341,10 @@ network =
     ApiModule "Network" "net"
         (Just "A Network is constructed by adding individual neurons synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.")
         defaultConstructor
-        [addNeuron, addSynapse, neuronCount, clearNetwork]
+        [addNeuron, netSetNeuron, addSynapse,
+        netGetNeuronState, netGetNeuronParameter,
+        netSetNeuronState, netSetNeuronParameter,
+        neuronCount, clearNetwork]
 
 
 step =
@@ -319,9 +377,13 @@ applyStdp =
         [] False
 
 
-setNeuron =
+simSetNeuron = setNeuron "modify a neuron during simulation"
+netSetNeuron = setNeuron "modify a neuron during construction"
+
+
+setNeuron descr =
     ApiFunction "setNeuron"
-        "modify a neuron during simulation"
+        descr
         Nothing
         []
         [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
@@ -334,6 +396,7 @@ setNeuron =
             Required (ApiArg "sigma" (Just "Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated") (Scalar ApiFloat))
         ]
         [] True
+
 
 
 getMembranePotential =
@@ -453,7 +516,10 @@ simulation =
     ApiModule "Simulation" "sim"
         (Just "A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.")
         (Factory [network, configuration])
-        [step, applyStdp, setNeuron, getMembranePotential, getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
+        [step, applyStdp, simSetNeuron,
+            simGetNeuronState, simGetNeuronParameter, getMembranePotential,
+            simSetNeuronState, simSetNeuronParameter,
+            getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
 
 
 setCpuBackend =
