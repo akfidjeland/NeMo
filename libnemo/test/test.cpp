@@ -582,7 +582,7 @@ testSetNeuron(backend_t backend)
 	BOOST_REQUIRE(net.getNeuronState(0, 0) == u-e);
 	BOOST_REQUIRE(net.getNeuronState(0, 1) == v-e);
 
-	/* Try setting individual parameters */
+	/* Try setting individual parameters during construction */
 
 	net.setNeuronParameter(0, 0, a);
 	BOOST_REQUIRE(net.getNeuronParameter(0, 0) == a);
@@ -615,6 +615,44 @@ testSetNeuron(backend_t backend)
 	BOOST_REQUIRE_THROW(net.setNeuronState(0, 2, 0.0f), nemo::exception);
 
 	nemo::Configuration conf = configuration(false, 1024, backend);
+
+	/* Try setting individual parameters during simulation */
+	{
+		boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
+
+		sim->step();
+
+		sim->setNeuronState(0, 0, u-e);
+		BOOST_REQUIRE(sim->getNeuronState(0, 0) == u-e);
+
+		sim->setNeuronState(0, 1, v-e);
+		BOOST_REQUIRE(sim->getNeuronState(0, 1) == v-e);
+
+		sim->step();
+
+		sim->setNeuronParameter(0, 0, a-e);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 0) == a-e);
+
+		sim->setNeuronParameter(0, 1, b-e);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 1) == b-e);
+
+		sim->setNeuronParameter(0, 2, c-e);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 2) == c-e);
+
+		sim->setNeuronParameter(0, 3, d-e);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 3) == d-e);
+
+		sim->setNeuronParameter(0, 4, sigma-e);
+		BOOST_REQUIRE(sim->getNeuronParameter(0, 4) == sigma-e);
+
+		/* Invalid neuron */
+		BOOST_REQUIRE_THROW(sim->setNeuronParameter(1, 0, 0.0f), nemo::exception);
+		BOOST_REQUIRE_THROW(sim->setNeuronState(1, 0, 0.0f), nemo::exception);
+
+		/* Invalid parameter */
+		BOOST_REQUIRE_THROW(sim->setNeuronParameter(0, 5, 0.0f), nemo::exception);
+		BOOST_REQUIRE_THROW(sim->setNeuronState(0, 2, 0.0f), nemo::exception);
+	}
 
 	float v0 = 0.0f;
 	{

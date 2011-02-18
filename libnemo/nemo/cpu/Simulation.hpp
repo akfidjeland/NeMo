@@ -71,6 +71,12 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
+		/*! \copydoc nemo::Simulation::setNeuronState */
+		void setNeuronState(unsigned neuron, unsigned var, float val);
+
+		/*! \copydoc nemo::Simulation::setNeuronParameter */
+		void setNeuronParameter(unsigned neuron, unsigned parameter, float val);
+
 		/*! \copydoc nemo::Simulation::getNeuronState */
 		float getNeuronState(unsigned neuron, unsigned var) const;
 
@@ -183,6 +189,8 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 
 		Timer m_timer;
+
+		nidx_t validLocalIndex(unsigned g_idx) const;
 };
 
 

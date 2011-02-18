@@ -286,13 +286,14 @@ Simulation::readFiring()
 
 
 
-void
-Simulation::setNeuron(unsigned g_idx,
-			float a, float b, float c, float d,
-			float u, float v, float sigma)
+/*! \return local index of neuron, provided it is both in the valid /range/ of
+ *  indices and is also /valid/ (i.e. already set) */
+nidx_t
+Simulation::validLocalIndex(unsigned g_idx) const
 {
+	using boost::format;
 	nidx_t l_idx = m_mapper.localIdx(g_idx);
-	if(!m_valid.at(l_idx)) {
+	if(!m_mapper.validLocal(l_idx)) {
 		/* Setting the parameters of a neuron which does not already exists
 		 * would not have any ill effects (as long the local index is in the
 		 * valid range). However, doing so will have no effect on the
@@ -301,8 +302,19 @@ Simulation::setNeuron(unsigned g_idx,
 		 * connections. Therefore, it is more likely that setting a
 		 * non-existing neuron is a user error. */
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				"setNeuron called with non-existing neuron index");
+				str(format("Non-existing neuron index (%u)") % g_idx));
 	}
+	return l_idx;
+}
+
+
+
+void
+Simulation::setNeuron(unsigned g_idx,
+			float a, float b, float c, float d,
+			float u, float v, float sigma)
+{
+	nidx_t l_idx = validLocalIndex(g_idx);
 	m_a.at(l_idx) = a;
 	m_b.at(l_idx) = b;
 	m_c.at(l_idx) = c;
@@ -310,6 +322,45 @@ Simulation::setNeuron(unsigned g_idx,
 	m_u.at(l_idx) = u;
 	m_v.at(l_idx) = v;
 	m_sigma.at(l_idx) = sigma;
+}
+
+
+
+void
+Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
+{
+	using boost::format;
+
+	nidx_t l_idx = validLocalIndex(g_idx);
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	switch(var) {
+		case 0: m_u.at(l_idx) = val; break;
+		case 1: m_v.at(l_idx) = val; break;
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron state variable index (%u)") % var));
+	}
+}
+
+
+
+void
+Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
+{
+	using boost::format;
+
+	nidx_t l_idx = validLocalIndex(g_idx);
+	/*! \todo change to more generic neuron storage and remove
+	 * Izhikevich-specific hardcoding */
+	switch(parameter) {
+		case 0: m_a.at(l_idx) = val; break;
+		case 1: m_b.at(l_idx) = val; break;
+		case 2: m_c.at(l_idx) = val; break;
+		case 3: m_d.at(l_idx) = val; break;
+		case 4: m_sigma.at(l_idx) = val; break;
+		default: throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Invalid neuron parameter index (%u)") % parameter));
+	}
 }
 
 

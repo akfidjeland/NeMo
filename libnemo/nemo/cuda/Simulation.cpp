@@ -406,6 +406,23 @@ Simulation::readFiring()
 }
 
 
+
+void
+Simulation::setNeuronState(unsigned neuron, unsigned var, float val)
+{
+	return m_neurons.setState(m_mapper.existingDeviceIdx(neuron), var, val);
+}
+
+
+
+void
+Simulation::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
+{
+	return m_neurons.setParameter(m_mapper.existingDeviceIdx(neuron), parameter, val);
+}
+
+
+
 float
 Simulation::getNeuronState(unsigned neuron, unsigned var) const
 {

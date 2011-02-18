@@ -87,11 +87,26 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 			return localIdx(addIdx(global));
 		}
 
-		/* Add global neuron index to the set of 'valid' synapses and return
+		/*! Add global neuron index to the set of 'valid' synapses and return
 		 * the correspondong device neuron index */
 		DeviceIdx addIdx(nidx_t global);
 
+		/*! \return device idx corresponding to the given global neuron index
+		 *
+		 * The global index may or may not be valid, i.e. refer to an existing
+		 * neuron.
+		 *
+		 * \see existingDeviceIdx
+		 */
 		DeviceIdx deviceIdx(nidx_t global) const;
+
+		/*! \return device idx corresponding to the given global index of an * existing neuron
+		 *
+		 * Throw if the neuron is not valid
+		 *
+		 * \see deviceIdx
+		 */
+		DeviceIdx existingDeviceIdx(nidx_t global) const;
 
 		unsigned partitionSize() const { return m_partitionSize; }
 

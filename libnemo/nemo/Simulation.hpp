@@ -91,6 +91,12 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 				float a, float b, float c, float d,
 				float u, float v, float sigma) = 0;
 
+		/*! \copydoc nemo::Network::setNeuronState */
+		virtual void setNeuronState(unsigned neuron, unsigned var, float val) = 0;
+
+		/*! \copydoc nemo::Network::setNeuronParameter */
+		virtual void setNeuronParameter(unsigned neuron, unsigned parameter, float val) = 0;
+
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *
 		 * \param reward

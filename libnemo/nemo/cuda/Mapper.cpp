@@ -13,7 +13,6 @@
 namespace nemo {
 	namespace cuda {
 
-using boost::format;
 
 Mapper::Mapper(const nemo::network::Generator& net, unsigned partitionSize) :
 	m_partitionSize(partitionSize),
@@ -39,12 +38,26 @@ Mapper::addIdx(nidx_t global)
 }
 
 
+
 DeviceIdx
 Mapper::deviceIdx(nidx_t global) const
 {
 	nidx_t local = global - m_offset;
 	assert(global >= m_offset);
 	return DeviceIdx(local / m_partitionSize, local % m_partitionSize);
+}
+
+
+
+DeviceIdx
+Mapper::existingDeviceIdx(nidx_t global) const
+{
+	using boost::format;
+	if(!validGlobal(global)) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid neuron index (%u)") % global));
+	}
+	return deviceIdx(global);
 }
 
 

@@ -246,6 +246,12 @@ class Simulation : public nemo::SimulationBackend
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
+		/*! \copydoc nemo::Simulation::setNeuronState */
+		void setNeuronState(unsigned neuron, unsigned var, float val);
+
+		/*! \copydoc nemo::Simulation::setNeuronParameter */
+		void setNeuronParameter(unsigned neuron, unsigned parameter, float val);
+
 		/*! \copydoc nemo::Simulation::getSynapsesFrom */
 		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
