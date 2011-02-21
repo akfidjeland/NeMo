@@ -287,19 +287,17 @@ BOOST_PYTHON_MODULE(nemo)
 		.def("__str__", &std_vector_str<uint64_t>)
 	;
 
-	class_<nemo::Configuration>("Configuration")
+	class_<nemo::Configuration>("Configuration", CONFIGURATION_DOC)
 		//.def("enable_logging", &nemo::Configuration::enableLogging)
 		//.def("disable_logging", &nemo::Configuration::disableLogging)
 		//.def("logging_enabled", &nemo::Configuration::loggingEnabled)
-		//.def("setCudaPartitionSize", &nemo::Configuration::setCudaPartitionSize)
-		//.def("cudaPartitionSize", &nemo::Configuration::cudaPartitionSize)
 		.def("set_stdp_function", &nemo::Configuration::setStdpFunction, CONFIGURATION_SET_STDP_FUNCTION_DOC)
 		.def("set_cuda_backend", &nemo::Configuration::setCudaBackend, CONFIGURATION_SET_CUDA_BACKEND_DOC)
 		.def("set_cpu_backend", &nemo::Configuration::setCpuBackend, CONFIGURATION_SET_CPU_BACKEND_DOC)
 		.def("backend_description", &nemo::Configuration::backendDescription, CONFIGURATION_BACKEND_DESCRIPTION_DOC)
 	;
 
-	class_<nemo::Network, boost::noncopyable>("Network")
+	class_<nemo::Network, boost::noncopyable>("Network", NETWORK_DOC)
 		.def("add_neuron", &nemo::Network::addNeuron, NETWORK_ADD_NEURON_DOC)
 		.def("add_synapse", add_synapse, NETWORK_ADD_SYNAPSE_DOC)
 		.def("set_neuron", &nemo::Network::setNeuron, NETWORK_SET_NEURON_DOC)
@@ -310,7 +308,8 @@ BOOST_PYTHON_MODULE(nemo)
 		.def("neuron_count", &nemo::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
 	;
 
-	class_<nemo::Simulation, boost::shared_ptr<nemo::Simulation>, boost::noncopyable>("Simulation", no_init)
+	class_<nemo::Simulation, boost::shared_ptr<nemo::Simulation>, boost::noncopyable>(
+			"Simulation", SIMULATION_DOC, no_init)
 		.def("__init__", make_constructor(makeSimulation))
 		// .def("step", &nemo::Simulation::step, return_internal_reference<1>(), SIMULATION_STEP_DOC)
 			/* May want to make a copy here, for some added safety:

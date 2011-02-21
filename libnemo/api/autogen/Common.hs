@@ -60,7 +60,7 @@ arglistWith bracket = bracket . listPunctuate
 arglist = arglistWith parens
 
 
-{- Long lines can be wrapped in different ways -} 
+{- Long lines can be wrapped in different ways -}
 data LineWrap
     = None        -- ^ never wrap
     | Compact Doc -- ^ wrap as little as possible, using the specified string to end each line

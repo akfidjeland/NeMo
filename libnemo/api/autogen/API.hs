@@ -239,11 +239,10 @@ clearNetwork =
 
 
 
--- TODO: add references to variables etc.
 addNeuron =
     ApiFunction
         "addNeuron"
-        "add a single neuron to network"
+        "add a single neuron to the network"
         (Just "The neuron uses the Izhikevich neuron model. See E. M. Izhikevich \"Simple model of spiking neurons\", IEEE Trans. Neural Networks, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.")
         []
         [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
@@ -339,7 +338,7 @@ neuronCount =
 
 network =
     ApiModule "Network" "net"
-        (Just "A Network is constructed by adding individual neurons synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.")
+        (Just "A Network is constructed by adding individual neurons and synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.")
         defaultConstructor
         [addNeuron, netSetNeuron, addSynapse,
         netGetNeuronState, netGetNeuronParameter,
@@ -598,7 +597,7 @@ resetConfiguration =
         [MEX]
         False
 
-configuration = ApiModule "Configuration" "conf" Nothing defaultConstructor
+configuration = ApiModule "Configuration" "conf" (Just "Global configuration") defaultConstructor
     [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription, setWriteOnlySynapses, resetConfiguration]
 
 

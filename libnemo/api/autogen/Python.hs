@@ -2,8 +2,9 @@ module Python (generate) where
 
 import Text.PrettyPrint
 import System.IO
-import Data.Maybe (maybe)
 import Data.Char
+import Data.Maybe (maybe)
+import Data.List (intercalate)
 import Network.URI (escapeURIString)
 
 import API
@@ -20,9 +21,22 @@ generate ms =
     hPutStr hdl $ render $ vcat (map moduleDoc ms) <> text "\n"
 
 
+docstringStyle = Style PageMode 75 1.0
+
+{- | Turn a string into a block of text with a fixed width and with escaped
+ - newlines -}
+docRender :: String -> Doc
+docRender = text . intercalate "\\n" . lines . renderStyle docstringStyle . fsep . map text . words
+
+
 {- Generate global static named docstrings for each method -}
 moduleDoc :: ApiModule -> Doc
-moduleDoc mdl = vcat $ map (functionDoc (name mdl)) $ mdl_functions mdl
+moduleDoc mdl = classDoc $+$ functionDocs
+    where
+        classDoc = text "#define" <+> macroName <+> classDocBody
+        macroName = underscoredUpper [mdl_name mdl, "doc"]
+        classDocBody = doubleQuotes $ maybe empty docRender (mdl_descr mdl)
+        functionDocs = vcat $ map (functionDoc (name mdl)) $ mdl_functions mdl
 
 
 {- TODO: perhaps use actual formatting characters here -}
@@ -33,8 +47,7 @@ functionDoc mname fn = text "#define" <+> macroName <+> docstring
         docstring = doubleQuotes $ mergeLinesWith "\\n\\n" $ empty : filter (not . isEmpty) [synopsis, inputs, description]
         synopsis = text $ fn_brief fn
         inputs = inputDoc $ fn_inputs fn
-        -- TODO: output doc
-        description = maybe empty (text . escape) $ describe fn
+        description = maybe empty (docRender . escape) $ describe fn
 
 
 inputDoc :: [Input] -> Doc
@@ -43,7 +56,7 @@ inputDoc xs = mergeLines $ (text "Inputs:" : map (go . arg) xs)
     where
         -- TODO: deal with optional arguments here
         go :: ApiArg -> Doc
-        go arg = text (name arg) <+> maybe empty (\a -> char '-' <+> text a) (describe arg)
+        go arg = text (name arg) <+> maybe empty (\a -> text "--" <+> text a) (describe arg)
 
 
 -- functionName :: ApiFunction -> Doc
