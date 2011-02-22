@@ -121,6 +121,9 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
 
+		/*! \return source neuron id for a given synapse */
+		unsigned getSynapseSource(synapse_id id) const;
+
 		/* synapse getter intended for testing only... */
 
 		/*! \return

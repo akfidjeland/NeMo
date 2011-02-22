@@ -1,5 +1,6 @@
 #include "Network.hpp"
 #include "NetworkImpl.hpp"
+#include "synapse_indices.hpp"
 
 namespace nemo {
 
@@ -57,6 +58,14 @@ void
 Network::setNeuronState(unsigned neuron, unsigned var, float val)
 {
 	return m_impl->setNeuronState(neuron, var, val);
+}
+
+
+
+unsigned
+Network::getSynapseSource(synapse_id id) const
+{
+	return neuronIndex(id);
 }
 
 

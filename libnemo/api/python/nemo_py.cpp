@@ -426,6 +426,7 @@ BOOST_PYTHON_MODULE(nemo)
 		.def("get_neuron_parameter", get_neuron_parameter<nemo::Network>, NETWORK_GET_NEURON_PARAMETER_DOC)
 		.def("set_neuron_state", set_neuron_state<nemo::Network>, NETWORK_SET_NEURON_STATE_DOC)
 		.def("set_neuron_parameter", set_neuron_parameter<nemo::Network>, NETWORK_SET_NEURON_PARAMETER_DOC)
+		.def("get_synapse_source", &nemo::Network::getSynapseSource)
 		.def("neuron_count", &nemo::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
 	;
 
