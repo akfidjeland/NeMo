@@ -189,11 +189,13 @@ checkInputVector(PyObject* obj, unsigned &vectorLength)
 
 /*! Add one or more synapses
  *
+ * \return synapse id in the form of a byte object with exactly eight bytes.
+ *
  * The arguments (other than net) may be either scalar or vector. All vectors
  * must be of the same length. If any of the inputs are vectors, the scalar
  * arguments are replicated for each synapse.
  */
-void
+PyObject*
 add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 		PyObject* delays, PyObject* weights, PyObject* plastics)
 {
@@ -205,13 +207,29 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 	bool vectorWeights = checkInputVector(weights, len);
 	bool vectorPlastics = checkInputVector(plastics, len);
 
-	for(unsigned i=0; i != len; ++i) {
-		unsigned source = extract<unsigned>(vectorSources ? PyList_GetItem(sources, i) : sources);
-		unsigned target = extract<unsigned>(vectorTargets ? PyList_GetItem(targets, i) : targets);
-		unsigned delay = extract<unsigned>(vectorDelays ? PyList_GetItem(delays, i) : delays);
-		float weight = extract<float>(vectorWeights ? PyList_GetItem(weights, i) : weights);
-		unsigned char plastic = extract<unsigned char>(vectorPlastics ? PyList_GetItem(plastics, i) : plastics);
-		net.addSynapse(source, target, delay, weight, plastic);
+	to_python_value<synapse_id&> get_id;
+
+	if(len == 1) {
+		/* All inputs are scalars */
+		return get_id(net.addSynapse(
+					extract<unsigned>(sources),
+					extract<unsigned>(targets),
+					extract<unsigned>(delays),
+					extract<float>(weights),
+					extract<unsigned char>(plastics))
+				);
+	} else {
+		/* At least some inputs are vectors, so we need to return a list */
+		PyObject* list = PyList_New(len);
+		for(unsigned i=0; i != len; ++i) {
+			unsigned source = extract<unsigned>(vectorSources ? PyList_GetItem(sources, i) : sources);
+			unsigned target = extract<unsigned>(vectorTargets ? PyList_GetItem(targets, i) : targets);
+			unsigned delay = extract<unsigned>(vectorDelays ? PyList_GetItem(delays, i) : delays);
+			float weight = extract<float>(vectorWeights ? PyList_GetItem(weights, i) : weights);
+			unsigned char plastic = extract<unsigned char>(vectorPlastics ? PyList_GetItem(plastics, i) : plastics);
+			PyList_SetItem(list, i, get_id(net.addSynapse(source, target, delay, weight, plastic)));
+		}
+		return list;
 	}
 }
 

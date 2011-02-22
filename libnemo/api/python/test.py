@@ -191,7 +191,14 @@ class TestFunctions(unittest.TestCase):
             delay = arg(vlen, randomDelay)
             weight = arg(vlen, randomWeight)
             plastic = arg(vlen, randomPlastic)
-            net.add_synapse(source, target, delay, weight, plastic)
+            ids = net.add_synapse(source, target, delay, weight, plastic)
+            vectorized = any(isinstance(n, list) for n in [source, target, delay, weight, plastic])
+            if vectorized:
+                self.assertTrue(isinstance(ids, list))
+                self.assertEqual(len(ids), vlen)
+            else:
+                self.assertFalse(isinstance(ids, list))
+
 
 
 if __name__ == '__main__':
