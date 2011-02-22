@@ -19,9 +19,24 @@ def randomWeight():
 def randomPlastic():
     return random.choice([True, False])
 
+def randomParameterIndex():
+    return random.randint(0, 4)
+
+def randomStateIndex():
+    return random.randint(0, 1)
+
+def arg(vlen, gen):
+    """
+    Return either a fixed-length vector or a scalar, with values drawn from 'gen'
+    """
+    vector = random.choice([True, False])
+    if vector:
+        return [gen() for n in range(vlen)]
+    else:
+        return gen()
+
 
 class TestFunctions(unittest.TestCase):
-
 
     def test_network_set_neuron(self):
         """ create a simple network and make sure we can get and set parameters
@@ -95,20 +110,79 @@ class TestFunctions(unittest.TestCase):
         self.assertRaises(RuntimeError, net.set_neuron_parameter, 0, 5, 0.0) # parameter
         self.assertRaises(RuntimeError, net.set_neuron_state, 0, 2, 0.0)     # state
 
+    def check_set_neuron_vector(self, obj, pop):
+        """
+        Test vector/scalar forms of set_neuron for either network or simulation
+
+        pop -- list of neuron
+        """
+        for test in range(1000):
+            vlen = random.randint(2, 100)
+            # We need uniqe neurons here, for defined behaviour
+            vector = random.choice([True, False])
+            if vector:
+                neuron = random.sample(pop, vlen)
+                value = [random.random() for n in neuron]
+            else:
+                neuron = random.choice(pop)
+                value = random.random()
+
+            def assertListsAlmostEqual(value, ret):
+                if vector:
+                    self.assertEqual(vlen, len(ret))
+                    self.assertEqual(vlen, len(value))
+                    self.assertEqual(vlen, len(neuron))
+                    [self.assertAlmostEqual(a, b, 5) for (a,b) in zip(value, ret)]
+                else:
+                    self.assertAlmostEqual(value, ret, 5)
+
+            # check neuron parameter
+            param = randomParameterIndex()
+            obj.set_neuron_parameter(neuron, param, value)
+            ret = obj.get_neuron_parameter(neuron, param)
+            assertListsAlmostEqual(value, ret)
+
+            # check neuron state
+            var = randomStateIndex()
+            obj.set_neuron_state(neuron, var, value)
+            ret = obj.get_neuron_state(neuron, var)
+            assertListsAlmostEqual(value, ret)
+
+
+    def test_network_set_neuron_vector(self):
+        """
+        Test for failures in vector/scalar form of set_neuron
+
+        The set_neuron_parameter methods supports either vector or scalar
+        input. This test calls this function in a large number of ways,
+        checking for catastrophics failures in the boost::python layer
+        """
+        net = nemo.Network()
+        pop = range(1000)
+        for n in pop:
+            net.add_neuron(n, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        self.check_set_neuron_vector(net, pop)
+
+    def test_sim_set_neuron_vector(self):
+        """
+        Test for failures in vector/scalar form of set_neuron
+
+        The set_neuron_parameter methods supports either vector or scalar
+        input. This test calls this function in a large number of ways,
+        checking for catastrophics failures in the boost::python layer
+        """
+        net = nemo.Network()
+        conf = nemo.Configuration()
+        pop = range(1000)
+        for n in pop:
+            net.add_neuron(n, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        sim = nemo.Simulation(net, conf)
+        self.check_set_neuron_vector(sim, pop)
+
     def test_add_synapse(self):
         """ The add_synapse method supports either vector or scalar input. This
         test calls set_synapse in a large number of ways, checking for
         catastrophics failures in the boost::python layer """
-
-        def arg(vlen, gen):
-            """ Return either a fixed-length vector or a scalar, with values
-            drawn from 'gen'"""
-            vector = random.choice([True, False])
-            if vector:
-                return [gen() for n in range(vlen)]
-            else:
-                return gen()
-
         net = nemo.Network()
         for test in range(1000):
             vlen = random.randint(2, 500)

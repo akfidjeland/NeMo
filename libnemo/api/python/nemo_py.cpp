@@ -1,5 +1,4 @@
 #include <sstream>
-#include <iterator>
 #include <stdexcept>
 
 #include <boost/python.hpp>
@@ -218,6 +217,110 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 
 
 
+unsigned
+set_neuron_x_length(PyObject* a, PyObject* b)
+{
+	unsigned len = 1;
+
+	bool vectorA = checkInputVector(a, len);
+	bool vectorB = checkInputVector(b, len);
+
+	if(vectorA != vectorB) {
+		throw std::invalid_argument("first and third argument must either both be scalar, lists of same length");
+	}
+	return len;
+}
+
+
+
+/*! Set neuron parameters for one or more neurons
+ *
+ * On the Python side the syntax is net.set_neuron_parameter(neurons, param,
+ * values). Either these are all scalar, or neurons and values are both lists
+ * of the same length.
+ */
+template<class T>
+void
+set_neuron_parameter(T& obj, PyObject* neurons, unsigned param, PyObject* values)
+{
+	const unsigned len = set_neuron_x_length(neurons, values);
+	if(len == 1) {
+		obj.setNeuronParameter(extract<unsigned>(neurons), param, extract<float>(values));
+	} else {
+		for(unsigned i=0; i < len; ++i) {
+			unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			float value = extract<float>(PyList_GetItem(values, i));
+			obj.setNeuronParameter(neuron, param, value);
+		}
+	}
+}
+
+
+
+/*! Set neuron state for one or more neurons
+ *
+ * On the Python side the syntax is net.set_neuron_state(neurons, param,
+ * values). Either these are all scalar, or neurons and values are both lists
+ * of the same length.
+ */
+template<class T>
+void
+set_neuron_state(T& obj, PyObject* neurons, unsigned param, PyObject* values)
+{
+	const unsigned len = set_neuron_x_length(neurons, values);
+	if(len == 1) {
+		obj.setNeuronState(extract<unsigned>(neurons), param, extract<float>(values));
+	} else {
+		for(unsigned i=0; i < len; ++i) {
+			unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			float value = extract<float>(PyList_GetItem(values, i));
+			obj.setNeuronState(neuron, param, value);
+		}
+	}
+}
+
+
+
+template<class T>
+PyObject*
+get_neuron_parameter(T& obj, PyObject* neurons, unsigned param)
+{
+	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 1;
+	if(len == 1) {
+		return PyFloat_FromDouble(obj.getNeuronParameter(extract<unsigned>(neurons), param));
+	} else {
+		PyObject* list = PyList_New(len);
+		for(Py_ssize_t i=0; i < len; ++i) {
+			const unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			const float val = obj.getNeuronParameter(neuron, param);
+			PyList_SetItem(list, i, PyFloat_FromDouble(val));
+		}
+		return list;
+	}
+}
+
+
+
+template<class T>
+PyObject*
+get_neuron_state(T& obj, PyObject* neurons, unsigned param)
+{
+	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 1;
+	if(len == 1) {
+		return PyFloat_FromDouble(obj.getNeuronState(extract<unsigned>(neurons), param));
+	} else {
+		PyObject* list = PyList_New(len);
+		for(Py_ssize_t i=0; i < len; ++i) {
+			const unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			const float val = obj.getNeuronState(neuron, param);
+			PyList_SetItem(list, i, PyFloat_FromDouble(val));
+		}
+		return list;
+	}
+}
+
+
+
 /* This wrappers for overloads of nemo::Simulation::step */
 const std::vector<unsigned>&
 step(nemo::Simulation& sim)
@@ -301,10 +404,10 @@ BOOST_PYTHON_MODULE(nemo)
 		.def("add_neuron", &nemo::Network::addNeuron, NETWORK_ADD_NEURON_DOC)
 		.def("add_synapse", add_synapse, NETWORK_ADD_SYNAPSE_DOC)
 		.def("set_neuron", &nemo::Network::setNeuron, NETWORK_SET_NEURON_DOC)
-		.def("get_neuron_state", &nemo::Network::getNeuronState, NETWORK_GET_NEURON_STATE_DOC)
-		.def("get_neuron_parameter", &nemo::Network::getNeuronParameter, NETWORK_GET_NEURON_PARAMETER_DOC)
-		.def("set_neuron_state", &nemo::Network::setNeuronState, NETWORK_SET_NEURON_STATE_DOC)
-		.def("set_neuron_parameter", &nemo::Network::setNeuronParameter, NETWORK_SET_NEURON_PARAMETER_DOC)
+		.def("get_neuron_state", get_neuron_state<nemo::Network>, NETWORK_GET_NEURON_STATE_DOC)
+		.def("get_neuron_parameter", get_neuron_parameter<nemo::Network>, NETWORK_GET_NEURON_PARAMETER_DOC)
+		.def("set_neuron_state", set_neuron_state<nemo::Network>, NETWORK_SET_NEURON_STATE_DOC)
+		.def("set_neuron_parameter", set_neuron_parameter<nemo::Network>, NETWORK_SET_NEURON_PARAMETER_DOC)
 		.def("neuron_count", &nemo::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
 	;
 
@@ -321,10 +424,10 @@ BOOST_PYTHON_MODULE(nemo)
 		.def("step", step_fi, return_internal_reference<1>(), SIMULATION_STEP_DOC)
 		.def("apply_stdp", &nemo::Simulation::applyStdp, SIMULATION_APPLY_STDP_DOC)
 		.def("set_neuron", &nemo::Simulation::setNeuron, SIMULATION_SET_NEURON_DOC)
-		.def("get_neuron_state", &nemo::Simulation::getNeuronState, SIMULATION_GET_NEURON_STATE_DOC)
-		.def("get_neuron_parameter", &nemo::Simulation::getNeuronParameter, SIMULATION_GET_NEURON_PARAMETER_DOC)
-		.def("set_neuron_state", &nemo::Simulation::setNeuronState, SIMULATION_SET_NEURON_STATE_DOC)
-		.def("set_neuron_parameter", &nemo::Simulation::setNeuronParameter, SIMULATION_SET_NEURON_PARAMETER_DOC)
+		.def("get_neuron_state", get_neuron_state<nemo::Simulation>, SIMULATION_GET_NEURON_STATE_DOC)
+		.def("get_neuron_parameter", get_neuron_parameter<nemo::Simulation>, SIMULATION_GET_NEURON_PARAMETER_DOC)
+		.def("set_neuron_state", set_neuron_state<nemo::Simulation>, SIMULATION_SET_NEURON_STATE_DOC)
+		.def("set_neuron_parameter", set_neuron_parameter<nemo::Simulation>, SIMULATION_SET_NEURON_PARAMETER_DOC)
 		.def("get_membrane_potential", &nemo::Simulation::getMembranePotential, SIMULATION_GET_MEMBRANE_POTENTIAL_DOC)
 		.def("get_synapses_from", &nemo::Simulation::getSynapsesFrom, return_value_policy<copy_const_reference>(), SIMULATION_GET_SYNAPSES_FROM_DOC)
 		.def("get_targets", &nemo::Simulation::getTargets, return_value_policy<copy_const_reference>(), SIMULATION_GET_TARGETS_DOC)
