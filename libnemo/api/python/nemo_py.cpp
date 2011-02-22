@@ -168,21 +168,21 @@ struct from_py_list
  *
  * \param obj either a scalar or a vector
  * \param vectorLength length of any other vectors in the same parameter list,
- * 		or '1' if there are no others.
+ * 		or '0' if there are no others.
  * \return true if the object is vector (Python list), false if it's a scalar
  */
 inline
 bool
 checkInputVector(PyObject* obj, unsigned &vectorLength)
 {
-	unsigned length = PyList_Check(obj) ? PyList_Size(obj) : 1;
-	if(length > 1) {
-		if(vectorLength > 1 && length != vectorLength) {
+	unsigned length = PyList_Check(obj) ? PyList_Size(obj) : 0;
+	if(length > 0) {
+		if(vectorLength > 0 && length != vectorLength) {
 			throw std::invalid_argument("input vectors of different length");
 		}
 		vectorLength = length;
 	}
-	return length > 1;
+	return length > 0;
 }
 
 
@@ -199,7 +199,7 @@ PyObject*
 add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 		PyObject* delays, PyObject* weights, PyObject* plastics)
 {
-	unsigned len = 1;
+	unsigned len = 0;
 
 	bool vectorSources = checkInputVector(sources, len);
 	bool vectorTargets = checkInputVector(targets, len);
@@ -209,7 +209,7 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 
 	to_python_value<synapse_id&> get_id;
 
-	if(len == 1) {
+	if(len == 0) {
 		/* All inputs are scalars */
 		return get_id(net.addSynapse(
 					extract<unsigned>(sources),
@@ -238,13 +238,13 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 unsigned
 set_neuron_x_length(PyObject* a, PyObject* b)
 {
-	unsigned len = 1;
+	unsigned len = 0;
 
 	bool vectorA = checkInputVector(a, len);
 	bool vectorB = checkInputVector(b, len);
 
 	if(vectorA != vectorB) {
-		throw std::invalid_argument("first and third argument must either both be scalar, lists of same length");
+		throw std::invalid_argument("first and third argument must either both be scalar or lists of same length");
 	}
 	return len;
 }
@@ -262,7 +262,7 @@ void
 set_neuron_parameter(T& obj, PyObject* neurons, unsigned param, PyObject* values)
 {
 	const unsigned len = set_neuron_x_length(neurons, values);
-	if(len == 1) {
+	if(len == 0) {
 		obj.setNeuronParameter(extract<unsigned>(neurons), param, extract<float>(values));
 	} else {
 		for(unsigned i=0; i < len; ++i) {
@@ -286,7 +286,7 @@ void
 set_neuron_state(T& obj, PyObject* neurons, unsigned param, PyObject* values)
 {
 	const unsigned len = set_neuron_x_length(neurons, values);
-	if(len == 1) {
+	if(len == 0) {
 		obj.setNeuronState(extract<unsigned>(neurons), param, extract<float>(values));
 	} else {
 		for(unsigned i=0; i < len; ++i) {
