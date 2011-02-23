@@ -70,7 +70,15 @@ ELSE(WIN32 OR APPLE)
 	SET(Boost_USE_STATIC_LIBS OFF)
 ENDIF(WIN32 OR APPLE)
 
-FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+# Minimum boost version
+#
+# - date/time: 1.29.0
+# - format:    1.29.0
+# - optional:  1.30.0
+# - smart ptr: 1.23.0
+# - unordered: 1.36.0
+
+FIND_PACKAGE(Boost 1.36.0 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 
 # On windows just put everyting in one directory
