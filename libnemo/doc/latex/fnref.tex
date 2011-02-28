@@ -1,6 +1,6 @@
 \subsection{Network class}
 \label{Network}
-A Network is constructed by adding individual neurons synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.
+A Network is constructed by adding individual neurons and synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.
 
 \noindent C++:
 \begin{lstlisting}[aboveskip=2pt]
@@ -29,7 +29,7 @@ net = nemoNetwork()
 \clearpage
 \subsubsection*{Network::addNeuron}
 \label{fn: addNeuron}
-add a single neuron to network
+add a single neuron to the network
 
 
 \noindent C++:
@@ -154,6 +154,7 @@ net.clearNetwork()
 \clearpage
 \subsection{Configuration class}
 \label{Configuration}
+Global configuration
 
 \noindent C++:
 \begin{lstlisting}[aboveskip=2pt]
@@ -374,7 +375,6 @@ sim = nemoSimulation(net, conf)
 \begin{itemize}
 \item \hyperref[fn: step]{step}
 \item \hyperref[fn: applyStdp]{applyStdp}
-\item \hyperref[fn: setNeuron]{setNeuron}
 \item \hyperref[fn: getMembranePotential]{getMembranePotential}
 \item \hyperref[fn: getSynapsesFrom]{getSynapsesFrom}
 \item \hyperref[fn: getTargets]{getTargets}
@@ -450,42 +450,6 @@ sim.applyStdp(reward)
 \paragraph{Inputs}
 \begin{description}
 \item[reward] Multiplier for the accumulated weight change
-\end{description}
-
-\clearpage
-\subsubsection*{Simulation::setNeuron}
-\label{fn: setNeuron}
-modify a neuron during simulation
-
-
-\noindent C++:
-\begin{lstlisting}[aboveskip=2pt]
-void
-Simulation::setNeuron(unsigned idx, float a, float b, float c, 
-        float d, float u, float v, float sigma)
-\end{lstlisting}
-
-\noindent C:
-\begin{lstlisting}[aboveskip=2pt]
-nemo_status_t
-nemo_set_neuron(nemo_simulation_t sim, unsigned idx, float a, 
-        float b, float c, float d, float u, float v, float sigma)
-\end{lstlisting}
-
-\noindent Matlab:
-\begin{lstlisting}[aboveskip=2pt]
-sim.setNeuron(idx, a, b, c, d, u, v, sigma)
-\end{lstlisting}
-\paragraph{Inputs}
-\begin{description}
-\item[idx] Neuron index (0-based)
-\item[a] Time scale of the recovery variable
-\item[b] Sensitivity to sub-threshold fluctuations in the membrane potential v
-\item[c] After-spike value of the membrane potential v
-\item[d] After-spike reset of the recovery variable u
-\item[u] Initial value for the membrane recovery variable
-\item[v] Initial value for the membrane potential
-\item[sigma] Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated
 \end{description}
 
 \clearpage

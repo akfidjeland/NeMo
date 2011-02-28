@@ -10,7 +10,6 @@ nemoSetWriteOnlySynapses.m
 nemoResetConfiguration.m
 nemoStep.m
 nemoApplyStdp.m
-nemoSetNeuron.m
 nemoGetMembranePotential.m
 nemoGetSynapsesFrom.m
 nemoGetTargets.m
@@ -23,3 +22,8 @@ nemoResetTimer.m
 nemoCreateSimulation.m
 nemoDestroySimulation.m
 nemoReset.m
+nemoSetNeuron.m
+nemoSetNeuronState.m
+nemoSetNeuronParameter.m
+nemoGetNeuronState.m
+nemoGetNeuronParameter.m

@@ -15,10 +15,14 @@ import Common
 {- The API is generated using boost::python. All we need to do here is generate
  - the docstring -}
 -- TODO: could generate most methods here, just except overloaded methods.
-generate :: [ApiModule] -> IO ()
-generate ms =
+generate
+    :: [ApiModule]
+    -> [ApiFunction] -- ^ functions common to both Simulation and Network
+    -> IO ()
+generate ms constructable =
     withFile "../python/docstrings.h" WriteMode $ \hdl -> do
     hPutStr hdl $ render $ vcat (map moduleDoc ms) <> text "\n"
+    hPutStr hdl $ render $ vcat (map (functionDoc "CONSTRUCTABLE") constructable) <> text "\n"
 
 
 docstringStyle = Style PageMode 75 1.0

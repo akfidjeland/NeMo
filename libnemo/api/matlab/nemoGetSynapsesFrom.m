@@ -11,5 +11,5 @@ function synapses = nemoGetSynapsesFrom(source)
 %   synapses -
 %             synapse ids
 %    
-    synapses = nemo_mex(uint32(14), uint32(source));
+    synapses = nemo_mex(uint32(13), uint32(source));
 end

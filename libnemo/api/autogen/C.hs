@@ -5,6 +5,7 @@ module C (
     constant,
     pointerTo,
     forLoop,
+    conditional,
     addressOf,
     comment,
     commentLine)
@@ -219,6 +220,19 @@ forLoop
 forLoop idx start end body = vcat [header, nest 4 body, char '}']
     where
         header = text $ printf "for(size_t %s=%s; %s<%s; ++%s){" idx start idx end idx
+
+conditional
+    :: Doc    -- ^ conditional
+    -> Doc    -- ^ if-clause
+    -> Doc    -- ^ else-clause
+    -> Doc
+conditional cond ifclause elseclause = vcat [
+        text "if" <> parens cond <> lbrace,
+        nest 4 ifclause,
+        rbrace <+> text "else" <+> lbrace,
+        nest 4 elseclause,
+        rbrace
+    ]
 
 
 addressOf :: Doc -> Doc

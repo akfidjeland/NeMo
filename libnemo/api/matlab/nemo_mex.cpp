@@ -359,6 +359,14 @@ createSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 
+bool
+isSimulating()
+{
+	return g_simulation != NULL;
+}
+
+
+
 void
 destroySimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
@@ -551,32 +559,6 @@ applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
-setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    size_t elems = vectorDimension(8, prhs + 1);
-    checkInputCount(nrhs, 8);
-    checkOutputCount(nlhs, 0);
-    void* hdl = getSimulation();
-    for(size_t i=0; i<elems; ++i){
-        checkNemoStatus( 
-                nemo_set_neuron( 
-                        hdl, 
-                        scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                        scalarAt<float,double>(prhs[2], i), 
-                        scalarAt<float,double>(prhs[3], i), 
-                        scalarAt<float,double>(prhs[4], i), 
-                        scalarAt<float,double>(prhs[5], i), 
-                        scalarAt<float,double>(prhs[6], i), 
-                        scalarAt<float,double>(prhs[7], i), 
-                        scalarAt<float,double>(prhs[8], i) 
-                ) 
-        );
-    }
-}
-
-
-
-void
 getMembranePotential(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     size_t elems = vectorDimension(1, prhs + 1);
@@ -708,8 +690,162 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 
+void
+setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 8);
+    checkOutputCount(nlhs, 0);
+    if(isSimulating()){
+        checkNemoStatus( 
+                nemo_set_neuron_s( 
+                        getSimulation(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<float,double>(prhs[2]), 
+                        scalar<float,double>(prhs[3]), 
+                        scalar<float,double>(prhs[4]), 
+                        scalar<float,double>(prhs[5]), 
+                        scalar<float,double>(prhs[6]), 
+                        scalar<float,double>(prhs[7]), 
+                        scalar<float,double>(prhs[8]) 
+                ) 
+        );
+    } else {
+        checkNemoStatus( 
+                nemo_set_neuron_n( 
+                        getNetwork(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<float,double>(prhs[2]), 
+                        scalar<float,double>(prhs[3]), 
+                        scalar<float,double>(prhs[4]), 
+                        scalar<float,double>(prhs[5]), 
+                        scalar<float,double>(prhs[6]), 
+                        scalar<float,double>(prhs[7]), 
+                        scalar<float,double>(prhs[8]) 
+                ) 
+        );
+    }
+}
+
+
+
+void
+setNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 3);
+    checkOutputCount(nlhs, 0);
+    if(isSimulating()){
+        checkNemoStatus( 
+                nemo_set_neuron_state_s( 
+                        getSimulation(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        scalar<float,double>(prhs[3]) 
+                ) 
+        );
+    } else {
+        checkNemoStatus( 
+                nemo_set_neuron_state_n( 
+                        getNetwork(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        scalar<float,double>(prhs[3]) 
+                ) 
+        );
+    }
+}
+
+
+
+void
+setNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 3);
+    checkOutputCount(nlhs, 0);
+    if(isSimulating()){
+        checkNemoStatus( 
+                nemo_set_neuron_parameter_s( 
+                        getSimulation(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        scalar<float,double>(prhs[3]) 
+                ) 
+        );
+    } else {
+        checkNemoStatus( 
+                nemo_set_neuron_parameter_n( 
+                        getNetwork(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        scalar<float,double>(prhs[3]) 
+                ) 
+        );
+    }
+}
+
+
+
+void
+getNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 2);
+    checkOutputCount(nlhs, 1);
+    float val;
+    if(isSimulating()){
+        checkNemoStatus( 
+                nemo_get_neuron_state_s( 
+                        getSimulation(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        &val 
+                ) 
+        );
+    } else {
+        checkNemoStatus( 
+                nemo_get_neuron_state_n( 
+                        getNetwork(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        &val 
+                ) 
+        );
+    }
+    returnScalar<float, double>(plhs, 0, val);
+}
+
+
+
+void
+getNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 2);
+    checkOutputCount(nlhs, 1);
+    float val;
+    if(isSimulating()){
+        checkNemoStatus( 
+                nemo_get_neuron_parameter_s( 
+                        getSimulation(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        &val 
+                ) 
+        );
+    } else {
+        checkNemoStatus( 
+                nemo_get_neuron_parameter_n( 
+                        getNetwork(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        scalar<unsigned,uint32_t>(prhs[2]), 
+                        &val 
+                ) 
+        );
+    }
+    returnScalar<float, double>(plhs, 0, val);
+}
+
+
+
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 25
+#define FN_COUNT 29
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuron,
     addSynapse,
@@ -723,7 +859,6 @@ fn_ptr fn_arr[FN_COUNT] = {
     resetConfiguration,
     step,
     applyStdp,
-    setNeuron,
     getMembranePotential,
     getSynapsesFrom,
     getTargets,
@@ -735,7 +870,12 @@ fn_ptr fn_arr[FN_COUNT] = {
     resetTimer,
     createSimulation,
     destroySimulation,
-    reset
+    reset,
+    setNeuron,
+    setNeuronState,
+    setNeuronParameter,
+    getNeuronState,
+    getNeuronParameter
 };
 
 /* AUTO-GENERATED CODE END */

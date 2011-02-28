@@ -1,5 +1,5 @@
 function nemoAddNeuron(idx, a, b, c, d, u, v, sigma)
-% nemoAddNeuron - add a single neuron to network
+% nemoAddNeuron - add a single neuron to the network
 %  
 % Synopsis:
 %   nemoAddNeuron(idx, a, b, c, d, u, v, sigma)

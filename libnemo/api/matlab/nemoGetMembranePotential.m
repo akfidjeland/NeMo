@@ -10,5 +10,5 @@ function v = nemoGetMembranePotential(idx)
 % Outputs:
 %   v       - membrane potential
 %    
-    v = nemo_mex(uint32(13), uint32(idx));
+    v = nemo_mex(uint32(12), uint32(idx));
 end

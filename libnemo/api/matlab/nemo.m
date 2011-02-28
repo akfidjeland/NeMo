@@ -30,6 +30,11 @@
 %  nemoAddSynapse
 %  nemoNeuronCount
 %  nemoClearNetwork
+%  nemoSetNeuron
+%  nemoSetNeuronState
+%  nemoSetNeuronParameter
+%  nemoGetNeuronState
+%  nemoGetNeuronParameter
 %
 % Configuration:
 %  nemoSetCpuBackend
@@ -42,7 +47,6 @@
 % Simulation:
 %  nemoStep
 %  nemoApplyStdp
-%  nemoSetNeuron
 %  nemoGetMembranePotential
 %  nemoGetSynapsesFrom
 %  nemoGetTargets
@@ -54,6 +58,11 @@
 %  nemoResetTimer
 %  nemoCreateSimulation
 %  nemoDestroySimulation
+%  nemoSetNeuron
+%  nemoSetNeuronState
+%  nemoSetNeuronParameter
+%  nemoGetNeuronState
+%  nemoGetNeuronParameter
 %
 % Others:
 %  nemoReset

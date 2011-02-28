@@ -54,11 +54,12 @@ catch e
         rethrow(e);
     end   
 end
-    
+
+testNeuronGetSet;
 
 % TODO: set up STDP function
 
-nemoStartSimulation;
+nemoCreateSimulation;
 
 for ms = 1:100
     nemoStep;
@@ -83,3 +84,7 @@ end
 for ms = 1:100
     nemoStep([1], [1], [1.0]);
 end
+
+testNeuronGetSet;
+
+nemoDestroySimulation;

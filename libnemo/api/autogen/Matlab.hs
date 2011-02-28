@@ -21,11 +21,13 @@ import qualified C
  - 1. A MEX file which wraps calls to underlying C++ objects
  - 2. A number of m-files which calls the m-file and includes
  -    function documentation -}
-generate :: [ApiModule] -> IO ()
-generate modules = do
-    generateMex $ zip moduleNames functionDefs
-    zipWithM_ generateMatlabFile functionDefs [0..]
-    generateCMake functionDefs
+generate :: [ApiModule]
+    -> [ApiFunction] -- ^ Functions common to both network and simulation modules
+    -> IO ()
+generate modules constructableFunctions = do
+    generateMex (zip moduleNames functionDefs) constructableFunctions
+    zipWithM_ generateMatlabFile (functionDefs ++ constructableFunctions) [0..]
+    generateCMake (functionDefs ++ constructableFunctions)
     generateHelp modules
     where
         -- all functions, regardless of module
@@ -49,7 +51,7 @@ generateHelp modules = do
         moduleHelp m = (commentLine $ text $ stage m) <> char ':' $+$ moduleFunctions m
 
         moduleFunctions :: ApiModule -> Doc
-        moduleFunctions m = vcat $ map (commentLine . (char ' ' <>) . text . matlabFunctionName) $ mdl_functions m
+        moduleFunctions m = vcat $ map (commentLine . (char ' ' <>) . text . matlabFunctionName) $ allModuleFunctions m
 
         stage :: ApiModule -> String
         stage m = case name m of
@@ -69,15 +71,16 @@ generateCMake fs =
 
 
 {- | Write a complete MEX file containing all code -}
-generateMex :: [(String, ApiFunction)] -> IO ()
-generateMex functions = do
+generateMex :: [(String, ApiFunction)] -> [ApiFunction] -> IO ()
+generateMex functions constructableFunctions = do
     withFile "../matlab/nemo_mex.cpp" WriteMode $ \mex -> do
     insertFileContents mex "../matlab/sources/nemo.header.mex"
     hPutStr mex $ render $ vcat [
         C.comment $ text "AUTO-GENERATED CODE START",
         Common.emptyLine,
         (vcat $ map (uncurry mexFunction) functions),
-        (mexFunctionTable $ map (mexFunctionName . snd) functions),
+        (vcat $ map mexScalarConstructibleFunction constructableFunctions),
+        (mexFunctionTable $ map mexFunctionName $ (map snd functions) ++ constructableFunctions),
         C.comment $ text "AUTO-GENERATED CODE END"
       ]
     insertFileContents mex "../matlab/sources/nemo.footer.mex"
@@ -310,6 +313,29 @@ matlabFunctionReturn xs  = Just $ Common.arglistWith brackets $ map (text . name
 
 declareInit :: Doc -> Doc -> Doc -> Doc
 declareInit t lhs rhs = t <+> lhs <+> (char '=') <+> rhs
+
+
+{-| Return code for function which is found in either network or simulation module -}
+mexScalarConstructibleFunction :: ApiFunction -> Doc
+mexScalarConstructibleFunction fn = mexFunctionDefinition fn body
+    where
+        body = vcat $ [
+                -- NOTE: input and output checks may be redundant
+                C.statement $ cFunctionCall (text "checkInputCount") Nothing [text "nrhs", int (length $ fn_inputs fn)],
+                C.statement $ cFunctionCall (text "checkOutputCount") Nothing [text "nlhs", int (length $ fn_output fn)],
+                mexDeclareInputVariables 1 $ fn_inputs fn,
+                mexDeclareOutputVariables $ fn_output fn,
+                C.conditional (text "isSimulating()") (call "Simulation" "_s") (call "Network" "_n"),
+                mexReturnOutputVariables $ fn_output fn
+            ]
+        call mdl_name suffix = C.statement $ cFunctionCall (text "checkNemoStatus") Nothing $
+            [cFunctionCall (text $ (cFunctionName fn) ++ suffix) Nothing (ptr mdl_name : callArgs)]
+        ptr mdl_name = cFunctionCall (hcat $ map text ["get", mdl_name]) Nothing []
+        -- expand outputArgs so that they contain both vector and length
+        -- make sure they are reference types as well
+        callArgs = inputArgs ++ outputArgs
+        inputArgs = zipWith mexInput [1..] $ fn_inputs fn
+        outputArgs = map mexOutput $ fn_output fn
 
 
 mexScalarFunction :: String -> ApiFunction -> Doc

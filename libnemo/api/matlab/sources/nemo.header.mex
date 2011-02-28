@@ -359,6 +359,14 @@ createSimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 
+bool
+isSimulating()
+{
+	return g_simulation != NULL;
+}
+
+
+
 void
 destroySimulation(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
