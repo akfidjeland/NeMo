@@ -204,14 +204,79 @@ nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v)
 }
 
 
+nemo_status_t
+nemo_get_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float* val)
+{
+	CATCH(Network, net, getNeuronState(neuron, var), *val);
+}
+
 
 nemo_status_t
-nemo_set_neuron(nemo_simulation_t sim,
+nemo_get_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float* val)
+{
+	CATCH(Network, net, getNeuronParameter(neuron, param), *val);
+}
+
+
+nemo_status_t
+nemo_get_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float* val)
+{
+	CATCH(Simulation, sim, getNeuronState(neuron, var), *val);
+}
+
+
+nemo_status_t
+nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float* val)
+{
+	CATCH(Simulation, sim, getNeuronParameter(neuron, param), *val);
+}
+
+
+nemo_status_t
+nemo_set_neuron_n(nemo_simulation_t net,
+		unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	CATCH_(Network, net, setNeuron(idx, a, b, c, d, u, v, sigma));
+}
+
+
+nemo_status_t
+nemo_set_neuron_s(nemo_simulation_t sim,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
 	CATCH_(Simulation, sim, setNeuron(idx, a, b, c, d, u, v, sigma));
+}
+
+
+nemo_status_t
+nemo_set_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float val)
+{
+	CATCH_(Network, net, setNeuronState(neuron, var, val));
+}
+
+
+nemo_status_t
+nemo_set_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float val)
+{
+	CATCH_(Network, net, setNeuronParameter(neuron, param, val));
+}
+
+
+nemo_status_t
+nemo_set_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float val)
+{
+	CATCH_(Simulation, sim, setNeuronState(neuron, var, val));
+}
+
+
+nemo_status_t
+nemo_set_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float val)
+{
+	CATCH_(Simulation, sim, setNeuronParameter(neuron, param, val));
 }
 
 

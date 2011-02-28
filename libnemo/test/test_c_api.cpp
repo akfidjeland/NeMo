@@ -154,7 +154,7 @@ c_runSimulation(
 	}
 
 	// try replacing a neuron, just to make sure it doesn't make things fall over.
-	nemo_set_neuron(sim, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -64.0f, 0.0f);
+	nemo_set_neuron_s(sim, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -64.0f, 0.0f);
 	{
 		float v;
 		nemo_get_membrane_potential(sim, 0, &v);
@@ -314,4 +314,174 @@ testSynapseId()
 BOOST_AUTO_TEST_CASE(synapse_ids)
 {
 	testSynapseId();
+}
+
+
+
+
+/* Both the simulation and network classes have neuron setters. Here we perform
+ * the same test for both. */
+void
+test_set_neuron()
+{
+	float a = 0.02f;
+	float b = 0.2f;
+	float c = -65.0f+15.0f*0.25f;
+	float d = 8.0f-6.0f*0.25f;
+	float v = -65.0f;
+	float u = b * v;
+	float sigma = 5.0f;
+	float val;
+
+	/* Create a minimal network with a single neuron */
+	nemo_network_t net = nemo_new_network();
+
+	/* setNeuron should only succeed for existing neurons */
+	BOOST_REQUIRE(nemo_set_neuron_n(net, 0, a, b, c, d, u, v, sigma) != NEMO_OK);
+
+	nemo_add_neuron(net, 0, a, b, c-0.1, d, u, v-1.0, sigma);
+
+	/* Invalid neuron */
+	BOOST_REQUIRE(nemo_get_neuron_parameter_n(net, 1, 0, &val) != NEMO_OK);
+	BOOST_REQUIRE(nemo_get_neuron_state_n(net, 1, 0, &val) != NEMO_OK);
+
+	/* Invalid parameter */
+	BOOST_REQUIRE(nemo_get_neuron_parameter_n(net, 0, 5, &val) != NEMO_OK);
+	BOOST_REQUIRE(nemo_get_neuron_state_n(net, 0, 2, &val) != NEMO_OK);
+
+	float e = 0.1;
+	BOOST_REQUIRE_EQUAL(nemo_set_neuron_n(net, 0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e), NEMO_OK);
+	nemo_get_neuron_parameter_n(net, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, a-e);
+	nemo_get_neuron_parameter_n(net, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, b-e);
+	nemo_get_neuron_parameter_n(net, 0, 2, &val); BOOST_REQUIRE_EQUAL(val, c-e);
+	nemo_get_neuron_parameter_n(net, 0, 3, &val); BOOST_REQUIRE_EQUAL(val, d-e);
+	nemo_get_neuron_parameter_n(net, 0, 4, &val); BOOST_REQUIRE_EQUAL(val, sigma-e);
+	nemo_get_neuron_state_n(net, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, u-e);
+	nemo_get_neuron_state_n(net, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, v-e);
+
+	/* Try setting individual parameters during construction */
+
+	nemo_set_neuron_parameter_n(net, 0, 0, a);
+	nemo_get_neuron_parameter_n(net, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, a);
+
+	nemo_set_neuron_parameter_n(net, 0, 1, b);
+	nemo_get_neuron_parameter_n(net, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, b);
+
+	nemo_set_neuron_parameter_n(net, 0, 2, c);
+	nemo_get_neuron_parameter_n(net, 0, 2, &val); BOOST_REQUIRE_EQUAL(val, c);
+
+	nemo_set_neuron_parameter_n(net, 0, 3, d);
+	nemo_get_neuron_parameter_n(net, 0, 3, &val); BOOST_REQUIRE_EQUAL(val, d);
+
+	nemo_set_neuron_parameter_n(net, 0, 4, sigma);
+	nemo_get_neuron_parameter_n(net, 0, 4, &val); BOOST_REQUIRE_EQUAL(val, sigma);
+
+	nemo_set_neuron_state_n(net, 0, 0, u);
+	nemo_get_neuron_state_n(net, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, u);
+
+	nemo_set_neuron_state_n(net, 0, 1, v);
+	nemo_get_neuron_state_n(net, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, v);
+
+	/* Invalid neuron */
+	BOOST_REQUIRE(nemo_set_neuron_parameter_n(net, 1, 0, 0.0f) != NEMO_OK);
+	BOOST_REQUIRE(nemo_set_neuron_state_n(net, 1, 0, 0.0f) != NEMO_OK);
+
+	/* Invalid parameter */
+	BOOST_REQUIRE(nemo_set_neuron_parameter_n(net, 0, 5, 0.0f) != NEMO_OK);
+	BOOST_REQUIRE(nemo_set_neuron_state_n(net, 0, 2, 0.0f) != NEMO_OK);
+
+	nemo_configuration_t conf = nemo_new_configuration();
+
+	/* Try setting individual parameters during simulation */
+	{
+		nemo_simulation_t sim = nemo_new_simulation(net, conf);
+		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
+
+		nemo_set_neuron_state_s(sim, 0, 0, u-e);
+		nemo_get_neuron_state_s(sim, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, u-e);
+
+		nemo_set_neuron_state_s(sim, 0, 1, v-e);
+		nemo_get_neuron_state_s(sim, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, v-e);
+
+		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
+
+		nemo_set_neuron_parameter_s(sim, 0, 0, a-e);
+		nemo_get_neuron_parameter_s(sim, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, a-e);
+
+		nemo_set_neuron_parameter_s(sim, 0, 1, b-e);
+		nemo_get_neuron_parameter_s(sim, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, b-e);
+
+		nemo_set_neuron_parameter_s(sim, 0, 2, c-e);
+		nemo_get_neuron_parameter_s(sim, 0, 2, &val); BOOST_REQUIRE_EQUAL(val, c-e);
+
+		nemo_set_neuron_parameter_s(sim, 0, 3, d-e);
+		nemo_get_neuron_parameter_s(sim, 0, 3, &val); BOOST_REQUIRE_EQUAL(val, d-e);
+
+		nemo_set_neuron_parameter_s(sim, 0, 4, sigma-e);
+		nemo_get_neuron_parameter_s(sim, 0, 4, &val); BOOST_REQUIRE_EQUAL(val, sigma-e);
+
+		/* Invalid neuron */
+		BOOST_REQUIRE(nemo_set_neuron_parameter_s(sim, 1, 0, 0.0f) != NEMO_OK);
+		BOOST_REQUIRE(nemo_set_neuron_state_s(sim, 1, 0, 0.0f) != NEMO_OK);
+		BOOST_REQUIRE(nemo_get_neuron_parameter_s(sim, 1, 0, &val) != NEMO_OK);
+		BOOST_REQUIRE(nemo_get_neuron_state_s(sim, 1, 0, &val) != NEMO_OK);
+
+		/* Invalid parameter */
+		BOOST_REQUIRE(nemo_set_neuron_parameter_s(sim, 0, 5, 0.0f) != NEMO_OK);
+		BOOST_REQUIRE(nemo_set_neuron_state_s(sim, 0, 2, 0.0f) != NEMO_OK);
+		BOOST_REQUIRE(nemo_get_neuron_parameter_s(sim, 0, 5, &val) != NEMO_OK);
+		BOOST_REQUIRE(nemo_get_neuron_state_s(sim, 0, 2, &val) != NEMO_OK);
+
+		nemo_delete_simulation(sim);
+	}
+
+	float v0 = 0.0f;
+	{
+		nemo_simulation_t sim = nemo_new_simulation(net, conf);
+		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
+		nemo_get_membrane_potential(sim, 0, &v0);
+		nemo_delete_simulation(sim);
+	}
+
+	{
+		nemo_simulation_t sim = nemo_new_simulation(net, conf);
+		nemo_get_neuron_state_s(sim, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, u);
+		nemo_get_neuron_state_s(sim, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, v);
+		/* Marginally change the 'c' parameter. This is only used if the neuron
+		 * fires (which it shouldn't do this cycle). This modification
+		 * therefore should not affect the simulation result (here measured via
+		 * the membrane potential) */
+		nemo_set_neuron_s(sim, 0, a, b, c+1.0f, d, u, v, sigma);
+		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
+		nemo_get_membrane_potential(sim, 0, &val); BOOST_REQUIRE_EQUAL(v0, val);
+		nemo_get_neuron_parameter_s(sim, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, a);
+		nemo_get_neuron_parameter_s(sim, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, b);
+		nemo_get_neuron_parameter_s(sim, 0, 2, &val); BOOST_REQUIRE_EQUAL(val, c+1.0f);
+		nemo_get_neuron_parameter_s(sim, 0, 3, &val); BOOST_REQUIRE_EQUAL(val, d);
+		nemo_get_neuron_parameter_s(sim, 0, 4, &val); BOOST_REQUIRE_EQUAL(val, sigma);
+		nemo_delete_simulation(sim);
+	}
+
+	{
+		/* Modify membrane potential after simulation has been created.
+		 * Again the result should be the same */
+		nemo_network_t net1 = nemo_new_network();
+		nemo_add_neuron(net1, 0, a, b, c, d, u, v-1.0f, sigma);
+		nemo_simulation_t sim = nemo_new_simulation(net1, conf);
+		nemo_set_neuron_s(sim, 0, a, b, c, d, u, v, sigma);
+		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
+		nemo_get_membrane_potential(sim, 0, &val); BOOST_REQUIRE_EQUAL(v0, val);
+		nemo_delete_simulation(sim);
+		nemo_delete_network(net1);
+	}
+
+	nemo_delete_network(net);
+	nemo_delete_configuration(conf);
+}
+
+
+
+BOOST_AUTO_TEST_CASE(set_neuron)
+{
+	test_set_neuron();
 }

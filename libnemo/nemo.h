@@ -14,6 +14,8 @@ extern "C" {
 #include <nemo/config.h>
 #include <nemo/types.h>
 
+
+
 /*! Only opaque pointers are exposed in the C API */
 typedef void* nemo_network_t;
 typedef void* nemo_simulation_t;
@@ -260,7 +262,84 @@ nemo_status_t
 nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v);
 
 
-/*! Modify the parameters/state for a single neuron at run-time
+
+/*! Get a single state variable for a single neuron during construction
+ *
+ * \param[in] net network object
+ * \param[in] neuron neuron index
+ * \param[in] var state variable index
+ * \param[out] val value of the state variable
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or state variable indices are invalid. Other errors may also
+ * 		be raised. \a val is undefined unless the return value is NEMO_OK.
+ *
+ * For the Izhikevich model the variable indices are 0 = u, 1 = v.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float* val);
+
+
+
+/*! Get a single parameter for a single neuron during simulation
+ *
+ * \param[in] net network object
+ * \param[in] neuron neuron index
+ * \param[in] param parameter index
+ * \param[out] val value of the state variable
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or parameter indices are invalid. Other errors may also be
+ * 		raised. \a val is undefined unless the return value is NEMO_OK.
+ *
+ * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float* val);
+
+
+
+/*! Get a single state variable for a single neuron during simulation
+ *
+ * \param[in] sim simulation object
+ * \param[in] neuron neuron index
+ * \param[in] var state variable index
+ * \param[out] val value of the state variable
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or state variable indices are invalid. Other errors may also
+ * 		be raised. \a val is undefined unless the return value is NEMO_OK.
+ *
+ * For the Izhikevich model the variable indices are 0 = u, 1 = v.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float* val);
+
+
+
+/*! Get a single parameter for a single neuron during simulation
+ *
+ * \param[in] sim simulation object
+ * \param[in] neuron neuron index
+ * \param[in] param parameter index
+ * \param[out] val value of the state variable
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or parameter indices are invalid. Other errors may also be
+ * 		raised. \a val is undefined unless the return value is NEMO_OK.
+ *
+ * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float* val);
+
+
+
+/*! Modify the parameters/state for a single neuron during construction
  *
  * The neuron must already exist.
  *
@@ -268,10 +347,102 @@ nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v);
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_neuron(nemo_simulation_t sim,
+nemo_set_neuron_n(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
+
+
+
+/*! Modify the parameters/state for a single neuron during simulation
+ *
+ * The neuron must already exist.
+ *
+ * \see nemo_add_neuron for parameters
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_s(nemo_simulation_t sim,
+		unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma);
+
+
+
+/*! Modify a single state variable for a single neuron during construction
+ *
+ * \param[in] net network object
+ * \param[in] neuron neuron index
+ * \param[in] var state variable index
+ * \param[in] val new value of the state variable
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or state variable indices are invalid. Other errors may also
+ * 		be raised.
+ *
+ * For the Izhikevich model the variable indices are 0 = u, 1 = v.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float val);
+
+
+
+/*! Modify a single parameter for a single neuron during construction
+ *
+ * \param[in] net network object
+ * \param[in] neuron neuron index
+ * \param[in] param parameter index
+ * \param[in] val new value of the parameter
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or state variable indices are invalid. Other errors may also
+ * 		be raised.
+ *
+ * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float val);
+
+
+
+/*! Modify a single state variable for a single neuron during simulation
+ *
+ * \param[in] sim simulation object
+ * \param[in] neuron neuron index
+ * \param[in] var state variable index
+ * \param[in] val new value of the state variable
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or state variable indices are invalid. Other errors may also
+ * 		be raised. \a val is undefined unless the return value is NEMO_OK.
+ *
+ * For the Izhikevich model the variable indices are 0 = u, 1 = v.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float val);
+
+
+
+/*! Modify a single parameter for a single neuron during simulation
+ *
+ * \param[in] sim simulation object
+ * \param[in] neuron neuron index
+ * \param[in] param parameter index
+ * \param[in] val new value of the parameter
+ *
+ * \return NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either
+ * 		the neuron or state variable indices are invalid. Other errors may also
+ * 		be raised.
+ *
+ * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float val);
+
 
 
 /*! Get synapse target for the specified synapses
