@@ -51,7 +51,7 @@ functionDoc mname fn = text "#define" <+> macroName <+> docstring
         docstring = doubleQuotes $ mergeLinesWith "\\n\\n" $ empty : filter (not . isEmpty) [synopsis, inputs, description]
         synopsis = text $ fn_brief fn
         inputs = inputDoc $ fn_inputs fn
-        description = maybe empty (docRender . escape) $ describe fn
+        description = maybe empty (docRender . escape) $ describeLanguage Python fn
 
 
 inputDoc :: [Input] -> Doc

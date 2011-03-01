@@ -1,12 +1,15 @@
 module API where
 
+import qualified Data.Map as M
+import Data.Maybe
 
-data Language = Matlab | MEX | CPP | C | LaTeX deriving (Eq)
+data Language = Matlab | MEX | CPP | C | LaTeX | Python deriving (Eq, Ord)
 
 type ApiDescr = Maybe String
 
 class Described a where
     describe :: a -> ApiDescr
+
 
 type Name = String
 
@@ -167,12 +170,23 @@ defaultLanguageSpec = LanguageSpec Automatic | NoVectorization
 data ApiFunction = ApiFunction {
         fn_name :: String,       -- ^ canonical name
         fn_brief :: String,      -- ^ brief description of function
+        -- TODO: change to a diffeent ApiDescr format that support construction
+        -- of per-language strings from the ground up.
         fn_descr :: ApiDescr,    -- ^ detailed description of function
+        fn_descr_extra :: M.Map Language String, -- ^ extra language-specific documentation
         fn_output :: [OutputType],
         fn_inputs :: [Input],
         fn_noauto :: [Language], -- ^ languages for which this function is hand-written
         fn_vectorized :: Bool    -- ^ vectorize this function where appropriate
     }
+
+
+describeLanguage :: Language -> ApiFunction -> Maybe String
+describeLanguage lang fn = if null combined then Nothing else Just combined
+    where
+        combined = concat $ catMaybes [main, extra]
+        main = fn_descr fn
+        extra = M.lookup lang $ fn_descr_extra fn
 
 
 {- TODO: We really should have a more complex set of types above, to support
@@ -195,11 +209,11 @@ constructorArgs (Factory a) = a
 
 
 instance Named ApiFunction where
-    name (ApiFunction n _ _ _ _ _ _) = n
+    name (ApiFunction n _ _ _ _ _ _ _) = n
 
 
 instance Described ApiFunction where
-    describe (ApiFunction _ _ d _ _ _ _) = d
+    describe (ApiFunction _ _ d _ _ _ _ _) = d
 
 
 inputCount :: ApiFunction -> Int
@@ -239,6 +253,7 @@ clearNetwork =
         "clearNetwork"
         "clear all neurons/synapses from network"
         Nothing
+        M.empty
         []
         []
         [MEX]
@@ -251,6 +266,7 @@ addNeuron =
         "addNeuron"
         "add a single neuron to the network"
         (Just "The neuron uses the Izhikevich neuron model. See E. M. Izhikevich \"Simple model of spiking neurons\", IEEE Trans. Neural Networks, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.")
+        M.empty
         []
         [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
             Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
@@ -264,12 +280,21 @@ addNeuron =
         [] True
 
 
+pythonVectorizedFull = [(Python, "The input arguments can be any combination of lists \
+\ of equal length and scalars. If the input arguments contain a mix of scalars and lists \
+\ the scalar arguments are replicated the required number of times.")]
+
+pythonVectorized13 = [(Python, "The neuron and value parameters can be either both scalar or both lists of the same length")]
+
+pythonVectorized1 = [(Python, "The neuron index may be either scalar or a list. The output has the same length as the neuron input")]
+
 
 addSynapse =
     ApiFunction
         "addSynapse"
         "add a single synapse to the network"
         Nothing
+        (M.fromList pythonVectorizedFull)
         [   ApiArg "id" (Just "Unique synapse ID") (Scalar ApiUInt64)]
         [   Required (ApiArg "source" (Just "Index of source neuron") (Scalar ApiUInt)),
             Required (ApiArg "target" (Just "Index of target neuron") (Scalar ApiUInt)),
@@ -283,7 +308,8 @@ addSynapse =
 getNeuronState =
     ApiFunction "getNeuronState"
         "get neuron state variable"
-        (Just "For the Izhikevich model: 0=u, 1=v")
+        (Just "For the Izhikevich model: 0=u, 1=v. ")
+        (M.fromList pythonVectorized1)
         [   ApiArg "val" (Just "value of the relevant variable") (Scalar ApiFloat) ]
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)) ]
@@ -294,7 +320,8 @@ getNeuronState =
 getNeuronParameter =
     ApiFunction "getNeuronParameter"
         "get neuron parameter"
-        (Just "The neuron parameters do not change during simulation. For the Izhikevich model: 0=a, 1=b, 2=c, 3=d")
+        (Just "The neuron parameters do not change during simulation. For the Izhikevich model: 0=a, 1=b, 2=c, 3=d. ")
+        (M.fromList pythonVectorized1)
         [   ApiArg "val" (Just "value of the neuron parameter") (Scalar ApiFloat) ]
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)) ]
@@ -305,7 +332,8 @@ getNeuronParameter =
 setNeuronState =
     ApiFunction "setNeuronState"
         "set neuron state variable"
-        (Just "For the Izhikevich model: 0=u, 1=v")
+        (Just "For the Izhikevich model: 0=u, 1=v. ")
+        (M.fromList pythonVectorized13)
         []
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)),
@@ -317,7 +345,8 @@ setNeuronState =
 setNeuronParameter =
     ApiFunction "setNeuronParameter"
         "set neuron parameter"
-        (Just "The neuron parameters do not change during simulation. For the Izhikevich model: 0=a, 1=b, 2=c, 3=d")
+        (Just "The neuron parameters do not change during simulation. For the Izhikevich model: 0=a, 1=b, 2=c, 3=d. ")
+        (M.fromList pythonVectorized13)
         []
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)),
@@ -329,7 +358,8 @@ neuronCount =
     ApiFunction
         "neuronCount"
         ""
-        Nothing [ApiArg "ncount" (Just "number of neurons in the network") (Scalar ApiUInt)] [] [] False
+        Nothing M.empty
+        [ApiArg "ncount" (Just "number of neurons in the network") (Scalar ApiUInt)] [] [] False
 
 
 network =
@@ -346,7 +376,7 @@ step =
                     (Vector ApiFloat ExplicitLength)
     in ApiFunction "step"
         "run simulation for a single cycle (1ms)"
-        Nothing
+        Nothing M.empty
         [   ApiArg "fired" (Just "Neurons which fired this cycle") (Vector ApiUInt ExplicitLength) ]
         [   Required (ApiArg "fstim"
                 (Just "An optional list of neurons, which will be forced to fire this cycle")
@@ -362,7 +392,7 @@ step =
 applyStdp =
     ApiFunction "applyStdp"
         "update synapse weights using the accumulated STDP statistics"
-        Nothing
+        Nothing M.empty
         []
         [   Required (ApiArg "reward"
                 (Just "Multiplier for the accumulated weight change")
@@ -374,7 +404,7 @@ applyStdp =
 setNeuron =
     ApiFunction "setNeuron"
         "modify an existing neuron"
-        Nothing
+        Nothing M.empty
         []
         [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
             Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
@@ -392,7 +422,7 @@ setNeuron =
 getMembranePotential =
     ApiFunction "getMembranePotential"
         "get membane potential of a neuron"
-        Nothing
+        Nothing M.empty
         [   ApiArg "v" (Just "membrane potential") (Scalar ApiFloat) ]
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)) ]
         []
@@ -403,7 +433,7 @@ getMembranePotential =
 getSynapsesFrom =
     ApiFunction "getSynapsesFrom"
         "return the synapse ids for all synapses with the given source neuron"
-        Nothing
+        Nothing M.empty
         [   ApiArg "synapses" (Just "synapse ids") (Vector ApiUInt64 ExplicitLength)]
         [   Required (ApiArg "source" (Just "source neuron index") (Scalar ApiUInt))]
         []
@@ -417,7 +447,7 @@ getTargets =
     in ApiFunction "getTargets"
         "return the targets for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing
+        Nothing M.empty
         [   ApiArg "targets" (Just "indices of target neurons") (Vector ApiUInt (ImplicitLength synapses)) ]
         [ synapses ]
         [] False
@@ -432,7 +462,7 @@ getDelays =
     in ApiFunction "getDelays"
         "return the conductance delays for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing
+        Nothing M.empty
         [   ApiArg "delays" (Just "conductance delays of the specified synpases") (Vector ApiUInt (ImplicitLength synapses)) ]
         [ synapses ]
         [] False
@@ -445,7 +475,7 @@ getWeights =
     in ApiFunction "getWeights"
         "return the weights for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing
+        Nothing M.empty
         [   ApiArg "weights" (Just "weights of the specified synapses") (Vector ApiFloat (ImplicitLength synapses)) ]
         [ synapses ]
         [] False
@@ -459,7 +489,7 @@ getPlastic =
     in ApiFunction "getPlastic"
         "return the boolean plasticity status for the specified synapses"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing
+        Nothing M.empty
         [   ApiArg "plastic" (Just "plasticity status of the specified synpases") (Vector ApiBool (ImplicitLength synapses)) ]
         [ synapses ]
         [] False
@@ -467,24 +497,25 @@ getPlastic =
 
 elapsedWallclock =
     ApiFunction "elapsedWallclock" []
-        Nothing
+        Nothing M.empty
         [ApiArg "elapsed" (Just "number of milliseconds of wall-clock time elapsed since first simulation step (or last timer reset)") (Scalar ApiULong)]
         [] [] False
 
 
 elapsedSimulation =
     ApiFunction "elapsedSimulation" []
-        Nothing
+        Nothing M.empty
         [ApiArg "elapsed" (Just "number of milliseconds of simulation time elapsed since first simulation step (or last timer reset)") (Scalar ApiULong)] [] [] False
 
 
-resetTimer = ApiFunction "resetTimer" "reset both wall-clock and simulation timer" Nothing [] [] [] False
+resetTimer = ApiFunction "resetTimer" "reset both wall-clock and simulation timer" Nothing M.empty [] [] [] False
 
 createSimulation =
     ApiFunction
         "createSimulation"
         "Initialise simulation data"
         (Just "Initialise simulation data, but do not start running. Call step to run simulation. The initialisation step can be time-consuming.")
+        M.empty
         []
         []
         [MEX]
@@ -496,6 +527,7 @@ destroySimulation =
         "destroySimulation"
         "Stop simulation and free associated data"
         (Just "The simulation can have a significant amount of memory associated with it. Calling destroySimulation frees up this memory.")
+        M.empty
         []
         []
         [MEX]
@@ -521,6 +553,7 @@ setCpuBackend =
             \used, the backend will choose a sensible value based on the available \
             \hardware concurrency."
         )
+        M.empty
         []
         [   Optional (ApiArg "tcount" (Just "number of threads") (Scalar ApiInt)) "-1" ]
         [] False
@@ -539,8 +572,9 @@ setCudaBackend =
 \ The device numbering is the numbering used internally by nemo (see \
 \ cudaDeviceCount and cudaDeviceDescription). This device \
 \ numbering may differ from the one provided by the CUDA driver \
-\ directly, since nemo ignores any devices it cannot use. "
+\ directly, since NeMo ignores any devices it cannot use. "
         )
+        M.empty
         []
         [   Optional (ApiArg "deviceNumber" Nothing (Scalar ApiInt)) "-1" ]
         [] False
@@ -551,6 +585,7 @@ setStdpFunction =
     ApiFunction "setStdpFunction" "enable STDP and set the global STDP function"
         -- TODO: add documentation here
         (Just "The STDP function is specified by providing the values sampled at integer cycles within the STDP window.")
+        M.empty
         -- TODO: document limitations here
         []
         [   Required (ApiArg "prefire" (Just "STDP function values for spikes arrival times before the postsynaptic firing, starting closest to the postsynaptic firing") (Vector ApiFloat ExplicitLength)),
@@ -565,6 +600,7 @@ backendDescription =
         "backendDescription"
         "Description of the currently selected simulation backend"
         (Just "The backend can be changed using setCudaBackend or setCpuBackend")
+        M.empty
         [ApiArg "description" (Just "Textual description of the currently selected backend") (Scalar ApiString)]
         []
         [] False
@@ -575,6 +611,7 @@ setWriteOnlySynapses =
         "setWriteOnlySynapses"
         "Specify that synapses will not be read back at run-time"
         (Just "By default synapse state can be read back at run-time. This may require setting up data structures of considerable size before starting the simulation. If the synapse state is not required at run-time, specify that synapses are write-only in order to save memory and setup time. By default synapses are readable")
+        M.empty
         [] [] [] False
 
 
@@ -582,7 +619,7 @@ resetConfiguration =
     ApiFunction
         "resetConfiguration"
         "Replace configuration with default configuration"
-        Nothing
+        Nothing M.empty
         []
         []
         [MEX]
@@ -596,7 +633,7 @@ configuration = ApiModule "Configuration" "conf" (Just "Global configuration") d
 
 reset = ApiFunction "reset"
         "Reset all NeMo state, leaving an empty network, a default configuration, and no simulation"
-        Nothing [] [] [MEX] False
+        Nothing M.empty [] [] [MEX] False
 
 
 matlabExtras = ApiModule "Others" "others" Nothing defaultConstructor [reset] []

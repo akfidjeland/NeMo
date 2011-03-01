@@ -189,7 +189,7 @@ checkInputVector(PyObject* obj, unsigned &vectorLength)
 
 /*! Add one or more synapses
  *
- * \return synapse id in the form of a byte object with exactly eight bytes.
+ * \return synapse id
  *
  * The arguments (other than net) may be either scalar or vector. All vectors
  * must be of the same length. If any of the inputs are vectors, the scalar

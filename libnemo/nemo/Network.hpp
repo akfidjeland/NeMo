@@ -88,7 +88,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 * \param var variable index
 		 * \return state variable \a n.
 		 *
-		 * For the Izhikevich model 0 = u, 1 = v
+		 * For the Izhikevich model the variable indices are 0 = u, 1 = v.
 		 */
 		float getNeuronState(unsigned neuron, unsigned var) const;
 
@@ -97,7 +97,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 * \param param parameter index
 		 * \return parameter \a n.
 		 *
-		 * For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
+		 * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
 		 */
 		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
 
