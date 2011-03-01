@@ -10,6 +10,6 @@ function nemoSetNeuronParameter(idx, varno, val)
 %   val     - value of the neuron parameter
 %    
 % The neuron parameters do not change during simulation. For the
-% Izhikevich model: 0=a, 1=b, 2=c, 3=d
+% Izhikevich model: 0=a, 1=b, 2=c, 3=d.
     nemo_mex(uint32(26), uint32(idx), uint32(varno), double(val));
 end

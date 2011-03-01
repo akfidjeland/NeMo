@@ -9,6 +9,6 @@ function nemoSetNeuronState(idx, varno, val)
 %   varno   - variable index
 %   val     - value of the relevant variable
 %    
-% For the Izhikevich model: 0=u, 1=v
+% For the Izhikevich model: 0=u, 1=v.
     nemo_mex(uint32(25), uint32(idx), uint32(varno), double(val));
 end
