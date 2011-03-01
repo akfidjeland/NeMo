@@ -1,2 +1,0 @@
-from nemo import *
-init()

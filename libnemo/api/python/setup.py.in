@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+from distutils.core import setup
+
+setup(  name='nemo',
+        description='Spiking neural network simulator',
+        version='@NEMO_VERSION@',
+        author='Andreas Fidjeland',
+        author_email='andreas.fidjeland@imperial.ac.uk',
+        url='http://www.doc.ic.ac.uk/~akf/nemo',
+        packages=['nemo'],
+        # There is an extension module here, but the shared library itself is
+        # stored in a NeMo-specific directory to which the __init__ script sets
+        # the path.
+    )

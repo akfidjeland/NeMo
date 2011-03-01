@@ -384,7 +384,7 @@ initializeConverters()
 
 
 
-BOOST_PYTHON_MODULE(nemo)
+BOOST_PYTHON_MODULE(_nemo)
 {
 	def("init", initializeConverters);
 

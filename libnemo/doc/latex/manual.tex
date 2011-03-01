@@ -542,13 +542,19 @@ The interface layer is implemented using \library{boost::python},
 Function names are all \code{lower\_case\_with\_underscores}.
 
 \paragraph{Setup}
-To use the API, the installation path of the module \library{nemo} must be on the Python path.
-The default paths are found in Table~\ref{tab:python-path}.
-The Python path can be set by 
-	setting the environment variable \command{PYTHONPATH},
-	or within a script/session by calling \code{sys.path.add}.
-One the module is on the path,
-	it can be brought into scope by \code{import nemo}.
+When installing the base \nemo\ library (see Section~\ref{installation}),
+	the Python wrapper is installed to a subdirectory of the main installation path
+	(Table~\ref{tab:python-path}).
+This contains a \command{distutils} setup script,
+	which installs the module initialization file to the appropriate 
+	location in the system's Python installation.
+Run \code{python setup.py install} to perform this installation,
+	after which \code{import nemo} should work.
+Alternatively,
+	the \nemo-related files can be left in the \nemo-specific installation directory.
+The Python path then has to be set manually to include the relevant path from Table~\ref{tab:python-path},
+	either by setting the environment variable \command{PYTHONPATH},
+	or within a script/session by calling \code{sys.path.append}.
 
 \begin{table}[!hb]
 	\centering
@@ -700,6 +706,7 @@ the firing pattern:
 \input{fnref}
 
 \section{Installation}
+\label{installation}
 
 \subsection{Windows}
 \label{installation:windows}
