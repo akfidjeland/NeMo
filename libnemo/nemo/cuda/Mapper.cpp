@@ -33,7 +33,7 @@ Mapper::Mapper(const nemo::network::Generator& net, unsigned partitionSize) :
 DeviceIdx
 Mapper::addIdx(nidx_t global)
 {
-	m_validGlobal.insert(global);
+	m_existingGlobal.insert(global);
 	return deviceIdx(global);
 }
 
@@ -53,9 +53,9 @@ DeviceIdx
 Mapper::existingDeviceIdx(nidx_t global) const
 {
 	using boost::format;
-	if(!validGlobal(global)) {
+	if(!existingGlobal(global)) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Invalid neuron index (%u)") % global));
+				str(format("Neuron index %u refers to non-existing neuron") % global));
 	}
 	return deviceIdx(global);
 }

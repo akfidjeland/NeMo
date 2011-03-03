@@ -286,35 +286,12 @@ Simulation::readFiring()
 
 
 
-/*! \return local index of neuron, provided it is both in the valid /range/ of
- *  indices and is also /valid/ (i.e. already set) */
-nidx_t
-Simulation::validLocalIndex(unsigned g_idx) const
-{
-	using boost::format;
-	nidx_t l_idx = m_mapper.localIdx(g_idx);
-	if(!m_mapper.validLocal(l_idx)) {
-		/* Setting the parameters of a neuron which does not already exists
-		 * would not have any ill effects (as long the local index is in the
-		 * valid range). However, doing so will have no effect on the
-		 * simulation, as changing the connectivity of the network at run-time
-		 * is not supported and consequently this new neuron will have no
-		 * connections. Therefore, it is more likely that setting a
-		 * non-existing neuron is a user error. */
-		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Non-existing neuron index (%u)") % g_idx));
-	}
-	return l_idx;
-}
-
-
-
 void
 Simulation::setNeuron(unsigned g_idx,
 			float a, float b, float c, float d,
 			float u, float v, float sigma)
 {
-	nidx_t l_idx = validLocalIndex(g_idx);
+	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
 	m_a.at(l_idx) = a;
 	m_b.at(l_idx) = b;
 	m_c.at(l_idx) = c;
@@ -331,7 +308,7 @@ Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 {
 	using boost::format;
 
-	nidx_t l_idx = validLocalIndex(g_idx);
+	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(var) {
@@ -349,7 +326,7 @@ Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 {
 	using boost::format;
 
-	nidx_t l_idx = validLocalIndex(g_idx);
+	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(parameter) {
@@ -424,7 +401,7 @@ Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
-	nidx_t l_idx = validLocalIndex(g_idx);
+	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
 	switch(var) {
 		case 0: return m_u.at(l_idx);
 		case 1: return m_v.at(l_idx);
@@ -440,7 +417,7 @@ Simulation::getNeuronParameter(unsigned g_idx, unsigned param) const
 {
 	using boost::format;
 
-	nidx_t l_idx = validLocalIndex(g_idx);
+	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
 
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */

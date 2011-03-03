@@ -59,6 +59,8 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 
 		Mapper(const nemo::network::Generator& net, unsigned partitionSize);
 
+		~Mapper() {}
+
 		/*! Convert from device index (2D) to local 1D index */
 		nidx_t localIdx(const DeviceIdx& d) const {
 			return d.partition * m_partitionSize + d.neuron;
@@ -87,22 +89,23 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 			return localIdx(addIdx(global));
 		}
 
-		/*! Add global neuron index to the set of 'valid' synapses and return
-		 * the correspondong device neuron index */
+		/*! Add a neuron to the set of existing neurons and return the device
+		 * index. */
 		DeviceIdx addIdx(nidx_t global);
 
-		/*! \return device idx corresponding to the given global neuron index
+		/*! \return device index corresponding to the given global neuron index
 		 *
-		 * The global index may or may not be valid, i.e. refer to an existing
-		 * neuron.
+		 * The global neuron index refers to a neuron which may or may not exist.
 		 *
-		 * \see existingDeviceIdx
+		 * \see existingDeviceIdx for a safer function.
 		 */
 		DeviceIdx deviceIdx(nidx_t global) const;
 
-		/*! \return device idx corresponding to the given global index of an * existing neuron
+		/*! \return
+		 * 		device index corresponding to the given global index of an
+		 * 		existing neuron
 		 *
-		 * Throw if the neuron is not valid
+		 * Throw if the neuron does not exist
 		 *
 		 * \see deviceIdx
 		 */
@@ -120,14 +123,14 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 		/*! \return maximum global indexed supported by this mapper */
 		unsigned maxHandledGlobalIdx() const;
 
-		/*! \copydoc nemo::Mapper::validGlobal */
-		bool validGlobal(const nidx_t& global) const {
-			return m_validGlobal.count(global) == 1;
+		/*! \copydoc nemo::Mapper::existingGlobal */
+		bool existingGlobal(const nidx_t& global) const {
+			return m_existingGlobal.count(global) == 1;
 		}
 
-		/*! \copydoc nemo::Mapper::validLocal */
-		bool validLocal(const nidx_t& local) const {
-			return validGlobal(globalIdx(local));
+		/*! \copydoc nemo::Mapper::existingLocal */
+		bool existingLocal(const nidx_t& local) const {
+			return existingGlobal(globalIdx(local));
 		}
 
 		/*! \copydoc nemo::Mapper::neuronsInValidRange */
@@ -143,7 +146,7 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 
 		unsigned m_offset;
 
-		std::set<nidx_t> m_validGlobal;
+		std::set<nidx_t> m_existingGlobal;
 };
 
 	} // end namespace cuda

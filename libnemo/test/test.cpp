@@ -574,36 +574,36 @@ testSetNeuron(backend_t backend)
 
 	float e = 0.1;
 	BOOST_REQUIRE_NO_THROW(net.setNeuron(0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e));
-	BOOST_REQUIRE(net.getNeuronParameter(0, 0) == a-e);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 1) == b-e);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 2) == c-e);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 3) == d-e);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 4) == sigma-e);
-	BOOST_REQUIRE(net.getNeuronState(0, 0) == u-e);
-	BOOST_REQUIRE(net.getNeuronState(0, 1) == v-e);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 0), a-e);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 1), b-e);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 2), c-e);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 3), d-e);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 4), sigma-e);
+	BOOST_REQUIRE_EQUAL(net.getNeuronState(0, 0), u-e);
+	BOOST_REQUIRE_EQUAL(net.getNeuronState(0, 1), v-e);
 
 	/* Try setting individual parameters during construction */
 
 	net.setNeuronParameter(0, 0, a);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 0) == a);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 0), a);
 
 	net.setNeuronParameter(0, 1, b);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 1) == b);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 1), b);
 
 	net.setNeuronParameter(0, 2, c);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 2) == c);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 2), c);
 
 	net.setNeuronParameter(0, 3, d);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 3) == d);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 3), d);
 
 	net.setNeuronParameter(0, 4, sigma);
-	BOOST_REQUIRE(net.getNeuronParameter(0, 4) == sigma);
+	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 4), sigma);
 
 	net.setNeuronState(0, 0, u);
-	BOOST_REQUIRE(net.getNeuronState(0, 0) == u);
+	BOOST_REQUIRE_EQUAL(net.getNeuronState(0, 0), u);
 
 	net.setNeuronState(0, 1, v);
-	BOOST_REQUIRE(net.getNeuronState(0, 1) == v);
+	BOOST_REQUIRE_EQUAL(net.getNeuronState(0, 1), v);
 
 	/* Invalid neuron */
 	BOOST_REQUIRE_THROW(net.setNeuronParameter(1, 0, 0.0f), nemo::exception);
@@ -622,27 +622,27 @@ testSetNeuron(backend_t backend)
 		sim->step();
 
 		sim->setNeuronState(0, 0, u-e);
-		BOOST_REQUIRE(sim->getNeuronState(0, 0) == u-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronState(0, 0), u-e);
 
 		sim->setNeuronState(0, 1, v-e);
-		BOOST_REQUIRE(sim->getNeuronState(0, 1) == v-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronState(0, 1), v-e);
 
 		sim->step();
 
 		sim->setNeuronParameter(0, 0, a-e);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 0) == a-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 0), a-e);
 
 		sim->setNeuronParameter(0, 1, b-e);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 1) == b-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 1), b-e);
 
 		sim->setNeuronParameter(0, 2, c-e);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 2) == c-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 2), c-e);
 
 		sim->setNeuronParameter(0, 3, d-e);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 3) == d-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 3), d-e);
 
 		sim->setNeuronParameter(0, 4, sigma-e);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 4) == sigma-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 4), sigma-e);
 
 		/* Invalid neuron */
 		BOOST_REQUIRE_THROW(sim->setNeuronParameter(1, 0, 0.0f), nemo::exception);
@@ -666,8 +666,8 @@ testSetNeuron(backend_t backend)
 
 	{
 		boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
-		BOOST_REQUIRE(sim->getNeuronState(0, 0) == u);
-		BOOST_REQUIRE(sim->getNeuronState(0, 1) == v);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronState(0, 0), u);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronState(0, 1), v);
 		/* Marginally change the 'c' parameter. This is only used if the neuron
 		 * fires (which it shouldn't do this cycle). This modification
 		 * therefore should not affect the simulation result (here measured via
@@ -675,11 +675,11 @@ testSetNeuron(backend_t backend)
 		sim->setNeuron(0, a, b, c+1.0f, d, u, v, sigma);
 		sim->step();
 		BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 0) == a);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 1) == b);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 2) == c+1.0f);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 3) == d);
-		BOOST_REQUIRE(sim->getNeuronParameter(0, 4) == sigma);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 0), a);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 1), b);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 2), c+1.0f);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 3), d);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 4), sigma);
 	}
 
 	{

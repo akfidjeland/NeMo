@@ -11,6 +11,8 @@
  */
 
 #include <set>
+#include <cassert>
+
 #include <nemo/types.hpp>
 #include <nemo/network/Generator.hpp>
 #include <nemo/Mapper.hpp>
@@ -18,6 +20,7 @@
 namespace nemo {
 	namespace cpu {
 
+/*! \copydoc nemo::Mapper */
 class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 {
 	public :
@@ -32,17 +35,28 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 			}
 		}
 
-		nidx_t addGlobal(const nidx_t& global) {
-			m_validGlobal.insert(global);
-			return localIdx(global);
-		}
+		/*! \copydoc nemo::Mapper */
+		nidx_t addGlobal(const nidx_t& global);
 
-		/* Convert global neuron index to local */
+		/*! \return local neuron index corresponding to the given global neuron index
+		 *
+		 * The global neuron index refers to a neuron which may or may not exist.
+		 *
+		 * \see existingDeviceIdx for a safer function.
+		 */
 		nidx_t localIdx(const nidx_t& global) const {
-			assert(global >= m_offset);
-			assert(global - m_offset < m_ncount);
 			return global - m_offset;
 		}
+
+		/*! \return
+		 * 		local index corresponding to the given global index of an
+		 * 		existing neuron
+		 *
+		 * Throw if the neuron does not exist
+		 *
+		 * \see localIdx
+		 */
+		nidx_t existingLocalIdx(const nidx_t& global) const;
 		
 		/* Convert local neuron index to global */
 		nidx_t globalIdx(const nidx_t& local) const {
@@ -63,12 +77,12 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 			return m_offset + m_ncount - 1;
 		}
 
-		bool validGlobal(const nidx_t& global) const {
-			return m_validGlobal.count(global) == 1;
+		bool existingGlobal(const nidx_t& global) const {
+			return m_existingGlobal.count(global) == 1;
 		}
 
-		bool validLocal(const nidx_t& local) const {
-			return validGlobal(globalIdx(local));
+		bool existingLocal(const nidx_t& local) const {
+			return existingGlobal(globalIdx(local));
 		}
 
 	private :
@@ -77,7 +91,7 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 
 		unsigned m_ncount;
 
-		std::set<nidx_t> m_validGlobal;
+		std::set<nidx_t> m_existingGlobal;
 };
 
 	}

@@ -188,7 +188,7 @@ ConnectivityMatrix::verifySynapseTerminals(fidx_t idx,
 
 	if(verifySource) {
 		nidx_t source = idx.get<0>();
-		if(!mapper.validLocal(source)) {
+		if(!mapper.existingLocal(source)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid synapse source neuron %u") % source));
 		}
@@ -196,7 +196,7 @@ ConnectivityMatrix::verifySynapseTerminals(fidx_t idx,
 
 	for(size_t s=0; s < row.size(); ++s) {
 		nidx_t target = row.at(s).target;
-		if(!mapper.validLocal(target)) {
+		if(!mapper.existingLocal(target)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Invalid synapse target neuron %u (source: %u)") % target % idx.get<0>()));
 		}
@@ -299,9 +299,9 @@ ConnectivityMatrix::getSynapsesFrom(unsigned source)
 	size_t nSynapses = 0;
 	aux_map::const_iterator iRow = m_cmAux.find(source);
 	if(iRow == m_cmAux.end()) {
-		if(!m_mapper.validGlobal(source)) {
+		if(!m_mapper.existingGlobal(source)) {
 			throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid source neuron id (%u) in synapse id query") % source));
+					str(format("Non-existing source neuron id (%u) in synapse id query") % source));
 		}
 		/* else just leave nSynapses at zero */
 	} else {
@@ -341,7 +341,7 @@ ConnectivityMatrix::axonTerminalAux(nidx_t neuron, id32_t synapse) const
 	aux_map::const_iterator it = m_cmAux.find(neuron);
 	if(it == m_cmAux.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Invalid neuron id (%u) in synapse query") % neuron));
+				str(format("Non-existing neuron id (%u) in synapse query") % neuron));
 	}
 	return it->second.at(synapse);
 }
