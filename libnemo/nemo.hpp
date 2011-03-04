@@ -23,7 +23,6 @@
 #include <nemo/Simulation.hpp>
 #include <nemo/exception.hpp>
 
-/*! \namespace nemo Top-level namespace for NeMo C++ code */
 
 namespace nemo {
 

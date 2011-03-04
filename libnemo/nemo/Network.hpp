@@ -7,6 +7,15 @@
 #include <nemo/config.h>
 #include <nemo/types.h>
 
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 namespace nemo {
 
 namespace mpi {
@@ -35,7 +44,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 
 		~Network();
 
-		/*! Add a single neuron to the network
+		/*! \brief Add a single neuron to the network
 		 *
 		 * The neuron uses the Izhikevich neuron model. See E. M. Izhikevich
 		 * "Simple model of spiking neurons", \e IEEE \e Trans. \e Neural \e

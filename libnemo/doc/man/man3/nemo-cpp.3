@@ -19,10 +19,10 @@ nemo-cpp \-
 .RI "float \fBgetNeuronState\fP (unsigned neuron, unsigned var) const "
 .br
 .ti -1c
-.RI "float \fBgetNeuronParameter\fP (unsigned neuron, unsigned parameter) const "
+.RI "float \fBgetNeuronParameter\fP (unsigned neuron, unsigned param) const "
 .br
 .ti -1c
-.RI "void \fBsetNeuronParameter\fP (unsigned neuron, unsigned var, float val)"
+.RI "void \fBsetNeuronParameter\fP (unsigned neuron, unsigned param, float val)"
 .br
 .ti -1c
 .RI "void \fBsetNeuronState\fP (unsigned neuron, unsigned var, float val)"
@@ -88,7 +88,7 @@ state variable \fIn\fP.
 .RE
 .PP
 For the Izhikevich model the variable indices are 0 = u, 1 = v. 
-.SS "float nemo::Network::getNeuronParameter (unsigned neuron, unsigned parameter) const"\fBParameters:\fP
+.SS "float nemo::Network::getNeuronParameter (unsigned neuron, unsigned param) const"\fBParameters:\fP
 .RS 4
 \fIneuron\fP neuron index 
 .br
@@ -101,7 +101,7 @@ parameter \fIn\fP.
 .RE
 .PP
 For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d. 
-.SS "void nemo::Network::setNeuronParameter (unsigned neuron, unsigned var, float val)"Change a single parameter for an existing neuron
+.SS "void nemo::Network::setNeuronParameter (unsigned neuron, unsigned param, float val)"Change a single parameter for an existing neuron
 .PP
 \fBParameters:\fP
 .RS 4

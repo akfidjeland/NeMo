@@ -1,19 +1,37 @@
 #ifndef NEMO_H
 #define NEMO_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*! \file nemo.h
  *
  * \brief C API for the NeMo spiking neural network simulator
- *
- * The API is based around three objects, controlled via opaque pointers:
- * nemo_configuration_t, nemo_network_t, and nemo_simulation_t. The calling
- * program must manages these objects and must explicitly create and destroy
- * them using the appropriate functions.
  */
+
+/*! \mainpage NeMo C++/C API reference
+ *
+ * NeMo is a C++ class library, with interfaces for C, Python, and Matlab.
+ *
+ *
+ * The C++ API is based around three classes: \a nemo::Configuration, \a
+ * nemo::Network, and \a nemo::Simulation. The C API gives access to these via
+ * opaque pointers, which are explicitly managed by the user. The C API
+ * functions are documented in \a nemo.h.
+ *
+ * The Python and Matlab APIs are documented elsewhere.
+ */ 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include <stddef.h> // for size_t
 #include <nemo/config.h>
@@ -125,7 +143,7 @@ nemo_status_t
 nemo_cuda_device(nemo_configuration_t conf, int* dev);
 
 
-/*! \copydoc nemo::Configuration::backend */
+/*! \copydoc nemo::Configuration::backendDescription */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_backend(nemo_configuration_t conf, backend_t* backend);
@@ -155,7 +173,7 @@ nemo_set_write_only_synapses(nemo_configuration_t conf);
 /*! \name Construction
  *
  * Networks are constructed by adding individual neurons and of synapses to the
- * network. Neurons are given indices (ideally, but not necessarily stargin
+ * network. Neurons are given indices (ideally, but not necessarily starting
  * from 0) which should be unique for each neuron. When adding synapses the
  * source or target neurons need not necessarily exist yet, but need to be
  * defined before the simulation is created.
@@ -238,7 +256,9 @@ void nemo_delete_simulation(nemo_simulation_t);
 
 /*! Run simulation for a single cycle (1ms)
  *
- * Neurons can be optionally be forced to fire using the two arguments
+ * Neurons can optionally be forced to fire using \a fstim_nidx and \a
+ * fstim_count.  Input current can be provided to a set of neurons using \a
+ * istim_nidx, \a istim_current, and \a istim_count.
  *
  * \param fstim_nidx
  * 		Indices of the neurons which should be forced to fire this cycle.
@@ -250,13 +270,16 @@ void nemo_delete_simulation(nemo_simulation_t);
  * \param istim_current
  * 		The corresponding vector of current
  * \param istim_count
- * 		Length of \a istim_nidx *and* \a istim_current
- * \param[output] fired
+ * 		Length of \a istim_nidx \b and \a istim_current
+ * \param[out] fired
  * 		Vector which fill be filled with the indices of the neurons which fired
  * 		this cycle. Set to NULL if the firing output is ignored.
- * \param[output] fired_count
+ * \param[out] fired_count
  * 		Number of neurons which fired this cycle, i.e. the length of \a fired.
  * 		Set to NULL if the firing output is ignored.
+ *
+ * \return
+ * 		NEMO_OK if operation succeeded, some other value otherwise.
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
@@ -371,7 +394,6 @@ nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned par
 
 /*! Get synapse target for the specified synapses
  *
- * \param ptr
  * \param synapses list of synapse ids (\see nemo_add_synapse)
  * \param len length of \a synapses
  * \param[out] targets
@@ -381,12 +403,11 @@ nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned par
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* targets[]);
+nemo_get_targets(nemo_simulation_t, synapse_id synapses[], size_t len, unsigned* targets[]);
 
 
 /*! Get conductance delays for the specified synapses
  *
- * \param ptr
  * \param synapses list of synapse ids (\see nemo_add_synapse)
  * \param len length of \a synapses
  * \param[out] delays
@@ -396,12 +417,11 @@ nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsig
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[]);
+nemo_get_delays(nemo_simulation_t, synapse_id synapses[], size_t len, unsigned* delays[]);
 
 
 /*! Get synapse ids for synapses with the given source id
  *
- * \param ptr
  * \param source source neuron id
  * \param[out] synapses array of synapse ids
  * \param[out] len length of \a synapses array
@@ -411,7 +431,7 @@ nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsign
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_synapses_from(nemo_simulation_t ptr, unsigned source, synapse_id *synapses[], size_t* len);
+nemo_get_synapses_from(nemo_simulation_t, unsigned source, synapse_id *synapses[], size_t* len);
 
 
 /*! Get weights for the specified synapses

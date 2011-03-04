@@ -3,11 +3,11 @@
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
- * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <vector>
@@ -23,7 +23,7 @@ class Configuration;
 
 /*! \class Simulation
  *
- * \brief Abstract high-level interface for simulation classes
+ * \brief Simulation of a single network
  *
  * Concrete instances are created using the \a nemo::simulation factory
  * function.
@@ -83,6 +83,13 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 					const firing_stimulus& fstim,
 					const current_stimulus& istim) = 0;
 
+		/*! \name Modifying the network
+		 *
+		 * Neuron parameters and state variables can be modified during
+		 * simulation. However, synapses can not be modified during simulation
+		 * in the current version of NeMo
+		 */
+
 		/*! Change the parameters of an existing neuron.
 		 *
 		 * \see nemo::Network::addNeuron for parameters
@@ -104,12 +111,12 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 */
 		virtual void applyStdp(float reward) = 0;
 
-		/*! \name Simulation (queries)
+		/*! \name Queries
 		 *
 		 * Neuron and synapse state is availble at run-time.
 		 *
 		 * The synapse state can be read back at run-time by specifiying a list
-		 * of synpase ids (\see addSynapse). The weights may change at
+		 * of synpase ids (see \a addSynapse). The weights may change at
 		 * run-time, while the other synapse data is static.
 		 *
 		 * \{ */
