@@ -10,7 +10,7 @@ IF(NEMO_DOC_SOURCE_ENABLED)
 	SET(NEMO_DOC_SOURCE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/doc/html" CACHE STRING "Directory in which to place generated source code documentation")
 ENDIF(NEMO_DOC_SOURCE_ENABLED)
 
-SUBDIRS(latex)
+SUBDIRS(latex api_html)
 
 SET(DOC_DIR ${CMAKE_BINARY_DIR}/doc)
 SET(MAN_DIR ${DOC_DIR}/man/man3)
