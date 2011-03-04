@@ -123,6 +123,7 @@ targetNeuron(
 	//! \todo should we set an upper limit to the distance? 
 	/* Make sure we don't connect back to self with (near) 0-distance connection.
 	 * Perhaps better to simply reject very short distances? */
+	//! \todo use fabs here. May need to update rtests
 	double dist = 1.0 + abs(distance());
 	double theta = angle();
 

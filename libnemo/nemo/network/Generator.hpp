@@ -15,6 +15,8 @@ class Generator
 {
 	public : 
 
+		virtual ~Generator() { }
+
 		typedef std::pair<nidx_t, Neuron<float> > neuron;
 		typedef Synapse synapse;
 		

@@ -236,7 +236,7 @@ conf.setCudaBackend(deviceNumber)
 \begin{description}
 \item[deviceNumber]
 \end{description}
-Specify that the CUDA backend should be used and optionally specify a desired device. If the (default) device value of -1 is used the backend will choose the best available device.   If the cuda backend (and the chosen device) cannot be used for  whatever reason, an exception is raised.   The device numbering is the numbering used internally by nemo (see  cudaDeviceCount and cudaDeviceDescription). This device  numbering may differ from the one provided by the CUDA driver  directly, since nemo ignores any devices it cannot use. 
+Specify that the CUDA backend should be used and optionally specify a desired device. If the (default) device value of -1 is used the backend will choose the best available device.   If the cuda backend (and the chosen device) cannot be used for  whatever reason, an exception is raised.   The device numbering is the numbering used internally by nemo (see  cudaDeviceCount and cudaDeviceDescription). This device  numbering may differ from the one provided by the CUDA driver  directly, since NeMo ignores any devices it cannot use. 
 
 \clearpage
 \subsubsection*{Configuration::setStdpFunction}
