@@ -4,7 +4,7 @@
 .SH NAME
 nemo-c \- 
 .PP
-C API for the nemo spiking neural network simulator.  
+C API for the NeMo spiking neural network simulator.  
 
 .SH SYNOPSIS
 .br
@@ -23,7 +23,7 @@ C API for the nemo spiking neural network simulator.
 
 .in +1c
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_cuda_device_count\fP (unsigned *count)"
+.RI "\fBnemo_status_t\fP \fBnemo_cuda_device_count\fP (unsigned *count)"
 .br
 .in -1c
 .PP
@@ -34,52 +34,61 @@ C API for the nemo spiking neural network simulator.
 .in +1c
 .in +1c
 .ti -1c
-.RI "NEMO_DLL_PUBLIC nemo_configuration_t \fBnemo_new_configuration\fP ()"
+.RI "nemo_configuration_t \fBnemo_new_configuration\fP ()"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_log_stdout\fP (nemo_configuration_t)"
+.RI "void \fBnemo_delete_configuration\fP (nemo_configuration_t)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_stdp_function\fP (nemo_configuration_t, float prefire_fn[], size_t prefire_len, float postfire_fn[], size_t postfire_len, float min_weight, float max_weight)"
+.RI "\fBnemo_status_t\fP \fBnemo_log_stdout\fP (nemo_configuration_t)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_cpu_backend\fP (nemo_configuration_t, int thread_count)"
+.RI "\fBnemo_status_t\fP \fBnemo_set_stdp_function\fP (nemo_configuration_t, float prefire_fn[], size_t prefire_len, float postfire_fn[], size_t postfire_len, float min_weight, float max_weight)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_cpu_thread_count\fP (nemo_configuration_t conf, int *thread_count)"
+.RI "\fBnemo_status_t\fP \fBnemo_set_cpu_backend\fP (nemo_configuration_t, int thread_count)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_cuda_backend\fP (nemo_configuration_t conf, int dev)"
+.RI "\fBnemo_status_t\fP \fBnemo_cpu_thread_count\fP (nemo_configuration_t conf, int *thread_count)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_cuda_device\fP (nemo_configuration_t conf, int *dev)"
+.RI "\fBnemo_status_t\fP \fBnemo_set_cuda_backend\fP (nemo_configuration_t conf, int dev)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_backend\fP (nemo_configuration_t conf, backend_t *backend)"
+.RI "\fBnemo_status_t\fP \fBnemo_cuda_device\fP (nemo_configuration_t conf, int *dev)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_backend_description\fP (nemo_configuration_t conf, const char **descr)"
+.RI "\fBnemo_status_t\fP \fBnemo_backend\fP (nemo_configuration_t conf, backend_t *backend)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_backend_description\fP (nemo_configuration_t conf, const char **descr)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_set_write_only_synapses\fP (nemo_configuration_t conf)"
 .br
 .in -1c
 .in -1c
 .PP
 .RI "\fBConstruction\fP"
 .br
- Networks are constructed by adding individual neurons, and single or groups of synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised. 
+ Networks are constructed by adding individual neurons and of synapses to the network. Neurons are given indices (ideally, but not necessarily stargin from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but need to be defined before the simulation is created. 
 .PP
 .in +1c
 .in +1c
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_network_t\fP \fBnemo_new_network\fP ()"
+.RI "\fBnemo_network_t\fP \fBnemo_new_network\fP ()"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_add_neuron\fP (\fBnemo_network_t\fP, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.RI "void \fBnemo_delete_network\fP (\fBnemo_network_t\fP)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_add_synapse\fP (\fBnemo_network_t\fP, unsigned source, unsigned target, unsigned delay, float weight, unsigned char is_plastic, synapse_id *id)"
+.RI "\fBnemo_status_t\fP \fBnemo_add_neuron\fP (\fBnemo_network_t\fP, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_neuron_count\fP (\fBnemo_network_t\fP net, unsigned *ncount)"
+.RI "\fBnemo_status_t\fP \fBnemo_add_synapse\fP (\fBnemo_network_t\fP, unsigned source, unsigned target, unsigned delay, float weight, unsigned char is_plastic, synapse_id *id)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_neuron_count\fP (\fBnemo_network_t\fP net, unsigned *ncount)"
 .br
 .in -1c
 .in -1c
@@ -91,65 +100,104 @@ C API for the nemo spiking neural network simulator.
 .in +1c
 .in +1c
 .ti -1c
-.RI "NEMO_DLL_PUBLIC nemo_simulation_t \fBnemo_new_simulation\fP (\fBnemo_network_t\fP, nemo_configuration_t)"
+.RI "nemo_simulation_t \fBnemo_new_simulation\fP (\fBnemo_network_t\fP, nemo_configuration_t)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_step\fP (nemo_simulation_t, unsigned fstim_nidx[], size_t fstim_count, unsigned istim_nidx[], float istim_current[], size_t istim_count, unsigned *fired[], size_t *fired_count)"
+.RI "void \fBnemo_delete_simulation\fP (nemo_simulation_t)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_apply_stdp\fP (nemo_simulation_t, float reward)"
+.RI "\fBnemo_status_t\fP \fBnemo_step\fP (nemo_simulation_t, unsigned fstim_nidx[], size_t fstim_count, unsigned istim_nidx[], float istim_current[], size_t istim_count, unsigned *fired[], size_t *fired_count)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_apply_stdp\fP (nemo_simulation_t, float reward)"
 .br
 .in -1c
 .in -1c
 .PP
-.RI "\fBSimulation (queries)\fP"
+.RI "\fBQuerying the network\fP"
 .br
- The synapse state can be read back at run-time by specifiying a list of synpase ids (
+ Neuron parameters (static) and state varaibles (dynamic) may be read read back either during construction or simulation. The same function names are used in both cases, but functions are postfixed with '_n' or '_s' to denote network or simulation functions.
 .PP
-\fBSee also:\fP
-.RS 4
-addSynapse). The weights may change at run-time, while the other synapse data is static. 
-.RE
-.PP
-
+The synapse state can also be read back during simulation. Synapses are referred to via a synapse_id (see \fInemo_add_synapse\fP). The weights may change at run-time, while the other synapse data is static. 
 .PP
 .in +1c
 .in +1c
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_get_membrane_potential\fP (nemo_simulation_t sim, unsigned neuron, float *v)"
+.RI "\fBnemo_status_t\fP \fBnemo_get_membrane_potential\fP (nemo_simulation_t sim, unsigned neuron, float *v)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_set_neuron\fP (nemo_simulation_t sim, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.RI "\fBnemo_status_t\fP \fBnemo_get_neuron_state_n\fP (\fBnemo_network_t\fP net, unsigned neuron, unsigned var, float *val)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_get_targets\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned *targets[])"
+.RI "\fBnemo_status_t\fP \fBnemo_get_neuron_parameter_n\fP (\fBnemo_network_t\fP net, unsigned neuron, unsigned param, float *val)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_get_delays\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned *delays[])"
+.RI "\fBnemo_status_t\fP \fBnemo_get_neuron_state_s\fP (nemo_simulation_t sim, unsigned neuron, unsigned var, float *val)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_get_weights\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, float *weights[])"
+.RI "\fBnemo_status_t\fP \fBnemo_get_neuron_parameter_s\fP (nemo_simulation_t sim, unsigned neuron, unsigned param, float *val)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_get_plastic\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char *plastic[])"
+.RI "\fBnemo_status_t\fP \fBnemo_get_targets\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned *targets[])"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_get_delays\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned *delays[])"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_get_synapses_from\fP (nemo_simulation_t ptr, unsigned source, synapse_id *synapses[], size_t *len)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_get_weights\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, float *weights[])"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_get_plastic\fP (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char *plastic[])"
 .br
 .in -1c
 .in -1c
 .PP
-.RI "\fBSimulation (timing)\fP"
+.RI "\fBModifying the network\fP"
+.br
+ Neuron parameters and state variables can be modified during both construction and simulation. The same function names are used in both cases, but functions are postfixed with '_n' or '_s' to denote network or simulation functions.
+.PP
+In the current version of NeMo synapses can not be modified during simulation. 
+.PP
+.in +1c
+.in +1c
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_set_neuron_n\fP (\fBnemo_network_t\fP net, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_set_neuron_s\fP (nemo_simulation_t sim, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_set_neuron_state_n\fP (\fBnemo_network_t\fP net, unsigned neuron, unsigned var, float val)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_set_neuron_parameter_n\fP (\fBnemo_network_t\fP net, unsigned neuron, unsigned param, float val)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_set_neuron_state_s\fP (nemo_simulation_t sim, unsigned neuron, unsigned var, float val)"
+.br
+.ti -1c
+.RI "\fBnemo_status_t\fP \fBnemo_set_neuron_parameter_s\fP (nemo_simulation_t sim, unsigned neuron, unsigned param, float val)"
+.br
+.in -1c
+.in -1c
+.PP
+.RI "\fBSimulation timing\fP"
 .br
  The simulation has two internal timers which keep track of the elapsed \fIsimulated\fP time and \fIwallclock\fP time. Both timers measure from the first simulation step, or from the last timer reset, whichever comes last. 
 .PP
 .in +1c
 .in +1c
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_elapsed_wallclock\fP (nemo_simulation_t, unsigned long *)"
+.RI "\fBnemo_status_t\fP \fBnemo_elapsed_wallclock\fP (nemo_simulation_t, unsigned long *)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_elapsed_simulation\fP (nemo_simulation_t, unsigned long *)"
+.RI "\fBnemo_status_t\fP \fBnemo_elapsed_simulation\fP (nemo_simulation_t, unsigned long *)"
 .br
 .ti -1c
-.RI "NEMO_DLL_PUBLIC \fBnemo_status_t\fP \fBnemo_reset_timer\fP (nemo_simulation_t)"
+.RI "\fBnemo_status_t\fP \fBnemo_reset_timer\fP (nemo_simulation_t)"
 .br
 .in -1c
 .in -1c
@@ -161,47 +209,29 @@ addSynapse). The weights may change at run-time, while the other synapse data is
 .in +1c
 .in +1c
 .ti -1c
-.RI "NEMO_DLL_PUBLIC const char * \fBnemo_strerror\fP ()"
-.br
-.in -1c
-.in -1c
-.PP
-.RI "\fBFinalization\fP"
-.br
- 
-.PP
-.in +1c
-.in +1c
-.ti -1c
-.RI "NEMO_DLL_PUBLIC void \fBnemo_delete_network\fP (\fBnemo_network_t\fP)"
-.br
-.ti -1c
-.RI "NEMO_DLL_PUBLIC void \fBnemo_delete_configuration\fP (nemo_configuration_t)"
-.br
-.ti -1c
-.RI "NEMO_DLL_PUBLIC void \fBnemo_delete_simulation\fP (nemo_simulation_t)"
+.RI "const char * \fBnemo_strerror\fP ()"
 .br
 .in -1c
 .in -1c
 .SH "Detailed Description"
 .PP 
-C API for the nemo spiking neural network simulator. 
+C API for the NeMo spiking neural network simulator. 
 
-
+The API is based around three objects, controlled via opaque pointers: nemo_configuration_t, nemo_network_t, and nemo_simulation_t. The calling program must manages these objects and must explicitly create and destroy them using the appropriate functions. 
 .SH "Typedef Documentation"
 .PP 
 .SS "typedef void* \fBnemo_network_t\fP"Only opaque pointers are exposed in the C API 
 .SS "typedef int \fBnemo_status_t\fP"Status of API calls which can fail. 
 .SH "Function Documentation"
 .PP 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_cuda_device_count (unsigned * count)"\fBReturns:\fP
+.SS "\fBnemo_status_t\fP nemo_cuda_device_count (unsigned * count)"\fBReturns:\fP
 .RS 4
 number of CUDA devices on this system.
 .RE
 .PP
 In case of error sets device count to 0 and return an error code. The associated error message can read using nemo_strerror. Errors can be the result of missing CUDA libraries, which from the users point of view may or may not be considered an error 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_log_stdout (nemo_configuration_t)" 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_set_stdp_function (nemo_configuration_t, float prefire_fn[], size_t prefire_len, float postfire_fn[], size_t postfire_len, float min_weight, float max_weight)"Enable spike-timing dependent plasticity in the simulation.
+.SS "\fBnemo_status_t\fP nemo_log_stdout (nemo_configuration_t)"Switch on logging and send output to stdout  
+.SS "\fBnemo_status_t\fP nemo_set_stdp_function (nemo_configuration_t, float prefire_fn[], size_t prefire_len, float postfire_fn[], size_t postfire_len, float min_weight, float max_weight)"Enable spike-timing dependent plasticity in the simulation.
 .PP
 \fBParameters:\fP
 .RS 4
@@ -219,34 +249,31 @@ In case of error sets device count to 0 and return an error code. The associated
 .RE
 .PP
 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_set_cpu_backend (nemo_configuration_t, int thread_count)"Specify that the CPU backend should be used and optionally specify the number of threads to use. If the default thread count of -1 is used, the backend will choose a sensible value  
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_cpu_thread_count (nemo_configuration_t conf, int * thread_count)"\fBReturns:\fP
+.SS "\fBnemo_status_t\fP nemo_set_cpu_backend (nemo_configuration_t, int thread_count)"Specify that the CPU backend should be used and optionally specify the number of threads to use. If the default thread count of -1 is used, the backend will choose a sensible value  
+.SS "\fBnemo_status_t\fP nemo_cpu_thread_count (nemo_configuration_t conf, int * thread_count)"\fBReturns:\fP
 .RS 4
 the number of threads used by the CPU backend or -1 if CPU is not the selected backend. 
 .RE
 .PP
  
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_set_cuda_backend (nemo_configuration_t conf, int dev)"Specify that the CUDA backend should be used and optionally specify a desired device. If the (default) device value of -1 is used the backend will choose the best available device.
+.SS "\fBnemo_status_t\fP nemo_set_cuda_backend (nemo_configuration_t conf, int dev)"Specify that the CUDA backend should be used and optionally specify a desired device. If the (default) device value of -1 is used the backend will choose the best available device.
 .PP
 If the cuda backend (and the chosen device) cannot be used for whatever reason, an exception is raised.
 .PP
-The device numbering is the numbering used internally by nemo (
-.PP
-\fBSee also:\fP
-.RS 4
-\fIcudaDeviceCount\fP and \fIcudaDeviceDescription\fP). This device numbering may differ from the one provided by the CUDA driver directly, since nemo ignores any devices it cannot use. 
-.RE
-.PP
- 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_backend (nemo_configuration_t conf, backend_t * backend)" 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_backend_description (nemo_configuration_t conf, const char ** descr)"\fBReturns:\fP
+The device numbering is the numbering used internally by NeMo This device numbering may differ from the one provided by the CUDA driver directly, since NeMo ignores any devices it cannot use.  
+.SS "\fBnemo_status_t\fP nemo_backend (nemo_configuration_t conf, backend_t * backend)" 
+.SS "\fBnemo_status_t\fP nemo_backend_description (nemo_configuration_t conf, const char ** descr)"\fBReturns:\fP
 .RS 4
 description of the chosen backend 
 .RE
 .PP
  
-.SS "NEMO_DLL_PUBLIC \fBnemo_network_t\fP nemo_new_network ()"Create an empty network object 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_add_neuron (\fBnemo_network_t\fP, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"Add a single neuron to the network
+.SS "\fBnemo_status_t\fP nemo_set_write_only_synapses (nemo_configuration_t conf)"Make the synapses write-only
+.PP
+By default synapse state can be read back at run-time. This may require setting up data structures of considerable size before starting the simulation. If the synapse state is not required at run-time, specify that synapses are write-only in order to save memory. By default synapses are readable  
+.SS "\fBnemo_network_t\fP nemo_new_network ()"Create an empty network object 
+.SS "void nemo_delete_network (\fBnemo_network_t\fP)"Delete network object, freeing up all its associated resources 
+.SS "\fBnemo_status_t\fP nemo_add_neuron (\fBnemo_network_t\fP, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"Add a single neuron to the network
 .PP
 The neuron uses the Izhikevich neuron model. See E. M. Izhikevich 'Simple model of spiking neurons', \fIIEEE\fP \fITrans\fP. \fINeural\fP \fINetworks\fP, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.
 .PP
@@ -270,8 +297,10 @@ The neuron uses the Izhikevich neuron model. See E. M. Izhikevich 'Simple model 
 .RE
 .PP
  
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_add_synapse (\fBnemo_network_t\fP, unsigned source, unsigned target, unsigned delay, float weight, unsigned char is_plastic, synapse_id * id)"
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_step (nemo_simulation_t, unsigned fstim_nidx[], size_t fstim_count, unsigned istim_nidx[], float istim_current[], size_t istim_count, unsigned * fired[], size_t * fired_count)"Run simulation for a single cycle (1ms)
+.SS "\fBnemo_status_t\fP nemo_add_synapse (\fBnemo_network_t\fP, unsigned source, unsigned target, unsigned delay, float weight, unsigned char is_plastic, synapse_id * id)"
+.SS "nemo_simulation_t nemo_new_simulation (\fBnemo_network_t\fP, nemo_configuration_t)"Create a new simulation from an existing populated network and a configuration 
+.SS "void nemo_delete_simulation (nemo_simulation_t)"Delete simulation object, freeing up all its associated resources 
+.SS "\fBnemo_status_t\fP nemo_step (nemo_simulation_t, unsigned fstim_nidx[], size_t fstim_count, unsigned istim_nidx[], float istim_current[], size_t istim_count, unsigned * fired[], size_t * fired_count)"Run simulation for a single cycle (1ms)
 .PP
 Neurons can be optionally be forced to fire using the two arguments
 .PP
@@ -287,13 +316,13 @@ Neurons can be optionally be forced to fire using the two arguments
 .br
 \fIistim_count\fP Length of \fIistim_nidx\fP *and* \fIistim_current\fP 
 .br
-\fIfired\fP (output) Vector which fill be filled with the indices of the neurons which fired this cycle. Set to NULL if the firing output is ignored. 
+\fIoutput]\fP fired Vector which fill be filled with the indices of the neurons which fired this cycle. Set to NULL if the firing output is ignored. 
 .br
-\fIfired_count\fP (output) Number of neurons which fired this cycle, i.e. the length of \fIfired\fP. Set to NULL if the firing output is ignored. 
+\fIoutput]\fP fired_count Number of neurons which fired this cycle, i.e. the length of \fIfired\fP. Set to NULL if the firing output is ignored. 
 .RE
 .PP
 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_apply_stdp (nemo_simulation_t, float reward)"Update synapse weights using the accumulated STDP statistics
+.SS "\fBnemo_status_t\fP nemo_apply_stdp (nemo_simulation_t, float reward)"Update synapse weights using the accumulated STDP statistics
 .PP
 \fBParameters:\fP
 .RS 4
@@ -301,7 +330,185 @@ Neurons can be optionally be forced to fire using the two arguments
 .RE
 .PP
  
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_set_neuron (nemo_simulation_t sim, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"Modify the parameters/state for a single neuron at run-time
+.SS "\fBnemo_status_t\fP nemo_get_neuron_state_n (\fBnemo_network_t\fP net, unsigned neuron, unsigned var, float * val)"Get a single state variable for a single neuron during construction
+.PP
+\fBParameters:\fP
+.RS 4
+\fInet\fP network object 
+.br
+\fIneuron\fP neuron index 
+.br
+\fIvar\fP state variable index 
+.br
+\fIval\fP value of the state variable
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or state variable indices are invalid. Other errors may also be raised. \fIval\fP is undefined unless the return value is NEMO_OK.
+.RE
+.PP
+For the Izhikevich model the variable indices are 0 = u, 1 = v. 
+.SS "\fBnemo_status_t\fP nemo_get_neuron_parameter_n (\fBnemo_network_t\fP net, unsigned neuron, unsigned param, float * val)"Get a single parameter for a single neuron during simulation
+.PP
+\fBParameters:\fP
+.RS 4
+\fInet\fP network object 
+.br
+\fIneuron\fP neuron index 
+.br
+\fIparam\fP parameter index 
+.br
+\fIval\fP value of the state variable
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or parameter indices are invalid. Other errors may also be raised. \fIval\fP is undefined unless the return value is NEMO_OK.
+.RE
+.PP
+For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d. 
+.SS "\fBnemo_status_t\fP nemo_get_neuron_state_s (nemo_simulation_t sim, unsigned neuron, unsigned var, float * val)"Get a single state variable for a single neuron during simulation
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsim\fP simulation object 
+.br
+\fIneuron\fP neuron index 
+.br
+\fIvar\fP state variable index 
+.br
+\fIval\fP value of the state variable
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or state variable indices are invalid. Other errors may also be raised. \fIval\fP is undefined unless the return value is NEMO_OK.
+.RE
+.PP
+For the Izhikevich model the variable indices are 0 = u, 1 = v. 
+.SS "\fBnemo_status_t\fP nemo_get_neuron_parameter_s (nemo_simulation_t sim, unsigned neuron, unsigned param, float * val)"Get a single parameter for a single neuron during simulation
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsim\fP simulation object 
+.br
+\fIneuron\fP neuron index 
+.br
+\fIparam\fP parameter index 
+.br
+\fIval\fP value of the state variable
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or parameter indices are invalid. Other errors may also be raised. \fIval\fP is undefined unless the return value is NEMO_OK.
+.RE
+.PP
+For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d. 
+.SS "\fBnemo_status_t\fP nemo_get_targets (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned * targets[])"Get synapse target for the specified synapses
+.PP
+\fBParameters:\fP
+.RS 4
+\fIptr\fP 
+.br
+\fIsynapses\fP list of synapse ids (
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBnemo_add_synapse\fP) 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIlen\fP length of \fIsynapses\fP 
+.br
+\fItargets\fP vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
+.RE
+.PP
+
+.SS "\fBnemo_status_t\fP nemo_get_delays (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned * delays[])"Get conductance delays for the specified synapses
+.PP
+\fBParameters:\fP
+.RS 4
+\fIptr\fP 
+.br
+\fIsynapses\fP list of synapse ids (
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBnemo_add_synapse\fP) 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIlen\fP length of \fIsynapses\fP 
+.br
+\fIdelays\fP vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
+.RE
+.PP
+
+.SS "\fBnemo_status_t\fP nemo_get_synapses_from (nemo_simulation_t ptr, unsigned source, synapse_id * synapses[], size_t * len)"Get synapse ids for synapses with the given source id
+.PP
+\fBParameters:\fP
+.RS 4
+\fIptr\fP 
+.br
+\fIsource\fP source neuron id 
+.br
+\fIsynapses\fP array of synapse ids 
+.br
+\fIlen\fP length of \fIsynapses\fP array
+.RE
+.PP
+The output array is only valid until the next call to \fInemo_get_synapses_from\fP 
+.SS "\fBnemo_status_t\fP nemo_get_weights (nemo_simulation_t ptr, synapse_id synapses[], size_t len, float * weights[])"Get weights for the specified synapses
+.PP
+\fBParameters:\fP
+.RS 4
+\fIptr\fP 
+.br
+\fIsynapses\fP list of synapse ids (
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBnemo_add_synapse\fP) 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIlen\fP length of \fIsynapses\fP 
+.br
+\fIweights\fP vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
+.RE
+.PP
+
+.SS "\fBnemo_status_t\fP nemo_get_plastic (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char * plastic[])"Get boolean plasticity status for the specified synapses
+.PP
+\fBParameters:\fP
+.RS 4
+\fIptr\fP 
+.br
+\fIsynapses\fP list of synapse ids (
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBnemo_add_synapse\fP) 
+.RE
+.PP
+\fBParameters:\fP
+.RS 4
+\fIlen\fP length of \fIsynapses\fP 
+.br
+\fIplastic\fP vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
+.RE
+.PP
+
+.SS "\fBnemo_status_t\fP nemo_set_neuron_n (\fBnemo_network_t\fP net, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"Modify the parameters/state for a single neuron during construction
 .PP
 The neuron must already exist.
 .PP
@@ -311,97 +518,111 @@ The neuron must already exist.
 .RE
 .PP
 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_get_targets (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned * targets[])"Get synapse target for the specified synapses
+.SS "\fBnemo_status_t\fP nemo_set_neuron_s (nemo_simulation_t sim, unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"Modify the parameters/state for a single neuron during simulation
 .PP
-\fBParameters:\fP
-.RS 4
-\fIsynapses\fP list of synapse ids (
-.RE
+The neuron must already exist.
 .PP
 \fBSee also:\fP
 .RS 4
-\fBnemo_add_synapse\fP) 
-.RE
-.PP
-\fBParameters:\fP
-.RS 4
-\fIlen\fP length of \fIsynapses\fP 
-.br
-\fItargets\fP (output) vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
+\fBnemo_add_neuron\fP for parameters 
 .RE
 .PP
 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_get_delays (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned * delays[])"Get conductance delays for the specified synapses
+.SS "\fBnemo_status_t\fP nemo_set_neuron_state_n (\fBnemo_network_t\fP net, unsigned neuron, unsigned var, float val)"Modify a single state variable for a single neuron during construction
 .PP
 \fBParameters:\fP
 .RS 4
-\fIsynapses\fP list of synapse ids (
-.RE
-.PP
-\fBSee also:\fP
-.RS 4
-\fBnemo_add_synapse\fP) 
-.RE
-.PP
-\fBParameters:\fP
-.RS 4
-\fIlen\fP length of \fIsynapses\fP 
+\fInet\fP network object 
 .br
-\fIdelays\fP (output) vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_get_weights (nemo_simulation_t ptr, synapse_id synapses[], size_t len, float * weights[])"Get weights for the specified synapses
-.PP
-\fBParameters:\fP
-.RS 4
-\fIsynapses\fP list of synapse ids (
-.RE
-.PP
-\fBSee also:\fP
-.RS 4
-\fBnemo_add_synapse\fP) 
-.RE
-.PP
-\fBParameters:\fP
-.RS 4
-\fIlen\fP length of \fIsynapses\fP 
+\fIneuron\fP neuron index 
 .br
-\fIweights\fP (output) vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_get_plastic (nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char * plastic[])"Get boolean plasticity status for the specified synapses
-.PP
-\fBParameters:\fP
-.RS 4
-\fIsynapses\fP list of synapse ids (
-.RE
-.PP
-\fBSee also:\fP
-.RS 4
-\fBnemo_add_synapse\fP) 
-.RE
-.PP
-\fBParameters:\fP
-.RS 4
-\fIlen\fP length of \fIsynapses\fP 
+\fIvar\fP state variable index 
 .br
-\fIweights\fP (output) vector of length \fIlen\fP to be set with synapse state. The memory is managed by the simulation object and is valid until the next call to this function. 
+\fIval\fP new value of the state variable
 .RE
 .PP
-
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_elapsed_wallclock (nemo_simulation_t, unsigned long *)" 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_elapsed_simulation (nemo_simulation_t, unsigned long *)" 
-.SS "NEMO_DLL_PUBLIC \fBnemo_status_t\fP nemo_reset_timer (nemo_simulation_t)" 
-.SS "NEMO_DLL_PUBLIC const char* nemo_strerror ()"\fBReturns:\fP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or state variable indices are invalid. Other errors may also be raised.
+.RE
+.PP
+For the Izhikevich model the variable indices are 0 = u, 1 = v. 
+.SS "\fBnemo_status_t\fP nemo_set_neuron_parameter_n (\fBnemo_network_t\fP net, unsigned neuron, unsigned param, float val)"Modify a single parameter for a single neuron during construction
+.PP
+\fBParameters:\fP
+.RS 4
+\fInet\fP network object 
+.br
+\fIneuron\fP neuron index 
+.br
+\fIparam\fP parameter index 
+.br
+\fIval\fP new value of the parameter
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or state variable indices are invalid. Other errors may also be raised.
+.RE
+.PP
+For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d. 
+.SS "\fBnemo_status_t\fP nemo_set_neuron_state_s (nemo_simulation_t sim, unsigned neuron, unsigned var, float val)"Modify a single state variable for a single neuron during simulation
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsim\fP simulation object 
+.br
+\fIneuron\fP neuron index 
+.br
+\fIvar\fP state variable index 
+.br
+\fIval\fP new value of the state variable
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or state variable indices are invalid. Other errors may also be raised. \fIval\fP is undefined unless the return value is NEMO_OK.
+.RE
+.PP
+For the Izhikevich model the variable indices are 0 = u, 1 = v. 
+.SS "\fBnemo_status_t\fP nemo_set_neuron_parameter_s (nemo_simulation_t sim, unsigned neuron, unsigned param, float val)"Modify a single parameter for a single neuron during simulation
+.PP
+\fBParameters:\fP
+.RS 4
+\fIsim\fP simulation object 
+.br
+\fIneuron\fP neuron index 
+.br
+\fIparam\fP parameter index 
+.br
+\fIval\fP new value of the parameter
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+NEMO_OK if no errors occurred. Returns NEMO_INVALID_INPUT if either the neuron or state variable indices are invalid. Other errors may also be raised.
+.RE
+.PP
+For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d. 
+.SS "\fBnemo_status_t\fP nemo_elapsed_wallclock (nemo_simulation_t, unsigned long *)"\fBReturns:\fP
+.RS 4
+number of milliseconds of wall-clock time elapsed since first simulation step (or last timer reset). 
+.RE
+.PP
+ 
+.SS "\fBnemo_status_t\fP nemo_elapsed_simulation (nemo_simulation_t, unsigned long *)"\fBReturns:\fP
+.RS 4
+number of milliseconds of simulated time elapsed since first simulation step (or last timer reset) 
+.RE
+.PP
+ 
+.SS "\fBnemo_status_t\fP nemo_reset_timer (nemo_simulation_t)"Reset both wall-clock and simulation timer  
+.SS "const char* nemo_strerror ()"\fBReturns:\fP
 .RS 4
 string describing the most recent error (if any) 
 .RE
 .PP
 
-.SS "NEMO_DLL_PUBLIC void nemo_delete_network (\fBnemo_network_t\fP)"Delete network object, freeing up all its associated resources 
-.SS "NEMO_DLL_PUBLIC void nemo_delete_simulation (nemo_simulation_t)"Delete simulation object, freeing up all its associated resources 
 .SH SEE ALSO
 nemo(3) for library overview
 .SH AUTHOR

@@ -7,7 +7,12 @@ extern "C" {
 
 /*! \file nemo.h
  *
- * \brief C API for the nemo spiking neural network simulator
+ * \brief C API for the NeMo spiking neural network simulator
+ *
+ * The API is based around three objects, controlled via opaque pointers:
+ * nemo_configuration_t, nemo_network_t, and nemo_simulation_t. The calling
+ * program must manages these objects and must explicitly create and destroy
+ * them using the appropriate functions.
  */
 
 #include <stddef.h> // for size_t
@@ -59,6 +64,11 @@ nemo_cuda_device_description(unsigned device, const char**);
 
 NEMO_DLL_PUBLIC
 nemo_configuration_t nemo_new_configuration();
+
+
+NEMO_DLL_PUBLIC
+void nemo_delete_configuration(nemo_configuration_t);
+
 
 /*! \copydoc nemo::Configuration::enableLogging */
 NEMO_DLL_PUBLIC
@@ -127,11 +137,11 @@ nemo_status_t
 nemo_backend_description(nemo_configuration_t conf, const char** descr);
 
 
-
 /*! \copydoc nemo::Configuration::setWriteOnlySynapses */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_write_only_synapses(nemo_configuration_t conf);
+
 
 
 /* \} */ // end configuration
@@ -144,11 +154,11 @@ nemo_set_write_only_synapses(nemo_configuration_t conf);
 
 /*! \name Construction
  *
- * Networks are constructed by adding individual neurons, and single or groups
- * of synapses to the network. Neurons are given indices (from 0) which should
- * be unique for each neuron. When adding synapses the source or target neurons
- * need not necessarily exist yet, but should be defined before the network is
- * finalised.
+ * Networks are constructed by adding individual neurons and of synapses to the
+ * network. Neurons are given indices (ideally, but not necessarily stargin
+ * from 0) which should be unique for each neuron. When adding synapses the
+ * source or target neurons need not necessarily exist yet, but need to be
+ * defined before the simulation is created.
  *
  * \{ */
 
@@ -156,6 +166,12 @@ nemo_set_write_only_synapses(nemo_configuration_t conf);
 /*! Create an empty network object */
 NEMO_DLL_PUBLIC
 nemo_network_t nemo_new_network();
+
+
+/*! Delete network object, freeing up all its associated resources */
+NEMO_DLL_PUBLIC
+void nemo_delete_network(nemo_network_t);
+
 
 //! \todo make sure we handle the issue of non-unique indices
 //! \todo add description of neuron indices
@@ -195,6 +211,8 @@ nemo_status_t
 nemo_neuron_count(nemo_network_t net, unsigned* ncount);
 
 
+
+
 /* \} */ // end construction group
 
 
@@ -206,8 +224,16 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount);
 /*! \name Simulation
  * \{ */
 
+
+/*! Create a new simulation from an existing populated network and a
+ * configuration */
 NEMO_DLL_PUBLIC
 nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_configuration_t);
+
+
+/*! Delete simulation object, freeing up all its associated resources */
+NEMO_DLL_PUBLIC
+void nemo_delete_simulation(nemo_simulation_t);
 
 
 /*! Run simulation for a single cycle (1ms)
@@ -225,10 +251,10 @@ nemo_simulation_t nemo_new_simulation(nemo_network_t, nemo_configuration_t);
  * 		The corresponding vector of current
  * \param istim_count
  * 		Length of \a istim_nidx *and* \a istim_current
- * \param fired (output)
+ * \param[output] fired
  * 		Vector which fill be filled with the indices of the neurons which fired
  * 		this cycle. Set to NULL if the firing output is ignored.
- * \param fired_count (output)
+ * \param[output] fired_count
  * 		Number of neurons which fired this cycle, i.e. the length of \a fired.
  * 		Set to NULL if the firing output is ignored.
  */
@@ -250,11 +276,16 @@ nemo_apply_stdp(nemo_simulation_t, float reward);
 // QUERIES
 //-----------------------------------------------------------------------------
 
-/*! \name Simulation (queries)
+/*! \name Querying the network
  *
- * The synapse state can be read back at run-time by specifiying a list of
- * synpase ids (\see addSynapse). The weights may change at run-time, while the
- * other synapse data is static.
+ * Neuron parameters (static) and state varaibles (dynamic) may be read read
+ * back either during construction or simulation. The same function names are
+ * used in both cases, but functions are postfixed with '_n' or '_s' to denote
+ * network or simulation functions.
+ *
+ * The synapse state can also be read back during simulation. Synapses are
+ * referred to via a synapse_id (see \a nemo_add_synapse). The weights may
+ * change at run-time, while the other synapse data is static.
  * \{ */
 
 NEMO_DLL_PUBLIC
@@ -338,6 +369,98 @@ nemo_status_t
 nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float* val);
 
 
+/*! Get synapse target for the specified synapses
+ *
+ * \param ptr
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param[out] targets
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* targets[]);
+
+
+/*! Get conductance delays for the specified synapses
+ *
+ * \param ptr
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param[out] delays
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[]);
+
+
+/*! Get synapse ids for synapses with the given source id
+ *
+ * \param ptr
+ * \param source source neuron id
+ * \param[out] synapses array of synapse ids
+ * \param[out] len length of \a synapses array
+ *
+ * The output array is only valid until the next call to
+ * \a nemo_get_synapses_from
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapses_from(nemo_simulation_t ptr, unsigned source, synapse_id *synapses[], size_t* len);
+
+
+/*! Get weights for the specified synapses
+ *
+ * \param ptr
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param[out] weights
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float* weights[]);
+
+
+/*! Get boolean plasticity status for the specified synapses
+ *
+ * \param ptr
+ * \param synapses list of synapse ids (\see nemo_add_synapse)
+ * \param len length of \a synapses
+ * \param[out] plastic
+ * 		vector of length \a len to be set with synapse state. The memory is
+ * 		managed by the simulation object and is valid until the next call to
+ * 		this function.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char* plastic[]);
+
+
+/* \} */ // end simulation group
+
+
+//-----------------------------------------------------------------------------
+// MODIFYING THE NETWROK
+//-----------------------------------------------------------------------------
+
+/*! \name Modifying the network
+ *
+ * Neuron parameters and state variables can be modified during both
+ * construction and simulation. The same function names are used in both cases,
+ * but functions are postfixed with '_n' or '_s' to denote network or
+ * simulation functions.
+ *
+ * In the current version of NeMo synapses can not be modified during
+ * simulation.
+ * \{ */
 
 /*! Modify the parameters/state for a single neuron during construction
  *
@@ -444,83 +567,7 @@ nemo_status_t
 nemo_set_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float val);
 
 
-
-/*! Get synapse target for the specified synapses
- *
- * \param ptr
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] targets
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* targets[]);
-
-
-/*! Get conductance delays for the specified synapses
- *
- * \param ptr
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] delays
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[]);
-
-
-/*! Get synapse ids for synapses with the given source id
- *
- * \param ptr
- * \param source source neuron id
- * \param[out] synapses array of synapse ids
- * \param[out] len length of \a synapses array
- *
- * The output array is only valid until the next call to
- * \a nemo_get_synapses_from
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_get_synapses_from(nemo_simulation_t ptr, unsigned source, synapse_id *synapses[], size_t* len);
-
-
-/*! Get weights for the specified synapses
- *
- * \param ptr
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] weights
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float* weights[]);
-
-
-/*! Get boolean plasticity status for the specified synapses
- *
- * \param ptr
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] plastic
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char* plastic[]);
-
-
-/* \} */ // end simulation group
+/* \} */ // end modification group
 
 
 //-----------------------------------------------------------------------------
@@ -528,7 +575,7 @@ nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsig
 //-----------------------------------------------------------------------------
 
 
-/*! \name Simulation (timing)
+/*! \name Simulation timing
  *
  * The simulation has two internal timers which keep track of the elapsed \e
  * simulated time and \e wallclock time. Both timers measure from the first
@@ -579,24 +626,6 @@ const char* nemo_strerror();
 
 
 
-/*! \name Finalization
- * \{ */
-
-
-/*! Delete network object, freeing up all its associated resources */
-NEMO_DLL_PUBLIC
-void nemo_delete_network(nemo_network_t);
-
-
-NEMO_DLL_PUBLIC
-void nemo_delete_configuration(nemo_configuration_t);
-
-
-/*! Delete simulation object, freeing up all its associated resources */
-NEMO_DLL_PUBLIC
-void nemo_delete_simulation(nemo_simulation_t);
-
-/* \} */ // end finalize section
 
 #ifdef __cplusplus
 }

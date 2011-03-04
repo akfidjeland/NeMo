@@ -83,10 +83,9 @@ class NEMO_DLL_PUBLIC Configuration
 		 * If the cuda backend (and the chosen device) cannot be used for
 		 * whatever reason, an exception is raised.
 		 *
-		 * The device numbering is the numbering used internally by nemo (\see
-		 * \a cudaDeviceCount and \a cudaDeviceDescription). This device
-		 * numbering may differ from the one provided by the CUDA driver
-		 * directly, since nemo ignores any devices it cannot use. */
+		 * The device numbering is the numbering used internally by NeMo This
+		 * device numbering may differ from the one provided by the CUDA driver
+		 * directly, since NeMo ignores any devices it cannot use. */
 		void setCudaBackend(int device = -1);
 
 		/*! Specify that the CPU backend should be used and optionally specify

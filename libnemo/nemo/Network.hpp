@@ -99,7 +99,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 *
 		 * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
 		 */
-		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
+		float getNeuronParameter(unsigned neuron, unsigned param) const;
 
 		/*! Change a single parameter for an existing neuron
 		 *
@@ -109,7 +109,7 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 *
 		 * For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
 		 */
-		void setNeuronParameter(unsigned neuron, unsigned var, float val);
+		void setNeuronParameter(unsigned neuron, unsigned param, float val);
 
 		/*! Change a single state variable for an existing neuron
 		 *

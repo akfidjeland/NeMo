@@ -1,32 +1,30 @@
 .Dd March 22, 2010
-.Dt NEMO(3) "" "Nemo Reference Manual"
+.Dt NEMO(3) "" "NeMo Reference Manual"
 .Os POSIX
 .Sh NAME
-.Nm nemo
-.Nd Simulation library for spiking neural networks
+.Nm NeMo
+.Nd Parallel spiking neural network simulator
 
 .Sh OVERVIEW
-nemo is a library for discrete-time simulation of spiking neural networks.
+NeMo is a library for discrete-time simulation of spiking neural networks.
 It runs simulations on CUDA-enabled GPUs (device generation >= 1.2).
-The library comes with two interfaces: a C++ interface and a C interface, 
-which is just a thin wrapper around the C++ library.
+NeMo is a C++ class library, but comes with APIs for C, Python, and Matlab.
 
 .Sh USAGE
-Both the C and C++ interfaces have the same usage pattern.
-The API commands fall into one of three groups: configuration, construction, and simulation.
+Both the C and C++ interfaces have the same usage pattern,
+with API commands falling into one of three groups:
+	configuration,
+	construction, and
+	simulation.
 These should be called in a fixed order:
 
 .Bl -enum -compact
 .It
-Create a network object;
+Create a global configuration object and set parameters as appropriate;
 .It
-Configure the network;
+Create a network and populate it with neurons and synapses; and
 .It
-Construct the network; 
-.It
-Run the simulation; and
-.It
-Delete the network object
+Create a simulation from the network and configuration and run it
 .El
 
 For details of the API look at the relevant man pages (nemo-c(3) and nemo-cpp(3)).
@@ -52,13 +50,12 @@ Accumulate STDP statistics, if STDP is enabled
 
 The state update step uses the Euler method with a step size of 0.25ms. 
 
-The weights are stored in a fixed-point format internally for performance reasons.
-The specific fixed-point format in use depends on the range of weights in the input network.
+The weights are stored in a Q10.21 fixed-point format internally for performance reasons.
 The current accumulation uses saturating arithmetic to avoid overflow.
 Neuron parameters are stored in single-precision floating point.
 
 .Sh STDP MODEL
-nemo supports spike-timing dependant plasticity,
+NeMo supports spike-timing dependant plasticity,
 i.e. synapses can change during simulation depending on the temporal relationship 
 between the firing of the pre- and post-synaptic neurons. 
 To make use of STDP the user must first enable STDP globally by specifying an STDP function,
@@ -149,6 +146,8 @@ Synapses can thus be deactivated, but never change from excitatory to inhibitory
 nemo-c(3) for C API
 .It
 nemo-cpp(3) for C++ API
+.It
+"NeMo user manual" for more details on the simulator
 .It
 E. M. Izhikevich "Simple model of spiking neurons",
 .Em IEEE Trans. Neural Networks ,

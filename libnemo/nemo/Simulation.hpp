@@ -95,7 +95,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		virtual void setNeuronState(unsigned neuron, unsigned var, float val) = 0;
 
 		/*! \copydoc nemo::Network::setNeuronParameter */
-		virtual void setNeuronParameter(unsigned neuron, unsigned parameter, float val) = 0;
+		virtual void setNeuronParameter(unsigned neuron, unsigned param, float val) = 0;
 
 		/*! Update synapse weights using the accumulated STDP statistics
 		 *
@@ -118,7 +118,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		virtual float getNeuronState(unsigned neuron, unsigned var) const = 0;
 
 		/*! \copydoc nemo::Network::getNeuronParameter */
-		virtual float getNeuronParameter(unsigned neuron, unsigned parameter) const = 0;
+		virtual float getNeuronParameter(unsigned neuron, unsigned param) const = 0;
 
 		/*! \return
 		 * 		membrane potential of the specified neuron
