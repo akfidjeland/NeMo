@@ -16,6 +16,7 @@
 #include "globalQueue.cu_h"
 #include "localQueue.cu_h"
 #include "types.h"
+#include "bitvector.cu_h"
 
 void
 applyStdp(
@@ -95,6 +96,7 @@ configureStdp(
 cudaError configurePartitionSize(const unsigned* d_partitionSize, size_t len);
 
 cudaError fx_setFormat(unsigned fractionalBits);
+cudaError bv_setPitch(size_t pitch);
 
 void initLog();
 void flushLog();

@@ -21,7 +21,6 @@
 #include <nemo/fixedpoint.hpp>
 
 #include "DeviceAssertions.hpp"
-#include "bitvector.hpp"
 #include "exception.hpp"
 
 #include "device_assert.cu_h"
