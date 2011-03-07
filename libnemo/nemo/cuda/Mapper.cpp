@@ -39,6 +39,38 @@ Mapper::addIdx(nidx_t global)
 
 
 
+nidx_t
+Mapper::localIdx(const DeviceIdx& d) const
+{
+	nidx_t local = d.partition * m_partitionSize + d.neuron;
+#ifndef NDEBUG
+	using boost::format;
+	if(!existingLocal(local)) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Neuron %u (p%un%u) refers to a non-existing neuron")
+					% globalIdx(local) % d.partition % d.neuron));
+	}
+#endif
+	return local;
+}
+
+
+nidx_t
+Mapper::globalIdx(pidx_t p, nidx_t n) const
+{
+	nidx_t global = m_offset + p * m_partitionSize + n;
+#ifndef NDEBUG
+	using boost::format;
+	if(!existingGlobal(global)) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Neuron %u (p%un%u) refers to a non-existing neuron") % global % p % n));
+	}
+#endif
+	return global;
+}
+
+
+
 DeviceIdx
 Mapper::deviceIdx(nidx_t global) const
 {

@@ -62,9 +62,7 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 		~Mapper() {}
 
 		/*! Convert from device index (2D) to local 1D index */
-		nidx_t localIdx(const DeviceIdx& d) const {
-			return d.partition * m_partitionSize + d.neuron;
-		}
+		nidx_t localIdx(const DeviceIdx& d) const;
 
 		/*! \copydoc nemo::Mapper::localIdx */
 		nidx_t localIdx(const nidx_t& global) const {
@@ -80,9 +78,7 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 			return m_offset + localIdx(d);
 		}
 
-		nidx_t globalIdx(pidx_t p, nidx_t n) const {
-			return m_offset + p * m_partitionSize + n;
-		}
+		nidx_t globalIdx(pidx_t p, nidx_t n) const;
 
 		/*! \copydoc nemo::Mapper::addGlobal */
 		nidx_t addGlobal(const nidx_t& global) {
