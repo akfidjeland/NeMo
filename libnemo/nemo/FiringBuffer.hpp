@@ -23,8 +23,7 @@ struct NEMO_BASE_DLL_PUBLIC FiredList
 };
 
 
-/* A firing buffer containing a FIFO of firing data with one entry for each
- * cycle. */
+/*! \brief Firing buffer containing a FIFO of firing data with one entry for each cycle. */
 class NEMO_BASE_DLL_PUBLIC FiringBuffer
 {
 	public :

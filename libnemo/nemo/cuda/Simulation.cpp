@@ -196,11 +196,12 @@ void
 Simulation::setPitch()
 {
 	size_t pitch1 = m_firingStimulus.wordPitch();
-	m_pitch32 = m_neurons.wordPitch();
+	m_pitch32 = m_neurons.wordPitch32();
 	m_pitch64 = m_recentFiring.wordPitch();
 	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
 	checkPitch(m_pitch64, m_cm.delayBits().wordPitch());
 	checkPitch(pitch1, m_firingBuffer.wordPitch());
+	checkPitch(pitch1, m_neurons.wordPitch1());
 	CUDA_SAFE_CALL(nv_setPitch32(m_pitch32));
 	CUDA_SAFE_CALL(nv_setPitch64(m_pitch64));
 	CUDA_SAFE_CALL(bv_setPitch(pitch1));
@@ -260,6 +261,7 @@ Simulation::fire()
 			m_neurons.df_parameters(),
 			m_neurons.df_state(),
 			m_neurons.du_state(),
+			m_neurons.d_valid(),
 			m_firingStimulus.d_buffer(),
 			md_istim,
 			m_current.deviceData(),

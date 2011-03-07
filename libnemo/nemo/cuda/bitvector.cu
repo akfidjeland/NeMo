@@ -16,7 +16,7 @@
 #include "device_assert.cu"
 
 
-// pitch for global memory bit-vectors
+/*! \i word pitch (i.e. number of 32-bit words per partition) for global memory bit-vectors */
 __constant__ size_t c_bv_pitch;
 
 

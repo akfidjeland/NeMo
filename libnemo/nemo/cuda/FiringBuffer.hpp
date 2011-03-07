@@ -1,9 +1,9 @@
-#ifndef FIRING_OUTPUT_HPP
-#define FIRING_OUTPUT_HPP
+#ifndef NEMO_CUDA_FIRING_BUFFER
+#define NEMO_CUDA_FIRING_BUFFER
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this

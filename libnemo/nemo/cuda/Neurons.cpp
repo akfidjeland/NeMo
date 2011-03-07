@@ -1,6 +1,6 @@
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
@@ -33,6 +33,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mf_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mf_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mu_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	m_valid(mapper.partitionCount(), true),
 	m_cycle(0),
 	mf_lastSync(~0),
 	mf_paramDirty(false),
@@ -59,6 +60,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 		mf_param.setNeuron(dev.partition, dev.neuron, n.sigma, PARAM_SIGMA);
 		mf_state.setNeuron(dev.partition, dev.neuron, n.u, STATE_U);
 		mf_state.setNeuron(dev.partition, dev.neuron, n.v, STATE_V);
+		m_valid.setNeuron(dev);
 
 		m_rngEnabled |= n.sigma != 0.0f;
 		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
@@ -73,6 +75,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mf_param.copyToDevice();
 	mf_state.copyToDevice();
 	mu_state.moveToDevice();
+	m_valid.moveToDevice();
 	configurePartitionSizes(maxPartitionNeuron);
 }
 
@@ -101,7 +104,7 @@ Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeu
 
 
 size_t
-Neurons::wordPitch() const
+Neurons::wordPitch32() const
 {
 	size_t f_param_pitch = mf_param.wordPitch();
 	size_t f_state_pitch = mf_state.wordPitch();

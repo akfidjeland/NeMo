@@ -57,6 +57,7 @@ SET(BUILD_SHARED_LIBS TRUE)
 
 CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	kernel.cu
+	Bitvector.cpp
 	ConnectivityMatrix.cpp
 	create_simulation.cpp
 	Simulation.cpp

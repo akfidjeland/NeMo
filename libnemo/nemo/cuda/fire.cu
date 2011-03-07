@@ -35,9 +35,10 @@
  */
 __device__
 void
-storeDenseFiring(unsigned nfired, nidx_dt* s_fired,
-		uint32_t* s_dfired, uint32_t* g_dfired)
+storeDenseFiring(unsigned nfired, nidx_dt* s_fired, uint32_t* g_dfired)
 {
+	__shared__ uint32_t s_dfired[S_BV_PITCH];
+
 	bv_clear_(s_dfired);
 
 	for(unsigned nbase=0; nbase < nfired; nbase += THREADS_PER_BLOCK) {
@@ -136,6 +137,7 @@ fire(
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
 	float* g_neuronState,
+	uint32_t* s_valid,   // bitvector for valid neurons
 	// input
 	float* s_current,    // input current
 	// buffers
@@ -156,7 +158,8 @@ fire(
 
 		unsigned neuron = nbase + threadIdx.x;
 
-		if(neuron < s_partitionSize) {
+		/* if index space is contigous, no warp divergence here */
+		if(bv_isSet(neuron, s_valid)) {
 
 			float v = g_v[neuron];
 			float u = g_u[neuron];
@@ -234,6 +237,7 @@ fire( 	uint32_t cycle,
 		float* gf_neuronParameters,
 		float* gf_neuronState,
 		unsigned* gu_neuronState,
+		uint32_t* g_valid,
 		// firing stimulus
 		uint32_t* g_fstim,
 		fix_t* g_istim,
@@ -243,7 +247,6 @@ fire( 	uint32_t cycle,
 		nidx_dt* g_fired)         // device-only buffer, sparse output
 {
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
-	__shared__ uint32_t s_N1A[S_BV_PITCH];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
 	__shared__ uint32_t s_overflow[S_BV_PITCH];
@@ -264,9 +267,6 @@ fire( 	uint32_t cycle,
 	bv_clear(s_overflow);
 	bv_clear(s_negative);
 
-	uint32_t* s_fstim = s_N1A;
-	loadFiringInput(g_fstim, s_fstim);
-
 	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
 	copyCurrent(s_partitionSize,
 			g_current + CURRENT_PARTITION * c_pitch32,
@@ -285,9 +285,17 @@ fire( 	uint32_t cycle,
 	}
 	__syncthreads();
 
+	__shared__ uint32_t s_fstim[S_BV_PITCH];
+	loadFiringInput(g_fstim, s_fstim);
+
+	__shared__ uint32_t s_valid[S_BV_PITCH];
+	bv_copy(g_valid + CURRENT_PARTITION * c_bv_pitch, s_valid);
+	__syncthreads();
+
 	fire( s_partitionSize,
 			gf_neuronParameters + CURRENT_PARTITION * c_pitch32,
 			gf_neuronState + CURRENT_PARTITION * c_pitch32,
+			s_valid,
 			(float*) s_current,
 			s_fstim,
 			&s_nFired,
@@ -295,8 +303,7 @@ fire( 	uint32_t cycle,
 
 	__syncthreads();
 
-	uint32_t* s_dfired = s_N1A;
-	storeDenseFiring(s_nFired, s_fired, s_dfired, g_firingOutput);
+	storeDenseFiring(s_nFired, s_fired, g_firingOutput);
 	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
 }
 
@@ -312,6 +319,7 @@ fire( 	cudaStream_t stream,
 		float* df_neuronParameters,
 		float* df_neuronState,
 		unsigned* du_neuronState,
+		uint32_t* d_valid,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
 		fix_t* d_current,
@@ -324,7 +332,7 @@ fire( 	cudaStream_t stream,
 
 	fire<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle, thalamicInputEnabled,
-			df_neuronParameters, df_neuronState, du_neuronState,
+			df_neuronParameters, df_neuronState, du_neuronState, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus
 			d_current, // internal input current

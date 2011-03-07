@@ -16,6 +16,7 @@
 
 #include "Mapper.hpp"
 #include "NVector.hpp"
+#include "Bitvector.hpp"
 #include "kernel.cu_h"
 #include "types.h"
 
@@ -62,12 +63,18 @@ class Neurons
 		/*! \return device pointer to unsigned neuron state data */
 		unsigned* du_state() const { return mu_state.deviceData(); }
 
+		/*! \return device pointer to bit vector with only valid/existing neurons set */
+		uint32_t* d_valid() const { return m_valid.d_data(); }
+
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const;
 
 		/*! \return the word pitch of each per-partition row of data (for a
 		 * single parameter/state variable) */
-		size_t wordPitch() const;
+		size_t wordPitch32() const;
+
+		/*! \return the word pitch of bitvectors */
+		size_t wordPitch1() const { return m_valid.wordPitch(); }
 
 		/*!
 		 * \param idx neuron index
@@ -124,6 +131,13 @@ class Neurons
 		mutable NVector<float, NEURON_FLOAT_STATE_COUNT> mf_state;
 
 		NVector<unsigned, NEURON_UNSIGNED_STATE_COUNT> mu_state;
+
+		/* In the translation from global neuron indices to device indices,
+		 * there may be 'holes' left in the index space. The valid bitvector
+		 * specifies which neurons are valid/existing, so that the kernel can
+		 * ignore these. Of course, the ideal situation is that the index space
+		 * is contigous, so that warp divergence is avoided on the device */
+		Bitvector m_valid;
 
 		cycle_t m_cycle;
 		mutable cycle_t mf_lastSync;
