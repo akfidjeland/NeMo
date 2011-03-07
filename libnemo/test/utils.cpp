@@ -125,17 +125,34 @@ synapseIds(unsigned neuron, unsigned synapses)
 
 
 
+/*! \return
+ * 		neuron index of the nth neuron in a ring network with \a ncount neurons
+ * 		with neuron indices starting from \a n0 and with \a nstep indices
+ * 		between neighbouring neurons.
+ *
+ * The \a nth parameter is considered modulo ncount.
+ * */
+unsigned
+ringNeuronIndex(unsigned nth, unsigned ncount, unsigned n0, unsigned nstep)
+{
+	return n0 + ((nth % ncount) * nstep);
+}
+
+
+
 nemo::Network*
-createRing(unsigned ncount, unsigned n0, bool plastic)
+createRing(unsigned ncount, unsigned n0, bool plastic, unsigned nstep)
 {
 	nemo::Network* net = new nemo::Network;
-	for(unsigned source=n0; source < n0 + ncount; ++source) {
+	for(unsigned i_source=0; i_source < ncount; ++i_source) {
 		float v = -65.0f;
 		float b = 0.2f;
 		float r = 0.5f;
 		float r2 = r * r;
+		unsigned source = ringNeuronIndex(i_source, ncount, n0, nstep);
 		net->addNeuron(source, 0.02f, b, v+15.0f*r2, 8.0f-6.0f*r2, b*v, v, 0.0f);
-		net->addSynapse(source, n0 + ((source - n0 + 1) % ncount), 1, 1000.0f, plastic);
+		unsigned target = ringNeuronIndex(i_source+1, ncount, n0, nstep);
+		net->addSynapse(source, target, 1, 1000.0f, plastic);
 	}
 	return net;
 }

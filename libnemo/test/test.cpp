@@ -326,13 +326,13 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 
 
 void
-testNonContigousNeuronIndices(backend_t backend, unsigned n0)
+testNonContigousNeuronIndices(backend_t backend, unsigned n0, unsigned nstep)
 {
 	unsigned ncount = 1000;
 	bool stdp = false;
 
-	boost::scoped_ptr<nemo::Network> net0(createRing(ncount, 0));
-	boost::scoped_ptr<nemo::Network> net1(createRing(ncount, n0));
+	boost::scoped_ptr<nemo::Network> net0(createRing(ncount, 0, false, nstep));
+	boost::scoped_ptr<nemo::Network> net1(createRing(ncount, n0, false, nstep));
 
 	std::vector<unsigned> cycles0, cycles1;
 	std::vector<unsigned> fired0, fired1;
@@ -346,7 +346,8 @@ testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 	/* The results should be the same, except firing indices
 	 * should have the same offset. */
 	BOOST_REQUIRE_EQUAL(cycles0.size(), cycles1.size());
-	BOOST_REQUIRE_EQUAL(fired0.size(), fired1.size());
+	BOOST_REQUIRE_EQUAL(fired0.size(), seconds*ncount);
+	BOOST_REQUIRE_EQUAL(fired1.size(), seconds*ncount);
 
 	for(unsigned i = 0; i < cycles0.size(); ++i) {
 		BOOST_REQUIRE_EQUAL(cycles0.at(i), cycles1.at(i));
@@ -358,8 +359,10 @@ testNonContigousNeuronIndices(backend_t backend, unsigned n0)
 
 
 BOOST_AUTO_TEST_SUITE(non_contigous_indices)
-	TEST_ALL_BACKENDS_N(low, testNonContigousNeuronIndices, 1)
-	TEST_ALL_BACKENDS_N(high, testNonContigousNeuronIndices, 1000000)
+	TEST_ALL_BACKENDS_N(contigous_low, testNonContigousNeuronIndices, 1, 1)
+	TEST_ALL_BACKENDS_N(contigous_high, testNonContigousNeuronIndices, 1000000, 1)
+	TEST_ALL_BACKENDS_N(non_contigous_low, testNonContigousNeuronIndices, 1, 4)
+	TEST_ALL_BACKENDS_N(non_contigous_high, testNonContigousNeuronIndices, 1000000, 4)
 BOOST_AUTO_TEST_SUITE_END()
 
 

@@ -54,9 +54,12 @@ synapseIds(unsigned neuron, unsigned synapses);
  * advance. Every cycle a single neuron fires. Each neuron connected to only
  * the next neuron (in global index space) with an abnormally strong synapse,
  * so the result is the firing propagating around the ring.
+ *
+ * \param n0 first neuron index
+ * \param nstep number of indices between neurons
  */
 nemo::Network*
-createRing(unsigned ncount, unsigned n0 = 0, bool plastic=false);
+createRing(unsigned ncount, unsigned n0 = 0, bool plastic=false, unsigned nstep=1);
 
 
 #endif
