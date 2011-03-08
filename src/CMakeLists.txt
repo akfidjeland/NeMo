@@ -1,15 +1,3 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-
-PROJECT(NeMo)
-
-SET(CPACK_PACKAGE_NAME nemo)
-SET(CPACK_PACKAGE_VERSION_MAJOR 0)
-SET(CPACK_PACKAGE_VERSION_MINOR 6)
-SET(CPACK_PACKAGE_VERSION_PATCH 8)
-SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
-
-SET(NEMO_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-
 OPTION(NEMO_CUDA_ENABLED "Enabled simulation on CUDA devices" ON)
 
 IF(NEMO_CUDA_ENABLED)
@@ -93,70 +81,15 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 	SET(CMAKE_CXX_FLAGS "-Wall" ${CMAKE_CXX_FLAGS})
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
 INCLUDE(LinkStaticMSVCR)
 
 SUBDIRS(nemo doc api ${DIRS})
 
 INSTALL(FILES nemo.h nemo.hpp DESTINATION ${INSTALL_INCLUDE_DIR})
 
-
-IF(WIN32)
-	SET(CPACK_GENERATOR "NSIS")
-	# Not that for the path setting to work, the libraries *must* be in the bin
-	# folder, as CMake is hard-coded this way.
-	SET(CPACK_NSIS_MODIFY_PATH ON)
-	# By default CMake puts the installed version into a directory which
-	# includes the version in the name. We can reasonably assume that users
-	# won't have more than a single version installed at a time, so always
-	# install into the same directory, to make upgrades easier.
-	SET(CPACK_PACKAGE_INSTALL_DIRECTORY "NeMo")
-	# TODO: Could add links to manual here using CPACK_NSIS_MENU_LINKS. Did not immideatly work
-ENDIF(WIN32)
-
-IF(APPLE)
-	SET(CPACK_GENERATOR "PackageMaker")
-ENDIF(APPLE)
-
-SET(CPACK_SOURCE_GENERATOR "TGZ" "ZIP")
-
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${NEMO_VERSION}")
-SET(CPACK_SOURCE_IGNORE_FILES
-	"\\\\.gitignore"
-	".*swp$"
-	"build"
-	mpi
-	api/autogen
-	api/matlab/sources
-	COPYING.txt INSTALL.txt # symlinks
-	"tmp.*"
-	${CPACK_SOURCE_IGNORE_FILES})
-
-IF(APPLE)
-	# PackageMaker needs resource files to have .txt extension. These are just symlinks.
-	SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/INSTALL.txt")
-	SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
-ELSE(APPLE)
-	SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/INSTALL")
-	SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
-ENDIF(APPLE)
-
-# TODO: get architecture from uname
-# TODO: only build this if we're actually on a debian platform
-# TODO: make sure we build for appropriate version
-#SET(CPACK_GENERATOR "DEB")
-#SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${NEMO_VERSION}-${CMAKE_HOST_SYSTEM}")
-#SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${NEMO_VERSION}-${CPACK_SYSTEM_NAME}")
-# Debian packaging
-# TODO: add dependencies (on other debian packages: boost)
-#SET(CPACK_DEBIAN_PACKAGE_SECTION Science)
-
-INCLUDE(CPack)
-
-
 # Add uninstall target
 CONFIGURE_FILE(
-	"${CMAKE_CURRENT_SOURCE_DIR}/CMake/cmake_uninstall.cmake.in"
+	"${CMAKE_SOURCE_DIR}/CMake/cmake_uninstall.cmake.in"
 	"${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
 	IMMEDIATE @ONLY
 )
