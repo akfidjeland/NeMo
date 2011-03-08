@@ -14,11 +14,11 @@ IF(NEMO_DOC_API_REBUILD)
 	FIND_PACKAGE(Doxygen REQUIRED)
 
 	SET(DOXYGEN_SOURCES 
-		${CMAKE_SOURCE_DIR}/nemo.h
-		${CMAKE_SOURCE_DIR}/nemo/Configuration.hpp
-		${CMAKE_SOURCE_DIR}/nemo/Network.hpp
-		${CMAKE_SOURCE_DIR}/nemo/Simulation.hpp
-		${CMAKE_SOURCE_DIR}/nemo/types.h
+		${CMAKE_SOURCE_DIR}/src/nemo.h
+		${CMAKE_SOURCE_DIR}/src/nemo/Configuration.hpp
+		${CMAKE_SOURCE_DIR}/src/nemo/Network.hpp
+		${CMAKE_SOURCE_DIR}/src/nemo/Simulation.hpp
+		${CMAKE_SOURCE_DIR}/src/nemo/types.h
 	) 
 
 	# Convert source list to space-separated string
