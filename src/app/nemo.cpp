@@ -16,11 +16,13 @@
 #include <boost/program_options.hpp>
 
 #include <nemo.hpp>
+#include <nemo/config.h>
 
 
 void
 listCudaDevices()
 {
+#ifdef NEMO_CUDA_ENABLED
 	unsigned dcount  = nemo::cudaDeviceCount();
 
 	if(dcount == 0) {
@@ -31,6 +33,9 @@ listCudaDevices()
 	for(unsigned d = 0; d < dcount; ++d) {
 		std::cout << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
 	}
+#else
+	std::cout << "No CUDA devices available\n";
+#endif
 }
 
 
