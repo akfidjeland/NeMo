@@ -15,8 +15,8 @@ ENDIF(NEMO_CPU_MULTITHREADED)
 
 
 INCLUDE_DIRECTORIES(
-	${CMAKE_BINARY_DIR}  # for configuration files
-	${CMAKE_SOURCE_DIR}
+	${CMAKE_BINARY_DIR}/src  # for configuration files
+	${CMAKE_SOURCE_DIR}/src
 	${Boost_INCLUDE_DIR}
 )
 

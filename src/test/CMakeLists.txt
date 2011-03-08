@@ -2,7 +2,7 @@ FIND_PACKAGE(Boost REQUIRED COMPONENTS unit_test_framework)
 SET(EXAMPLES_DIR ${CMAKE_SOURCE_DIR}/src/examples)
 INCLUDE_DIRECTORIES(
 	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_BINARY_DIR} # for configuration files
+	${CMAKE_BINARY_DIR}/src # for configuration files
 	${EXAMPLES_DIR}
 	${Boost_INCLUDE_DIR}
 )

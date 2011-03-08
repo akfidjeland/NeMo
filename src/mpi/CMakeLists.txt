@@ -9,9 +9,9 @@ ENDIF(NOT MPI_FOUND)
 INCLUDE_DIRECTORIES(
 	${MPI_INCLUDE_PATH}
 	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_SOURCE_DIR}/examples
-	${CMAKE_SOURCE_DIR}
-	${CMAKE_BINARY_DIR} # for configuration
+	${CMAKE_SOURCE_DIR}/src/examples
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_BINARY_DIR}/src # for configuration
 	${Boost_INCLUDE_DIR}
 )
 
