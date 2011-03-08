@@ -5,10 +5,9 @@ IF(NEMO_CUDA_ENABLED)
 	OPTION(NEMO_CUDA_KERNEL_TIMING "Count and report cycles spent by the device in different kernel stages" OFF)
 	SET(NEMO_CUDA_DEBUG_TRACE "" CACHE STRING "Mask indicating what events to show in trace log. Or the following: 0x2 (neuron), 0x4 (synapse) 0x8 (stdp)")
 	OPTION(NEMO_CUDA_DEVICE_ASSERTIONS "Enable assertions in device code" OFF)
+ELSE(NEMO_CUDA_ENABLED)
+	SET(NEMO_CUDA_DYNAMIC_LOADING OFF)
 ENDIF(NEMO_CUDA_ENABLED)
-
-OPTION(NEMO_MATLAB_ENABLED "Create Matlab API bindings" ON)
-OPTION(NEMO_PYTHON_ENABLED "Create Python API bindings" ON)
 
 OPTION(
 	NEMO_TIMING_ENABLED
