@@ -630,7 +630,11 @@ testSetNeuron(backend_t backend)
 		sim->setNeuronState(0, 1, v-e);
 		BOOST_REQUIRE_EQUAL(sim->getNeuronState(0, 1), v-e);
 
-		sim->step();
+		/* Get the data back to later verify that it does in fact change during
+		 * simulation, rather than being overwritten again on subsequent
+		 * simulation steps */
+		float u0 = sim->getNeuronState(0, 0);
+		float v0 = sim->getNeuronState(0, 1);
 
 		sim->setNeuronParameter(0, 0, a-e);
 		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 0), a-e);
@@ -646,6 +650,20 @@ testSetNeuron(backend_t backend)
 
 		sim->setNeuronParameter(0, 4, sigma-e);
 		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 4), sigma-e);
+
+		sim->step();
+
+		/* After simulating one more step all the parameter should remain the
+		 * same, whereas all the state variables should have changed */
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 0), a-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 1), b-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 2), c-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 3), d-e);
+		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 4), sigma-e);
+
+		BOOST_REQUIRE(sim->getNeuronState(0, 0) != u0);
+		BOOST_REQUIRE(sim->getNeuronState(0, 1) != v0);
+
 
 		/* Invalid neuron */
 		BOOST_REQUIRE_THROW(sim->setNeuronParameter(1, 0, 0.0f), nemo::exception);
@@ -676,13 +694,37 @@ testSetNeuron(backend_t backend)
 		 * therefore should not affect the simulation result (here measured via
 		 * the membrane potential) */
 		sim->setNeuron(0, a, b, c+1.0f, d, u, v, sigma);
+
 		sim->step();
+
 		BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
+
 		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 0), a);
 		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 1), b);
 		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 2), c+1.0f);
 		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 3), d);
 		BOOST_REQUIRE_EQUAL(sim->getNeuronParameter(0, 4), sigma);
+	}
+
+	{
+		/* Ensure that when setting the state variable, it is not copied
+		 * multiple times */
+		nemo::Network net0;
+		net0.addNeuron(0, a, b, c, d, u, v, 0.0f);
+
+		boost::scoped_ptr<nemo::Simulation> sim0(simulation(net0, conf));
+		sim0->step();
+		sim0->step();
+		float v0 = sim0->getMembranePotential(0);
+
+		boost::scoped_ptr<nemo::Simulation> sim1(simulation(net0, conf));
+		sim1->step();
+		sim1->setNeuron(0, a, b, c, d, u, v, 0.0f);
+		sim1->step();
+		sim1->step();
+		float v1 = sim1->getMembranePotential(0);
+
+		BOOST_REQUIRE_EQUAL(v0, v1);
 	}
 
 	{
