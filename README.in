@@ -1,6 +1,10 @@
 NeMo v@NEMO_VERSION@
 
 @NEMO_DESCRIPTION@
+If you are a new user of NeMo please consider sending a short email to the
+author with a brief description of who you are and what you use it for. This
+would be greatly useful in justifying continued funding of the project.
+
 See INSTALL for build instructions and COPYING for licence information.
 
 NeMo is written by
