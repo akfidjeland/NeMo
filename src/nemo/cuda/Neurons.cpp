@@ -122,9 +122,11 @@ Neurons::step(cycle_t cycle)
 {
 	if(mf_paramDirty) {
 		mf_param.copyToDevice();
+		mf_paramDirty = false;
 	}
 	if(mf_stateDirty) {
 		mf_state.copyToDevice();
+		mf_stateDirty = false;
 	}
 	m_cycle = cycle;
 }
