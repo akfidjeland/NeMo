@@ -2,12 +2,20 @@
 
 from distutils.core import setup
 
-setup(  name='nemo',
+setup(  name='NeMo',
         description='Spiking neural network simulator',
+        long_description=''''
+NeMo supports fast simulation of Izhikevich neurons on CUDA-enabled GPUs. The
+Python module is a siple wrapper for the underlying C++ class library, which
+must be installed for the simulator to work.
+''',
         version='@NEMO_VERSION@',
         author='Andreas Fidjeland',
         author_email='andreas.fidjeland@imperial.ac.uk',
-        url='http://www.doc.ic.ac.uk/~akf/nemo',
+        url='http://sourceforge.net/projects/nemosim',
+        download_url='http://sourceforge.net/projects/nemosim/files/@NEMO_VERSION@',
+        platforms=['Linux', 'Windows', 'OSX'],
+        license='GPLv2',
         packages=['nemo'],
         # There is an extension module here, but the shared library itself is
         # stored in a NeMo-specific directory to which the __init__ script sets
