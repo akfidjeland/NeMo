@@ -13,7 +13,7 @@ C API for the NeMo spiking neural network simulator.
 
 .in +1c
 .ti -1c
-.RI "typedef void * \fBnemo_network_t\fP"
+.RI "typedef nemo_network_class * \fBnemo_network_t\fP"
 .br
 .ti -1c
 .RI "typedef int \fBnemo_status_t\fP"
@@ -220,7 +220,7 @@ C API for the NeMo spiking neural network simulator.
 
 .SH "Typedef Documentation"
 .PP 
-.SS "typedef void* \fBnemo_network_t\fP"Only opaque pointers are exposed in the C API 
+.SS "typedef nemo_network_class* \fBnemo_network_t\fP"Only opaque pointers are exposed in the C API 
 .SS "typedef int \fBnemo_status_t\fP"Status of API calls which can fail. 
 .SH "Function Documentation"
 .PP 

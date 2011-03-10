@@ -39,10 +39,15 @@ extern "C" {
 
 
 
+/* Dummy classes */
+struct nemo_network_class;
+struct nemo_simulation_class;
+struct nemo_configuration_class;
+
 /*! Only opaque pointers are exposed in the C API */
-typedef void* nemo_network_t;
-typedef void* nemo_simulation_t;
-typedef void* nemo_configuration_t;
+typedef nemo_network_class* nemo_network_t;
+typedef nemo_simulation_class* nemo_simulation_t;
+typedef nemo_configuration_class* nemo_configuration_t;
 
 /*! Status of API calls which can fail. */
 typedef int nemo_status_t;
