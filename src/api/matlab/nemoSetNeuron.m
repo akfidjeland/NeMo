@@ -19,8 +19,9 @@ function nemoSetNeuron(idx, a, b, c, d, u, v, sigma)
 %             generated
 %    
 %  
-% The inputs can be either all scalars or all vectors of the same
-% length.
+% The input arguments can be a mix of scalars and vectors as long as
+% all vectors have the same length. Scalar arguments are replicated
+% the appropriate number of times.
     nemo_mex(...
             uint32(24),...
             uint32(idx),...

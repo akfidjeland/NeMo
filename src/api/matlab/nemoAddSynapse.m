@@ -15,8 +15,11 @@ function id = nemoAddSynapse(source, target, delay, weight, plastic)
 %   id      - Unique synapse ID
 %    
 %  
-% The inputs can be either all scalars or all vectors of the same
-% length. The output has the same dimension as the inputs.
+% The input arguments can be a mix of scalars and vectors as long as
+% all vectors have the same length. Scalar arguments are replicated
+% the appropriate number of times. If all input arguments are scalar,
+% the output is scalar. Otherwise the output has the same length as
+% the vector input arguments.
     id = nemo_mex(...
                  uint32(1),...
                  uint32(source),...

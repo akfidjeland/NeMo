@@ -236,10 +236,10 @@ matlabHelp fn = commentBlock $ vcat $ [
                 then char ' ' $+$ (reflow $ vectorization_inputs ++ vectorization_outputs)
                 else empty
 
-        vectorization_inputs = "The inputs can be either all scalars or all vectors of the same length. "
+        vectorization_inputs = "The input arguments can be a mix of scalars and vectors as long as all vectors have the same length. Scalar arguments are replicated the appropriate number of times. "
         vectorization_outputs =
             if not ( null (fn_output fn))
-                then "The output has the same dimension as the inputs. "
+                then "If all input arguments are scalar, the output is scalar. Otherwise the output has the same length as the vector input arguments. "
                 else ""
 
 
@@ -371,7 +371,8 @@ mexVectorConstructibleFunction fn = mexFunctionDefinition fn body
                 -- NOTE: input and output checks may be redundant
                 {- In the vector form, all inputs should have the same format.
                  - A pre-defined function can verify this. -}
-                C.statement $ cFunctionCall (text "vectorDimension") (Just $ text "size_t elems") [int inputCount, text "prhs + 1"],
+                C.statement $ text "static unsigned arglen" <> (brackets $ int inputCount),
+                C.statement $ cFunctionCall (text "vectorDimension") (Just $ text "size_t elems") [int inputCount, text "prhs + 1", text "arglen"],
                 C.statement $ cFunctionCall (text "checkInputCount") Nothing [text "nrhs", int inputCount],
                 C.statement $ cFunctionCall (text "checkOutputCount") Nothing [text "nlhs", int outputCount],
                 mexDeclareInputVariables 1 $ fn_inputs fn,
@@ -435,7 +436,8 @@ mexVectorFunction mname fn = mexFunctionDefinition fn body
         body = vcat $ [
                 {- In the vector form, all inputs should have the same format.
                  - A pre-defined function can verify this. -}
-                C.statement $ cFunctionCall (text "vectorDimension") (Just $ text "size_t elems") [int inputCount, text "prhs + 1"],
+                C.statement $ text "static unsigned arglen" <> (brackets $ int inputCount),
+                C.statement $ cFunctionCall (text "vectorDimension") (Just $ text "size_t elems") [int inputCount, text "prhs + 1", text "arglen"],
                 C.statement $ cFunctionCall (text "checkInputCount") Nothing [text "nrhs", int inputCount],
                 C.statement $ cFunctionCall (text "checkOutputCount") Nothing [text "nlhs", int outputCount],
                 mexDeclareInputVariables 1 $ fn_inputs fn,
@@ -617,7 +619,7 @@ mexInput argno a = text $
 mexVectorInput :: String -> Int -> Input -> Doc
 mexVectorInput idx argno a = text $
     if scalar a
-        then printf "scalarAt<%s,%s>(prhs[%d], %s)" (cppType t) (mexType t) argno idx
+        then printf "scalarAt<%s,%s>(prhs[%d], %s, arglen[%d])" (cppType t) (mexType t) argno idx (argno-1)
         else error "mexVectorInput called with input which is already a vector"
     where
         t = baseType a

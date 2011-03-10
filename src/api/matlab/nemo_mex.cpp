@@ -34,6 +34,7 @@ template<> mxClassID classId<double>() { return mxDOUBLE_CLASS; }
 
 
 
+inline
 void
 checkNemoStatus(nemo_status_t s)
 {
@@ -80,11 +81,14 @@ scalar(const mxArray* arr)
 
 
 /* Return scalar from a given position in a Matlab array. M and N refers to
- * Matlab and Nemo types, rather than array dimensions.  */
+ * Matlab and Nemo types, rather than array dimensions. Vectorised functions
+ * can use a mix of scalar and vector inputs. The length of the relevant input
+ * is found in len. Scalar inputs ignore the offset. */
 template<typename N, typename M>
 N
-scalarAt(const mxArray* arr, size_t offset)
+scalarAt(const mxArray* arr, size_t i, unsigned len)
 {
+	size_t offset = len == 1 ? 0 : i;
 	/* No bounds checking here since we have already verified the bonds for all input vectors */
 	return boost::numeric_cast<N, M>(*(static_cast<M*>(mxGetData(numeric<M>(arr)))+offset));
 }
@@ -154,24 +158,34 @@ reportVectorDimensions(int argc, const mxArray* argv[])
 
 
 /* For the vector form of functions which are scalar in the C++ API (i.e. all
- * inputs and outputs are scalars) we allow using a vector form in Matlab, but
- * require that all vectors have the same dimensions. Return this and report
- * error if sizes are not the same. The precise shape of the matrices do not
- * matter. */
+ * inputs and outputs are scalars) we allow using a vector form in Matlab. For
+ * these functions we support a mix of scalar and vector input, as long as all
+ * vectors have the same length. scalar inputs are simply replicated as
+ * appropriate. The precise shape of the matrices do not matter. */
 size_t
-vectorDimension(int nrhs, const mxArray* prhs[])
+vectorDimension(int nrhs, const mxArray* prhs[], unsigned arglen[])
 {
 	if(nrhs < 1) {
 		mexErrMsgIdAndTxt("nemo:api", "function should have at least one input argument");
 	}
-	size_t dim = mxGetN(prhs[0]) * mxGetM(prhs[0]);
-	for(int i=1; i < nrhs; ++i) {
-		size_t found = mxGetN(prhs[i]) * mxGetM(prhs[i]);
-		if(found != dim) {
+
+	size_t dim = 1;
+	unsigned i = 0;
+
+	/* Skip initial scalars */
+	for(; i < nrhs && dim == 1; ++i) {
+		dim = arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
+	}
+
+	/* Verify remaining vectors */
+	for(; i < nrhs; ++i) {
+		arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
+		if(arglen[i] != dim && arglen[i] != 1) {
 			reportVectorDimensions(nrhs, prhs);
 			mexErrMsgIdAndTxt("nemo:api", "vector arguments do not have the same size");
 		}
 	}
+
 	return dim;
 }
 
@@ -394,7 +408,8 @@ reset(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(8, prhs + 1);
+    static unsigned arglen[8];
+    size_t elems = vectorDimension(8, prhs + 1, arglen);
     checkInputCount(nrhs, 8);
     checkOutputCount(nlhs, 0);
     void* hdl = getNetwork();
@@ -402,14 +417,14 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         checkNemoStatus( 
                 nemo_add_neuron( 
                         hdl, 
-                        scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                        scalarAt<float,double>(prhs[2], i), 
-                        scalarAt<float,double>(prhs[3], i), 
-                        scalarAt<float,double>(prhs[4], i), 
-                        scalarAt<float,double>(prhs[5], i), 
-                        scalarAt<float,double>(prhs[6], i), 
-                        scalarAt<float,double>(prhs[7], i), 
-                        scalarAt<float,double>(prhs[8], i) 
+                        scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                        scalarAt<float,double>(prhs[2], i, arglen[1]), 
+                        scalarAt<float,double>(prhs[3], i, arglen[2]), 
+                        scalarAt<float,double>(prhs[4], i, arglen[3]), 
+                        scalarAt<float,double>(prhs[5], i, arglen[4]), 
+                        scalarAt<float,double>(prhs[6], i, arglen[5]), 
+                        scalarAt<float,double>(prhs[7], i, arglen[6]), 
+                        scalarAt<float,double>(prhs[8], i, arglen[7]) 
                 ) 
         );
     }
@@ -420,7 +435,8 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 addSynapse(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(5, prhs + 1);
+    static unsigned arglen[5];
+    size_t elems = vectorDimension(5, prhs + 1, arglen);
     checkInputCount(nrhs, 5);
     checkOutputCount(nlhs, 1);
     allocateOutputVector<uint64_t>(plhs, 0, elems);
@@ -430,11 +446,11 @@ addSynapse(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         checkNemoStatus( 
                 nemo_add_synapse( 
                         hdl, 
-                        scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                        scalarAt<unsigned,uint32_t>(prhs[2], i), 
-                        scalarAt<unsigned,uint32_t>(prhs[3], i), 
-                        scalarAt<float,double>(prhs[4], i), 
-                        scalarAt<unsigned char,uint8_t>(prhs[5], i), 
+                        scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                        scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
+                        scalarAt<unsigned,uint32_t>(prhs[3], i, arglen[2]), 
+                        scalarAt<float,double>(prhs[4], i, arglen[3]), 
+                        scalarAt<unsigned char,uint8_t>(prhs[5], i, arglen[4]), 
                         &id 
                 ) 
         );
@@ -561,7 +577,8 @@ applyStdp(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 getMembranePotential(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(1, prhs + 1);
+    static unsigned arglen[1];
+    size_t elems = vectorDimension(1, prhs + 1, arglen);
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 1);
     allocateOutputVector<double>(plhs, 0, elems);
@@ -569,7 +586,7 @@ getMembranePotential(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     for(size_t i=0; i<elems; ++i){
         float v;
         checkNemoStatus( 
-                nemo_get_membrane_potential(hdl, scalarAt<unsigned,uint32_t>(prhs[1], i), &v) 
+                nemo_get_membrane_potential(hdl, scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), &v) 
         );
         returnScalarAt<float, double>(plhs, 0, i, v);
     }
@@ -693,7 +710,8 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(8, prhs + 1);
+    static unsigned arglen[8];
+    size_t elems = vectorDimension(8, prhs + 1, arglen);
     checkInputCount(nrhs, 8);
     checkOutputCount(nlhs, 0);
     if(isSimulating()){
@@ -702,14 +720,14 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_set_neuron_s( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<float,double>(prhs[2], i), 
-                            scalarAt<float,double>(prhs[3], i), 
-                            scalarAt<float,double>(prhs[4], i), 
-                            scalarAt<float,double>(prhs[5], i), 
-                            scalarAt<float,double>(prhs[6], i), 
-                            scalarAt<float,double>(prhs[7], i), 
-                            scalarAt<float,double>(prhs[8], i) 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<float,double>(prhs[2], i, arglen[1]), 
+                            scalarAt<float,double>(prhs[3], i, arglen[2]), 
+                            scalarAt<float,double>(prhs[4], i, arglen[3]), 
+                            scalarAt<float,double>(prhs[5], i, arglen[4]), 
+                            scalarAt<float,double>(prhs[6], i, arglen[5]), 
+                            scalarAt<float,double>(prhs[7], i, arglen[6]), 
+                            scalarAt<float,double>(prhs[8], i, arglen[7]) 
                     ) 
             );
         }
@@ -719,14 +737,14 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_set_neuron_n( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<float,double>(prhs[2], i), 
-                            scalarAt<float,double>(prhs[3], i), 
-                            scalarAt<float,double>(prhs[4], i), 
-                            scalarAt<float,double>(prhs[5], i), 
-                            scalarAt<float,double>(prhs[6], i), 
-                            scalarAt<float,double>(prhs[7], i), 
-                            scalarAt<float,double>(prhs[8], i) 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<float,double>(prhs[2], i, arglen[1]), 
+                            scalarAt<float,double>(prhs[3], i, arglen[2]), 
+                            scalarAt<float,double>(prhs[4], i, arglen[3]), 
+                            scalarAt<float,double>(prhs[5], i, arglen[4]), 
+                            scalarAt<float,double>(prhs[6], i, arglen[5]), 
+                            scalarAt<float,double>(prhs[7], i, arglen[6]), 
+                            scalarAt<float,double>(prhs[8], i, arglen[7]) 
                     ) 
             );
         }
@@ -738,7 +756,8 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 setNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(3, prhs + 1);
+    static unsigned arglen[3];
+    size_t elems = vectorDimension(3, prhs + 1, arglen);
     checkInputCount(nrhs, 3);
     checkOutputCount(nlhs, 0);
     if(isSimulating()){
@@ -747,9 +766,9 @@ setNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_set_neuron_state_s( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
-                            scalarAt<float,double>(prhs[3], i) 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
+                            scalarAt<float,double>(prhs[3], i, arglen[2]) 
                     ) 
             );
         }
@@ -759,9 +778,9 @@ setNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_set_neuron_state_n( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
-                            scalarAt<float,double>(prhs[3], i) 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
+                            scalarAt<float,double>(prhs[3], i, arglen[2]) 
                     ) 
             );
         }
@@ -773,7 +792,8 @@ setNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 setNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(3, prhs + 1);
+    static unsigned arglen[3];
+    size_t elems = vectorDimension(3, prhs + 1, arglen);
     checkInputCount(nrhs, 3);
     checkOutputCount(nlhs, 0);
     if(isSimulating()){
@@ -782,9 +802,9 @@ setNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_set_neuron_parameter_s( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
-                            scalarAt<float,double>(prhs[3], i) 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
+                            scalarAt<float,double>(prhs[3], i, arglen[2]) 
                     ) 
             );
         }
@@ -794,9 +814,9 @@ setNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_set_neuron_parameter_n( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
-                            scalarAt<float,double>(prhs[3], i) 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
+                            scalarAt<float,double>(prhs[3], i, arglen[2]) 
                     ) 
             );
         }
@@ -808,7 +828,8 @@ setNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 getNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(2, prhs + 1);
+    static unsigned arglen[2];
+    size_t elems = vectorDimension(2, prhs + 1, arglen);
     checkInputCount(nrhs, 2);
     checkOutputCount(nlhs, 1);
     allocateOutputVector<double>(plhs, 0, elems);
@@ -819,8 +840,8 @@ getNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_get_neuron_state_s( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
                             &val 
                     ) 
             );
@@ -833,8 +854,8 @@ getNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_get_neuron_state_n( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
                             &val 
                     ) 
             );
@@ -848,7 +869,8 @@ getNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 getNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    size_t elems = vectorDimension(2, prhs + 1);
+    static unsigned arglen[2];
+    size_t elems = vectorDimension(2, prhs + 1, arglen);
     checkInputCount(nrhs, 2);
     checkOutputCount(nlhs, 1);
     allocateOutputVector<double>(plhs, 0, elems);
@@ -859,8 +881,8 @@ getNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_get_neuron_parameter_s( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
                             &val 
                     ) 
             );
@@ -873,8 +895,8 @@ getNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             checkNemoStatus( 
                     nemo_get_neuron_parameter_n( 
                             hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i), 
-                            scalarAt<unsigned,uint32_t>(prhs[2], i), 
+                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
+                            scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]), 
                             &val 
                     ) 
             );

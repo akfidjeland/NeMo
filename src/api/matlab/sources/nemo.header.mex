@@ -34,6 +34,7 @@ template<> mxClassID classId<double>() { return mxDOUBLE_CLASS; }
 
 
 
+inline
 void
 checkNemoStatus(nemo_status_t s)
 {
@@ -80,11 +81,14 @@ scalar(const mxArray* arr)
 
 
 /* Return scalar from a given position in a Matlab array. M and N refers to
- * Matlab and Nemo types, rather than array dimensions.  */
+ * Matlab and Nemo types, rather than array dimensions. Vectorised functions
+ * can use a mix of scalar and vector inputs. The length of the relevant input
+ * is found in len. Scalar inputs ignore the offset. */
 template<typename N, typename M>
 N
-scalarAt(const mxArray* arr, size_t offset)
+scalarAt(const mxArray* arr, size_t i, unsigned len)
 {
+	size_t offset = len == 1 ? 0 : i;
 	/* No bounds checking here since we have already verified the bonds for all input vectors */
 	return boost::numeric_cast<N, M>(*(static_cast<M*>(mxGetData(numeric<M>(arr)))+offset));
 }
@@ -154,24 +158,34 @@ reportVectorDimensions(int argc, const mxArray* argv[])
 
 
 /* For the vector form of functions which are scalar in the C++ API (i.e. all
- * inputs and outputs are scalars) we allow using a vector form in Matlab, but
- * require that all vectors have the same dimensions. Return this and report
- * error if sizes are not the same. The precise shape of the matrices do not
- * matter. */
+ * inputs and outputs are scalars) we allow using a vector form in Matlab. For
+ * these functions we support a mix of scalar and vector input, as long as all
+ * vectors have the same length. scalar inputs are simply replicated as
+ * appropriate. The precise shape of the matrices do not matter. */
 size_t
-vectorDimension(int nrhs, const mxArray* prhs[])
+vectorDimension(int nrhs, const mxArray* prhs[], unsigned arglen[])
 {
 	if(nrhs < 1) {
 		mexErrMsgIdAndTxt("nemo:api", "function should have at least one input argument");
 	}
-	size_t dim = mxGetN(prhs[0]) * mxGetM(prhs[0]);
-	for(int i=1; i < nrhs; ++i) {
-		size_t found = mxGetN(prhs[i]) * mxGetM(prhs[i]);
-		if(found != dim) {
+
+	size_t dim = 1;
+	unsigned i = 0;
+
+	/* Skip initial scalars */
+	for(; i < nrhs && dim == 1; ++i) {
+		dim = arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
+	}
+
+	/* Verify remaining vectors */
+	for(; i < nrhs; ++i) {
+		arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
+		if(arglen[i] != dim && arglen[i] != 1) {
 			reportVectorDimensions(nrhs, prhs);
 			mexErrMsgIdAndTxt("nemo:api", "vector arguments do not have the same size");
 		}
 	}
+
 	return dim;
 }
 

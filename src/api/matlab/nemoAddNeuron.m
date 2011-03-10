@@ -23,8 +23,9 @@ function nemoAddNeuron(idx, a, b, c, d, u, v, sigma)
 % 14, pp 1569-1572, 2003 for a full description of the model and the
 % parameters.
 %  
-% The inputs can be either all scalars or all vectors of the same
-% length.
+% The input arguments can be a mix of scalars and vectors as long as
+% all vectors have the same length. Scalar arguments are replicated
+% the appropriate number of times.
     nemo_mex(...
             uint32(0),...
             uint32(idx),...
