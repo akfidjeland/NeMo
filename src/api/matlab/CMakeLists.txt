@@ -38,8 +38,8 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 	ENDIF(MEXEXT)
 
 	SET(MEX_INCLUDES
-		-I${CMAKE_SOURCE_DIR}
-		-I${CMAKE_BINARY_DIR} # for configured file
+		-I${CMAKE_SOURCE_DIR}/src
+		-I${CMAKE_BINARY_DIR}/src # for configuration file
 		-I${Boost_INCLUDE_DIR}
 	)
 	SET(MEX_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/nemo_mex.${SUFFIX})
