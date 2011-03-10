@@ -4,7 +4,9 @@ OPTION(NEMO_DOC_MAN_REBUILD "Rebuild API documentation (man pages)" OFF)
 SET(MAN_DIR ${CMAKE_CURRENT_BINARY_DIR}/man3)
 SET(GENERATED_MAN_PAGES
 	${MAN_DIR}/nemo-c.3
-	${MAN_DIR}/nemo-cpp.3
+	${MAN_DIR}/nemo_Network.3
+	${MAN_DIR}/nemo_Simulation.3
+	${MAN_DIR}/nemo_Configuration.3
 )
 
 
@@ -22,13 +24,17 @@ IF(NEMO_DOC_MAN_REBUILD)
 			# Files we are interested in
 			${MAN_DIR}/nemo.h.3
 			${MAN_DIR}/nemo_Network.3
+			${MAN_DIR}/nemo_Configuration.3
+			${MAN_DIR}/nemo_Simulation.3
 			# Extra crud
 			${MAN_DIR}/nemo.hpp.3
 		COMMAND ${DOXYGEN_EXECUTABLE}
 		DEPENDS
 			${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 			${CMAKE_SOURCE_DIR}/src/nemo.h
-			${CMAKE_SOURCE_DIR}/src/nemo.hpp
+			${CMAKE_SOURCE_DIR}/src/nemo/Network.hpp
+			${CMAKE_SOURCE_DIR}/src/nemo/Configuration.hpp
+			${CMAKE_SOURCE_DIR}/src/nemo/Simulation.hpp
 	)
 
 	# Name C API man page correctly
@@ -36,13 +42,6 @@ IF(NEMO_DOC_MAN_REBUILD)
 		OUTPUT ${MAN_DIR}/nemo-c.3
 		COMMAND ${CMAKE_COMMAND} -E copy ${MAN_DIR}/nemo.h.3 ${MAN_DIR}/nemo-c.3
 		DEPENDS ${MAN_DIR}/nemo.h.3
-	)
-
-	# Name C++ API man page correctly
-	ADD_CUSTOM_COMMAND(
-		OUTPUT ${MAN_DIR}/nemo-cpp.3
-		COMMAND ${CMAKE_COMMAND} -E copy ${MAN_DIR}/nemo_Network.3 ${MAN_DIR}/nemo-cpp.3
-		DEPENDS ${MAN_DIR}/nemo_Network.3
 	)
 
 	ADD_CUSTOM_TARGET(api-doc-man
@@ -64,8 +63,7 @@ IF(NEMO_DOC_MAN_REBUILD)
 			# The title page is incorrect as it referes to filename or
 			# class. Just hard-code the relevant replacements.
 			SET(SED_SET_TITLE_C -e s/^nemo.h\ \\\\-/${MANPAGE_TITLE}\ \\\\-/)
-			SET(SED_SET_TITLE_CPP -e s/^nemo::Network\ \\\\-/${MANPAGE_TITLE}\ \\\\-/)
-			SET(SED_SET_TITLE ${SED_SET_TITLE_C} ${SED_SET_TITLE_CPP})
+			SET(SED_SET_TITLE ${SED_SET_TITLE_C})
 
 			# Add reference to main man-page and upper-case author header
 			SET(SED_SET_SEE -e /.SH\ .Author/\ c.SH\ SEE\ ALSO\\nnemo\(3\)\ for\ library\ overview\\n.SH\ AUTHOR)
