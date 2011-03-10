@@ -63,3 +63,5 @@ sys.path.append('@CMAKE_INSTALL_PREFIX@/@INSTALL_DIR@')
 from _nemo import *
 
 init()
+
+__all__ = ['Network', 'Simulation', 'Configuration']
