@@ -15,7 +15,6 @@
 #include <nemo/util.h>
 #include <nemo/config.h>
 
-#include "cycleCounting.cu"
 #include "connectivityMatrix.cu"
 #include "fixedpoint.cu"
 
@@ -35,10 +34,6 @@
 __global__
 void
 applyStdp(
-#ifdef NEMO_CUDA_KERNEL_TIMING
-	cycle_counter_t* g_cc,
-	size_t ccPitch,
-#endif
 	synapse_t* g_fcm,
 	weight_dt reward,
 	weight_dt maxWeight, // for excitatory synapses
@@ -46,8 +41,6 @@ applyStdp(
 	/*! \note reverse connectivity addresses are found in constant memory,
 	 * while forward connectivity addresses are found in texture memory */
 {
-	SET_COUNTER(s_ccApplySTDP, 0);
-
 	__shared__ unsigned s_chunkCount;
 	__shared__ unsigned s_partitionSize;
 
@@ -116,9 +109,6 @@ applyStdp(
 		//! \todo remove sync?
 		__syncthreads();
 	}
-
-	SET_COUNTER(s_ccApplySTDP, 1);
-	WRITE_COUNTERS(s_ccApplySTDP, g_cc, ccPitch, 2);
 }
 
 
@@ -126,8 +116,6 @@ __host__
 void
 applyStdp(
 		cudaStream_t stream,
-		cycle_counter_t* d_cc,
-		size_t ccPitch,
 		unsigned partitionCount,
 		unsigned fractionalBits,
 		synapse_t* d_fcm,
@@ -139,9 +127,6 @@ applyStdp(
 	dim3 dimGrid(partitionCount);
 
 	applyStdp<<<dimGrid, dimBlock, 0, stream>>>(
-#ifdef NEMO_CUDA_KERNEL_TIMING
-			d_cc, ccPitch,
-#endif
 			d_fcm,
 			fx_toFix(reward, fractionalBits),
 			fx_toFix(maxWeight, fractionalBits),

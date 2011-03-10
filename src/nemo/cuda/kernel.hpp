@@ -21,8 +21,6 @@
 void
 applyStdp(
 		cudaStream_t stream,
-		cycle_counter_t* d_cc,
-		size_t ccPitch,
 		unsigned partitionCount,
 		unsigned fractionalBits,
 		synapse_t* d_fcm,

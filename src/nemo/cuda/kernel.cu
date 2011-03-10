@@ -29,7 +29,6 @@ __constant__ unsigned c_partitionSize[MAX_PARTITION_COUNT];
 #include "bitvector.cu"
 #include "double_buffer.cu"
 #include "connectivityMatrix.cu"
-#include "cycleCounting.cu"
 #include "outgoing.cu"
 #include "globalQueue.cu"
 #include "nvector.cu"

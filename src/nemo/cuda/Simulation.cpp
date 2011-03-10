@@ -47,7 +47,6 @@ Simulation::Simulation(
 	m_firingBuffer(m_mapper),
 	m_fired(m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), "Fired count")),
-	m_cycleCounters(m_mapper.partitionCount(), conf.stdpFunction()),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_pitch32(0),
 	m_pitch64(0),
@@ -331,8 +330,6 @@ Simulation::applyStdp(float reward)
 		initLog();
 		::applyStdp(
 				m_streamCompute,
-				m_cycleCounters.dataApplySTDP(),
-				m_cycleCounters.pitchApplySTDP(),
 				m_mapper.partitionCount(),
 				m_cm.fractionalBits(),
 				m_cm.d_fcm(),
@@ -459,10 +456,6 @@ Simulation::finishSimulation()
 		cudaStreamDestroy(m_streamCopy);
 
 	//! \todo perhaps clear device data here instead of in dtor
-	if(m_conf.loggingEnabled()) {
-		m_cycleCounters.printCounters(std::cout);
-		//! \todo add time summary
-	}
 }
 
 

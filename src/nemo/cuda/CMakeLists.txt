@@ -61,7 +61,6 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	ConnectivityMatrix.cpp
 	create_simulation.cpp
 	Simulation.cpp
-	CycleCounters.cpp
 	DeviceAssertions.cpp
 	FiringBuffer.cpp
 	FiringStimulus.cpp

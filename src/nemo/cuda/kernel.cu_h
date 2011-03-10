@@ -60,20 +60,4 @@
 #define STATE_RNG3 3
 #define NEURON_UNSIGNED_STATE_COUNT 4
 
-/* If kernel timing is enabled (NEMO_CUDA_KERNEL_TIMING), device cycle counters
- * will be used at run-time to record the number of cycles spent in different
- * phases of the simulation kernel.
- *
- * Counters are specified using numeric indices. Some care must be taken to
- * ensure that the counter counts specified here matches what's used in the
- * different kernels, and furthermore that the counters used there match what's
- * used when reading back. */
-
-#define CC_MAIN_COUNT 5
-#define CC_GATHER_COUNT  4
-#define CC_STDP_APPLY_COUNT 2
-
-/* Factor by which to reduce cycle counts, in order to avoid overflow */
-#define CC_MULT 1024
-
 #endif

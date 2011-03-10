@@ -24,7 +24,6 @@
 #include "Mapper.hpp"
 #include "NVector.hpp"
 #include "ConnectivityMatrix.hpp"
-#include "CycleCounters.hpp"
 #include "DeviceAssertions.hpp"
 #include "FiringStimulus.hpp"
 #include "FiringBuffer.hpp"
@@ -323,8 +322,6 @@ class Simulation : public nemo::SimulationBackend
 		 * calls */
 		NVector<nidx_dt> m_fired;
 		boost::shared_array<unsigned> md_nFired;
-
-		CycleCounters m_cycleCounters;
 
 		DeviceAssertions m_deviceAssertions;
 
