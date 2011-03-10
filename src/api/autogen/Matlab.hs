@@ -205,7 +205,8 @@ matlabHelp fn = commentBlock $ vcat $ [
             synopsis, space,
             inputs,
             outputs,
-            descr
+            descr,
+            vectorization
         ]
     where
         fnname = matlabFunctionName fn
@@ -226,7 +227,20 @@ matlabHelp fn = commentBlock $ vcat $ [
         inputs = optlist "Inputs" $ fn_inputs fn
         outputs = optlist "Outputs" $ fn_output fn
 
-        descr = maybe empty (fsep . map text . words) $ fn_descr fn
+        descr = maybe empty reflow $ fn_descr fn
+
+        reflow = fsep . map text . words
+
+        vectorization =
+            if fn_vectorized fn
+                then char ' ' $+$ (reflow $ vectorization_inputs ++ vectorization_outputs)
+                else empty
+
+        vectorization_inputs = "The inputs can be either all scalars or all vectors of the same length. "
+        vectorization_outputs =
+            if not ( null (fn_output fn))
+                then "The output has the same dimension as the inputs. "
+                else ""
 
 
 -- TODO: make use of this in matlabHelp

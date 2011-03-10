@@ -22,6 +22,9 @@ function nemoAddNeuron(idx, a, b, c, d, u, v, sigma)
 % "Simple model of spiking neurons", IEEE Trans. Neural Networks, vol
 % 14, pp 1569-1572, 2003 for a full description of the model and the
 % parameters.
+%  
+% The inputs can be either all scalars or all vectors of the same
+% length.
     nemo_mex(...
             uint32(0),...
             uint32(idx),...

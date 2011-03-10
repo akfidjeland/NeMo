@@ -18,6 +18,9 @@ function nemoSetNeuron(idx, a, b, c, d, u, v, sigma)
 %             distribution. If set to zero no random input current will be
 %             generated
 %    
+%  
+% The inputs can be either all scalars or all vectors of the same
+% length.
     nemo_mex(...
             uint32(24),...
             uint32(idx),...
