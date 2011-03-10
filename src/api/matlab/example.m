@@ -1,91 +1,26 @@
-% Simple example showing usage of Matlab bindings of nemo.
-% Create a network with 1k neurons randomly connected and run it for a bit.
+Ne = 800;
+Ni = 200;
+N = Ne + Ni;
 
-% Populate the network
+re = rand(Ne,1);
+nemoAddNeuron(0:Ne-1, 0.02, 0.2, -65+15*re.^2, 8-6*re.^2, -65*0.2, -65, 5);
+ri = rand(Ni,1);
+nemoAddNeuron(Ne:Ne+Ni-1, 0.02+0.08*ri, 0.25-0.05*ri, -65, 2, -65*0.25-0.05*ri, -65, 2);
 
-% Excitatory neurons
-for n=0:799
-	r = rand;
-	a = 0.02;
-	b = 0.2;
-	c = -65 + 15*r.^2;
-	d = 8 - 6*r.^2;
-	v = -65;
-	u = b*v;
-	sigma = 5 * randn;
-	nemoAddNeuron(n, a, b, c, d, u, v, sigma);
-
-	sources = ones(1, 1000) * n;
-	targets = 0:999;
-	delays = ones(1, 1000);
-	weights = 0.5 * rand(1, 1000);
-	plastic = true(1, 1000);
-
-	% Adding groups of synapses
-	nemoAddSynapse(sources, targets, delays, weights, plastic);
-end;
-
-
-% Inhibitory neurons
-for n=800:999
-	r = rand;
-	a = 0.02 + 0.08 * r;
-	b = 0.25 - 0.05 * r;
-	c = -65;
-	d = 2;
-	v = -65;
-	u = b * v;
-	sigma = 2 * randn;
-	nemoAddNeuron(n, a, b, c, d, u, v, sigma);
-
-	sources = ones(1, 1000) * n;
-	targets = 0:999;
-	delays = ones(1, 1000);
-	weights = -rand(1, 1000);
-	plastic = false(1, 1000);
-	nemoAddSynapse(sources, targets, delays, weights, plastic);
-end;
-
-
-% Set up STDP
-prefire = 0.1 * exp(-(0:20)./20);
-postfire = -0.08 * exp(-(0:20)./20);
-
-nemoSetStdpFunction(prefire, postfire, -1.0, 1.0);
-
-
-nemoCreateSimulation;
-
-% Run for 5s with STDP enabled
-for s=0:4
-	for ms=1:1000
-		fired = nemoStep;
-		t = s*1000 + ms;
-		disp([ones(size(fired')) * t, fired'])
-	end
-
-	% Change neuron parameter during simulation
-	nemoSetNeuron(50, 0.05, 0.25, -70, 2, -70*0.05, -70, 2 * rand);
-
-	% Read back membrane potential of a single neuron
-	v = nemoGetMembranePotential(100)
-
-	% Read back membrane potential of a couple of neurons
-	v = nemoGetMembranePotential([101, 105])
-
-	nemoApplyStdp(1.0);
+for n = 1:Ne-1
+	nemoAddSynapse(n, 0:N-1, 1, 0.5*rand(N,1), false);
 end
-elapsed = nemoElapsedWallclock
 
-% Test that the synapse queries work.
-%
-% Note: the synapse ids returned by addSynapse should be used here. The synapse
-% queries below relies on knowing the internals of how synapse ids are
-% allocated (it refers to the first 10 synapse of neuron 0).
+for n = Ne:N-1
+	nemoAddSynapse(n, 0:N-1, 1, -rand(N,1), false);
+end
 
-weights = nemoGetWeights(0:9)
-targets = nemoGetTargets(0:9)
-delays = nemoGetDelays(0:9)
-plastic = nemoGetPlastic(0:9)
-
+firings = [];
+nemoCreateSimulation;
+for t=1:1000
+	fired = nemoStep;
+	firings=[firings; t+0*fired',fired'];
+end
 nemoDestroySimulation;
+nemoClearNetwork;
+plot(firings(:,1),firings(:,2),'.');

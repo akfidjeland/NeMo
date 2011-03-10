@@ -43,7 +43,10 @@ generate modules constructableFunctions = do
 generateHelp :: [ApiModule] -> IO ()
 generateHelp modules = do
     withFile "../matlab/nemo.m" WriteMode $ \h -> do
-    hPutStr h =<< readFile "../matlab/sources/nemo.m.in"
+    hPutStr h =<< readFile "../matlab/sources/nemo.m.header"
+    example <- readFile "../matlab/example.m"
+    hPutStr h $ unlines $ map ("%    " ++) $ lines example
+    hPutStr h =<< readFile "../matlab/sources/nemo.m.footer"
     hPutStr h $ render $ vcat $ intersperse (char '%') $ map moduleHelp modules
     hPutStr h "\n"
     where
