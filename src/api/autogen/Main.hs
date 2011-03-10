@@ -7,8 +7,8 @@ import qualified Latex (generate)
 import qualified Python (generate)
 
 main = do
-    Latex.generate True api "tmp/fnref.tex"
-    Latex.generate False api "../../doc/latex/fnref.tex"
+    -- Latex.generate True api "tmp/fnref.tex"
+    -- Latex.generate False api "../../doc/latex/fnref.tex"
     Matlab.generate (api ++ [matlabExtras]) constructable
     -- Haskell.generate api
     Python.generate api constructable

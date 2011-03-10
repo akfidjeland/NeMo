@@ -314,7 +314,7 @@ getNeuronState =
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)) ]
         []
-        False
+        True
 
 
 getNeuronParameter =
@@ -326,7 +326,7 @@ getNeuronParameter =
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)),
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)) ]
         []
-        False
+        True
 
 
 setNeuronState =
@@ -339,7 +339,7 @@ setNeuronState =
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)),
             Required (ApiArg "val" (Just "value of the relevant variable") (Scalar ApiFloat)) ]
         []
-        False
+        True
 
 
 setNeuronParameter =
@@ -352,7 +352,7 @@ setNeuronParameter =
             Required (ApiArg "varno" (Just "variable index") (Scalar ApiUInt)),
             Required (ApiArg "val" (Just "value of the neuron parameter") (Scalar ApiFloat)) ]
         []
-        False
+        True
 
 neuronCount =
     ApiFunction

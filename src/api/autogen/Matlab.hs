@@ -79,7 +79,7 @@ generateMex functions constructableFunctions = do
         C.comment $ text "AUTO-GENERATED CODE START",
         Common.emptyLine,
         (vcat $ map (uncurry mexFunction) functions),
-        (vcat $ map mexScalarConstructibleFunction constructableFunctions),
+        (vcat $ map mexConstructibleFunction constructableFunctions),
         (mexFunctionTable $ map mexFunctionName $ (map snd functions) ++ constructableFunctions),
         C.comment $ text "AUTO-GENERATED CODE END"
       ]
@@ -101,6 +101,16 @@ mexFunction mname fn =
         else if fn_vectorized fn
             then mexVectorFunction mname fn
             else mexScalarFunction mname fn
+
+{- Return C/MEX code for a single function which is found in both Network and Simulation class -}
+mexConstructibleFunction :: ApiFunction -> Doc
+mexConstructibleFunction fn =
+    if (MEX `elem` fn_noauto fn)
+        then empty
+        else if fn_vectorized fn
+            then mexVectorConstructibleFunction fn
+            else mexScalarConstructibleFunction fn
+
 
 
 
@@ -336,6 +346,50 @@ mexScalarConstructibleFunction fn = mexFunctionDefinition fn body
         callArgs = inputArgs ++ outputArgs
         inputArgs = zipWith mexInput [1..] $ fn_inputs fn
         outputArgs = map mexOutput $ fn_output fn
+
+
+
+{-| Return vectorized code for function which is found in either network or simulation module -}
+mexVectorConstructibleFunction :: ApiFunction -> Doc
+mexVectorConstructibleFunction fn = mexFunctionDefinition fn body
+    where
+        body = vcat $ [
+                -- NOTE: input and output checks may be redundant
+                {- In the vector form, all inputs should have the same format.
+                 - A pre-defined function can verify this. -}
+                C.statement $ cFunctionCall (text "vectorDimension") (Just $ text "size_t elems") [int inputCount, text "prhs + 1"],
+                C.statement $ cFunctionCall (text "checkInputCount") Nothing [text "nrhs", int inputCount],
+                C.statement $ cFunctionCall (text "checkOutputCount") Nothing [text "nlhs", int outputCount],
+                mexDeclareInputVariables 1 $ fn_inputs fn,
+                mexAllocateVectorOutputs $ fn_output fn,
+                C.conditional (text "isSimulating()") (call "Simulation" "_s") (call "Network" "_n")
+            ]
+
+        -- Conditional with loop inside each branch
+        call mdl_name suffix = vcat $ [
+                C.statement $ cFunctionCall (getHandle mdl_name) (Just (text "void* hdl")) [],
+                C.forLoop indexVar "0" "elems" $ loopBody suffix
+            ]
+
+        -- Loop body iterates over inputs/outputs
+        loopBody suffix = vcat $ [
+                -- use a temporary scalar for the output
+                mexDeclareOutputVariables $ fn_output fn,
+                C.statement $ cFunctionCall (text "checkNemoStatus") Nothing $
+                    [cFunctionCall (text (cFunctionName fn) <> text suffix) Nothing (text "hdl" : callArgs)],
+                -- then convert to Matlab format and return
+                mexVectorizedReturn indexVar $ fn_output fn
+            ]
+
+        getHandle mdl_name = (text "get") <> (text mdl_name)
+        callArgs = inputArgs ++ outputArgs
+        inputCount = length $ fn_inputs fn
+        inputArgs = zipWith (mexVectorInput indexVar) [1..] $ fn_inputs fn
+        outputCount = length $ fn_output fn
+        outputArgs = map mexOutput $ fn_output fn
+        indexVar = "i"
+
+
 
 
 mexScalarFunction :: String -> ApiFunction -> Doc
