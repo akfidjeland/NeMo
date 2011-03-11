@@ -129,7 +129,7 @@ c_runSimulation(
 		if(ms % 100 == 0) {
 			synapse_id* synapses;
 			size_t len;
-			nemo_get_synapses_from(sim, 1, &synapses, &len);
+			nemo_get_synapses_from_s(sim, 1, &synapses, &len);
 
 			float weight;
 			nemo_get_synapse_weight_s(sim, synapses[0], &weight);

@@ -397,7 +397,17 @@ nemo_status_t
 nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float* val);
 
 
-/*! Get synapse target for the specified synapses
+/*! Get target for the specified synapse during construction
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] target index of target neuron
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_target_n(nemo_network_t, synapse_id synapse, unsigned* target);
+
+
+/*! Get target for the specified synapse during simulation
  *
  * \param synapse synapse id (see \a nemo_add_synapse)
  * \param[out] target index of target neuron
@@ -407,7 +417,17 @@ nemo_status_t
 nemo_get_synapse_target_s(nemo_simulation_t, synapse_id synapse, unsigned* target);
 
 
-/*! Get conduction delay for the specified synapse
+/*! Get conduction delay for the specified synapse during construction
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] delay conduction delay (in ms) of synapse
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_delay_n(nemo_network_t, synapse_id synapse, unsigned* delay);
+
+
+/*! Get conduction delay for the specified synapse during simulation
  *
  * \param synapse synapse id (see \a nemo_add_synapse)
  * \param[out] delay conduction delay (in ms) of synapse
@@ -415,6 +435,52 @@ nemo_get_synapse_target_s(nemo_simulation_t, synapse_id synapse, unsigned* targe
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_get_synapse_delay_s(nemo_simulation_t, synapse_id synapse, unsigned* delay);
+
+
+/*! Get weight for a single synapse during construction
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] weight synapse weight
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_weight_n(nemo_network_t, synapse_id synapse, float* weight);
+
+
+/*! Get weight for a single synapse during simulation
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] weight synapse weight
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_weight_s(nemo_simulation_t, synapse_id synapse, float* weight);
+
+
+/*! Get boolean plasticity status for a single synapse during construction
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] plastic boolean indicating whether synapse is plastic
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_plastic_n(nemo_network_t, synapse_id synapse, unsigned char* plastic);
+
+
+/*! Get boolean plasticity status for a single synapse during simulation
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] plastic boolean indicating whether synapse is plastic
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_plastic_s(nemo_simulation_t, synapse_id synapse, unsigned char* plastic);
+
+
+/*! \copydoc nemo_get_synapses_from_n */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapses_from_n(nemo_network_t, unsigned source, synapse_id *synapses[], size_t* len);
 
 
 /*! Get synapse ids for synapses with the given source id
@@ -428,28 +494,8 @@ nemo_get_synapse_delay_s(nemo_simulation_t, synapse_id synapse, unsigned* delay)
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_synapses_from(nemo_simulation_t, unsigned source, synapse_id *synapses[], size_t* len);
+nemo_get_synapses_from_s(nemo_simulation_t, unsigned source, synapse_id *synapses[], size_t* len);
 
-
-/*! Get weight for a single synapses
- *
- * \param ptr
- * \param synapse synapse ids (see \a nemo_add_synapse)
- * \param[out] weight synapse weight
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_get_synapse_weight_s(nemo_simulation_t ptr, synapse_id synapse, float* weight);
-
-
-/*! Get boolean plasticity status for a single synapse
- *
- * \param synapse synapse ids (see \a nemo_add_synapse)
- * \param[out] plastic boolean indicating whether synapse is plastic
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_get_synapse_plastic_s(nemo_simulation_t ptr, synapse_id synapse, unsigned char* plastic);
 
 
 /* \} */ // end simulation group

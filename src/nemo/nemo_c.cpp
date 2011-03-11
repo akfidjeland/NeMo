@@ -281,12 +281,12 @@ nemo_set_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned par
 
 void
 getSynapsesFrom(
-		nemo::SimulationBackend* sim,
+		nemo::ReadableNetwork* net,
 		unsigned source,
 		synapse_id *synapses[],
 		size_t* len)
 {
-	const std::vector<synapse_id>& ids = sim->getSynapsesFrom(source);
+	const std::vector<synapse_id>& ids = net->getSynapsesFrom(source);
 	if(g_lastCallStatus == NEMO_OK && !ids.empty()) {
 		*synapses = const_cast<synapse_id*>(&ids[0]);
 		*len = ids.size();
@@ -298,13 +298,32 @@ getSynapsesFrom(
 
 
 nemo_status_t
-nemo_get_synapses_from(nemo_simulation_t sim,
+nemo_get_synapses_from_n(nemo_network_t net,
+		unsigned source,
+		synapse_id *synapses[],
+		size_t* len)
+{
+	CALL(getSynapsesFrom(net, source, synapses, len));
+	return g_lastCallStatus;
+}
+
+
+
+nemo_status_t
+nemo_get_synapses_from_s(nemo_simulation_t sim,
 		unsigned source,
 		synapse_id *synapses[],
 		size_t* len)
 {
 	CALL(getSynapsesFrom(sim, source, synapses, len));
 	return g_lastCallStatus;
+}
+
+
+nemo_status_t
+nemo_get_synapse_target_n(nemo_network_t ptr, synapse_id synapse, unsigned* target)
+{
+	CATCH(ptr, getSynapseTarget(synapse), *target);
 }
 
 
@@ -316,6 +335,13 @@ nemo_get_synapse_target_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* t
 
 
 nemo_status_t
+nemo_get_synapse_delay_n(nemo_network_t ptr, synapse_id synapse, unsigned* delay)
+{
+	CATCH(ptr, getSynapseTarget(synapse), *delay);
+}
+
+
+nemo_status_t
 nemo_get_synapse_delay_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* delay)
 {
 	CATCH(ptr, getSynapseTarget(synapse), *delay);
@@ -323,9 +349,23 @@ nemo_get_synapse_delay_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* de
 
 
 nemo_status_t
+nemo_get_synapse_weight_n(nemo_network_t ptr, synapse_id synapse, float* weight)
+{
+	CATCH(ptr, getSynapseTarget(synapse), *weight);
+}
+
+
+nemo_status_t
 nemo_get_synapse_weight_s(nemo_simulation_t ptr, synapse_id synapse, float* weight)
 {
 	CATCH(ptr, getSynapseTarget(synapse), *weight);
+}
+
+
+nemo_status_t
+nemo_get_synapse_plastic_n(nemo_network_t ptr, synapse_id synapse, unsigned char* plastic)
+{
+	CATCH(ptr, getSynapsePlastic(synapse), *plastic);
 }
 
 
