@@ -130,11 +130,22 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
 
-		/*! \return source neuron id for a given synapse */
-		unsigned getSynapseSource(synapse_id id) const;
+		/*! \return source neuron id for a synapse */
+		unsigned getSynapseSource(synapse_id) const;
 
-		/* synapse getter intended for testing only... */
+		/*! \return target neuron id for a synapse */
+		unsigned getSynapseTarget(synapse_id) const;
 
+		/*! \return conductance delay for a synapse */
+		unsigned getSynapseDelay(synapse_id) const;
+
+		/*! \return weight for a synapse */
+		float getSynapseWeight(synapse_id) const;
+
+		/*! \return plasticity status for a synapse */
+		unsigned char getSynapsePlastic(synapse_id) const;
+
+		/* vectorised synapse getter intended for testing only... */
 		/*! \return
 		 * 		target neurons for the specified synapses. The reference is
 		 * 		valid until the next call to this function.

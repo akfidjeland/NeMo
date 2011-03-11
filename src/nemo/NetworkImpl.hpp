@@ -9,6 +9,7 @@
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
 #include "Axon.hpp"
+#include "ReadableNetwork.hpp"
 
 namespace nemo {
 
@@ -35,7 +36,7 @@ namespace nemo {
 			class synapse_iterator;
 		}
 
-class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
+class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwork
 {
 	public :
 
@@ -74,6 +75,18 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 
 		/*! \copydoc nemo::Network::setNeuronParameter */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
+
+		/*! \copydoc Network::getSynapseTarget */
+		unsigned getSynapseTarget(synapse_id) const;
+
+		/*! \copydoc Network::getSynapseDelay */
+		unsigned getSynapseDelay(synapse_id) const;
+
+		/*! \copydoc Network::getSynapseWeight */
+		float getSynapseWeight(synapse_id) const;
+
+		/*! \copydoc Network::getSynapsePlastic */
+		unsigned char getSynapsePlastic(synapse_id) const;
 
 		/*! \return
 		 * 		target neurons for the specified synapses. The reference is

@@ -29,7 +29,19 @@ nemo::Network \-
 .RI "void \fBsetNeuronState\fP (unsigned neuron, unsigned var, float val)"
 .br
 .ti -1c
-.RI "unsigned \fBgetSynapseSource\fP (synapse_id id) const "
+.RI "unsigned \fBgetSynapseSource\fP (synapse_id) const "
+.br
+.ti -1c
+.RI "unsigned \fBgetSynapseTarget\fP (synapse_id) const "
+.br
+.ti -1c
+.RI "unsigned \fBgetSynapseDelay\fP (synapse_id) const "
+.br
+.ti -1c
+.RI "float \fBgetSynapseWeight\fP (synapse_id) const "
+.br
+.ti -1c
+.RI "unsigned char \fBgetSynapsePlastic\fP (synapse_id) const "
 .br
 .ti -1c
 .RI "const std::vector< unsigned > & \fBgetTargets\fP (unsigned source) const "
@@ -51,7 +63,9 @@ Networks are constructed by adding individual neurons, and single or groups of s
 .PP 
 .SS "void nemo::Network::addNeuron (unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
 .PP
-Add a single neuron to the network. The neuron uses the Izhikevich neuron model. See E. M. Izhikevich 'Simple model of spiking neurons', \fIIEEE\fP \fITrans\fP. \fINeural\fP \fINetworks\fP, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.
+Add a single neuron to the network. 
+.PP
+The neuron uses the Izhikevich neuron model. See E. M. Izhikevich 'Simple model of spiking neurons', \fIIEEE\fP \fITrans\fP. \fINeural\fP \fINetworks\fP, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.
 .PP
 \fBParameters:\fP
 .RS 4
@@ -73,10 +87,14 @@ Add a single neuron to the network. The neuron uses the Izhikevich neuron model.
 .RE
 .PP
 
-.SS "void nemo::Network::setNeuron (unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"Change parameters/state variables of a single existing neuron
+.SS "void nemo::Network::setNeuron (unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)"
+.PP
+Change parameters/state variables of a single existing neuron
 .PP
 The parameters are the same as for \fI\fBnemo::Network::addNeuron\fP\fP 
-.SS "float nemo::Network::getNeuronState (unsigned neuron, unsigned var) const"\fBParameters:\fP
+.SS "float nemo::Network::getNeuronState (unsigned neuron, unsigned var) const"
+.PP
+\fBParameters:\fP
 .RS 4
 \fIneuron\fP neuron index 
 .br
@@ -89,7 +107,9 @@ state variable \fIn\fP.
 .RE
 .PP
 For the Izhikevich model the variable indices are 0 = u, 1 = v. 
-.SS "float nemo::Network::getNeuronParameter (unsigned neuron, unsigned param) const"\fBParameters:\fP
+.SS "float nemo::Network::getNeuronParameter (unsigned neuron, unsigned param) const"
+.PP
+\fBParameters:\fP
 .RS 4
 \fIneuron\fP neuron index 
 .br
@@ -102,7 +122,9 @@ parameter \fIn\fP.
 .RE
 .PP
 For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d. 
-.SS "void nemo::Network::setNeuronParameter (unsigned neuron, unsigned param, float val)"Change a single parameter for an existing neuron
+.SS "void nemo::Network::setNeuronParameter (unsigned neuron, unsigned param, float val)"
+.PP
+Change a single parameter for an existing neuron
 .PP
 \fBParameters:\fP
 .RS 4
@@ -114,7 +136,9 @@ For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
 .RE
 .PP
 For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d 
-.SS "void nemo::Network::setNeuronState (unsigned neuron, unsigned var, float val)"Change a single state variable for an existing neuron
+.SS "void nemo::Network::setNeuronState (unsigned neuron, unsigned var, float val)"
+.PP
+Change a single state variable for an existing neuron
 .PP
 \fBParameters:\fP
 .RS 4
@@ -126,31 +150,73 @@ For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
 .RE
 .PP
 For the Izhikevich model variable indices 0 = u, 1 = v 
-.SS "unsigned nemo::Network::getSynapseSource (synapse_id id) const"\fBReturns:\fP
+.SS "unsigned nemo::Network::getSynapseSource (synapse_id) const"
+.PP
+\fBReturns:\fP
 .RS 4
-source neuron id for a given synapse 
+source neuron id for a synapse 
 .RE
 .PP
 
-.SS "const std::vector<unsigned>& nemo::Network::getTargets (unsigned source) const"\fBReturns:\fP
+.SS "unsigned nemo::Network::getSynapseTarget (synapse_id) const"
+.PP
+\fBReturns:\fP
+.RS 4
+target neuron id for a synapse 
+.RE
+.PP
+
+.SS "unsigned nemo::Network::getSynapseDelay (synapse_id) const"
+.PP
+\fBReturns:\fP
+.RS 4
+conductance delay for a synapse 
+.RE
+.PP
+
+.SS "float nemo::Network::getSynapseWeight (synapse_id) const"
+.PP
+\fBReturns:\fP
+.RS 4
+weight for a synapse 
+.RE
+.PP
+
+.SS "unsigned char nemo::Network::getSynapsePlastic (synapse_id) const"
+.PP
+\fBReturns:\fP
+.RS 4
+plasticity status for a synapse 
+.RE
+.PP
+
+.SS "const std::vector<unsigned>& nemo::Network::getTargets (unsigned source) const"
+.PP
+\fBReturns:\fP
 .RS 4
 target neurons for the specified synapses. The reference is valid until the next call to this function. 
 .RE
 .PP
 
-.SS "const std::vector<unsigned>& nemo::Network::getDelays (unsigned source) const"\fBReturns:\fP
+.SS "const std::vector<unsigned>& nemo::Network::getDelays (unsigned source) const"
+.PP
+\fBReturns:\fP
 .RS 4
 conductance delays for the specified synapses. The reference is valid until the next call to this function. 
 .RE
 .PP
 
-.SS "const std::vector<float>& nemo::Network::getWeights (unsigned source) const"\fBReturns:\fP
+.SS "const std::vector<float>& nemo::Network::getWeights (unsigned source) const"
+.PP
+\fBReturns:\fP
 .RS 4
 synaptic weights for the specified synapses. The reference is valid until the next call to this function. 
 .RE
 .PP
 
-.SS "const std::vector<unsigned char>& nemo::Network::getPlastic (unsigned source) const"\fBReturns:\fP
+.SS "const std::vector<unsigned char>& nemo::Network::getPlastic (unsigned source) const"
+.PP
+\fBReturns:\fP
 .RS 4
 plasticity status for the specified synapses. The reference is valid until the next call to this function. 
 .RE

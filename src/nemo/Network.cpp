@@ -62,14 +62,6 @@ Network::setNeuronState(unsigned neuron, unsigned var, float val)
 
 
 
-unsigned
-Network::getSynapseSource(synapse_id id) const
-{
-	return neuronIndex(id);
-}
-
-
-
 void
 Network::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
 {
@@ -87,6 +79,46 @@ Network::addSynapse(
 		unsigned char plastic)
 {
 	return m_impl->addSynapse(source, target, delay, weight, plastic);
+}
+
+
+
+unsigned
+Network::getSynapseSource(synapse_id id) const
+{
+	return m_impl->getSynapseSource(id);
+}
+
+
+
+unsigned
+Network::getSynapseTarget(synapse_id id) const
+{
+	return m_impl->getSynapseTarget(id);
+}
+
+
+
+unsigned
+Network::getSynapseDelay(synapse_id id) const
+{
+	return m_impl->getSynapseDelay(id);
+}
+
+
+
+float
+Network::getSynapseWeight(synapse_id id) const
+{
+	return m_impl->getSynapseWeight(id);
+}
+
+
+
+unsigned char
+Network::getSynapsePlastic(synapse_id id) const
+{
+	return m_impl->getSynapsePlastic(id);
 }
 
 
