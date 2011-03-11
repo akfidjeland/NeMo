@@ -75,6 +75,7 @@ INSTALL(FILES
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp
+		ReadableNetwork.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/config.h
 	DESTINATION ${INSTALL_INCLUDE_DIR}/nemo
 )

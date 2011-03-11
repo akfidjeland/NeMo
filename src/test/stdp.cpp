@@ -166,23 +166,23 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m, float rewa
 
 	for(unsigned local = 0; local < groupSize; ++local) {
 
-		std::vector<synapse_id> synapses = synapseIds(globalIdx(0, local), m);
-		const std::vector<unsigned>& targets = sim->getTargets(synapses);
-		const std::vector<float>& weights = sim->getWeights(synapses);
-		const std::vector<unsigned>& delays = sim->getDelays(synapses);
-		const std::vector<unsigned char>& plastic = sim->getPlastic(synapses);
+		const std::vector<synapse_id>& synapses = sim->getSynapsesFrom(globalIdx(0, local));
 
-		for(unsigned s = 0; s < targets.size(); ++s) {
+		for(std::vector<synapse_id>::const_iterator id = synapses.begin();
+				id != synapses.end(); ++id) {
 
-			if(local != localIdx(targets.at(s)))
+			unsigned target = sim->getSynapseTarget(*id);
+
+			if(local != localIdx(target))
 				continue;
 
-			BOOST_REQUIRE_EQUAL(delay(localIdx(targets.at(s))), delays.at(s));
-			BOOST_REQUIRE(plastic.at(s));
+			unsigned actualDelay = sim->getSynapseDelay(*id);
+			BOOST_REQUIRE_EQUAL(delay(localIdx(target)), actualDelay);
+			BOOST_REQUIRE(sim->getSynapsePlastic(*id));
 
 			/* dt is positive for pre-post pair, and negative for post-pre
 			 * pairs */ 
-			int dt = -(int(postFireDelay - delays.at(s)));
+			int dt = -(int(postFireDelay - actualDelay));
 
 			float dw_expected = 0.0f; 
 			if(dt > 0) {
@@ -192,7 +192,7 @@ verifyWeightChange(unsigned epoch, nemo::Simulation* sim, unsigned m, float rewa
 			}
 
 			float expectedWeight = initWeight + epoch * reward * dw_expected;
-			float actualWeight = weights.at(s);
+			float actualWeight = sim->getSynapseWeight(*id);
 
 			const float tolerance = 0.001f; // percent
 			BOOST_REQUIRE_CLOSE(expectedWeight, actualWeight, tolerance);

@@ -76,17 +76,17 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		/*! \copydoc nemo::Network::setNeuronParameter */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
 
-		/*! \copydoc Network::getSynapseTarget */
-		unsigned getSynapseTarget(synapse_id) const;
+		/*! \copydoc nemo::Network::getSynapseTarget */
+		unsigned getSynapseTarget(const synapse_id&) const;
 
-		/*! \copydoc Network::getSynapseDelay */
-		unsigned getSynapseDelay(synapse_id) const;
+		/*! \copydoc nemo::Network::getSynapseDelay */
+		unsigned getSynapseDelay(const synapse_id&) const;
 
-		/*! \copydoc Network::getSynapseWeight */
-		float getSynapseWeight(synapse_id) const;
+		/*! \copydoc nemo::Network::getSynapseWeight */
+		float getSynapseWeight(const synapse_id&) const;
 
-		/*! \copydoc Network::getSynapsePlastic */
-		unsigned char getSynapsePlastic(synapse_id) const;
+		/*! \copydoc nemo::Network::getSynapsePlastic */
+		unsigned char getSynapsePlastic(const synapse_id&) const;
 
 		/*! \return
 		 * 		target neurons for the specified synapses. The reference is

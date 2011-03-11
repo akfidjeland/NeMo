@@ -14,6 +14,7 @@
 #include <utility>
 #include <nemo/config.h>
 #include <nemo/types.h>
+#include <nemo/ReadableNetwork.hpp>
 
 namespace nemo {
 
@@ -33,7 +34,7 @@ class Configuration;
  *
  * \ingroup cpp-api
  */
-class NEMO_BASE_DLL_PUBLIC Simulation
+class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 {
 	public :
 
@@ -137,30 +138,6 @@ class NEMO_BASE_DLL_PUBLIC Simulation
 		 * 		neuron
 		 */
 		virtual const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron) = 0;
-
-		/*! \return
-		 * 		target neurons for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		virtual const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses) = 0;
-
-		/*! \return
-		 * 		conductance delays for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		virtual const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses) = 0;
-
-		/*! \return
-		 * 		synaptic weights for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		virtual const std::vector<float>& getWeights(const std::vector<synapse_id>& synapses) = 0;
-
-		/*! \return
-		 * 		plasticity status for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		virtual const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses) = 0;
 
 		/* \} */ // end simulation (queries) section
 

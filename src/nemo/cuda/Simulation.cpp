@@ -361,6 +361,7 @@ Simulation::setNeuron(unsigned g_idx,
 }
 
 
+
 const std::vector<synapse_id>&
 Simulation::getSynapsesFrom(unsigned neuron)
 {
@@ -368,31 +369,35 @@ Simulation::getSynapsesFrom(unsigned neuron)
 }
 
 
-const std::vector<unsigned>&
-Simulation::getTargets(const std::vector<synapse_id>& synapses)
+
+unsigned
+Simulation::getSynapseTarget(const synapse_id& synapse) const
 {
-	return m_cm.getTargets(synapses);
+	return m_cm.getTarget(synapse);
 }
 
 
-const std::vector<unsigned>&
-Simulation::getDelays(const std::vector<synapse_id>& synapses)
+
+unsigned
+Simulation::getSynapseDelay(const synapse_id& synapse) const
 {
-	return m_cm.getDelays(synapses);
+	return m_cm.getDelay(synapse);
 }
 
 
-const std::vector<float>&
-Simulation::getWeights(const std::vector<synapse_id>& synapses)
+
+float
+Simulation::getSynapseWeight(const synapse_id& synapse) const
 {
-	return m_cm.getWeights(elapsedSimulation(), synapses);
+	return m_cm.getWeight(elapsedSimulation(), synapse);
 }
 
 
-const std::vector<unsigned char>&
-Simulation::getPlastic(const std::vector<synapse_id>& synapses)
+
+unsigned char
+Simulation::getSynapsePlastic(const synapse_id& synapse) const
 {
-	return m_cm.getPlastic(synapses);
+	return m_cm.getPlastic(synapse);
 }
 
 

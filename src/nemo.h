@@ -399,30 +399,22 @@ nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned par
 
 /*! Get synapse target for the specified synapses
  *
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] targets
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] target index of target neuron
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_targets(nemo_simulation_t, synapse_id synapses[], size_t len, unsigned* targets[]);
+nemo_get_synapse_target_s(nemo_simulation_t, synapse_id synapse, unsigned* target);
 
 
-/*! Get conductance delays for the specified synapses
+/*! Get conduction delay for the specified synapse
  *
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] delays
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] delay conduction delay (in ms) of synapse
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_delays(nemo_simulation_t, synapse_id synapses[], size_t len, unsigned* delays[]);
+nemo_get_synapse_delay_s(nemo_simulation_t, synapse_id synapse, unsigned* delay);
 
 
 /*! Get synapse ids for synapses with the given source id
@@ -439,34 +431,25 @@ nemo_status_t
 nemo_get_synapses_from(nemo_simulation_t, unsigned source, synapse_id *synapses[], size_t* len);
 
 
-/*! Get weights for the specified synapses
+/*! Get weight for a single synapses
  *
  * \param ptr
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] weights
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
+ * \param synapse synapse ids (see \a nemo_add_synapse)
+ * \param[out] weight synapse weight
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float* weights[]);
+nemo_get_synapse_weight_s(nemo_simulation_t ptr, synapse_id synapse, float* weight);
 
 
-/*! Get boolean plasticity status for the specified synapses
+/*! Get boolean plasticity status for a single synapse
  *
- * \param ptr
- * \param synapses list of synapse ids (\see nemo_add_synapse)
- * \param len length of \a synapses
- * \param[out] plastic
- * 		vector of length \a len to be set with synapse state. The memory is
- * 		managed by the simulation object and is valid until the next call to
- * 		this function.
+ * \param synapse synapse ids (see \a nemo_add_synapse)
+ * \param[out] plastic boolean indicating whether synapse is plastic
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char* plastic[]);
+nemo_get_synapse_plastic_s(nemo_simulation_t ptr, synapse_id synapse, unsigned char* plastic);
 
 
 /* \} */ // end simulation group

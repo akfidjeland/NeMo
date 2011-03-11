@@ -348,11 +348,10 @@ ConnectivityMatrix::getSynapsesFrom(unsigned source)
 
 
 
-
 const std::vector<weight_dt>&
-ConnectivityMatrix::syncWeights(cycle_t cycle, const std::vector<synapse_id>& synapses)
+ConnectivityMatrix::syncWeights(cycle_t cycle) const
 {
-	if(cycle != m_lastWeightSync && !synapses.empty() && !mh_weights.empty()) {
+	if(cycle != m_lastWeightSync && !mh_weights.empty()) {
 		//! \todo refine this by only doing the minimal amount of copying
 		memcpyFromDevice(reinterpret_cast<synapse_t*>(&mh_weights[0]),
 					md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize,
@@ -364,79 +363,54 @@ ConnectivityMatrix::syncWeights(cycle_t cycle, const std::vector<synapse_id>& sy
 
 
 
-const std::vector<float>&
-ConnectivityMatrix::getWeights(cycle_t cycle, const std::vector<synapse_id>& synapses)
+const AxonTerminalAux&
+ConnectivityMatrix::axonTerminalAux(const synapse_id& id) const
 {
+	using boost::format;
+
 	if(m_writeOnlySynapses) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				"Cannot read synapse state if simulation configured with write-only synapses");
 	}
 
-	m_queriedWeights.resize(synapses.size());
-	const std::vector<weight_dt>& h_weights = syncWeights(cycle, synapses);
-	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
-		synapse_id id = synapses.at(i);
-		size_t addr = m_cmAux[neuronIndex(id)][synapseIndex(id)].addr();
-		weight_dt w = h_weights[addr];
-		m_queriedWeights[i] = fx_toFloat(w, m_fractionalBits);;
-	}
-	return m_queriedWeights;
-}
-
-
-
-template<typename T>
-const std::vector<T>&
-getSynapseState(
-		bool writeOnlySynapses,
-		const std::vector<synapse_id>& synapses,
-		const boost::unordered_map<nidx_t, std::deque<AxonTerminalAux> >& cm,
-		std::const_mem_fun_ref_t<T, AxonTerminalAux> fun,
-		std::vector<T>& out)
-{
-	using boost::format;
-
-	if(writeOnlySynapses) {
+	aux_map::const_iterator it = m_cmAux.find(neuronIndex(id));
+	if(it == m_cmAux.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				"Cannot read synapse state if simulation configured with write-only synapses");
+				str(format("Non-existing neuron id (%u) in synapse query") % neuronIndex(id)));
 	}
-
-	out.resize(synapses.size());
-	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
-		synapse_id id = synapses.at(i);
-		boost::unordered_map<nidx_t, std::deque<AxonTerminalAux> >::const_iterator it = cm.find(neuronIndex(id));
-		if(it == cm.end()) {
-			throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Non-existing neuron id (%u) in synapse query") % neuronIndex(id)));
-		}
-		out[i] = fun(it->second.at(synapseIndex(id)));
-	}
-	return out;
+	return (it->second)[synapseIndex(id)];
 }
 
 
 
-const std::vector<unsigned>&
-ConnectivityMatrix::getTargets(const std::vector<synapse_id>& synapses)
+float
+ConnectivityMatrix::getWeight(cycle_t cycle, const synapse_id& id) const
 {
-	return getSynapseState(m_writeOnlySynapses, synapses, m_cmAux,
-			std::mem_fun_ref(&AxonTerminalAux::target), m_queriedTargets);
+	size_t addr = axonTerminalAux(id).addr();
+	const std::vector<weight_dt>& h_weights = syncWeights(cycle);
+	return fx_toFloat(h_weights[addr], m_fractionalBits);;
 }
 
 
-const std::vector<unsigned>&
-ConnectivityMatrix::getDelays(const std::vector<synapse_id>& synapses)
+
+unsigned
+ConnectivityMatrix::getTarget(const synapse_id& id) const
 {
-	return getSynapseState(m_writeOnlySynapses, synapses, m_cmAux,
-			std::mem_fun_ref(&AxonTerminalAux::delay), m_queriedDelays);
+	return axonTerminalAux(id).target();
 }
 
 
-const std::vector<unsigned char>&
-ConnectivityMatrix::getPlastic(const std::vector<synapse_id>& synapses)
+unsigned
+ConnectivityMatrix::getDelay(const synapse_id& id) const
 {
-	return getSynapseState(m_writeOnlySynapses, synapses, m_cmAux,
-			std::mem_fun_ref(&AxonTerminalAux::plastic), m_queriedPlastic);
+	return axonTerminalAux(id).delay();
+}
+
+
+unsigned char
+ConnectivityMatrix::getPlastic(const synapse_id& id) const
+{
+	return axonTerminalAux(id).plastic();
 }
 
 

@@ -84,15 +84,7 @@ Network::addSynapse(
 
 
 unsigned
-Network::getSynapseSource(synapse_id id) const
-{
-	return m_impl->getSynapseSource(id);
-}
-
-
-
-unsigned
-Network::getSynapseTarget(synapse_id id) const
+Network::getSynapseTarget(const synapse_id& id) const
 {
 	return m_impl->getSynapseTarget(id);
 }
@@ -100,7 +92,7 @@ Network::getSynapseTarget(synapse_id id) const
 
 
 unsigned
-Network::getSynapseDelay(synapse_id id) const
+Network::getSynapseDelay(const synapse_id& id) const
 {
 	return m_impl->getSynapseDelay(id);
 }
@@ -108,7 +100,7 @@ Network::getSynapseDelay(synapse_id id) const
 
 
 float
-Network::getSynapseWeight(synapse_id id) const
+Network::getSynapseWeight(const synapse_id& id) const
 {
 	return m_impl->getSynapseWeight(id);
 }
@@ -116,7 +108,7 @@ Network::getSynapseWeight(synapse_id id) const
 
 
 unsigned char
-Network::getSynapsePlastic(synapse_id id) const
+Network::getSynapsePlastic(const synapse_id& id) const
 {
 	return m_impl->getSynapsePlastic(id);
 }

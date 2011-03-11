@@ -308,41 +308,31 @@ nemo_get_synapses_from(nemo_simulation_t sim,
 }
 
 
-#define GET_SYNAPSE_STATE(T, sim, call, synapses, len, ret)                   \
-    if(len > 0) {                                                             \
-        CALL(*ret = &const_cast<T&>(sim->call(std::vector<synapse_id>(synapses, synapses+len))[0])); \
-        return g_lastCallStatus;                                              \
-    } else {                                                                  \
-        *ret = NULL;                                                          \
-        return NEMO_OK;                                                       \
-    }
-
-
 nemo_status_t
-nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* targets[])
+nemo_get_synapse_target_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* target)
 {
-	GET_SYNAPSE_STATE(unsigned, ptr, getTargets, synapses, len, targets);
+	CATCH(ptr, getSynapseTarget(synapse), *target);
 }
 
 
 nemo_status_t
-nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[])
+nemo_get_synapse_delay_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* delay)
 {
-	GET_SYNAPSE_STATE(unsigned, ptr, getDelays, synapses, len, delays);
+	CATCH(ptr, getSynapseTarget(synapse), *delay);
 }
 
 
 nemo_status_t
-nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float* weights[])
+nemo_get_synapse_weight_s(nemo_simulation_t ptr, synapse_id synapse, float* weight)
 {
-	GET_SYNAPSE_STATE(float, ptr, getWeights, synapses, len, weights);
+	CATCH(ptr, getSynapseTarget(synapse), *weight);
 }
 
 
 nemo_status_t
-nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char* plastic[])
+nemo_get_synapse_plastic_s(nemo_simulation_t ptr, synapse_id synapse, unsigned char* plastic)
 {
-	GET_SYNAPSE_STATE(unsigned char, ptr, getPlastic, synapses, len, plastic);
+	CATCH(ptr, getSynapsePlastic(synapse), *plastic);
 }
 
 

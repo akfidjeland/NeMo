@@ -10,6 +10,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <nemo/synapse_indices.hpp>
+
 namespace nemo {
 
 /*! Network whose neurons and synapses can be queried
@@ -26,16 +28,16 @@ class ReadableNetwork
 		}
 
 		/*! \return target neuron id for a synapse */
-		virtual unsigned getSynapseTarget(synapse_id) const = 0;
+		virtual unsigned getSynapseTarget(const synapse_id&) const = 0;
 
 		/*! \return conductance delay for a synapse */
-		virtual unsigned getSynapseDelay(synapse_id) const = 0;
+		virtual unsigned getSynapseDelay(const synapse_id&) const = 0;
 
 		/*! \return weight for a synapse */
-		virtual float getSynapseWeight(synapse_id) const = 0;
+		virtual float getSynapseWeight(const synapse_id&) const = 0;
 
 		/*! \return plasticity status for a synapse */
-		virtual unsigned char getSynapsePlastic(synapse_id) const = 0;
+		virtual unsigned char getSynapsePlastic(const synapse_id&) const = 0;
 };
 
 }

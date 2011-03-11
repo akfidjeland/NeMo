@@ -42,11 +42,6 @@ void
 addExcitatoryNeuron(unsigned nidx, nemo::Network& net, float sigma=0.0f);
 
 
-/* Return all the synapse ids for a given neuron */
-//! \todo this should be part of the simulation interface instead.
-std::vector<synapse_id>
-synapseIds(unsigned neuron, unsigned synapses);
-
 
 /* Simple ring network.
  *

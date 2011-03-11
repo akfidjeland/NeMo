@@ -127,18 +127,21 @@ c_runSimulation(
 
 		// read back a few synapses every now and then just to make sure it works
 		if(ms % 100 == 0) {
-			std::vector<synapse_id> synapses = synapseIds(1, 1000);
-			float* weights;
-			nemo_get_weights(sim, &synapses[0], synapses.size(), &weights);
+			synapse_id* synapses;
+			size_t len;
+			nemo_get_synapses_from(sim, 1, &synapses, &len);
 
-			unsigned* targets;
-			nemo_get_targets(sim, &synapses[0], synapses.size(), &targets);
+			float weight;
+			nemo_get_synapse_weight_s(sim, synapses[0], &weight);
 
-			unsigned* delays;
-			nemo_get_delays(sim, &synapses[0], synapses.size(), &delays);
+			unsigned target;
+			nemo_get_synapse_target_s(sim, synapses[0], &target);
 
-			unsigned char* plastic;
-			nemo_get_plastic(sim, &synapses[0], synapses.size(), &plastic);
+			unsigned delay;
+			nemo_get_synapse_delay_s(sim, synapses[0], &delay);
+
+			unsigned char plastic;
+			nemo_get_synapse_plastic_s(sim, synapses[0], &plastic);
 		}
 
 		// read back a some membrane potential, just to make sure it works

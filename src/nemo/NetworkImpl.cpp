@@ -230,7 +230,7 @@ NetworkImpl::axon(nidx_t source) const
  * testing, so is not optimised */
 
 unsigned
-NetworkImpl::getSynapseTarget(synapse_id id) const
+NetworkImpl::getSynapseTarget(const synapse_id& id) const
 {
 	return axon(neuronIndex(id)).getTarget(synapseIndex(id));
 }
@@ -238,7 +238,7 @@ NetworkImpl::getSynapseTarget(synapse_id id) const
 
 
 unsigned
-NetworkImpl::getSynapseDelay(synapse_id id) const
+NetworkImpl::getSynapseDelay(const synapse_id& id) const
 {
 	return axon(neuronIndex(id)).getDelay(synapseIndex(id));
 }
@@ -246,7 +246,7 @@ NetworkImpl::getSynapseDelay(synapse_id id) const
 
 
 float
-NetworkImpl::getSynapseWeight(synapse_id id) const
+NetworkImpl::getSynapseWeight(const synapse_id& id) const
 {
 	return axon(neuronIndex(id)).getWeight(synapseIndex(id));
 }
@@ -254,7 +254,7 @@ NetworkImpl::getSynapseWeight(synapse_id id) const
 
 
 unsigned char
-NetworkImpl::getSynapsePlastic(synapse_id id) const
+NetworkImpl::getSynapsePlastic(const synapse_id& id) const
 {
 	return axon(neuronIndex(id)).getPlastic(synapseIndex(id));
 }

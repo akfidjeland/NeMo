@@ -6,6 +6,7 @@
 #include <vector>
 #include <nemo/config.h>
 #include <nemo/types.h>
+#include <nemo/ReadableNetwork.hpp>
 
 /* Copyright 2010 Imperial College London
  *
@@ -36,7 +37,7 @@ class Configuration;
  * be unique for each neuron. When adding synapses the source or target neurons
  * need not necessarily exist yet, but should be defined before the network is
  * finalised. */
-class NEMO_BASE_DLL_PUBLIC Network
+class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 {
 	public :
 
@@ -130,20 +131,17 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
 
-		/*! \return source neuron id for a synapse */
-		unsigned getSynapseSource(synapse_id) const;
-
 		/*! \return target neuron id for a synapse */
-		unsigned getSynapseTarget(synapse_id) const;
+		unsigned getSynapseTarget(const synapse_id&) const;
 
 		/*! \return conductance delay for a synapse */
-		unsigned getSynapseDelay(synapse_id) const;
+		unsigned getSynapseDelay(const synapse_id&) const;
 
 		/*! \return weight for a synapse */
-		float getSynapseWeight(synapse_id) const;
+		float getSynapseWeight(const synapse_id&) const;
 
 		/*! \return plasticity status for a synapse */
-		unsigned char getSynapsePlastic(synapse_id) const;
+		unsigned char getSynapsePlastic(const synapse_id&) const;
 
 		/* vectorised synapse getter intended for testing only... */
 		/*! \return
