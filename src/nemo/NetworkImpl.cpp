@@ -261,58 +261,6 @@ NetworkImpl::getSynapsePlastic(const synapse_id& id) const
 
 
 
-const std::vector<unsigned>&
-NetworkImpl::getTargets(unsigned source) const
-{
-	const Axon& group = axon(source);
-	m_queriedTargets.clear();
-	for(id32_t i_axon=0, end_axon=group.size(); i_axon < end_axon; ++i_axon) {
-		m_queriedTargets.push_back(group.getTarget(i_axon));
-	}
-	return m_queriedTargets;
-}
-
-
-
-const std::vector<unsigned>&
-NetworkImpl::getDelays(unsigned source) const
-{
-	const Axon& group = axon(source);
-	m_queriedDelays.clear();
-	for(id32_t i_axon=0, end_axon=group.size(); i_axon < end_axon; ++i_axon) {
-		m_queriedDelays.push_back(group.getDelay(i_axon));
-	}
-	return m_queriedDelays;
-}
-
-
-
-const std::vector<float>&
-NetworkImpl::getWeights(unsigned source) const
-{
-	const Axon& group = axon(source);
-	m_queriedWeights.clear();
-	for(id32_t i_axon=0, end_axon=group.size(); i_axon < end_axon; ++i_axon) {
-		m_queriedWeights.push_back(group.getWeight(i_axon));
-	}
-	return m_queriedWeights;
-}
-
-
-
-const std::vector<unsigned char>&
-NetworkImpl::getPlastic(unsigned source) const
-{
-	const Axon& group = axon(source);
-	m_queriedPlastic.clear();
-	for(id32_t i_axon=0, end_axon=group.size(); i_axon < end_axon; ++i_axon) {
-		m_queriedPlastic.push_back(group.getPlastic(i_axon));
-	}
-	return m_queriedPlastic;
-}
-
-
-
 unsigned
 NetworkImpl::neuronCount() const
 {

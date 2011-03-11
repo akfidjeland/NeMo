@@ -143,31 +143,6 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		/*! \return plasticity status for a synapse */
 		unsigned char getSynapsePlastic(const synapse_id&) const;
 
-		/* vectorised synapse getter intended for testing only... */
-		/*! \return
-		 * 		target neurons for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned>& getTargets(unsigned source) const;
-
-		/*! \return
-		 * 		conductance delays for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned>& getDelays(unsigned source) const;
-
-		/*! \return
-		 * 		synaptic weights for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<float>& getWeights(unsigned source) const;
-
-		/*! \return
-		 * 		plasticity status for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned char>& getPlastic(unsigned source) const;
-
 		unsigned maxDelay() const;
 
 		float maxWeight() const;

@@ -115,38 +115,6 @@ Network::getSynapsePlastic(const synapse_id& id) const
 
 
 
-const std::vector<unsigned>&
-Network::getTargets(unsigned source) const
-{
-	return m_impl->getTargets(source);
-}
-
-
-
-const std::vector<unsigned>&
-Network::getDelays(unsigned source) const
-{
-	return m_impl->getDelays(source);
-}
-
-
-
-const std::vector<float>&
-Network::getWeights(unsigned source) const
-{
-	return m_impl->getWeights(source);
-}
-
-
-
-const std::vector<unsigned char>&
-Network::getPlastic(unsigned source) const
-{
-	return m_impl->getPlastic(source);
-}
-
-
-
 unsigned
 Network::maxDelay() const 
 {
