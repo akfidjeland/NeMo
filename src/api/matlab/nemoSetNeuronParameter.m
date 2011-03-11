@@ -15,5 +15,5 @@ function nemoSetNeuronParameter(idx, varno, val)
 % The input arguments can be a mix of scalars and vectors as long as
 % all vectors have the same length. Scalar arguments are replicated
 % the appropriate number of times.
-    nemo_mex(uint32(26), uint32(idx), uint32(varno), double(val));
+    nemo_mex(uint32(21), uint32(idx), uint32(varno), double(val));
 end

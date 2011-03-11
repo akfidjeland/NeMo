@@ -1,22 +1,20 @@
-function val = nemoGetNeuronState(idx, varno)
-% nemoGetNeuronState - get neuron state variable
+function delay = nemoGetSynapseDelay(synapse)
+% nemoGetSynapseDelay - return the conduction delay for the specified synapse
 %  
 % Synopsis:
-%   val = nemoGetNeuronState(idx, varno)
+%   delay = nemoGetSynapseDelay(synapse)
 %  
 % Inputs:
-%   idx     - neuron index
-%   varno   - variable index
+%   synapse - synapse id (as returned by addSynapse)
 %    
 % Outputs:
-%   val     - value of the relevant variable
+%   delay   - conduction delay of the specified synapse
 %    
-% For the Izhikevich model: 0=u, 1=v.
 %  
 % The input arguments can be a mix of scalars and vectors as long as
 % all vectors have the same length. Scalar arguments are replicated
 % the appropriate number of times. If all input arguments are scalar,
 % the output is scalar. Otherwise the output has the same length as
 % the vector input arguments.
-    val = nemo_mex(uint32(22), uint32(idx), uint32(varno));
+    delay = nemo_mex(uint32(27), uint64(synapse));
 end
