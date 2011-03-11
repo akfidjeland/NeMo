@@ -50,6 +50,7 @@ ADD_LIBRARY(nemo_base
 	RNG.cpp
 	STDP.cpp
 	StdpFunction.cpp
+	Axon.cpp
 	fixedpoint.cpp
 )
 

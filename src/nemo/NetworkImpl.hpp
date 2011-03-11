@@ -8,9 +8,9 @@
 
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
+#include "Axon.hpp"
 
 namespace nemo {
-
 
 	namespace cuda {
 		// needed for 'friend' declarations
@@ -125,15 +125,14 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 
 		/*! \return neuron with given index
 		 * Throws if neuron does not exist
-		 * */
+		 */
 		const neuron_t& getNeuron(unsigned idx) const;
 		neuron_t& getNeuron(unsigned idx);
 
-		typedef AxonTerminal synapse_t;
-		typedef std::vector<synapse_t> bundle_t;
-		//! \todo could keep this in a single map with a tuple index
-		typedef std::map<delay_t, bundle_t> axon_t;
-		typedef std::map<nidx_t, axon_t> fcm_t;
+		/*! \todo consider using unordered here instead, esp. after removing
+		 * iterator interface. Currently we need rbegin, which is not found in
+		 * unordered_map */
+		typedef std::map<nidx_t, Axon> fcm_t;
 
 		fcm_t m_fcm;
 
@@ -142,10 +141,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		delay_t m_maxDelay;
 		weight_t m_minWeight;
 		weight_t m_maxWeight;
-
-		/* Keep track of the number of synapses per neuron in order to generate
-		 * a dense list of synapse ids */
-		std::map<nidx_t, id32_t> m_synapseCount;
 
 		//! \todo modify public interface to avoid friendship here
 		friend class nemo::cuda::ConnectivityMatrix;
@@ -163,8 +158,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		mutable std::vector<float> m_queriedWeights;
 		mutable std::vector<unsigned char> m_queriedPlastic;
 
-		fcm_t::const_iterator getSourceIterator(unsigned source) const;
-
+		const Axon& axon(nidx_t source) const;
 };
 
 	} // end namespace network

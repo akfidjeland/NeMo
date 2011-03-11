@@ -10,6 +10,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
+
 /* The basic types in nemo_types are also used without an enclosing namespace
  * inside the kernel (which is pure C). */
 #include <nemo/config.h>
