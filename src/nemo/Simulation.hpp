@@ -133,10 +133,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 		 */
 		virtual float getMembranePotential(unsigned neuron) const = 0;
 
-		/*! \return
-		 * 		vector of synapse ids for all synapses with the given source
-		 * 		neuron
-		 */
+		/*! \copydoc nemo::ReadableNetwork::getSynapsesFrom */
 		virtual const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron) = 0;
 
 		/* \} */ // end simulation (queries) section

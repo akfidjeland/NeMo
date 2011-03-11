@@ -88,6 +88,9 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		/*! \copydoc nemo::Network::getSynapsePlastic */
 		unsigned char getSynapsePlastic(const synapse_id&) const;
 
+		/*! \copydoc nemo::Network::getSynapsesFrom */
+		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
+
 		/* pre: network is not empty */
 		nidx_t minNeuronIndex() const;
 
@@ -139,6 +142,9 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		friend class nemo::mpi::Master;
 
 		friend class programmatic::synapse_iterator;
+
+		/*! Internal buffer for synapse queries */
+		std::vector<synapse_id> m_queriedSynapseIds;
 
 		const Axon& axon(nidx_t source) const;
 };

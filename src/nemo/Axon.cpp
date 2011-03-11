@@ -70,4 +70,16 @@ Axon::size() const
 	return m_targets.size();
 }
 
+
+
+void
+Axon::setSynapseIds(id32_t source, std::vector<synapse_id>& ids) const
+{
+	size_t nSynapses = size();
+	ids.resize(nSynapses);
+	for(size_t iSynapse = 0; iSynapse < nSynapses; ++iSynapse) {
+		ids[iSynapse] = make_synapse_id(source, iSynapse);
+	}
+}
+
 }

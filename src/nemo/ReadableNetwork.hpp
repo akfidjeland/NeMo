@@ -10,6 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
 #include <nemo/synapse_indices.hpp>
 
 namespace nemo {
@@ -38,6 +39,14 @@ class ReadableNetwork
 
 		/*! \return plasticity status for a synapse */
 		virtual unsigned char getSynapsePlastic(const synapse_id&) const = 0;
+
+		/*! \return
+		 * 		vector of synapse ids for all synapses with the given source
+		 * 		neuron
+		 *
+		 * The vector reference is valid until the next call to this function.
+		 */
+		virtual const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron) = 0;
 };
 
 }

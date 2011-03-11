@@ -45,6 +45,9 @@ class Axon
 
 		size_t size() const;
 
+		/*! Populate vector with all synapse ids contained in this axon */
+		void setSynapseIds(id32_t source, std::vector<synapse_id>&) const;
+
 	private :
 
 		std::vector<unsigned> m_targets;

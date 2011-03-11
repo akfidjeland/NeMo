@@ -233,7 +233,7 @@ class ConnectivityMatrix
 		std::map<nidx_t, unsigned> m_synapsesPerNeuron;
 #endif
 
-		/* Internal buffers for synapse queries */
+		/*! Internal buffer for synapse queries */
 		std::vector<synapse_id> m_queriedSynapseIds;
 
 		void addSynapse(

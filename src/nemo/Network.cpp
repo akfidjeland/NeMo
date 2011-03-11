@@ -115,6 +115,12 @@ Network::getSynapsePlastic(const synapse_id& id) const
 
 
 
+const std::vector<synapse_id>&
+Network::getSynapsesFrom(unsigned neuron)
+{
+	return m_impl->getSynapsesFrom(neuron);
+}
+
 unsigned
 Network::maxDelay() const 
 {

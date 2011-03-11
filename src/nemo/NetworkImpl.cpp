@@ -261,6 +261,15 @@ NetworkImpl::getSynapsePlastic(const synapse_id& id) const
 
 
 
+const std::vector<synapse_id>&
+NetworkImpl::getSynapsesFrom(unsigned source)
+{
+	axon(source).setSynapseIds(source, m_queriedSynapseIds);
+	return m_queriedSynapseIds;
+}
+
+
+
 unsigned
 NetworkImpl::neuronCount() const
 {
