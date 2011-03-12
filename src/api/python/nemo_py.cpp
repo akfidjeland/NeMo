@@ -304,8 +304,8 @@ template<class T>
 PyObject*
 get_neuron_parameter(T& obj, PyObject* neurons, unsigned param)
 {
-	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 1;
-	if(len == 1) {
+	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 0;
+	if(len == 0) {
 		return PyFloat_FromDouble(obj.getNeuronParameter(extract<unsigned>(neurons), param));
 	} else {
 		PyObject* list = PyList_New(len);
@@ -324,8 +324,8 @@ template<class T>
 PyObject*
 get_neuron_state(T& obj, PyObject* neurons, unsigned param)
 {
-	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 1;
-	if(len == 1) {
+	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 0;
+	if(len == 0) {
 		return PyFloat_FromDouble(obj.getNeuronState(extract<unsigned>(neurons), param));
 	} else {
 		PyObject* list = PyList_New(len);
@@ -364,8 +364,8 @@ get_synapse_x(const nemo::ReadableNetwork& net,
 		PyObject* ids,
 		std::const_mem_fun1_ref_t<T, nemo::ReadableNetwork, const synapse_id&> get_x)
 {
-	const Py_ssize_t len = PyList_Check(ids) ? PyList_Size(ids) : 1;
-	if(len == 1) {
+	const Py_ssize_t len = PyList_Check(ids) ? PyList_Size(ids) : 0;
+	if(len == 0) {
 		return insert<T>(get_x(net, extract<synapse_id>(ids)));
 	} else {
 		PyObject* list = PyList_New(len);

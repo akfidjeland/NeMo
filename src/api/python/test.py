@@ -179,6 +179,62 @@ class TestFunctions(unittest.TestCase):
         sim = nemo.Simulation(net, conf)
         self.check_set_neuron_vector(sim, pop)
 
+    def simple_network(self):
+        net = nemo.Network()
+        net.add_neuron(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        net.add_neuron(1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        net.add_synapse(0, 1, 1, 5.0, False)
+        net.add_synapse(1, 0, 1, 5.0, False)
+        return (net, nemo.Simulation(net, nemo.Configuration()))
+
+    def test_get_neuron_scalar(self):
+        """
+        Test that singleton arguments to neuron getters work as either scalar
+        or singleton list.
+        """
+        def check(x):
+            x.get_neuron_state([0], 0)
+            x.get_neuron_state(0, 0)
+            x.get_neuron_parameter([0], 0)
+            x.get_neuron_parameter(0, 0)
+        (net, sim) = self.simple_network()
+        check(net)
+        check(sim)
+
+    def test_set_neuron_scalar(self):
+        """
+        Test that singleton arguments to neuron setters work as either scalar
+        or singleton list.
+        """
+        def check(x):
+            x.set_neuron_state([0], 0, [0])
+            x.set_neuron_state(0, 0, 0)
+            x.set_neuron_parameter([0], 0, [0])
+            x.set_neuron_parameter(0, 0, 0)
+        (net, sim) = self.simple_network()
+        check(net)
+        check(sim)
+
+    def test_get_synapse_scalar(self):
+        """
+        Test that singleton arguments to synapse getters work as either scalar
+        or singleton list.
+        """
+        def check(x):
+            x.get_synapse_source(0)
+            x.get_synapse_source([0])
+            x.get_synapse_target(0)
+            x.get_synapse_target([0])
+            x.get_synapse_delay(0)
+            x.get_synapse_delay([0])
+            x.get_synapse_weight(0)
+            x.get_synapse_weight([0])
+            x.get_synapse_plastic(0)
+            x.get_synapse_plastic([0])
+        (net, sim) = self.simple_network()
+        check(net)
+        check(sim)
+
     def test_add_synapse(self):
         """
         The add_synapse method supports either vector or scalar input. This
