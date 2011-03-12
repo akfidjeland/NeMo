@@ -180,9 +180,11 @@ class TestFunctions(unittest.TestCase):
         self.check_set_neuron_vector(sim, pop)
 
     def test_add_synapse(self):
-        """ The add_synapse method supports either vector or scalar input. This
+        """
+        The add_synapse method supports either vector or scalar input. This
         test calls set_synapse in a large number of ways, checking for
-        catastrophics failures in the boost::python layer """
+        catastrophics failures in the boost::python layer
+        """
         net = nemo.Network()
         for test in range(1000):
             vlen = random.randint(2, 500)
@@ -199,6 +201,67 @@ class TestFunctions(unittest.TestCase):
             else:
                 self.assertFalse(isinstance(ids, list))
 
+    def test_get_synapses_from_unconnected(self):
+        net = nemo.Network()
+        net.add_neuron(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        conf = nemo.Configuration()
+        sim = nemo.Simulation(net, conf)
+        self.assertEqual(net.get_synapses_from(0), [])
+        self.assertEqual(sim.get_synapses_from(0), [])
+
+    def test_get_synapse(self):
+        """
+        Test scalar and vector form of synapse getters
+
+        Synapse getters have both scalar and vector forms. To test these,
+        construct a network with fixed connectivity where all synapse
+        properties are functions of the source and target, then read back and
+        verify that the values are as expected.
+        """
+
+        def delay(source, target):
+            return 1 + ((source + target) % 20)
+
+        def plastic(source, target):
+            return (source + target) % 1 == 0
+
+        def weight(source, target):
+            return float(source) + float(target)
+
+        ncount = 100
+
+        net = nemo.Network()
+        for src in range(ncount):
+            net.add_neuron(src, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            for tgt in range(src+1):
+                net.add_synapse(src, tgt, delay(src, tgt), weight(src, tgt), plastic(src, tgt))
+
+        conf = nemo.Configuration()
+        sim = nemo.Simulation(net, conf)
+
+        def check_scalar(x, known_source, sid, source, target):
+            self.assertEqual(known_source, source)
+            self.assertEqual(x.get_synapse_delay(sid), delay(source, target))
+            self.assertEqual(x.get_synapse_weight(sid), weight(source, target))
+            self.assertEqual(x.get_synapse_plastic(sid), plastic(source, target))
+
+        def check(x):
+            for src in range(ncount):
+                all_synapses = x.get_synapses_from(src)
+                # read a random number of these out-of-order
+                n_queried = random.randint(1, len(all_synapses))
+                queried = random.sample(all_synapses, n_queried)
+                if len(queried) == 1:
+                    queried = queried[0]
+                sources = x.get_synapse_source(queried)
+                targets = x.get_synapse_target(queried)
+                if n_queried == 1:
+                    check_scalar(x, src, queried, sources, targets)
+                else:
+                    for (sid, qsrc, tgt) in zip(queried, sources, targets):
+                        check_scalar(x, src, sid, qsrc, tgt)
+        check(net)
+        check(sim)
 
 
 if __name__ == '__main__':

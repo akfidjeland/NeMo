@@ -24,7 +24,7 @@ class ReadableNetwork
 	public :
 
 		/*! \return source neuron id for a synapse */
-		unsigned getSynapseSource(synapse_id id) const {
+		unsigned getSynapseSource(const synapse_id& id) const {
 			return neuronIndex(id);
 		}
 

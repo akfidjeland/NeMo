@@ -1,5 +1,6 @@
 #include <sstream>
 #include <stdexcept>
+#include <functional>
 
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
@@ -339,6 +340,97 @@ get_neuron_state(T& obj, PyObject* neurons, unsigned param)
 
 
 
+/* Convert scalar type to corresponding C++ type. Oddly, boost::python does not
+ * seem to have this */
+template<typename T>
+PyObject*
+insert(T)
+{
+	throw std::logic_error("invalid static type conversion in Python/C++ interface");
+}
+
+
+template<> PyObject* insert<float>(float x) { return PyFloat_FromDouble(x); }
+template<> PyObject* insert<unsigned>(unsigned x) { return PyInt_FromLong(x); }
+template<> PyObject* insert<unsigned char>(unsigned char x) { return PyBool_FromLong(x); }
+
+
+
+/*! Return scalar or vector synapse parameter/state of type R from a
+ * ReadableNetwork instance of type Net */
+template<typename T>
+PyObject*
+get_synapse_x(const nemo::ReadableNetwork& net,
+		PyObject* ids,
+		std::const_mem_fun1_ref_t<T, nemo::ReadableNetwork, const synapse_id&> get_x)
+{
+	const Py_ssize_t len = PyList_Check(ids) ? PyList_Size(ids) : 1;
+	if(len == 1) {
+		return insert<T>(get_x(net, extract<synapse_id>(ids)));
+	} else {
+		PyObject* list = PyList_New(len);
+		for(Py_ssize_t i=0; i < len; ++i) {
+			synapse_id id = extract<synapse_id>(PyList_GetItem(ids, i));
+			const T val = get_x(net, id);
+			PyList_SetItem(list, i, insert<T>(val));
+		}
+		return list;
+	}
+}
+
+
+
+template<class Net>
+PyObject*
+get_synapse_source(const Net& net, PyObject* ids)
+{
+	return get_synapse_x<unsigned>(
+			static_cast<const nemo::ReadableNetwork&>(net),
+			ids, std::mem_fun_ref(&nemo::ReadableNetwork::getSynapseSource));
+}
+
+
+template<class Net>
+PyObject*
+get_synapse_target(const Net& net, PyObject* ids)
+{
+	return get_synapse_x<unsigned>(
+			static_cast<const nemo::ReadableNetwork&>(net),
+			ids, std::mem_fun_ref(&nemo::ReadableNetwork::getSynapseTarget));
+}
+
+
+template<class Net>
+PyObject*
+get_synapse_delay(const Net& net, PyObject* ids)
+{
+	return get_synapse_x<unsigned>(
+			static_cast<const nemo::ReadableNetwork&>(net),
+			ids, std::mem_fun_ref(&nemo::ReadableNetwork::getSynapseDelay));
+}
+
+
+template<class Net>
+PyObject*
+get_synapse_weight(const Net& net, PyObject* ids)
+{
+	return get_synapse_x<float>(
+			static_cast<const nemo::ReadableNetwork&>(net),
+			ids, std::mem_fun_ref(&nemo::ReadableNetwork::getSynapseWeight));
+}
+
+
+template<class Net>
+PyObject*
+get_synapse_plastic(const Net& net, PyObject* ids)
+{
+	return get_synapse_x<unsigned char>(
+			static_cast<const nemo::ReadableNetwork&>(net),
+			ids, std::mem_fun_ref(&nemo::ReadableNetwork::getSynapsePlastic));
+}
+
+
+
 /* This wrappers for overloads of nemo::Simulation::step */
 const std::vector<unsigned>&
 step(nemo::Simulation& sim)
@@ -368,7 +460,6 @@ step_fi(nemo::Simulation& sim,
 {
 	return sim.step(fstim, istim);
 }
-
 
 
 void
@@ -428,6 +519,12 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("set_neuron_parameter", set_neuron_parameter<nemo::Network>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
 		.def("get_synapse_source", &nemo::Network::getSynapseSource)
 		.def("neuron_count", &nemo::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
+		.def("get_synapses_from", &nemo::Network::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
+		.def("get_synapse_source", get_synapse_source<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
+		.def("get_synapse_target", get_synapse_target<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)
+		.def("get_synapse_delay", get_synapse_delay<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_DELAY_DOC)
+		.def("get_synapse_weight", get_synapse_weight<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_WEIGHT_DOC)
+		.def("get_synapse_plastic", get_synapse_plastic<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_PLASTIC_DOC)
 	;
 
 	class_<nemo::Simulation, boost::shared_ptr<nemo::Simulation>, boost::noncopyable>(
@@ -448,11 +545,12 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("set_neuron_state", set_neuron_state<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
 		.def("set_neuron_parameter", set_neuron_parameter<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
 		.def("get_membrane_potential", &nemo::Simulation::getMembranePotential, SIMULATION_GET_MEMBRANE_POTENTIAL_DOC)
-		.def("get_synapses_from", &nemo::Simulation::getSynapsesFrom, return_value_policy<copy_const_reference>(), SIMULATION_GET_SYNAPSES_FROM_DOC)
-		.def("get_targets", &nemo::Simulation::getTargets, return_value_policy<copy_const_reference>(), SIMULATION_GET_TARGETS_DOC)
-		.def("get_delays", &nemo::Simulation::getDelays, return_value_policy<copy_const_reference>(), SIMULATION_GET_DELAYS_DOC)
-		.def("get_weights", &nemo::Simulation::getWeights, return_value_policy<copy_const_reference>(), SIMULATION_GET_WEIGHTS_DOC)
-		.def("get_plastic", &nemo::Simulation::getPlastic, return_value_policy<copy_const_reference>(), SIMULATION_GET_PLASTIC_DOC)
+		.def("get_synapses_from", &nemo::Simulation::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
+		.def("get_synapse_source", get_synapse_source<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
+		.def("get_synapse_target", get_synapse_target<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)
+		.def("get_synapse_delay", get_synapse_delay<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_DELAY_DOC)
+		.def("get_synapse_weight", get_synapse_weight<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_WEIGHT_DOC)
+		.def("get_synapse_plastic", get_synapse_plastic<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_PLASTIC_DOC)
 		.def("elapsed_wallclock", &nemo::Simulation::elapsedWallclock, SIMULATION_ELAPSED_WALLCLOCK_DOC)
 		.def("elapsed_simulation", &nemo::Simulation::elapsedSimulation, SIMULATION_ELAPSED_SIMULATION_DOC)
 		.def("reset_timer", &nemo::Simulation::resetTimer, SIMULATION_RESET_TIMER_DOC)
