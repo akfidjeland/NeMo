@@ -226,8 +226,6 @@ NetworkImpl::axon(nidx_t source) const
 }
 
 
-/* The synapse getters could do caching etc., but this is only really used in
- * testing, so is not optimised */
 
 unsigned
 NetworkImpl::getSynapseTarget(const synapse_id& id) const
@@ -264,7 +262,12 @@ NetworkImpl::getSynapsePlastic(const synapse_id& id) const
 const std::vector<synapse_id>&
 NetworkImpl::getSynapsesFrom(unsigned source)
 {
-	axon(source).setSynapseIds(source, m_queriedSynapseIds);
+	fcm_t::const_iterator i_src = m_fcm.find(source);
+	if(i_src == m_fcm.end()) {
+		m_queriedSynapseIds.clear();
+	} else {
+		i_src->second.setSynapseIds(source, m_queriedSynapseIds);
+	}
 	return m_queriedSynapseIds;
 }
 

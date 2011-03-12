@@ -204,10 +204,9 @@ class TestFunctions(unittest.TestCase):
     def test_get_synapses_from_unconnected(self):
         net = nemo.Network()
         net.add_neuron(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-        conf = nemo.Configuration()
-        sim = nemo.Simulation(net, conf)
-        self.assertEqual(net.get_synapses_from(0), [])
-        self.assertEqual(sim.get_synapses_from(0), [])
+        self.assertEqual(len(net.get_synapses_from(0)), 0)
+        sim = nemo.Simulation(net, nemo.Configuration())
+        self.assertEqual(len(sim.get_synapses_from(0)), 0)
 
     def test_get_synapse(self):
         """
