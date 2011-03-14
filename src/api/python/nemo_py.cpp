@@ -12,6 +12,14 @@
 using namespace boost::python;
 
 
+/* Py_ssize_t only introduced in Python 2.5 */
+#if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
+typedef int Py_ssize_t;
+#	define PY_SSIZE_T_MAX INT_MAX
+#	define PY_SSIZE_T_MIN INT_MIN
+#endif
+
+
 /* The simulation is only created via a factory and only accessed throught the
  * returned pointer */
 boost::shared_ptr<nemo::Simulation>
