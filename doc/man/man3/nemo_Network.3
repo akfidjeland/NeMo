@@ -29,31 +29,19 @@ nemo::Network \-
 .RI "void \fBsetNeuronState\fP (unsigned neuron, unsigned var, float val)"
 .br
 .ti -1c
-.RI "unsigned \fBgetSynapseSource\fP (synapse_id) const "
+.RI "unsigned \fBgetSynapseTarget\fP (const synapse_id &) const "
 .br
 .ti -1c
-.RI "unsigned \fBgetSynapseTarget\fP (synapse_id) const "
+.RI "unsigned \fBgetSynapseDelay\fP (const synapse_id &) const "
 .br
 .ti -1c
-.RI "unsigned \fBgetSynapseDelay\fP (synapse_id) const "
+.RI "float \fBgetSynapseWeight\fP (const synapse_id &) const "
 .br
 .ti -1c
-.RI "float \fBgetSynapseWeight\fP (synapse_id) const "
+.RI "unsigned char \fBgetSynapsePlastic\fP (const synapse_id &) const "
 .br
 .ti -1c
-.RI "unsigned char \fBgetSynapsePlastic\fP (synapse_id) const "
-.br
-.ti -1c
-.RI "const std::vector< unsigned > & \fBgetTargets\fP (unsigned source) const "
-.br
-.ti -1c
-.RI "const std::vector< unsigned > & \fBgetDelays\fP (unsigned source) const "
-.br
-.ti -1c
-.RI "const std::vector< float > & \fBgetWeights\fP (unsigned source) const "
-.br
-.ti -1c
-.RI "const std::vector< unsigned char > & \fBgetPlastic\fP (unsigned source) const "
+.RI "const std::vector< synapse_id > & \fBgetSynapsesFrom\fP (unsigned neuron)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -150,15 +138,7 @@ Change a single state variable for an existing neuron
 .RE
 .PP
 For the Izhikevich model variable indices 0 = u, 1 = v 
-.SS "unsigned nemo::Network::getSynapseSource (synapse_id) const"
-.PP
-\fBReturns:\fP
-.RS 4
-source neuron id for a synapse 
-.RE
-.PP
-
-.SS "unsigned nemo::Network::getSynapseTarget (synapse_id) const"
+.SS "unsigned nemo::Network::getSynapseTarget (const synapse_id &) const"
 .PP
 \fBReturns:\fP
 .RS 4
@@ -166,7 +146,7 @@ target neuron id for a synapse
 .RE
 .PP
 
-.SS "unsigned nemo::Network::getSynapseDelay (synapse_id) const"
+.SS "unsigned nemo::Network::getSynapseDelay (const synapse_id &) const"
 .PP
 \fBReturns:\fP
 .RS 4
@@ -174,7 +154,7 @@ conductance delay for a synapse
 .RE
 .PP
 
-.SS "float nemo::Network::getSynapseWeight (synapse_id) const"
+.SS "float nemo::Network::getSynapseWeight (const synapse_id &) const"
 .PP
 \fBReturns:\fP
 .RS 4
@@ -182,7 +162,7 @@ weight for a synapse
 .RE
 .PP
 
-.SS "unsigned char nemo::Network::getSynapsePlastic (synapse_id) const"
+.SS "unsigned char nemo::Network::getSynapsePlastic (const synapse_id &) const"
 .PP
 \fBReturns:\fP
 .RS 4
@@ -190,38 +170,9 @@ plasticity status for a synapse
 .RE
 .PP
 
-.SS "const std::vector<unsigned>& nemo::Network::getTargets (unsigned source) const"
+.SS "const std::vector<synapse_id>& nemo::Network::getSynapsesFrom (unsigned neuron)"
 .PP
-\fBReturns:\fP
-.RS 4
-target neurons for the specified synapses. The reference is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "const std::vector<unsigned>& nemo::Network::getDelays (unsigned source) const"
-.PP
-\fBReturns:\fP
-.RS 4
-conductance delays for the specified synapses. The reference is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "const std::vector<float>& nemo::Network::getWeights (unsigned source) const"
-.PP
-\fBReturns:\fP
-.RS 4
-synaptic weights for the specified synapses. The reference is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "const std::vector<unsigned char>& nemo::Network::getPlastic (unsigned source) const"
-.PP
-\fBReturns:\fP
-.RS 4
-plasticity status for the specified synapses. The reference is valid until the next call to this function. 
-.RE
-.PP
-
+ 
 
 .SH SEE ALSO
 nemo(3) for library overview
