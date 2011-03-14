@@ -313,7 +313,10 @@ nemo_apply_stdp(nemo_simulation_t, float reward);
  *
  * The synapse state can also be read back during simulation. Synapses are
  * referred to via a synapse_id (see \a nemo_add_synapse). The weights may
- * change at run-time, while the other synapse data is static.
+ * change at run-time, while the other synapse data is static. As for neurons,
+ * the state can be read back either during construction or simulation, and
+ * function names are postfixed with '_n' or '_s' for the two cases.
+ *
  * \{ */
 
 NEMO_DLL_PUBLIC
@@ -395,6 +398,29 @@ nemo_get_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, fl
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float* val);
+
+
+
+/*! Get source neuron for the specified synapse during construction
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] source index of source neuron
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_source_n(nemo_network_t, synapse_id synapse, unsigned* source);
+
+
+
+/*! Get source neuron for the specified synapse during simulation
+ *
+ * \param synapse synapse id (see \a nemo_add_synapse)
+ * \param[out] source index of source neuron
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_get_synapse_source_s(nemo_simulation_t, synapse_id synapse, unsigned* source);
+
 
 
 /*! Get target for the specified synapse during construction

@@ -321,6 +321,20 @@ nemo_get_synapses_from_s(nemo_simulation_t sim,
 
 
 nemo_status_t
+nemo_get_synapse_source_n(nemo_network_t ptr, synapse_id synapse, unsigned* source)
+{
+	CATCH(ptr, getSynapseSource(synapse), *source);
+}
+
+
+nemo_status_t
+nemo_get_synapse_source_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* source)
+{
+	CATCH(ptr, getSynapseSource(synapse), *source);
+}
+
+
+nemo_status_t
 nemo_get_synapse_target_n(nemo_network_t ptr, synapse_id synapse, unsigned* target)
 {
 	CATCH(ptr, getSynapseTarget(synapse), *target);
