@@ -538,7 +538,7 @@ get_synapse_plastic(const Net& net, PyObject* ids)
 
 /* This wrappers for overloads of nemo::Simulation::step */
 const std::vector<unsigned>&
-step(nemo::Simulation& sim)
+step_noinput(nemo::Simulation& sim)
 {
 	return sim.step();
 }
@@ -635,14 +635,18 @@ BOOST_PYTHON_MODULE(_nemo)
 	class_<nemo::Simulation, boost::shared_ptr<nemo::Simulation>, boost::noncopyable>(
 			"Simulation", SIMULATION_DOC, no_init)
 		.def("__init__", make_constructor(makeSimulation))
-		// .def("step", &nemo::Simulation::step, return_internal_reference<1>(), SIMULATION_STEP_DOC)
-			/* May want to make a copy here, for some added safety:
-			 * return_value_policy<copy_const_reference>() */
-		.def("step", step, return_internal_reference<1>(), SIMULATION_STEP_DOC)
-		//! \todo add back these functions. Currently cannot distinguish between them
-		//.def("step", step_f, return_internal_reference<1>(), SIMULATION_STEP_DOC)
-		//.def("step", step_i, return_internal_reference<1>(), SIMULATION_STEP_DOC)
-		.def("step", step_fi, return_internal_reference<1>(), SIMULATION_STEP_DOC)
+		/* For the step function(s) named optional input arguments is handled
+		 * in pure python. See __init__.py. */
+		/* May want to make a copy here, for some added safety:
+		 * return_value_policy<copy_const_reference>()
+		 *
+		 * In the current form we return a reference to memory handled by the
+		 * simulation object, which may be overwritten by subsequent calls to
+		 * to this function. */
+		.def("step_noinput", step_noinput, return_internal_reference<1>())
+		.def("step_f", step_f, return_internal_reference<1>())
+		.def("step_i", step_i, return_internal_reference<1>())
+		.def("step_fi", step_fi, return_internal_reference<1>())
 		.def("apply_stdp", &nemo::Simulation::applyStdp, SIMULATION_APPLY_STDP_DOC)
 		.def("set_neuron", set_neuron<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_DOC)
 		.def("get_neuron_state", get_neuron_state<nemo::Simulation>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
