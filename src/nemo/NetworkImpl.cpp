@@ -24,10 +24,6 @@ namespace nemo {
 	namespace network {
 
 
-NetworkImpl::axon_t programmatic::synapse_iterator::s_axon;
-NetworkImpl::bundle_t programmatic::synapse_iterator::s_bundle;
-
-
 NetworkImpl::NetworkImpl() :
 	m_minIdx(std::numeric_limits<int>::max()),
 	m_maxIdx(std::numeric_limits<int>::min()),
@@ -102,10 +98,7 @@ NetworkImpl::addSynapse(
 				str(format("Invalid delay (%u) for synapse between %u and %u") % delay % source % target));
 	}
 
-	id32_t& count = m_synapseCount[source];
-	id32_t id = count;
-	m_fcm[source][delay].push_back(synapse_t(count, target, weight, plastic != 0));
-	count += 1;
+	id32_t id = m_fcm[source].addSynapse(target, delay, weight, plastic != 0);
 
 	//! \todo make sure we don't have maxDelay in cuda::ConnectivityMatrix
 	m_maxIdx = std::max(m_maxIdx, int(std::max(source, target)));
@@ -220,8 +213,8 @@ NetworkImpl::setNeuronParameter(unsigned nidx, unsigned parameter, float val)
 
 
 
-NetworkImpl::fcm_t::const_iterator
-NetworkImpl::getSourceIterator(unsigned source) const
+const Axon&
+NetworkImpl::axon(nidx_t source) const
 {
 	using boost::format;
 	fcm_t::const_iterator i_src = m_fcm.find(source);
@@ -229,80 +222,53 @@ NetworkImpl::getSourceIterator(unsigned source) const
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("synapses of non-existing neuron (%u) requested") % source));
 	}
-	return i_src;
+	return i_src->second;
 }
 
 
 
-/* The synapse getters could do caching etc., but this is only really used in
- * testing, so is not optimised */
-
-const std::vector<unsigned>&
-NetworkImpl::getTargets(unsigned source) const
+unsigned
+NetworkImpl::getSynapseTarget(const synapse_id& id) const
 {
-	fcm_t::const_iterator i_src = getSourceIterator(source);
-	m_queriedTargets.clear();
-	const axon_t& axon = i_src->second;
-	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
-		const bundle_t& bundle = i_axon->second;
-		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
-			m_queriedTargets.push_back(s->target);
-		}
-	}
-	return m_queriedTargets;
+	return axon(neuronIndex(id)).getTarget(synapseIndex(id));
 }
 
 
 
-const std::vector<unsigned>&
-NetworkImpl::getDelays(unsigned source) const
+unsigned
+NetworkImpl::getSynapseDelay(const synapse_id& id) const
 {
-	fcm_t::const_iterator i_src = getSourceIterator(source);
-	m_queriedDelays.clear();
-	const axon_t& axon = i_src->second;
-	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
-		unsigned delay = i_axon->first;
-		const bundle_t& bundle = i_axon->second;
-		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
-			m_queriedDelays.push_back(delay);
-		}
-	}
-	return m_queriedDelays;
-
+	return axon(neuronIndex(id)).getDelay(synapseIndex(id));
 }
 
 
 
-const std::vector<float>&
-NetworkImpl::getWeights(unsigned source) const
+float
+NetworkImpl::getSynapseWeight(const synapse_id& id) const
 {
-	fcm_t::const_iterator i_src = getSourceIterator(source);
-	m_queriedWeights.clear();
-	const axon_t& axon = i_src->second;
-	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
-		const bundle_t& bundle = i_axon->second;
-		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
-			m_queriedWeights.push_back(s->weight);
-		}
-	}
-	return m_queriedWeights;
+	return axon(neuronIndex(id)).getWeight(synapseIndex(id));
 }
 
 
 
-const std::vector<unsigned char>&
-NetworkImpl::getPlastic(unsigned source) const
+unsigned char
+NetworkImpl::getSynapsePlastic(const synapse_id& id) const
 {
-	fcm_t::const_iterator i_src = getSourceIterator(source);
-	m_queriedPlastic.clear();
-	const axon_t& axon = i_src->second;
-	for(axon_t::const_iterator i_axon = axon.begin(); i_axon != axon.end(); ++i_axon) {
-		const bundle_t& bundle = i_axon->second;
-		for(bundle_t::const_iterator s = bundle.begin(); s != bundle.end(); ++s) {
-			m_queriedPlastic.push_back(s->plastic);
-		}
+	return axon(neuronIndex(id)).getPlastic(synapseIndex(id));
+}
+
+
+
+const std::vector<synapse_id>&
+NetworkImpl::getSynapsesFrom(unsigned source)
+{
+	fcm_t::const_iterator i_src = m_fcm.find(source);
+	if(i_src == m_fcm.end()) {
+		m_queriedSynapseIds.clear();
+	} else {
+		i_src->second.setSynapseIds(source, m_queriedSynapseIds);
 	}
-	return m_queriedPlastic;
+	return m_queriedSynapseIds;
 }
 
 
@@ -360,21 +326,14 @@ NetworkImpl::synapse_begin() const
 	fcm_t::const_iterator ni = m_fcm.begin();
 	fcm_t::const_iterator ni_end = m_fcm.end();
 
-	axon_t::const_iterator bi = programmatic::synapse_iterator::defaultBi();
-	axon_t::const_iterator bi_end = programmatic::synapse_iterator::defaultBi();
-	bundle_t::const_iterator si = programmatic::synapse_iterator::defaultSi();
-	bundle_t::const_iterator si_end = programmatic::synapse_iterator::defaultSi();
+	size_t gi = 0;
+	size_t gi_end = 0;
 
 	if(ni != ni_end) {
-		bi = ni->second.begin();
-		bi_end = ni->second.end();
-		if(bi != bi_end) {
-			si = bi->second.begin();
-			si_end = bi->second.end();
-		}
+		gi_end = ni->second.size();
 	}
 	return synapse_iterator(
-		new programmatic::synapse_iterator(ni, ni_end, bi, bi_end, si, si_end));
+		new programmatic::synapse_iterator(ni, ni_end, gi, gi_end));
 }
 
 
@@ -382,19 +341,13 @@ synapse_iterator
 NetworkImpl::synapse_end() const
 {
 	fcm_t::const_iterator ni = m_fcm.end();
-	axon_t::const_iterator bi = programmatic::synapse_iterator::defaultBi();
-	bundle_t::const_iterator si = programmatic::synapse_iterator::defaultSi();
+	size_t gi = 0;
 
 	if(m_fcm.begin() != ni) {
-		const axon_t& axon = m_fcm.rbegin()->second;
-		bi = axon.end();
-		if(axon.begin() != bi) {
-			si = axon.rbegin()->second.end();
-		}
+		gi = m_fcm.rbegin()->second.size();
 	}
 
-	return synapse_iterator(
-			new programmatic::synapse_iterator(ni, ni, bi, bi, si, si));
+	return synapse_iterator(new programmatic::synapse_iterator(ni, ni, gi, gi));
 }
 
 

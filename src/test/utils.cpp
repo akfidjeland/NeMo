@@ -113,17 +113,6 @@ addExcitatoryNeuron(unsigned nidx, nemo::Network& net, float sigma)
 }
 
 
-std::vector<synapse_id>
-synapseIds(unsigned neuron, unsigned synapses)
-{
-	std::vector<synapse_id> ids(synapses);
-	for(uint32_t sidx = 0; sidx < synapses; ++sidx) {
-		ids[sidx] = (uint64_t(neuron) << 32) | uint64_t(sidx);
-	}
-	return ids;
-}
-
-
 
 /*! \return
  * 		neuron index of the nth neuron in a ring network with \a ncount neurons

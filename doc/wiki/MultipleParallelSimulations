@@ -1,9 +1,0 @@
-=============================
-Multiple parallel simulations
-=============================
-
-This can be done by providing nsStartM and nsSyncM which deals with multiple
-networks. On the host side these would be seen as a single network, albeit a
-disjoint one. The handle returned from nsStartM should contain both the socket
-and a description of the size of each network. nsSyncM can then split up the
-firing into several matrices.

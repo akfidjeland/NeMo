@@ -356,60 +356,42 @@ ConnectivityMatrix::axonTerminalAux(const synapse_id& id) const
 
 
 
-const std::vector<unsigned>&
-ConnectivityMatrix::getTargets(const std::vector<synapse_id>& synapses)
+unsigned
+ConnectivityMatrix::getTarget(const synapse_id& id) const
 {
-	m_queriedTargets.resize(synapses.size());
-	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
-		synapse_id id = synapses[i];
-		nidx_t l_source = m_mapper.localIdx(neuronIndex(id));
-		const AxonTerminalAux& s = axonTerminalAux(l_source, synapseIndex(id));
-		nidx_t l_target = m_cm[addressOf(l_source, s.delay)].data[s.idx].target;
-		m_queriedTargets[i] = m_mapper.globalIdx(l_target);
-	}
-	return m_queriedTargets;
+	nidx_t l_source = m_mapper.localIdx(neuronIndex(id));
+	const AxonTerminalAux& s = axonTerminalAux(l_source, synapseIndex(id));
+	nidx_t l_target = m_cm[addressOf(l_source, s.delay)].data[s.idx].target;
+	return m_mapper.globalIdx(l_target);
 }
 
 
 
-const std::vector<float>&
-ConnectivityMatrix::getWeights(const std::vector<synapse_id>& synapses)
+float
+ConnectivityMatrix::getWeight(const synapse_id& id) const
 {
-	m_queriedWeights.resize(synapses.size());
-	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
-		synapse_id id = synapses[i];
-		nidx_t source = m_mapper.localIdx(neuronIndex(id));
-		const AxonTerminalAux& s = axonTerminalAux(source, synapseIndex(id));
-		const Row& row = m_cm[addressOf(source, s.delay)];
-		assert(s.idx < row.len);
-		fix_t w = row.data[s.idx].weight;
-		m_queriedWeights[i] = fx_toFloat(w, m_fractionalBits);
-	}
-	return m_queriedWeights;
+	nidx_t source = m_mapper.localIdx(neuronIndex(id));
+	const AxonTerminalAux& s = axonTerminalAux(source, synapseIndex(id));
+	const Row& row = m_cm[addressOf(source, s.delay)];
+	assert(s.idx < row.len);
+	fix_t w = row.data[s.idx].weight;
+	return fx_toFloat(w, m_fractionalBits);
 }
 
 
 
-const std::vector<unsigned>&
-ConnectivityMatrix::getDelays(const std::vector<synapse_id>& synapses)
+unsigned
+ConnectivityMatrix::getDelay(const synapse_id& id) const
 {
-	m_queriedDelays.resize(synapses.size());
-	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
-		m_queriedDelays[i] = axonTerminalAux(synapses[i]).delay;
-	}
-	return m_queriedDelays;
+	return axonTerminalAux(id).delay;
 }
 
 
 
-const std::vector<unsigned char>&
-ConnectivityMatrix::getPlastic(const std::vector<synapse_id>& synapses)
+unsigned char
+ConnectivityMatrix::getPlastic(const synapse_id& id) const
 {
-	m_queriedPlastic.resize(synapses.size());
-	for(size_t i = 0, i_end = synapses.size(); i != i_end; ++i) {
-		m_queriedPlastic[i] = axonTerminalAux(synapses[i]).plastic;
-	}
-	return m_queriedPlastic;
+	return axonTerminalAux(id).plastic;
 }
 
 

@@ -105,17 +105,20 @@ class ConnectivityMatrix
 		/*! \copydoc nemo::Simulation::getSynapsesFrom */
 		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
-		/*! \copydoc nemo::Simulation::getTargets */
-		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>& synapses);
+		/*! \copydoc nemo::Simulation::getSynapseTarget */
+		unsigned getTarget(const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getDelays */
-		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>& synapses);
+		/*! \copydoc nemo::Simulation::getSynapseDelay */
+		unsigned getDelay(const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getWeights */
-		const std::vector<float>& getWeights(cycle_t cycle, const std::vector<synapse_id>& synapses);
+		/*! \return synapse weight
+		 *
+		 * Calling function may involve a large copy from the device to host.
+		 */
+		float getWeight(cycle_t cycle, const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getPlastic */
-		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>& synapses);
+		/*! \copydoc nemo::Simulation::getSynapsePlastic */
+		unsigned char getPlastic(const synapse_id& synapse) const;
 
 		/*! Clear one plane of connectivity matrix on the device */
 		void clearStdpAccumulator();
@@ -157,16 +160,17 @@ class ConnectivityMatrix
 		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
 		rcm_t m_rsynapses;
 
-		/* Compact fcm on device */
+		/*! Compact FCM on device */
 		boost::shared_ptr<synapse_t> md_fcm;
 
-		/* Host-side copy of the weight data. */
-		std::vector<weight_dt> mh_weights;
+		/*! Host-side copy of the weight data. This is mutable since it acts as
+		 * a buffer for synapse getters */
+		mutable std::vector<weight_dt> mh_weights;
 
 		/* \post The weight of every synapse in 'synapses' is found up-to-date
 		 * in mh_weights. */
-		const std::vector<weight_dt>& syncWeights(cycle_t, const std::vector<synapse_id>& synapses);
-		cycle_t m_lastWeightSync;
+		const std::vector<weight_dt>& syncWeights(cycle_t) const;
+		mutable cycle_t m_lastWeightSync;
 
 		size_t md_fcmPlaneSize; // in words
 		size_t md_fcmAllocated; // in bytes
@@ -229,12 +233,8 @@ class ConnectivityMatrix
 		std::map<nidx_t, unsigned> m_synapsesPerNeuron;
 #endif
 
-		/* Internal buffers for synapse queries */
+		/*! Internal buffer for synapse queries */
 		std::vector<synapse_id> m_queriedSynapseIds;
-		std::vector<unsigned> m_queriedTargets;
-		std::vector<unsigned> m_queriedDelays;
-		std::vector<float> m_queriedWeights;
-		std::vector<unsigned char> m_queriedPlastic;
 
 		void addSynapse(
 				const Synapse&,
@@ -245,6 +245,8 @@ class ConnectivityMatrix
 				std::vector<weight_dt>& h_weights);
 
 		void verifySynapseTerminals(const aux_map&, const Mapper& mapper);
+
+		const AxonTerminalAux& axonTerminalAux(const synapse_id& id) const;
 };
 
 

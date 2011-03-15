@@ -382,17 +382,16 @@ testGetSynapses(const nemo::Network& net,
 
 	for(unsigned src = n0, src_end = n0 + net.neuronCount(); src < src_end; ++src) {
 
-		std::vector<synapse_id> ids = synapseIds(src, m);
+		const std::vector<synapse_id>& ids = sim->getSynapsesFrom(src);
 
-		nweights = net.getWeights(src);
-		for(std::vector<float>::iterator i = nweights.begin(); i != nweights.end(); ++i) {
-			*i = fx_toFloat(fx_toFix(*i, fbits), fbits);
+		for(std::vector<synapse_id>::const_iterator i = ids.begin(); i != ids.end(); ++i) {
+			BOOST_REQUIRE_EQUAL(sim->getSynapseTarget(*i), net.getSynapseTarget(*i));
+			BOOST_REQUIRE_EQUAL(sim->getSynapseDelay(*i), net.getSynapseDelay(*i));
+			BOOST_REQUIRE_EQUAL(sim->getSynapsePlastic(*i), net.getSynapsePlastic(*i));
+			BOOST_REQUIRE_EQUAL(sim->getSynapsePlastic(*i),
+					fx_toFloat(fx_toFix(net.getSynapsePlastic(*i), fbits), fbits));
+
 		}
-
-		sortAndCompare(sim->getWeights(ids), nweights);
-		sortAndCompare(sim->getTargets(ids), net.getTargets(src));
-		sortAndCompare(sim->getDelays(ids), net.getDelays(src));
-		sortAndCompare(sim->getPlastic(ids), net.getPlastic(src));
 	}
 }
 
@@ -421,8 +420,14 @@ testWriteOnlySynapses(backend_t backend)
 	boost::scoped_ptr<nemo::Network> net(createRing(10, 0, true));
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 	sim->step();
-	std::vector<synapse_id> ids = synapseIds(0, 1);
-	BOOST_REQUIRE_THROW(sim->getWeights(ids),nemo::exception);
+	BOOST_REQUIRE_THROW(const std::vector<synapse_id> ids = sim->getSynapsesFrom(0), nemo::exception);
+
+	/* so, we cant use getSynapsesFrom, but create a synapse id anyway */
+	nidx_t neuron = 1;
+	unsigned synapse = 0;
+	synapse_id id = (uint64_t(neuron) << 32) | uint64_t(synapse);
+
+	BOOST_REQUIRE_THROW(sim->getSynapseWeight(id), nemo::exception);
 }
 
 

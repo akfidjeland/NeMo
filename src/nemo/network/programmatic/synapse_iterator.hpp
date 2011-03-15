@@ -19,21 +19,18 @@ class NEMO_BASE_DLL_PUBLIC synapse_iterator : public abstract_synapse_iterator
 		synapse_iterator(
 				NetworkImpl::fcm_t::const_iterator ni,
 				NetworkImpl::fcm_t::const_iterator ni_end,
-				NetworkImpl::axon_t::const_iterator bi,
-				NetworkImpl::axon_t::const_iterator bi_end,
-				NetworkImpl::bundle_t::const_iterator si,
-				NetworkImpl::bundle_t::const_iterator si_end) :
+				id32_t gi,
+				id32_t gi_end) :
 			ni(ni), ni_end(ni_end), 
-			bi(bi), bi_end(bi_end),
-			si(si), si_end(si_end) { }
+			gi(gi), gi_end(gi_end) { }
 
 		const value_type& operator*() const {
-			m_data = Synapse(ni->first, bi->first, *si);
+			m_data = ni->second.getSynapse(ni->first, gi);
 			return m_data;
 		}
 
 		const value_type* operator->() const {
-			m_data = Synapse(ni->first, bi->first, *si);
+			m_data = ni->second.getSynapse(ni->first, gi);
 			return &m_data;
 		}
 
@@ -42,22 +39,17 @@ class NEMO_BASE_DLL_PUBLIC synapse_iterator : public abstract_synapse_iterator
 		}
 
 		abstract_synapse_iterator& operator++() {
-			++si;
-			if(si == si_end) {
-				++bi;
-				if(bi == bi_end) {
-					++ni;
-					if(ni == ni_end) {
-						/* When reaching the end, all three iterators are at
-						 * their respective ends. Further increments leads to
-						 * undefined behaviour */
-						return *this;
-					}
-					bi = ni->second.begin();
-					bi_end = ni->second.end();
+			++gi;
+			if(gi == gi_end) {
+				++ni;
+				if(ni == ni_end) {
+					/* When reaching the end, all three iterators are at
+					 * their respective ends. Further increments leads to
+					 * undefined behaviour */
+					return *this;
 				}
-				si = bi->second.begin();
-				si_end = bi->second.end();
+				gi = 0;
+				gi_end = ni->second.size();
 			}
 			return *this;
 		 }
@@ -68,28 +60,19 @@ class NEMO_BASE_DLL_PUBLIC synapse_iterator : public abstract_synapse_iterator
 			}
 			const synapse_iterator& rhs = static_cast<const synapse_iterator&>(rhs_);
 			return ni == rhs.ni && ni_end == rhs.ni_end
-				&& bi == rhs.bi && bi_end == rhs.bi_end
-				&& si == rhs.si && si_end == rhs.si_end;
+				&& gi == rhs.gi && gi_end == rhs.gi_end;
 		}
 
 		bool operator!=(const abstract_synapse_iterator& rhs) const {
 			return !(*this == rhs);
 		}
 
-		static NetworkImpl::axon_t::const_iterator defaultBi() { return s_axon.end(); }
-		static NetworkImpl::bundle_t::const_iterator defaultSi() { return s_bundle.end(); }
-
 	private :
 
 		NetworkImpl::fcm_t::const_iterator ni;
 		NetworkImpl::fcm_t::const_iterator ni_end;
-		NetworkImpl::axon_t::const_iterator bi;
-		NetworkImpl::axon_t::const_iterator bi_end;
-		NetworkImpl::bundle_t::const_iterator si;
-		NetworkImpl::bundle_t::const_iterator si_end;
-
-		static NetworkImpl::axon_t s_axon;
-		static NetworkImpl::bundle_t s_bundle;
+		id32_t gi;
+		id32_t gi_end;
 
 		mutable value_type m_data;
 };

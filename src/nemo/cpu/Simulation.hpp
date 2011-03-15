@@ -89,17 +89,17 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::getSynapsesFrom */
 		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
-		/*! \copydoc nemo::Simulation::getTargets */
-		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
+		/*! \copydoc nemo::Simulation::getSynapseTarget */
+		unsigned getSynapseTarget(const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getDelays */
-		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>&);
+		/*! \copydoc nemo::Simulation::getSynapseDelay */
+		unsigned getSynapseDelay(const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getWeights */
-		const std::vector<float>& getWeights(const std::vector<synapse_id>&);
+		/*! \copydoc nemo::Simulation::getSynapseWeight */
+		float getSynapseWeight(const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getPlastic */
-		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>&);
+		/*! \copydoc nemo::Simulation::getSynapsePlastic */
+		unsigned char getSynapsePlastic(const synapse_id& synapse) const;
 
 		/*! \copydoc nemo::Simulation::elapsedWallclock */
 		unsigned long elapsedWallclock() const;

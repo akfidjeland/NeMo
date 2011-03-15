@@ -93,6 +93,17 @@ addInhibitorySynapses(
 }
 
 
+
+/* Array arguments to NeMo API should be NULL if there is no data. */
+template<typename T>
+T*
+vectorData(std::vector<T>& vec)
+{
+	return vec.size() > 0 ? &vec[0] : NULL;
+}
+
+
+
 void
 c_runSimulation(
 		const nemo_network_t net,
@@ -118,27 +129,29 @@ c_runSimulation(
 		size_t fired_len;
 
 		if(s == 0 && ms == 0) {
-			nemo_step(sim, &fstim[0], fstim.size(),
-					&istim_nidx[0], &istim_current[0], istim_nidx.size(),
+			nemo_step(sim, vectorData(fstim), fstim.size(),
+					vectorData(istim_nidx), vectorData(istim_current), istim_nidx.size(),
 					&fired, &fired_len);
 		} else {
 			nemo_step(sim, NULL, 0, NULL, NULL, 0, &fired, &fired_len);
 		}
-
 		// read back a few synapses every now and then just to make sure it works
 		if(ms % 100 == 0) {
-			std::vector<synapse_id> synapses = synapseIds(1, 1000);
-			float* weights;
-			nemo_get_weights(sim, &synapses[0], synapses.size(), &weights);
+			synapse_id* synapses;
+			size_t len;
+			nemo_get_synapses_from_s(sim, 1, &synapses, &len);
 
-			unsigned* targets;
-			nemo_get_targets(sim, &synapses[0], synapses.size(), &targets);
+			float weight;
+			nemo_get_synapse_weight_s(sim, synapses[0], &weight);
 
-			unsigned* delays;
-			nemo_get_delays(sim, &synapses[0], synapses.size(), &delays);
+			unsigned target;
+			nemo_get_synapse_target_s(sim, synapses[0], &target);
 
-			unsigned char* plastic;
-			nemo_get_plastic(sim, &synapses[0], synapses.size(), &plastic);
+			unsigned delay;
+			nemo_get_synapse_delay_s(sim, synapses[0], &delay);
+
+			unsigned char plastic;
+			nemo_get_synapse_plastic_s(sim, synapses[0], &plastic);
 		}
 
 		// read back a some membrane potential, just to make sure it works
@@ -259,9 +272,9 @@ runComparison(bool useFstim, bool useIstim)
 	std::cerr << "Running network (C API)\n";
 	c_runSimulation(c_net, c_conf, duration,
 			fstim, istim_nidx, istim_current, &cycles2, &nidx2);
+
 	std::cerr << "Checking results\n";
 	compareSimulationResults(cycles1, nidx1, cycles2, nidx2);
-
 	nemo_delete_configuration(c_conf);
 	nemo_delete_network(c_net);
 }
@@ -339,7 +352,7 @@ test_set_neuron()
 	/* setNeuron should only succeed for existing neurons */
 	BOOST_REQUIRE(nemo_set_neuron_n(net, 0, a, b, c, d, u, v, sigma) != NEMO_OK);
 
-	nemo_add_neuron(net, 0, a, b, c-0.1, d, u, v-1.0, sigma);
+	nemo_add_neuron(net, 0, a, b, c-0.1f, d, u, v-1.0f, sigma);
 
 	/* Invalid neuron */
 	BOOST_REQUIRE(nemo_get_neuron_parameter_n(net, 1, 0, &val) != NEMO_OK);
@@ -349,7 +362,7 @@ test_set_neuron()
 	BOOST_REQUIRE(nemo_get_neuron_parameter_n(net, 0, 5, &val) != NEMO_OK);
 	BOOST_REQUIRE(nemo_get_neuron_state_n(net, 0, 2, &val) != NEMO_OK);
 
-	float e = 0.1;
+	float e = 0.1f;
 	BOOST_REQUIRE_EQUAL(nemo_set_neuron_n(net, 0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e), NEMO_OK);
 	nemo_get_neuron_parameter_n(net, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, a-e);
 	nemo_get_neuron_parameter_n(net, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, b-e);

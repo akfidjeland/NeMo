@@ -50,6 +50,7 @@ ADD_LIBRARY(nemo_base
 	RNG.cpp
 	STDP.cpp
 	StdpFunction.cpp
+	Axon.cpp
 	fixedpoint.cpp
 )
 
@@ -74,6 +75,7 @@ INSTALL(FILES
 		Configuration.hpp
 		Network.hpp
 		Simulation.hpp
+		ReadableNetwork.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/config.h
 	DESTINATION ${INSTALL_INCLUDE_DIR}/nemo
 )

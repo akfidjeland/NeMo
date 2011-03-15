@@ -169,11 +169,11 @@ vectorDimension(int nrhs, const mxArray* prhs[], unsigned arglen[])
 		mexErrMsgIdAndTxt("nemo:api", "function should have at least one input argument");
 	}
 
-	size_t dim = 1;
-	unsigned i = 0;
+	size_t dim = 1U;
+	size_t i = 0U;
 
 	/* Skip initial scalars */
-	for(; i < nrhs && dim == 1; ++i) {
+	for(; i < nrhs && dim == 1U; ++i) {
 		dim = arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
 	}
 
@@ -412,7 +412,7 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     size_t elems = vectorDimension(8, prhs + 1, arglen);
     checkInputCount(nrhs, 8);
     checkOutputCount(nlhs, 0);
-    void* hdl = getNetwork();
+    nemo_network_t hdl = getNetwork();
     for(size_t i=0; i<elems; ++i){
         checkNemoStatus( 
                 nemo_add_neuron( 
@@ -440,7 +440,7 @@ addSynapse(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 5);
     checkOutputCount(nlhs, 1);
     allocateOutputVector<uint64_t>(plhs, 0, elems);
-    void* hdl = getNetwork();
+    nemo_network_t hdl = getNetwork();
     for(size_t i=0; i<elems; ++i){
         uint64_t id;
         checkNemoStatus( 
@@ -582,7 +582,7 @@ getMembranePotential(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 1);
     checkOutputCount(nlhs, 1);
     allocateOutputVector<double>(plhs, 0, elems);
-    void* hdl = getSimulation();
+    nemo_simulation_t hdl = getSimulation();
     for(size_t i=0; i<elems; ++i){
         float v;
         checkNemoStatus( 
@@ -590,85 +590,6 @@ getMembranePotential(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         );
         returnScalarAt<float, double>(plhs, 0, i, v);
     }
-}
-
-
-
-void
-getSynapsesFrom(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 1);
-    uint64_t* synapses;
-    size_t synapses_len;
-    checkNemoStatus( 
-            nemo_get_synapses_from( 
-                    getSimulation(), 
-                    scalar<unsigned,uint32_t>(prhs[1]), 
-                    &synapses, &synapses_len 
-            ) 
-    );
-    returnVector<uint64_t, uint64_t>(plhs, 0, synapses, synapses_len);
-}
-
-
-
-void
-getTargets(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
-    unsigned* targets;
-    checkNemoStatus( 
-            nemo_get_targets(getSimulation(), &synapses[0], synapses.size(), &targets) 
-    );
-    returnVector<unsigned, uint32_t>(plhs, 0, targets, synapses.size());
-}
-
-
-
-void
-getDelays(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
-    unsigned* delays;
-    checkNemoStatus( 
-            nemo_get_delays(getSimulation(), &synapses[0], synapses.size(), &delays) 
-    );
-    returnVector<unsigned, uint32_t>(plhs, 0, delays, synapses.size());
-}
-
-
-
-void
-getWeights(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
-    float* weights;
-    checkNemoStatus( 
-            nemo_get_weights(getSimulation(), &synapses[0], synapses.size(), &weights) 
-    );
-    returnVector<float, double>(plhs, 0, weights, synapses.size());
-}
-
-
-
-void
-getPlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 1);
-    checkOutputCount(nlhs, 1);
-    std::vector<uint64_t> synapses = vector<uint64_t, uint64_t>(prhs[1]);
-    unsigned char* plastic;
-    checkNemoStatus( 
-            nemo_get_plastic(getSimulation(), &synapses[0], synapses.size(), &plastic) 
-    );
-    returnVector<unsigned char, uint8_t>(plhs, 0, plastic, synapses.size());
 }
 
 
@@ -715,7 +636,7 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 8);
     checkOutputCount(nlhs, 0);
     if(isSimulating()){
-        void* hdl = getSimulation();
+        nemo_simulation_t hdl = getSimulation();
         for(size_t i=0; i<elems; ++i){
             checkNemoStatus( 
                     nemo_set_neuron_s( 
@@ -732,7 +653,7 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             );
         }
     } else {
-        void* hdl = getNetwork();
+        nemo_network_t hdl = getNetwork();
         for(size_t i=0; i<elems; ++i){
             checkNemoStatus( 
                     nemo_set_neuron_n( 
@@ -761,7 +682,7 @@ setNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 3);
     checkOutputCount(nlhs, 0);
     if(isSimulating()){
-        void* hdl = getSimulation();
+        nemo_simulation_t hdl = getSimulation();
         for(size_t i=0; i<elems; ++i){
             checkNemoStatus( 
                     nemo_set_neuron_state_s( 
@@ -773,7 +694,7 @@ setNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             );
         }
     } else {
-        void* hdl = getNetwork();
+        nemo_network_t hdl = getNetwork();
         for(size_t i=0; i<elems; ++i){
             checkNemoStatus( 
                     nemo_set_neuron_state_n( 
@@ -797,7 +718,7 @@ setNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 3);
     checkOutputCount(nlhs, 0);
     if(isSimulating()){
-        void* hdl = getSimulation();
+        nemo_simulation_t hdl = getSimulation();
         for(size_t i=0; i<elems; ++i){
             checkNemoStatus( 
                     nemo_set_neuron_parameter_s( 
@@ -809,7 +730,7 @@ setNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             );
         }
     } else {
-        void* hdl = getNetwork();
+        nemo_network_t hdl = getNetwork();
         for(size_t i=0; i<elems; ++i){
             checkNemoStatus( 
                     nemo_set_neuron_parameter_n( 
@@ -834,7 +755,7 @@ getNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     allocateOutputVector<double>(plhs, 0, elems);
     if(isSimulating()){
-        void* hdl = getSimulation();
+        nemo_simulation_t hdl = getSimulation();
         for(size_t i=0; i<elems; ++i){
             float val;
             checkNemoStatus( 
@@ -848,7 +769,7 @@ getNeuronState(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             returnScalarAt<float, double>(plhs, 0, i, val);
         }
     } else {
-        void* hdl = getNetwork();
+        nemo_network_t hdl = getNetwork();
         for(size_t i=0; i<elems; ++i){
             float val;
             checkNemoStatus( 
@@ -875,7 +796,7 @@ getNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 1);
     allocateOutputVector<double>(plhs, 0, elems);
     if(isSimulating()){
-        void* hdl = getSimulation();
+        nemo_simulation_t hdl = getSimulation();
         for(size_t i=0; i<elems; ++i){
             float val;
             checkNemoStatus( 
@@ -889,7 +810,7 @@ getNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             returnScalarAt<float, double>(plhs, 0, i, val);
         }
     } else {
-        void* hdl = getNetwork();
+        nemo_network_t hdl = getNetwork();
         for(size_t i=0; i<elems; ++i){
             float val;
             checkNemoStatus( 
@@ -907,8 +828,232 @@ getNeuronParameter(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 
+void
+getSynapsesFrom(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    uint64_t* synapses;
+    size_t synapses_len;
+    if(isSimulating()){
+        checkNemoStatus( 
+                nemo_get_synapses_from_s( 
+                        getSimulation(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        &synapses, &synapses_len 
+                ) 
+        );
+    } else {
+        checkNemoStatus( 
+                nemo_get_synapses_from_n( 
+                        getNetwork(), 
+                        scalar<unsigned,uint32_t>(prhs[1]), 
+                        &synapses, &synapses_len 
+                ) 
+        );
+    }
+    returnVector<uint64_t, uint64_t>(plhs, 0, synapses, synapses_len);
+}
+
+
+
+void
+getSynapseSource(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    static unsigned arglen[1];
+    size_t elems = vectorDimension(1, prhs + 1, arglen);
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    allocateOutputVector<uint32_t>(plhs, 0, elems);
+    if(isSimulating()){
+        nemo_simulation_t hdl = getSimulation();
+        for(size_t i=0; i<elems; ++i){
+            unsigned source;
+            checkNemoStatus( 
+                    nemo_get_synapse_source_s( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &source 
+                    ) 
+            );
+            returnScalarAt<unsigned, uint32_t>(plhs, 0, i, source);
+        }
+    } else {
+        nemo_network_t hdl = getNetwork();
+        for(size_t i=0; i<elems; ++i){
+            unsigned source;
+            checkNemoStatus( 
+                    nemo_get_synapse_source_n( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &source 
+                    ) 
+            );
+            returnScalarAt<unsigned, uint32_t>(plhs, 0, i, source);
+        }
+    }
+}
+
+
+
+void
+getSynapseTarget(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    static unsigned arglen[1];
+    size_t elems = vectorDimension(1, prhs + 1, arglen);
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    allocateOutputVector<uint32_t>(plhs, 0, elems);
+    if(isSimulating()){
+        nemo_simulation_t hdl = getSimulation();
+        for(size_t i=0; i<elems; ++i){
+            unsigned target;
+            checkNemoStatus( 
+                    nemo_get_synapse_target_s( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &target 
+                    ) 
+            );
+            returnScalarAt<unsigned, uint32_t>(plhs, 0, i, target);
+        }
+    } else {
+        nemo_network_t hdl = getNetwork();
+        for(size_t i=0; i<elems; ++i){
+            unsigned target;
+            checkNemoStatus( 
+                    nemo_get_synapse_target_n( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &target 
+                    ) 
+            );
+            returnScalarAt<unsigned, uint32_t>(plhs, 0, i, target);
+        }
+    }
+}
+
+
+
+void
+getSynapseDelay(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    static unsigned arglen[1];
+    size_t elems = vectorDimension(1, prhs + 1, arglen);
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    allocateOutputVector<uint32_t>(plhs, 0, elems);
+    if(isSimulating()){
+        nemo_simulation_t hdl = getSimulation();
+        for(size_t i=0; i<elems; ++i){
+            unsigned delay;
+            checkNemoStatus( 
+                    nemo_get_synapse_delay_s( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &delay 
+                    ) 
+            );
+            returnScalarAt<unsigned, uint32_t>(plhs, 0, i, delay);
+        }
+    } else {
+        nemo_network_t hdl = getNetwork();
+        for(size_t i=0; i<elems; ++i){
+            unsigned delay;
+            checkNemoStatus( 
+                    nemo_get_synapse_delay_n( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &delay 
+                    ) 
+            );
+            returnScalarAt<unsigned, uint32_t>(plhs, 0, i, delay);
+        }
+    }
+}
+
+
+
+void
+getSynapseWeight(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    static unsigned arglen[1];
+    size_t elems = vectorDimension(1, prhs + 1, arglen);
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    allocateOutputVector<double>(plhs, 0, elems);
+    if(isSimulating()){
+        nemo_simulation_t hdl = getSimulation();
+        for(size_t i=0; i<elems; ++i){
+            float weight;
+            checkNemoStatus( 
+                    nemo_get_synapse_weight_s( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &weight 
+                    ) 
+            );
+            returnScalarAt<float, double>(plhs, 0, i, weight);
+        }
+    } else {
+        nemo_network_t hdl = getNetwork();
+        for(size_t i=0; i<elems; ++i){
+            float weight;
+            checkNemoStatus( 
+                    nemo_get_synapse_weight_n( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &weight 
+                    ) 
+            );
+            returnScalarAt<float, double>(plhs, 0, i, weight);
+        }
+    }
+}
+
+
+
+void
+getSynapsePlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    static unsigned arglen[1];
+    size_t elems = vectorDimension(1, prhs + 1, arglen);
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    allocateOutputVector<uint8_t>(plhs, 0, elems);
+    if(isSimulating()){
+        nemo_simulation_t hdl = getSimulation();
+        for(size_t i=0; i<elems; ++i){
+            unsigned char plastic;
+            checkNemoStatus( 
+                    nemo_get_synapse_plastic_s( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &plastic 
+                    ) 
+            );
+            returnScalarAt<unsigned char, uint8_t>(plhs, 0, i, plastic);
+        }
+    } else {
+        nemo_network_t hdl = getNetwork();
+        for(size_t i=0; i<elems; ++i){
+            unsigned char plastic;
+            checkNemoStatus( 
+                    nemo_get_synapse_plastic_n( 
+                            hdl, 
+                            scalarAt<uint64_t,uint64_t>(prhs[1], i, arglen[0]), 
+                            &plastic 
+                    ) 
+            );
+            returnScalarAt<unsigned char, uint8_t>(plhs, 0, i, plastic);
+        }
+    }
+}
+
+
+
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 29
+#define FN_COUNT 30
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuron,
     addSynapse,
@@ -923,11 +1068,6 @@ fn_ptr fn_arr[FN_COUNT] = {
     step,
     applyStdp,
     getMembranePotential,
-    getSynapsesFrom,
-    getTargets,
-    getDelays,
-    getWeights,
-    getPlastic,
     elapsedWallclock,
     elapsedSimulation,
     resetTimer,
@@ -938,7 +1078,13 @@ fn_ptr fn_arr[FN_COUNT] = {
     setNeuronState,
     setNeuronParameter,
     getNeuronState,
-    getNeuronParameter
+    getNeuronParameter,
+    getSynapsesFrom,
+    getSynapseSource,
+    getSynapseTarget,
+    getSynapseDelay,
+    getSynapseWeight,
+    getSynapsePlastic
 };
 
 /* AUTO-GENERATED CODE END */

@@ -6,6 +6,7 @@
 #include <vector>
 #include <nemo/config.h>
 #include <nemo/types.h>
+#include <nemo/ReadableNetwork.hpp>
 
 /* Copyright 2010 Imperial College London
  *
@@ -36,7 +37,7 @@ class Configuration;
  * be unique for each neuron. When adding synapses the source or target neurons
  * need not necessarily exist yet, but should be defined before the network is
  * finalised. */
-class NEMO_BASE_DLL_PUBLIC Network
+class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 {
 	public :
 
@@ -130,34 +131,20 @@ class NEMO_BASE_DLL_PUBLIC Network
 		 */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
 
-		/*! \return source neuron id for a given synapse */
-		unsigned getSynapseSource(synapse_id id) const;
+		/*! \return target neuron id for a synapse */
+		unsigned getSynapseTarget(const synapse_id&) const;
 
-		/* synapse getter intended for testing only... */
+		/*! \return conductance delay for a synapse */
+		unsigned getSynapseDelay(const synapse_id&) const;
 
-		/*! \return
-		 * 		target neurons for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned>& getTargets(unsigned source) const;
+		/*! \return weight for a synapse */
+		float getSynapseWeight(const synapse_id&) const;
 
-		/*! \return
-		 * 		conductance delays for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned>& getDelays(unsigned source) const;
+		/*! \return plasticity status for a synapse */
+		unsigned char getSynapsePlastic(const synapse_id&) const;
 
-		/*! \return
-		 * 		synaptic weights for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<float>& getWeights(unsigned source) const;
-
-		/*! \return
-		 * 		plasticity status for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned char>& getPlastic(unsigned source) const;
+		/*! \copydoc nemo::ReadableNetwork::getSynapsesFrom */
+		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
 		unsigned maxDelay() const;
 

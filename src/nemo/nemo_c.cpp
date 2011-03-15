@@ -24,6 +24,10 @@
 static std::string g_lastError;
 static nemo_status_t g_lastCallStatus = NEMO_OK;
 
+struct nemo_network_class : public nemo::Network {};
+struct nemo_simulation_class : public nemo::SimulationBackend {};
+struct nemo_configuration_class : public nemo::Configuration {};
+
 
 void
 setResult(const char* msg, nemo_status_t status) {
@@ -49,20 +53,16 @@ setResult(const char* msg, nemo_status_t status) {
     }
 
 /* Call method on wrapper object, and return status and error */
-#define CATCH_(T, ptr, call) {                                                \
-        nemo::T* obj = static_cast<nemo::T*>(ptr);                            \
+#define CATCH_(obj, call) {                                                   \
         CALL(obj->call)                                                       \
         return g_lastCallStatus;                                              \
 	}
 
 /* Call method on wrapper object, set output value, and return status and error */
-#define CATCH(T, ptr, call, ret) {                                            \
-        nemo::T* obj = static_cast<nemo::T*>(ptr);                            \
+#define CATCH(obj, call, ret) {                                               \
         CALL(ret = obj->call);                                                \
         return g_lastCallStatus;                                              \
 	}
-
-#define NOCATCH(T, ptr, call) static_cast<nemo::T*>(ptr)->call
 
 
 const char*
@@ -164,7 +164,7 @@ nemo_add_neuron(nemo_network_t net,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	CATCH_(Network, net, addNeuron(idx, a, b, c, d, u, v, sigma));
+	CATCH_(net, addNeuron(idx, a, b, c, d, u, v, sigma));
 }
 
 
@@ -179,8 +179,7 @@ nemo_add_synapse(nemo_network_t net,
 		synapse_id* id)
 {
 	synapse_id sid = 0;
-	nemo::Network* obj = static_cast<nemo::Network*>(net);
-	CALL(sid = obj->addSynapse(source, target, delay, weight, is_plastic));
+	CALL(sid = net->addSynapse(source, target, delay, weight, is_plastic));
 	if(id != NULL) {
 		*id = sid;
 	}
@@ -192,7 +191,7 @@ nemo_add_synapse(nemo_network_t net,
 nemo_status_t
 nemo_neuron_count(nemo_network_t net, unsigned* ncount)
 {
-	CATCH(Network, net, neuronCount(), *ncount);
+	CATCH(net, neuronCount(), *ncount);
 }
 
 
@@ -200,45 +199,45 @@ nemo_neuron_count(nemo_network_t net, unsigned* ncount)
 nemo_status_t
 nemo_get_membrane_potential(nemo_simulation_t sim, unsigned neuron, float* v)
 {
-	CATCH(Simulation, sim, getMembranePotential(neuron), *v);
+	CATCH(sim, getMembranePotential(neuron), *v);
 }
 
 
 nemo_status_t
 nemo_get_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float* val)
 {
-	CATCH(Network, net, getNeuronState(neuron, var), *val);
+	CATCH(net, getNeuronState(neuron, var), *val);
 }
 
 
 nemo_status_t
 nemo_get_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float* val)
 {
-	CATCH(Network, net, getNeuronParameter(neuron, param), *val);
+	CATCH(net, getNeuronParameter(neuron, param), *val);
 }
 
 
 nemo_status_t
 nemo_get_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float* val)
 {
-	CATCH(Simulation, sim, getNeuronState(neuron, var), *val);
+	CATCH(sim, getNeuronState(neuron, var), *val);
 }
 
 
 nemo_status_t
 nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float* val)
 {
-	CATCH(Simulation, sim, getNeuronParameter(neuron, param), *val);
+	CATCH(sim, getNeuronParameter(neuron, param), *val);
 }
 
 
 nemo_status_t
-nemo_set_neuron_n(nemo_simulation_t net,
+nemo_set_neuron_n(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	CATCH_(Network, net, setNeuron(idx, a, b, c, d, u, v, sigma));
+	CATCH_(net, setNeuron(idx, a, b, c, d, u, v, sigma));
 }
 
 
@@ -248,46 +247,46 @@ nemo_set_neuron_s(nemo_simulation_t sim,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	CATCH_(Simulation, sim, setNeuron(idx, a, b, c, d, u, v, sigma));
+	CATCH_(sim, setNeuron(idx, a, b, c, d, u, v, sigma));
 }
 
 
 nemo_status_t
 nemo_set_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float val)
 {
-	CATCH_(Network, net, setNeuronState(neuron, var, val));
+	CATCH_(net, setNeuronState(neuron, var, val));
 }
 
 
 nemo_status_t
 nemo_set_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float val)
 {
-	CATCH_(Network, net, setNeuronParameter(neuron, param, val));
+	CATCH_(net, setNeuronParameter(neuron, param, val));
 }
 
 
 nemo_status_t
 nemo_set_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float val)
 {
-	CATCH_(Simulation, sim, setNeuronState(neuron, var, val));
+	CATCH_(sim, setNeuronState(neuron, var, val));
 }
 
 
 nemo_status_t
 nemo_set_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned param, float val)
 {
-	CATCH_(Simulation, sim, setNeuronParameter(neuron, param, val));
+	CATCH_(sim, setNeuronParameter(neuron, param, val));
 }
 
 
 void
 getSynapsesFrom(
-		nemo::Simulation* sim,
+		nemo::ReadableNetwork* net,
 		unsigned source,
 		synapse_id *synapses[],
 		size_t* len)
 {
-	const std::vector<synapse_id>& ids = sim->getSynapsesFrom(source);
+	const std::vector<synapse_id>& ids = net->getSynapsesFrom(source);
 	if(g_lastCallStatus == NEMO_OK && !ids.empty()) {
 		*synapses = const_cast<synapse_id*>(&ids[0]);
 		*len = ids.size();
@@ -299,54 +298,95 @@ getSynapsesFrom(
 
 
 nemo_status_t
-nemo_get_synapses_from(nemo_simulation_t ptr,
+nemo_get_synapses_from_n(nemo_network_t net,
 		unsigned source,
 		synapse_id *synapses[],
 		size_t* len)
 {
-	nemo::Simulation* sim = static_cast<nemo::Simulation*>(ptr);
+	CALL(getSynapsesFrom(net, source, synapses, len));
+	return g_lastCallStatus;
+}
+
+
+
+nemo_status_t
+nemo_get_synapses_from_s(nemo_simulation_t sim,
+		unsigned source,
+		synapse_id *synapses[],
+		size_t* len)
+{
 	CALL(getSynapsesFrom(sim, source, synapses, len));
 	return g_lastCallStatus;
 }
 
 
-#define GET_SYNAPSE_STATE(T, ptr, call, synapses, len, ret)                   \
-    if(len > 0) {                                                             \
-        nemo::SimulationBackend* sim =                                        \
-            static_cast<nemo::SimulationBackend*>(ptr);                       \
-        CALL(*ret = &const_cast<T&>(sim->call(std::vector<synapse_id>(synapses, synapses+len))[0])); \
-        return g_lastCallStatus;                                              \
-    } else {                                                                  \
-        *ret = NULL;                                                          \
-        return NEMO_OK;                                                       \
-    }
-
-
 nemo_status_t
-nemo_get_targets(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* targets[])
+nemo_get_synapse_source_n(nemo_network_t ptr, synapse_id synapse, unsigned* source)
 {
-	GET_SYNAPSE_STATE(unsigned, ptr, getTargets, synapses, len, targets);
+	CATCH(ptr, getSynapseSource(synapse), *source);
 }
 
 
 nemo_status_t
-nemo_get_delays(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned* delays[])
+nemo_get_synapse_source_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* source)
 {
-	GET_SYNAPSE_STATE(unsigned, ptr, getDelays, synapses, len, delays);
+	CATCH(ptr, getSynapseSource(synapse), *source);
 }
 
 
 nemo_status_t
-nemo_get_weights(nemo_simulation_t ptr, synapse_id synapses[], size_t len, float* weights[])
+nemo_get_synapse_target_n(nemo_network_t ptr, synapse_id synapse, unsigned* target)
 {
-	GET_SYNAPSE_STATE(float, ptr, getWeights, synapses, len, weights);
+	CATCH(ptr, getSynapseTarget(synapse), *target);
 }
 
 
 nemo_status_t
-nemo_get_plastic(nemo_simulation_t ptr, synapse_id synapses[], size_t len, unsigned char* plastic[])
+nemo_get_synapse_target_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* target)
 {
-	GET_SYNAPSE_STATE(unsigned char, ptr, getPlastic, synapses, len, plastic);
+	CATCH(ptr, getSynapseTarget(synapse), *target);
+}
+
+
+nemo_status_t
+nemo_get_synapse_delay_n(nemo_network_t ptr, synapse_id synapse, unsigned* delay)
+{
+	CATCH(ptr, getSynapseTarget(synapse), *delay);
+}
+
+
+nemo_status_t
+nemo_get_synapse_delay_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* delay)
+{
+	CATCH(ptr, getSynapseTarget(synapse), *delay);
+}
+
+
+nemo_status_t
+nemo_get_synapse_weight_n(nemo_network_t ptr, synapse_id synapse, float* weight)
+{
+	CATCH(ptr, getSynapseTarget(synapse), *weight);
+}
+
+
+nemo_status_t
+nemo_get_synapse_weight_s(nemo_simulation_t ptr, synapse_id synapse, float* weight)
+{
+	CATCH(ptr, getSynapseTarget(synapse), *weight);
+}
+
+
+nemo_status_t
+nemo_get_synapse_plastic_n(nemo_network_t ptr, synapse_id synapse, unsigned char* plastic)
+{
+	CATCH(ptr, getSynapsePlastic(synapse), *plastic);
+}
+
+
+nemo_status_t
+nemo_get_synapse_plastic_s(nemo_simulation_t ptr, synapse_id synapse, unsigned char* plastic)
+{
+	CATCH(ptr, getSynapsePlastic(synapse), *plastic);
 }
 
 
@@ -377,12 +417,11 @@ step(nemo::SimulationBackend* sim,
 
 
 nemo_status_t
-nemo_step(nemo_simulation_t sim_ptr,
+nemo_step(nemo_simulation_t sim,
 		unsigned fstim_nidx[], size_t fstim_count,
 		unsigned istim_nidx[], float istim_current[], size_t istim_count,
 		unsigned* fired[], size_t* fired_count)
 {
-	nemo::SimulationBackend* sim = static_cast<nemo::SimulationBackend*>(sim_ptr);
 	CALL(step(sim,
 			std::vector<unsigned>(fstim_nidx, fstim_nidx + fstim_count),
 			istim_nidx, istim_current, istim_count,
@@ -395,7 +434,7 @@ nemo_step(nemo_simulation_t sim_ptr,
 nemo_status_t
 nemo_apply_stdp(nemo_simulation_t sim, float reward)
 {
-	CATCH_(SimulationBackend, sim, applyStdp(reward));
+	CATCH_(sim, applyStdp(reward));
 }
 
 
@@ -408,7 +447,7 @@ nemo_apply_stdp(nemo_simulation_t sim, float reward)
 nemo_status_t
 nemo_log_stdout(nemo_configuration_t conf)
 {
-	CATCH_(Configuration, conf, enableLogging());
+	CATCH_(conf, enableLogging());
 }
 
 
@@ -416,7 +455,7 @@ nemo_log_stdout(nemo_configuration_t conf)
 nemo_status_t
 nemo_elapsed_wallclock(nemo_simulation_t sim, unsigned long* elapsed)
 {
-	CATCH(SimulationBackend, sim, elapsedWallclock(), *elapsed);
+	CATCH(sim, elapsedWallclock(), *elapsed);
 }
 
 
@@ -424,7 +463,7 @@ nemo_elapsed_wallclock(nemo_simulation_t sim, unsigned long* elapsed)
 nemo_status_t
 nemo_elapsed_simulation(nemo_simulation_t sim, unsigned long* elapsed)
 {
-	CATCH(SimulationBackend, sim, elapsedSimulation(), *elapsed);
+	CATCH(sim, elapsedSimulation(), *elapsed);
 }
 
 
@@ -432,7 +471,7 @@ nemo_elapsed_simulation(nemo_simulation_t sim, unsigned long* elapsed)
 nemo_status_t
 nemo_reset_timer(nemo_simulation_t sim)
 {
-	CATCH_(SimulationBackend, sim, resetTimer());
+	CATCH_(sim, resetTimer());
 }
 
 
@@ -449,7 +488,7 @@ nemo_set_stdp_function(nemo_configuration_t conf,
 		float w_min,
 		float w_max)
 {
-	CATCH_(Configuration, conf, setStdpFunction(
+	CATCH_(conf, setStdpFunction(
 				std::vector<float>(pre_fn, pre_fn+pre_len),
 				std::vector<float>(post_fn, post_fn+post_len),
 				w_min, w_max));
@@ -459,7 +498,7 @@ nemo_set_stdp_function(nemo_configuration_t conf,
 nemo_status_t
 nemo_set_cpu_backend(nemo_configuration_t conf, int threadCount)
 {
-	CATCH_(Configuration, conf, setCpuBackend(threadCount));
+	CATCH_(conf, setCpuBackend(threadCount));
 }
 
 
@@ -467,7 +506,7 @@ nemo_set_cpu_backend(nemo_configuration_t conf, int threadCount)
 nemo_status_t
 nemo_cpu_thread_count(nemo_configuration_t conf, int* threadCount)
 {
-	CATCH(Configuration, conf, cpuThreadCount(), *threadCount);
+	CATCH(conf, cpuThreadCount(), *threadCount);
 }
 
 
@@ -475,7 +514,7 @@ nemo_cpu_thread_count(nemo_configuration_t conf, int* threadCount)
 nemo_status_t
 nemo_set_cuda_backend(nemo_configuration_t conf, int dev)
 {
-	CATCH_(Configuration, conf, setCudaBackend(dev));
+	CATCH_(conf, setCudaBackend(dev));
 }
 
 
@@ -483,7 +522,7 @@ nemo_set_cuda_backend(nemo_configuration_t conf, int dev)
 nemo_status_t
 nemo_cuda_device(nemo_configuration_t conf, int* dev)
 {
-	CATCH(Configuration, conf, cudaDevice(), *dev);
+	CATCH(conf, cudaDevice(), *dev);
 }
 
 
@@ -491,7 +530,7 @@ nemo_cuda_device(nemo_configuration_t conf, int* dev)
 nemo_status_t
 nemo_backend(nemo_configuration_t conf, backend_t* backend)
 {
-	CATCH(Configuration, conf, backend(), *backend);
+	CATCH(conf, backend(), *backend);
 }
 
 
@@ -499,14 +538,14 @@ nemo_backend(nemo_configuration_t conf, backend_t* backend)
 nemo_status_t
 nemo_backend_description(nemo_configuration_t conf, const char** descr)
 {
-	CATCH(Configuration, conf, backendDescription(), *descr);
+	CATCH(conf, backendDescription(), *descr);
 }
 
 
 nemo_status_t
 nemo_set_write_only_synapses(nemo_configuration_t conf)
 {
-	CATCH_(Configuration, conf, setWriteOnlySynapses());
+	CATCH_(conf, setWriteOnlySynapses());
 }
 
 

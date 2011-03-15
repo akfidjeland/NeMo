@@ -52,6 +52,12 @@
 %  nemoSetNeuronParameter
 %  nemoGetNeuronState
 %  nemoGetNeuronParameter
+%  nemoGetSynapsesFrom
+%  nemoGetSynapseSource
+%  nemoGetSynapseTarget
+%  nemoGetSynapseDelay
+%  nemoGetSynapseWeight
+%  nemoGetSynapsePlastic
 %
 % Configuration:
 %  nemoSetCpuBackend
@@ -65,11 +71,6 @@
 %  nemoStep
 %  nemoApplyStdp
 %  nemoGetMembranePotential
-%  nemoGetSynapsesFrom
-%  nemoGetTargets
-%  nemoGetDelays
-%  nemoGetWeights
-%  nemoGetPlastic
 %  nemoElapsedWallclock
 %  nemoElapsedSimulation
 %  nemoResetTimer
@@ -80,6 +81,12 @@
 %  nemoSetNeuronParameter
 %  nemoGetNeuronState
 %  nemoGetNeuronParameter
+%  nemoGetSynapsesFrom
+%  nemoGetSynapseSource
+%  nemoGetSynapseTarget
+%  nemoGetSynapseDelay
+%  nemoGetSynapseWeight
+%  nemoGetSynapsePlastic
 %
 % Others:
 %  nemoReset

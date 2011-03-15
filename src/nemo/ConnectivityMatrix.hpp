@@ -111,17 +111,17 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		/*! \return all synapses for a given source and delay */
 		const Row& getRow(nidx_t source, delay_t) const;
 
-		/*! \copydoc nemo::Simulation::getTargets */
-		const std::vector<unsigned>& getTargets(const std::vector<synapse_id>&);
+		/*! \copydoc nemo::Simulation::getTarget */
+		unsigned getTarget(const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getDelays */
-		const std::vector<unsigned>& getDelays(const std::vector<synapse_id>&);
+		/*! \copydoc nemo::Simulation::getDelay */
+		unsigned getDelay(const synapse_id& synapse) const;
 
-		/*! \copydoc nemo::Simulation::getWeights */
-		const std::vector<float>& getWeights(const std::vector<synapse_id>&);
+		/*! \copydoc nemo::Simulation::getWeight */
+		float getWeight(const synapse_id& synapse) const;
 
 		/*! \copydoc nemo::Simulation::getPlastic */
-		const std::vector<unsigned char>& getPlastic(const std::vector<synapse_id>&);
+		unsigned char getPlastic(const synapse_id& synapse) const;
 
 		void finalize(const mapper_t& mapper, bool verifySources);
 
@@ -197,10 +197,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		/* Internal buffers for synapse queries */
 		std::vector<synapse_id> m_queriedSynapseIds;
-		std::vector<unsigned> m_queriedTargets;
-		std::vector<unsigned> m_queriedDelays;
-		std::vector<float> m_queriedWeights;
-		std::vector<unsigned char> m_queriedPlastic;
 
 		/*! \todo We could save both time and space here by doing the same as
 		 * in the cuda backend, namely

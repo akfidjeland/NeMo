@@ -8,5 +8,5 @@ function elapsed = nemoElapsedSimulation()
 %   elapsed - number of milliseconds of simulation time elapsed since
 %             first simulation step (or last timer reset)
 %    
-    elapsed = nemo_mex(uint32(19));
+    elapsed = nemo_mex(uint32(14));
 end

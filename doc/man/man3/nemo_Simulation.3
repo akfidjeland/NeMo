@@ -2,10 +2,9 @@
 .ad l
 .nh
 .SH NAME
-nemo::Simulation \- 
-.PP
-\fBSimulation\fP of a single network.  
+nemo::Simulation \- \fBSimulation\fP of a single network.  
 
+.PP
 .SH SYNOPSIS
 .br
 .PP
@@ -28,7 +27,7 @@ nemo::Simulation \-
 .PP
 .RI "\fBModifying the network\fP"
 .br
- Neuron parameters and state variables can be modified during simulation. However, synapses can not be modified during simulation in the current version of NeMo 
+Neuron parameters and state variables can be modified during simulation. However, synapses can not be modified during simulation in the current version of NeMo 
 .PP
 .in +1c
 .in +1c
@@ -49,7 +48,7 @@ nemo::Simulation \-
 .PP
 .RI "\fBQueries\fP"
 .br
- Neuron and synapse state is availble at run-time.
+Neuron and synapse state is availble at run-time.
 .PP
 The synapse state can be read back at run-time by specifiying a list of synpase ids (see \fIaddSynapse\fP). The weights may change at run-time, while the other synapse data is static. 
 .PP
@@ -67,24 +66,12 @@ The synapse state can be read back at run-time by specifiying a list of synpase 
 .ti -1c
 .RI "virtual const std::vector< synapse_id > & \fBgetSynapsesFrom\fP (unsigned neuron)=0"
 .br
-.ti -1c
-.RI "virtual const std::vector< unsigned > & \fBgetTargets\fP (const std::vector< synapse_id > &synapses)=0"
-.br
-.ti -1c
-.RI "virtual const std::vector< unsigned > & \fBgetDelays\fP (const std::vector< synapse_id > &synapses)=0"
-.br
-.ti -1c
-.RI "virtual const std::vector< float > & \fBgetWeights\fP (const std::vector< synapse_id > &synapses)=0"
-.br
-.ti -1c
-.RI "virtual const std::vector< unsigned char > & \fBgetPlastic\fP (const std::vector< synapse_id > &synapses)=0"
-.br
 .in -1c
 .in -1c
 .PP
 .RI "\fBSimulation (timing)\fP"
 .br
- The simulation has two internal timers which keep track of the elapsed \fIsimulated\fP time and \fIwallclock\fP time. Both timers measure from the first simulation step, or from the last timer reset, whichever comes last. 
+The simulation has two internal timers which keep track of the elapsed \fIsimulated\fP time and \fIwallclock\fP time. Both timers measure from the first simulation step, or from the last timer reset, whichever comes last. 
 .PP
 .in +1c
 .in +1c
@@ -113,8 +100,12 @@ Internal errors are signaled by exceptions. Thrown exceptions are all of the typ
 
 .SH "Member Function Documentation"
 .PP 
-.SS "virtual const firing_output& nemo::Simulation::step ()\fC [pure virtual]\fP"Run simulation for a single cycle (1ms) without external stimulus 
-.SS "virtual const firing_output& nemo::Simulation::step (const firing_stimulus & fstim)\fC [pure virtual]\fP"Run simulation for a single cycle (1ms) with firing stimulus
+.SS "virtual const firing_output& nemo::Simulation::step ()\fC [pure virtual]\fP"
+.PP
+Run simulation for a single cycle (1ms) without external stimulus 
+.SS "virtual const firing_output& nemo::Simulation::step (const firing_stimulus & fstim)\fC [pure virtual]\fP"
+.PP
+Run simulation for a single cycle (1ms) with firing stimulus
 .PP
 \fBParameters:\fP
 .RS 4
@@ -127,7 +118,9 @@ List of neurons which fired this cycle. The referenced data is valid until the n
 .RE
 .PP
 
-.SS "virtual const firing_output& nemo::Simulation::step (const current_stimulus & istim)\fC [pure virtual]\fP"Run simulation for a single cycle (1ms) with current stimulus
+.SS "virtual const firing_output& nemo::Simulation::step (const current_stimulus & istim)\fC [pure virtual]\fP"
+.PP
+Run simulation for a single cycle (1ms) with current stimulus
 .PP
 \fBParameters:\fP
 .RS 4
@@ -140,7 +133,9 @@ List of neurons which fired this cycle. The referenced data is valid until the n
 .RE
 .PP
 
-.SS "virtual const firing_output& nemo::Simulation::step (const firing_stimulus & fstim, const current_stimulus & istim)\fC [pure virtual]\fP"Run simulation for a single cycle (1ms) with both firing stimulus and current stimulus
+.SS "virtual const firing_output& nemo::Simulation::step (const firing_stimulus & fstim, const current_stimulus & istim)\fC [pure virtual]\fP"
+.PP
+Run simulation for a single cycle (1ms) with both firing stimulus and current stimulus
 .PP
 \fBParameters:\fP
 .RS 4
@@ -155,7 +150,9 @@ List of neurons which fired this cycle. The referenced data is valid until the n
 .RE
 .PP
 
-.SS "virtual void nemo::Simulation::setNeuron (unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)\fC [pure virtual]\fP"Change the parameters of an existing neuron.
+.SS "virtual void nemo::Simulation::setNeuron (unsigned idx, float a, float b, float c, float d, float u, float v, float sigma)\fC [pure virtual]\fP"
+.PP
+Change the parameters of an existing neuron.
 .PP
 \fBSee also:\fP
 .RS 4
@@ -163,7 +160,9 @@ List of neurons which fired this cycle. The referenced data is valid until the n
 .RE
 .PP
 
-.SS "virtual void nemo::Simulation::setNeuronState (unsigned neuron, unsigned var, float val)\fC [pure virtual]\fP"Change a single state variable for an existing neuron
+.SS "virtual void nemo::Simulation::setNeuronState (unsigned neuron, unsigned var, float val)\fC [pure virtual]\fP"
+.PP
+Change a single state variable for an existing neuron
 .PP
 \fBParameters:\fP
 .RS 4
@@ -175,7 +174,9 @@ List of neurons which fired this cycle. The referenced data is valid until the n
 .RE
 .PP
 For the Izhikevich model variable indices 0 = u, 1 = v  
-.SS "virtual void nemo::Simulation::setNeuronParameter (unsigned neuron, unsigned param, float val)\fC [pure virtual]\fP"Change a single parameter for an existing neuron
+.SS "virtual void nemo::Simulation::setNeuronParameter (unsigned neuron, unsigned param, float val)\fC [pure virtual]\fP"
+.PP
+Change a single parameter for an existing neuron
 .PP
 \fBParameters:\fP
 .RS 4
@@ -187,7 +188,9 @@ For the Izhikevich model variable indices 0 = u, 1 = v
 .RE
 .PP
 For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d  
-.SS "virtual void nemo::Simulation::applyStdp (float reward)\fC [pure virtual]\fP"Update synapse weights using the accumulated STDP statistics
+.SS "virtual void nemo::Simulation::applyStdp (float reward)\fC [pure virtual]\fP"
+.PP
+Update synapse weights using the accumulated STDP statistics
 .PP
 \fBParameters:\fP
 .RS 4
@@ -195,7 +198,9 @@ For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
 .RE
 .PP
 
-.SS "virtual float nemo::Simulation::getNeuronState (unsigned neuron, unsigned var) const\fC [pure virtual]\fP"\fBParameters:\fP
+.SS "virtual float nemo::Simulation::getNeuronState (unsigned neuron, unsigned var) const\fC [pure virtual]\fP"
+.PP
+\fBParameters:\fP
 .RS 4
 \fIneuron\fP neuron index 
 .br
@@ -208,7 +213,9 @@ state variable \fIn\fP.
 .RE
 .PP
 For the Izhikevich model the variable indices are 0 = u, 1 = v.  
-.SS "virtual float nemo::Simulation::getNeuronParameter (unsigned neuron, unsigned param) const\fC [pure virtual]\fP"\fBParameters:\fP
+.SS "virtual float nemo::Simulation::getNeuronParameter (unsigned neuron, unsigned param) const\fC [pure virtual]\fP"
+.PP
+\fBParameters:\fP
 .RS 4
 \fIneuron\fP neuron index 
 .br
@@ -221,55 +228,36 @@ parameter \fIn\fP.
 .RE
 .PP
 For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.  
-.SS "virtual float nemo::Simulation::getMembranePotential (unsigned neuron) const\fC [pure virtual]\fP"\fBReturns:\fP
+.SS "virtual float nemo::Simulation::getMembranePotential (unsigned neuron) const\fC [pure virtual]\fP"
+.PP
+\fBReturns:\fP
 .RS 4
 membrane potential of the specified neuron 
 .RE
 .PP
 
-.SS "virtual const std::vector<synapse_id>& nemo::Simulation::getSynapsesFrom (unsigned neuron)\fC [pure virtual]\fP"\fBReturns:\fP
-.RS 4
-vector of synapse ids for all synapses with the given source neuron 
-.RE
+.SS "virtual const std::vector<synapse_id>& nemo::Simulation::getSynapsesFrom (unsigned neuron)\fC [pure virtual]\fP"
 .PP
-
-.SS "virtual const std::vector<unsigned>& nemo::Simulation::getTargets (const std::vector< synapse_id > & synapses)\fC [pure virtual]\fP"\fBReturns:\fP
-.RS 4
-target neurons for the specified synapses. The reference is valid until the next call to this function. 
-.RE
+ 
+.SS "virtual unsigned long nemo::Simulation::elapsedWallclock () const\fC [pure virtual]\fP"
 .PP
-
-.SS "virtual const std::vector<unsigned>& nemo::Simulation::getDelays (const std::vector< synapse_id > & synapses)\fC [pure virtual]\fP"\fBReturns:\fP
-.RS 4
-conductance delays for the specified synapses. The reference is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "virtual const std::vector<float>& nemo::Simulation::getWeights (const std::vector< synapse_id > & synapses)\fC [pure virtual]\fP"\fBReturns:\fP
-.RS 4
-synaptic weights for the specified synapses. The reference is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "virtual const std::vector<unsigned char>& nemo::Simulation::getPlastic (const std::vector< synapse_id > & synapses)\fC [pure virtual]\fP"\fBReturns:\fP
-.RS 4
-plasticity status for the specified synapses. The reference is valid until the next call to this function. 
-.RE
-.PP
-
-.SS "virtual unsigned long nemo::Simulation::elapsedWallclock () const\fC [pure virtual]\fP"\fBReturns:\fP
+\fBReturns:\fP
 .RS 4
 number of milliseconds of wall-clock time elapsed since first simulation step (or last timer reset). 
 .RE
 .PP
 
-.SS "virtual unsigned long nemo::Simulation::elapsedSimulation () const\fC [pure virtual]\fP"\fBReturns:\fP
+.SS "virtual unsigned long nemo::Simulation::elapsedSimulation () const\fC [pure virtual]\fP"
+.PP
+\fBReturns:\fP
 .RS 4
 number of milliseconds of simulated time elapsed since first simulation step (or last timer reset) 
 .RE
 .PP
 
-.SS "virtual void nemo::Simulation::resetTimer ()\fC [pure virtual]\fP"Reset both wall-clock and simulation timer 
+.SS "virtual void nemo::Simulation::resetTimer ()\fC [pure virtual]\fP"
+.PP
+Reset both wall-clock and simulation timer 
 
 .SH SEE ALSO
 nemo(3) for library overview

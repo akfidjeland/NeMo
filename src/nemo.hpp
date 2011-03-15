@@ -22,6 +22,7 @@
 #include <nemo/Network.hpp>
 #include <nemo/Simulation.hpp>
 #include <nemo/exception.hpp>
+#include <nemo/types.h>
 
 
 namespace nemo {

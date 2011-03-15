@@ -288,6 +288,8 @@ pythonVectorized13 = [(Python, "The neuron and value parameters can be either bo
 
 pythonVectorized1 = [(Python, "The neuron index may be either scalar or a list. The output has the same length as the neuron input")]
 
+pythonSynapseGetter = [(Python, "The input synapse indices may be either a scalar or a list. The return value has the same form")]
+
 
 addSynapse =
     ApiFunction
@@ -429,70 +431,69 @@ getMembranePotential =
         True
 
 
+synapseGetterArgs = [
+        Required $ ApiArg "synapse" (Just "synapse id (as returned by addSynapse)") $ Scalar ApiUInt64
+    ]
+
 
 getSynapsesFrom =
     ApiFunction "getSynapsesFrom"
         "return the synapse ids for all synapses with the given source neuron"
-        Nothing M.empty
+        Nothing (M.fromList pythonSynapseGetter)
         [   ApiArg "synapses" (Just "synapse ids") (Vector ApiUInt64 ExplicitLength)]
         [   Required (ApiArg "source" (Just "source neuron index") (Scalar ApiUInt))]
         []
         False -- TODO: vectorize?
 
 
-getTargets =
-    let synapses = Required $ ApiArg "synapses"
-                    (Just "synapse ids (as returned by addSynapse)")
-                    (Vector ApiUInt64 ExplicitLength)
-    in ApiFunction "getTargets"
-        "return the targets for the specified synapses"
+getSynapseSource =
+    ApiFunction "getSynapseSource"
+        "return the source neuron of the specified synapse"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing M.empty
-        [   ApiArg "targets" (Just "indices of target neurons") (Vector ApiUInt (ImplicitLength synapses)) ]
-        [ synapses ]
-        [] False
+        Nothing (M.fromList pythonSynapseGetter)
+        [   ApiArg "source" (Just "source neuron index") (Scalar ApiUInt) ]
+        synapseGetterArgs
+        [] True
 
-
-
-
-getDelays =
-    let synapses = Required $ ApiArg "synapses"
-                    (Just "synapse ids (as returned by addSynapse)")
-                    (Vector ApiUInt64 ExplicitLength)
-    in ApiFunction "getDelays"
-        "return the conductance delays for the specified synapses"
+getSynapseTarget =
+    ApiFunction "getSynapseTarget"
+        "return the target of the specified synapse"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing M.empty
-        [   ApiArg "delays" (Just "conductance delays of the specified synpases") (Vector ApiUInt (ImplicitLength synapses)) ]
-        [ synapses ]
-        [] False
+        Nothing (M.fromList pythonSynapseGetter)
+        [   ApiArg "target" (Just "target neuron index") (Scalar ApiUInt) ]
+        synapseGetterArgs
+        [] True
 
 
-getWeights =
-    let synapses = Required $ ApiArg "synapses"
-                    (Just "synapse ids (as returned by addSynapse)")
-                    (Vector ApiUInt64 ExplicitLength)
-    in ApiFunction "getWeights"
-        "return the weights for the specified synapses"
+getSynapseDelay =
+    ApiFunction "getSynapseDelay"
+        "return the conduction delay for the specified synapse"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing M.empty
-        [   ApiArg "weights" (Just "weights of the specified synapses") (Vector ApiFloat (ImplicitLength synapses)) ]
-        [ synapses ]
-        [] False
+        Nothing (M.fromList pythonSynapseGetter)
+        [   ApiArg "delay" (Just "conduction delay of the specified synapse") (Scalar ApiUInt) ]
+        synapseGetterArgs
+        [] True
 
 
-
-getPlastic =
-    let synapses = Required $ ApiArg "synapses"
-                    (Just "synapse ids (as returned by addSynapse)")
-                    (Vector ApiUInt64 ExplicitLength)
-    in ApiFunction "getPlastic"
-        "return the boolean plasticity status for the specified synapses"
+getSynapseWeight =
+    ApiFunction "getSynapseWeight"
+        "return the weight for the specified synapse"
         -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
-        Nothing M.empty
-        [   ApiArg "plastic" (Just "plasticity status of the specified synpases") (Vector ApiBool (ImplicitLength synapses)) ]
-        [ synapses ]
-        [] False
+        Nothing (M.fromList pythonSynapseGetter)
+        [   ApiArg "weight" (Just "weight of the specified synapse") (Scalar ApiFloat) ]
+        synapseGetterArgs
+        [] True
+
+
+
+getSynapsePlastic =
+    ApiFunction "getSynapsePlastic"
+        "return the boolean plasticity status for the specified synapse"
+        -- TODO: add notes for C and C++ API, mentioning lifetime of returned pointer/reference
+        Nothing (M.fromList pythonSynapseGetter)
+        [   ApiArg "plastic" (Just "plasticity status of the specified synapse") (Scalar ApiBool) ]
+        synapseGetterArgs
+        [] True
 
 
 elapsedWallclock =
@@ -539,7 +540,7 @@ simulation =
         (Just "A simulation is created from a network and a configuration object. The simulation is run by stepping through it, providing stimulus as appropriate. It is possible to read back synapse data at run time. The simulation also maintains a timer for both simulated time and wallclock time.")
         (Factory [network, configuration])
         [step, applyStdp, getMembranePotential,
-            getSynapsesFrom, getTargets, getDelays, getWeights, getPlastic, elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
+            elapsedWallclock, elapsedSimulation, resetTimer, createSimulation, destroySimulation]
         constructable
 
 
@@ -640,4 +641,9 @@ matlabExtras = ApiModule "Others" "others" Nothing defaultConstructor [reset] []
 
 {- | Some methods are common to the network and simulation modules. We deal with these methods separately -}
 constructable :: [ApiFunction]
-constructable = [setNeuron, setNeuronState, setNeuronParameter, getNeuronState, getNeuronParameter]
+constructable = [
+        setNeuron, setNeuronState, setNeuronParameter,
+        getNeuronState, getNeuronParameter,
+        getSynapsesFrom,
+        getSynapseSource, getSynapseTarget, getSynapseDelay, getSynapseWeight, getSynapsePlastic
+    ]

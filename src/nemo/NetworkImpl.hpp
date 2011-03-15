@@ -8,9 +8,10 @@
 
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
+#include "Axon.hpp"
+#include "ReadableNetwork.hpp"
 
 namespace nemo {
-
 
 	namespace cuda {
 		// needed for 'friend' declarations
@@ -35,7 +36,7 @@ namespace nemo {
 			class synapse_iterator;
 		}
 
-class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
+class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwork
 {
 	public :
 
@@ -75,30 +76,20 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		/*! \copydoc nemo::Network::setNeuronParameter */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
 
-		/*! \return
-		 * 		target neurons for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned>& getTargets(unsigned source) const;
+		/*! \copydoc nemo::Network::getSynapseTarget */
+		unsigned getSynapseTarget(const synapse_id&) const;
 
-		/*! \return
-		 * 		conductance delays for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned>& getDelays(unsigned source) const;
+		/*! \copydoc nemo::Network::getSynapseDelay */
+		unsigned getSynapseDelay(const synapse_id&) const;
 
-		/*! \return
-		 * 		synaptic weights for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<float>& getWeights(unsigned source) const;
+		/*! \copydoc nemo::Network::getSynapseWeight */
+		float getSynapseWeight(const synapse_id&) const;
 
-		/*! \return
-		 * 		plasticity status for the specified synapses. The reference is
-		 * 		valid until the next call to this function.
-		 */
-		const std::vector<unsigned char>& getPlastic(unsigned source) const;
+		/*! \copydoc nemo::Network::getSynapsePlastic */
+		unsigned char getSynapsePlastic(const synapse_id&) const;
 
+		/*! \copydoc nemo::Network::getSynapsesFrom */
+		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
 		/* pre: network is not empty */
 		nidx_t minNeuronIndex() const;
@@ -125,15 +116,14 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 
 		/*! \return neuron with given index
 		 * Throws if neuron does not exist
-		 * */
+		 */
 		const neuron_t& getNeuron(unsigned idx) const;
 		neuron_t& getNeuron(unsigned idx);
 
-		typedef AxonTerminal synapse_t;
-		typedef std::vector<synapse_t> bundle_t;
-		//! \todo could keep this in a single map with a tuple index
-		typedef std::map<delay_t, bundle_t> axon_t;
-		typedef std::map<nidx_t, axon_t> fcm_t;
+		/*! \todo consider using unordered here instead, esp. after removing
+		 * iterator interface. Currently we need rbegin, which is not found in
+		 * unordered_map */
+		typedef std::map<nidx_t, Axon> fcm_t;
 
 		fcm_t m_fcm;
 
@@ -142,10 +132,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 		delay_t m_maxDelay;
 		weight_t m_minWeight;
 		weight_t m_maxWeight;
-
-		/* Keep track of the number of synapses per neuron in order to generate
-		 * a dense list of synapse ids */
-		std::map<nidx_t, id32_t> m_synapseCount;
 
 		//! \todo modify public interface to avoid friendship here
 		friend class nemo::cuda::ConnectivityMatrix;
@@ -157,14 +143,10 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator
 
 		friend class programmatic::synapse_iterator;
 
-		/* Internal buffers for synapse queries */
-		mutable std::vector<unsigned> m_queriedTargets;
-		mutable std::vector<unsigned> m_queriedDelays;
-		mutable std::vector<float> m_queriedWeights;
-		mutable std::vector<unsigned char> m_queriedPlastic;
+		/*! Internal buffer for synapse queries */
+		std::vector<synapse_id> m_queriedSynapseIds;
 
-		fcm_t::const_iterator getSourceIterator(unsigned source) const;
-
+		const Axon& axon(nidx_t source) const;
 };
 
 	} // end namespace network

@@ -58,10 +58,50 @@ elsewhere.
 """
 
 import sys
+import warnings
 
 sys.path.append('@CMAKE_INSTALL_PREFIX@/@INSTALL_DIR@')
 from _nemo import *
 
 init()
+
+
+# Old synapse getters. These were originally vector-only, and were only exposed
+# for the simulation class. The new getters support both vector and scalar
+# forms, and use more consistent naming.
+
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used."""
+    def new_func(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning)
+        return func(*args, **kwargs)
+    new_func.__name__ = func.__name__
+    new_func.__doc__ = func.__doc__
+    new_func.__dict__.update(func.__dict__)
+    return new_func
+
+@deprecated
+def get_targets(self, ids):
+    return self.get_synapse_target(ids)
+
+@deprecated
+def get_delays(self, ids):
+    return self.get_synapse_delay(ids)
+
+@deprecated
+def get_weights(self, ids):
+    return self.get_synapse_weight(ids)
+
+@deprecated
+def get_plastic(self, ids):
+    return self.get_synapse_plastic(ids)
+
+Simulation.get_targets = get_targets
+Simulation.get_delays = get_delays
+Simulation.get_weights = get_weights
+Simulation.get_plastic = get_plastic
 
 __all__ = ['Network', 'Simulation', 'Configuration']

@@ -385,7 +385,7 @@ mexVectorConstructibleFunction fn = mexFunctionDefinition fn body
 
         -- Conditional with loop inside each branch
         call mdl_name suffix = vcat $ [
-                C.statement $ cFunctionCall (getHandle mdl_name) (Just (text "void* hdl")) [],
+                C.statement $ cFunctionCall (getHandle mdl_name) (Just (handleType mdl_name <+> text "hdl")) [],
                 C.forLoop indexVar "0" "elems" $ loopBody suffix
             ]
 
@@ -446,7 +446,7 @@ mexVectorFunction mname fn = mexFunctionDefinition fn body
                 mexDeclareInputVariables 1 $ fn_inputs fn,
                 mexAllocateVectorOutputs $ fn_output fn,
                 -- get the handle argument only once to reduce overhead, esp. for error checking
-                C.statement $ cFunctionCall getHandle (Just (text "void* hdl")) [],
+                C.statement $ cFunctionCall getHandle (Just (handleType mname <+> text "hdl")) [],
                 C.forLoop indexVar "0" "elems" loopBody
                 -- mexReturnOutputVariables $ fn_output fn
             ]
@@ -649,6 +649,11 @@ matlabType ApiUInt64 = "uint64"
 matlabType ApiInt = "int32"
 matlabType ApiULong = "uint64"
 matlabType ApiBool = "uint8"
+
+
+{-- | convert module name to C API handle typename -}
+handleType :: String -> Doc
+handleType mdl = text $ "nemo_" ++ (map toLower mdl) ++ "_t"
 
 
 matlabInput :: ApiArg -> String
