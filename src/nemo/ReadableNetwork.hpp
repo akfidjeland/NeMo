@@ -19,7 +19,7 @@ namespace nemo {
  *
  * Abstract base class
  */
-class ReadableNetwork
+class NEMO_BASE_DLL_PUBLIC ReadableNetwork
 {
 	public :
 
