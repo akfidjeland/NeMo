@@ -13,6 +13,7 @@
 
 #include <nemo.hpp>
 #include <nemo.h>
+#include <nemo/fixedpoint.hpp>
 
 #include "c_api.hpp"
 #include "utils.hpp"
@@ -24,6 +25,19 @@ namespace nemo {
 typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
+
+
+void
+setBackend(nemo_configuration_t conf, backend_t backend)
+{
+	switch(backend) {
+		case NEMO_BACKEND_CPU: nemo_set_cpu_backend(conf, 1); break;
+		case NEMO_BACKEND_CUDA: nemo_set_cuda_backend(conf, 0); break;
+		default: BOOST_REQUIRE(false);
+	}
+}
+
+
 
 void
 addExcitatoryNeuron(
@@ -199,6 +213,20 @@ c_safeCall(nemo_status_t err)
 		exit(-1);
 	}
 }
+
+
+
+template<typename T>
+T
+c_safeAlloc(T ptr)
+{
+	if(ptr == NULL) {
+		std::cerr << nemo_strerror() << std::endl;
+		exit(-1);
+	}
+	return ptr;
+}
+
 
 
 
@@ -482,5 +510,90 @@ testSetNeuron()
 	nemo_delete_network(net);
 	nemo_delete_configuration(conf);
 }
+
+
+
+/*! Create simulation and verify that the simulation data contains the same
+ * synapses as the input network. Neurons are assumed to lie in a contigous
+ * range of indices starting at n0. */
+void
+testGetSynapses(backend_t backend, unsigned n0)
+{
+	unsigned fbits = 20;
+
+	nemo_network_t net = c_safeAlloc(nemo_new_network());
+
+	/* Construct a network with a triangular connection matrix and fixed
+	 * synapse properties depending on source and target neurons */
+	unsigned ncount = 1000;
+	for(unsigned n = 0; n < ncount; ++n) {
+		unsigned source = n0 + n;
+		c_safeCall(nemo_add_neuron(net, source, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f));
+		for(unsigned s = 0; s < n; ++s) {
+			unsigned target = n0 + s;
+			synapse_id id;
+			c_safeCall(nemo_add_synapse(net, source, target, 1 + s%20, float(s % 10), s%2, &id));
+		}
+	}
+
+	nemo_configuration_t conf = c_safeAlloc(nemo_new_configuration());
+	setBackend(conf, backend);
+
+	nemo_simulation_t sim = c_safeAlloc(nemo_new_simulation(net, conf));
+
+	for(unsigned src = n0; src < n0 + ncount; ++src) {
+
+		synapse_id* ids;
+		size_t slen;
+		size_t nlen;
+		c_safeCall(nemo_get_synapses_from_n(net, src, &ids, &nlen));
+		c_safeCall(nemo_get_synapses_from_s(sim, src, &ids, &slen));
+
+		BOOST_REQUIRE_EQUAL(nlen, slen);
+		BOOST_REQUIRE_EQUAL(slen, src-n0);
+
+		for(unsigned i = 0; i < slen; ++i) {
+
+			synapse_id id = ids[i];
+
+			unsigned ns, ss;
+			c_safeCall(nemo_get_synapse_source_s(sim, id, &ss));
+			c_safeCall(nemo_get_synapse_source_n(net, id, &ns));
+			BOOST_REQUIRE_EQUAL(ns, ss);
+			BOOST_REQUIRE_EQUAL(ns, src);
+
+			unsigned nt, st;
+			c_safeCall(nemo_get_synapse_target_n(net, id, &nt));
+			c_safeCall(nemo_get_synapse_target_s(sim, id, &st));
+			BOOST_REQUIRE_EQUAL(nt, st);
+			BOOST_REQUIRE_EQUAL(nt, n0 + i);
+
+			unsigned nd, sd;
+			c_safeCall(nemo_get_synapse_delay_n(net, id, &nd));
+			c_safeCall(nemo_get_synapse_delay_s(sim, id, &sd));
+			BOOST_REQUIRE_EQUAL(nd, sd);
+			BOOST_REQUIRE_EQUAL(nd, 1 + i % 20);
+
+			float nw, sw;
+			c_safeCall(nemo_get_synapse_weight_n(net, id, &nw));
+			c_safeCall(nemo_get_synapse_weight_s(sim, id, &sw));
+			nw = fx_toFloat(fx_toFix(nw, fbits), fbits);
+			BOOST_REQUIRE_EQUAL(nw, sw);
+			BOOST_REQUIRE_EQUAL(nw, float(i % 10));
+
+			unsigned char np, sp;
+			c_safeCall(nemo_get_synapse_plastic_n(net, id, &np));
+			c_safeCall(nemo_get_synapse_plastic_s(sim, id, &sp));
+			BOOST_REQUIRE_EQUAL(np, sp);
+			BOOST_REQUIRE_EQUAL(np, i % 2);
+		}
+	}
+
+	nemo_delete_configuration(conf);
+	nemo_delete_network(net);
+	nemo_delete_simulation(sim);
+}
+
+
 
 }	}	}

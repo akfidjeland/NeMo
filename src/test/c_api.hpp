@@ -17,6 +17,7 @@ namespace nemo {
 void compareWithCpp(bool useFstim, bool useIstim);
 void testSynapseId();
 void testSetNeuron();
+void testGetSynapses(backend_t, unsigned n0);
 
 }	}	}
 

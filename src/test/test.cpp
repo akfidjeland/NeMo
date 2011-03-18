@@ -52,7 +52,7 @@
 
 #define TEST_ALL_BACKENDS_N(name, fn,...)                                     \
     BOOST_AUTO_TEST_SUITE(name)                                               \
-    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }         \
+    BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }          \
     BOOST_AUTO_TEST_SUITE_END()
 
 #endif
@@ -388,7 +388,6 @@ testGetSynapses(const nemo::Network& net,
 {
 	unsigned fbits = 20;
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
-	std::vector<float> nweights;
 
 	for(unsigned src = n0, src_end = n0 + net.neuronCount(); src < src_end; ++src) {
 
@@ -776,6 +775,11 @@ BOOST_AUTO_TEST_SUITE(c_api)
 
 	BOOST_AUTO_TEST_CASE(synapse_ids) { nemo::test::c_api::testSynapseId(); }
 	BOOST_AUTO_TEST_CASE(set_neuron) { nemo::test::c_api::testSetNeuron(); }
+
+	BOOST_AUTO_TEST_SUITE(get_synapse)
+		TEST_ALL_BACKENDS_N(n0, nemo::test::c_api::testGetSynapses, 0)
+		TEST_ALL_BACKENDS_N(n1000, nemo::test::c_api::testGetSynapses, 1000)
+	BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE_END()
 
