@@ -1,5 +1,14 @@
 #define BOOST_TEST_MODULE nemo test
 
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <cmath>
 #include <iostream>
 #include <boost/test/unit_test.hpp>
@@ -13,6 +22,7 @@
 #include "test.hpp"
 #include "utils.hpp"
 #include "rtest.hpp"
+#include "c_api.hpp"
 
 
 /* For a number of tests, we want to run both CUDA and CPU versions with the
@@ -753,3 +763,19 @@ BOOST_AUTO_TEST_SUITE(regression)
 		runTorus(false);
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
+
+
+BOOST_AUTO_TEST_SUITE(c_api)
+
+	BOOST_AUTO_TEST_SUITE(comparison)
+		BOOST_AUTO_TEST_CASE(nostim) { nemo::test::c_api::compareWithCpp(false, false); }
+		BOOST_AUTO_TEST_CASE(fstim) { nemo::test::c_api::compareWithCpp(true, false); }
+		BOOST_AUTO_TEST_CASE(istim) { nemo::test::c_api::compareWithCpp(false, true); }
+	BOOST_AUTO_TEST_SUITE_END()
+
+	BOOST_AUTO_TEST_CASE(synapse_ids) { nemo::test::c_api::testSynapseId(); }
+	BOOST_AUTO_TEST_CASE(set_neuron) { nemo::test::c_api::testSetNeuron(); }
+
+BOOST_AUTO_TEST_SUITE_END()
+

@@ -21,6 +21,7 @@ ADD_EXECUTABLE(test
 	utils.cpp
 	networks.cpp
 	rtest.cpp
+	test_c_api.cpp
 	${EXAMPLES_DIR}/torus.cpp
 	${EXAMPLES_DIR}/random.cpp)
 TARGET_LINK_LIBRARIES(test nemo ${Boost_LIBRARIES})
@@ -38,8 +39,6 @@ IF(INCLUDE_MPI)
 	TARGET_LINK_LIBRARIES(stest nemo ${Boost_LIBRARIES})
 ENDIF(INCLUDE_MPI)
 
-ADD_EXECUTABLE(api_test test_c_api.cpp utils.cpp)
-TARGET_LINK_LIBRARIES(api_test nemo ${Boost_LIBRARIES})
 
 IF(NEMO_MPI_ENABLED)
 
