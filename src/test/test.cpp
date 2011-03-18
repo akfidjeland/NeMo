@@ -381,7 +381,7 @@ BOOST_AUTO_TEST_SUITE_END()
  * synapses as the input network. Neurons are assumed to lie in a contigous
  * range of indices starting at n0. */
 void
-testGetSynapses(const nemo::Network& net,
+testGetSynapses(nemo::Network& net,
 		nemo::Configuration& conf,
 		unsigned n0,
 		unsigned m)
@@ -391,9 +391,12 @@ testGetSynapses(const nemo::Network& net,
 
 	for(unsigned src = n0, src_end = n0 + net.neuronCount(); src < src_end; ++src) {
 
-		const std::vector<synapse_id>& ids = sim->getSynapsesFrom(src);
+		const std::vector<synapse_id>& s_ids = sim->getSynapsesFrom(src);
+		const std::vector<synapse_id>& n_ids = net.getSynapsesFrom(src);
 
-		for(std::vector<synapse_id>::const_iterator i = ids.begin(); i != ids.end(); ++i) {
+		BOOST_REQUIRE_EQUAL(s_ids.size(), n_ids.size());
+
+		for(std::vector<synapse_id>::const_iterator i = s_ids.begin(); i != s_ids.end(); ++i) {
 			BOOST_REQUIRE_EQUAL(sim->getSynapseTarget(*i), net.getSynapseTarget(*i));
 			BOOST_REQUIRE_EQUAL(sim->getSynapseDelay(*i), net.getSynapseDelay(*i));
 			BOOST_REQUIRE_EQUAL(sim->getSynapsePlastic(*i), net.getSynapsePlastic(*i));
