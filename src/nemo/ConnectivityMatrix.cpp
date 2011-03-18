@@ -120,7 +120,10 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 	}
 
 	if(!m_writeOnlySynapses) {
-		aux_row& auxRow = m_cmAux[source];
+		/* The auxillary synapse maps always uses the global (user-specified)
+		 * source and target neuron ids, since it's used for lookups basd on
+		 * these global ids */
+		aux_row& auxRow = m_cmAux[s.source];
 		insert(s.id(), AxonTerminalAux(sidx, delay, plastic != 0), auxRow);
 	}
 }
@@ -329,7 +332,7 @@ ConnectivityMatrix::getRow(nidx_t source, delay_t delay) const
 
 
 const AxonTerminalAux&
-ConnectivityMatrix::axonTerminalAux(nidx_t neuron, id32_t synapse) const
+ConnectivityMatrix::axonTerminalAux(const synapse_id& id) const
 {
 	using boost::format;
 
@@ -338,20 +341,13 @@ ConnectivityMatrix::axonTerminalAux(nidx_t neuron, id32_t synapse) const
 				"Cannot read synapse state if simulation configured with write-only synapses");
 	}
 
+	nidx_t neuron = neuronIndex(id);
 	aux_map::const_iterator it = m_cmAux.find(neuron);
 	if(it == m_cmAux.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Non-existing neuron id (%u) in synapse query") % neuron));
 	}
-	return it->second.at(synapse);
-}
-
-
-
-const AxonTerminalAux&
-ConnectivityMatrix::axonTerminalAux(const synapse_id& id) const
-{
-	return axonTerminalAux(m_mapper.localIdx(neuronIndex(id)), synapseIndex(id));
+	return it->second.at(synapseIndex(id));
 }
 
 
@@ -359,8 +355,8 @@ ConnectivityMatrix::axonTerminalAux(const synapse_id& id) const
 unsigned
 ConnectivityMatrix::getTarget(const synapse_id& id) const
 {
+	const AxonTerminalAux& s = axonTerminalAux(id);
 	nidx_t l_source = m_mapper.localIdx(neuronIndex(id));
-	const AxonTerminalAux& s = axonTerminalAux(l_source, synapseIndex(id));
 	nidx_t l_target = m_cm[addressOf(l_source, s.delay)].data[s.idx].target;
 	return m_mapper.globalIdx(l_target);
 }
@@ -370,9 +366,9 @@ ConnectivityMatrix::getTarget(const synapse_id& id) const
 float
 ConnectivityMatrix::getWeight(const synapse_id& id) const
 {
-	nidx_t source = m_mapper.localIdx(neuronIndex(id));
-	const AxonTerminalAux& s = axonTerminalAux(source, synapseIndex(id));
-	const Row& row = m_cm[addressOf(source, s.delay)];
+	const AxonTerminalAux& s = axonTerminalAux(id);
+	nidx_t l_source = m_mapper.localIdx(neuronIndex(id));
+	const Row& row = m_cm[addressOf(l_source, s.delay)];
 	assert(s.idx < row.len);
 	fix_t w = row.data[s.idx].weight;
 	return fx_toFloat(w, m_fractionalBits);

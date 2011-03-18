@@ -101,9 +101,12 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 				const ConfigurationImpl& conf,
 				const mapper_t&);
 
-		/* Add synapse but use the provided source and target values rather
+		/*! Add synapse with pre-mapped source and target
+		 *
+		 * Add synapse but use the provided source and target values rather
 		 * than the ones provided in the underlying synapse. The caller can
-		 * thus provide an appropriate mapping of either index. */
+		 * thus provide an appropriate mapping of either index.
+		 */
 		void addSynapse(nidx_t source, nidx_t target, const Synapse&);
 
 		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
@@ -213,7 +216,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		aux_map m_cmAux;
 
 		/* Look up auxillary synapse data and report invalid lookups */
-		const AxonTerminalAux& axonTerminalAux(nidx_t neuron, id32_t synapse) const;
 		const AxonTerminalAux& axonTerminalAux(const synapse_id&) const;
 
 		bool m_writeOnlySynapses;
