@@ -60,7 +60,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	mh_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
-	m_delays(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	m_delays(1, mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_fractionalBits(conf.fractionalBits()),
 	m_writeOnlySynapses(conf.writeOnlySynapses())
 {

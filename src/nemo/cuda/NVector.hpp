@@ -21,12 +21,12 @@ namespace nemo {
 
 /*! \brief Per-neuron data array 
  *
- * Neuron data are organised on a per-partition basis. There are M copies
- * (planes, subvectors) of the data.
+ * Neuron data are organised on a per-partition basis, with possibly several
+ * copies (planes, subvectors) of the data.
  *
  * \author Andreas Fidjeland
  */
-template<typename T, int M = 1>
+template<typename T>
 class NVector
 {
 	public :
@@ -55,10 +55,11 @@ class NVector
 		 * 		faster at the cost of reducing the amount of virtual memory
 		 * 		available to the host system.
 		 */
-		NVector(size_t partitionCount,
+		NVector(size_t planes,
+				size_t partitionCount,
 				size_t maxPartitionSize,
 				bool allocHostData,
-				bool pinHostData = false);
+				bool pinHostData);
         
 		/*! \return pointer to device data */
 		T* deviceData() const;
@@ -111,6 +112,7 @@ class NVector
 		boost::shared_array<T> m_deviceData;
 		boost::shared_array<T> m_hostData;
 
+		const size_t m_planes;
 		const size_t m_partitionCount;
 
 		size_t m_pitch;

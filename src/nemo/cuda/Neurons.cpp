@@ -27,12 +27,13 @@ namespace nemo {
 
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	//! \todo set these sizes based on configuration
+	//! \todo: remove these here. Handle inside NVector instead
 	mf_nParams(NEURON_FLOAT_PARAM_COUNT),
 	mf_nStateVars(NEURON_FLOAT_STATE_COUNT),
 	mu_nStateVars(NEURON_UNSIGNED_STATE_COUNT),
-	mf_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
-	mf_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
-	mu_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_param(NEURON_FLOAT_PARAM_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_state(NEURON_FLOAT_STATE_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mu_state(NEURON_UNSIGNED_STATE_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_valid(mapper.partitionCount(), true),
 	m_cycle(0),
 	mf_lastSync(~0),

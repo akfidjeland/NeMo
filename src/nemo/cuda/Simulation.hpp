@@ -307,7 +307,7 @@ class Simulation : public nemo::SimulationBackend
 
 		LocalQueue m_lq;
 
-		NVector<uint64_t, 2> m_recentFiring;
+		NVector<uint64_t> m_recentFiring;
 
 		FiringStimulus m_firingStimulus;
 
