@@ -98,8 +98,8 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		nidx_t maxNeuronIndex() const;
 
 		delay_t maxDelay() const { return m_maxDelay; }
-		weight_t maxWeight() const { return m_maxWeight; }
-		weight_t minWeight() const { return m_minWeight; }
+		float maxWeight() const { return m_maxWeight; }
+		float minWeight() const { return m_minWeight; }
 
 		unsigned neuronCount() const;
 
@@ -129,8 +129,8 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		int m_minIdx;
 		int m_maxIdx;
 		delay_t m_maxDelay;
-		weight_t m_minWeight;
-		weight_t m_maxWeight;
+		float m_minWeight;
+		float m_maxWeight;
 
 		//! \todo modify public interface to avoid friendship here
 		friend class nemo::cuda::ConnectivityMatrix;
