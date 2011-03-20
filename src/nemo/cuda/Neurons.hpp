@@ -121,7 +121,6 @@ class Neurons
 
 		const unsigned mf_nParams;
 		const unsigned mf_nStateVars;
-		const unsigned mu_nStateVars;
 
 		/* Neuron parameters do not change at run-time (unless the user
 		 * specifically does it through \a setParameter) */

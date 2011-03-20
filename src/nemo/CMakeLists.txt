@@ -43,6 +43,7 @@ ADD_LIBRARY(nemo_base
 	FiringBuffer.cpp
 	Network.cpp
 	NetworkImpl.cpp
+	Neuron.cpp
 	Simulation.cpp
 	SimulationBackend.cpp
 	OutgoingDelays.cpp
