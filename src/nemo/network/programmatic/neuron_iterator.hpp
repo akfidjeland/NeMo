@@ -13,7 +13,7 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 {
 	public :
 
-		typedef std::map<nidx_t, Neuron<weight_t> >::const_iterator base_iterator;
+		typedef std::map<nidx_t, Neuron>::const_iterator base_iterator;
 
 		neuron_iterator(base_iterator it) : m_it(it) { }
 

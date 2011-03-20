@@ -82,7 +82,7 @@ Simulation::setNeuronParameters(
 	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
 		nidx_t nidx = mapper.addGlobal((*i).first);
-		const Neuron<float>& n = i->second;
+		const Neuron& n = i->second;
 		m_a.at(nidx) = n.a;
 		m_b.at(nidx) = n.b;
 		m_c.at(nidx) = n.c;

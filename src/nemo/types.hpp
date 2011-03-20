@@ -34,17 +34,16 @@ namespace boost {
 namespace nemo {
 
 
-template<typename FP>
 class Neuron
 {
 	public :
 
 		Neuron(): a(0), b(0), c(0), d(0), u(0), v(0), sigma(0) {}
 
-		Neuron(FP a, FP b, FP c, FP d, FP u, FP v, FP sigma) :
+		Neuron(float a, float b, float c, float d, float u, float v, float sigma) :
 			a(a), b(b), c(c), d(d), u(u), v(v), sigma(sigma) {}
 
-		FP a, b, c, d, u, v, sigma;
+		float a, b, c, d, u, v, sigma;
 
 	private :
 
@@ -173,15 +172,15 @@ struct SynapseAddress
 
 BOOST_CLASS_IMPLEMENTATION(nemo::AxonTerminal, object_serializable)
 BOOST_CLASS_IMPLEMENTATION(nemo::Synapse, object_serializable)
-BOOST_CLASS_IMPLEMENTATION(nemo::Neuron<float>, object_serializable)
+BOOST_CLASS_IMPLEMENTATION(nemo::Neuron, object_serializable)
 
 BOOST_IS_MPI_DATATYPE(nemo::AxonTerminal);
 BOOST_IS_MPI_DATATYPE(nemo::Synapse);
-BOOST_IS_MPI_DATATYPE(nemo::Neuron<float>);
+BOOST_IS_MPI_DATATYPE(nemo::Neuron);
 
 BOOST_CLASS_TRACKING(nemo::AxonTerminal, track_never)
 BOOST_CLASS_TRACKING(nemo::Synapse, track_never)
-BOOST_CLASS_TRACKING(nemo::Neuron<float>, track_never)
+BOOST_CLASS_TRACKING(nemo::Neuron, track_never)
 
 #endif
 

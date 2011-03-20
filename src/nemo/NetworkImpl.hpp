@@ -47,14 +47,14 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
-		void addNeuron(nidx_t nidx, const Neuron<float>&);
+		void addNeuron(nidx_t nidx, const Neuron&);
 
 		/*! \copydoc nemo::Network::setNeuron */
 		void setNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
-		void setNeuron(nidx_t nidx, const Neuron<float>& n);
+		void setNeuron(nidx_t nidx, const Neuron&);
 
 		/*! \copydoc nemo::Network::addSynapse */
 		synapse_id addSynapse(
@@ -111,14 +111,13 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 	private :
 
-		typedef nemo::Neuron<weight_t> neuron_t;
-		std::map<nidx_t, neuron_t> m_neurons;
+		std::map<nidx_t, Neuron> m_neurons;
 
 		/*! \return neuron with given index
 		 * Throws if neuron does not exist
 		 */
-		const neuron_t& getNeuron(unsigned idx) const;
-		neuron_t& getNeuron(unsigned idx);
+		const Neuron& getNeuron(unsigned idx) const;
+		Neuron& getNeuron(unsigned idx);
 
 		/*! \todo consider using unordered here instead, esp. after removing
 		 * iterator interface. Currently we need rbegin, which is not found in

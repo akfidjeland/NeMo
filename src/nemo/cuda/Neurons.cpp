@@ -52,7 +52,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 			i != i_end; ++i) {
 
 		DeviceIdx dev = mapper.addIdx(i->first);
-		const nemo::Neuron<float>& n = i->second;
+		const nemo::Neuron& n = i->second;
 
 		mf_param.setNeuron(dev.partition, dev.neuron, n.a, PARAM_A);
 		mf_param.setNeuron(dev.partition, dev.neuron, n.b, PARAM_B);

@@ -38,13 +38,13 @@ NetworkImpl::addNeuron(unsigned nidx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	addNeuron(nidx, Neuron<float>(a, b, c, d, u, v, sigma));
+	addNeuron(nidx, Neuron(a, b, c, d, u, v, sigma));
 }
 
 
 
 void
-NetworkImpl::addNeuron(nidx_t nidx, const Neuron<float>& n)
+NetworkImpl::addNeuron(nidx_t nidx, const Neuron& n)
 {
 	using boost::format;
 	if(m_neurons.find(nidx) != m_neurons.end()) {
@@ -63,13 +63,13 @@ NetworkImpl::setNeuron(unsigned nidx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	setNeuron(nidx, Neuron<float>(a, b, c, d, u, v, sigma));
+	setNeuron(nidx, Neuron(a, b, c, d, u, v, sigma));
 }
 
 
 
 void
-NetworkImpl::setNeuron(nidx_t nidx, const Neuron<float>& n)
+NetworkImpl::setNeuron(nidx_t nidx, const Neuron& n)
 {
 	using boost::format;
 	if(m_neurons.find(nidx) == m_neurons.end()) {
@@ -112,12 +112,12 @@ NetworkImpl::addSynapse(
 
 
 
-const NetworkImpl::neuron_t&
+const Neuron&
 NetworkImpl::getNeuron(unsigned nidx) const
 {
 	using boost::format;
 
-	std::map<nidx_t, neuron_t>::const_iterator i = m_neurons.find(nidx);
+	std::map<nidx_t, Neuron>::const_iterator i = m_neurons.find(nidx);
 	if(i == m_neurons.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Unknown neuron index %u") % nidx));
@@ -127,10 +127,10 @@ NetworkImpl::getNeuron(unsigned nidx) const
 
 
 
-NetworkImpl::neuron_t&
+Neuron&
 NetworkImpl::getNeuron(unsigned idx)
 {
-	return const_cast<neuron_t&>(static_cast<const NetworkImpl*>(this)->getNeuron(idx));
+	return const_cast<Neuron&>(static_cast<const NetworkImpl*>(this)->getNeuron(idx));
 }
 
 
@@ -140,7 +140,7 @@ NetworkImpl::getNeuronState(unsigned nidx, unsigned var) const
 {
 	using boost::format;
 
-	const neuron_t& neuron = getNeuron(nidx);
+	const Neuron& neuron = getNeuron(nidx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(var) {
@@ -158,7 +158,7 @@ NetworkImpl::getNeuronParameter(unsigned nidx, unsigned parameter) const
 {
 	using boost::format;
 
-	const neuron_t& neuron = getNeuron(nidx);
+	const Neuron& neuron = getNeuron(nidx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(parameter) {
@@ -179,7 +179,7 @@ NetworkImpl::setNeuronState(unsigned nidx, unsigned var, float val)
 {
 	using boost::format;
 
-	neuron_t& neuron = getNeuron(nidx);
+	Neuron& neuron = getNeuron(nidx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(var) {
@@ -197,7 +197,7 @@ NetworkImpl::setNeuronParameter(unsigned nidx, unsigned parameter, float val)
 {
 	using boost::format;
 
-	neuron_t& neuron = getNeuron(nidx);
+	Neuron& neuron = getNeuron(nidx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(parameter) {
