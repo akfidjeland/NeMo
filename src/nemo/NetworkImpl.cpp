@@ -28,7 +28,7 @@ namespace nemo {
 NetworkImpl::NetworkImpl() :
 	//! \todo defer the initialization until neurons arrive
 	//! remove hard-coding of izhikevich model
-	m_neurons(NeuronType(5,2)),
+	m_neurons(NeuronType(5,2, "Izhikevich")),
 	m_minIdx(std::numeric_limits<int>::max()),
 	m_maxIdx(std::numeric_limits<int>::min()),
 	m_maxDelay(0),

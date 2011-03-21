@@ -10,6 +10,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string>
+
 namespace nemo {
 
 /*! \brief General neuron type
@@ -34,17 +36,23 @@ class NeuronType
 		 *
 		 * \param f_nParam number of floating point parameters
 		 * \param f_nState number of floating point state variables
+		 * \param name unique name for this type
 		 */
-		NeuronType(size_t f_nParam, size_t f_nState)  :
-			mf_nParam(f_nParam), mf_nState(f_nState) { }
+		NeuronType(size_t f_nParam, size_t f_nState, const std::string& name) :
+			mf_nParam(f_nParam), mf_nState(f_nState), m_name(name) { }
 
 		size_t f_nParam() const { return mf_nParam; }
 		size_t f_nState() const { return mf_nState; }
 
+		size_t hash_value() const;
+
 	private :
 
-		size_t mf_nParam;
-		size_t mf_nState;
+		const size_t mf_nParam;
+		const size_t mf_nState;
+		const std::string m_name;
+
+		friend size_t hash_value(const nemo::NeuronType&);
 };
 
 }
