@@ -44,6 +44,7 @@ ADD_LIBRARY(nemo_base
 	Network.cpp
 	NetworkImpl.cpp
 	Neuron.cpp
+	Neurons.cpp
 	Simulation.cpp
 	SimulationBackend.cpp
 	OutgoingDelays.cpp

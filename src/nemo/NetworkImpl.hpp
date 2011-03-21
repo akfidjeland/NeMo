@@ -5,11 +5,11 @@
 
 #include <map>
 #include <vector>
-#include <deque>
 
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
 #include "Axon.hpp"
+#include "Neurons.hpp"
 #include "ReadableNetwork.hpp"
 
 namespace nemo {
@@ -42,20 +42,12 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		NetworkImpl();
 
-		/*! \copydoc nemo::Network::addNeuron
-		 *
-		 * \pre the shapes of mf_param and mf_state are identical
-		 * \post the shapes of mf_param and mf_state are identical
-		 */
+		/*! \copydoc nemo::Network::addNeuron */
 		void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
-		/*! \copydoc nemo::Network::setNeuron
-		 *
-		 * \pre the shapes of mf_param and mf_state are identical
-		 * \post the shapes of mf_param and mf_state are identical
-		 */
+		/*! \copydoc nemo::Network::setNeuron */
 		void setNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
@@ -115,21 +107,13 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 	private :
 
-		/* Neurons are stored in several Structure-of-arrays, supporting
-		 * arbitrary neuron types. Functions modifying these maintain the
-		 * invariant that the shapes are the same. */
-		std::vector< std::deque<float> > mf_param;
-		std::vector< std::deque<float> > mf_state;
+		Neurons m_neurons;
 
 		/*! Data are inserted into mf_param etc as they arrive. The mapper
 		 * maintains the mapping between global neuron indices, and locations
 		 * in the accumulating SoA */
 		typedef std::map<nidx_t, size_t> mapper_t;
 		mapper_t m_mapper;
-
-		void registerNeuronType(const NeuronType& type);
-		std::vector<NeuronType> m_neuronTypes;
-
 
 		/*! \todo consider using unordered here instead, esp. after removing
 		 * iterator interface. Currently we need rbegin, which is not found in
@@ -159,12 +143,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		const Axon& axon(nidx_t source) const;
 
 		size_t existingNeuronLocation(unsigned nidx) const;
-
-		std::deque<float>& f_parameter(size_t i);
-		const std::deque<float>& f_parameter(size_t i) const;
-
-		std::deque<float>& f_state(size_t i);
-		const std::deque<float>& f_state(size_t i) const;
 };
 
 	} // end namespace network
