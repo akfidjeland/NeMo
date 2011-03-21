@@ -158,6 +158,32 @@ runSimple(unsigned startNeuron, unsigned neuronCount)
 }
 
 
+/* Verify that neuron cound actually counts the number of neurons.
+ *
+ * Create a fixed number of neurons with indices at fixed intervals starting
+ * from \a startNeuron */
+void
+testNeuronCount(unsigned startNeuron, unsigned step)
+{
+	nemo::Network net;
+	unsigned ncount;
+	for(unsigned i = 0; i < ncount; ++i) {
+		unsigned nidx = startNeuron + i * step;
+		net.addNeuron(nidx, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
+	}
+	BOOST_REQUIRE_EQUAL(ncount, net.neuronCount());
+}
+
+
+
+BOOST_AUTO_TEST_SUITE(neuron_count)
+	BOOST_AUTO_TEST_CASE(cont_zero) { testNeuronCount(0, 1); }
+	BOOST_AUTO_TEST_CASE(cont_nonzero) { testNeuronCount(1000, 1); }
+	BOOST_AUTO_TEST_CASE(noncont_zero) { testNeuronCount(0, 5); }
+	BOOST_AUTO_TEST_CASE(noncont_nonzero) { testNeuronCount(1000, 5); }
+BOOST_AUTO_TEST_SUITE_END()
+
+
 
 BOOST_AUTO_TEST_CASE(simulation_unary_network)
 {
