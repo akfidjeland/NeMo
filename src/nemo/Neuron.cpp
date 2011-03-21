@@ -1,5 +1,6 @@
 #include "Neuron.hpp"
 
+#include <algorithm>
 #include <boost/format.hpp>
 
 #include "exception.hpp"
@@ -8,75 +9,50 @@ namespace nemo {
 
 
 Neuron::Neuron(const NeuronType& type) :
-	 a(0), b(0), c(0), d(0), u(0), v(0), sigma(0)
-{
-	init(type);
-}
+	mf_param(type.f_nParam(), 0.0f),
+	mf_state(type.f_nState(), 0.0f)
+{ }
 
 
-Neuron::Neuron(const NeuronType& type, float fParam[], float fState[])
-{
-	init(type);
-	set(fParam, fState);
-}
-
-
-
-void
-Neuron::init(const NeuronType& type)
-{
-	/* Currently this is hard-coded to use Izhikevich neurons only */
-	if(type.f_nParam() != 5 && type.f_nState() != 2) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "Unsupported neuron type");
-	}
-}
+Neuron::Neuron(const NeuronType& type, float fParam[], float fState[]) :
+	mf_param(fParam, fParam + type.f_nParam()),
+	mf_state(fState, fState + type.f_nState())
+{ }
 
 
 
 void
 Neuron::set(float fParam[], float fState[])
 {
-	a = fParam[0];
-	b = fParam[1];
-	c = fParam[2];
-	d = fParam[3];
-	sigma = fParam[4];
-	u = fState[0];
-	v = fState[1];
+	std::copy(fParam, fParam + mf_param.size(), mf_param.begin());
+	std::copy(fState, fState + mf_state.size(), mf_state.begin());
 }
 
 
 
-float
-Neuron::f_getParameter(size_t i) const
+const float&
+Neuron::f_paramRef(size_t i) const
 {
 	using boost::format;
-
-	switch(i) {
-		case 0: return a;
-		case 1: return b;
-		case 2: return c;
-		case 3: return d;
-		case 4: return sigma;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
+	if(i >= mf_param.size()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid neuron parameter index (%u)") % i));
 	}
+	return mf_param[i];
 }
 
 
 
 
-float
-Neuron::f_getState(size_t i) const
+const float&
+Neuron::f_stateRef(size_t i) const
 {
 	using boost::format;
-
-	switch(i) {
-		case 0: return u;
-		case 1: return v;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
+	if(i >= mf_state.size()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid neuron state variable index (%u)") % i));
 	}
+	return mf_state[i];
 }
 
 
@@ -84,16 +60,7 @@ Neuron::f_getState(size_t i) const
 void
 Neuron::f_setParameter(size_t i, float val)
 {
-	using boost::format;
-	switch(i) {
-		case 0: a = val; break;
-		case 1: b = val; break;
-		case 2: c = val; break;
-		case 3: d = val; break;
-		case 4: sigma = val; break;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Invalid neuron parameter index (%u)") % i));
-	}
+	const_cast<float&>(f_paramRef(i)) = val;
 }
 
 
@@ -101,14 +68,7 @@ Neuron::f_setParameter(size_t i, float val)
 void
 Neuron::f_setState(size_t i, float val)
 {
-	using boost::format;
-
-	switch(i) {
-		case 0: u = val; break;
-		case 1: v = val; break;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Invalid neuron state variable index (%u)") % i));
-	}
+	const_cast<float&>(f_stateRef(i)) = val;
 }
 
 }
