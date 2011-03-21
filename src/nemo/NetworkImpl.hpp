@@ -5,6 +5,7 @@
 
 #include <map>
 #include <vector>
+#include <deque>
 
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
@@ -16,7 +17,6 @@ namespace nemo {
 	namespace cuda {
 		// needed for 'friend' declarations
 		class ConnectivityMatrix;
-		class NeuronParameters;
 		class ThalamicInput;
 	}
 
@@ -42,19 +42,23 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		NetworkImpl();
 
-		/*! \copydoc nemo::Network::addNeuron */
+		/*! \copydoc nemo::Network::addNeuron
+		 *
+		 * \pre the shapes of mf_param and mf_state are identical
+		 * \post the shapes of mf_param and mf_state are identical
+		 */
 		void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
-		void addNeuron(nidx_t nidx, const Neuron&);
-
-		/*! \copydoc nemo::Network::setNeuron */
+		/*! \copydoc nemo::Network::setNeuron
+		 *
+		 * \pre the shapes of mf_param and mf_state are identical
+		 * \post the shapes of mf_param and mf_state are identical
+		 */
 		void setNeuron(unsigned idx,
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
-
-		void setNeuron(nidx_t nidx, const Neuron&);
 
 		/*! \copydoc nemo::Network::addSynapse */
 		synapse_id addSynapse(
@@ -111,13 +115,21 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 	private :
 
-		std::map<nidx_t, Neuron> m_neurons;
+		/* Neurons are stored in several Structure-of-arrays, supporting
+		 * arbitrary neuron types. Functions modifying these maintain the
+		 * invariant that the shapes are the same. */
+		std::vector< std::deque<float> > mf_param;
+		std::vector< std::deque<float> > mf_state;
 
-		/*! \return neuron with given index
-		 * Throws if neuron does not exist
-		 */
-		const Neuron& getNeuron(unsigned idx) const;
-		Neuron& getNeuron(unsigned idx);
+		/*! Data are inserted into mf_param etc as they arrive. The mapper
+		 * maintains the mapping between global neuron indices, and locations
+		 * in the accumulating SoA */
+		typedef std::map<nidx_t, size_t> mapper_t;
+		mapper_t m_mapper;
+
+		void registerNeuronType(const NeuronType& type);
+		std::vector<NeuronType> m_neuronTypes;
+
 
 		/*! \todo consider using unordered here instead, esp. after removing
 		 * iterator interface. Currently we need rbegin, which is not found in
@@ -134,7 +146,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		//! \todo modify public interface to avoid friendship here
 		friend class nemo::cuda::ConnectivityMatrix;
-		friend class nemo::cuda::NeuronParameters;
 		friend class nemo::cuda::ThalamicInput;
 		friend class nemo::ConnectivityMatrix;
 		friend class nemo::cpu::Simulation;
@@ -146,6 +157,14 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		std::vector<synapse_id> m_queriedSynapseIds;
 
 		const Axon& axon(nidx_t source) const;
+
+		size_t existingNeuronLocation(unsigned nidx) const;
+
+		std::deque<float>& f_parameter(size_t i);
+		const std::deque<float>& f_parameter(size_t i) const;
+
+		std::deque<float>& f_state(size_t i);
+		const std::deque<float>& f_state(size_t i) const;
 };
 
 	} // end namespace network

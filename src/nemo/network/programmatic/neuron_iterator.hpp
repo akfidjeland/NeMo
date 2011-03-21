@@ -2,7 +2,12 @@
 #define NEMO_NETWORK_PROGRAMMATIC_NEURON_ITERATOR_HPP
 
 #include <typeinfo>
+#include <vector>
+#include <deque>
+
 #include <nemo/network/iterator.hpp>
+#include <nemo/NeuronType.hpp>
+
 
 namespace nemo {
 	namespace network {
@@ -13,18 +18,33 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 {
 	public :
 
-		typedef std::map<nidx_t, Neuron>::const_iterator base_iterator;
+		typedef std::map<nidx_t, size_t>::const_iterator base_iterator;
 
-		neuron_iterator(base_iterator it) : m_it(it) { }
+		neuron_iterator(base_iterator it,
+			const std::vector< std::deque<float> >& param,
+			const std::vector< std::deque<float> >& state,
+			const NeuronType& type) :
+			m_it(it), m_nt(type), m_param(param), m_state(state) {}
+
+		void set_value() const {
+			m_data.second = Neuron(m_nt);
+			size_t n = m_it->second;
+			m_data.first = m_it->first;
+			for(size_t i=0; i < m_param.size(); ++i) {
+				m_data.second.f_setParameter(i, m_param[i][n]);
+			}
+			for(size_t i=0; i < m_state.size(); ++i) {
+				m_data.second.f_setState(i, m_state[i][n]);
+			}
+		}
 
 		const value_type& operator*() const {
-			//! note: returning *m_it here results in warning regarding reference to temporary
-			m_data = *m_it;
+			set_value();
 			return m_data;
 		}
 
 		const value_type* operator->() const {
-			m_data = *m_it;
+			set_value();
 			return &m_data;
 		}
 
@@ -51,6 +71,11 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 		base_iterator m_it;
 
 		mutable value_type m_data;
+
+		const NeuronType m_nt;
+
+		const std::vector< std::deque<float> >& m_param;
+		const std::vector< std::deque<float> >& m_state;
 };
 
 }	}	}

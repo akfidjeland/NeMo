@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <nemo/config.h>
+#include "NeuronType.hpp"
 
 namespace nemo {
 
@@ -12,9 +13,9 @@ class Neuron
 
 		Neuron(): a(0), b(0), c(0), d(0), u(0), v(0), sigma(0) {}
 
-		/*! Create an Izhikevich neuron */
-		Neuron(float a, float b, float c, float d, float u, float v, float sigma) :
-			a(a), b(b), c(c), d(d), u(u), v(v), sigma(sigma) {}
+		Neuron(const NeuronType&);
+
+		Neuron(const NeuronType&, float fParam[], float fState[]);
 
 		/*! \return i'th parameter of neuron */
 		float f_getParameter(size_t i) const;
@@ -22,9 +23,19 @@ class Neuron
 		/*! \return i'th state variable of neuron */
 		float f_getState(size_t i) const;
 
-		float a, b, c, d, u, v, sigma;
+		/*! set i'th parameter of neuron */
+		void f_setParameter(size_t i, float val);
+
+		/*! set i'th state variable of neuron */
+		void f_setState(size_t i, float val);
 
 	private :
+
+		float a, b, c, d, u, v, sigma;
+
+		void init(const NeuronType& type);
+
+		void set(float fParam[], float fState[]);
 
 #ifdef NEMO_MPI_ENABLED
 
