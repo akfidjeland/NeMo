@@ -43,7 +43,7 @@ class Neurons
 		 * \pre the input arrays have the lengths specified by the neuron type
 		 * 		used when this object was created.
 		 */
-		size_t add(float fParam[], float fState[]);
+		size_t add(const float fParam[], const float fState[]);
 
 		/*! Modify an existing neuron
 		 *
@@ -55,7 +55,7 @@ class Neurons
 		 * \pre the input arrays have the lengths specified by the neuron type
 		 * 		used when this object was created.
 		 */
-		void set(size_t nidx, float fParam[], float fState[]);
+		void set(size_t nidx, const float fParam[], const float fState[]);
 
 		/*! \copydoc NetworkImpl::getNeuronParameter */
 		float getParameter(size_t nidx, unsigned pidx) const;
@@ -85,7 +85,7 @@ class Neurons
 
 		size_t m_size;
 
-		const NeuronType m_type;
+		NeuronType m_type;
 
 		/*! \return parameter index after checking its validity */
 		unsigned parameterIndex(unsigned i) const;

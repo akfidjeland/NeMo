@@ -18,7 +18,7 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 {
 	public :
 
-		typedef std::map<nidx_t, size_t>::const_iterator base_iterator;
+		typedef std::map<nidx_t, std::pair<unsigned, unsigned> >::const_iterator base_iterator;
 
 		neuron_iterator(base_iterator it,
 			const std::vector< std::deque<float> >& param,
@@ -28,7 +28,7 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 
 		void set_value() const {
 			m_data.second = Neuron(m_nt);
-			size_t n = m_it->second;
+			size_t n = m_it->second.second;
 			m_data.first = m_it->first;
 			for(size_t i=0; i < m_param.size(); ++i) {
 				m_data.second.f_setParameter(i, m_param[i][n]);

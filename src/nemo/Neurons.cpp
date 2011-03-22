@@ -26,7 +26,7 @@ Neurons::Neurons(const NeuronType& type) :
 
 
 size_t
-Neurons::add(float fParam[], float fState[])
+Neurons::add(const float fParam[], const float fState[])
 {
 	for(unsigned i=0; i < mf_param.size(); ++i) {
 		mf_param[i].push_back(fParam[i]);
@@ -66,7 +66,7 @@ Neurons::stateIndex(unsigned i) const
 
 
 void
-Neurons::set(size_t n, float fParam[], float fState[])
+Neurons::set(size_t n, const float fParam[], const float fState[])
 {
 	for(unsigned i=0; i < mf_param.size(); ++i) {
 		mf_param[i][n] = fParam[i];

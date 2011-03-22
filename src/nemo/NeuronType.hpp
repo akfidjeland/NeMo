@@ -29,6 +29,8 @@ class NeuronType
 {
 	public :
 
+		NeuronType() : mf_nParam(0), mf_nState(0), m_name("null") { }
+
 		/*! Create a new neuron model specification
 		 * 
 		 * This is a generic neuron type which supports a number of run-time
@@ -48,9 +50,9 @@ class NeuronType
 
 	private :
 
-		const size_t mf_nParam;
-		const size_t mf_nState;
-		const std::string m_name;
+		size_t mf_nParam;
+		size_t mf_nState;
+		std::string m_name;
 
 		friend size_t hash_value(const nemo::NeuronType&);
 };

@@ -1,11 +1,25 @@
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "Network.hpp"
+
+#include <boost/array.hpp>
+
 #include "NetworkImpl.hpp"
+#include "NeuronType.hpp"
 #include "synapse_indices.hpp"
 
 namespace nemo {
 
 Network::Network() :
-	m_impl(new network::NetworkImpl())
+	m_impl(new network::NetworkImpl()),
+	iz_type(~0U)
 {
 	;
 }
@@ -22,8 +36,15 @@ Network::addNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	//! \todo could use internal network type here
-	m_impl->addNeuron(idx, a, b, c, d, u, v, sigma);
+	if(iz_type == ~0U) {
+		iz_type = m_impl->addNeuronType(NeuronType(5, 2, "Izhikevich"));
+	}
+	static boost::array<float, 5> param;
+	static boost::array<float, 2> state;
+
+	param[0] = a; param[1] = b; param[2] = c; param[3] = d; param[4] = sigma;
+	state[0] = u; state[1] = v;
+	m_impl->addNeuron(iz_type, idx, param.c_array(), state.c_array());
 }
 
 
@@ -33,7 +54,12 @@ Network::setNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	m_impl->setNeuron(idx, a, b, c, d, u, v, sigma);
+	static boost::array<float, 5> param;
+	static boost::array<float, 2> state;
+
+	param[0] = a; param[1] = b; param[2] = c; param[3] = d; param[4] = sigma;
+	state[0] = u; state[1] = v;
+	m_impl->setNeuron(idx, param.c_array(), state.c_array());
 }
 
 

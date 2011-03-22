@@ -163,7 +163,11 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		// undefined
 		Network(const Network&);
 		Network& operator=(const Network&);
+
+		/* hack for backwards-compatability with original construction API */
+		unsigned iz_type;
 };
+
 
 } // end namespace nemo
 

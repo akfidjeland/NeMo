@@ -36,21 +36,43 @@ namespace nemo {
 			class synapse_iterator;
 		}
 
+
+
 class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwork
 {
 	public :
 
 		NetworkImpl();
 
-		/*! \copydoc nemo::Network::addNeuron */
-		void addNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
+		/*! Register a new neuron type with the network.
+		 *
+		 * \return index of the the neuron type, to be used when adding neurons.
+		 *
+		 * This must be done before neurons of this type can be added to the network.
+		 */
+		unsigned addNeuronType(const NeuronType&);
 
-		/*! \copydoc nemo::Network::setNeuron */
-		void setNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
+		/*! Add a neuron to the network
+		 *
+		 * \param type index of the neuron type, as returned by \a addNeuronType
+		 * \param param floating point parameters of the neuron
+		 * \param state floating point state variables of the neuron
+		 *
+		 * \pre The parameter and state arrays must have the dimensions
+		 * 		matching the neuron type represented by \a type.
+		 */
+		void addNeuron(unsigned type, unsigned idx,
+				const float param[], const float state[]);
+
+		/*! Set an existing neuron
+		 *
+		 * \param param floating point parameters of the neuron
+		 * \param state floating point state variables of the neuron
+		 *
+		 * \pre The parameter and state arrays must have the dimensions
+		 * 		matching the neuron type specified when the neuron was first added.
+		 */
+		void setNeuron(unsigned idx, const float param[], const float state[]);
 
 		/*! \copydoc nemo::Network::addSynapse */
 		synapse_id addSynapse(
@@ -107,13 +129,22 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 	private :
 
-		Neurons m_neurons;
+		/* Neurons are grouped by neuron type */
+		std::vector<Neurons> m_neurons;
 
-		/*! Data are inserted into mf_param etc as they arrive. The mapper
-		 * maintains the mapping between global neuron indices, and locations
-		 * in the accumulating SoA */
-		typedef std::map<nidx_t, size_t> mapper_t;
+		const Neurons& neuronCollection(unsigned type_id) const;
+		Neurons& neuronCollection(unsigned type_id);
+
+		/* could use a separate type here, but kept it simple while we use this
+		 * type in the neuron_iterator class */
+		typedef std::pair<unsigned, unsigned> NeuronAddress;
+
+		typedef std::map<nidx_t, NeuronAddress> mapper_t;
 		mapper_t m_mapper;
+
+		/*! Return neuron address of an existing neuron or throw if it does not
+		 * exist */
+		const NeuronAddress& existingNeuronAddress(unsigned nidx) const;
 
 		/*! \todo consider using unordered here instead, esp. after removing
 		 * iterator interface. Currently we need rbegin, which is not found in
@@ -142,9 +173,9 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		const Axon& axon(nidx_t source) const;
 
-		size_t existingNeuronLocation(unsigned nidx) const;
 };
 
 	} // end namespace network
 } // end namespace nemo
+
 #endif
