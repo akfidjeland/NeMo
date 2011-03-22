@@ -11,6 +11,7 @@
  */
 
 #include <string>
+#include <nemo/config.h>
 
 namespace nemo {
 
@@ -25,7 +26,7 @@ namespace nemo {
  * simulation data can be set up based on this, regardless of the neuron
  * dynamics.
  */
-class NeuronType 
+class NEMO_BASE_DLL_PUBLIC NeuronType
 {
 	public :
 

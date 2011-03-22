@@ -77,6 +77,7 @@ INSTALL(FILES
 		types.h
 		Configuration.hpp
 		Network.hpp
+		NeuronType.hpp
 		Simulation.hpp
 		ReadableNetwork.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/config.h

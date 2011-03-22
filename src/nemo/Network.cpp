@@ -31,6 +31,21 @@ Network::~Network()
 }
 
 
+unsigned
+Network::addNeuronType(const NeuronType& t)
+{
+	return m_impl->addNeuronType(t);
+}
+
+
+void
+Network::addNeuron(unsigned type, unsigned idx,
+				const float param[], const float state[])
+{
+	m_impl->addNeuron(type, idx, param, state);
+}
+
+
 void
 Network::addNeuron(unsigned idx,
 		float a, float b, float c, float d,
@@ -47,6 +62,12 @@ Network::addNeuron(unsigned idx,
 	m_impl->addNeuron(iz_type, idx, param.c_array(), state.c_array());
 }
 
+
+void
+Network::setNeuron(unsigned idx, const float param[], const float state[])
+{
+	m_impl->setNeuron(idx, param, state);
+}
 
 
 void

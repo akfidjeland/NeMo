@@ -44,34 +44,14 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		NetworkImpl();
 
-		/*! Register a new neuron type with the network.
-		 *
-		 * \return index of the the neuron type, to be used when adding neurons.
-		 *
-		 * This must be done before neurons of this type can be added to the network.
-		 */
+		/*! \copydoc nemo::Network::addNeuronType */
 		unsigned addNeuronType(const NeuronType&);
 
-		/*! Add a neuron to the network
-		 *
-		 * \param type index of the neuron type, as returned by \a addNeuronType
-		 * \param param floating point parameters of the neuron
-		 * \param state floating point state variables of the neuron
-		 *
-		 * \pre The parameter and state arrays must have the dimensions
-		 * 		matching the neuron type represented by \a type.
-		 */
+		/*! \copydoc nemo::Network::addNeuron */
 		void addNeuron(unsigned type, unsigned idx,
 				const float param[], const float state[]);
 
-		/*! Set an existing neuron
-		 *
-		 * \param param floating point parameters of the neuron
-		 * \param state floating point state variables of the neuron
-		 *
-		 * \pre The parameter and state arrays must have the dimensions
-		 * 		matching the neuron type specified when the neuron was first added.
-		 */
+		/*! \copydoc nemo::Network::setNeuron */
 		void setNeuron(unsigned idx, const float param[], const float state[]);
 
 		/*! \copydoc nemo::Network::addSynapse */
