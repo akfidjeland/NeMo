@@ -39,7 +39,7 @@ class abstract_iterator
 };
 
 
-typedef abstract_iterator< std::pair<unsigned, nemo::Neuron<float> > > abstract_neuron_iterator;
+typedef abstract_iterator< std::pair<unsigned, nemo::Neuron> > abstract_neuron_iterator;
 typedef abstract_iterator<Synapse> abstract_synapse_iterator;
 
 

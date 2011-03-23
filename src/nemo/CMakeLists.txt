@@ -43,6 +43,9 @@ ADD_LIBRARY(nemo_base
 	FiringBuffer.cpp
 	Network.cpp
 	NetworkImpl.cpp
+	Neuron.cpp
+	Neurons.cpp
+	NeuronType.cpp
 	Simulation.cpp
 	SimulationBackend.cpp
 	OutgoingDelays.cpp
@@ -74,6 +77,7 @@ INSTALL(FILES
 		types.h
 		Configuration.hpp
 		Network.hpp
+		NeuronType.hpp
 		Simulation.hpp
 		ReadableNetwork.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/config.h

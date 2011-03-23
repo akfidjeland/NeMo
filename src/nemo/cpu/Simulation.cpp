@@ -82,14 +82,14 @@ Simulation::setNeuronParameters(
 	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
 		nidx_t nidx = mapper.addGlobal((*i).first);
-		const Neuron<float>& n = i->second;
-		m_a.at(nidx) = n.a;
-		m_b.at(nidx) = n.b;
-		m_c.at(nidx) = n.c;
-		m_d.at(nidx) = n.d;
-		m_u.at(nidx) = n.u;
-		m_v.at(nidx) = n.v;
-		m_sigma.at(nidx) = n.sigma;	
+		const Neuron& n = i->second;
+		m_a.at(nidx) = n.f_getParameter(0);
+		m_b.at(nidx) = n.f_getParameter(1);
+		m_c.at(nidx) = n.f_getParameter(2);
+		m_d.at(nidx) = n.f_getParameter(3);
+		m_sigma.at(nidx) = n.f_getParameter(4);
+		m_u.at(nidx) = n.f_getState(0);
+		m_v.at(nidx) = n.f_getState(1);
 		m_valid.at(nidx) = true;
 	}
 }

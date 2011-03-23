@@ -121,16 +121,15 @@ class Neurons
 
 		const unsigned mf_nParams;
 		const unsigned mf_nStateVars;
-		const unsigned mu_nStateVars;
 
 		/* Neuron parameters do not change at run-time (unless the user
 		 * specifically does it through \a setParameter) */
-		NVector<float, NEURON_FLOAT_PARAM_COUNT> mf_param;
+		NVector<float> mf_param;
 
 		/* Neuron state variables are updated during simulation. */
-		mutable NVector<float, NEURON_FLOAT_STATE_COUNT> mf_state;
+		mutable NVector<float> mf_state;
 
-		NVector<unsigned, NEURON_UNSIGNED_STATE_COUNT> mu_state;
+		NVector<unsigned> mu_state;
 
 		/* In the translation from global neuron indices to device indices,
 		 * there may be 'holes' left in the index space. The valid bitvector

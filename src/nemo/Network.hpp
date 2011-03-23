@@ -7,6 +7,7 @@
 #include <nemo/config.h>
 #include <nemo/types.h>
 #include <nemo/ReadableNetwork.hpp>
+#include <nemo/NeuronType.hpp>
 
 /* Copyright 2010 Imperial College London
  *
@@ -45,7 +46,29 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 
 		~Network();
 
-		/*! \brief Add a single neuron to the network
+		/*! \brief Register a new neuron type with the network.
+		 *
+		 * \return
+		 * 		index of the the neuron type, to be used when adding neurons.
+		 *
+		 * This function must be called before neurons of the specified type
+		 * can be added to the network.
+		 */
+		unsigned addNeuronType(const NeuronType&);
+
+		/*! \brief Add a neuron to the network
+		 *
+		 * \param type index of the neuron type, as returned by \a addNeuronType
+		 * \param param floating point parameters of the neuron
+		 * \param state floating point state variables of the neuron
+		 *
+		 * \pre The parameter and state arrays must have the dimensions
+		 * 		matching the neuron type represented by \a type.
+		 */
+		void addNeuron(unsigned type, unsigned idx,
+				const float param[], const float state[]);
+
+		/*! \brief Add a single Izhikevich neuron to the network
 		 *
 		 * The neuron uses the Izhikevich neuron model. See E. M. Izhikevich
 		 * "Simple model of spiking neurons", \e IEEE \e Trans. \e Neural \e
@@ -77,7 +100,18 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
-		/*! Change parameters/state variables of a single existing neuron
+		/*! Set an existing neuron
+		 *
+		 * \param param floating point parameters of the neuron
+		 * \param state floating point state variables of the neuron
+		 *
+		 * \pre The parameter and state arrays must have the dimensions
+		 * 		matching the neuron type specified when the neuron was first
+		 * 		added.
+		 */
+		void setNeuron(unsigned idx, const float param[], const float state[]);
+
+		/*! Change parameters/state variables of a single existing Izhikevich-type neuron
 		 *
 		 * The parameters are the same as for \a nemo::Network::addNeuron
 		 */
@@ -163,7 +197,11 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		// undefined
 		Network(const Network&);
 		Network& operator=(const Network&);
+
+		/* hack for backwards-compatability with original construction API */
+		unsigned iz_type;
 };
+
 
 } // end namespace nemo
 

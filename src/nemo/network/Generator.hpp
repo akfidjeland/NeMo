@@ -17,7 +17,7 @@ class Generator
 
 		virtual ~Generator() { }
 
-		typedef std::pair<nidx_t, Neuron<float> > neuron;
+		typedef std::pair<nidx_t, Neuron> neuron;
 		typedef Synapse synapse;
 		
 		virtual neuron_iterator neuron_begin() const = 0;

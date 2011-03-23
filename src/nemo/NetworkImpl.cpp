@@ -30,55 +30,73 @@ NetworkImpl::NetworkImpl() :
 	m_maxDelay(0),
 	m_minWeight(0),
 	m_maxWeight(0)
-{ }
-
-
-void
-NetworkImpl::addNeuron(unsigned nidx,
-		float a, float b, float c, float d,
-		float u, float v, float sigma)
 {
-	addNeuron(nidx, Neuron<float>(a, b, c, d, u, v, sigma));
+	;
+}
+
+
+
+unsigned
+NetworkImpl::addNeuronType(const NeuronType& type)
+{
+	if(!m_neurons.empty()) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Only a single neuron type per network is supported");
+	}
+	unsigned type_id = m_neurons.size();
+	m_neurons.push_back(Neurons(type));
+	return type_id;
+}
+
+
+
+const Neurons&
+NetworkImpl::neuronCollection(unsigned type_id) const
+{
+	using boost::format;
+	if(type_id >= m_neurons.size()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid neuron type id %u") % type_id));
+	}
+	return m_neurons[type_id];
+}
+
+
+
+Neurons&
+NetworkImpl::neuronCollection(unsigned type_id)
+{
+	return const_cast<Neurons&>(static_cast<const NetworkImpl&>(*this).neuronCollection(type_id));
 }
 
 
 
 void
-NetworkImpl::addNeuron(nidx_t nidx, const Neuron<float>& n)
+NetworkImpl::addNeuron(
+		unsigned type_id,
+		unsigned nidx,
+		const float param[],
+		const float state[])
 {
 	using boost::format;
-	if(m_neurons.find(nidx) != m_neurons.end()) {
+	if(m_mapper.find(nidx) != m_mapper.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Duplicate neuron index for neuron %u") % nidx));
 	}
 	m_maxIdx = std::max(m_maxIdx, int(nidx));
 	m_minIdx = std::min(m_minIdx, int(nidx));
-	m_neurons[nidx] = n;
+
+	unsigned l_nidx = neuronCollection(type_id).add(param, state);
+	m_mapper[nidx] = NeuronAddress(type_id, l_nidx);
 }
 
 
 
-void
-NetworkImpl::setNeuron(unsigned nidx,
-		float a, float b, float c, float d,
-		float u, float v, float sigma)
-{
-	setNeuron(nidx, Neuron<float>(a, b, c, d, u, v, sigma));
-}
-
-
 
 void
-NetworkImpl::setNeuron(nidx_t nidx, const Neuron<float>& n)
+NetworkImpl::setNeuron(unsigned nidx, const float param[], const float state[])
 {
-	using boost::format;
-	if(m_neurons.find(nidx) == m_neurons.end()) {
-		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Attemt to modify non-existing neuron %u") % nidx));
-	}
-	m_maxIdx = std::max(m_maxIdx, int(nidx));
-	m_minIdx = std::min(m_minIdx, int(nidx));
-	m_neurons[nidx] = n;
+	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	neuronCollection(addr.first).set(addr.second, param, state);
 }
 
 
@@ -112,25 +130,16 @@ NetworkImpl::addSynapse(
 
 
 
-const NetworkImpl::neuron_t&
-NetworkImpl::getNeuron(unsigned nidx) const
+const NetworkImpl::NeuronAddress&
+NetworkImpl::existingNeuronAddress(unsigned nidx) const
 {
 	using boost::format;
-
-	std::map<nidx_t, neuron_t>::const_iterator i = m_neurons.find(nidx);
-	if(i == m_neurons.end()) {
+	mapper_t::const_iterator found = m_mapper.find(nidx);
+	if(found == m_mapper.end()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Unknown neuron index %u") % nidx));
+				str(format("Non-existing neuron index %u") % nidx));
 	}
-	return i->second;
-}
-
-
-
-NetworkImpl::neuron_t&
-NetworkImpl::getNeuron(unsigned idx)
-{
-	return const_cast<neuron_t&>(static_cast<const NetworkImpl*>(this)->getNeuron(idx));
+	return found->second;
 }
 
 
@@ -138,17 +147,8 @@ NetworkImpl::getNeuron(unsigned idx)
 float
 NetworkImpl::getNeuronState(unsigned nidx, unsigned var) const
 {
-	using boost::format;
-
-	const neuron_t& neuron = getNeuron(nidx);
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	switch(var) {
-		case 0: return neuron.u;
-		case 1: return neuron.v;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron state variable index (%u)") % var));
-	}
+	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	return neuronCollection(addr.first).getState(addr.second, var);
 }
 
 
@@ -156,20 +156,8 @@ NetworkImpl::getNeuronState(unsigned nidx, unsigned var) const
 float
 NetworkImpl::getNeuronParameter(unsigned nidx, unsigned parameter) const
 {
-	using boost::format;
-
-	const neuron_t& neuron = getNeuron(nidx);
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	switch(parameter) {
-		case 0: return neuron.a;
-		case 1: return neuron.b;
-		case 2: return neuron.c;
-		case 3: return neuron.d;
-		case 4: return neuron.sigma;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron parameter index (%u)") % parameter));
-	}
+	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	return neuronCollection(addr.first).getParameter(addr.second, parameter);
 }
 
 
@@ -177,17 +165,8 @@ NetworkImpl::getNeuronParameter(unsigned nidx, unsigned parameter) const
 void
 NetworkImpl::setNeuronState(unsigned nidx, unsigned var, float val)
 {
-	using boost::format;
-
-	neuron_t& neuron = getNeuron(nidx);
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	switch(var) {
-		case 0: neuron.u = val; break;
-		case 1: neuron.v = val; break;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron state variable index (%u)") % var));
-	}
+	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	return neuronCollection(addr.first).setState(addr.second, var, val);
 }
 
 
@@ -195,20 +174,8 @@ NetworkImpl::setNeuronState(unsigned nidx, unsigned var, float val)
 void
 NetworkImpl::setNeuronParameter(unsigned nidx, unsigned parameter, float val)
 {
-	using boost::format;
-
-	neuron_t& neuron = getNeuron(nidx);
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	switch(parameter) {
-		case 0: neuron.a = val; break;
-		case 1: neuron.b = val; break;
-		case 2: neuron.c = val; break;
-		case 3: neuron.d = val; break;
-		case 4: neuron.sigma = val; break;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron parameter index (%u)") % parameter));
-	}
+	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	return neuronCollection(addr.first).setParameter(addr.second, parameter, val);
 }
 
 
@@ -276,8 +243,14 @@ NetworkImpl::getSynapsesFrom(unsigned source)
 unsigned
 NetworkImpl::neuronCount() const
 {
-	return m_neurons.size();
+	unsigned total = 0;
+	for(std::vector<Neurons>::const_iterator i = m_neurons.begin();
+			i != m_neurons.end(); ++i) {
+		total += i->size();
+	}
+	return total;
 }
+
 
 
 nidx_t
@@ -309,14 +282,26 @@ NetworkImpl::maxNeuronIndex() const
 neuron_iterator
 NetworkImpl::neuron_begin() const
 {
-	return neuron_iterator(new programmatic::neuron_iterator(m_neurons.begin()));
+	/* only a single neuron model supported here */
+	if(m_neurons.size() != 1) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network");
+	}
+	const Neurons& neurons = m_neurons.front();
+	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.begin(),
+				neurons.mf_param, neurons.mf_state, neurons.type()));
 }
 
 
 neuron_iterator
 NetworkImpl::neuron_end() const
 {
-	return neuron_iterator(new programmatic::neuron_iterator(m_neurons.end()));
+	/* only a single neuron model supported here */
+	if(m_neurons.size() != 1) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network");
+	}
+	const Neurons& neurons = m_neurons.front();
+	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.end(),
+				neurons.mf_param, neurons.mf_state, neurons.type()));
 }
 
 

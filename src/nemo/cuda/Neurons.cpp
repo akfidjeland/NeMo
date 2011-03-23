@@ -27,12 +27,12 @@ namespace nemo {
 
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	//! \todo set these sizes based on configuration
+	//! \todo: remove these here. Handle inside NVector instead
 	mf_nParams(NEURON_FLOAT_PARAM_COUNT),
 	mf_nStateVars(NEURON_FLOAT_STATE_COUNT),
-	mu_nStateVars(NEURON_UNSIGNED_STATE_COUNT),
-	mf_param(mapper.partitionCount(), mapper.partitionSize(), true, false),
-	mf_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
-	mu_state(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_param(NEURON_FLOAT_PARAM_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_state(NEURON_FLOAT_STATE_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mu_state(NEURON_UNSIGNED_STATE_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_valid(mapper.partitionCount(), true),
 	m_cycle(0),
 	mf_lastSync(~0),
@@ -51,18 +51,19 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 			i != i_end; ++i) {
 
 		DeviceIdx dev = mapper.addIdx(i->first);
-		const nemo::Neuron<float>& n = i->second;
+		const nemo::Neuron& n = i->second;
 
-		mf_param.setNeuron(dev.partition, dev.neuron, n.a, PARAM_A);
-		mf_param.setNeuron(dev.partition, dev.neuron, n.b, PARAM_B);
-		mf_param.setNeuron(dev.partition, dev.neuron, n.c, PARAM_C);
-		mf_param.setNeuron(dev.partition, dev.neuron, n.d, PARAM_D);
-		mf_param.setNeuron(dev.partition, dev.neuron, n.sigma, PARAM_SIGMA);
-		mf_state.setNeuron(dev.partition, dev.neuron, n.u, STATE_U);
-		mf_state.setNeuron(dev.partition, dev.neuron, n.v, STATE_V);
+		for(unsigned i=0; i < mf_nParams; ++i) {
+			mf_param.setNeuron(dev.partition, dev.neuron, n.f_getParameter(i), i);
+		}
+		for(unsigned i=0; i < mf_nStateVars; ++i) {
+			mf_state.setNeuron(dev.partition, dev.neuron, n.f_getState(i), i);
+		}
+
 		m_valid.setNeuron(dev);
 
-		m_rngEnabled |= n.sigma != 0.0f;
+		float sigma = n.f_getParameter(PARAM_SIGMA);
+		m_rngEnabled |= sigma != 0.0f;
 		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
 		for(unsigned plane = 0; plane < 4; ++plane) {
 			mu_state.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], STATE_RNG+plane);
