@@ -110,6 +110,46 @@ class TestFunctions(unittest.TestCase):
         self.assertRaises(RuntimeError, net.set_neuron_parameter, 0, 5, 0.0) # parameter
         self.assertRaises(RuntimeError, net.set_neuron_state, 0, 2, 0.0)     # state
 
+    def check_neuron_function(self, fun, ncount):
+        vlen = random.randint(2, ncount)
+        a = arg(vlen, random.random)
+        b = arg(vlen, random.random)
+        c = arg(vlen, random.random)
+        d = arg(vlen, random.random)
+        u = arg(vlen, random.random)
+        v = arg(vlen, random.random)
+        s = arg(vlen, random.random)
+        vectorized = any(isinstance(x, list) for x in [a, b, c, d, u, v, s])
+        if vectorized:
+            fun(range(vlen), a, b, c, d, u, v, s)
+        else:
+            fun(random.randint(0,1000), a, b, c, d, u, v, s)
+
+    def test_add_neuron(self):
+        """
+        The add_neuron method supports either vector or scalar input. This
+        test calls set_synapse in a large number of ways, checking for
+        catastrophics failures in the boost::python layer
+        """
+        for test in range(1000):
+            net = nemo.Network()
+            self.check_neuron_function(net.add_neuron, ncount=1000)
+
+    def test_set_neuron(self):
+        """
+        The set_neuron method supports either vector or scalar input. This
+        test calls set_synapse in a large number of ways, checking for
+        catastrophics failures in the boost::python layer
+        """
+        net = nemo.Network()
+        ncount = 1000
+        net.add_neuron(range(ncount), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        for test in range(1000):
+            self.check_neuron_function(net.set_neuron, ncount=1000)
+        sim = nemo.Simulation(net, nemo.Configuration())
+        for test in range(1000):
+            self.check_neuron_function(sim.set_neuron, ncount=1000)
+
     def check_set_neuron_vector(self, obj, pop):
         """
         Test vector/scalar forms of set_neuron for either network or simulation
@@ -256,6 +296,7 @@ class TestFunctions(unittest.TestCase):
                 self.assertEqual(len(ids), vlen)
             else:
                 self.assertFalse(isinstance(ids, list))
+
 
     def test_get_synapses_from_unconnected(self):
         net = nemo.Network()

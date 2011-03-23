@@ -265,8 +265,8 @@ addNeuron =
     ApiFunction
         "addNeuron"
         "add a single neuron to the network"
-        (Just "The neuron uses the Izhikevich neuron model. See E. M. Izhikevich \"Simple model of spiking neurons\", IEEE Trans. Neural Networks, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters.")
-        M.empty
+        (Just "The neuron uses the Izhikevich neuron model. See E. M. Izhikevich \"Simple model of spiking neurons\", IEEE Trans. Neural Networks, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters. ")
+        (M.fromList pythonNeuronFullSetter)
         []
         [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
             Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
@@ -290,6 +290,7 @@ pythonVectorized1 = [(Python, "The neuron index may be either scalar or a list. 
 
 pythonSynapseGetter = [(Python, "The input synapse indices may be either a scalar or a list. The return value has the same form")]
 
+pythonNeuronFullSetter = [(Python, "This function may be called either in a scalar or vector form. In the scalar form all inputs are scalars. In the vector form, the neuron index argument plus any number of the other arguments are lists of the same length. In this second form scalar inputs are replicated the appropriate number of times")]
 
 addSynapse =
     ApiFunction
@@ -406,7 +407,8 @@ applyStdp =
 setNeuron =
     ApiFunction "setNeuron"
         "modify an existing neuron"
-        Nothing M.empty
+        Nothing
+        (M.fromList pythonNeuronFullSetter)
         []
         [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
             Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),

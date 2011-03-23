@@ -1,5 +1,14 @@
 #define BOOST_TEST_MODULE nemo test
 
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <cmath>
 #include <iostream>
 #include <boost/test/unit_test.hpp>
@@ -13,6 +22,7 @@
 #include "test.hpp"
 #include "utils.hpp"
 #include "rtest.hpp"
+#include "c_api.hpp"
 
 
 /* For a number of tests, we want to run both CUDA and CPU versions with the
@@ -42,7 +52,7 @@
 
 #define TEST_ALL_BACKENDS_N(name, fn,...)                                     \
     BOOST_AUTO_TEST_SUITE(name)                                               \
-    BOOST_AUTO_TEST_CASE(cuda) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }         \
+    BOOST_AUTO_TEST_CASE(cpu) { fn(NEMO_BACKEND_CPU, __VA_ARGS__); }          \
     BOOST_AUTO_TEST_SUITE_END()
 
 #endif
@@ -371,20 +381,22 @@ BOOST_AUTO_TEST_SUITE_END()
  * synapses as the input network. Neurons are assumed to lie in a contigous
  * range of indices starting at n0. */
 void
-testGetSynapses(const nemo::Network& net,
+testGetSynapses(nemo::Network& net,
 		nemo::Configuration& conf,
 		unsigned n0,
 		unsigned m)
 {
 	unsigned fbits = 20;
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
-	std::vector<float> nweights;
 
 	for(unsigned src = n0, src_end = n0 + net.neuronCount(); src < src_end; ++src) {
 
-		const std::vector<synapse_id>& ids = sim->getSynapsesFrom(src);
+		const std::vector<synapse_id>& s_ids = sim->getSynapsesFrom(src);
+		const std::vector<synapse_id>& n_ids = net.getSynapsesFrom(src);
 
-		for(std::vector<synapse_id>::const_iterator i = ids.begin(); i != ids.end(); ++i) {
+		BOOST_REQUIRE_EQUAL(s_ids.size(), n_ids.size());
+
+		for(std::vector<synapse_id>::const_iterator i = s_ids.begin(); i != s_ids.end(); ++i) {
 			BOOST_REQUIRE_EQUAL(sim->getSynapseTarget(*i), net.getSynapseTarget(*i));
 			BOOST_REQUIRE_EQUAL(sim->getSynapseDelay(*i), net.getSynapseDelay(*i));
 			BOOST_REQUIRE_EQUAL(sim->getSynapsePlastic(*i), net.getSynapsePlastic(*i));
@@ -753,3 +765,24 @@ BOOST_AUTO_TEST_SUITE(regression)
 		runTorus(false);
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
+
+
+BOOST_AUTO_TEST_SUITE(c_api)
+
+	BOOST_AUTO_TEST_SUITE(comparison)
+		BOOST_AUTO_TEST_CASE(nostim) { nemo::test::c_api::compareWithCpp(false, false); }
+		BOOST_AUTO_TEST_CASE(fstim) { nemo::test::c_api::compareWithCpp(true, false); }
+		BOOST_AUTO_TEST_CASE(istim) { nemo::test::c_api::compareWithCpp(false, true); }
+	BOOST_AUTO_TEST_SUITE_END()
+
+	BOOST_AUTO_TEST_CASE(synapse_ids) { nemo::test::c_api::testSynapseId(); }
+	BOOST_AUTO_TEST_CASE(set_neuron) { nemo::test::c_api::testSetNeuron(); }
+
+	BOOST_AUTO_TEST_SUITE(get_synapse)
+		TEST_ALL_BACKENDS_N(n0, nemo::test::c_api::testGetSynapses, 0)
+		TEST_ALL_BACKENDS_N(n1000, nemo::test::c_api::testGetSynapses, 1000)
+	BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE_END()
+

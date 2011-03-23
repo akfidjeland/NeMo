@@ -66,6 +66,29 @@ from _nemo import *
 init()
 
 
+def step(self, fstim=None, istim=None):
+    """
+    run simulation for a single cycle (1ms)
+
+    Inputs:
+    fstim -- An optional list of neurons which will be forced to fire this cycle
+    istim -- An optional list of neuron index/current pairs for external stimulus of the network
+    """
+    if fstim:
+        if istim:
+            return self.step_fi(fstim, istim)
+        else:
+            return self.step_f(fstim)
+    else:
+        if istim:
+            return self.step_i(istim)
+        else:
+            return self.step_noinput()
+
+
+
+Simulation.step = step
+
 # Old synapse getters. These were originally vector-only, and were only exposed
 # for the simulation class. The new getters support both vector and scalar
 # forms, and use more consistent naming.
@@ -103,5 +126,6 @@ Simulation.get_targets = get_targets
 Simulation.get_delays = get_delays
 Simulation.get_weights = get_weights
 Simulation.get_plastic = get_plastic
+
 
 __all__ = ['Network', 'Simulation', 'Configuration']

@@ -351,28 +351,28 @@ nemo_get_synapse_target_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* t
 nemo_status_t
 nemo_get_synapse_delay_n(nemo_network_t ptr, synapse_id synapse, unsigned* delay)
 {
-	CATCH(ptr, getSynapseTarget(synapse), *delay);
+	CATCH(ptr, getSynapseDelay(synapse), *delay);
 }
 
 
 nemo_status_t
 nemo_get_synapse_delay_s(nemo_simulation_t ptr, synapse_id synapse, unsigned* delay)
 {
-	CATCH(ptr, getSynapseTarget(synapse), *delay);
+	CATCH(ptr, getSynapseDelay(synapse), *delay);
 }
 
 
 nemo_status_t
 nemo_get_synapse_weight_n(nemo_network_t ptr, synapse_id synapse, float* weight)
 {
-	CATCH(ptr, getSynapseTarget(synapse), *weight);
+	CATCH(ptr, getSynapseWeight(synapse), *weight);
 }
 
 
 nemo_status_t
 nemo_get_synapse_weight_s(nemo_simulation_t ptr, synapse_id synapse, float* weight)
 {
-	CATCH(ptr, getSynapseTarget(synapse), *weight);
+	CATCH(ptr, getSynapseWeight(synapse), *weight);
 }
 
 

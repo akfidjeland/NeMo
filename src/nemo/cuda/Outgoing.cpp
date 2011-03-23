@@ -183,6 +183,8 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 void
 Outgoing::setConstants(unsigned maxWarpsPerNeuronDelay)
 {
+	using boost::format;
+
 	/* We need the step to exactly divide the pitch, in order for the inner
 	 * loop in scatterGlobal to work out. */
 	unsigned wpitch = std::max(1U, unsigned(ceilPowerOfTwo(maxWarpsPerNeuronDelay)));
@@ -190,7 +192,8 @@ Outgoing::setConstants(unsigned maxWarpsPerNeuronDelay)
 	/* Additionally scatterGlobal assumes that wpitch <= THREADS_PER_BLOCK. It
 	 * would possible to modify scatterGLobal to handle the other case as well,
 	 * with different looping logic. Separate kernels might be more sensible. */
-	assert_or_throw(wpitch <= THREADS_PER_BLOCK, "Outgoing pitch too wide");
+	assert_or_throw(wpitch <= THREADS_PER_BLOCK,
+			str(format("Outgoing pitch too wide (%u, max %u)") % wpitch % THREADS_PER_BLOCK));
 
 	CUDA_SAFE_CALL(setOutgoingPitch(wpitch));
 

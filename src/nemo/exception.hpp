@@ -51,6 +51,17 @@ assert_or_throw(bool cond, const char* str)
 }
 
 
+
+inline
+void
+assert_or_throw(bool cond, const std::string& str)
+{
+	if(!cond) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, str);
+	}
+}
+
+
 } // end namespace nemo
 
 #endif
