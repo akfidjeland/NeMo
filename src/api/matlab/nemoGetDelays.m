@@ -11,5 +11,6 @@ function delays = nemoGetDelays(synapses)
 % Outputs:
 %   delays  - conductance delays of the specified synpases
 %    
-    delays = nemo_mex(uint32(15), uint64(synapses));
+	warning('nemo:api', 'nemoGetDelays is deprecated; Use nemoGetSynapseDelay instead');
+	delays = nemoGetSynapseWeight(synapses);
 end

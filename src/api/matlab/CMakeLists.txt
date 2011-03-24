@@ -74,8 +74,10 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 
 	FILE(STRINGS "install.cmake" AUTO_MATLAB_FILES)
 
+	SET(DEPRECATED_MATLAB_FILES nemoGetDelays.m nemoGetPlastic.m nemoGetTargets.m nemoGetWeights.m)
+
 	INSTALL(
-		FILES ${MEX_OUTPUT} ${AUTO_MATLAB_FILES} nemo.m example.m
+		FILES ${MEX_OUTPUT} ${AUTO_MATLAB_FILES} ${DEPRECATED_MATLAB_FILES} nemo.m example.m
 		DESTINATION ${INSTALL_DIR}
 	)
 

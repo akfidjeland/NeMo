@@ -11,5 +11,6 @@ function plastic = nemoGetPlastic(synapses)
 % Outputs:
 %   plastic - plasticity status of the specified synpases
 %    
-    plastic = nemo_mex(uint32(17), uint64(synapses));
+	warning('nemo:api', 'nemoGetPlastic is deprecated; Use nemoGetSynapsePlastic instead');
+	plastic = nemoGetSynapsePlastic(synapses);
 end
