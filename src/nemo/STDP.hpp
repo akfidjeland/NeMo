@@ -73,8 +73,10 @@ class NEMO_BASE_DLL_PUBLIC StdpProcess
 
 		uint64_t m_postFireMask;
 
-		fix_t m_minWeight;
-		fix_t m_maxWeight;
+		fix_t m_minExcitatoryWeight;
+		fix_t m_maxExcitatoryWeight;
+		fix_t m_minInhibitoryWeight;
+		fix_t m_maxInhibitoryWeight;
 };
 
 } // namespace nemo
