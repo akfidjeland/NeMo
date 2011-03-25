@@ -128,7 +128,7 @@ Simulation::initCurrentStimulus(size_t count)
 void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
-	DeviceIdx dev = m_mapper.deviceIdx(neuron);
+	DeviceIdx dev = m_mapper.existingDeviceIdx(neuron);
 	fix_t fx_current = fx_toFix(current, m_cm.fractionalBits());
 	m_currentStimulus.setNeuron(dev.partition, dev.neuron, fx_current);
 }
