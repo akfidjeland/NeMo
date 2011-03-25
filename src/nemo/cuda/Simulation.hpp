@@ -15,7 +15,6 @@
 #include <boost/optional.hpp>
 
 #include <nemo/config.h>
-#include <nemo/STDP.hpp>
 #include <nemo/Timer.hpp>
 #include <nemo/internal_types.h>
 #include <nemo/ConfigurationImpl.hpp>

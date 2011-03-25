@@ -51,8 +51,8 @@ ADD_LIBRARY(nemo_base
 	OutgoingDelays.cpp
 	ConnectivityMatrix.cpp
 	RNG.cpp
-	STDP.cpp
 	StdpFunction.cpp
+	StdpProcess.cpp
 	Axon.cpp
 	fixedpoint.cpp
 )
