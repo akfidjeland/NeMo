@@ -42,15 +42,6 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 			m_minInhibitoryWeight(0.0),
 			m_maxInhibitoryWeight(0.0) { }
 
-		/*! Create an STDP function with minimum weight of zero
-		 *
-		 * Excitatory synapses are allowed to vary in the range [0, \a maxWeight].
-		 * Inhibitory synapses are allowed to vary in the range [0, \a minWeight].
-		 * */
-		StdpFunction(const std::vector<float>& prefire,
-				const std::vector<float>& postfire,
-				float minWeight, float maxWeight);
-
 		/*! Create an STDP function
 		 *
 		 * Excitatory synapses are allowed to vary in the range
@@ -96,8 +87,6 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 		float m_maxInhibitoryWeight;
 
 		uint64_t getBits(bool (*pred)(float)) const;
-
-		void verifyBounds() const;
 
 #ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;

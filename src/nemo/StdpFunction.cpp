@@ -7,23 +7,6 @@ namespace nemo {
 StdpFunction::StdpFunction(
 		const std::vector<float>& prefire,
 		const std::vector<float>& postfire,
-		float minWeight,
-		float maxWeight):
-	m_prefire(prefire),
-	m_postfire(postfire),
-	m_minExcitatoryWeight(0.0f),
-	m_maxExcitatoryWeight(maxWeight),
-	m_minInhibitoryWeight(0.0f),
-	m_maxInhibitoryWeight(minWeight)
-{
-	verifyBounds();
-}
-
-
-
-StdpFunction::StdpFunction(
-		const std::vector<float>& prefire,
-		const std::vector<float>& postfire,
 		float minExcitatoryWeight, float maxExcitatoryWeight,
 		float minInhibitoryWeight, float maxInhibitoryWeight) :
 	m_prefire(prefire),
@@ -33,14 +16,6 @@ StdpFunction::StdpFunction(
 	m_minInhibitoryWeight(minInhibitoryWeight),
 	m_maxInhibitoryWeight(maxInhibitoryWeight)
 { 
-	verifyBounds();
-}
-
-
-
-void
-StdpFunction::verifyBounds() const
-{
 	if(m_maxInhibitoryWeight > 0.0f || m_minInhibitoryWeight > 0.0f) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				"STDP function should not have positive limits for inhibitory synapses");
