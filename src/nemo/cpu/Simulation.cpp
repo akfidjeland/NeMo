@@ -157,7 +157,7 @@ Simulation::initCurrentStimulus(size_t count)
 void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
-	m_current[m_mapper.localIdx(neuron)] = fx_toFix(current, getFractionalBits());
+	m_current[m_mapper.existingLocalIdx(neuron)] = fx_toFix(current, getFractionalBits());
 }
 
 
