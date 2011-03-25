@@ -35,9 +35,11 @@ __global__
 void
 applyStdp(
 	synapse_t* g_fcm,
-	weight_dt reward,
-	weight_dt maxWeight, // for excitatory synapses
-	weight_dt minWeight) // for inhibitory synapses
+	weight_dt minExcitatoryWeight,
+	weight_dt maxExcitatoryWeight,
+	weight_dt minInhibitoryWeight,
+	weight_dt maxInhibitoryWeight,
+	weight_dt reward)
 	/*! \note reverse connectivity addresses are found in constant memory,
 	 * while forward connectivity addresses are found in texture memory */
 {
@@ -90,9 +92,9 @@ applyStdp(
 						weight_dt w_old = gf_weight[gf_offset];
 						weight_dt w_new = 0;
 						if(w_old > 0) {
-							w_new = min(maxWeight, max(w_old + w_diff, 0));
+							w_new = min(maxExcitatoryWeight, max(w_old + w_diff, minExcitatoryWeight));
 						} else if(w_old < 0) {
-							w_new = min(0, max(w_old + w_diff, minWeight));
+							w_new = min(minInhibitoryWeight, max(w_old + w_diff, maxInhibitoryWeight));
 						}
 
 						if(w_old != w_new) {
@@ -119,8 +121,10 @@ applyStdp(
 		unsigned partitionCount,
 		unsigned fractionalBits,
 		synapse_t* d_fcm,
-		float maxWeight,
-		float minWeight,
+		float minExcitatoryWeight,
+		float maxExcitatoryWeight,
+		float minInhibitoryWeight,
+		float maxInhibitoryWeight,
 		float reward)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
@@ -128,9 +132,11 @@ applyStdp(
 
 	applyStdp<<<dimGrid, dimBlock, 0, stream>>>(
 			d_fcm,
-			fx_toFix(reward, fractionalBits),
-			fx_toFix(maxWeight, fractionalBits),
-			fx_toFix(minWeight, fractionalBits));
+			fx_toFix(minExcitatoryWeight, fractionalBits),
+			fx_toFix(maxExcitatoryWeight, fractionalBits),
+			fx_toFix(minInhibitoryWeight, fractionalBits),
+			fx_toFix(maxInhibitoryWeight, fractionalBits),
+			fx_toFix(reward, fractionalBits));
 }
 
 

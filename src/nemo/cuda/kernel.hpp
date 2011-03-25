@@ -18,14 +18,29 @@
 #include "types.h"
 #include "bitvector.cu_h"
 
+/*! Update synapse weight using the accumulated eligibility trace
+ *
+ * \param minExcitatoryWeight lowest \i positive weight for excitatory synapses
+ * \param maxExcitatoryWeight highest \i positive weight for excitatory synapses
+ * \param minInhibitoryWeight lowest absolute \i negative weight for inhibitory synapses
+ * \param maxInhibitoryWeight highest absolute \i negative weight for inhibitory synapses
+ *
+ * Synapses 'stick' at zero. If the minimum weight is non-zero, this will never
+ * occur.
+ *
+ * \pre 0 <= minExcitatoryWeight < maxExcitatoryWeight
+ * \pre 0 >= minInhibitoryWeight < maxInhibitoryWeight
+ */
 void
 applyStdp(
 		cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned fractionalBits,
 		synapse_t* d_fcm,
-		float maxWeight,
-		float minWeight,
+		float minExcitatoryWeight,
+		float maxExcitatoryWeight,
+		float minInhibitoryWeight,
+		float maxInhibitoryWeight,
 		float reward);
 
 

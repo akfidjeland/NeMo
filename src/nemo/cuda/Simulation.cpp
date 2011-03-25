@@ -333,7 +333,9 @@ Simulation::applyStdp(float reward)
 				m_mapper.partitionCount(),
 				m_cm.fractionalBits(),
 				m_cm.d_fcm(),
+				0,
 				m_stdp->maxWeight(),
+				0,
 				m_stdp->minWeight(),
 				reward);
 		flushLog();
