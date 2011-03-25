@@ -508,8 +508,10 @@ setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
                     getConfiguration(), 
                     &prefire[0], prefire.size(), 
                     &postfire[0], postfire.size(), 
-                    scalar<float,double>(prhs[3]), 
-                    scalar<float,double>(prhs[4]) 
+					0.0f,
+                    scalar<float,double>(prhs[4]),
+					0.0f,
+                    scalar<float,double>(prhs[3]) 
             ) 
     );
 }

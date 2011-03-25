@@ -485,13 +485,13 @@ nemo_status_t
 nemo_set_stdp_function(nemo_configuration_t conf,
 		float* pre_fn, size_t pre_len,
 		float* post_fn, size_t post_len,
-		float w_min,
-		float w_max)
+		float we_min, float we_max,
+		float wi_min, float wi_max)
 {
 	CATCH_(conf, setStdpFunction(
 				std::vector<float>(pre_fn, pre_fn+pre_len),
 				std::vector<float>(post_fn, post_fn+post_len),
-				w_min, w_max));
+				we_min, we_max, wi_min, wi_max));
 }
 
 
