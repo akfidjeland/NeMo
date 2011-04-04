@@ -132,7 +132,7 @@ Neurons::update(
 {
 	syncToDevice();
 	m_cycle = cycle;
-	return fire(stream,
+	return update_neurons(stream,
 			m_mapper.partitionCount(),
 			cycle,
 			m_rngEnabled,

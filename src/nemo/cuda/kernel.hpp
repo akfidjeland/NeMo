@@ -56,7 +56,8 @@ gather( cudaStream_t stream,
 
 
 cudaError_t
-fire(	cudaStream_t stream,
+update_neurons(
+		cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned cycle,
 		bool thalamicInputEnabled,

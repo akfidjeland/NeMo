@@ -133,7 +133,7 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
  */
 __device__
 void
-fire(
+updateNeurons(
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
 	float* g_neuronState,
@@ -231,7 +231,8 @@ fire(
  */
 __global__
 void
-fire( 	uint32_t cycle,
+updateNeurons(
+		uint32_t cycle,
 		bool thalamicInputEnabled,
 		// neuron state
 		float* gf_neuronParameters,
@@ -292,7 +293,8 @@ fire( 	uint32_t cycle,
 	bv_copy(g_valid + CURRENT_PARTITION * c_bv_pitch, s_valid);
 	__syncthreads();
 
-	fire( s_partitionSize,
+	updateNeurons(
+			s_partitionSize,
 			gf_neuronParameters + CURRENT_PARTITION * c_pitch32,
 			gf_neuronState + CURRENT_PARTITION * c_pitch32,
 			s_valid,
@@ -312,7 +314,8 @@ fire( 	uint32_t cycle,
 /*! Wrapper for the __global__ call that performs a single simulation step */
 __host__
 cudaError_t
-fire( 	cudaStream_t stream,
+update_neurons(
+		cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned cycle,
 		bool thalamicInputEnabled,
@@ -330,7 +333,7 @@ fire( 	cudaStream_t stream,
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	fire<<<dimGrid, dimBlock, 0, stream>>>(
+	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle, thalamicInputEnabled,
 			df_neuronParameters, df_neuronState, du_neuronState, d_valid,
 			d_fstim,   // firing stimulus
