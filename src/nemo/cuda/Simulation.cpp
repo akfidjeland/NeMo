@@ -232,7 +232,6 @@ void
 Simulation::prefire()
 {
 	m_timer.step();
-	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
 
 	runKernel(::gather(
@@ -251,15 +250,9 @@ Simulation::fire()
 {
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_firingStimulusDone));
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_currentStimulusDone));
-	runKernel(::fire(
+	runKernel(m_neurons.update(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
-			m_neurons.rngEnabled(),
-			m_neurons.df_parameters(),
-			m_neurons.df_state(),
-			m_neurons.du_state(),
-			m_neurons.d_valid(),
 			m_firingStimulus.d_buffer(),
 			md_istim,
 			m_current.deviceData(),

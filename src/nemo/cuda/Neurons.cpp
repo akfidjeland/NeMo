@@ -28,6 +28,7 @@ namespace nemo {
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	//! \todo set these sizes based on configuration
 	//! \todo: remove these here. Handle inside NVector instead
+	m_mapper(mapper),
 	mf_nParams(NEURON_FLOAT_PARAM_COUNT),
 	mf_nStateVars(NEURON_FLOAT_STATE_COUNT),
 	mf_param(NEURON_FLOAT_PARAM_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
@@ -118,18 +119,33 @@ Neurons::wordPitch32() const
 
 
 
-void
-Neurons::step(cycle_t cycle)
+cudaError_t
+Neurons::update(
+		cudaStream_t stream,
+		cycle_t cycle,
+		uint32_t* d_fstim,
+		fix_t* d_istim,
+		fix_t* d_current,
+		uint32_t* d_fout,
+		unsigned* d_nFired,
+		nidx_dt* d_fired)
 {
-	if(mf_paramDirty) {
-		mf_param.copyToDevice();
-		mf_paramDirty = false;
-	}
-	if(mf_stateDirty) {
-		mf_state.copyToDevice();
-		mf_stateDirty = false;
-	}
+	syncToDevice();
+	//! \todo get rid of this
 	m_cycle = cycle;
+
+	return fire(stream,
+			m_mapper.partitionCount(),
+			cycle,
+			//! \todo make all these private
+			rngEnabled(),
+			df_parameters(),
+			df_state(),
+			du_state(),
+			d_valid(),
+			d_fstim, d_istim,
+			//! \todo make some of these local to the class
+			d_current, d_fout, d_nFired, d_fired);
 }
 
 
@@ -208,6 +224,20 @@ Neurons::setState(const DeviceIdx& idx, unsigned var, float value)
 	mf_stateDirty = true;
 }
 
+
+
+void
+Neurons::syncToDevice()
+{
+	if(mf_paramDirty) {
+		mf_param.copyToDevice();
+		mf_paramDirty = false;
+	}
+	if(mf_stateDirty) {
+		mf_state.copyToDevice();
+		mf_stateDirty = false;
+	}
+}
 
 	} // end namespace cuda
 } // end namespace nemo

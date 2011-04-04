@@ -48,11 +48,16 @@ class Neurons
 
 		Neurons(const network::Generator& net, Mapper&);
 
-		/*! Perform any required synchronisation between host and device data.
-		 * Such synchronisation may be required if the user has requested that
-		 * the data should be updated. The step function should be called for
-		 * every simulation cycle. */
-		void step(cycle_t cycle);
+		/*! Update the state of all neurons */
+		cudaError_t update(
+				cudaStream_t stream,
+				cycle_t cycle,
+				uint32_t* d_fstim,
+				fix_t* d_istim,
+				fix_t* d_current,
+				uint32_t* d_fout,
+				unsigned* d_nFired,
+				nidx_dt* d_fired);
 
 		/*! \return device pointer to floating-point neuron parameter data */
 		float* df_parameters() const { return mf_param.deviceData(); }
@@ -119,6 +124,8 @@ class Neurons
 
 	private:
 
+		const Mapper& m_mapper;
+
 		const unsigned mf_nParams;
 		const unsigned mf_nStateVars;
 
@@ -152,6 +159,12 @@ class Neurons
 		void readStateFromDevice() const; // conceptually const, this is just caching
 
 		bool m_rngEnabled;
+
+		/*! Perform any required synchronisation between host and device data.
+		 * Such synchronisation may be required if the user has requested that
+		 * the data should be updated. The sync function should be called for
+		 * every simulation cycle. */
+		void syncToDevice();
 };
 
 
