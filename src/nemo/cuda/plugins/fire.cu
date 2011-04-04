@@ -16,89 +16,10 @@
 #include <log.cu_h>
 #include <bitvector.cu>
 #include <current.cu>
+#include <firing.cu>
 #include <fixedpoint.cu>
 #include <parameters.cu>
 #include <thalamicInput.cu>
-
-
-/*! Set per-neuron bit-vector for fired neurons in both shared and global memory
- *
- * \param[in] nfired
- *		Number of neurons in current partition which fired this cycle.
- * \param[in] s_fired
- *		Vector of indices of the fired neuron. The first \a nfired entries
- *		should be set.
- * \param[out] s_dfired
- *		Per-neuron bit-vector in shared memory for fired neurons.
- * \param[out] g_dfired
- *		Per-neuron bit-vector in global memory for fired neurons.
- *
- * \see loadDenseFiring
- */
-__device__
-void
-storeDenseFiring(unsigned nfired, size_t pitch1, nidx_dt* s_fired, uint32_t* g_dfired)
-{
-	__shared__ uint32_t s_dfired[S_BV_PITCH];
-
-	bv_clear_(s_dfired);
-
-	for(unsigned nbase=0; nbase < nfired; nbase += THREADS_PER_BLOCK) {
-		unsigned i = nbase + threadIdx.x;
-		unsigned neuron = s_fired[i];
-		bv_atomicSetPredicated(i < nfired, neuron, s_dfired);
-	}
-	__syncthreads();
-
-	bv_copy(s_dfired, g_dfired + CURRENT_PARTITION * pitch1);
-}
-
-
-/*! Store sparse firing in global memory buffer
- *
- * The global memory roundtrip is required to support having 'fire' and
- * 'scatter' in separate kernels.
- *
- * \param[in] nFired number of neurons in this partition which fired this cycle
- * \param[in] s_fired shared memory vector of the relevant neuron indices.
- * \param[out] g_nFired global memory per-partition vector of firing counts
- * \param[out] g_fired global memory per-neuron vector of fired neuron indices.
- * 		For each partition, only the first \a nFired entries contain valid data.
- *
- * \see loadSparseFiring
- */
-__device__
-void
-storeSparseFiring(unsigned nFired, size_t pitch32, nidx_dt* s_fired, unsigned* g_nFired, nidx_dt* g_fired)
-{
-	for(unsigned b=0; b < nFired; b += THREADS_PER_BLOCK) {
-		unsigned i = b + threadIdx.x;
-		if(i < nFired) {
-			g_fired[CURRENT_PARTITION * pitch32 + i] = s_fired[i];
-		}
-	}
-
-	if(threadIdx.x == 0) {
-		g_nFired[CURRENT_PARTITION] = nFired;
-	}
-}
-
-
-
-/*! The external firing stimulus is (possibly) provided in a per-neuron
- * bit-vector */
-__device__
-void
-loadFiringInput(size_t pitch1, uint32_t* g_firing, uint32_t* s_firing)
-{
-	if(g_firing != NULL) {
-		bv_copy(g_firing + CURRENT_PARTITION * pitch1, s_firing);
-	} else {
-		bv_clear(s_firing);
-	}
-	__syncthreads();
-}
-
 
 
 /*! Update state of all neurons
