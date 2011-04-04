@@ -242,6 +242,7 @@ updateNeurons(
 
 
 /*! Wrapper for the __global__ call that performs a single simulation step */
+extern "C"
 NEMO_CUDA_DLL_PUBLIC
 cudaError_t
 update_neurons(

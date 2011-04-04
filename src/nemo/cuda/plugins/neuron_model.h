@@ -6,6 +6,10 @@
 #include <cuda.h>
 #include <nemo/internal_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 cudaError_t
 update_neurons(
 		cudaStream_t stream,
@@ -24,5 +28,9 @@ update_neurons(
 		uint32_t* d_fout,
 		unsigned* d_nFired,
 		nidx_dt* d_fired);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
