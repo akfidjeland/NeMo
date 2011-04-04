@@ -131,20 +131,16 @@ Neurons::update(
 		nidx_dt* d_fired)
 {
 	syncToDevice();
-	//! \todo get rid of this
 	m_cycle = cycle;
-
 	return fire(stream,
 			m_mapper.partitionCount(),
 			cycle,
-			//! \todo make all these private
-			rngEnabled(),
-			df_parameters(),
-			df_state(),
-			du_state(),
-			d_valid(),
+			m_rngEnabled,
+			mf_param.deviceData(),
+			mf_state.deviceData(),
+			mu_state.deviceData(),
+			m_valid.d_data(),
 			d_fstim, d_istim,
-			//! \todo make some of these local to the class
 			d_current, d_fout, d_nFired, d_fired);
 }
 

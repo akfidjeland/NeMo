@@ -59,18 +59,6 @@ class Neurons
 				unsigned* d_nFired,
 				nidx_dt* d_fired);
 
-		/*! \return device pointer to floating-point neuron parameter data */
-		float* df_parameters() const { return mf_param.deviceData(); }
-
-		/*! \return device pointer to floating-point neuron state data */
-		float* df_state() const { return mf_state.deviceData(); }
-
-		/*! \return device pointer to unsigned neuron state data */
-		unsigned* du_state() const { return mu_state.deviceData(); }
-
-		/*! \return device pointer to bit vector with only valid/existing neurons set */
-		uint32_t* d_valid() const { return m_valid.d_data(); }
-
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const;
 
@@ -119,8 +107,6 @@ class Neurons
 		 * data from host *to* device.
 		 */
 		void setState(const DeviceIdx& idx, unsigned var, float value);
-
-		bool rngEnabled() const { return m_rngEnabled; }
 
 	private:
 
