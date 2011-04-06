@@ -138,6 +138,7 @@ Neurons::update(
 			m_mapper.partitionCount(),
 			md_partitionSize.get(),
 			m_rngEnabled,
+			wordPitch1(),
 			mf_param.deviceData(),
 			mf_state.deviceData(),
 			mu_state.deviceData(),

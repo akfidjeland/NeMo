@@ -16,7 +16,6 @@
 #include "fixedpoint.cu"
 #include "bitvector.cu"
 #include "nvector.cu"
-#include "constants.cu"
 #include "thalamicInput.cu"
 #include "current.cu"
 
@@ -37,7 +36,7 @@
  */
 __device__
 void
-storeDenseFiring(unsigned nfired, nidx_dt* s_fired, uint32_t* g_dfired)
+storeDenseFiring(unsigned nfired, size_t pitch1, nidx_dt* s_fired, uint32_t* g_dfired)
 {
 	__shared__ uint32_t s_dfired[S_BV_PITCH];
 
@@ -50,7 +49,7 @@ storeDenseFiring(unsigned nfired, nidx_dt* s_fired, uint32_t* g_dfired)
 	}
 	__syncthreads();
 
-	bv_copy(s_dfired, g_dfired + CURRENT_PARTITION * c_bv_pitch);
+	bv_copy(s_dfired, g_dfired + CURRENT_PARTITION * pitch1);
 }
 
 
@@ -89,10 +88,10 @@ storeSparseFiring(unsigned nFired, nidx_dt* s_fired, unsigned* g_nFired, nidx_dt
  * bit-vector */
 __device__
 void
-loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
+loadFiringInput(size_t pitch1, uint32_t* g_firing, uint32_t* s_firing)
 {
 	if(g_firing != NULL) {
-		bv_copy(g_firing + CURRENT_PARTITION * c_bv_pitch, s_firing);
+		bv_copy(g_firing + CURRENT_PARTITION * pitch1, s_firing);
 	} else {
 		bv_clear(s_firing);
 	}
@@ -237,6 +236,7 @@ updateNeurons(
 		uint32_t cycle,
 		bool thalamicInputEnabled,
 		unsigned* g_partitionSize,
+		size_t bv_pitch,
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
@@ -290,10 +290,10 @@ updateNeurons(
 	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
-	loadFiringInput(g_fstim, s_fstim);
+	loadFiringInput(bv_pitch, g_fstim, s_fstim);
 
 	__shared__ uint32_t s_valid[S_BV_PITCH];
-	bv_copy(g_valid + CURRENT_PARTITION * c_bv_pitch, s_valid);
+	bv_copy(g_valid + CURRENT_PARTITION * bv_pitch, s_valid);
 	__syncthreads();
 
 	updateNeurons(
@@ -308,7 +308,7 @@ updateNeurons(
 
 	__syncthreads();
 
-	storeDenseFiring(s_nFired, s_fired, g_firingOutput);
+	storeDenseFiring(s_nFired, bv_pitch, s_fired, g_firingOutput);
 	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
 }
 
@@ -323,6 +323,7 @@ update_neurons(
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		bool thalamicInputEnabled,
+		size_t bv_pitch,
 		float* df_neuronParameters,
 		float* df_neuronState,
 		unsigned* du_neuronState,
@@ -338,7 +339,7 @@ update_neurons(
 	dim3 dimGrid(partitionCount);
 
 	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
-			cycle, thalamicInputEnabled, d_partitionSize,
+			cycle, thalamicInputEnabled, d_partitionSize, bv_pitch,
 			df_neuronParameters, df_neuronState, du_neuronState, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus

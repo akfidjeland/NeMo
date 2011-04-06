@@ -326,6 +326,7 @@ class Simulation : public nemo::SimulationBackend
 
 		void setPitch();
 
+		size_t m_pitch1;
 		size_t m_pitch32;
 		size_t m_pitch64;
 

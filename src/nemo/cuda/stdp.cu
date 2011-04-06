@@ -373,9 +373,9 @@ updateSTDP_(
  */
 __device__
 void
-loadDenseFiring(uint32_t* g_dfired, uint32_t* s_dfired)
+loadDenseFiring(size_t pitch1, uint32_t* g_dfired, uint32_t* s_dfired)
 {
-	bv_copy(g_dfired + CURRENT_PARTITION * c_bv_pitch, s_dfired);
+	bv_copy(g_dfired + CURRENT_PARTITION * pitch1, s_dfired);
 }
 
 
@@ -385,6 +385,7 @@ void
 updateStdp(
 		uint32_t cycle,
 		unsigned* g_partitionSize,
+		size_t bv_pitch,
 		uint64_t* g_recentFiring,
 		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
 		unsigned* g_nFired,        // device-only buffer.
@@ -398,7 +399,7 @@ updateStdp(
 	 * kernel, we'd only need to load this once per simulation
 	 * step, rather than twice. */
 	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
-	loadDenseFiring(g_dfired, s_dfired);
+	loadDenseFiring(bv_pitch, g_dfired, s_dfired);
 	loadStdpParameters_();
 	updateSTDP_(
 			cycle,
@@ -419,6 +420,7 @@ updateStdp(
 		unsigned cycle,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
+		size_t pitch1,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
@@ -426,7 +428,7 @@ updateStdp(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_recentFiring, d_dfired, d_nFired, d_fired);
+	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, pitch1, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }
 
