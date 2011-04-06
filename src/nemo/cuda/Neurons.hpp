@@ -14,6 +14,8 @@
 
 #include <map>
 
+#include <nemo/cuda/plugins/neuron_model.h>
+
 #include "Mapper.hpp"
 #include "NVector.hpp"
 #include "Bitvector.hpp"
@@ -159,6 +161,8 @@ class Neurons
 
 		/*! \see d_partitionSize() */
 		boost::shared_array<unsigned> md_partitionSize;
+
+		update_neurons_t* m_update_neurons;
 };
 
 

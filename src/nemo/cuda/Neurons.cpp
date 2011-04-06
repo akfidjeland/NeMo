@@ -19,7 +19,6 @@
 #include "types.h"
 #include "exception.hpp"
 #include "kernel.hpp"
-#include <nemo/cuda/plugins/neuron_model.h>
 
 
 namespace nemo {
@@ -40,7 +39,8 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mf_lastSync(~0),
 	mf_paramDirty(false),
 	mf_stateDirty(false),
-	m_rngEnabled(false)
+	m_rngEnabled(false),
+	m_update_neurons(update_neurons)
 {
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
@@ -135,7 +135,7 @@ Neurons::update(
 {
 	syncToDevice();
 	m_cycle = cycle;
-	return update_neurons(stream,
+	return m_update_neurons(stream,
 			cycle,
 			m_mapper.partitionCount(),
 			md_partitionSize.get(),
