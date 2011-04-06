@@ -243,6 +243,7 @@ gather( unsigned cycle,
 __global__
 void
 gather( uint32_t cycle,
+		unsigned* g_partitionSize,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
 		unsigned* g_gqFill,
@@ -261,7 +262,7 @@ gather( uint32_t cycle,
 #ifdef NEMO_CUDA_DEBUG_TRACE
 		s_cycle = cycle;
 #endif
-		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
     }
 	__syncthreads();
 
@@ -283,8 +284,9 @@ gather( uint32_t cycle,
 __host__
 cudaError_t
 gather( cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		fix_t* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
@@ -292,6 +294,6 @@ gather( cudaStream_t stream,
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	gather<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_fcm, d_gqData, d_gqFill, d_current);
+	gather<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_fcm, d_gqData, d_gqFill, d_current);
 	return cudaGetLastError();
 }

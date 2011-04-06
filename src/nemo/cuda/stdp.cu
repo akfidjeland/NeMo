@@ -384,6 +384,7 @@ __global__
 void
 updateStdp(
 		uint32_t cycle,
+		unsigned* g_partitionSize,
 		uint64_t* g_recentFiring,
 		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
 		unsigned* g_nFired,        // device-only buffer.
@@ -404,7 +405,7 @@ updateStdp(
 			s_dfired,
 			g_recentFiring,
 			c_pitch64,
-			c_partitionSize[CURRENT_PARTITION],
+			g_partitionSize[CURRENT_PARTITION],
 			cr_address, cr_stdp, cr_pitch,
 			s_fired);
 }
@@ -415,8 +416,9 @@ __host__
 cudaError_t
 updateStdp(
 		cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
@@ -424,7 +426,7 @@ updateStdp(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_recentFiring, d_dfired, d_nFired, d_fired);
+	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }
 

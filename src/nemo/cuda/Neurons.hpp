@@ -108,6 +108,9 @@ class Neurons
 		 */
 		void setState(const DeviceIdx& idx, unsigned var, float value);
 
+		/*! \return array of sizes for each partition (which may differ). */
+		unsigned* d_partitionSize() const { return md_partitionSize.get(); }
+
 	private:
 
 		const Mapper& m_mapper;
@@ -151,6 +154,9 @@ class Neurons
 		 * the data should be updated. The sync function should be called for
 		 * every simulation cycle. */
 		void syncToDevice();
+
+		/*! \see d_partitionSize() */
+		boost::shared_array<unsigned> md_partitionSize;
 };
 
 

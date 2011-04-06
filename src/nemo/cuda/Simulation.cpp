@@ -236,8 +236,9 @@ Simulation::prefire()
 
 	runKernel(::gather(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
+			m_mapper.partitionCount(),
+			m_neurons.d_partitionSize(),
 			m_current.deviceData(),
 			m_cm.d_fcm(),
 			m_cm.d_gqData(),
@@ -287,8 +288,9 @@ Simulation::postfire()
 	if(m_stdp) {
 		runKernel(::updateStdp(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
+			m_mapper.partitionCount(),
+			m_neurons.d_partitionSize(),
 			m_recentFiring.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
@@ -324,6 +326,7 @@ Simulation::applyStdp(float reward)
 		::applyStdp(
 				m_streamCompute,
 				m_mapper.partitionCount(),
+				m_neurons.d_partitionSize(),
 				m_cm.fractionalBits(),
 				m_cm.d_fcm(),
 				m_stdp->minExcitatoryWeight(),

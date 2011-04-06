@@ -34,6 +34,7 @@
 __global__
 void
 applyStdp(
+	unsigned* g_partitionSize,
 	synapse_t* g_fcm,
 	weight_dt minExcitatoryWeight,
 	weight_dt maxExcitatoryWeight,
@@ -56,7 +57,7 @@ applyStdp(
 	uint32_t* gr_faddress = (uint32_t*) cr_faddress[CURRENT_PARTITION];
 
 	if(threadIdx.x == 0) {
-		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
 		s_chunkCount = DIV_CEIL(r_pitch, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
@@ -119,6 +120,7 @@ void
 applyStdp(
 		cudaStream_t stream,
 		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		unsigned fractionalBits,
 		synapse_t* d_fcm,
 		float minExcitatoryWeight,
@@ -131,6 +133,7 @@ applyStdp(
 	dim3 dimGrid(partitionCount);
 
 	applyStdp<<<dimGrid, dimBlock, 0, stream>>>(
+			d_partitionSize,
 			d_fcm,
 			fx_toFix(minExcitatoryWeight, fractionalBits),
 			fx_toFix(maxExcitatoryWeight, fractionalBits),

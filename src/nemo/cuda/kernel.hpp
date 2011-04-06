@@ -35,6 +35,7 @@ void
 applyStdp(
 		cudaStream_t stream,
 		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		unsigned fractionalBits,
 		synapse_t* d_fcm,
 		float minExcitatoryWeight,
@@ -46,8 +47,9 @@ applyStdp(
 
 cudaError_t
 gather( cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		fix_t* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
@@ -58,8 +60,9 @@ gather( cudaStream_t stream,
 cudaError_t
 update_neurons(
 		cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		bool thalamicInputEnabled,
 		float* df_neuronParameters,
 		float* df_neuronState,
@@ -91,8 +94,9 @@ scatter(cudaStream_t stream,
 cudaError_t
 updateStdp(
 		cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
@@ -106,8 +110,6 @@ configureStdp(
 		uint64_t potentiationBits,
 		uint64_t depressionBits,
 		weight_dt* stdpFn);
-
-cudaError configurePartitionSize(const unsigned* d_partitionSize, size_t len);
 
 cudaError fx_setFormat(unsigned fractionalBits);
 cudaError bv_setPitch(size_t pitch);

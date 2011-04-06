@@ -95,12 +95,13 @@ Neurons::d_allocated() const
 void
 Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
 {
-	std::vector<unsigned> partitionSizes(MAX_PARTITION_COUNT, 0);
+	md_partitionSize = d_array<unsigned>(MAX_PARTITION_COUNT, "partition size array");
+	std::vector<unsigned> h_partitionSize(MAX_PARTITION_COUNT, 0);
 	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
 			i != maxPartitionNeuron.end(); ++i) {
-		partitionSizes.at(i->first) = i->second + 1;
+		h_partitionSize.at(i->first) = i->second + 1;
 	}
-	CUDA_SAFE_CALL(configurePartitionSize(&partitionSizes[0], partitionSizes.size()));
+	memcpyToDevice(md_partitionSize.get(), h_partitionSize);
 }
 
 
@@ -133,8 +134,9 @@ Neurons::update(
 	syncToDevice();
 	m_cycle = cycle;
 	return update_neurons(stream,
-			m_mapper.partitionCount(),
 			cycle,
+			m_mapper.partitionCount(),
+			md_partitionSize.get(),
 			m_rngEnabled,
 			mf_param.deviceData(),
 			mf_state.deviceData(),

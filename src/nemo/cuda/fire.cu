@@ -234,6 +234,7 @@ void
 updateNeurons(
 		uint32_t cycle,
 		bool thalamicInputEnabled,
+		unsigned* g_partitionSize,
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
@@ -261,7 +262,7 @@ updateNeurons(
 		s_cycle = cycle;
 #endif
 		s_nFired = 0;
-		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
     }
 	__syncthreads();
 
@@ -316,8 +317,9 @@ __host__
 cudaError_t
 update_neurons(
 		cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		bool thalamicInputEnabled,
 		float* df_neuronParameters,
 		float* df_neuronState,
@@ -334,7 +336,7 @@ update_neurons(
 	dim3 dimGrid(partitionCount);
 
 	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
-			cycle, thalamicInputEnabled,
+			cycle, thalamicInputEnabled, d_partitionSize,
 			df_neuronParameters, df_neuronState, du_neuronState, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus
