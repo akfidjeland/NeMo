@@ -8,7 +8,7 @@
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
@@ -25,34 +25,13 @@
 #define FX_SIGN_BIT 0x80000000
 
 
-/*! Scaling factor used for fixed-points (used for weight storage) */
-__constant__ unsigned c_fixedPointScale;
-__constant__ unsigned c_fixedPointFractionalBits;
-
-
-__host__
-cudaError
-fx_setFormat(unsigned fracbits)
-{
-	unsigned scale = 1 << fracbits;
-	cudaError status;
-	status = cudaMemcpyToSymbol(c_fixedPointScale,
-				&scale, sizeof(unsigned), 0, cudaMemcpyHostToDevice);
-	if(cudaSuccess != status) {
-		return status;
-	}
-	return cudaMemcpyToSymbol(c_fixedPointFractionalBits,
-				&fracbits, sizeof(unsigned), 0, cudaMemcpyHostToDevice);
-}
-
-
 __device__
 float
-fx_tofloat(fix_t v)
+fx_tofloat(fix_t v, unsigned scale)
 {
 	//! \todo any way to avoid division here. Perhaps precompute the fraction here?
 	//! \todo check if it makes any difference to use 1<<c here instead
-	return float(v) / c_fixedPointScale;
+	return float(v) / scale;
 }
 
 
@@ -72,11 +51,11 @@ fx_saturate(bool negative)
  * flags \a overflow and \a negative */
 __device__
 float
-fx_saturatedTofloat(fix_t v, bool overflow, bool negative)
+fx_saturatedTofloat(fix_t v, bool overflow, bool negative, unsigned scale)
 {
 	//! \todo any way to avoid division here? Perhaps precompute the fraction here?
 	//! \todo check if it makes any difference to use 1<<c here instead
-	return float(overflow ? fx_saturate(negative) : v) / c_fixedPointScale;
+	return float(overflow ? fx_saturate(negative) : v) / scale;
 }
 
 
@@ -99,14 +78,6 @@ fx_atomicAdd(fix_t* s_a, fix_t b)
 }
 
 
-__device__
-fix_t
-fx_mul(fix_t a, fix_t b)
-{
-	ASSERT(sizeof(fix_t) == 4);
-	return fx_mul(a, b, c_fixedPointFractionalBits);
-}
-
 
 __device__
 fix_t
@@ -126,17 +97,18 @@ fx_arrSaturatedToFloat(
 		uint32_t* s_overflow, // bit-vector
 		uint32_t* s_negative, // bit-vector
 		fix_t* s_fix,
-		float* s_float)
+		float* s_float,
+		unsigned scale)
 {
 	/* If any accumulators overflow, clamp to max positive or minimum value */
 	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
 		unsigned nidx = nbase + threadIdx.x;
 #ifndef FIXPOINT_SATURATION
-		s_float[nidx] = fx_tofloat(s_fix[nidx]);
+		s_float[nidx] = fx_tofloat(s_fix[nidx], scale);
 #else
 		bool overflow = bv_isSet(nidx, s_overflow);
 		bool negative = bv_isSet(nidx, s_negative);
-		s_float[nidx] = fx_saturatedTofloat(s_fix[nidx], overflow, negative);
+		s_float[nidx] = fx_saturatedTofloat(s_fix[nidx], overflow, negative, scale);
 		if(overflow) {
 			DEBUG_MSG("c%u p%un%u input current overflow. Saturated to %+f (%08x)\n",
 					s_cycle, CURRENT_PARTITION, nidx,

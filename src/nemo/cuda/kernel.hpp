@@ -37,6 +37,7 @@ applyStdp(
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		unsigned fractionalBits,
+		param_t* d_params,
 		synapse_t* d_fcm,
 		float minExcitatoryWeight,
 		float maxExcitatoryWeight,
@@ -114,8 +115,6 @@ configureStdp(
 		uint64_t potentiationBits,
 		uint64_t depressionBits,
 		weight_dt* stdpFn);
-
-cudaError fx_setFormat(unsigned fractionalBits);
 
 void initLog();
 void flushLog();

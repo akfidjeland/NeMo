@@ -283,7 +283,7 @@ updateNeurons(
 	__syncthreads();
 
 	addCurrentStimulus(s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
-	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current);
+	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current, s_params.fixedPointScale);
 
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the fire kernel),

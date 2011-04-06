@@ -13,6 +13,10 @@
 
 /*! Global parameters */
 struct param_t {
+
+	unsigned fixedPointScale;
+	unsigned fixedPointFractionalBits;
+
 	// per-neuron vector pitches
 	size_t pitch1;
 	size_t pitch32;

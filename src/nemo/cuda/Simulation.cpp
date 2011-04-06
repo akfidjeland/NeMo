@@ -192,6 +192,7 @@ void
 Simulation::setParameters()
 {
 	param_t params;
+
 	params.pitch1 = m_firingStimulus.wordPitch();
 	params.pitch32 = m_neurons.wordPitch32();
 	params.pitch64 = m_recentFiring.wordPitch();
@@ -199,6 +200,10 @@ Simulation::setParameters()
 	checkPitch(params.pitch64, m_cm.delayBits().wordPitch());
 	checkPitch(params.pitch1, m_firingBuffer.wordPitch());
 	checkPitch(params.pitch1, m_neurons.wordPitch1());
+
+	unsigned fbits = m_cm.fractionalBits();
+	params.fixedPointScale = 1 << fbits;
+	params.fixedPointFractionalBits = fbits;
 
 	void* d_ptr;
 	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
@@ -333,6 +338,7 @@ Simulation::applyStdp(float reward)
 				m_mapper.partitionCount(),
 				m_neurons.d_partitionSize(),
 				m_cm.fractionalBits(),
+				md_params.get(),
 				m_cm.d_fcm(),
 				m_stdp->minExcitatoryWeight(),
 				m_stdp->maxExcitatoryWeight(),
