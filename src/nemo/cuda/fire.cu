@@ -10,13 +10,15 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*! \file fire.cu Firing/neuron update kernel */
+/*! \file fire.cu Izhikevich neuron update kernel */
 
 #include "log.cu_h"
 #include "fixedpoint.cu"
 #include "bitvector.cu"
-#include "localQueue.cu"
+#include "nvector.cu"
+#include "constants.cu"
 #include "thalamicInput.cu"
+#include "current.cu"
 
 
 /*! Set per-neuron bit-vector for fired neurons in both shared and global memory
