@@ -260,6 +260,7 @@ Simulation::fire()
 	runKernel(m_neurons.update(
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
+			md_params.get(),
 			m_firingStimulus.d_buffer(),
 			md_istim,
 			m_current.deviceData(),

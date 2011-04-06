@@ -64,7 +64,7 @@ update_neurons(
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		bool thalamicInputEnabled,
-		size_t bv_pitch,
+		param_t* d_globalParameters,
 		float* df_neuronParameters,
 		float* df_neuronState,
 		unsigned* du_neuronState,

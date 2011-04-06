@@ -124,6 +124,7 @@ cudaError_t
 Neurons::update(
 		cudaStream_t stream,
 		cycle_t cycle,
+		param_t* d_params,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
 		fix_t* d_current,
@@ -138,7 +139,7 @@ Neurons::update(
 			m_mapper.partitionCount(),
 			md_partitionSize.get(),
 			m_rngEnabled,
-			wordPitch1(),
+			d_params,
 			mf_param.deviceData(),
 			mf_state.deviceData(),
 			mu_state.deviceData(),

@@ -18,6 +18,7 @@
 #include "NVector.hpp"
 #include "Bitvector.hpp"
 #include "kernel.cu_h"
+#include "parameters.cu_h"
 #include "types.h"
 
 namespace nemo {
@@ -52,6 +53,7 @@ class Neurons
 		cudaError_t update(
 				cudaStream_t stream,
 				cycle_t cycle,
+				param_t* d_params,
 				uint32_t* d_fstim,
 				fix_t* d_istim,
 				fix_t* d_current,
