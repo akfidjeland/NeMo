@@ -292,14 +292,14 @@ updateSTDP_(
 		unsigned target = nbase + threadIdx.x;
 
 		uint64_t targetRecentFiring =
-			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + target];
+			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * pitch64 + target];
 
 		const int processingDelay = s_stdpPostFireWindow - 1;
 
 		bool fired = targetRecentFiring & (0x1 << processingDelay);
 
 		/* Write updated history to double buffer */
-		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + target] =
+		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * pitch64 + target] =
 				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
 		if(cr_address[CURRENT_PARTITION] == 0) {
@@ -402,14 +402,14 @@ updateStdp(
 	/* If the STDP update kernel is merged with the scatter
 	 * kernel, we'd only need to load this once per simulation
 	 * step, rather than twice. */
-	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
+	loadSparseFiring(g_nFired, s_params.pitch32, g_fired, &s_nFired, s_fired);
 	loadDenseFiring(s_params.pitch1, g_dfired, s_dfired);
 	loadStdpParameters_();
 	updateSTDP_(
 			cycle,
 			s_dfired,
 			g_recentFiring,
-			c_pitch64,
+			s_params.pitch64,
 			g_partitionSize[CURRENT_PARTITION],
 			cr_address, cr_stdp, cr_pitch,
 			s_fired);

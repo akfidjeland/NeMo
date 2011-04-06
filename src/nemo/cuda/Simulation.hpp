@@ -329,9 +329,6 @@ class Simulation : public nemo::SimulationBackend
 
 		DeviceAssertions m_deviceAssertions;
 
-		size_t m_pitch32;
-		size_t m_pitch64;
-
 		boost::optional<StdpFunction> m_stdp;
 
 		void configureStdp();

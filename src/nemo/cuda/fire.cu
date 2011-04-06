@@ -69,12 +69,12 @@ storeDenseFiring(unsigned nfired, size_t pitch1, nidx_dt* s_fired, uint32_t* g_d
  */
 __device__
 void
-storeSparseFiring(unsigned nFired, nidx_dt* s_fired, unsigned* g_nFired, nidx_dt* g_fired)
+storeSparseFiring(unsigned nFired, size_t pitch32, nidx_dt* s_fired, unsigned* g_nFired, nidx_dt* g_fired)
 {
 	for(unsigned b=0; b < nFired; b += THREADS_PER_BLOCK) {
 		unsigned i = b + threadIdx.x;
 		if(i < nFired) {
-			g_fired[CURRENT_PARTITION * c_pitch32 + i] = s_fired[i];
+			g_fired[CURRENT_PARTITION * pitch32 + i] = s_fired[i];
 		}
 	}
 
@@ -136,6 +136,7 @@ loadFiringInput(size_t pitch1, uint32_t* g_firing, uint32_t* s_firing)
 __device__
 void
 updateNeurons(
+	const param_t& s_params,
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
 	float* g_neuronState,
@@ -148,7 +149,7 @@ updateNeurons(
 	unsigned* s_nFired,
 	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
-	size_t neuronParametersSize = PARTITION_COUNT * c_pitch32;
+	size_t neuronParametersSize = PARTITION_COUNT * s_params.pitch32;
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
 	float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
@@ -277,18 +278,18 @@ updateNeurons(
 
 	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
 	copyCurrent(s_partitionSize,
-			g_current + CURRENT_PARTITION * c_pitch32,
+			g_current + CURRENT_PARTITION * s_params.pitch32,
 			s_current);
 	__syncthreads();
 
-	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, s_current, s_overflow, s_negative);
+	addCurrentStimulus(s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current);
 
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the fire kernel),
 	 * is smaller. */
 	if(thalamicInputEnabled) {
-		thalamicInput(s_partitionSize, c_pitch32,
+		thalamicInput(s_partitionSize, s_params.pitch32,
 				gu_neuronState, gf_neuronParameters, (float*) s_current);
 	}
 	__syncthreads();
@@ -301,9 +302,10 @@ updateNeurons(
 	__syncthreads();
 
 	updateNeurons(
+			s_params,
 			s_partitionSize,
-			gf_neuronParameters + CURRENT_PARTITION * c_pitch32,
-			gf_neuronState + CURRENT_PARTITION * c_pitch32,
+			gf_neuronParameters + CURRENT_PARTITION * s_params.pitch32,
+			gf_neuronState + CURRENT_PARTITION * s_params.pitch32,
 			s_valid,
 			(float*) s_current,
 			s_fstim,
@@ -313,7 +315,7 @@ updateNeurons(
 	__syncthreads();
 
 	storeDenseFiring(s_nFired, s_params.pitch1, s_fired, g_firingOutput);
-	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
+	storeSparseFiring(s_nFired, s_params.pitch32, s_fired, g_nFired, g_fired);
 }
 
 

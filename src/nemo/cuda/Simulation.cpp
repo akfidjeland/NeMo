@@ -48,8 +48,6 @@ Simulation::Simulation(
 	m_fired(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), "Fired count")),
 	m_deviceAssertions(m_mapper.partitionCount()),
-	m_pitch32(0),
-	m_pitch64(0),
 	m_stdp(conf.stdpFunction()),
 	md_istim(NULL),
 	m_streamCompute(0),
@@ -195,15 +193,12 @@ Simulation::setParameters()
 {
 	param_t params;
 	params.pitch1 = m_firingStimulus.wordPitch();
-	m_pitch32 = m_neurons.wordPitch32();
-	m_pitch64 = m_recentFiring.wordPitch();
-	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
-	checkPitch(m_pitch64, m_cm.delayBits().wordPitch());
+	params.pitch32 = m_neurons.wordPitch32();
+	params.pitch64 = m_recentFiring.wordPitch();
+	checkPitch(params.pitch32, m_currentStimulus.wordPitch());
+	checkPitch(params.pitch64, m_cm.delayBits().wordPitch());
 	checkPitch(params.pitch1, m_firingBuffer.wordPitch());
 	checkPitch(params.pitch1, m_neurons.wordPitch1());
-	CUDA_SAFE_CALL(nv_setPitch32(m_pitch32));
-	CUDA_SAFE_CALL(nv_setPitch64(m_pitch64));
-
 
 	void* d_ptr;
 	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
@@ -245,6 +240,7 @@ Simulation::prefire()
 			m_timer.elapsedSimulation(),
 			m_mapper.partitionCount(),
 			m_neurons.d_partitionSize(),
+			md_params.get(),
 			m_current.deviceData(),
 			m_cm.d_fcm(),
 			m_cm.d_gqData(),
@@ -277,8 +273,9 @@ Simulation::postfire()
 {
 	runKernel(::scatter(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
+			m_mapper.partitionCount(),
+			md_params.get(),
 			// firing buffers
 			md_nFired.get(),
 			m_fired.deviceData(),

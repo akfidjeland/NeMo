@@ -18,7 +18,7 @@
 #include "double_buffer.cu"
 #include "fixedpoint.cu"
 #include "globalQueue.cu"
-#include "nvector.cu"
+#include "parameters.cu"
 #include "current.cu"
 
 
@@ -136,6 +136,7 @@ __global__
 void
 gather( uint32_t cycle,
 		unsigned* g_partitionSize,
+		param_t* g_params,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
 		unsigned* g_gqFill,
@@ -147,8 +148,12 @@ gather( uint32_t cycle,
 	__shared__ uint32_t s_overflow[S_BV_PITCH];
 	__shared__ uint32_t s_negative[S_BV_PITCH];
 
+	__shared__ param_t s_params;
+
 	/* Per-partition parameters */
 	__shared__ unsigned s_partitionSize;
+
+	loadParameters(g_params, &s_params);
 
 	if(threadIdx.x == 0) {
 #ifdef NEMO_CUDA_DEBUG_TRACE
@@ -167,7 +172,7 @@ gather( uint32_t cycle,
 
 	/* Write back to global memory The global memory roundtrip is so that the
 	 * gather and fire steps can be done in separate kernel invocations. */
-	copyCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * c_pitch32);
+	copyCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * s_params.pitch32);
 }
 
 
@@ -179,6 +184,7 @@ gather( cudaStream_t stream,
 		unsigned cycle,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
+		param_t* d_params,
 		fix_t* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
@@ -186,6 +192,6 @@ gather( cudaStream_t stream,
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	gather<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_fcm, d_gqData, d_gqFill, d_current);
+	gather<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_params, d_fcm, d_gqData, d_gqFill, d_current);
 	return cudaGetLastError();
 }

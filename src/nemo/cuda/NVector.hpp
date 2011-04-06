@@ -118,10 +118,6 @@ class NVector
 
 }	} // end namespace
 
-/* Functions to set pitch on device. Defined in nvector.cu */
-cudaError nv_setPitch32(size_t pitch32);
-cudaError nv_setPitch64(size_t pitch64);
-
 #include "NVector.ipp"
 
 #endif

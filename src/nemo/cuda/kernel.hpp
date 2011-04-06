@@ -50,6 +50,7 @@ gather( cudaStream_t stream,
 		unsigned cycle,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
+		param_t* d_globalParameters,
 		fix_t* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
@@ -79,8 +80,9 @@ update_neurons(
 
 cudaError_t
 scatter(cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		param_t* d_globalParameters,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
@@ -114,7 +116,6 @@ configureStdp(
 		weight_dt* stdpFn);
 
 cudaError fx_setFormat(unsigned fractionalBits);
-cudaError bv_setPitch(size_t pitch);
 
 void initLog();
 void flushLog();
