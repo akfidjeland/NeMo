@@ -29,6 +29,8 @@
 #include "Neurons.hpp"
 #include "LocalQueue.hpp"
 
+#include "parameters.cu_h"
+
 namespace nemo {
 
 	namespace network {
@@ -322,11 +324,11 @@ class Simulation : public nemo::SimulationBackend
 		NVector<nidx_dt> m_fired;
 		boost::shared_array<unsigned> md_nFired;
 
+		boost::shared_ptr<param_t> md_params;
+		void setParameters();
+
 		DeviceAssertions m_deviceAssertions;
 
-		void setPitch();
-
-		size_t m_pitch1;
 		size_t m_pitch32;
 		size_t m_pitch64;
 

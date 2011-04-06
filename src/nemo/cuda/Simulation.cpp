@@ -58,7 +58,7 @@ Simulation::Simulation(
 	if(m_stdp) {
 		configureStdp();
 	}
-	setPitch();
+	setParameters();
 	resetTimer();
 
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
@@ -191,17 +191,24 @@ Simulation::d_allocated() const
 /* Set common pitch and check that all relevant arrays have the same pitch. The
  * kernel uses a single pitch for all 32-bit data */ 
 void
-Simulation::setPitch()
+Simulation::setParameters()
 {
-	m_pitch1 = m_firingStimulus.wordPitch();
+	param_t params;
+	params.pitch1 = m_firingStimulus.wordPitch();
 	m_pitch32 = m_neurons.wordPitch32();
 	m_pitch64 = m_recentFiring.wordPitch();
 	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
 	checkPitch(m_pitch64, m_cm.delayBits().wordPitch());
-	checkPitch(m_pitch1, m_firingBuffer.wordPitch());
-	checkPitch(m_pitch1, m_neurons.wordPitch1());
+	checkPitch(params.pitch1, m_firingBuffer.wordPitch());
+	checkPitch(params.pitch1, m_neurons.wordPitch1());
 	CUDA_SAFE_CALL(nv_setPitch32(m_pitch32));
 	CUDA_SAFE_CALL(nv_setPitch64(m_pitch64));
+
+
+	void* d_ptr;
+	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
+	md_params = boost::shared_ptr<param_t>(static_cast<param_t*>(d_ptr), d_free);
+	memcpyBytesToDevice(d_ptr, &params, sizeof(param_t));
 }
 
 
@@ -290,7 +297,7 @@ Simulation::postfire()
 			m_timer.elapsedSimulation(),
 			m_mapper.partitionCount(),
 			m_neurons.d_partitionSize(),
-			m_pitch1,
+			md_params.get(),
 			m_recentFiring.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),

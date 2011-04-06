@@ -14,6 +14,7 @@
 
 #include "log.cu_h"
 #include "device_assert.cu"
+#include "parameters.cu"
 
 
 /* STDP parameters
@@ -385,7 +386,7 @@ void
 updateStdp(
 		uint32_t cycle,
 		unsigned* g_partitionSize,
-		size_t bv_pitch,
+		param_t* g_params,
 		uint64_t* g_recentFiring,
 		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
 		unsigned* g_nFired,        // device-only buffer.
@@ -394,12 +395,15 @@ updateStdp(
 	__shared__ unsigned s_nFired;
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 	__shared__ uint32_t s_dfired[S_BV_PITCH];
+	__shared__ param_t s_params;
+
+	loadParameters(g_params, &s_params);
 
 	/* If the STDP update kernel is merged with the scatter
 	 * kernel, we'd only need to load this once per simulation
 	 * step, rather than twice. */
 	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
-	loadDenseFiring(bv_pitch, g_dfired, s_dfired);
+	loadDenseFiring(s_params.pitch1, g_dfired, s_dfired);
 	loadStdpParameters_();
 	updateSTDP_(
 			cycle,
@@ -420,7 +424,7 @@ updateStdp(
 		unsigned cycle,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
-		size_t pitch1,
+		param_t* d_parameters,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
@@ -428,7 +432,7 @@ updateStdp(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, pitch1, d_recentFiring, d_dfired, d_nFired, d_fired);
+	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_parameters, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }
 

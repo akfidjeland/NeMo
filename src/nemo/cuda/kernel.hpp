@@ -16,7 +16,7 @@
 #include "globalQueue.cu_h"
 #include "localQueue.cu_h"
 #include "types.h"
-#include "bitvector.cu_h"
+#include "parameters.cu_h"
 
 /*! Update synapse weight using the accumulated eligibility trace
  *
@@ -98,7 +98,7 @@ updateStdp(
 		unsigned cycle,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
-		size_t pitch1,
+		param_t* d_parameters,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
