@@ -40,8 +40,11 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mf_paramDirty(false),
 	mf_stateDirty(false),
 	m_rngEnabled(false),
-	m_update_neurons(update_neurons)
+	m_plugin(NULL),
+	m_update_neurons(NULL)
 {
+	loadNeuronUpdatePlugin();
+
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
 	/* Create all the RNG seeds */
@@ -80,6 +83,43 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mu_state.moveToDevice();
 	m_valid.moveToDevice();
 	configurePartitionSizes(maxPartitionNeuron);
+}
+
+
+
+Neurons::~Neurons()
+{
+	if(m_plugin != NULL) {
+		dl_unload(m_plugin);
+	}
+	dl_exit();
+}
+
+
+void
+reportLoadError()
+{
+	using boost::format;
+	throw nemo::exception(NEMO_DL_ERROR,
+			str(format("error when load neuron model plugin %s: %s")
+				% LIB_NAME("nemo_cuda_iz") % dl_error()));
+}
+
+
+void
+Neurons::loadNeuronUpdatePlugin()
+{
+	if(!dl_init()) {
+		reportLoadError();
+	}
+	m_plugin = dl_load(LIB_NAME("nemo_cuda_iz"));
+	if(m_plugin == NULL) {
+		reportLoadError();
+	}
+	m_update_neurons = (update_neurons_t*) dl_sym(m_plugin, "update_neurons");
+	if(m_update_neurons == NULL) {
+		reportLoadError();
+	}
 }
 
 

@@ -15,6 +15,7 @@
 #include <map>
 
 #include <nemo/cuda/plugins/neuron_model.h>
+#include <nemo/dyn_load.hpp>
 
 #include "Mapper.hpp"
 #include "NVector.hpp"
@@ -50,6 +51,8 @@ class Neurons
 	public:
 
 		Neurons(const network::Generator& net, Mapper&);
+
+		~Neurons();
 
 		/*! Update the state of all neurons */
 		cudaError_t update(
@@ -162,7 +165,11 @@ class Neurons
 		/*! \see d_partitionSize() */
 		boost::shared_array<unsigned> md_partitionSize;
 
+		/* The update function itself is found in a plugin which is loaded
+		 * dynamically */
+		dl_handle m_plugin;
 		update_neurons_t* m_update_neurons;
+		void loadNeuronUpdatePlugin();
 };
 
 
