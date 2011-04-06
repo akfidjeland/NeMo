@@ -21,7 +21,6 @@
 #include "nvector.cu"
 
 #include "gather.cu"
-#include "fire.cu"
 #include "scatter.cu"
 #include "stdp.cu"
 #include "applySTDP.cu"

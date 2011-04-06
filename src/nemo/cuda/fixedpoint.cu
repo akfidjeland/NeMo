@@ -21,6 +21,7 @@
 #include "log.cu_h"
 
 #include "device_assert.cu"
+#include "bitvector.cu"
 
 #define FX_SIGN_BIT 0x80000000
 

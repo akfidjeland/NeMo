@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_STEP_CU
-#define NEMO_CUDA_STEP_CU
+#ifndef NEMO_CUDA_IZ_UPDATE_NEURONS_CU
+#define NEMO_CUDA_IZ_UPDATE_NEURONS_CU
 
 /* Copyright 2010 Imperial College London
  *
@@ -12,13 +12,13 @@
 
 /*! \file fire.cu Izhikevich neuron update kernel */
 
-#include "log.cu_h"
-#include "fixedpoint.cu"
-#include "bitvector.cu"
-#include "nvector.cu"
-#include "parameters.cu"
-#include "thalamicInput.cu"
-#include "current.cu"
+#include <nemo/config.h>
+#include <log.cu_h>
+#include <bitvector.cu>
+#include <current.cu>
+#include <fixedpoint.cu>
+#include <parameters.cu>
+#include <thalamicInput.cu>
 
 
 /*! Set per-neuron bit-vector for fired neurons in both shared and global memory
@@ -321,7 +321,7 @@ updateNeurons(
 
 
 /*! Wrapper for the __global__ call that performs a single simulation step */
-__host__
+NEMO_CUDA_DLL_PUBLIC
 cudaError_t
 update_neurons(
 		cudaStream_t stream,
@@ -354,7 +354,6 @@ update_neurons(
 
 	return cudaGetLastError();
 }
-
 
 
 #endif

@@ -12,6 +12,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "fixedpoint.cu"
+
 
 /*! \brief Add input current for a particular neuron
  *

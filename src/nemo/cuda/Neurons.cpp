@@ -19,6 +19,7 @@
 #include "types.h"
 #include "exception.hpp"
 #include "kernel.hpp"
+#include <nemo/cuda/plugins/neuron_model.h>
 
 
 namespace nemo {

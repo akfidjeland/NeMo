@@ -1,3 +1,5 @@
+SUBDIRS(plugins)
+
 ##############################################################################
 # CUDA configuration
 
@@ -77,7 +79,7 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
   )
 
 SET_TARGET_PROPERTIES(nemo_cuda PROPERTIES DEFINE_SYMBOL NEMO_CUDA_EXPORTS)
-TARGET_LINK_LIBRARIES(nemo_cuda nemo_base)
+TARGET_LINK_LIBRARIES(nemo_cuda nemo_base nemo_cuda_iz)
 
 # Add a special target to clean nvcc generated files.
 CUDA_BUILD_CLEAN_TARGET()
