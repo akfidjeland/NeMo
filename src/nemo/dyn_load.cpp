@@ -50,6 +50,12 @@ dl_setsearchpath(const char* dir)
 	return SetDllDirectory(dir) != 0;
 }
 
+bool
+dl_addsearchdir(const char* dir)
+{
+	return SetDllDirectory(dir) != 0;
+}
+
 #else
 
 bool
@@ -92,6 +98,12 @@ bool
 dl_setsearchpath(const char* dir)
 {
 	return lt_dlsetsearchpath(dir) == 0;
+}
+
+bool
+dl_addsearchdir(const char* dir)
+{
+	return lt_dladdsearchdir(dir) == 0;
 }
 
 #endif

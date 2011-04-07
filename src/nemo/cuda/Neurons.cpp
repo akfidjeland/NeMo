@@ -116,8 +116,18 @@ Neurons::loadNeuronUpdatePlugin()
 		reportLoadError();
 	}
 
+	char* home = getenv(HOME_ENV_VAR);
+	if(home == NULL) {
+		throw nemo::exception(NEMO_DL_ERROR, "Could not locate user's home directory when searching for plugins");
+	}
+
+	std::string userPath = str(format("%s%c%s%ccuda") % home % DIRSEP_CHAR % NEMO_USER_PLUGIN_DIR % DIRSEP_CHAR);
+	if(!dl_setsearchpath(userPath.c_str())) {
+		reportLoadError();
+	}
+
 	std::string systemPath = str(format("%s%ccuda") % NEMO_SYSTEM_PLUGIN_DIR % DIRSEP_CHAR);
-	if(!dl_setsearchpath(systemPath.c_str())) {
+	if(!dl_addsearchdir(systemPath.c_str())) {
 		reportLoadError();
 	}
 

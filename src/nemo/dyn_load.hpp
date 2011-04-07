@@ -13,6 +13,7 @@ typedef HMODULE dl_handle;
 
 #define LIB_NAME(base) base ".dll"
 #define DIRSEP_CHAR '\\'
+#define HOME_ENV_VAR "userprofile"
 
 #else
 
@@ -22,6 +23,7 @@ typedef lt_dlhandle dl_handle;
 // leave ltdl to work out the extension
 #define LIB_NAME(base) "lib" base
 #define DIRSEP_CHAR '/'
+#define HOME_ENV_VAR "HOME"
 
 #endif
 
@@ -46,5 +48,7 @@ void* dl_sym(dl_handle, const char* name);
 /*! Set plugin search path, returning success */
 bool dl_setsearchpath(const char* dir);
 
+/*! Append to plugin search path, returning success */
+bool dl_addsearchdir(const char* dir);
 
 #endif
