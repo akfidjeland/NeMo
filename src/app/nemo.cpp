@@ -49,6 +49,8 @@ main(int argc, char* argv[])
 		("help,h", "print this message")
 		("version,v", "print version number")
 		("list-devices,l", "print the available simulation devices")
+		("system-plugin-path", "print the path to the system plugin path for NeMo")
+		("user-plugin-path", "print the path to the user plugin path for NeMo")
 	;
 
 	po::variables_map vm;
@@ -70,6 +72,16 @@ main(int argc, char* argv[])
 
 	if(vm.count("list-devices") != 0) {
 		listCudaDevices();
+		exit(0);
+	}
+
+	if(vm.count("system-plugin-path") != 0) {
+		std::cout << NEMO_SYSTEM_PLUGIN_DIR << std::endl;
+		exit(0);
+	}
+
+	if(vm.count("user-plugin-path") != 0) {
+		std::cout << NEMO_USER_PLUGIN_DIR << std::endl;
 		exit(0);
 	}
 
