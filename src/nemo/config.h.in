@@ -21,6 +21,8 @@
 #cmakedefine NEMO_CPU_MULTITHREADED
 
 #cmakedefine NEMO_VERSION "@NEMO_VERSION@"
+#cmakedefine NEMO_SYSTEM_PLUGIN_DIR "@NEMO_SYSTEM_PLUGIN_DIR@"
+
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef NEMO_EXPORTS

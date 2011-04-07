@@ -13,6 +13,7 @@
 
 #include <boost/format.hpp>
 
+#include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
 #include <nemo/RNG.hpp>
 
@@ -109,13 +110,23 @@ reportLoadError()
 void
 Neurons::loadNeuronUpdatePlugin()
 {
+	using boost::format;
+
 	if(!dl_init()) {
 		reportLoadError();
 	}
+
+	std::string systemPath = str(format("%s%ccuda") % NEMO_SYSTEM_PLUGIN_DIR % DIRSEP_CHAR);
+	if(!dl_setsearchpath(systemPath.c_str())) {
+		reportLoadError();
+	}
+
 	m_plugin = dl_load(LIB_NAME("nemo_cuda_iz"));
 	if(m_plugin == NULL) {
 		reportLoadError();
 	}
+
+
 	m_update_neurons = (update_neurons_t*) dl_sym(m_plugin, "update_neurons");
 	if(m_update_neurons == NULL) {
 		reportLoadError();
