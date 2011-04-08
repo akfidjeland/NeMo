@@ -3,6 +3,7 @@
 
 #include <nemo/types.hpp>
 #include <nemo/network/iterator.hpp>
+#include <nemo/NeuronType.hpp>
 
 
 namespace nemo {
@@ -30,6 +31,9 @@ class Generator
 
 		virtual unsigned minNeuronIndex() const = 0;
 		virtual unsigned maxNeuronIndex() const = 0;
+
+		/*! \return the \i unique neuron type found in this network */
+		virtual const class NeuronType& neuronType() const = 0;
 };
 
 

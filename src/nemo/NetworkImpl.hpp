@@ -107,6 +107,9 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		synapse_iterator synapse_begin() const;
 		synapse_iterator synapse_end() const;
 
+		/*! \copydoc nemo::network::Generator::neuronType */
+		const NeuronType& neuronType() const;
+
 	private :
 
 		/* Neurons are grouped by neuron type */

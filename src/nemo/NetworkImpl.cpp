@@ -49,6 +49,21 @@ NetworkImpl::addNeuronType(const NeuronType& type)
 
 
 
+const NeuronType&
+NetworkImpl::neuronType() const
+{
+	/* only a single neuron model supported currently */
+	if(m_neurons.size() == 0) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network, so neuron type unkown");
+	} else if (m_neurons.size() > 1) {
+		// this ought to work, but in the current scheme we only support a single neuron type
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Multiple neuron types specified");
+	}
+	return m_neurons.front().type();
+}
+
+
+
 const Neurons&
 NetworkImpl::neuronCollection(unsigned type_id) const
 {
