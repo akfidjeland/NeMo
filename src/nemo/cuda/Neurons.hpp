@@ -26,6 +26,7 @@
 
 namespace nemo {
 
+	class NeuronType;
 	namespace network {
 		class Generator;
 	}
@@ -169,7 +170,7 @@ class Neurons
 		 * dynamically */
 		dl_handle m_plugin;
 		update_neurons_t* m_update_neurons;
-		void loadNeuronUpdatePlugin();
+		void loadNeuronUpdatePlugin(const nemo::NeuronType&);
 };
 
 

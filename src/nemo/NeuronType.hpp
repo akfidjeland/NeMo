@@ -49,6 +49,12 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 
 		size_t hash_value() const;
 
+		/*! Return the name of the neuron model
+		 *
+		 * This should match the name of the plugin which implements this
+		 * neuron type */
+		std::string name() const { return m_name; }
+
 	private :
 
 		size_t mf_nParam;

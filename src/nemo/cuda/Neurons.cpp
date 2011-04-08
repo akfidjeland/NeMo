@@ -16,6 +16,7 @@
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
 #include <nemo/RNG.hpp>
+#include <nemo/NeuronType.hpp>
 
 #include "types.h"
 #include "exception.hpp"
@@ -41,7 +42,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	m_plugin(NULL),
 	m_update_neurons(NULL)
 {
-	loadNeuronUpdatePlugin();
+	loadNeuronUpdatePlugin(net.neuronType());
 
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
@@ -95,22 +96,22 @@ Neurons::~Neurons()
 
 
 void
-reportLoadError()
+reportLoadError(const nemo::NeuronType& type)
 {
 	using boost::format;
 	throw nemo::exception(NEMO_DL_ERROR,
 			str(format("error when loading neuron model plugin %s: %s")
-				% dl_libname("Izhikevich") % dl_error()));
+				% dl_libname(type.name()) % dl_error()));
 }
 
 
 void
-Neurons::loadNeuronUpdatePlugin()
+Neurons::loadNeuronUpdatePlugin(const nemo::NeuronType& type)
 {
 	using boost::format;
 
 	if(!dl_init()) {
-		reportLoadError();
+		reportLoadError(type);
 	}
 
 	char* home = getenv(HOME_ENV_VAR);
@@ -120,23 +121,23 @@ Neurons::loadNeuronUpdatePlugin()
 
 	std::string userPath = str(format("%s%c%s%ccuda") % home % DIRSEP_CHAR % NEMO_USER_PLUGIN_DIR % DIRSEP_CHAR);
 	if(!dl_setsearchpath(userPath.c_str())) {
-		reportLoadError();
+		reportLoadError(type);
 	}
 
 	std::string systemPath = str(format("%s%ccuda") % NEMO_SYSTEM_PLUGIN_DIR % DIRSEP_CHAR);
 	if(!dl_addsearchdir(systemPath.c_str())) {
-		reportLoadError();
+		reportLoadError(type);
 	}
 
-	m_plugin = dl_load(dl_libname("Izhikevich").c_str());
+	m_plugin = dl_load(dl_libname(type.name()).c_str());
 	if(m_plugin == NULL) {
-		reportLoadError();
+		reportLoadError(type);
 	}
 
 
 	m_update_neurons = (update_neurons_t*) dl_sym(m_plugin, "update_neurons");
 	if(m_update_neurons == NULL) {
-		reportLoadError();
+		reportLoadError(type);
 	}
 }
 
