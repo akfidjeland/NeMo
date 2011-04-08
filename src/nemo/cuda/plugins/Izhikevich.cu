@@ -19,7 +19,7 @@
 #include <firing.cu>
 #include <fixedpoint.cu>
 #include <parameters.cu>
-#include <thalamicInput.cu>
+#include <rng.cu>
 
 #define PARAM_A 0
 #define PARAM_B 1
