@@ -69,6 +69,28 @@ rng_genGaussian(unsigned* rngState)
 }
 
 
+
+/*! Generate a gaussian random number for a specific neuron */
+__device__
+float
+rng_nrand(unsigned neuron, size_t pitch, unsigned* g_nstate)
+{
+	unsigned rngState[4];
+
+	/* Copy the input state from memory into our local state */
+	rng_loadState(rngState, g_nstate, neuron, pitch);
+
+	float2 r = rng_genGaussian(rngState);
+
+	/* Copy the current RNG state back to memory (not strictly necessary, you
+	 * can just generate a new random state every time if you want). */
+	rng_saveState(rngState, g_nstate, neuron, pitch);
+
+	/* We're throwing away one random number here */
+	return r.x;
+}
+
+
 __device__
 void
 thalamicInput(
@@ -78,40 +100,17 @@ thalamicInput(
 		float* g_nparam,    // not offset
 		float* s_current)   // correctly offset for this partition
 {
-	unsigned rngState[4];
-
 	//! \todo make the partition offset in call (for consistency).
 	float* g_sigma = g_nparam
 			+ PARAM_SIGMA * PARTITION_COUNT * pitch
 			+ CURRENT_PARTITION * pitch;
 
 	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
-
 		unsigned neuron = nbase + threadIdx.x;
-
-		/* Copy the input state from memory into our local state */
-		rng_loadState(rngState, g_nstate, neuron, pitch);
-
 		if(neuron < partitionSize) {
-
-			//! \todo make use of  both randoms
-			float2 r = rng_genGaussian(rngState);
-
-			/*! \bug It seems that if r.x is very small the result of the
-			 * multiplication is NaN (at least if sigma is 0, possibly in other
-			 * cases as well). This issue seems unrelated to fusing
-			 * multiply-add operations. Forcing separate multiplication does
-			 * not fix. For instance with sigma=0 and r.x=0x00007f80
-			 * (4.57384e-41) we get a NaN result. Could not reproduce in
-			 * standalone test-case, however. */
-			//! \todo consider using fixed-point arithmetic here as well.
-			s_current[neuron] += r.x * g_sigma[neuron];
+			float r = rng_nrand(neuron, pitch, g_nstate);
+			s_current[neuron] += r * g_sigma[neuron];
 		}
-
-		/* Copy the current RNG state back to memory (not strictly necessary, you
-		 * can just generate a new random state every time if you want). */
-		rng_saveState(rngState, g_nstate, neuron, pitch);
 	}
-
 	__syncthreads();
 }
