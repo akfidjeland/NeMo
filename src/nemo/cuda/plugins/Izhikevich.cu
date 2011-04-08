@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_IZ_UPDATE_NEURONS_CU
-#define NEMO_CUDA_IZ_UPDATE_NEURONS_CU
+#ifndef NEMO_CUDA_PLUGINS_IZHIKEVICH_CU
+#define NEMO_CUDA_PLUGINS_IZHIKEVICH_CU
 
 /* Copyright 2010 Imperial College London
  *
@@ -10,7 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*! \file fire.cu Izhikevich neuron update kernel */
+/*! \file Izhikevich.cu Izhikevich neuron update kernel */
 
 #include <nemo/config.h>
 #include <log.cu_h>

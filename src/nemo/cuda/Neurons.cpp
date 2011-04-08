@@ -27,7 +27,6 @@ namespace nemo {
 
 
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
-	//! \todo set these sizes based on configuration
 	m_mapper(mapper),
 	mf_param(net.neuronType().f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mf_state(net.neuronType().f_nState(), mapper.partitionCount(), mapper.partitionSize(), true, false),
@@ -101,7 +100,7 @@ reportLoadError()
 	using boost::format;
 	throw nemo::exception(NEMO_DL_ERROR,
 			str(format("error when loading neuron model plugin %s: %s")
-				% LIB_NAME("nemo_cuda_iz") % dl_error()));
+				% LIB_NAME("Izhikevich") % dl_error()));
 }
 
 
@@ -129,7 +128,7 @@ Neurons::loadNeuronUpdatePlugin()
 		reportLoadError();
 	}
 
-	m_plugin = dl_load(LIB_NAME("nemo_cuda_iz"));
+	m_plugin = dl_load(LIB_NAME("Izhikevich"));
 	if(m_plugin == NULL) {
 		reportLoadError();
 	}
