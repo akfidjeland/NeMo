@@ -16,6 +16,7 @@
 
 #include <nemo/cuda/plugins/neuron_model.h>
 #include <nemo/dyn_load.hpp>
+#include <nemo/NeuronType.hpp>
 
 #include "Mapper.hpp"
 #include "NVector.hpp"
@@ -26,7 +27,6 @@
 
 namespace nemo {
 
-	class NeuronType;
 	namespace network {
 		class Generator;
 	}
@@ -123,6 +123,8 @@ class Neurons
 		 */
 		float getState(const DeviceIdx& neuron, unsigned var) const;
 
+		float getMembranePotential(const DeviceIdx&) const;
+
 		/*! Change a single state variable for an existing neuron
 		 *
 		 * \param neuron neuron index
@@ -144,6 +146,8 @@ class Neurons
 	private:
 
 		const Mapper& m_mapper;
+
+		NeuronType m_type;
 
 		size_t parameterCount() const { return mf_param.planeCount(); }
 		size_t stateVarCount() const { return mf_state.planeCount(); }

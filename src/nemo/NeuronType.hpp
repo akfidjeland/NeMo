@@ -30,7 +30,9 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 {
 	public :
 
-		NeuronType() : mf_nParam(0), mf_nState(0), m_name("null") { }
+		NeuronType() :
+			mf_nParam(0), mf_nState(0),
+			m_name("null"), m_membranePotential(0) { }
 
 		/*! Create a new neuron model specification
 		 * 
@@ -40,9 +42,11 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		 * \param f_nParam number of floating point parameters
 		 * \param f_nState number of floating point state variables
 		 * \param name unique name for this type
+		 * \param mp index of membrane potential state variable
 		 */
-		NeuronType(size_t f_nParam, size_t f_nState, const std::string& name) :
-			mf_nParam(f_nParam), mf_nState(f_nState), m_name(name) { }
+		NeuronType(size_t f_nParam, size_t f_nState, const std::string& name, unsigned mp) :
+			mf_nParam(f_nParam), mf_nState(f_nState),
+			m_name(name), m_membranePotential(mp) { }
 
 		size_t f_nParam() const { return mf_nParam; }
 		size_t f_nState() const { return mf_nState; }
@@ -55,11 +59,16 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		 * neuron type */
 		std::string name() const { return m_name; }
 
+		/*! Return the index of the state variable representing the membrane potential */
+		unsigned membranePotential() const { return m_membranePotential; }
+
 	private :
 
 		size_t mf_nParam;
 		size_t mf_nState;
 		std::string m_name;
+
+		unsigned m_membranePotential;
 
 		friend size_t hash_value(const nemo::NeuronType&);
 };

@@ -16,7 +16,6 @@
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
 #include <nemo/RNG.hpp>
-#include <nemo/NeuronType.hpp>
 
 #include "types.h"
 #include "exception.hpp"
@@ -29,6 +28,7 @@ namespace nemo {
 
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	m_mapper(mapper),
+	m_type(net.neuronType()),
 	mf_param(net.neuronType().f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mf_state(net.neuronType().f_nState(), mapper.partitionCount(), mapper.partitionSize(), true, false),
 	//! \todo add RNG spec to neuron type
@@ -281,6 +281,15 @@ verifyStateVariableIndex(unsigned var, unsigned maxVar)
 				str(format("Invalid neuron state variable index (%u)") % var));
 	}
 }
+
+
+
+float
+Neurons::getMembranePotential(const DeviceIdx& neuron) const
+{
+	return getState(neuron, m_type.membranePotential());
+}
+
 
 
 float
