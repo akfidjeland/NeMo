@@ -89,28 +89,3 @@ rng_nrand(unsigned neuron, size_t pitch, unsigned* g_nstate)
 	/* We're throwing away one random number here */
 	return r.x;
 }
-
-
-__device__
-void
-thalamicInput(
-		size_t partitionSize,
-		size_t pitch,
-		unsigned* g_nstate,
-		float* g_nparam,    // not offset
-		float* s_current)   // correctly offset for this partition
-{
-	//! \todo make the partition offset in call (for consistency).
-	float* g_sigma = g_nparam
-			+ PARAM_SIGMA * PARTITION_COUNT * pitch
-			+ CURRENT_PARTITION * pitch;
-
-	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
-		unsigned neuron = nbase + threadIdx.x;
-		if(neuron < partitionSize) {
-			float r = rng_nrand(neuron, pitch, g_nstate);
-			s_current[neuron] += r * g_sigma[neuron];
-		}
-	}
-	__syncthreads();
-}

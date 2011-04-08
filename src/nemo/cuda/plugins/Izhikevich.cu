@@ -29,6 +29,33 @@
 #define STATE_U 0
 #define STATE_V 1
 
+
+__device__
+void
+thalamicInput(
+		size_t partitionSize,
+		size_t pitch,
+		unsigned* g_nstate,
+		float* g_nparam,    // not offset
+		float* s_current)   // correctly offset for this partition
+{
+	//! \todo make the partition offset in call (for consistency).
+	float* g_sigma = g_nparam
+			+ PARAM_SIGMA * PARTITION_COUNT * pitch
+			+ CURRENT_PARTITION * pitch;
+
+	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
+		unsigned neuron = nbase + threadIdx.x;
+		if(neuron < partitionSize) {
+			float r = rng_nrand(neuron, pitch, g_nstate);
+			s_current[neuron] += r * g_sigma[neuron];
+		}
+	}
+	__syncthreads();
+}
+
+
+
 /*! Update state of all neurons
  *
  * Update the state of all neurons in partition according to the equations in
@@ -214,8 +241,8 @@ updateNeurons(
 	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current, s_params.fixedPointScale);
 
 	/* The random input current might be better computed in a separate kernel,
-	 * so that the critical section in the MPI backend (i.e. the fire kernel),
-	 * is smaller. */
+	 * so that the critical section in the MPI backend (i.e. the neuron update
+	 * kernel), is smaller. */
 	if(thalamicInputEnabled) {
 		thalamicInput(s_partitionSize, s_params.pitch32,
 				gu_neuronState, gf_neuronParameters, (float*) s_current);
