@@ -15,6 +15,7 @@
 #include <nemo/util.h>
 #include <nemo/config.h>
 
+#include "parameters.cu_h"
 #include "connectivityMatrix.cu"
 #include "fixedpoint.cu"
 
@@ -34,6 +35,8 @@
 __global__
 void
 applyStdp(
+	unsigned* g_partitionSize,
+	param_t* g_params,
 	synapse_t* g_fcm,
 	weight_dt minExcitatoryWeight,
 	weight_dt maxExcitatoryWeight,
@@ -46,6 +49,9 @@ applyStdp(
 	__shared__ unsigned s_chunkCount;
 	__shared__ unsigned s_partitionSize;
 
+	__shared__ param_t s_params;
+	loadParameters(g_params, &s_params);
+
 	weight_dt* gr_stdp = (weight_dt*) cr_stdp[CURRENT_PARTITION];
 	unsigned r_pitch = cr_pitch[CURRENT_PARTITION];
 
@@ -56,7 +62,7 @@ applyStdp(
 	uint32_t* gr_faddress = (uint32_t*) cr_faddress[CURRENT_PARTITION];
 
 	if(threadIdx.x == 0) {
-		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
 		s_chunkCount = DIV_CEIL(r_pitch, THREADS_PER_BLOCK);
 	}
 	__syncthreads();
@@ -81,7 +87,7 @@ applyStdp(
 					 * work less well for e.g. m=1000 */
 					//weight_dt w_diff = gr_stdp[gr_offset] * reward;
 					//float w_diff = reward * __int_as_float(atomicExch(gr_stdp + gr_offset, __float_as_int(0.0f)));
-					weight_dt w_diff = fx_mul(gr_stdp[gr_offset], reward);
+					weight_dt w_diff = fx_mul(gr_stdp[gr_offset], reward, s_params.fixedPointFractionalBits);
 
 					if(w_diff != 0) {
 
@@ -119,7 +125,9 @@ void
 applyStdp(
 		cudaStream_t stream,
 		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		unsigned fractionalBits,
+		param_t* d_params,
 		synapse_t* d_fcm,
 		float minExcitatoryWeight,
 		float maxExcitatoryWeight,
@@ -131,6 +139,8 @@ applyStdp(
 	dim3 dimGrid(partitionCount);
 
 	applyStdp<<<dimGrid, dimBlock, 0, stream>>>(
+			d_partitionSize,
+			d_params,
 			d_fcm,
 			fx_toFix(minExcitatoryWeight, fractionalBits),
 			fx_toFix(maxExcitatoryWeight, fractionalBits),

@@ -13,6 +13,7 @@
 
 #include <boost/format.hpp>
 
+#include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
 #include <nemo/RNG.hpp>
 
@@ -28,6 +29,7 @@ namespace nemo {
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	//! \todo set these sizes based on configuration
 	//! \todo: remove these here. Handle inside NVector instead
+	m_mapper(mapper),
 	mf_nParams(NEURON_FLOAT_PARAM_COUNT),
 	mf_nStateVars(NEURON_FLOAT_STATE_COUNT),
 	mf_param(NEURON_FLOAT_PARAM_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
@@ -38,8 +40,12 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mf_lastSync(~0),
 	mf_paramDirty(false),
 	mf_stateDirty(false),
-	m_rngEnabled(false)
+	m_rngEnabled(false),
+	m_plugin(NULL),
+	m_update_neurons(NULL)
 {
+	loadNeuronUpdatePlugin();
+
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
 	/* Create all the RNG seeds */
@@ -82,6 +88,63 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 
 
 
+Neurons::~Neurons()
+{
+	if(m_plugin != NULL) {
+		dl_unload(m_plugin);
+	}
+	dl_exit();
+}
+
+
+void
+reportLoadError()
+{
+	using boost::format;
+	throw nemo::exception(NEMO_DL_ERROR,
+			str(format("error when load neuron model plugin %s: %s")
+				% LIB_NAME("nemo_cuda_iz") % dl_error()));
+}
+
+
+void
+Neurons::loadNeuronUpdatePlugin()
+{
+	using boost::format;
+
+	if(!dl_init()) {
+		reportLoadError();
+	}
+
+	char* home = getenv(HOME_ENV_VAR);
+	if(home == NULL) {
+		throw nemo::exception(NEMO_DL_ERROR, "Could not locate user's home directory when searching for plugins");
+	}
+
+	std::string userPath = str(format("%s%c%s%ccuda") % home % DIRSEP_CHAR % NEMO_USER_PLUGIN_DIR % DIRSEP_CHAR);
+	if(!dl_setsearchpath(userPath.c_str())) {
+		reportLoadError();
+	}
+
+	std::string systemPath = str(format("%s%ccuda") % NEMO_SYSTEM_PLUGIN_DIR % DIRSEP_CHAR);
+	if(!dl_addsearchdir(systemPath.c_str())) {
+		reportLoadError();
+	}
+
+	m_plugin = dl_load(LIB_NAME("nemo_cuda_iz"));
+	if(m_plugin == NULL) {
+		reportLoadError();
+	}
+
+
+	m_update_neurons = (update_neurons_t*) dl_sym(m_plugin, "update_neurons");
+	if(m_update_neurons == NULL) {
+		reportLoadError();
+	}
+}
+
+
+
 size_t
 Neurons::d_allocated() const
 {
@@ -94,12 +157,13 @@ Neurons::d_allocated() const
 void
 Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
 {
-	std::vector<unsigned> partitionSizes(MAX_PARTITION_COUNT, 0);
+	md_partitionSize = d_array<unsigned>(MAX_PARTITION_COUNT, "partition size array");
+	std::vector<unsigned> h_partitionSize(MAX_PARTITION_COUNT, 0);
 	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
 			i != maxPartitionNeuron.end(); ++i) {
-		partitionSizes.at(i->first) = i->second + 1;
+		h_partitionSize.at(i->first) = i->second + 1;
 	}
-	CUDA_SAFE_CALL(configurePartitionSize(&partitionSizes[0], partitionSizes.size()));
+	memcpyToDevice(md_partitionSize.get(), h_partitionSize);
 }
 
 
@@ -118,18 +182,32 @@ Neurons::wordPitch32() const
 
 
 
-void
-Neurons::step(cycle_t cycle)
+cudaError_t
+Neurons::update(
+		cudaStream_t stream,
+		cycle_t cycle,
+		param_t* d_params,
+		uint32_t* d_fstim,
+		fix_t* d_istim,
+		fix_t* d_current,
+		uint32_t* d_fout,
+		unsigned* d_nFired,
+		nidx_dt* d_fired)
 {
-	if(mf_paramDirty) {
-		mf_param.copyToDevice();
-		mf_paramDirty = false;
-	}
-	if(mf_stateDirty) {
-		mf_state.copyToDevice();
-		mf_stateDirty = false;
-	}
+	syncToDevice();
 	m_cycle = cycle;
+	return m_update_neurons(stream,
+			cycle,
+			m_mapper.partitionCount(),
+			md_partitionSize.get(),
+			m_rngEnabled,
+			d_params,
+			mf_param.deviceData(),
+			mf_state.deviceData(),
+			mu_state.deviceData(),
+			m_valid.d_data(),
+			d_fstim, d_istim,
+			d_current, d_fout, d_nFired, d_fired);
 }
 
 
@@ -208,6 +286,20 @@ Neurons::setState(const DeviceIdx& idx, unsigned var, float value)
 	mf_stateDirty = true;
 }
 
+
+
+void
+Neurons::syncToDevice()
+{
+	if(mf_paramDirty) {
+		mf_param.copyToDevice();
+		mf_paramDirty = false;
+	}
+	if(mf_stateDirty) {
+		mf_state.copyToDevice();
+		mf_stateDirty = false;
+	}
+}
 
 	} // end namespace cuda
 } // end namespace nemo

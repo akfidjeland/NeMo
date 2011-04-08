@@ -142,13 +142,6 @@ NVector<T>::offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) cons
 }
 
 
-template<typename T>
-void
-NVector<T>::setPartition(size_t partitionIdx, const T* data, size_t length, size_t subvector)
-{
-	std::copy(data, data + length, m_hostData.get() + offset(subvector, partitionIdx, 0));
-}
-
 
 template<typename T>
 void

@@ -13,17 +13,17 @@ ENDIF(NEMO_CUDA_ENABLED)
 
 SUBDIRS(${BACKEND_DIRS})
 
-IF(NEMO_CUDA_ENABLED AND NEMO_CUDA_DYNAMIC_LOADING AND NOT WIN32)
+IF(NOT WIN32)
 	SET(FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 	FIND_PATH(LTDL_INCLUDE_DIR ltdl.h)
 	FIND_LIBRARY(LTDL_LIBRARY NAMES ltdl)
 	IF(NOT LTDL_INCLUDE_DIR OR NOT LTDL_LIBRARY)
-		MESSAGE(SEND_ERROR "The ltdl library is required for dynamic loading of the CUDA backend on Linux and OSX. If the library or the include directory is not found, ensure that ltdl library and the libltdl development headers are installed on your system. Alternatively, set NEMO_CUDA_DYNAMIC_LOADING to OFF.")
+		MESSAGE(SEND_ERROR "The ltdl library is required for loading plugins on Linux and OSX. If the library or the include directory is not found, ensure that ltdl library and the libltdl development headers are installed on your system.")
 	ENDIF(NOT LTDL_INCLUDE_DIR OR NOT LTDL_LIBRARY)
-ELSE(NEMO_CUDA_ENABLED AND NEMO_CUDA_DYNAMIC_LOADING AND NOT WIN32)
+ELSE(NOT WIN32)
 	SET(LTDL_INCLUDE_DIR "")
 	SET(LTDL_LIBRARY "")
-ENDIF(NEMO_CUDA_ENABLED AND NEMO_CUDA_DYNAMIC_LOADING AND NOT WIN32)
+ENDIF(NOT WIN32)
 
 LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 INCLUDE_DIRECTORIES(
@@ -37,10 +37,12 @@ SET(BUILD_SHARED_LIBS TRUE)
 
 LINK_STATIC_MSVCR()
 
-
 ADD_LIBRARY(nemo_base
+	Axon.cpp
 	ConfigurationImpl.cpp
+	dyn_load.cpp
 	FiringBuffer.cpp
+	fixedpoint.cpp
 	Network.cpp
 	NetworkImpl.cpp
 	Neuron.cpp
@@ -53,20 +55,13 @@ ADD_LIBRARY(nemo_base
 	RNG.cpp
 	StdpFunction.cpp
 	StdpProcess.cpp
-	Axon.cpp
-	fixedpoint.cpp
 )
+
 
 SET_TARGET_PROPERTIES(nemo_base PROPERTIES DEFINE_SYMBOL NEMO_BASE_EXPORTS)
 
 
-SET(SOURCES nemo.cpp nemo_c.cpp Configuration.cpp)
-
-IF(NEMO_CUDA_DYNAMIC_LOADING)
-	LIST(APPEND SOURCES dyn_load.cpp)
-ENDIF(NEMO_CUDA_DYNAMIC_LOADING)
-
-ADD_LIBRARY(nemo ${SOURCES})
+ADD_LIBRARY(nemo nemo.cpp nemo_c.cpp Configuration.cpp)
 SET_TARGET_PROPERTIES(nemo PROPERTIES DEFINE_SYMBOL NEMO_EXPORTS)
 TARGET_LINK_LIBRARIES(nemo nemo_base ${BACKEND_LIBS} ${LTDL_LIBRARY} ${Boost_LIBRARIES})
 
@@ -142,6 +137,16 @@ IF(NOT HAVE_STDINT_H AND NOT MSVC)
 	MESSAGE(FATAL_ERROR "No valid stdint.h file found on this platform")
 ENDIF(NOT HAVE_STDINT_H AND NOT MSVC)
 
+
+SET(NEMO_SYSTEM_PLUGIN_DIR "${CMAKE_INSTALL_PREFIX}/lib/nemo/plugins")
+IF(WIN32)
+	SET(NEMO_SYSTEM_PLUGIN_DIR "${CMAKE_INSTALL_PREFIX}/plugins")
+ENDIF(WIN32)
+
+SET(NEMO_USER_PLUGIN_DIR ".nemo/plugins")
+IF(WIN32)
+	SET(NEMO_SYSTEM_PLUGIN_DIR "Application Data/NeMo/plugins")
+ENDIF(WIN32)
 
 CONFIGURE_FILE(
 	${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
