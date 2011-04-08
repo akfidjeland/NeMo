@@ -31,6 +31,8 @@ class NVector
 {
 	public :
 
+		NVector() : m_planes(0), m_partitionCount(0), m_pitch(0) { }
+
 		/*! Initialise a 1D parameter vector, potentially for several
 		 * partitions. 
 		 *
@@ -110,9 +112,8 @@ class NVector
 		boost::shared_array<T> m_deviceData;
 		boost::shared_array<T> m_hostData;
 
-		const size_t m_planes;
-		const size_t m_partitionCount;
-
+		size_t m_planes;
+		size_t m_partitionCount;
 		size_t m_pitch;
 
 		size_t offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const;

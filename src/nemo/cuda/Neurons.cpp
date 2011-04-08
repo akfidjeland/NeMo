@@ -31,8 +31,6 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	m_type(net.neuronType()),
 	mf_param(net.neuronType().f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
 	mf_state(net.neuronType().f_nState(), mapper.partitionCount(), mapper.partitionSize(), true, false),
-	//! \todo add RNG spec to neuron type
-	mu_state(NEURON_UNSIGNED_STATE_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_valid(mapper.partitionCount(), true),
 	m_cycle(0),
 	mf_lastSync(~0),
@@ -41,7 +39,12 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	m_plugin(NULL),
 	m_update_neurons(NULL)
 {
-	loadNeuronUpdatePlugin(net.neuronType());
+	loadNeuronUpdatePlugin(m_type);
+
+	if(m_type.usesNormalRNG()) {
+		m_nrng = NVector<unsigned>(RNG_STATE_COUNT,
+				mapper.partitionCount(), mapper.partitionSize(), true, false);
+	}
 
 	std::map<pidx_t, nidx_t> maxPartitionNeuron;
 
@@ -67,7 +70,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 
 		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
 		for(unsigned plane = 0; plane < 4; ++plane) {
-			mu_state.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], STATE_RNG+plane);
+			m_nrng.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], plane);
 		}
 
 		maxPartitionNeuron[dev.partition] =
@@ -76,7 +79,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 
 	mf_param.copyToDevice();
 	mf_state.copyToDevice();
-	mu_state.moveToDevice();
+	m_nrng.moveToDevice();
 	m_valid.moveToDevice();
 	configurePartitionSizes(maxPartitionNeuron);
 }
@@ -145,7 +148,7 @@ Neurons::d_allocated() const
 {
 	return mf_param.d_allocated()
 		+ mf_state.d_allocated()
-		+ mu_state.d_allocated();
+		+ m_nrng.d_allocated();
 }
 
 
@@ -168,7 +171,7 @@ Neurons::wordPitch32() const
 {
 	size_t f_param_pitch = mf_param.wordPitch();
 	size_t f_state_pitch = mf_state.wordPitch();
-	size_t u_state_pitch = mu_state.wordPitch();
+	size_t u_state_pitch = m_nrng.wordPitch();
 	if(f_param_pitch != f_state_pitch || f_param_pitch != u_state_pitch) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitches");
 	}
@@ -198,7 +201,7 @@ Neurons::update(
 			d_params,
 			mf_param.deviceData(),
 			mf_state.deviceData(),
-			mu_state.deviceData(),
+			m_nrng.deviceData(),
 			m_valid.d_data(),
 			d_fstim, d_istim,
 			d_current, d_fout, d_nFired, d_fired);

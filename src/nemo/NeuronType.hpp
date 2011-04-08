@@ -32,7 +32,7 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 
 		NeuronType() :
 			mf_nParam(0), mf_nState(0),
-			m_name("null"), m_membranePotential(0) { }
+			m_name("null"), m_membranePotential(0), m_nrand(false) { }
 
 		/*! Create a new neuron model specification
 		 * 
@@ -43,10 +43,15 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		 * \param f_nState number of floating point state variables
 		 * \param name unique name for this type
 		 * \param mp index of membrane potential state variable
+		 * \param nrand is a per-neuron gaussian RNG required?
 		 */
-		NeuronType(size_t f_nParam, size_t f_nState, const std::string& name, unsigned mp) :
+		NeuronType(size_t f_nParam,
+				size_t f_nState,
+				const std::string& name,
+				unsigned mp,
+				bool nrand) :
 			mf_nParam(f_nParam), mf_nState(f_nState),
-			m_name(name), m_membranePotential(mp) { }
+			m_name(name), m_membranePotential(mp), m_nrand(nrand) { }
 
 		size_t f_nParam() const { return mf_nParam; }
 		size_t f_nState() const { return mf_nState; }
@@ -62,6 +67,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		/*! Return the index of the state variable representing the membrane potential */
 		unsigned membranePotential() const { return m_membranePotential; }
 
+		bool usesNormalRNG() const { return m_nrand; }
+
 	private :
 
 		size_t mf_nParam;
@@ -69,6 +76,9 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		std::string m_name;
 
 		unsigned m_membranePotential;
+
+		/*! Does this neuron type require a per-neuron gaussian random number generator? */
+		bool m_nrand;
 
 		friend size_t hash_value(const nemo::NeuronType&);
 };

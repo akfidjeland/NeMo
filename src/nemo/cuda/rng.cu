@@ -25,7 +25,7 @@ __device__
 void 
 rng_loadState(unsigned *rngState, const unsigned* g_nstate, unsigned neuron, size_t pitch)
 {
-	for(unsigned i=STATE_RNG0; i <= STATE_RNG3; i++){
+	for(unsigned i=0; i < 4; i++){
 		rngState[i] = g_nstate[neuronLocalStateIndex(neuron, i, pitch)];
 	}
 }
@@ -35,7 +35,7 @@ __device__
 void 
 rng_saveState(const unsigned *rngState, unsigned *g_nstate, unsigned neuron, size_t pitch)
 {
-	for(unsigned i=STATE_RNG0; i <= STATE_RNG3; i++){
+	for(unsigned i=0; i < 4; i++){
 		g_nstate[neuronLocalStateIndex(neuron, i, pitch)] = rngState[i];
 	}
 }

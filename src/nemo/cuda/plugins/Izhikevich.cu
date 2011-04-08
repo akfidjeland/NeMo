@@ -197,7 +197,7 @@ updateNeurons(
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
-		unsigned* gu_neuronState,
+		unsigned* g_nrng,
 		uint32_t* g_valid,
 		// firing stimulus
 		uint32_t* g_fstim,
@@ -244,7 +244,7 @@ updateNeurons(
 	 * so that the critical section in the MPI backend (i.e. the neuron update
 	 * kernel), is smaller. */
 	thalamicInput(s_partitionSize, s_params.pitch32,
-			gu_neuronState, gf_neuronParameters, (float*) s_current);
+			g_nrng, gf_neuronParameters, (float*) s_current);
 	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
@@ -285,7 +285,7 @@ update_neurons(
 		param_t* d_params,
 		float* df_neuronParameters,
 		float* df_neuronState,
-		unsigned* du_neuronState,
+		unsigned* d_nrng,
 		uint32_t* d_valid,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
@@ -299,7 +299,7 @@ update_neurons(
 
 	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle, d_partitionSize, d_params,
-			df_neuronParameters, df_neuronState, du_neuronState, d_valid,
+			df_neuronParameters, df_neuronState, d_nrng, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus
 			d_current, // internal input current

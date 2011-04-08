@@ -20,7 +20,7 @@ typedef cudaError_t update_neurons_t(
 		param_t* d_globalParameters,
 		float* df_neuronParameters,
 		float* df_neuronState,
-		unsigned* du_neuronState,
+		unsigned* d_nrng,
 		uint32_t* d_valid,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
