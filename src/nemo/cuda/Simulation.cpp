@@ -445,6 +445,8 @@ Simulation::getNeuronParameter(unsigned neuron, unsigned parameter) const
 float
 Simulation::getMembranePotential(unsigned neuron) const
 {
+	/*! \bug hard-coding of izhikevich-specific membrane potential variable */
+	const unsigned STATE_V = 1;
 	return m_neurons.getState(m_mapper.deviceIdx(neuron), STATE_V);
 }
 

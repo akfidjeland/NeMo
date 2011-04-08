@@ -66,6 +66,8 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 
 		m_valid.setNeuron(dev);
 
+		/*! \bug The 'sigma' parameter for per-neuron gaussian random number
+		 * generation is hard-coded here */
 		float sigma = n.f_getParameter(PARAM_SIGMA);
 		m_rngEnabled |= sigma != 0.0f;
 		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
