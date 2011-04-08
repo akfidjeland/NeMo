@@ -88,3 +88,4 @@ end
 testNeuronGetSet;
 
 nemoDestroySimulation;
+nemoClearNetwork;

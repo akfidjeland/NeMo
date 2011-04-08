@@ -61,11 +61,39 @@ class NEMO_DLL_PUBLIC Configuration
 		void setCudaPartitionSize(unsigned ps); 
 		unsigned cudaPartitionSize() const;
 
+		/*! Set global STDP function
+		 *
+		 * Excitatory synapses are allowed to vary in the range [0, \a maxWeight].
+		 * Inhibitory synapses are allowed to vary in the range [0, \a minWeight].
+		 *
+		 * \deprecated Use the other setStdpFunction instead.
+		 */
 		void setStdpFunction(
 				const std::vector<float>& prefire,
 				const std::vector<float>& postfire,
 				float minWeight,
 				float maxWeight);
+
+		/*! Set global STDP function
+		 *
+		 * Excitatory synapses are allowed to vary in the range
+		 * [\a minExcitatoryWeight, \a maxExcitatoryWeight].
+		 * Inhibitory synapses are allowed to vary in the range
+		 * [\a minInhibitoryWeight \a maxInhibitoryWeight].
+		 *
+		 * We take minimum and maximum here to refer to the \i effect of the
+		 * synapse. This might cause some confusion for inhibitory weights.
+		 * Since these are negative, \a minInhibitoryWeight > \a
+		 * maxInhibitoryWeight. However, abs(minInhibitoryWeight) >
+		 * abs(maxInhibitoryWeight).
+		 */
+		void setStdpFunction(
+				const std::vector<float>& prefire,
+				const std::vector<float>& postfire,
+				float minExcitatoryWeight,
+				float maxExcitatoryWeight,
+				float minInhibitoryWeight,
+				float maxInhibitoryWeight);
 
 		/*! Make the synapses write-only
 		 *

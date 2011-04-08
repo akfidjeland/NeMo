@@ -14,10 +14,14 @@
 
 #include <map>
 
+#include <nemo/cuda/plugins/neuron_model.h>
+#include <nemo/dyn_load.hpp>
+
 #include "Mapper.hpp"
 #include "NVector.hpp"
 #include "Bitvector.hpp"
 #include "kernel.cu_h"
+#include "parameters.cu_h"
 #include "types.h"
 
 namespace nemo {
@@ -48,23 +52,19 @@ class Neurons
 
 		Neurons(const network::Generator& net, Mapper&);
 
-		/*! Perform any required synchronisation between host and device data.
-		 * Such synchronisation may be required if the user has requested that
-		 * the data should be updated. The step function should be called for
-		 * every simulation cycle. */
-		void step(cycle_t cycle);
+		~Neurons();
 
-		/*! \return device pointer to floating-point neuron parameter data */
-		float* df_parameters() const { return mf_param.deviceData(); }
-
-		/*! \return device pointer to floating-point neuron state data */
-		float* df_state() const { return mf_state.deviceData(); }
-
-		/*! \return device pointer to unsigned neuron state data */
-		unsigned* du_state() const { return mu_state.deviceData(); }
-
-		/*! \return device pointer to bit vector with only valid/existing neurons set */
-		uint32_t* d_valid() const { return m_valid.d_data(); }
+		/*! Update the state of all neurons */
+		cudaError_t update(
+				cudaStream_t stream,
+				cycle_t cycle,
+				param_t* d_params,
+				uint32_t* d_fstim,
+				fix_t* d_istim,
+				fix_t* d_current,
+				uint32_t* d_fout,
+				unsigned* d_nFired,
+				nidx_dt* d_fired);
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const;
@@ -115,9 +115,12 @@ class Neurons
 		 */
 		void setState(const DeviceIdx& idx, unsigned var, float value);
 
-		bool rngEnabled() const { return m_rngEnabled; }
+		/*! \return array of sizes for each partition (which may differ). */
+		unsigned* d_partitionSize() const { return md_partitionSize.get(); }
 
 	private:
+
+		const Mapper& m_mapper;
 
 		const unsigned mf_nParams;
 		const unsigned mf_nStateVars;
@@ -152,6 +155,21 @@ class Neurons
 		void readStateFromDevice() const; // conceptually const, this is just caching
 
 		bool m_rngEnabled;
+
+		/*! Perform any required synchronisation between host and device data.
+		 * Such synchronisation may be required if the user has requested that
+		 * the data should be updated. The sync function should be called for
+		 * every simulation cycle. */
+		void syncToDevice();
+
+		/*! \see d_partitionSize() */
+		boost::shared_array<unsigned> md_partitionSize;
+
+		/* The update function itself is found in a plugin which is loaded
+		 * dynamically */
+		dl_handle m_plugin;
+		update_neurons_t* m_update_neurons;
+		void loadNeuronUpdatePlugin();
 };
 
 

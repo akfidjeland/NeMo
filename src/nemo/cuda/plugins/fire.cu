@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_STEP_CU
-#define NEMO_CUDA_STEP_CU
+#ifndef NEMO_CUDA_IZ_UPDATE_NEURONS_CU
+#define NEMO_CUDA_IZ_UPDATE_NEURONS_CU
 
 /* Copyright 2010 Imperial College London
  *
@@ -10,93 +10,16 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*! \file fire.cu Firing/neuron update kernel */
+/*! \file fire.cu Izhikevich neuron update kernel */
 
-#include "log.cu_h"
-#include "fixedpoint.cu"
-#include "bitvector.cu"
-#include "localQueue.cu"
-#include "thalamicInput.cu"
-
-
-/*! Set per-neuron bit-vector for fired neurons in both shared and global memory
- *
- * \param[in] nfired
- *		Number of neurons in current partition which fired this cycle.
- * \param[in] s_fired
- *		Vector of indices of the fired neuron. The first \a nfired entries
- *		should be set.
- * \param[out] s_dfired
- *		Per-neuron bit-vector in shared memory for fired neurons.
- * \param[out] g_dfired
- *		Per-neuron bit-vector in global memory for fired neurons.
- *
- * \see loadDenseFiring
- */
-__device__
-void
-storeDenseFiring(unsigned nfired, nidx_dt* s_fired, uint32_t* g_dfired)
-{
-	__shared__ uint32_t s_dfired[S_BV_PITCH];
-
-	bv_clear_(s_dfired);
-
-	for(unsigned nbase=0; nbase < nfired; nbase += THREADS_PER_BLOCK) {
-		unsigned i = nbase + threadIdx.x;
-		unsigned neuron = s_fired[i];
-		bv_atomicSetPredicated(i < nfired, neuron, s_dfired);
-	}
-	__syncthreads();
-
-	bv_copy(s_dfired, g_dfired + CURRENT_PARTITION * c_bv_pitch);
-}
-
-
-/*! Store sparse firing in global memory buffer
- *
- * The global memory roundtrip is required to support having 'fire' and
- * 'scatter' in separate kernels.
- *
- * \param[in] nFired number of neurons in this partition which fired this cycle
- * \param[in] s_fired shared memory vector of the relevant neuron indices.
- * \param[out] g_nFired global memory per-partition vector of firing counts
- * \param[out] g_fired global memory per-neuron vector of fired neuron indices.
- * 		For each partition, only the first \a nFired entries contain valid data.
- *
- * \see loadSparseFiring
- */
-__device__
-void
-storeSparseFiring(unsigned nFired, nidx_dt* s_fired, unsigned* g_nFired, nidx_dt* g_fired)
-{
-	for(unsigned b=0; b < nFired; b += THREADS_PER_BLOCK) {
-		unsigned i = b + threadIdx.x;
-		if(i < nFired) {
-			g_fired[CURRENT_PARTITION * c_pitch32 + i] = s_fired[i];
-		}
-	}
-
-	if(threadIdx.x == 0) {
-		g_nFired[CURRENT_PARTITION] = nFired;
-	}
-}
-
-
-
-/*! The external firing stimulus is (possibly) provided in a per-neuron
- * bit-vector */
-__device__
-void
-loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
-{
-	if(g_firing != NULL) {
-		bv_copy(g_firing + CURRENT_PARTITION * c_bv_pitch, s_firing);
-	} else {
-		bv_clear(s_firing);
-	}
-	__syncthreads();
-}
-
+#include <nemo/config.h>
+#include <log.cu_h>
+#include <bitvector.cu>
+#include <current.cu>
+#include <firing.cu>
+#include <fixedpoint.cu>
+#include <parameters.cu>
+#include <thalamicInput.cu>
 
 
 /*! Update state of all neurons
@@ -133,7 +56,8 @@ loadFiringInput(uint32_t* g_firing, uint32_t* s_firing)
  */
 __device__
 void
-fire(
+updateNeurons(
+	const param_t& s_params,
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
 	float* g_neuronState,
@@ -146,7 +70,7 @@ fire(
 	unsigned* s_nFired,
 	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
-	size_t neuronParametersSize = PARTITION_COUNT * c_pitch32;
+	size_t neuronParametersSize = PARTITION_COUNT * s_params.pitch32;
 	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
 	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
 	float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
@@ -231,8 +155,11 @@ fire(
  */
 __global__
 void
-fire( 	uint32_t cycle,
+updateNeurons(
+		uint32_t cycle,
 		bool thalamicInputEnabled,
+		unsigned* g_partitionSize,
+		param_t* g_params,
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
@@ -260,41 +187,46 @@ fire( 	uint32_t cycle,
 		s_cycle = cycle;
 #endif
 		s_nFired = 0;
-		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
+		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
     }
 	__syncthreads();
+
+	__shared__ param_t s_params;
+	loadParameters(g_params, &s_params);
 
 	bv_clear(s_overflow);
 	bv_clear(s_negative);
 
 	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
 	copyCurrent(s_partitionSize,
-			g_current + CURRENT_PARTITION * c_pitch32,
+			g_current + CURRENT_PARTITION * s_params.pitch32,
 			s_current);
 	__syncthreads();
 
-	addCurrentStimulus(s_partitionSize, c_pitch32, g_istim, s_current, s_overflow, s_negative);
-	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current);
+	addCurrentStimulus(s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
+	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current, s_params.fixedPointScale);
 
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the fire kernel),
 	 * is smaller. */
 	if(thalamicInputEnabled) {
-		thalamicInput(s_partitionSize, c_pitch32,
+		thalamicInput(s_partitionSize, s_params.pitch32,
 				gu_neuronState, gf_neuronParameters, (float*) s_current);
 	}
 	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
-	loadFiringInput(g_fstim, s_fstim);
+	loadFiringInput(s_params.pitch1, g_fstim, s_fstim);
 
 	__shared__ uint32_t s_valid[S_BV_PITCH];
-	bv_copy(g_valid + CURRENT_PARTITION * c_bv_pitch, s_valid);
+	bv_copy(g_valid + CURRENT_PARTITION * s_params.pitch1, s_valid);
 	__syncthreads();
 
-	fire( s_partitionSize,
-			gf_neuronParameters + CURRENT_PARTITION * c_pitch32,
-			gf_neuronState + CURRENT_PARTITION * c_pitch32,
+	updateNeurons(
+			s_params,
+			s_partitionSize,
+			gf_neuronParameters + CURRENT_PARTITION * s_params.pitch32,
+			gf_neuronState + CURRENT_PARTITION * s_params.pitch32,
 			s_valid,
 			(float*) s_current,
 			s_fstim,
@@ -303,19 +235,23 @@ fire( 	uint32_t cycle,
 
 	__syncthreads();
 
-	storeDenseFiring(s_nFired, s_fired, g_firingOutput);
-	storeSparseFiring(s_nFired, s_fired, g_nFired, g_fired);
+	storeDenseFiring(s_nFired, s_params.pitch1, s_fired, g_firingOutput);
+	storeSparseFiring(s_nFired, s_params.pitch32, s_fired, g_nFired, g_fired);
 }
 
 
 
 /*! Wrapper for the __global__ call that performs a single simulation step */
-__host__
+extern "C"
+NEMO_CUDA_DLL_PUBLIC
 cudaError_t
-fire( 	cudaStream_t stream,
-		unsigned partitionCount,
+update_neurons(
+		cudaStream_t stream,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		bool thalamicInputEnabled,
+		param_t* d_params,
 		float* df_neuronParameters,
 		float* df_neuronState,
 		unsigned* du_neuronState,
@@ -330,8 +266,8 @@ fire( 	cudaStream_t stream,
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
-	fire<<<dimGrid, dimBlock, 0, stream>>>(
-			cycle, thalamicInputEnabled,
+	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
+			cycle, thalamicInputEnabled, d_partitionSize, d_params,
 			df_neuronParameters, df_neuronState, du_neuronState, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus
@@ -340,7 +276,6 @@ fire( 	cudaStream_t stream,
 
 	return cudaGetLastError();
 }
-
 
 
 #endif

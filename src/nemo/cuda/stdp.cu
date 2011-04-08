@@ -14,6 +14,7 @@
 
 #include "log.cu_h"
 #include "device_assert.cu"
+#include "parameters.cu"
 
 
 /* STDP parameters
@@ -291,14 +292,14 @@ updateSTDP_(
 		unsigned target = nbase + threadIdx.x;
 
 		uint64_t targetRecentFiring =
-			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + target];
+			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * pitch64 + target];
 
 		const int processingDelay = s_stdpPostFireWindow - 1;
 
 		bool fired = targetRecentFiring & (0x1 << processingDelay);
 
 		/* Write updated history to double buffer */
-		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * c_pitch64 + target] =
+		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * pitch64 + target] =
 				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
 		if(cr_address[CURRENT_PARTITION] == 0) {
@@ -373,9 +374,9 @@ updateSTDP_(
  */
 __device__
 void
-loadDenseFiring(uint32_t* g_dfired, uint32_t* s_dfired)
+loadDenseFiring(size_t pitch1, uint32_t* g_dfired, uint32_t* s_dfired)
 {
-	bv_copy(g_dfired + CURRENT_PARTITION * c_bv_pitch, s_dfired);
+	bv_copy(g_dfired + CURRENT_PARTITION * pitch1, s_dfired);
 }
 
 
@@ -384,6 +385,8 @@ __global__
 void
 updateStdp(
 		uint32_t cycle,
+		unsigned* g_partitionSize,
+		param_t* g_params,
 		uint64_t* g_recentFiring,
 		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
 		unsigned* g_nFired,        // device-only buffer.
@@ -392,19 +395,22 @@ updateStdp(
 	__shared__ unsigned s_nFired;
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
 	__shared__ uint32_t s_dfired[S_BV_PITCH];
+	__shared__ param_t s_params;
+
+	loadParameters(g_params, &s_params);
 
 	/* If the STDP update kernel is merged with the scatter
 	 * kernel, we'd only need to load this once per simulation
 	 * step, rather than twice. */
-	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
-	loadDenseFiring(g_dfired, s_dfired);
+	loadSparseFiring(g_nFired, s_params.pitch32, g_fired, &s_nFired, s_fired);
+	loadDenseFiring(s_params.pitch1, g_dfired, s_dfired);
 	loadStdpParameters_();
 	updateSTDP_(
 			cycle,
 			s_dfired,
 			g_recentFiring,
-			c_pitch64,
-			c_partitionSize[CURRENT_PARTITION],
+			s_params.pitch64,
+			g_partitionSize[CURRENT_PARTITION],
 			cr_address, cr_stdp, cr_pitch,
 			s_fired);
 }
@@ -415,8 +421,10 @@ __host__
 cudaError_t
 updateStdp(
 		cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		unsigned* d_partitionSize,
+		param_t* d_parameters,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
@@ -424,7 +432,7 @@ updateStdp(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_recentFiring, d_dfired, d_nFired, d_fired);
+	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_parameters, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }
 

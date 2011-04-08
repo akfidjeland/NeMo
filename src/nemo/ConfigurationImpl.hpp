@@ -40,10 +40,13 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 
 		ConfigurationImpl();
 
-		/*! Switch on logging and send output to stdout */
+		/*! \copydoc nemo::Configuration::enableLogging */
 		void enableLogging() { m_logging = true; }
 
+		/*! \copydoc nemo::Configuration::disableLogging */
 		void disableLogging() { m_logging = false; }
+
+		/*! \copydoc nemo::Configuration::loggingEnabled */
 		bool loggingEnabled() const { return m_logging; }
 
 		void setCpuThreadCount(unsigned threads);
@@ -55,11 +58,14 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		void setCudaDevice(unsigned device) { m_cudaDevice = device; }
 		unsigned cudaDevice() const { return m_cudaDevice; }
 
+		/*! \copydoc nemo::Configuration::setStdpFunction */
 		void setStdpFunction(
 				const std::vector<float>& prefire,
 				const std::vector<float>& postfire,
-				float minWeight,
-				float maxWeight);
+				float minExcitatoryWeight,
+				float maxExcitatoryWeight,
+				float minInhibitoryWeight,
+				float maxInhibitoryWeight);
 
 		const boost::optional<StdpFunction>& stdpFunction() const { return m_stdpFn; }
 

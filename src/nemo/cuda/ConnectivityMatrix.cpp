@@ -76,7 +76,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 		std::cout << "Using fixed point format Q"
 			<< 31-m_fractionalBits << "." << m_fractionalBits << " for weights\n";
 	}
-	CUDA_SAFE_CALL(fx_setFormat(m_fractionalBits));
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
 	 * h_targets/h_weights in advance? It's hard to know exactly how much is

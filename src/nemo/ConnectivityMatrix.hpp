@@ -21,7 +21,7 @@
 #include <nemo/config.h>
 #include "types.hpp"
 #include "Mapper.hpp"
-#include "STDP.hpp"
+#include "StdpProcess.hpp"
 #include "OutgoingDelays.hpp"
 
 #define ASSUMED_CACHE_LINE_SIZE 64

@@ -1,17 +1,15 @@
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \file STDP.cpp
+//! \file StdpProcess.cpp
 
-#include <cassert>
-
-#include "STDP.hpp"
+#include "StdpProcess.hpp"
 #include "StdpFunction.hpp"
 #include "fixedpoint.hpp"
 #include "bitops.h"
@@ -20,8 +18,10 @@ namespace nemo {
 
 
 StdpProcess::StdpProcess(const StdpFunction& fn, unsigned fbits) :
-	m_minWeight(fx_toFix(fn.minWeight(), fbits)),
-	m_maxWeight(fx_toFix(fn.maxWeight(), fbits))
+	m_minExcitatoryWeight(fx_toFix(fn.minExcitatoryWeight(), fbits)),
+	m_maxExcitatoryWeight(fx_toFix(fn.maxExcitatoryWeight(), fbits)),
+	m_minInhibitoryWeight(fx_toFix(fn.minInhibitoryWeight(), fbits)),
+	m_maxInhibitoryWeight(fx_toFix(fn.maxInhibitoryWeight(), fbits))
 {
 	for(std::vector<float>::const_iterator i = fn.prefire().begin();
 			i != fn.prefire().end(); ++i) {
@@ -130,9 +130,9 @@ StdpProcess::updatedWeight(fix_t w_old, fix_t w_diff) const
 {
 	fix_t w_new = 0;
 	if(w_old > 0) {
-		w_new = std::min(m_maxWeight, std::max(w_old + w_diff, 0));
+		w_new = std::min(m_maxExcitatoryWeight, std::max(w_old + w_diff, m_minExcitatoryWeight));
 	} else if(w_old < 0) {
-		w_new = std::min(0, std::max(w_old + w_diff, m_minWeight));
+		w_new = std::min(m_minInhibitoryWeight, std::max(w_old + w_diff, m_maxInhibitoryWeight));
 	}
 	return w_new;
 }

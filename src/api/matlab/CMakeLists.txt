@@ -60,6 +60,12 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 
 	ADD_DEPENDENCIES(mex-api nemo)
 
+	# Sometimes the m-files changes and the install list along with it, but the
+	# installed targets are deemed up-to-date. This might be because the list
+	# of install targets is loaded from a file, but not sure why. Just force
+	# all files to always be installed to work around this issue.
+	SET(CMAKE_INSTALL_ALWAYS ON)
+
 	IF(WIN32)
 		SET(INSTALL_DIR Matlab)
 	ELSE(WIN32)
@@ -68,8 +74,10 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 
 	FILE(STRINGS "install.cmake" AUTO_MATLAB_FILES)
 
+	SET(DEPRECATED_MATLAB_FILES nemoGetDelays.m nemoGetPlastic.m nemoGetTargets.m nemoGetWeights.m)
+
 	INSTALL(
-		FILES ${MEX_OUTPUT} ${AUTO_MATLAB_FILES} nemo.m example.m
+		FILES ${MEX_OUTPUT} ${AUTO_MATLAB_FILES} ${DEPRECATED_MATLAB_FILES} nemo.m example.m
 		DESTINATION ${INSTALL_DIR}
 	)
 

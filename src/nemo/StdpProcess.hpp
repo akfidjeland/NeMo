@@ -3,7 +3,7 @@
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
@@ -73,8 +73,10 @@ class NEMO_BASE_DLL_PUBLIC StdpProcess
 
 		uint64_t m_postFireMask;
 
-		fix_t m_minWeight;
-		fix_t m_maxWeight;
+		fix_t m_minExcitatoryWeight;
+		fix_t m_maxExcitatoryWeight;
+		fix_t m_minInhibitoryWeight;
+		fix_t m_maxInhibitoryWeight;
 };
 
 } // namespace nemo

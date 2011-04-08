@@ -91,10 +91,6 @@ class NVector
 		/*! Asynchronously copy to device */
 		void copyToDeviceAsync(cudaStream_t);
 		
-		/*! Set row of data (in host buffer) for a single partition */ 
-		//! \todo change parameter order, with vector first
-		void setPartition(size_t partitionIdx, const T* arr, size_t length, size_t subvector=0);
-
 		/*! Set value (in host buffer) for a single neuron */
 		//! \todo change parameter order, with vector first
 		void setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector=0);
@@ -121,10 +117,6 @@ class NVector
 };
 
 }	} // end namespace
-
-/* Functions to set pitch on device. Defined in nvector.cu */
-cudaError nv_setPitch32(size_t pitch32);
-cudaError nv_setPitch64(size_t pitch64);
 
 #include "NVector.ipp"
 

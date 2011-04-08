@@ -13,6 +13,7 @@
 /*! \file scatter.cu Spike scatter kernel */
 
 #include "localQueue.cu"
+#include "parameters.cu"
 
 
 /*! Load sparse firing from global memory buffer
@@ -30,7 +31,7 @@
  */
 __device__
 void
-loadSparseFiring(unsigned* g_nFired, nidx_dt* g_fired, unsigned* s_nFired, nidx_dt* s_fired)
+loadSparseFiring(unsigned* g_nFired, size_t pitch32, nidx_dt* g_fired, unsigned* s_nFired, nidx_dt* s_fired)
 {
 	if(threadIdx.x == 0) {
 		*s_nFired = g_nFired[CURRENT_PARTITION];
@@ -40,7 +41,7 @@ loadSparseFiring(unsigned* g_nFired, nidx_dt* g_fired, unsigned* s_nFired, nidx_
 	for(unsigned b=0; b < *s_nFired; b += THREADS_PER_BLOCK) {
 		unsigned i = b + threadIdx.x;
 		if(i < *s_nFired) {
-			s_fired[i] = g_fired[CURRENT_PARTITION * c_pitch32 + i];
+			s_fired[i] = g_fired[CURRENT_PARTITION * pitch32 + i];
 		}
 	}
 	__syncthreads();
@@ -64,6 +65,7 @@ __device__
 void
 scatterLocal(
 		unsigned cycle,
+		const param_t& s_params,
 		unsigned nFired,
 		const nidx_dt* s_fired,
 		uint64_t* g_delays,
@@ -85,7 +87,7 @@ scatterLocal(
 		__shared__ uint64_t delayBits;
 		/*! \todo could load more delay data in one go */
 		if(threadIdx.x == 0) {
-			delayBits = nv_load64(neuron, 0, g_delays);
+			delayBits = nv_load64(neuron, 0, s_params.pitch64, g_delays);
 		}
 		__syncthreads();
 
@@ -250,6 +252,7 @@ scatterGlobal(unsigned cycle,
 __global__
 void
 scatter(uint32_t cycle,
+		param_t* g_params,
 		outgoing_addr_t* g_outgoingAddr,
 		outgoing_t* g_outgoing,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
@@ -262,10 +265,12 @@ scatter(uint32_t cycle,
 {
 	__shared__ unsigned s_nFired;
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
+	__shared__ param_t s_params;
 
-	loadSparseFiring(g_nFired, g_fired, &s_nFired, s_fired);
+	loadParameters(g_params, &s_params);
+	loadSparseFiring(g_nFired, s_params.pitch32, g_fired, &s_nFired, s_fired);
 
-	scatterLocal(cycle, s_nFired, s_fired, g_delays, g_lqFill, g_lqData);
+	scatterLocal(cycle, s_params, s_nFired, s_fired, g_delays, g_lqFill, g_lqData);
 
 	scatterGlobal(cycle,
 			g_lqFill,
@@ -281,8 +286,9 @@ scatter(uint32_t cycle,
 __host__
 cudaError_t
 scatter(cudaStream_t stream,
-		unsigned partitionCount,
 		unsigned cycle,
+		unsigned partitionCount,
+		param_t* d_globalParameters,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
 		outgoing_addr_t* d_outgoingAddr,
@@ -298,6 +304,7 @@ scatter(cudaStream_t stream,
 
 	scatter<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle,
+			d_globalParameters,
 			// spike delivery
 			d_outgoingAddr, d_outgoing,
 			d_gqData, d_gqFill,

@@ -281,7 +281,29 @@ testCurrentStimulus(backend_t backend)
 }
 
 
-TEST_ALL_BACKENDS(istim, testCurrentStimulus)
+void
+testInvalidCurrentStimulus(backend_t backend)
+{
+	unsigned ncount = 1000U;
+	nemo::Configuration conf = configuration(false, 1024, backend);
+	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+
+	sim->step();
+	sim->step();
+
+	nemo::Simulation::current_stimulus istim;
+	istim.push_back(std::make_pair(ncount+1, 0.5));
+	BOOST_REQUIRE_THROW(sim->step(istim), nemo::exception);
+}
+
+
+
+BOOST_AUTO_TEST_SUITE(istim)
+	TEST_ALL_BACKENDS(single_injection, testCurrentStimulus)
+	TEST_ALL_BACKENDS(invalid_injection, testInvalidCurrentStimulus)
+BOOST_AUTO_TEST_SUITE_END()
+
 
 
 void
