@@ -8,8 +8,6 @@
  */
 
 #include "kernel.cu_h"
-#include "thalamicInput.cu_h"
-
 
 
 __device__

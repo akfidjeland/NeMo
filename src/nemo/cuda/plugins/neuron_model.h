@@ -17,7 +17,6 @@ typedef cudaError_t update_neurons_t(
 		unsigned cycle,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
-		bool thalamicInputEnabled,
 		param_t* d_globalParameters,
 		float* df_neuronParameters,
 		float* df_neuronState,

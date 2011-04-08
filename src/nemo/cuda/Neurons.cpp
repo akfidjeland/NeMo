@@ -38,7 +38,6 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	mf_lastSync(~0),
 	mf_paramDirty(false),
 	mf_stateDirty(false),
-	m_rngEnabled(false),
 	m_plugin(NULL),
 	m_update_neurons(NULL)
 {
@@ -66,10 +65,6 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 
 		m_valid.setNeuron(dev);
 
-		/*! \bug The 'sigma' parameter for per-neuron gaussian random number
-		 * generation is hard-coded here */
-		float sigma = n.f_getParameter(PARAM_SIGMA);
-		m_rngEnabled |= sigma != 0.0f;
 		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
 		for(unsigned plane = 0; plane < 4; ++plane) {
 			mu_state.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], STATE_RNG+plane);
@@ -200,7 +195,6 @@ Neurons::update(
 			cycle,
 			m_mapper.partitionCount(),
 			md_partitionSize.get(),
-			m_rngEnabled,
 			d_params,
 			mf_param.deviceData(),
 			mf_state.deviceData(),

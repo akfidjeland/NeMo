@@ -25,6 +25,7 @@
 #define PARAM_B 1
 #define PARAM_C 2
 #define PARAM_D 3
+#define PARAM_SIGMA 4 // for gaussian RNG
 
 #define STATE_U 0
 #define STATE_V 1
@@ -46,12 +47,12 @@ thalamicInput(
 
 	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 		unsigned neuron = nbase + threadIdx.x;
-		if(neuron < partitionSize) {
+		float sigma = g_sigma[neuron];
+		if(neuron < partitionSize && sigma != 0.0f) {
 			float r = rng_nrand(neuron, pitch, g_nstate);
-			s_current[neuron] += r * g_sigma[neuron];
+			s_current[neuron] += r * sigma;
 		}
 	}
-	__syncthreads();
 }
 
 
@@ -191,7 +192,6 @@ __global__
 void
 updateNeurons(
 		uint32_t cycle,
-		bool thalamicInputEnabled,
 		unsigned* g_partitionSize,
 		param_t* g_params,
 		// neuron state
@@ -243,10 +243,8 @@ updateNeurons(
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the neuron update
 	 * kernel), is smaller. */
-	if(thalamicInputEnabled) {
-		thalamicInput(s_partitionSize, s_params.pitch32,
-				gu_neuronState, gf_neuronParameters, (float*) s_current);
-	}
+	thalamicInput(s_partitionSize, s_params.pitch32,
+			gu_neuronState, gf_neuronParameters, (float*) s_current);
 	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
@@ -284,7 +282,6 @@ update_neurons(
 		unsigned cycle,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
-		bool thalamicInputEnabled,
 		param_t* d_params,
 		float* df_neuronParameters,
 		float* df_neuronState,
@@ -301,7 +298,7 @@ update_neurons(
 	dim3 dimGrid(partitionCount);
 
 	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
-			cycle, thalamicInputEnabled, d_partitionSize, d_params,
+			cycle, d_partitionSize, d_params,
 			df_neuronParameters, df_neuronState, du_neuronState, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus

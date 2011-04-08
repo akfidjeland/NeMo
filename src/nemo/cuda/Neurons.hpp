@@ -181,8 +181,6 @@ class Neurons
 		 * already cached on the host */
 		void readStateFromDevice() const; // conceptually const, this is just caching
 
-		bool m_rngEnabled;
-
 		/*! Perform any required synchronisation between host and device data.
 		 * Such synchronisation may be required if the user has requested that
 		 * the data should be updated. The sync function should be called for

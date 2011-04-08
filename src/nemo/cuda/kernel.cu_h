@@ -39,10 +39,6 @@
 #define PARTITION_COUNT gridDim.x
 #define CURRENT_PARTITION blockIdx.x
 
-/*! \bug This parameter is hard-coded as for Izhikevich neurons with gaussian
- * input current */
-#define PARAM_SIGMA 4 // for gaussian RNG
-
 /* Unsigned neuron state variables */
 #define STATE_RNG  0 // use STATE_RNG+plane
 #define STATE_RNG0 0
