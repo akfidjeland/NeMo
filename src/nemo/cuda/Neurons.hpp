@@ -77,6 +77,9 @@ class Neurons
 		/*! \return the word pitch of bitvectors */
 		size_t wordPitch1() const { return m_valid.wordPitch(); }
 
+		/*! \copydoc nemo::Network::setNeuron */
+		void setNeuron(const DeviceIdx&, const float param[], const float state[]);
+
 		/*!
 		 * \param idx neuron index
 		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D

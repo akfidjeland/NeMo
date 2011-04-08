@@ -355,18 +355,9 @@ Simulation::applyStdp(float reward)
 
 
 void
-Simulation::setNeuron(unsigned g_idx,
-			float a, float b, float c, float d,
-			float u, float v, float sigma)
+Simulation::setNeuron(unsigned g_idx, const float param[], const float state[])
 {
-	DeviceIdx d_idx = m_mapper.deviceIdx(g_idx);
-	m_neurons.setParameter(d_idx, PARAM_A, a);
-	m_neurons.setParameter(d_idx, PARAM_B, b);
-	m_neurons.setParameter(d_idx, PARAM_C, c);
-	m_neurons.setParameter(d_idx, PARAM_D, d);
-	m_neurons.setParameter(d_idx, PARAM_SIGMA, sigma);
-	m_neurons.setState(d_idx, STATE_V, v);
-	m_neurons.setState(d_idx, STATE_U, u);
+	m_neurons.setNeuron(m_mapper.existingDeviceIdx(g_idx), param, state);
 }
 
 

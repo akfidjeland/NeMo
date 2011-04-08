@@ -8,6 +8,9 @@
  */
 
 #include "SimulationBackend.hpp"
+
+#include <boost/array.hpp>
+
 #include "fixedpoint.hpp"
 
 namespace nemo {
@@ -76,5 +79,19 @@ SimulationBackend::step(const firing_stimulus& fstim, const current_stimulus& is
 	return readFiring().neurons;
 }
 
+
+
+void
+SimulationBackend::setNeuron(unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	static boost::array<float, 5> param;
+	static boost::array<float, 2> state;
+
+	param[0] = a; param[1] = b; param[2] = c; param[3] = d; param[4] = sigma;
+	state[0] = u; state[1] = v;
+	setNeuron(idx, param.c_array(), state.c_array());
+}
 
 }

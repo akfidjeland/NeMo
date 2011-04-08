@@ -66,10 +66,8 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::applyStdp */
 		void applyStdp(float reward);
 
-		/*! \copydoc nemo::Simulation::setNeuron */
-		void setNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
+		/*! \copydoc nemo::SimulationBackend::setNeuron */
+		void setNeuron(unsigned idx, const float param[], const float state[]);
 
 		/*! \copydoc nemo::Simulation::setNeuronState */
 		void setNeuronState(unsigned neuron, unsigned var, float val);

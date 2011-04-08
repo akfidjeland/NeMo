@@ -242,9 +242,7 @@ class Simulation : public nemo::SimulationBackend
 		void applyStdp(float reward);
 
 		/*! \copydoc nemo::Simulation::setNeuron */
-		void setNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
+		void setNeuron(unsigned idx, const float param[], const float state[]);
 
 		/*! \copydoc nemo::Simulation::setNeuronState */
 		void setNeuronState(unsigned neuron, unsigned var, float val);

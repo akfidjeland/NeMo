@@ -144,6 +144,22 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		/*! \return the mapper used internally by the simulation */
 		virtual Mapper<nidx_t, nidx_t>& mapper() = 0;
 
+		/*! \copydoc Simulation::setNeuron */
+		void setNeuron(unsigned idx,
+				float a, float b, float c, float d,
+				float u, float v, float sigma);
+
+		/*! Set an existing neuron
+		 *
+		 * \param param floating point parameters of the neuron
+		 * \param state floating point state variables of the neuron
+		 *
+		 * \pre The parameter and state arrays must have the dimensions
+		 * 		matching the neuron type specified when the neuron was first
+		 * 		added.
+		 */
+		virtual void setNeuron(unsigned idx, const float param[], const float state[]) = 0;
+
 	protected :
 
 		SimulationBackend() { };

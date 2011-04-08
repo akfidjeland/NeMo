@@ -233,6 +233,22 @@ Neurons::getParameter(const DeviceIdx& idx, unsigned parameter) const
 
 
 void
+Neurons::setNeuron(const DeviceIdx& dev, const float param[], const float state[])
+{
+	readStateFromDevice();
+	for(unsigned i=0, i_end=parameterCount(); i < i_end; ++i) {
+		mf_param.setNeuron(dev.partition, dev.neuron, param[i], i);
+	}
+	mf_paramDirty = true;
+	for(unsigned i=0, i_end=stateVarCount(); i < i_end; ++i) {
+		mf_state.setNeuron(dev.partition, dev.neuron, state[i], i);
+	}
+	mf_stateDirty = true;
+}
+
+
+
+void
 Neurons::setParameter(const DeviceIdx& idx, unsigned parameter, float value)
 {
 	verifyParameterIndex(parameter, parameterCount());

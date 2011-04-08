@@ -287,18 +287,17 @@ Simulation::readFiring()
 
 
 void
-Simulation::setNeuron(unsigned g_idx,
-			float a, float b, float c, float d,
-			float u, float v, float sigma)
+Simulation::setNeuron(unsigned g_idx, const float param[], const float state[])
 {
+	/*! \todo remove Izhikevich specificity. */
 	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
-	m_a.at(l_idx) = a;
-	m_b.at(l_idx) = b;
-	m_c.at(l_idx) = c;
-	m_d.at(l_idx) = d;
-	m_u.at(l_idx) = u;
-	m_v.at(l_idx) = v;
-	m_sigma.at(l_idx) = sigma;
+	m_a.at(l_idx) = param[0];
+	m_b.at(l_idx) = param[1];
+	m_c.at(l_idx) = param[2];
+	m_d.at(l_idx) = param[3];
+	m_u.at(l_idx) = state[0];
+	m_v.at(l_idx) = state[1];
+	m_sigma.at(l_idx) = param[4];
 }
 
 
