@@ -30,21 +30,21 @@ namespace nemo {
 Row::Row(const std::vector<FAxonTerminal>& ss) :
 	len(ss.size())
 {
-	FAxonTerminal* ptr;
+	void* ptr;
 #ifdef HAVE_POSIX_MEMALIGN
 	//! \todo factor out the memory aligned allocation
-	int error = posix_memalign((void**)&ptr,
+	int error = posix_memalign(&ptr,
 			ASSUMED_CACHE_LINE_SIZE,
 			ss.size()*sizeof(FAxonTerminal));
 	if(error) {
 		throw nemo::exception(NEMO_ALLOCATION_ERROR, "Failed to allocate CM row");
 	}
 #else
-	ptr = (FAxonTerminal*) malloc(ss.size()*sizeof(FAxonTerminal));
+	ptr = malloc(ss.size()*sizeof(FAxonTerminal));
 #endif
-
-	std::copy(ss.begin(), ss.end(), ptr);
-	data = boost::shared_array<FAxonTerminal>(ptr, free);
+	FAxonTerminal* term = static_cast<FAxonTerminal*>(ptr);
+	std::copy(ss.begin(), ss.end(), term);
+	data = boost::shared_array<FAxonTerminal>(term, free);
 }
 
 
