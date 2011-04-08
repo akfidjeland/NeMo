@@ -100,7 +100,7 @@ reportLoadError()
 	using boost::format;
 	throw nemo::exception(NEMO_DL_ERROR,
 			str(format("error when loading neuron model plugin %s: %s")
-				% LIB_NAME("Izhikevich") % dl_error()));
+				% dl_libname("Izhikevich") % dl_error()));
 }
 
 
@@ -128,7 +128,7 @@ Neurons::loadNeuronUpdatePlugin()
 		reportLoadError();
 	}
 
-	m_plugin = dl_load(LIB_NAME("Izhikevich"));
+	m_plugin = dl_load(dl_libname("Izhikevich").c_str());
 	if(m_plugin == NULL) {
 		reportLoadError();
 	}

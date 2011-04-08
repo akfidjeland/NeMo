@@ -3,6 +3,8 @@
 
 /* Common interface for dynamic library loading. */
 
+#include <string>
+
 #ifdef _MSC_VER
 
 /* Suppress generation of MSVC-specific min/max macros which otherwise break
@@ -11,7 +13,6 @@
 #include <windows.h>
 typedef HMODULE dl_handle;
 
-#define LIB_NAME(base) base ".dll"
 #define DIRSEP_CHAR '\\'
 #define HOME_ENV_VAR "userprofile"
 
@@ -20,8 +21,6 @@ typedef HMODULE dl_handle;
 #include <ltdl.h>
 typedef lt_dlhandle dl_handle;
 
-// leave ltdl to work out the extension
-#define LIB_NAME(base) "lib" base
 #define DIRSEP_CHAR '/'
 #define HOME_ENV_VAR "HOME"
 
@@ -50,5 +49,8 @@ bool dl_setsearchpath(const char* dir);
 
 /*! Append to plugin search path, returning success */
 bool dl_addsearchdir(const char* dir);
+
+/*! \return library name with any required extension */
+std::string dl_libname(std::string baseName);
 
 #endif

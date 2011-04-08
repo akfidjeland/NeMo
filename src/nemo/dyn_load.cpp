@@ -56,6 +56,12 @@ dl_addsearchdir(const char* dir)
 	return SetDllDirectory(dir) != 0;
 }
 
+std::string
+dl_libname(std::string baseName)
+{
+	return baseName.append(".dll");
+}
+
 #else
 
 bool
@@ -104,6 +110,13 @@ bool
 dl_addsearchdir(const char* dir)
 {
 	return lt_dladdsearchdir(dir) == 0;
+}
+
+std::string
+dl_libname(std::string baseName)
+{
+	/* Leave libltdl to work out the extension */
+	return std::string("lib").append(baseName);
 }
 
 #endif
