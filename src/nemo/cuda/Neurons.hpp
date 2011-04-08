@@ -80,44 +80,63 @@ class Neurons
 		/*! \copydoc nemo::Network::setNeuron */
 		void setNeuron(const DeviceIdx&, const float param[], const float state[]);
 
-		/*!
-		 * \param idx neuron index
-		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
-		 * \return a parameter for a single neuron
-		 */
-		float getParameter(const DeviceIdx& idx, unsigned parameter) const;
-
-		/* Set parameter for a single neuron
+		/*! Get a single parameter for a single neuron
 		 *
-		 * \param idx neuron index
-		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
-		 * \param value
-		 */
-		void setParameter(const DeviceIdx& idx, unsigned parameter, float value);
-
-		/*! Get a state variable for a single neuron
+		 * \param neuron neuron index
+		 * \param parameter parameter index
+		 * \return parameter with index \a parameter.
 		 *
-		 * \param idx neuron index
-		 * \param var STATE_U or STATE_V
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
 		 *
 		 * The first call to this function in any given cycle may take some
 		 * time, since synchronisation is needed between the host and the
 		 * device.
 		 */
-		float getState(const DeviceIdx& idx, unsigned var) const;
+		float getParameter(const DeviceIdx& neuron, unsigned parameter) const;
 
-		/*! Set a state variable for a single neuron
+		/*! Change a single parameter for an existing neuron
 		 *
-		 * \param idx neuron index
-		 * \param var STATE_U or STATE_V
-		 * \param value
+		 * \param neuron neuron index
+		 * \param parameter parameter index
+		 * \param value new value of the state variable
+		 *
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
 		 *
 		 * The first call to this function in any given cycle may take some
 		 * time, since synchronisation is needed between the host and the
 		 * device. Additionaly, the next simulation step will involve copying
-		 * data from host *to* device.
+		 * data from the host to the device.
 		 */
-		void setState(const DeviceIdx& idx, unsigned var, float value);
+		void setParameter(const DeviceIdx& idx, unsigned parameter, float value);
+
+		/*! Get a single state variable for a single neuron
+		 *
+		 * \param neuron neuron index
+		 * \param var variable index
+		 * \return state variable \a n.
+		 *
+		 * For the Izhikevich model the variable indices are 0=u, 1=v.
+		 *
+		 * The first call to this function in any given cycle may take some
+		 * time, since synchronisation is needed between the host and the
+		 * device.
+		 */
+		float getState(const DeviceIdx& neuron, unsigned var) const;
+
+		/*! Change a single state variable for an existing neuron
+		 *
+		 * \param neuron neuron index
+		 * \param var state variable index
+		 * \param value new value of the state variable
+		 *
+		 * For the Izhikevich model variable indices 0=u, 1=v.
+		 *
+		 * The first call to this function in any given cycle may take some
+		 * time, since synchronisation is needed between the host and the
+		 * device. Additionaly, the next simulation step will involve copying
+		 * data from the host to the device.
+		 */
+		void setState(const DeviceIdx& neuron, unsigned var, float value);
 
 		/*! \return array of sizes for each partition (which may differ). */
 		unsigned* d_partitionSize() const { return md_partitionSize.get(); }

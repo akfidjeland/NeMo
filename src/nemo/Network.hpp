@@ -127,43 +127,46 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 				float weight,
 				unsigned char plastic);
 
-		/*!
+
+		/*! Get a single parameter for a single neuron
+		 *
+		 * \param neuron neuron index
+		 * \param parameter parameter index
+		 * \return parameter with index \a parameter.
+		 *
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
+		 */
+		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
+
+		/*! Get a single state variable for a single neuron
+		 *
 		 * \param neuron neuron index
 		 * \param var variable index
-		 * \return state variable \a n.
+		 * \return state variable with index \a var.
 		 *
-		 * For the Izhikevich model the variable indices are 0 = u, 1 = v.
+		 * For the Izhikevich model the variable indices are 0=u, 1=v.
 		 */
 		float getNeuronState(unsigned neuron, unsigned var) const;
-
-		/*!
-		 * \param neuron neuron index
-		 * \param param parameter index
-		 * \return parameter \a n.
-		 *
-		 * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
-		 */
-		float getNeuronParameter(unsigned neuron, unsigned param) const;
 
 		/*! Change a single parameter for an existing neuron
 		 *
 		 * \param neuron neuron index
-		 * \param param parameter index
-		 * \param val new value of the state variable
+		 * \param parameter parameter index
+		 * \param value new value of the state variable
 		 *
-		 * For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
 		 */
-		void setNeuronParameter(unsigned neuron, unsigned param, float val);
+		void setNeuronParameter(unsigned neuron, unsigned parameter, float value);
 
 		/*! Change a single state variable for an existing neuron
 		 *
 		 * \param neuron neuron index
 		 * \param var state variable index
-		 * \param val new value of the state variable
+		 * \param value new value of the state variable
 		 *
-		 * For the Izhikevich model variable indices 0 = u, 1 = v
+		 * For the Izhikevich model variable indices 0=u, 1=v.
 		 */
-		void setNeuronState(unsigned neuron, unsigned var, float val);
+		void setNeuronState(unsigned neuron, unsigned var, float value);
 
 		/*! \return target neuron id for a synapse */
 		unsigned getSynapseTarget(const synapse_id&) const;
