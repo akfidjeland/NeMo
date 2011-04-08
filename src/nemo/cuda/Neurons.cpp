@@ -28,12 +28,10 @@ namespace nemo {
 
 Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	//! \todo set these sizes based on configuration
-	//! \todo: remove these here. Handle inside NVector instead
 	m_mapper(mapper),
-	mf_nParams(NEURON_FLOAT_PARAM_COUNT),
-	mf_nStateVars(NEURON_FLOAT_STATE_COUNT),
-	mf_param(NEURON_FLOAT_PARAM_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
-	mf_state(NEURON_FLOAT_STATE_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_param(net.neuronType().f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_state(net.neuronType().f_nState(), mapper.partitionCount(), mapper.partitionSize(), true, false),
+	//! \todo add RNG spec to neuron type
 	mu_state(NEURON_UNSIGNED_STATE_COUNT, mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_valid(mapper.partitionCount(), true),
 	m_cycle(0),
@@ -59,10 +57,10 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 		DeviceIdx dev = mapper.addIdx(i->first);
 		const nemo::Neuron& n = i->second;
 
-		for(unsigned i=0; i < mf_nParams; ++i) {
+		for(unsigned i=0, i_end=parameterCount(); i < i_end; ++i) {
 			mf_param.setNeuron(dev.partition, dev.neuron, n.f_getParameter(i), i);
 		}
-		for(unsigned i=0; i < mf_nStateVars; ++i) {
+		for(unsigned i=0, i_end=stateVarCount(); i < i_end; ++i) {
 			mf_state.setNeuron(dev.partition, dev.neuron, n.f_getState(i), i);
 		}
 
@@ -102,7 +100,7 @@ reportLoadError()
 {
 	using boost::format;
 	throw nemo::exception(NEMO_DL_ERROR,
-			str(format("error when load neuron model plugin %s: %s")
+			str(format("error when loading neuron model plugin %s: %s")
 				% LIB_NAME("nemo_cuda_iz") % dl_error()));
 }
 
@@ -228,7 +226,7 @@ verifyParameterIndex(unsigned parameter, unsigned maxParameter)
 float
 Neurons::getParameter(const DeviceIdx& idx, unsigned parameter) const
 {
-	verifyParameterIndex(parameter, mf_nParams);
+	verifyParameterIndex(parameter, parameterCount());
 	return mf_param.getNeuron(idx.partition, idx.neuron, parameter);
 }
 
@@ -237,7 +235,7 @@ Neurons::getParameter(const DeviceIdx& idx, unsigned parameter) const
 void
 Neurons::setParameter(const DeviceIdx& idx, unsigned parameter, float value)
 {
-	verifyParameterIndex(parameter, mf_nParams);
+	verifyParameterIndex(parameter, parameterCount());
 	mf_param.setNeuron(idx.partition, idx.neuron, value, parameter);
 	mf_paramDirty = true;
 }
@@ -270,7 +268,7 @@ verifyStateVariableIndex(unsigned var, unsigned maxVar)
 float
 Neurons::getState(const DeviceIdx& idx, unsigned var) const
 {
-	verifyStateVariableIndex(var, mf_nStateVars);
+	verifyStateVariableIndex(var, stateVarCount());
 	readStateFromDevice();
 	return mf_state.getNeuron(idx.partition, idx.neuron, var);
 }
@@ -280,7 +278,7 @@ Neurons::getState(const DeviceIdx& idx, unsigned var) const
 void
 Neurons::setState(const DeviceIdx& idx, unsigned var, float value)
 {
-	verifyStateVariableIndex(var, mf_nStateVars);
+	verifyStateVariableIndex(var, stateVarCount());
 	readStateFromDevice();
 	mf_state.setNeuron(idx.partition, idx.neuron, value, var);
 	mf_stateDirty = true;

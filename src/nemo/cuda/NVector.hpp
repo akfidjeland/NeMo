@@ -103,6 +103,8 @@ class NVector
 		/*! Fill all entries in a single plane with the same value */
 		void fill(const T& val, size_t subvector=0);
 
+		size_t planeCount() const { return m_planes; }
+
 	private :
 
 		boost::shared_array<T> m_deviceData;

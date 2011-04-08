@@ -122,8 +122,8 @@ class Neurons
 
 		const Mapper& m_mapper;
 
-		const unsigned mf_nParams;
-		const unsigned mf_nStateVars;
+		size_t parameterCount() const { return mf_param.planeCount(); }
+		size_t stateVarCount() const { return mf_state.planeCount(); }
 
 		/* Neuron parameters do not change at run-time (unless the user
 		 * specifically does it through \a setParameter) */
