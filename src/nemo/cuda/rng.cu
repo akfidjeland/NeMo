@@ -10,6 +10,7 @@
 /*! \file rng.cu Per-neuron random number generation */
 
 #include "kernel.cu_h"
+#include "rng.cu_h"
 
 
 __device__
@@ -73,18 +74,18 @@ rng_genGaussian(unsigned* rngState)
 /*! Generate a gaussian random number for a specific neuron */
 __device__
 float
-rng_nrand(unsigned neuron, size_t pitch, unsigned* g_nstate)
+rng_nrand(unsigned neuron, nrng_t g_nrng)
 {
 	unsigned rngState[4];
 
 	/* Copy the input state from memory into our local state */
-	rng_loadState(rngState, g_nstate, neuron, pitch);
+	rng_loadState(rngState, g_nrng.state, neuron, g_nrng.pitch);
 
 	float2 r = rng_genGaussian(rngState);
 
 	/* Copy the current RNG state back to memory (not strictly necessary, you
 	 * can just generate a new random state every time if you want). */
-	rng_saveState(rngState, g_nstate, neuron, pitch);
+	rng_saveState(rngState, g_nrng.state, neuron, g_nrng.pitch);
 
 	/* We're throwing away one random number here */
 	return r.x;

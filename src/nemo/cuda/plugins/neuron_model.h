@@ -7,6 +7,7 @@
 #include <nemo/internal_types.h>
 #include <nemo/cuda/types.h>
 #include <nemo/cuda/parameters.cu_h>
+#include <nemo/cuda/rng.cu_h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,7 +21,7 @@ typedef cudaError_t update_neurons_t(
 		param_t* d_globalParameters,
 		float* df_neuronParameters,
 		float* df_neuronState,
-		unsigned* d_nrng,
+		nrng_t d_nrng,
 		uint32_t* d_valid,
 		uint32_t* d_fstim,
 		fix_t* d_istim,

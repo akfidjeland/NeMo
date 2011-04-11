@@ -36,11 +36,12 @@ void
 thalamicInput(
 		size_t partitionSize,
 		size_t pitch,
-		unsigned* g_nstate,
 		float* g_nparam,    // not offset
+		nrng_t g_nrng,
 		float* s_current)   // correctly offset for this partition
 {
 	//! \todo make the partition offset in call (for consistency).
+	//! \todo make this call via a generic nvector function
 	float* g_sigma = g_nparam
 			+ PARAM_SIGMA * PARTITION_COUNT * pitch
 			+ CURRENT_PARTITION * pitch;
@@ -49,7 +50,7 @@ thalamicInput(
 		unsigned neuron = nbase + threadIdx.x;
 		float sigma = g_sigma[neuron];
 		if(neuron < partitionSize && sigma != 0.0f) {
-			float r = rng_nrand(neuron, pitch, g_nstate);
+			float r = rng_nrand(neuron, g_nrng);
 			s_current[neuron] += r * sigma;
 		}
 	}
@@ -197,7 +198,7 @@ updateNeurons(
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
-		unsigned* g_nrng,
+		nrng_t g_nrng,
 		uint32_t* g_valid,
 		// firing stimulus
 		uint32_t* g_fstim,
@@ -244,7 +245,7 @@ updateNeurons(
 	 * so that the critical section in the MPI backend (i.e. the neuron update
 	 * kernel), is smaller. */
 	thalamicInput(s_partitionSize, s_params.pitch32,
-			g_nrng, gf_neuronParameters, (float*) s_current);
+			gf_neuronParameters, g_nrng, (float*) s_current);
 	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
@@ -285,7 +286,7 @@ update_neurons(
 		param_t* d_params,
 		float* df_neuronParameters,
 		float* df_neuronState,
-		unsigned* d_nrng,
+		nrng_t d_nrng,
 		uint32_t* d_valid,
 		uint32_t* d_fstim,
 		fix_t* d_istim,

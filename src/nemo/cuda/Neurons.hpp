@@ -160,7 +160,8 @@ class Neurons
 		mutable NVector<float> mf_state;
 
 		/*! Normal RNG state */
-		NVector<unsigned> m_nrng;
+		NVector<unsigned> m_nrngState;
+		nrng_t m_nrng;
 
 		/* In the translation from global neuron indices to device indices,
 		 * there may be 'holes' left in the index space. The valid bitvector

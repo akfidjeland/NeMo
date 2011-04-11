@@ -42,7 +42,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	loadNeuronUpdatePlugin(m_type);
 
 	if(m_type.usesNormalRNG()) {
-		m_nrng = NVector<unsigned>(RNG_STATE_COUNT,
+		m_nrngState = NVector<unsigned>(RNG_STATE_COUNT,
 				mapper.partitionCount(), mapper.partitionSize(), true, false);
 	}
 
@@ -70,7 +70,7 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 
 		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
 		for(unsigned plane = 0; plane < 4; ++plane) {
-			m_nrng.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], plane);
+			m_nrngState.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], plane);
 		}
 
 		maxPartitionNeuron[dev.partition] =
@@ -79,7 +79,9 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 
 	mf_param.copyToDevice();
 	mf_state.copyToDevice();
-	m_nrng.moveToDevice();
+	m_nrngState.moveToDevice();
+	m_nrng.state = m_nrngState.deviceData();
+	m_nrng.pitch = m_nrngState.wordPitch();
 	m_valid.moveToDevice();
 	configurePartitionSizes(maxPartitionNeuron);
 }
@@ -148,7 +150,7 @@ Neurons::d_allocated() const
 {
 	return mf_param.d_allocated()
 		+ mf_state.d_allocated()
-		+ m_nrng.d_allocated();
+		+ m_nrngState.d_allocated();
 }
 
 
@@ -171,8 +173,7 @@ Neurons::wordPitch32() const
 {
 	size_t f_param_pitch = mf_param.wordPitch();
 	size_t f_state_pitch = mf_state.wordPitch();
-	size_t u_state_pitch = m_nrng.wordPitch();
-	if(f_param_pitch != f_state_pitch || f_param_pitch != u_state_pitch) {
+	if(f_param_pitch != f_state_pitch) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitches");
 	}
 	return f_param_pitch;
@@ -201,7 +202,7 @@ Neurons::update(
 			d_params,
 			mf_param.deviceData(),
 			mf_state.deviceData(),
-			m_nrng.deviceData(),
+			m_nrng,
 			m_valid.d_data(),
 			d_fstim, d_istim,
 			d_current, d_fout, d_nFired, d_fired);
