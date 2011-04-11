@@ -13,45 +13,26 @@
 #include "rng.cu_h"
 
 
+/*! \return offset into the RNG state vector for a given \a neuron and \a plane */
 __device__
-unsigned
-neuronLocalStateIndex(unsigned neuron, unsigned plane, size_t pitch)
+unsigned*
+rng_state(unsigned neuron, unsigned plane, nrng_t g_nrng)
 {
-    return (plane * PARTITION_COUNT + CURRENT_PARTITION) * pitch + neuron;
+    return g_nrng.state + (plane * PARTITION_COUNT + CURRENT_PARTITION) * g_nrng.pitch + neuron;
 }
 
-
-
-__device__ 
-void 
-rng_loadState(unsigned *rngState, const unsigned* g_nstate, unsigned neuron, size_t pitch)
-{
-	for(unsigned i=0; i < 4; i++){
-		rngState[i] = g_nstate[neuronLocalStateIndex(neuron, i, pitch)];
-	}
-}
-
-
-__device__ 
-void 
-rng_saveState(const unsigned *rngState, unsigned *g_nstate, unsigned neuron, size_t pitch)
-{
-	for(unsigned i=0; i < 4; i++){
-		g_nstate[neuronLocalStateIndex(neuron, i, pitch)] = rngState[i];
-	}
-}
 
 
 __device__ 
 unsigned 
-rng_genUniform(unsigned *rngState)
+rng_urand(unsigned state[])
 {
-	unsigned t = (rngState[0]^(rngState[0]<<11));
-	rngState[0] = rngState[1];
-	rngState[1] = rngState[2];
-	rngState[2] = rngState[3];
-	rngState[3] = (rngState[3]^(rngState[3]>>19))^(t^(t>>8));
-	return rngState[3];
+	unsigned t = (state[0]^(state[0]<<11));
+	state[0] = state[1];
+	state[1] = state[2];
+	state[2] = state[3];
+	state[3] = (state[3]^(state[3]>>19))^(t^(t>>8));
+	return state[3];
 }
 
 
@@ -61,31 +42,35 @@ rng_genUniform(unsigned *rngState)
  * needed or something.  */
 __device__
 float2
-rng_genGaussian(unsigned* rngState)
+rng_nrand(unsigned state[])
 {
-	float a = rng_genUniform(rngState) * 1.4629180792671596810513378043098e-9f;
-	float b = rng_genUniform(rngState) * 0.00000000023283064365386962890625f;
+	float a = rng_urand(state) * 1.4629180792671596810513378043098e-9f;
+	float b = rng_urand(state) * 0.00000000023283064365386962890625f;
 	float r = sqrtf(-2*logf(1-b));
 	return make_float2(sinf(a)*r, cosf(a)*r);
 }
 
 
 
-/*! Generate a gaussian random number for a specific neuron */
+/*! Generate a gaussian random number from N(0,1) for a specific neuron */
 __device__
 float
-rng_nrand(unsigned neuron, nrng_t g_nrng)
+nrand(unsigned neuron, nrng_t g_nrng)
 {
-	unsigned rngState[4];
+	unsigned state[4];
 
 	/* Copy the input state from memory into our local state */
-	rng_loadState(rngState, g_nrng.state, neuron, g_nrng.pitch);
+	for(unsigned i=0; i < 4; i++){
+		state[i] = *rng_state(neuron, i, g_nrng);
+	}
 
-	float2 r = rng_genGaussian(rngState);
+	float2 r = rng_nrand(state);
 
 	/* Copy the current RNG state back to memory (not strictly necessary, you
 	 * can just generate a new random state every time if you want). */
-	rng_saveState(rngState, g_nrng.state, neuron, g_nrng.pitch);
+	for(unsigned i=0; i < 4; i++){
+		*rng_state(neuron, i, g_nrng) = state[i];
+	}
 
 	/* We're throwing away one random number here */
 	return r.x;

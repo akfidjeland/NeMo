@@ -50,8 +50,7 @@ thalamicInput(
 		unsigned neuron = nbase + threadIdx.x;
 		float sigma = g_sigma[neuron];
 		if(neuron < partitionSize && sigma != 0.0f) {
-			float r = rng_nrand(neuron, g_nrng);
-			s_current[neuron] += r * sigma;
+			s_current[neuron] += nrand(neuron, g_nrng) * sigma;
 		}
 	}
 }
