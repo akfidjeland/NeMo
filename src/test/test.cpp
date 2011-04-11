@@ -799,6 +799,7 @@ testSetNeuron(backend_t backend)
 		net1.addNeuron(0, a, b, c, d, u, v-1.0f, sigma);
 		boost::scoped_ptr<nemo::Simulation> sim(simulation(net1, conf));
 		sim->setNeuron(0, a, b, c, d, u, v, sigma);
+		BOOST_REQUIRE_EQUAL(v, sim->getMembranePotential(0));
 		sim->step();
 		BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
 	}
