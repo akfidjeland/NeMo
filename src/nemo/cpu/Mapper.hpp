@@ -35,7 +35,8 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 			}
 		}
 
-		/*! \copydoc nemo::Mapper */
+		/*! Add a neuron to the set of existing neurons and return the local
+		 * index. */
 		nidx_t addGlobal(const nidx_t& global);
 
 		/*! \return local neuron index corresponding to the given global neuron index
@@ -64,7 +65,10 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t>
 			return local + m_offset;
 		}
 
-		/*! \copydoc nemo::Mapper::neuronsInValidRange */
+		/*! \return
+		 * 		number of neurons in the valid index range. This may be larger
+		 * 		than the existing number of neurons in this range as some
+		 * 		indices may be unused.*/
 		unsigned neuronsInValidRange() const {
 			return m_ncount;
 		}

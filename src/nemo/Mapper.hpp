@@ -30,10 +30,6 @@ class Mapper
 		/*! Translate from local to global index */
 		virtual G globalIdx(const L&) const = 0;
 
-		/*! Add a neuron to the set of existing neurons and return the local
-		 * index. */
-		virtual L addGlobal(const G&) = 0;
-
 		/*! \return
 		 * 		true if the global neuron index is one which has previously
 		 * 		been added to the mapper (via \a addGlobal), false otherwise.
@@ -45,15 +41,8 @@ class Mapper
 		 * 		added to the mapper (via \a addGlobal), false otherwise
 		 */
 		virtual bool existingLocal(const L&) const = 0;
-
-		virtual L maxLocalIdx() const = 0;
-
-		/*! \return
-		 * 		number of neurons in the valid index range. This may be larger
-		 * 		than the existing number of neurons in this range as some
-		 * 		indices may be unused.*/
-		virtual unsigned neuronsInValidRange() const = 0;
 };
+
 
 }
 

@@ -80,11 +80,6 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 
 		nidx_t globalIdx(pidx_t p, nidx_t n) const;
 
-		/*! \copydoc nemo::Mapper::addGlobal */
-		nidx_t addGlobal(const nidx_t& global) {
-			return localIdx(addIdx(global));
-		}
-
 		/*! Add a neuron to the set of existing neurons and return the device
 		 * index. */
 		DeviceIdx addIdx(nidx_t global);
@@ -111,8 +106,6 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 
 		unsigned partitionCount() const { return m_partitionCount; }
 
-		unsigned maxLocalIdx() const { return partitionSize() * partitionCount() - 1; }
-
 		/*! \return minimum global indexed supported by this mapper */
 		unsigned minHandledGlobalIdx() const { return m_offset; }
 
@@ -127,11 +120,6 @@ class Mapper : public nemo::Mapper<nidx_t, nidx_t> {
 		/*! \copydoc nemo::Mapper::existingLocal */
 		bool existingLocal(const nidx_t& local) const {
 			return existingGlobal(globalIdx(local));
-		}
-
-		/*! \copydoc nemo::Mapper::neuronsInValidRange */
-		unsigned neuronsInValidRange() const {
-			return partitionCount() * partitionSize();
 		}
 
 	private :
