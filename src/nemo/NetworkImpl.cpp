@@ -1,6 +1,6 @@
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
@@ -92,16 +92,10 @@ NetworkImpl::addNeuron(
 		const float param[],
 		const float state[])
 {
-	using boost::format;
-	if(m_mapper.find(nidx) != m_mapper.end()) {
-		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Duplicate neuron index for neuron %u") % nidx));
-	}
 	m_maxIdx = std::max(m_maxIdx, int(nidx));
 	m_minIdx = std::min(m_minIdx, int(nidx));
-
 	unsigned l_nidx = neuronCollection(type_id).add(param, state);
-	m_mapper[nidx] = NeuronAddress(type_id, l_nidx);
+	m_mapper.insert(nidx, NeuronAddress(type_id, l_nidx));
 }
 
 
@@ -110,7 +104,7 @@ NetworkImpl::addNeuron(
 void
 NetworkImpl::setNeuron(unsigned nidx, const float param[], const float state[])
 {
-	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	const NeuronAddress& addr = m_mapper.localIdx(nidx);
 	neuronCollection(addr.first).set(addr.second, param, state);
 }
 
@@ -145,24 +139,10 @@ NetworkImpl::addSynapse(
 
 
 
-const NetworkImpl::NeuronAddress&
-NetworkImpl::existingNeuronAddress(unsigned nidx) const
-{
-	using boost::format;
-	mapper_t::const_iterator found = m_mapper.find(nidx);
-	if(found == m_mapper.end()) {
-		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Non-existing neuron index %u") % nidx));
-	}
-	return found->second;
-}
-
-
-
 float
 NetworkImpl::getNeuronState(unsigned nidx, unsigned var) const
 {
-	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	const NeuronAddress& addr = m_mapper.localIdx(nidx);
 	return neuronCollection(addr.first).getState(addr.second, var);
 }
 
@@ -171,7 +151,7 @@ NetworkImpl::getNeuronState(unsigned nidx, unsigned var) const
 float
 NetworkImpl::getNeuronParameter(unsigned nidx, unsigned parameter) const
 {
-	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	const NeuronAddress& addr = m_mapper.localIdx(nidx);
 	return neuronCollection(addr.first).getParameter(addr.second, parameter);
 }
 
@@ -180,7 +160,7 @@ NetworkImpl::getNeuronParameter(unsigned nidx, unsigned parameter) const
 void
 NetworkImpl::setNeuronState(unsigned nidx, unsigned var, float val)
 {
-	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	const NeuronAddress& addr = m_mapper.localIdx(nidx);
 	return neuronCollection(addr.first).setState(addr.second, var, val);
 }
 
@@ -189,7 +169,7 @@ NetworkImpl::setNeuronState(unsigned nidx, unsigned var, float val)
 void
 NetworkImpl::setNeuronParameter(unsigned nidx, unsigned parameter, float val)
 {
-	const NeuronAddress& addr = existingNeuronAddress(nidx);
+	const NeuronAddress& addr = m_mapper.localIdx(nidx);
 	return neuronCollection(addr.first).setParameter(addr.second, parameter, val);
 }
 

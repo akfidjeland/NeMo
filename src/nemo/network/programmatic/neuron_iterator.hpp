@@ -7,6 +7,7 @@
 
 #include <nemo/network/iterator.hpp>
 #include <nemo/NeuronType.hpp>
+#include <nemo/RandomMapper.hpp>
 
 
 namespace nemo {
@@ -18,7 +19,7 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 {
 	public :
 
-		typedef std::map<nidx_t, std::pair<unsigned, unsigned> >::const_iterator base_iterator;
+		typedef RandomMapper<std::pair<unsigned, unsigned> >::const_iterator base_iterator;
 
 		neuron_iterator(base_iterator it,
 			const std::vector< std::deque<float> >& param,

@@ -11,6 +11,7 @@
 #include "Axon.hpp"
 #include "Neurons.hpp"
 #include "ReadableNetwork.hpp"
+#include "RandomMapper.hpp"
 
 namespace nemo {
 
@@ -122,12 +123,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		 * type in the neuron_iterator class */
 		typedef std::pair<unsigned, unsigned> NeuronAddress;
 
-		typedef std::map<nidx_t, NeuronAddress> mapper_t;
-		mapper_t m_mapper;
-
-		/*! Return neuron address of an existing neuron or throw if it does not
-		 * exist */
-		const NeuronAddress& existingNeuronAddress(unsigned nidx) const;
+		nemo::RandomMapper<NeuronAddress> m_mapper;
 
 		/*! \todo consider using unordered here instead, esp. after removing
 		 * iterator interface. Currently we need rbegin, which is not found in
