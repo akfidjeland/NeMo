@@ -36,12 +36,30 @@ namespace nemo {
 	namespace cpu {
 
 
+/* Populate mapper */
+RandomMapper<nidx_t>
+mapCompact(const nemo::network::Generator& net)
+{
+	using namespace nemo::network;
+
+	nidx_t nidx = 0;
+	RandomMapper<nidx_t> mapper;
+
+	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+			i != i_end; ++i) {
+		mapper.insert((*i).first, nidx);
+		nidx++;
+	}
+	return mapper;
+}
+
+
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
-	m_mapper(net),
+	m_mapper(mapCompact(net)),
 	//! \todo remove redundant member?
-	m_neuronCount(m_mapper.neuronsInValidRange()),
+	m_neuronCount(net.neuronCount()),
 	m_a(m_neuronCount, 0),
 	m_b(m_neuronCount, 0),
 	m_c(m_neuronCount, 0),
@@ -75,13 +93,13 @@ Simulation::Simulation(
 void
 Simulation::setNeuronParameters(
 		const nemo::network::Generator& net,
-		Mapper& mapper)
+		RandomMapper<nidx_t>& mapper)
 {
 	using namespace nemo::network;
 
 	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
-		nidx_t nidx = mapper.addGlobal((*i).first);
+		nidx_t nidx = mapper.localIdx((*i).first);
 		const Neuron& n = i->second;
 		m_a.at(nidx) = n.f_getParameter(0);
 		m_b.at(nidx) = n.f_getParameter(1);
@@ -157,7 +175,7 @@ Simulation::initCurrentStimulus(size_t count)
 void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
-	m_current[m_mapper.existingLocalIdx(neuron)] = fx_toFix(current, getFractionalBits());
+	m_current[m_mapper.localIdx(neuron)] = fx_toFix(current, getFractionalBits());
 }
 
 
@@ -290,7 +308,7 @@ void
 Simulation::setNeuron(unsigned g_idx, const float param[], const float state[])
 {
 	/*! \todo remove Izhikevich specificity. */
-	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
+	nidx_t l_idx = m_mapper.localIdx(g_idx);
 	m_a.at(l_idx) = param[0];
 	m_b.at(l_idx) = param[1];
 	m_c.at(l_idx) = param[2];
@@ -307,7 +325,7 @@ Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 {
 	using boost::format;
 
-	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
+	nidx_t l_idx = m_mapper.localIdx(g_idx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(var) {
@@ -325,7 +343,7 @@ Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 {
 	using boost::format;
 
-	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
+	nidx_t l_idx = m_mapper.localIdx(g_idx);
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
 	switch(parameter) {
@@ -400,7 +418,7 @@ Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */
-	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
+	nidx_t l_idx = m_mapper.localIdx(g_idx);
 	switch(var) {
 		case 0: return m_u.at(l_idx);
 		case 1: return m_v.at(l_idx);
@@ -416,7 +434,7 @@ Simulation::getNeuronParameter(unsigned g_idx, unsigned param) const
 {
 	using boost::format;
 
-	nidx_t l_idx = m_mapper.existingLocalIdx(g_idx);
+	nidx_t l_idx = m_mapper.localIdx(g_idx);
 
 	/*! \todo change to more generic neuron storage and remove
 	 * Izhikevich-specific hardcoding */

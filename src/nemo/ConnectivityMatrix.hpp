@@ -20,7 +20,7 @@
 
 #include <nemo/config.h>
 #include "types.hpp"
-#include "Mapper.hpp"
+#include "RandomMapper.hpp"
 #include "StdpProcess.hpp"
 #include "OutgoingDelays.hpp"
 
@@ -81,7 +81,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 {
 	public:
 
-		typedef Mapper<nidx_t, nidx_t> mapper_t;
+		typedef RandomMapper<nidx_t> mapper_t;
 
 		ConnectivityMatrix(const ConfigurationImpl& conf, const mapper_t&);
 

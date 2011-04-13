@@ -23,13 +23,15 @@ namespace nemo {
  * The user of this class is responsible for providing both indices
  */
 template<class L>
-class RandomMapper
+class RandomMapper : public Mapper<nidx_t, L>
 {
 	private :
 
 		typedef boost::bimap<nidx_t, L> bm_type;
 
 	public :
+
+		~RandomMapper() {}
 
 		/*! Add a new global/local neuron index pair */
 		void insert(nidx_t gidx, const L& lidx) {
@@ -39,8 +41,9 @@ class RandomMapper
 		/*! \return local index corresponding to the global neuron index \a gidx 
 		 *
 		 * \throws nemo::exception if the global neuron does not exist
+		 * \todo return a reference here instead
 		 */
-		const L& localIdx(const nidx_t& gidx) const {
+		L localIdx(const nidx_t& gidx) const {
 			using boost::format;
 			try {
 				return m_bm.left.at(gidx);
@@ -48,6 +51,33 @@ class RandomMapper
 				throw nemo::exception(NEMO_INVALID_INPUT,
 					str(format("Non-existing neuron index %u") % gidx));
 			} 
+		}
+
+		nidx_t globalIdx(const L& lidx) const {
+			try {
+				return m_bm.right.at(lidx);
+			} catch(std::out_of_range) {
+				//! \todo print the local index as well here
+				throw nemo::exception(NEMO_INVALID_INPUT,
+						"Non-existing local neuron index");
+			}
+		}
+
+		bool existingGlobal(const nidx_t& gidx) const {
+			return m_bm.left.find(gidx) != m_bm.left.end();
+		}
+
+		bool existingLocal(const L& lidx) const {
+			return m_bm.right.find(lidx) != m_bm.right.end();
+		}
+
+		const L& minLocalIdx() const {
+			return m_bm.size() == 0 ? 0 : m_bm.right.begin()->first;
+
+		}
+
+		const L& maxLocalIdx() const {
+			return m_bm.size() == 0 ? 0 : m_bm.right.rbegin()->first;
 		}
 
 		/*! Iterator over <global,local> pairs */

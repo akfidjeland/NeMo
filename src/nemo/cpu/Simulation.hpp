@@ -19,10 +19,10 @@
 #include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/Timer.hpp>
 #include <nemo/FiringBuffer.hpp>
+#include <nemo/RandomMapper.hpp>
 #include <nemo/RNG.hpp>
 
 #include "Worker.hpp"
-#include "Mapper.hpp"
 
 
 namespace nemo {
@@ -113,7 +113,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 	private:
 
-		Mapper m_mapper;
+		RandomMapper<nidx_t> m_mapper;
 
 		typedef std::vector<fix_t> current_vector_t;
 		typedef std::vector<unsigned> stimulus_vector_t;
@@ -150,7 +150,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/* Set all neuron parameters from input network in
 		 * local data structures. Also add valid neuron
 		 * indices to the mapper as a side effect.  */
-		void setNeuronParameters(const network::Generator& net, Mapper& mapper);
+		void setNeuronParameters(const network::Generator& net, RandomMapper<nidx_t>& mapper);
 
 		/*! Update state of all neurons */
 		void update(const stimulus_vector_t&, const current_vector_t&);
