@@ -261,6 +261,8 @@ Worker::runSimulation(
 	/* Local simulation data */
 	boost::scoped_ptr<nemo::SimulationBackend> sim(nemo::simulationBackend(net, conf));
 
+	/*! \bug the mapper() method no longer exists (due to more complex mapping
+	 * in the different backends). */
 	nemo::Mapper<nidx_t, nidx_t>& localMapper = sim->mapper();
 	nemo::ConnectivityMatrix g_fcmIn(conf, localMapper);
 	for(std::deque<Synapse>::const_iterator s = globalSynapses.begin();

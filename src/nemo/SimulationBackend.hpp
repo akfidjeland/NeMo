@@ -141,9 +141,6 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 * associated cycle number. */
 		virtual FiredList readFiring() = 0;
 
-		/*! \return the mapper used internally by the simulation */
-		virtual Mapper<nidx_t, nidx_t>& mapper() = 0;
-
 		/*! \copydoc Simulation::setNeuron */
 		void setNeuron(unsigned idx,
 				float a, float b, float c, float d,
