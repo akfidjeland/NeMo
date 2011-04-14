@@ -41,14 +41,12 @@ Simulation::Simulation(
 	 * (dense) local neuron indices */
 	m_neurons(net),
 	m_mapper(m_neurons.mapper()),
-	//! \todo remove redundant member?
 	m_neuronCount(net.neuronCount()),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
 	m_cm(net, conf, m_mapper),
-	m_current(m_neuronCount, 0),
-	m_fstim(m_neuronCount, 0)
+	m_current(m_neuronCount, 0)
 {
 	//! \todo can we finalize cm right away?
 	m_cm.finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
@@ -91,12 +89,9 @@ void
 Simulation::fire()
 {
 	const current_vector_t& current = deliverSpikes();
-	update(m_fstim, current);
+	update(current);
 	setFiring();
 	m_timer.step();
-	//! \todo add separate unset so as to only touch minimal number of words
-	//each iteration. Alternatively, just unset after use.
-	std::fill(m_fstim.begin(), m_fstim.end(), 0);
 }
 
 
@@ -104,11 +99,7 @@ Simulation::fire()
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 {
-	// m_fstim should already be clear at this point
-	for(std::vector<unsigned>::const_iterator i = fstim.begin();
-			i != fstim.end(); ++i) {
-		m_fstim.at(m_mapper.localIdx(*i)) = true;
-	}
+	m_neurons.setFiringStimulus(fstim);
 }
 
 
@@ -164,15 +155,13 @@ void
 Simulation::updateRange(int start, int end)
 {
 	m_neurons.update(start, end, getFractionalBits(),
-			&m_fstim[0], &m_recentFiring[0],
-			&m_current[0], &m_fired[0]);
+			&m_current[0], &m_recentFiring[0], &m_fired[0]);
 }
 
 
 
 void
 Simulation::update(
-		const stimulus_vector_t& fstim,
 		const current_vector_t& current)
 {
 #ifdef NEMO_CPU_MULTITHREADED

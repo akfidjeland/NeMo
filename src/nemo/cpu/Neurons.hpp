@@ -21,7 +21,8 @@ namespace nemo {
 
 /*! Neuron population for CPU backend
  *
- * The neurons are stored internally in dense structure-of-arrays. 
+ * The neurons are stored internally in dense structure-of-arrays with
+ * contigous local indices starting from zero.
  *
  * \todo deal with multi-threading inside this class
  */
@@ -36,11 +37,11 @@ class Neurons
 
 		/*! Update the state of all neurons
 		 *
-		 * The current vector is cleared 
+		 * \post the input current vector is set to all zero.
+		 * \post the internal firing stimulus buffer (\a m_fstim) is set to all false.
 		 */
 		void update(int start, int end, unsigned fbits,
-			unsigned fstim[], uint64_t recentFiring[],
-			fix_t current[], unsigned fired[]);
+			fix_t current[], uint64_t recentFiring[], unsigned fired[]);
 
 		/*! \copydoc nemo::Network::getNeuronState */
 		float getState(unsigned g_idx, unsigned var) const {
@@ -71,6 +72,12 @@ class Neurons
 			m_neurons.setParameter(m_mapper.localIdx(g_idx), var, val);
 		}
 
+		/*! \copydoc nemo::SimulationBackend::setFiringStimulus
+		 *
+		 * \pre the internal firing stimulus buffer (\a m_fstim) is all false
+		 */
+		void setFiringStimulus(const std::vector<unsigned>& fstim);
+
 		typedef RandomMapper<nidx_t> mapper_type;
 
 		const mapper_type& mapper() const { return m_mapper; }
@@ -84,6 +91,14 @@ class Neurons
 
 		/*! RNG with separate state for each neuron */
 		std::vector<nemo::RNG> m_rng;
+
+		/*! firing stimulus (for a single cycle).
+		 *
+		 * This is really a boolean vector, but use unsigned to support
+		 * parallelisation
+		 */
+		std::vector<unsigned> m_fstim;
+
 
 		//! \todo maintain firing buffer etc. here instead?
 };

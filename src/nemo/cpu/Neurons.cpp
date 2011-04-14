@@ -9,7 +9,8 @@ namespace nemo {
 
 Neurons::Neurons(const nemo::network::Generator& net) :
 	m_neurons(net.neuronType()),
-	m_rng(net.neuronCount())
+	m_rng(net.neuronCount()),
+	m_fstim(net.neuronCount(), 0)
 {
 	using namespace nemo::network;
 
@@ -24,6 +25,16 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 }
 
+
+
+void
+Neurons::setFiringStimulus(const std::vector<unsigned>& fstim)
+{
+	for(std::vector<unsigned>::const_iterator i = fstim.begin();
+			i != fstim.end(); ++i) {
+		m_fstim.at(m_mapper.localIdx(*i)) = 1;
+	}
+}
 
 
 #define SUBSTEPS 4
@@ -44,9 +55,8 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 void
 Neurons::update(int start, int end,
 		unsigned fbits,
-		unsigned fstim[],
-		uint64_t recentFiring[],
 		fix_t current[],
+		uint64_t recentFiring[],
 		unsigned fired[])
 {
 	if(0 > start || start > end || end > int(m_neurons.size())) {
@@ -80,7 +90,8 @@ Neurons::update(int start, int end,
 			}
 		}
 
-		fired[n] |= fstim[n];
+		fired[n] |= m_fstim[n];
+		m_fstim[n] = 0;
 		recentFiring[n] = (recentFiring[n] << 1) | (uint64_t) fired[n];
 
 		if(fired[n]) {

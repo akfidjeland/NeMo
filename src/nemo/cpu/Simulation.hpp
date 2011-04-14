@@ -116,7 +116,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		const RandomMapper<nidx_t>& m_mapper;
 
 		typedef std::vector<fix_t> current_vector_t;
-		typedef std::vector<unsigned> stimulus_vector_t;
 
 		//! \todo can we get rid of this?
 		size_t m_neuronCount;
@@ -132,7 +131,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		std::vector<uint64_t> m_delays;
 
 		/*! Update state of all neurons */
-		void update(const stimulus_vector_t&, const current_vector_t&);
+		void update(const current_vector_t&);
 
 		nemo::ConnectivityMatrix m_cm;
 
@@ -141,9 +140,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		/*! Deliver spikes due for delivery */
 		current_vector_t& deliverSpikes();
-
-		/* firing stimulus (for a single cycle) */
-		stimulus_vector_t m_fstim;
 
 		void setFiring();
 
