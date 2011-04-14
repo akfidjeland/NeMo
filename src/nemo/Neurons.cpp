@@ -94,6 +94,14 @@ Neurons::getState(size_t nidx, unsigned sidx) const
 
 
 
+float
+Neurons::getMembranePotential(size_t nidx) const
+{
+	return getState(nidx, m_type.membranePotential());
+}
+
+
+
 void
 Neurons::setParameter(size_t nidx, unsigned pidx, float val)
 {

@@ -1,6 +1,6 @@
 OPTION(NEMO_CPU_MULTITHREADED "Use multithreaded CPU backend" OFF)
 
-SET(SOURCES Simulation.cpp)
+SET(SOURCES Simulation.cpp Neurons.cpp)
 
 
 IF(NEMO_CPU_MULTITHREADED)

@@ -15,9 +15,6 @@
 #include <nemo/bitops.h>
 #include <nemo/fixedpoint.hpp>
 
-#define SUBSTEPS 4
-#define SUBSTEP_MULT 0.25
-
 #ifdef NEMO_CPU_DEBUG_TRACE
 
 #include <cstdio>
@@ -36,49 +33,26 @@ namespace nemo {
 	namespace cpu {
 
 
-/* Populate mapper */
-RandomMapper<nidx_t>
-mapCompact(const nemo::network::Generator& net)
-{
-	using namespace nemo::network;
-
-	nidx_t nidx = 0;
-	RandomMapper<nidx_t> mapper;
-
-	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
-			i != i_end; ++i) {
-		mapper.insert((*i).first, nidx);
-		nidx++;
-	}
-	return mapper;
-}
-
 
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
-	m_mapper(mapCompact(net)),
+	/* Creating the neuron population also creates a mapping from global to
+	 * (dense) local neuron indices */
+	m_neurons(net),
+	m_mapper(m_neurons.mapper()),
 	//! \todo remove redundant member?
 	m_neuronCount(net.neuronCount()),
-	m_a(m_neuronCount, 0),
-	m_b(m_neuronCount, 0),
-	m_c(m_neuronCount, 0),
-	m_d(m_neuronCount, 0),
-	m_u(m_neuronCount, 0),
-	m_v(m_neuronCount, 0),
-	m_sigma(m_neuronCount, 0),
-	m_valid(m_neuronCount, false),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
-	//! \todo Determine fixedpoint format based on input network
 	m_cm(net, conf, m_mapper),
 	m_current(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0),
 	m_rng(m_neuronCount)
 {
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
-	setNeuronParameters(net, m_mapper);
+	//! \todo can we finalize cm right away?
 	m_cm.finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
 	for(size_t source=0; source < m_neuronCount; ++source) {
 		m_delays[source] = m_cm.delayBits(source);
@@ -87,29 +61,6 @@ Simulation::Simulation(
 	initWorkers(m_neuronCount, conf.cpuThreadCount());
 #endif
 	resetTimer();
-}
-
-
-void
-Simulation::setNeuronParameters(
-		const nemo::network::Generator& net,
-		RandomMapper<nidx_t>& mapper)
-{
-	using namespace nemo::network;
-
-	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
-			i != i_end; ++i) {
-		nidx_t nidx = mapper.localIdx((*i).first);
-		const Neuron& n = i->second;
-		m_a.at(nidx) = n.f_getParameter(0);
-		m_b.at(nidx) = n.f_getParameter(1);
-		m_c.at(nidx) = n.f_getParameter(2);
-		m_d.at(nidx) = n.f_getParameter(3);
-		m_sigma.at(nidx) = n.f_getParameter(4);
-		m_u.at(nidx) = n.f_getState(0);
-		m_v.at(nidx) = n.f_getState(1);
-		m_valid.at(nidx) = true;
-	}
 }
 
 
@@ -214,42 +165,9 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 void
 Simulation::updateRange(int start, int end)
 {
-	unsigned fbits = getFractionalBits();
-
-	for(int n=start; n < end; n++) {
-
-		if(!m_valid[n]) {
-			continue;
-		}
-
-		float current = fx_toFloat(m_current[n], fbits);
-		m_current[n] = 0;
-
-		if(m_sigma[n] != 0.0f) {
-			current += m_sigma[n] * (float) m_rng[n].gaussian();
-		}
-
-		m_fired[n] = 0;
-
-		for(unsigned int t=0; t<SUBSTEPS; ++t) {
-			if(!m_fired[n]) {
-				m_v[n] += SUBSTEP_MULT * ((0.04* m_v[n] + 5.0) * m_v[n] + 140.0 - m_u[n] + current);
-				/*! \todo: could pre-multiply this with a, when initialising memory */
-				m_u[n] += SUBSTEP_MULT * (m_a[n] * (m_b[n] * m_v[n] - m_u[n]));
-				m_fired[n] = m_v[n] >= 30.0;
-			}
-		}
-
-		m_fired[n] |= m_fstim[n];
-		m_recentFiring[n] = (m_recentFiring[n] << 1) | (uint64_t) m_fired[n];
-
-		if(m_fired[n]) {
-			m_v[n] = m_c[n];
-			m_u[n] += m_d[n];
-			LOG("c%lu: n%u fired\n", elapsedSimulation(), m_mapper.globalIdx(n));
-		}
-
-	}
+	m_neurons.update(start, end, getFractionalBits(),
+			&m_fstim[0], &m_recentFiring[0],
+			&m_current[0], &m_fired[0], &m_rng[0]);
 }
 
 
@@ -307,15 +225,7 @@ Simulation::readFiring()
 void
 Simulation::setNeuron(unsigned g_idx, const float param[], const float state[])
 {
-	/*! \todo remove Izhikevich specificity. */
-	nidx_t l_idx = m_mapper.localIdx(g_idx);
-	m_a.at(l_idx) = param[0];
-	m_b.at(l_idx) = param[1];
-	m_c.at(l_idx) = param[2];
-	m_d.at(l_idx) = param[3];
-	m_u.at(l_idx) = state[0];
-	m_v.at(l_idx) = state[1];
-	m_sigma.at(l_idx) = param[4];
+	m_neurons.set(g_idx, param, state);
 }
 
 
@@ -323,17 +233,7 @@ Simulation::setNeuron(unsigned g_idx, const float param[], const float state[])
 void
 Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 {
-	using boost::format;
-
-	nidx_t l_idx = m_mapper.localIdx(g_idx);
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	switch(var) {
-		case 0: m_u.at(l_idx) = val; break;
-		case 1: m_v.at(l_idx) = val; break;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron state variable index (%u)") % var));
-	}
+	m_neurons.setState(g_idx, var, val);
 }
 
 
@@ -341,20 +241,7 @@ Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 void
 Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 {
-	using boost::format;
-
-	nidx_t l_idx = m_mapper.localIdx(g_idx);
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	switch(parameter) {
-		case 0: m_a.at(l_idx) = val; break;
-		case 1: m_b.at(l_idx) = val; break;
-		case 2: m_c.at(l_idx) = val; break;
-		case 3: m_d.at(l_idx) = val; break;
-		case 4: m_sigma.at(l_idx) = val; break;
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron parameter index (%u)") % parameter));
-	}
+	m_neurons.setParameter(g_idx, parameter, val);
 }
 
 
@@ -414,17 +301,7 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 float
 Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 {
-	using boost::format;
-
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	nidx_t l_idx = m_mapper.localIdx(g_idx);
-	switch(var) {
-		case 0: return m_u.at(l_idx);
-		case 1: return m_v.at(l_idx);
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron state variable index (%u)") % var));
-	}
+	return m_neurons.getState(g_idx, var);
 }
 
 
@@ -432,28 +309,14 @@ Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 float
 Simulation::getNeuronParameter(unsigned g_idx, unsigned param) const
 {
-	using boost::format;
-
-	nidx_t l_idx = m_mapper.localIdx(g_idx);
-
-	/*! \todo change to more generic neuron storage and remove
-	 * Izhikevich-specific hardcoding */
-	switch(param) {
-		case 0: return m_a.at(l_idx);
-		case 1: return m_b.at(l_idx);
-		case 2: return m_c.at(l_idx);
-		case 3: return m_d.at(l_idx);
-		case 4: return m_sigma.at(l_idx);
-		default: throw nemo::exception(NEMO_INVALID_INPUT,
-					str(format("Invalid neuron parameter index (%u)") % param));
-	}
+	return m_neurons.getParameter(g_idx, param);
 }
 
 
 float
 Simulation::getMembranePotential(unsigned g_idx) const
 {
-	return m_v.at(m_mapper.localIdx(g_idx));
+	return m_neurons.getMembranePotential(g_idx);
 }
 
 

@@ -11,7 +11,6 @@
  */
 
 #include <vector>
-#include <deque>
 
 #include <nemo/config.h>
 #include "NeuronType.hpp"
@@ -63,6 +62,9 @@ class Neurons
 		/*! \copydoc NetworkImpl::getNeuronState */
 		float getState(size_t nidx, unsigned sidx) const;
 
+		/*! \copydoc NetworkImpl::getMembranePotential */
+		float getMembranePotential(size_t nidx) const;
+
 		/*! \copydoc NetworkImpl::setNeuronParameter */
 		void setParameter(size_t nidx, unsigned pidx, float val);
 
@@ -75,13 +77,27 @@ class Neurons
 		/*! \return neuron type common to all neurons in this collection */
 		const NeuronType& type() const { return m_type; }
 
+		/*! \return array of parameter \a pidx
+		 *
+		 * The array contains the values for the given parameter for all the
+		 * neurons in this collection.
+		 */
+		const float* getParameter(unsigned pidx) const { return &(mf_param.at(pidx)[0]); }
+
+		/*! \return array of state variables \a sidx
+		 *
+		 * The array contains the values for the given parameter for all the
+		 * neurons in this collection.
+		 */
+		float* getState(unsigned sidx) { return &(mf_state.at(sidx)[0]); }
+
 	private :
 
 		/* Neurons are stored in several Structure-of-arrays, supporting
 		 * arbitrary neuron types. Functions modifying these maintain the
 		 * invariant that the shapes are the same. */
-		std::vector< std::deque<float> > mf_param;
-		std::vector< std::deque<float> > mf_state;
+		std::vector< std::vector<float> > mf_param;
+		std::vector< std::vector<float> > mf_state;
 
 		size_t m_size;
 

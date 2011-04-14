@@ -22,8 +22,8 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 		typedef RandomMapper<std::pair<unsigned, unsigned> >::const_iterator base_iterator;
 
 		neuron_iterator(base_iterator it,
-			const std::vector< std::deque<float> >& param,
-			const std::vector< std::deque<float> >& state,
+			const std::vector< std::vector<float> >& param,
+			const std::vector< std::vector<float> >& state,
 			const NeuronType& type) :
 			m_it(it), m_nt(type), m_param(param), m_state(state) {}
 
@@ -75,8 +75,8 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 
 		const NeuronType m_nt;
 
-		const std::vector< std::deque<float> >& m_param;
-		const std::vector< std::deque<float> >& m_state;
+		const std::vector< std::vector<float> >& m_param;
+		const std::vector< std::vector<float> >& m_state;
 };
 
 }	}	}

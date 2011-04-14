@@ -19,6 +19,16 @@ class Neuron
 
 		Neuron(const NeuronType&, float fParam[], float fState[]);
 
+		/*! \return all parameters of neuron (or NULL if there are none) */
+		const float* f_getParameters() const {
+			return mf_param.empty() ? NULL : &mf_param[0];
+		}
+
+		/*! \return all state variables of neuron (or NULL if there are none) */
+		const float* f_getState() const {
+			return mf_state.empty() ? NULL : &mf_state[0];
+		}
+
 		/*! \return i'th parameter of neuron */
 		float f_getParameter(size_t i) const { return f_paramRef(i); }
 

@@ -13,6 +13,7 @@
 #include <boost/bimap.hpp>
 #include <boost/format.hpp>
 
+#include <nemo/internal_types.h>
 #include <nemo/Mapper.hpp>
 #include <nemo/exception.hpp>
 
@@ -71,12 +72,12 @@ class RandomMapper : public Mapper<nidx_t, L>
 			return m_bm.right.find(lidx) != m_bm.right.end();
 		}
 
-		const L& minLocalIdx() const {
+		L minLocalIdx() const {
 			return m_bm.size() == 0 ? 0 : m_bm.right.begin()->first;
 
 		}
 
-		const L& maxLocalIdx() const {
+		L maxLocalIdx() const {
 			return m_bm.size() == 0 ? 0 : m_bm.right.rbegin()->first;
 		}
 
