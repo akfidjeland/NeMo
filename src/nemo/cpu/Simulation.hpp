@@ -20,7 +20,6 @@
 #include <nemo/FiringBuffer.hpp>
 #include <nemo/Neurons.hpp>
 #include <nemo/RandomMapper.hpp>
-#include <nemo/RNG.hpp>
 #include <nemo/Timer.hpp>
 
 #include "Worker.hpp"
@@ -145,9 +144,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		/* firing stimulus (for a single cycle) */
 		stimulus_vector_t m_fstim;
-
-		//! \todo may want to have one rng per neuron or at least per thread
-		std::vector<nemo::RNG> m_rng;
 
 		void setFiring();
 

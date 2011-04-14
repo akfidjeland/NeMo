@@ -40,7 +40,7 @@ class Neurons
 		 */
 		void update(int start, int end, unsigned fbits,
 			unsigned fstim[], uint64_t recentFiring[],
-			fix_t current[], unsigned fired[], nemo::RNG rng[]);
+			fix_t current[], unsigned fired[]);
 
 		/*! \copydoc nemo::Network::getNeuronState */
 		float getState(unsigned g_idx, unsigned var) const {
@@ -81,6 +81,9 @@ class Neurons
 
 		//! \todo support multiple neuron types here
 		nemo::Neurons m_neurons;
+
+		/*! RNG with separate state for each neuron */
+		std::vector<nemo::RNG> m_rng;
 
 		//! \todo maintain firing buffer etc. here instead?
 };

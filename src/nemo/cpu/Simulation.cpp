@@ -48,10 +48,8 @@ Simulation::Simulation(
 	m_delays(m_neuronCount, 0),
 	m_cm(net, conf, m_mapper),
 	m_current(m_neuronCount, 0),
-	m_fstim(m_neuronCount, 0),
-	m_rng(m_neuronCount)
+	m_fstim(m_neuronCount, 0)
 {
-	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 	//! \todo can we finalize cm right away?
 	m_cm.finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
 	for(size_t source=0; source < m_neuronCount; ++source) {
@@ -167,7 +165,7 @@ Simulation::updateRange(int start, int end)
 {
 	m_neurons.update(start, end, getFractionalBits(),
 			&m_fstim[0], &m_recentFiring[0],
-			&m_current[0], &m_fired[0], &m_rng[0]);
+			&m_current[0], &m_fired[0]);
 }
 
 

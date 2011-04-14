@@ -8,7 +8,8 @@ namespace nemo {
 
 
 Neurons::Neurons(const nemo::network::Generator& net) :
-	m_neurons(net.neuronType())
+	m_neurons(net.neuronType()),
+	m_rng(net.neuronCount())
 {
 	using namespace nemo::network;
 
@@ -19,6 +20,8 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 		size_t l_idx = m_neurons.add(n.f_getParameters(), n.f_getState());
 		m_mapper.insert(g_idx, l_idx);
 	}
+
+	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 }
 
 
@@ -37,17 +40,16 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 #define STATE_V 1
 
 
-//! \todo document clearing of current
+
 void
 Neurons::update(int start, int end,
 		unsigned fbits,
 		unsigned fstim[],
 		uint64_t recentFiring[],
 		fix_t current[],
-		unsigned fired[],
-		nemo::RNG rng[])
+		unsigned fired[])
 {
-	if(start < 0 || end >= m_neurons.size() || start > end) {
+	if(0 > start || start > end || end > int(m_neurons.size())) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
 	}
 
@@ -65,7 +67,7 @@ Neurons::update(int start, int end,
 		current[n] = 0;
 
 		if(sigma[n] != 0.0f) {
-			I += sigma[n] * (float) rng[n].gaussian();
+			I += sigma[n] * (float) m_rng[n].gaussian();
 		}
 
 		fired[n] = 0;
