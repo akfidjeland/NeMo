@@ -26,7 +26,7 @@ namespace nemo {
 	namespace cuda {
 
 
-Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
+Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	m_mapper(mapper),
 	m_type(net.neuronType()),
 	mf_param(net.neuronType().f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
@@ -56,7 +56,8 @@ Neurons::Neurons(const network::Generator& net, Mapper& mapper) :
 	for(network::neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
 
-		DeviceIdx dev = mapper.addIdx(i->first);
+		//! \todo insertion here, but make sure the usage is correct in the Simulation class
+		DeviceIdx dev = mapper.localIdx(i->first);
 		const nemo::Neuron& n = i->second;
 
 		for(unsigned i=0, i_end=parameterCount(); i < i_end; ++i) {

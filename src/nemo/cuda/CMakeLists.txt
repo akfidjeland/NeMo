@@ -69,7 +69,6 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	GlobalQueue.cpp
 	LocalQueue.cpp
 	Neurons.cpp
-	Mapper.cpp
 	Outgoing.cpp
 	RSMatrix.cpp
 	WarpAddressTable.cpp

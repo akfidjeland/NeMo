@@ -51,7 +51,9 @@ class Neurons
 {
 	public:
 
-		Neurons(const network::Generator& net, Mapper&);
+		typedef Mapper mapper_type;
+
+		Neurons(const network::Generator&, const mapper_type&);
 
 		~Neurons();
 
@@ -145,7 +147,7 @@ class Neurons
 
 	private:
 
-		const Mapper& m_mapper;
+		const mapper_type& m_mapper;
 
 		NeuronType m_type;
 

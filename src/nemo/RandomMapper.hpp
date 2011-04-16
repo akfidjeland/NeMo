@@ -35,7 +35,7 @@ class RandomMapper : public Mapper<nidx_t, L>
 		~RandomMapper() {}
 
 		/*! Add a new global/local neuron index pair */
-		void insert(nidx_t gidx, const L& lidx) {
+		virtual void insert(nidx_t gidx, const L& lidx) {
 			m_bm.insert(typename bm_type::value_type(gidx, lidx));
 		}
 
@@ -79,6 +79,15 @@ class RandomMapper : public Mapper<nidx_t, L>
 
 		L maxLocalIdx() const {
 			return m_bm.size() == 0 ? 0 : m_bm.right.rbegin()->first;
+		}
+
+		nidx_t minGlobalIdx() const {
+			return m_bm.size() == 0 ? 0 : m_bm.left.begin()->first;
+
+		}
+
+		nidx_t maxGlobalIdx() const {
+			return m_bm.size() == 0 ? 0 : m_bm.left.rbegin()->first;
 		}
 
 		/*! Iterator over <global,local> pairs */

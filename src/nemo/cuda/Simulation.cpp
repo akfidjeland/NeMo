@@ -32,10 +32,37 @@ namespace nemo {
 	namespace cuda {
 
 
+/* Map global neuron indices to compact local indices */
+Mapper
+mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
+{
+	using namespace nemo::network;
+
+	Mapper mapper(partitionSize);
+
+	pidx_t pidx = 0;
+	nidx_t nidx = 0;
+
+	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+			i != i_end; ++i) {
+		unsigned g_idx = i->first;
+		DeviceIdx l_idx(pidx, nidx);
+		mapper.insert(g_idx, l_idx);
+		nidx++;
+		if(nidx == partitionSize) {
+			nidx = 0;
+			pidx++;
+		}
+	}
+	return mapper;
+}
+
+
+
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
-	m_mapper(net, conf.cudaPartitionSize()),
+	m_mapper(mapCompact(net, conf.cudaPartitionSize())),
 	m_conf(conf),
 	m_neurons(net, m_mapper),
 	m_cm(net, conf, m_mapper),
@@ -126,7 +153,7 @@ Simulation::initCurrentStimulus(size_t count)
 void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
-	DeviceIdx dev = m_mapper.existingDeviceIdx(neuron);
+	DeviceIdx dev = m_mapper.deviceIdx(neuron);
 	fix_t fx_current = fx_toFix(current, m_cm.fractionalBits());
 	m_currentStimulus.setNeuron(dev.partition, dev.neuron, fx_current);
 }
@@ -357,7 +384,7 @@ Simulation::applyStdp(float reward)
 void
 Simulation::setNeuron(unsigned g_idx, const float param[], const float state[])
 {
-	m_neurons.setNeuron(m_mapper.existingDeviceIdx(g_idx), param, state);
+	m_neurons.setNeuron(m_mapper.deviceIdx(g_idx), param, state);
 }
 
 
@@ -413,7 +440,7 @@ Simulation::readFiring()
 void
 Simulation::setNeuronState(unsigned neuron, unsigned var, float val)
 {
-	return m_neurons.setState(m_mapper.existingDeviceIdx(neuron), var, val);
+	return m_neurons.setState(m_mapper.deviceIdx(neuron), var, val);
 }
 
 
@@ -421,7 +448,7 @@ Simulation::setNeuronState(unsigned neuron, unsigned var, float val)
 void
 Simulation::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
 {
-	return m_neurons.setParameter(m_mapper.existingDeviceIdx(neuron), parameter, val);
+	return m_neurons.setParameter(m_mapper.deviceIdx(neuron), parameter, val);
 }
 
 
@@ -429,7 +456,7 @@ Simulation::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
 float
 Simulation::getNeuronState(unsigned neuron, unsigned var) const
 {
-	return m_neurons.getState(m_mapper.existingDeviceIdx(neuron), var);
+	return m_neurons.getState(m_mapper.deviceIdx(neuron), var);
 }
 
 
@@ -437,7 +464,7 @@ Simulation::getNeuronState(unsigned neuron, unsigned var) const
 float
 Simulation::getNeuronParameter(unsigned neuron, unsigned parameter) const
 {
-	return m_neurons.getParameter(m_mapper.existingDeviceIdx(neuron), parameter);
+	return m_neurons.getParameter(m_mapper.deviceIdx(neuron), parameter);
 }
 
 
