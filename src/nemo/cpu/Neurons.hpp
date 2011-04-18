@@ -10,7 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <nemo/Neurons.hpp>
 #include <nemo/RandomMapper.hpp>
 #include <nemo/RNG.hpp>
 #include <nemo/network/Generator.hpp>
@@ -45,31 +44,29 @@ class Neurons
 
 		/*! \copydoc nemo::Network::getNeuronState */
 		float getState(unsigned g_idx, unsigned var) const {
-			return m_neurons.getState(m_mapper.localIdx(g_idx), var);
+			return m_state[stateIndex(var)][m_mapper.localIdx(g_idx)];
 		}
 
 		/*! \copydoc nemo::Network::getNeuronParameter */
 		float getParameter(unsigned g_idx, unsigned param) const {
-			return m_neurons.getParameter(m_mapper.localIdx(g_idx), param);
+			return m_param[parameterIndex(param)][m_mapper.localIdx(g_idx)];
 		}
 
 		float getMembranePotential(unsigned g_idx) const {
-			return m_neurons.getMembranePotential(m_mapper.localIdx(g_idx));
+			return getState(g_idx, m_type.membranePotential());
 		}
 
 		/*! \copydoc nemo::Network::setNeuron */
-		void set(unsigned g_idx, const float param[], const float state[]) {
-			m_neurons.set(m_mapper.localIdx(g_idx), param, state);
-		}
+		void set(unsigned g_idx, const float param[], const float state[]);
 
 		/*! \copydoc nemo::Network::setNeuronState */
 		void setState(unsigned g_idx, unsigned var, float val) {
-			m_neurons.setState(m_mapper.localIdx(g_idx), var, val);
+			m_state[stateIndex(var)][m_mapper.localIdx(g_idx)] = val;
 		}
 
 		/*! \copydoc nemo::Network::setNeuronParameter */
-		void setParameter(unsigned g_idx, unsigned var, float val) {
-			m_neurons.setParameter(m_mapper.localIdx(g_idx), var, val);
+		void setParameter(unsigned g_idx, unsigned param, float val) {
+			m_param[parameterIndex(param)][m_mapper.localIdx(g_idx)] = val;
 		}
 
 		/*! \copydoc nemo::SimulationBackend::setFiringStimulus
@@ -82,12 +79,60 @@ class Neurons
 
 		const mapper_type& mapper() const { return m_mapper; }
 
+		/*! \return number of neurons in this collection */
+		size_t size() const { return m_size; }
+
 	private :
 
 		mapper_type m_mapper;
 
-		//! \todo support multiple neuron types here
-		nemo::Neurons m_neurons;
+		/*! Common type for all neurons in this collection */
+		NeuronType m_type;
+
+		/* Neurons are stored in several Structure-of-arrays, supporting
+		 * arbitrary neuron types. Functions modifying these maintain the
+		 * invariant that the shapes are the same. */
+		std::vector< std::vector<float> > m_param;
+		std::vector< std::vector<float> > m_state;
+
+		/*! Number of neurons in this collection */
+		size_t m_size;
+
+		/*! \return array of parameter \a pidx
+		 *
+		 * The array contains the values for the given parameter for all the
+		 * neurons in this collection.
+		 */
+		const float* parameterArray(unsigned pidx) const {
+			return &(m_param.at(pidx)[0]);
+		}
+
+		/*! \return array of state variables \a sidx
+		 *
+		 * The array contains the values for the given parameter for all the
+		 * neurons in this collection.
+		 */
+		float* stateArray(unsigned sidx) {
+			return &(m_state.at(sidx)[0]);
+		}
+
+		/*! \return parameter index after checking its validity */
+		unsigned parameterIndex(unsigned i) const;
+
+		/*! \return state variable index after checking its validity */
+		unsigned stateIndex(unsigned i) const;
+
+		/*! Add a new neuron
+		 *
+		 * \param fParam array of floating point parameters
+		 * \param fState array of floating point state variables
+		 *
+		 * \return local index (wihtin this class) of the newly added neuron
+		 *
+		 * \pre the input arrays have the lengths specified by the neuron type
+		 * 		used when this object was created.
+		 */
+		size_t add(const float fParam[], const float fState[]);
 
 		/*! RNG with separate state for each neuron */
 		std::vector<nemo::RNG> m_rng;
@@ -106,4 +151,5 @@ class Neurons
 
 	}
 }
+
 #endif

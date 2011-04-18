@@ -8,7 +8,10 @@ namespace nemo {
 
 
 Neurons::Neurons(const nemo::network::Generator& net) :
-	m_neurons(net.neuronType()),
+	m_type(net.neuronType()),
+	m_param(m_type.f_nParam()),
+	m_state(m_type.f_nState()),
+	m_size(0),
 	m_rng(net.neuronCount()),
 	m_fstim(net.neuronCount(), 0)
 {
@@ -18,13 +21,40 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 			i != i_end; ++i) {
 		unsigned g_idx = i->first;
 		const Neuron& n = i->second;
-		size_t l_idx = m_neurons.add(n.f_getParameters(), n.f_getState());
+		size_t l_idx = add(n.f_getParameters(), n.f_getState());
 		m_mapper.insert(g_idx, l_idx);
 	}
 
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
 }
 
+
+
+size_t
+Neurons::add(const float fParam[], const float fState[])
+{
+	for(unsigned i=0; i < m_param.size(); ++i) {
+		m_param[i].push_back(fParam[i]);
+	}
+	for(unsigned i=0; i < m_state.size(); ++i) {
+		m_state[i].push_back(fState[i]);
+	}
+	return m_size++;
+}
+
+
+
+void
+Neurons::set(unsigned g_idx, const float fParam[], const float fState[])
+{
+	nidx_t l_idx = m_mapper.localIdx(g_idx);
+	for(unsigned i=0; i < m_param.size(); ++i) {
+		m_param[i][l_idx] = fParam[i];
+	}
+	for(unsigned i=0; i < m_state.size(); ++i) {
+		m_state[i][l_idx] = fState[i];
+	}
+}
 
 
 void
@@ -59,17 +89,18 @@ Neurons::update(int start, int end,
 		uint64_t recentFiring[],
 		unsigned fired[])
 {
-	if(0 > start || start > end || end > int(m_neurons.size())) {
+	if(0 > start || start > end || end > int(size())) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
 	}
 
-	const float* a = m_neurons.getParameter(PARAM_A);
-	const float* b = m_neurons.getParameter(PARAM_B);
-	const float* c = m_neurons.getParameter(PARAM_C);
-	const float* d = m_neurons.getParameter(PARAM_D);
-	const float* sigma = m_neurons.getParameter(PARAM_SIGMA);
-	float* u = m_neurons.getState(STATE_U);
-	float* v = m_neurons.getState(STATE_V);
+	const float* a = parameterArray(PARAM_A);
+	const float* b = parameterArray(PARAM_B);
+	const float* c = parameterArray(PARAM_C);
+	const float* d = parameterArray(PARAM_D);
+	const float* sigma = parameterArray(PARAM_SIGMA);
+
+	float* u = stateArray(STATE_U);
+	float* v = stateArray(STATE_V);
 
 	for(int n=start; n < end; n++) {
 
@@ -101,6 +132,32 @@ Neurons::update(int start, int end,
 		}
 
 	}
+}
+
+
+
+unsigned
+Neurons::stateIndex(unsigned i) const
+{
+	using boost::format;
+	if(i >= m_state.size()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid state variable index %u") % i));
+	}
+	return i;
+}
+
+
+
+unsigned
+Neurons::parameterIndex(unsigned i) const
+{
+	using boost::format;
+	if(i >= m_param.size()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Invalid parameter index %u") % i));
+	}
+	return i;
 }
 
 

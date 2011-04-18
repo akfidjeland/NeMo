@@ -77,20 +77,6 @@ class Neurons
 		/*! \return neuron type common to all neurons in this collection */
 		const NeuronType& type() const { return m_type; }
 
-		/*! \return array of parameter \a pidx
-		 *
-		 * The array contains the values for the given parameter for all the
-		 * neurons in this collection.
-		 */
-		const float* getParameter(unsigned pidx) const { return &(mf_param.at(pidx)[0]); }
-
-		/*! \return array of state variables \a sidx
-		 *
-		 * The array contains the values for the given parameter for all the
-		 * neurons in this collection.
-		 */
-		float* getState(unsigned sidx) { return &(mf_state.at(sidx)[0]); }
-
 	private :
 
 		/* Neurons are stored in several Structure-of-arrays, supporting
