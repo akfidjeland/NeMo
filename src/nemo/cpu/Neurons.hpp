@@ -125,20 +125,6 @@ class Neurons
 		/*! Number of neurons in this collection */
 		size_t m_size;
 
-		/*! \return array of parameter \a pidx
-		 *
-		 * The array contains the values for the given parameter for all the
-		 * neurons in this collection.
-		 */
-		const float* parameterArray(unsigned pidx) const;
-
-		/*! \return array of state variables \a sidx
-		 *
-		 * The array contains the values for the given parameter for all the
-		 * neurons in this collection.
-		 */
-		float* stateArray(unsigned sidx);
-
 		/*! \return parameter index after checking its validity */
 		unsigned parameterIndex(unsigned i) const;
 

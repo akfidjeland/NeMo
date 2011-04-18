@@ -73,26 +73,26 @@ Neurons::setFiringStimulus(const std::vector<unsigned>& fstim)
 #define STATE_V 1
 
 
-
 void
-Neurons::update(int start, int end,
+update_neurons(
+		int start, int end,
+		float* paramBase, size_t paramStride,
+		float* stateBase, size_t stateStride,
 		unsigned fbits,
+		unsigned fstim[],
+		RNG rng[],
 		fix_t current[],
 		uint64_t recentFiring[],
 		unsigned fired[])
 {
-	if(0 > start || start > end || end > int(size())) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
-	}
+	const float* a = paramBase + PARAM_A * paramStride;
+	const float* b = paramBase + PARAM_B * paramStride;
+	const float* c = paramBase + PARAM_C * paramStride;
+	const float* d = paramBase + PARAM_D * paramStride;
+	const float* sigma = paramBase + PARAM_SIGMA * paramStride;
 
-	const float* a = parameterArray(PARAM_A);
-	const float* b = parameterArray(PARAM_B);
-	const float* c = parameterArray(PARAM_C);
-	const float* d = parameterArray(PARAM_D);
-	const float* sigma = parameterArray(PARAM_SIGMA);
-
-	float* u = stateArray(STATE_U);
-	float* v = stateArray(STATE_V);
+	float* u = stateBase + STATE_U * stateStride;
+	float* v = stateBase + STATE_V * stateStride;
 
 	for(int n=start; n < end; n++) {
 
@@ -100,7 +100,7 @@ Neurons::update(int start, int end,
 		current[n] = 0;
 
 		if(sigma[n] != 0.0f) {
-			I += sigma[n] * (float) m_rng[n].gaussian();
+			I += sigma[n] * (float) rng[n].gaussian();
 		}
 
 		fired[n] = 0;
@@ -113,8 +113,8 @@ Neurons::update(int start, int end,
 			}
 		}
 
-		fired[n] |= m_fstim[n];
-		m_fstim[n] = 0;
+		fired[n] |= fstim[n];
+		fstim[n] = 0;
 		recentFiring[n] = (recentFiring[n] << 1) | (uint64_t) fired[n];
 
 		if(fired[n]) {
@@ -122,8 +122,30 @@ Neurons::update(int start, int end,
 			u[n] += d[n];
 			// LOG("c%lu: n%u fired\n", elapsedSimulation(), m_mapper.globalIdx(n));
 		}
-
 	}
+
+}
+
+void
+Neurons::update(int start, int end,
+		unsigned fbits,
+		fix_t current[],
+		uint64_t recentFiring[],
+		unsigned fired[])
+{
+	if(0 > start || start > end || end > int(size())) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
+	}
+
+	update_neurons(start, end,
+			m_param.data(), m_param.strides()[0],
+			m_state.data(), m_state.strides()[0],
+			fbits,
+			&m_fstim[0],
+			&m_rng[0],
+			current,
+			recentFiring,
+			fired);
 }
 
 
@@ -152,23 +174,6 @@ Neurons::parameterIndex(unsigned i) const
 	return i;
 }
 
-
-
-const float*
-Neurons::parameterArray(unsigned pidx) const
-{
-	const param_type::index* strides = m_param.strides();
-	return m_param.data() + pidx * strides[0];
-}
-
-
-float*
-Neurons::stateArray(unsigned sidx)
-{
-	const param_type::index* strides = m_state.strides();
-	//const param_type::size_type* shape m_state.shape();
-	return m_state.data() + sidx * strides[0];
-}
 
 	} // end namespace cpu
 } // end namespace nemo
