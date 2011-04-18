@@ -1,5 +1,7 @@
 OPTION(NEMO_CPU_MULTITHREADED "Use multithreaded CPU backend" OFF)
 
+SUBDIRS(plugins)
+
 SET(SOURCES Simulation.cpp Neurons.cpp)
 
 
@@ -22,5 +24,5 @@ INCLUDE_DIRECTORIES(
 
 ADD_LIBRARY(nemo_cpu ${SOURCES})
 SET_TARGET_PROPERTIES(nemo_cpu PROPERTIES DEFINE_SYMBOL NEMO_CPU_EXPORTS)
-TARGET_LINK_LIBRARIES(nemo_cpu nemo_base ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(nemo_cpu nemo_base cpu_Izhikevich ${Boost_LIBRARIES})
 INSTALL(TARGETS nemo_cpu DESTINATION ${INSTALL_LIB_DIR})
