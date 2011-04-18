@@ -9,8 +9,10 @@ namespace nemo {
 
 Neurons::Neurons(const nemo::network::Generator& net) :
 	m_type(net.neuronType()),
-	m_param(m_type.f_nParam()),
-	m_state(m_type.f_nState()),
+	m_nParam(m_type.f_nParam()),
+	m_nState(m_type.f_nState()),
+	m_param(boost::extents[m_nParam][net.neuronCount()]),
+	m_state(boost::extents[m_nState][net.neuronCount()]),
 	m_size(0),
 	m_rng(net.neuronCount()),
 	m_fstim(net.neuronCount(), 0)
@@ -19,10 +21,15 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 
 	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
 			i != i_end; ++i) {
+
 		unsigned g_idx = i->first;
-		const Neuron& n = i->second;
-		size_t l_idx = add(n.f_getParameters(), n.f_getState());
+		unsigned l_idx = m_size;
 		m_mapper.insert(g_idx, l_idx);
+
+		const Neuron& n = i->second;
+		setLocal(l_idx, n.f_getParameters(), n.f_getState());
+
+		m_size++;
 	}
 
 	nemo::initialiseRng(m_mapper.minLocalIdx(), m_mapper.maxLocalIdx(), m_rng);
@@ -30,28 +37,13 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 
 
 
-size_t
-Neurons::add(const float fParam[], const float fState[])
-{
-	for(unsigned i=0; i < m_param.size(); ++i) {
-		m_param[i].push_back(fParam[i]);
-	}
-	for(unsigned i=0; i < m_state.size(); ++i) {
-		m_state[i].push_back(fState[i]);
-	}
-	return m_size++;
-}
-
-
-
 void
-Neurons::set(unsigned g_idx, const float fParam[], const float fState[])
+Neurons::setLocal(unsigned l_idx, const float fParam[], const float fState[])
 {
-	nidx_t l_idx = m_mapper.localIdx(g_idx);
-	for(unsigned i=0; i < m_param.size(); ++i) {
+	for(unsigned i=0; i < m_nParam; ++i) {
 		m_param[i][l_idx] = fParam[i];
 	}
-	for(unsigned i=0; i < m_state.size(); ++i) {
+	for(unsigned i=0; i < m_nState; ++i) {
 		m_state[i][l_idx] = fState[i];
 	}
 }
@@ -140,7 +132,7 @@ unsigned
 Neurons::stateIndex(unsigned i) const
 {
 	using boost::format;
-	if(i >= m_state.size()) {
+	if(i >= m_nState) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid state variable index %u") % i));
 	}
@@ -153,13 +145,30 @@ unsigned
 Neurons::parameterIndex(unsigned i) const
 {
 	using boost::format;
-	if(i >= m_param.size()) {
+	if(i >= m_nParam) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid parameter index %u") % i));
 	}
 	return i;
 }
 
+
+
+const float*
+Neurons::parameterArray(unsigned pidx) const
+{
+	const param_type::index* strides = m_param.strides();
+	return m_param.data() + pidx * strides[0];
+}
+
+
+float*
+Neurons::stateArray(unsigned sidx)
+{
+	const param_type::index* strides = m_state.strides();
+	//const param_type::size_type* shape m_state.shape();
+	return m_state.data() + sidx * strides[0];
+}
 
 	} // end namespace cpu
 } // end namespace nemo

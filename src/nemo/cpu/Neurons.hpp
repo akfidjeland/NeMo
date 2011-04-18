@@ -10,6 +10,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/multi_array.hpp>
+
 #include <nemo/RandomMapper.hpp>
 #include <nemo/RNG.hpp>
 #include <nemo/network/Generator.hpp>
@@ -57,7 +59,9 @@ class Neurons
 		}
 
 		/*! \copydoc nemo::Network::setNeuron */
-		void set(unsigned g_idx, const float param[], const float state[]);
+		void set(unsigned g_idx, const float param[], const float state[]) {
+			setLocal(m_mapper.localIdx(g_idx), param, state);
+		}
 
 		/*! \copydoc nemo::Network::setNeuronState */
 		void setState(unsigned g_idx, unsigned var, float val) {
@@ -89,11 +93,34 @@ class Neurons
 		/*! Common type for all neurons in this collection */
 		NeuronType m_type;
 
-		/* Neurons are stored in several Structure-of-arrays, supporting
+		const unsigned m_nParam;
+		const unsigned m_nState;
+
+		/*! Neurons are stored in several structure-of-arrays, supporting
 		 * arbitrary neuron types. Functions modifying these maintain the
-		 * invariant that the shapes are the same. */
-		std::vector< std::vector<float> > m_param;
-		std::vector< std::vector<float> > m_state;
+		 * invariant that the shapes are the same.
+		 *
+		 * The indices here are:
+		 *
+		 * 1. (outer) parameter index
+		 * 2. (inner) neuron index
+		 */
+		typedef boost::multi_array<float, 2> param_type;
+		param_type m_param;
+
+		/*! Neuron state is stored in a structure-of-arrays format, supporting
+		 * arbitrary neuron types. Functions modifying these maintain the
+		 *
+		 * The indices here are:
+		 *
+		 * 1. (outer) parameter index
+		 * 2. (inner) neuron index
+		 */
+		typedef boost::multi_array<float, 2> state_type;
+		state_type m_state;
+
+		/*! Set neuron, like \a cpu::Neurons::set, but with a local index */
+		void setLocal(unsigned l_idx, const float fParam[], const float fState[]);
 
 		/*! Number of neurons in this collection */
 		size_t m_size;
@@ -103,36 +130,20 @@ class Neurons
 		 * The array contains the values for the given parameter for all the
 		 * neurons in this collection.
 		 */
-		const float* parameterArray(unsigned pidx) const {
-			return &(m_param.at(pidx)[0]);
-		}
+		const float* parameterArray(unsigned pidx) const;
 
 		/*! \return array of state variables \a sidx
 		 *
 		 * The array contains the values for the given parameter for all the
 		 * neurons in this collection.
 		 */
-		float* stateArray(unsigned sidx) {
-			return &(m_state.at(sidx)[0]);
-		}
+		float* stateArray(unsigned sidx);
 
 		/*! \return parameter index after checking its validity */
 		unsigned parameterIndex(unsigned i) const;
 
 		/*! \return state variable index after checking its validity */
 		unsigned stateIndex(unsigned i) const;
-
-		/*! Add a new neuron
-		 *
-		 * \param fParam array of floating point parameters
-		 * \param fState array of floating point state variables
-		 *
-		 * \return local index (wihtin this class) of the newly added neuron
-		 *
-		 * \pre the input arrays have the lengths specified by the neuron type
-		 * 		used when this object was created.
-		 */
-		size_t add(const float fParam[], const float fState[]);
 
 		/*! RNG with separate state for each neuron */
 		std::vector<nemo::RNG> m_rng;
