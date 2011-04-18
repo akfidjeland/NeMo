@@ -132,7 +132,7 @@ class Neurons
 		unsigned stateIndex(unsigned i) const;
 
 		/*! RNG with separate state for each neuron */
-		std::vector<nemo::RNG> m_rng;
+		std::vector<RNG> m_rng;
 
 		/*! firing stimulus (for a single cycle).
 		 *

@@ -25,7 +25,7 @@ update_neurons(
 		float* stateBase, size_t stateStride,
 		unsigned fbits,
 		unsigned fstim[],
-		nemo::RNG rng[],
+		RNG rng[],
 		fix_t current[],
 		uint64_t recentFiring[],
 		unsigned fired[])
@@ -45,7 +45,7 @@ update_neurons(
 		current[n] = 0;
 
 		if(sigma[n] != 0.0f) {
-			I += sigma[n] * (float) rng[n].gaussian();
+			I += sigma[n] * nrand(&rng[n]);
 		}
 
 		fired[n] = 0;

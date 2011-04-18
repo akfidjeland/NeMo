@@ -10,7 +10,7 @@ update_neurons(
 		float* stateBase, size_t stateStride,
 		unsigned fbits,
 		unsigned fstim[],
-		nemo::RNG rng[],
+		RNG rng[],
 		fix_t current[],
 		uint64_t recentFiring[],
 		unsigned fired[]);

@@ -14,7 +14,7 @@ typedef void update_neurons_t(
 		float* stateBase, size_t stateStride,
 		unsigned fbits,
 		unsigned fstim[],
-		nemo::RNG rng[],
+		RNG rng[],
 		fix_t current[],
 		uint64_t recentFiring[],
 		unsigned fired[]);

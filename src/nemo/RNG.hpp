@@ -5,28 +5,27 @@
 #include <nemo/internal_types.h>
 #include <nemo/config.h>
 
-namespace nemo {
-
-class NEMO_BASE_DLL_PUBLIC RNG
-{
-
-	public:
-
-		RNG();
-
-		RNG(unsigned seeds[]);
-
-		float gaussian();
-
-		unsigned uniform();
-
-		unsigned operator[](size_t i) { return m_state[i]; }
-
-	private:
-
-		unsigned m_state[4];
+struct NEMO_BASE_DLL_PUBLIC RNG {
+	unsigned state[4];
 };
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*! \return uniform random 32-bit number */
+unsigned urand(RNG* rng);
+
+/*! \return normal random number drawn from N(0, 1) */
+float nrand(RNG* rng);
+
+#ifdef __cplusplus
+}
+#endif
+
+
+namespace nemo {
 
 /* Generates RNG seeds for neurons in the range [0, maxIdx], and writes the
  * seeds for [minIdx, maxIdx] to the output vector (indices [0, maxIdx -

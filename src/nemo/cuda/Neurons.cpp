@@ -52,7 +52,7 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 
 	/* Create all the RNG seeds */
 	//! \todo seed this from configuration
-	std::vector<nemo::RNG> rngs(mapper.maxHandledGlobalIdx() - mapper.minHandledGlobalIdx() + 1);
+	std::vector<RNG> rngs(mapper.maxHandledGlobalIdx() - mapper.minHandledGlobalIdx() + 1);
 	initialiseRng(mapper.minHandledGlobalIdx(), mapper.maxHandledGlobalIdx(), rngs);
 
 	for(network::neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
@@ -74,7 +74,7 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 
 		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
 		for(unsigned plane = 0; plane < 4; ++plane) {
-			m_nrngState.setNeuron(dev.partition, dev.neuron, rngs[localIdx][plane], plane);
+			m_nrngState.setNeuron(dev.partition, dev.neuron, rngs[localIdx].state[plane], plane);
 		}
 
 		maxPartitionNeuron[dev.partition] =
