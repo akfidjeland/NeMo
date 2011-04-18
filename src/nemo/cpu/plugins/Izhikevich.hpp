@@ -3,6 +3,10 @@
 
 #include "neuron_model.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void
 update_neurons(
 		int start, int end,
@@ -14,5 +18,9 @@ update_neurons(
 		fix_t current[],
 		uint64_t recentFiring[],
 		unsigned fired[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

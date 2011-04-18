@@ -6,8 +6,11 @@
 #include <nemo/internal_types.h>
 #include <nemo/RNG.hpp>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* Update a range of neuron in a contigous range */
+/* Update a number of neurons in a contigous range */
 typedef void update_neurons_t(
 		int start, int end,
 		float* paramBase, size_t paramStride,
@@ -18,5 +21,9 @@ typedef void update_neurons_t(
 		fix_t current[],
 		uint64_t recentFiring[],
 		unsigned fired[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
