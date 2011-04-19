@@ -32,7 +32,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 
 		NeuronType() :
 			mf_nParam(0), mf_nState(0),
-			m_name("null"), m_membranePotential(0), m_nrand(false) { }
+			m_name("null"), m_membranePotential(0),
+			m_nrand(false), m_stateHistory(1) { }
 
 		/*! Create a new neuron model specification
 		 * 
@@ -51,7 +52,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 				unsigned mp,
 				bool nrand) :
 			mf_nParam(f_nParam), mf_nState(f_nState),
-			m_name(name), m_membranePotential(mp), m_nrand(nrand) { }
+			m_name(name), m_membranePotential(mp),
+			m_nrand(nrand), m_stateHistory(1) { }
 
 		size_t f_nParam() const { return mf_nParam; }
 		size_t f_nState() const { return mf_nState; }
@@ -69,6 +71,13 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 
 		bool usesNormalRNG() const { return m_nrand; }
 
+		/*! How much history (of the state) do we need? In a first order system
+		 * only the latest state is available. In a second order system, a
+		 * double buffer is used. The \it previous state is available to the
+		 * whole system, whereas the current state is available to some subset
+		 * of the system (e.g. a thread). */
+		unsigned stateHistory() const { return m_stateHistory; }
+
 	private :
 
 		size_t mf_nParam;
@@ -77,8 +86,16 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 
 		unsigned m_membranePotential;
 
-		/*! Does this neuron type require a per-neuron gaussian random number generator? */
+		/*! Does this neuron type require a per-neuron gaussian random number
+		 * generator? */
 		bool m_nrand;
+
+		/*! How much history (of the state) do we need? In a first order system
+		 * only the latest state is available. In a second order system, a
+		 * double buffer is used. The \it previous state is available to the
+		 * whole system, whereas the current state is available to some subset
+		 * of the system (e.g. a thread). */
+		unsigned m_stateHistory;
 
 		friend size_t hash_value(const nemo::NeuronType&);
 };

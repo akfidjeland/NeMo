@@ -264,7 +264,6 @@ Simulation::runKernel(cudaError_t status)
 void
 Simulation::prefire()
 {
-	m_timer.step();
 	initLog();
 
 	runKernel(::gather(
@@ -344,6 +343,8 @@ Simulation::postfire()
 
 	flushLog();
 	endLog();
+
+	m_timer.step();
 }
 
 

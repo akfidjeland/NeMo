@@ -18,6 +18,7 @@
 #include <current.cu>
 #include <firing.cu>
 #include <fixedpoint.cu>
+#include <neurons.cu>
 #include <parameters.cu>
 #include <rng.cu>
 
@@ -92,6 +93,7 @@ thalamicInput(
 __device__
 void
 updateNeurons(
+	uint32_t cycle,
 	const param_t& s_params,
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
@@ -105,13 +107,17 @@ updateNeurons(
 	unsigned* s_nFired,
 	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
+	//! \todo could set these in shared memory
 	size_t neuronParametersSize = PARTITION_COUNT * s_params.pitch32;
-	float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
-	float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
-	float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
-	float* g_d = g_neuronParameters + PARAM_D * neuronParametersSize;
-	float* g_u = g_neuronState + STATE_U * neuronParametersSize;
-	float* g_v = g_neuronState + STATE_V * neuronParametersSize;
+	const float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
+	const float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
+	const float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
+	const float* g_d = g_neuronParameters + PARAM_D * neuronParametersSize;
+	//! \todo avoid repeated computation of the same data here
+	const float* g_u0 = state<1, 2, STATE_U>(cycle, s_params.pitch32, g_neuronState);
+	const float* g_v0 = state<1, 2, STATE_V>(cycle, s_params.pitch32, g_neuronState);
+	float* g_u1 = state<1, 2, STATE_U>(cycle+1, s_params.pitch32, g_neuronState);
+	float* g_v1 = state<1, 2, STATE_V>(cycle+1, s_params.pitch32, g_neuronState);
 
 	for(unsigned nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
 
@@ -120,8 +126,8 @@ updateNeurons(
 		/* if index space is contigous, no warp divergence here */
 		if(bv_isSet(neuron, s_valid)) {
 
-			float v = g_v[neuron];
-			float u = g_u[neuron];
+			float v = g_v0[neuron];
+			float u = g_u0[neuron];
 			float a = g_a[neuron];
 			float b = g_b[neuron];
 			float I = s_current[neuron];
@@ -161,8 +167,8 @@ updateNeurons(
 				s_fired[i] = neuron;
 			}
 
-			g_v[neuron] = v;
-			g_u[neuron] = u;
+			g_v1[neuron] = v;
+			g_u1[neuron] = u;
 		}
 
 		/* synchronise to ensure accesses to s_fired and s_current (which use
@@ -255,10 +261,12 @@ updateNeurons(
 	__syncthreads();
 
 	updateNeurons(
+			cycle,
 			s_params,
 			s_partitionSize,
+			//! \todo use consistent parameter passing scheme here
 			gf_neuronParameters + CURRENT_PARTITION * s_params.pitch32,
-			gf_neuronState + CURRENT_PARTITION * s_params.pitch32,
+			gf_neuronState,
 			s_valid,
 			(float*) s_current,
 			s_fstim,

@@ -29,10 +29,12 @@ namespace nemo {
 Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	m_mapper(mapper),
 	m_type(net.neuronType()),
-	mf_param(net.neuronType().f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
-	mf_state(net.neuronType().f_nState(), mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_param(m_type.f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
+	mf_state(m_type.f_nState() * m_type.stateHistory(),
+			mapper.partitionCount(), mapper.partitionSize(), true, false),
+	m_stateCurrent(0),
 	m_valid(mapper.partitionCount(), true),
-	m_cycle(0),
+	m_cycle(~0),
 	mf_lastSync(~0),
 	mf_paramDirty(false),
 	mf_stateDirty(false),
@@ -64,6 +66,7 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 			mf_param.setNeuron(dev.partition, dev.neuron, n.f_getParameter(i), i);
 		}
 		for(unsigned i=0, i_end=stateVarCount(); i < i_end; ++i) {
+			// no need to offset based on time here, since this is beginning of the simulation.
 			mf_state.setNeuron(dev.partition, dev.neuron, n.f_getState(i), i);
 		}
 
@@ -196,6 +199,7 @@ Neurons::update(
 {
 	syncToDevice();
 	m_cycle = cycle;
+	m_stateCurrent = (cycle+1) % m_type.stateHistory();
 	return m_update_neurons(stream,
 			cycle,
 			m_mapper.partitionCount(),
@@ -233,6 +237,14 @@ Neurons::getParameter(const DeviceIdx& idx, unsigned parameter) const
 
 
 
+size_t
+Neurons::currentStateVariable(unsigned var) const
+{
+	return m_stateCurrent * stateVarCount() + var;
+}
+
+
+
 void
 Neurons::setNeuron(const DeviceIdx& dev, const float param[], const float state[])
 {
@@ -242,7 +254,7 @@ Neurons::setNeuron(const DeviceIdx& dev, const float param[], const float state[
 	}
 	mf_paramDirty = true;
 	for(unsigned i=0, i_end=stateVarCount(); i < i_end; ++i) {
-		mf_state.setNeuron(dev.partition, dev.neuron, state[i], i);
+		mf_state.setNeuron(dev.partition, dev.neuron, state[i], currentStateVariable(i));
 	}
 	mf_stateDirty = true;
 }
@@ -263,6 +275,7 @@ void
 Neurons::readStateFromDevice() const
 {
 	if(mf_lastSync != m_cycle) {
+		//! \todo read only part of the data here
 		mf_state.copyFromDevice();
 		mf_lastSync = m_cycle;
 	}
@@ -296,7 +309,7 @@ Neurons::getState(const DeviceIdx& idx, unsigned var) const
 {
 	verifyStateVariableIndex(var, stateVarCount());
 	readStateFromDevice();
-	return mf_state.getNeuron(idx.partition, idx.neuron, var);
+	return mf_state.getNeuron(idx.partition, idx.neuron, currentStateVariable(var));
 }
 
 
@@ -306,7 +319,7 @@ Neurons::setState(const DeviceIdx& idx, unsigned var, float value)
 {
 	verifyStateVariableIndex(var, stateVarCount());
 	readStateFromDevice();
-	mf_state.setNeuron(idx.partition, idx.neuron, value, var);
+	mf_state.setNeuron(idx.partition, idx.neuron, value, currentStateVariable(var));
 	mf_stateDirty = true;
 }
 

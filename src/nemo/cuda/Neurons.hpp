@@ -151,8 +151,8 @@ class Neurons
 
 		NeuronType m_type;
 
-		size_t parameterCount() const { return mf_param.planeCount(); }
-		size_t stateVarCount() const { return mf_state.planeCount(); }
+		size_t parameterCount() const { return m_type.f_nParam(); }
+		size_t stateVarCount() const { return m_type.f_nState(); }
 
 		/* Neuron parameters do not change at run-time (unless the user
 		 * specifically does it through \a setParameter) */
@@ -160,6 +160,12 @@ class Neurons
 
 		/* Neuron state variables are updated during simulation. */
 		mutable NVector<float> mf_state;
+
+		/* Index of state buffer corresponding to most recent state */
+		unsigned m_stateCurrent;
+
+		/*! \return offset (in terms of 'planes') to the up-to-date data for variable \a var */
+		size_t currentStateVariable(unsigned var) const;
 
 		/*! Normal RNG state */
 		NVector<unsigned> m_nrngState;

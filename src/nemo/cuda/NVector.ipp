@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 
 #include "exception.hpp"
 #include "device_memory.hpp"
@@ -99,6 +100,8 @@ template<typename T>
 const T*
 NVector<T>::copyFromDevice()
 {
+	fprintf(stderr, "Reading %lu words from device\n",
+			m_planes * size());
 	memcpyFromDevice(m_hostData.get(), m_deviceData.get(), m_planes * size());
 	return m_hostData.get();
 }
@@ -134,7 +137,7 @@ template<typename T>
 size_t
 NVector<T>::offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const
 {
-	//! \todo thow exception if incorrect size is used
+	//! \todo throw exception if incorrect size is used
 	assert(subvector < m_planes);
 	assert(partitionIdx < m_partitionCount);
 	assert(neuronIdx < m_pitch);
