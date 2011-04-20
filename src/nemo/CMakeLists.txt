@@ -40,6 +40,7 @@ LINK_STATIC_MSVCR()
 ADD_LIBRARY(nemo_base
 	Axon.cpp
 	ConfigurationImpl.cpp
+	ConnectivityMatrix.cpp
 	dyn_load.cpp
 	FiringBuffer.cpp
 	fixedpoint.cpp
@@ -51,7 +52,7 @@ ADD_LIBRARY(nemo_base
 	Simulation.cpp
 	SimulationBackend.cpp
 	OutgoingDelays.cpp
-	ConnectivityMatrix.cpp
+	Plugin.cpp
 	RNG.cpp
 	StdpFunction.cpp
 	StdpProcess.cpp
