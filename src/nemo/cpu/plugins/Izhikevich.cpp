@@ -1,19 +1,10 @@
 #include <nemo/fixedpoint.hpp>
+#include <nemo/plugins/Izhikevich.h>
 
 #include "neuron_model.h"
 
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
-
-//! \todo share symbolic names with CUDA Izhikevich plugin
-#define PARAM_A 0
-#define PARAM_B 1
-#define PARAM_C 2
-#define PARAM_D 3
-#define PARAM_SIGMA 4 // for gaussian RNG
-
-#define STATE_U 0
-#define STATE_V 1
 
 
 extern "C"

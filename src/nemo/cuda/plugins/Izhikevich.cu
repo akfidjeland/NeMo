@@ -22,14 +22,7 @@
 #include <parameters.cu>
 #include <rng.cu>
 
-#define PARAM_A 0
-#define PARAM_B 1
-#define PARAM_C 2
-#define PARAM_D 3
-#define PARAM_SIGMA 4 // for gaussian RNG
-
-#define STATE_U 0
-#define STATE_V 1
+#include <nemo/plugins/Izhikevich.h>
 
 
 __device__
