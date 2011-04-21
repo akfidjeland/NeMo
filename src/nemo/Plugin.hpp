@@ -10,11 +10,19 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+/* Suppress generation of MSVC-specific min/max macros which otherwise break
+ * std::min and std::max */
+#	define NOMINMAX
+#	include <windows.h>
+typedef HMODULE dl_handle;
+#else
+#	include <ltdl.h>
+typedef lt_dlhandle dl_handle;
+#endif
 #include <string>
 #include <boost/utility.hpp>
 
-//! \todo fold functionality from dyn_load into this class
-#include "dyn_load.hpp"
 
 namespace nemo {
 

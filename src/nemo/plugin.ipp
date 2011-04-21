@@ -1,4 +1,41 @@
-#include "dyn_load.hpp"
+/*! \file plugin.ipp OS-specific dynamic loading routines */
+
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*! Initialise loading routines, returning success */
+bool dl_init();
+
+/*! Shut down loading routines, returning success */
+bool dl_exit();
+
+/*! Load library, returning handle to library. Returns NULL in case of failure */
+dl_handle dl_load(const char* name);
+
+/*! Unload library. Return success. */
+bool dl_unload(dl_handle h);
+
+/*! Return description of last error */
+const char* dl_error();
+
+/* Return function pointer to given symbol or NULL if there's an error. */
+void* dl_sym(dl_handle, const char* name);
+
+/*! Set plugin search path, returning success */
+bool dl_setsearchpath(const char* dir);
+
+/*! Append to plugin search path, returning success */
+bool dl_addsearchdir(const char* dir);
+
+/*! \return library name with any required extension */
+std::string dl_libname(std::string baseName);
+
 
 #ifdef _MSC_VER
 

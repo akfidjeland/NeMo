@@ -14,6 +14,16 @@
 #include "Plugin.hpp"
 #include "exception.hpp"
 
+#include "plugin.ipp"
+
+#ifdef _MSC_VER
+const char DIRSEP_CHAR = '\\';
+const char* HOME_ENV_VAR = "userprofile";
+#else
+const char DIRSEP_CHAR = '/';
+const char* HOME_ENV_VAR = "HOME";
+#endif
+
 namespace nemo {
 
 
