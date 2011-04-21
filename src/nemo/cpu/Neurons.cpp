@@ -72,7 +72,7 @@ Neurons::update(int start, int end,
 		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
 	}
 
-	update_neurons(start, end,
+	cpu_update_neurons(start, end,
 			m_param.data(), m_param.strides()[0],
 			m_state.data(), m_state.strides()[0],
 			fbits,

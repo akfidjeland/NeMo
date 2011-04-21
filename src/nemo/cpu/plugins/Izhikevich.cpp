@@ -19,7 +19,7 @@
 
 
 void
-update_neurons(
+cpu_update_neurons(
 		int start, int end,
 		float* paramBase, size_t paramStride,
 		float* stateBase, size_t stateStride,

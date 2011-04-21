@@ -285,7 +285,7 @@ updateNeurons(
 extern "C"
 NEMO_CUDA_DLL_PUBLIC
 cudaError_t
-update_neurons(
+cuda_update_neurons(
 		cudaStream_t stream,
 		unsigned cycle,
 		unsigned partitionCount,

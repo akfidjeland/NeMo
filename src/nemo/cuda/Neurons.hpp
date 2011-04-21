@@ -199,7 +199,7 @@ class Neurons
 		/* The update function itself is found in a plugin which is loaded
 		 * dynamically */
 		Plugin m_plugin;
-		update_neurons_t* m_update_neurons;
+		cuda_update_neurons_t* m_update_neurons;
 };
 
 

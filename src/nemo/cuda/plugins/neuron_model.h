@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-typedef cudaError_t update_neurons_t(
+typedef cudaError_t cuda_update_neurons_t(
 		cudaStream_t stream,
 		unsigned cycle,
 		unsigned partitionCount,

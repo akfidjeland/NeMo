@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 /* Update a number of neurons in a contigous range */
-typedef void update_neurons_t(
+typedef void cpu_update_neurons_t(
 		int start, int end,
 		float* paramBase, size_t paramStride,
 		float* stateBase, size_t stateStride,

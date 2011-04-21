@@ -39,7 +39,7 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	mf_paramDirty(false),
 	mf_stateDirty(false),
 	m_plugin(m_type.name(), "cuda"),
-	m_update_neurons((update_neurons_t*) m_plugin.function("update_neurons"))
+	m_update_neurons((cuda_update_neurons_t*) m_plugin.function("cuda_update_neurons"))
 {
 
 	if(m_type.usesNormalRNG()) {
