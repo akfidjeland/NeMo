@@ -1,6 +1,5 @@
 #include "Simulation.hpp"
 
-#include <cassert>
 #include <cmath>
 #include <algorithm>
 
@@ -273,7 +272,6 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 	for(unsigned s=0; s < row.len; ++s) {
 		const FAxonTerminal& terminal = row[s];
-		assert(terminal.target < m_current.size());
 		m_current.at(terminal.target) += terminal.weight;
 		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",
 				elapsedSimulation(),
