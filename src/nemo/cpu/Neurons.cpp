@@ -1,7 +1,6 @@
 #include "Neurons.hpp"
 
 #include <nemo/fixedpoint.hpp>
-#include <nemo/cpu/plugins/Izhikevich.hpp>
 
 
 namespace nemo {
@@ -16,7 +15,9 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 	m_state(boost::extents[m_nState][net.neuronCount()]),
 	m_size(0),
 	m_rng(net.neuronCount()),
-	m_fstim(net.neuronCount(), 0)
+	m_fstim(net.neuronCount(), 0),
+	m_plugin(m_type.name(), "cpu"),
+	m_update_neurons((cpu_update_neurons_t*) m_plugin.function("cpu_update_neurons"))
 {
 	using namespace nemo::network;
 
@@ -72,7 +73,7 @@ Neurons::update(int start, int end,
 		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
 	}
 
-	cpu_update_neurons(start, end,
+	m_update_neurons(start, end,
 			m_param.data(), m_param.strides()[0],
 			m_state.data(), m_state.strides()[0],
 			fbits,

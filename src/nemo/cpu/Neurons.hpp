@@ -13,8 +13,10 @@
 #include <boost/multi_array.hpp>
 
 #include <nemo/RandomMapper.hpp>
+#include <nemo/Plugin.hpp>
 #include <nemo/RNG.hpp>
 #include <nemo/network/Generator.hpp>
+#include <nemo/cpu/plugins/neuron_model.h>
 
 namespace nemo {
 	namespace cpu {
@@ -141,8 +143,13 @@ class Neurons
 		 */
 		std::vector<unsigned> m_fstim;
 
-
 		//! \todo maintain firing buffer etc. here instead?
+
+		/* The update function itself is found in a plugin which is loaded
+		 * dynamically */
+		Plugin m_plugin;
+		cpu_update_neurons_t* m_update_neurons;
+
 };
 
 

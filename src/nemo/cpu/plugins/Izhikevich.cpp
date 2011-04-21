@@ -1,8 +1,6 @@
 #include <nemo/fixedpoint.hpp>
 
 #include "neuron_model.h"
-#include "Izhikevich.hpp"
-
 
 #define SUBSTEPS 4
 #define SUBSTEP_MULT 0.25
@@ -18,6 +16,8 @@
 #define STATE_V 1
 
 
+extern "C"
+NEMO_CPU_DLL_PUBLIC
 void
 cpu_update_neurons(
 		int start, int end,
