@@ -10,13 +10,11 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \file Neurons.hpp
-
 #include <map>
 
 #include <nemo/cuda/plugins/neuron_model.h>
-#include <nemo/dyn_load.hpp>
 #include <nemo/NeuronType.hpp>
+#include <nemo/Plugin.hpp>
 
 #include "Mapper.hpp"
 #include "NVector.hpp"
@@ -54,8 +52,6 @@ class Neurons
 		typedef Mapper mapper_type;
 
 		Neurons(const network::Generator&, const mapper_type&);
-
-		~Neurons();
 
 		/*! Update the state of all neurons */
 		cudaError_t update(
@@ -202,9 +198,8 @@ class Neurons
 
 		/* The update function itself is found in a plugin which is loaded
 		 * dynamically */
-		dl_handle m_plugin;
+		Plugin m_plugin;
 		update_neurons_t* m_update_neurons;
-		void loadNeuronUpdatePlugin(const nemo::NeuronType&);
 };
 
 

@@ -38,10 +38,9 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	mf_lastSync(~0),
 	mf_paramDirty(false),
 	mf_stateDirty(false),
-	m_plugin(NULL),
-	m_update_neurons(NULL)
+	m_plugin(m_type.name(), "cuda"),
+	m_update_neurons((update_neurons_t*) m_plugin.function("update_neurons"))
 {
-	loadNeuronUpdatePlugin(m_type);
 
 	if(m_type.usesNormalRNG()) {
 		m_nrngState = NVector<unsigned>(RNG_STATE_COUNT,
@@ -88,63 +87,6 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	m_nrng.pitch = m_nrngState.wordPitch();
 	m_valid.moveToDevice();
 	configurePartitionSizes(maxPartitionNeuron);
-}
-
-
-
-Neurons::~Neurons()
-{
-	if(m_plugin != NULL) {
-		dl_unload(m_plugin);
-	}
-	dl_exit();
-}
-
-
-void
-reportLoadError(const nemo::NeuronType& type)
-{
-	using boost::format;
-	throw nemo::exception(NEMO_DL_ERROR,
-			str(format("error when loading neuron model plugin %s: %s")
-				% dl_libname(type.name()) % dl_error()));
-}
-
-
-void
-Neurons::loadNeuronUpdatePlugin(const nemo::NeuronType& type)
-{
-	using boost::format;
-
-	if(!dl_init()) {
-		reportLoadError(type);
-	}
-
-	char* home = getenv(HOME_ENV_VAR);
-	if(home == NULL) {
-		throw nemo::exception(NEMO_DL_ERROR, "Could not locate user's home directory when searching for plugins");
-	}
-
-	std::string userPath = str(format("%s%c%s%ccuda") % home % DIRSEP_CHAR % NEMO_USER_PLUGIN_DIR % DIRSEP_CHAR);
-	if(!dl_setsearchpath(userPath.c_str())) {
-		reportLoadError(type);
-	}
-
-	std::string systemPath = str(format("%s%ccuda") % NEMO_SYSTEM_PLUGIN_DIR % DIRSEP_CHAR);
-	if(!dl_addsearchdir(systemPath.c_str())) {
-		reportLoadError(type);
-	}
-
-	m_plugin = dl_load(dl_libname(type.name()).c_str());
-	if(m_plugin == NULL) {
-		reportLoadError(type);
-	}
-
-
-	m_update_neurons = (update_neurons_t*) dl_sym(m_plugin, "update_neurons");
-	if(m_update_neurons == NULL) {
-		reportLoadError(type);
-	}
 }
 
 

@@ -1,6 +1,15 @@
 #ifndef NEMO_PLUGIN_HPP
 #define NEMO_PLUGIN_HPP
 
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <string>
 #include <boost/utility.hpp>
 
@@ -10,7 +19,7 @@
 namespace nemo {
 
 
-/* Wrapper for a dynamically loaded library */
+/* Wrapper for a dynamically loaded library or plugin */
 class Plugin : private boost::noncopyable
 {
 	public :
@@ -26,6 +35,13 @@ class Plugin : private boost::noncopyable
 		 */
 		explicit Plugin(const std::string& name);
 
+		/*! Load a plugin from a subdirectory of the set of NeMo-specific plugin directories
+		 *
+		 * Plugins are always located in a subdirectory, as they are backend-specific.
+		 * There is one system plugin directory and one per-user system directory.
+		 */
+		Plugin(const std::string& name, const std::string& subdir);
+
 		~Plugin();
 
 		/*! \return function pointer for a named function
@@ -39,6 +55,15 @@ class Plugin : private boost::noncopyable
 	private:
 
 		dl_handle m_handle;
+
+		/*! Initialise the loader */
+		void init(const std::string& name);
+
+		/*! Set NeMo-specific search paths */
+		void setpath(const std::string& subdir);
+
+		/*! Load the library */
+		void load(const std::string& name);
 };
 
 }
