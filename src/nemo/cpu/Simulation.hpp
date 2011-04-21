@@ -10,7 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <map>
 #include <vector>
 
 #include <nemo/config.h>

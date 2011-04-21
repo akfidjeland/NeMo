@@ -2,6 +2,7 @@ INCLUDE_DIRECTORIES(
 	${CMAKE_SOURCE_DIR}/src
 )
 
-ADD_LIBRARY(cpu_Izhikevich SHARED Izhikevich.cpp)
-INSTALL(TARGETS cpu_Izhikevich DESTINATION ${NEMO_SYSTEM_PLUGIN_DIR}/cpu)
-TARGET_LINK_LIBRARIES(cpu_Izhikevich nemo_base)
+ADD_LIBRARY(Izhikevich-cpu SHARED Izhikevich.cpp)
+SET_TARGET_PROPERTIES(Izhikevich-cpu PROPERTIES OUTPUT_NAME "Izhikevich")
+INSTALL(TARGETS Izhikevich-cpu DESTINATION ${NEMO_SYSTEM_PLUGIN_DIR}/cpu)
+TARGET_LINK_LIBRARIES(Izhikevich-cpu nemo_base)
