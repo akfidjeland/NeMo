@@ -489,13 +489,13 @@ get_synapse_x(const nemo::ReadableNetwork& net,
 		PyObject* ids,
 		std::const_mem_fun1_ref_t<T, nemo::ReadableNetwork, const synapse_id&> get_x)
 {
-	const Py_ssize_t len = PyList_Check(ids) ? PyList_Size(ids) : 0;
+	const Py_ssize_t len = PySequence_Check(ids) ? PySequence_Size(ids) : 0;
 	if(len == 0) {
 		return insert<T>(get_x(net, extract<synapse_id>(ids)));
 	} else {
 		PyObject* list = PyList_New(len);
 		for(Py_ssize_t i=0; i < len; ++i) {
-			synapse_id id = extract<synapse_id>(PyList_GetItem(ids, i));
+			synapse_id id = extract<synapse_id>(PySequence_GetItem(ids, i));
 			const T val = get_x(net, id);
 			PyList_SetItem(list, i, insert<T>(val));
 		}
