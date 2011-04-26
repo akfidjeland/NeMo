@@ -7,7 +7,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boost/functional/hash.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -117,24 +116,5 @@ NeuronType::parseConfigurationFile(const std::string& name)
 	}
 }
 
-
-
-size_t
-hash_value(const nemo::NeuronType& type)
-{
-	std::size_t seed = 0;
-	boost::hash_combine(seed, type.mf_nParam);
-	boost::hash_combine(seed, type.mf_nState);
-	boost::hash_combine(seed, type.m_name);
-	return seed;
-}
-
-
-size_t
-NeuronType::hash_value() const
-{
-	static size_t h = nemo::hash_value(*this);
-	return h;	
-}
 
 }

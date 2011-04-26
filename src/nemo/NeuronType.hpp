@@ -42,8 +42,6 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		/* \return number of floating point state variables */
 		size_t f_nState() const { return mf_nState; }
 
-		size_t hash_value() const;
-
 		/*! Return the name of the neuron model
 		 *
 		 * This should match the name of the plugin which implements this
@@ -82,8 +80,6 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		unsigned m_stateHistory;
 
 		void parseConfigurationFile(const std::string& name);
-
-		friend size_t hash_value(const nemo::NeuronType&);
 };
 
 }
