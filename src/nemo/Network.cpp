@@ -52,7 +52,7 @@ Network::addNeuron(unsigned idx,
 		float u, float v, float sigma)
 {
 	if(iz_type == ~0U) {
-		iz_type = m_impl->addNeuronType(NeuronType(5, 2, "Izhikevich", 1, true));
+		iz_type = m_impl->addNeuronType(NeuronType("Izhikevich"));
 	}
 	static boost::array<float, 5> param;
 	static boost::array<float, 2> state;

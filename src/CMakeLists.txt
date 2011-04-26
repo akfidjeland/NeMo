@@ -14,6 +14,8 @@ OPTION(
 	ON
 )
 
+LIST(APPEND BOOST_COMPONENTS filesystem program_options)
+
 IF(NEMO_TIMING_ENABLED)
 	LIST(APPEND BOOST_COMPONENTS date_time)
 ENDIF(NEMO_TIMING_ENABLED)
@@ -60,7 +62,9 @@ ENDIF(WIN32 OR APPLE)
 #
 # - date/time: 1.29.0
 # - format:    1.29.0
+# - filesystem: 1.30.0
 # - optional:  1.30.0
+# - program options: 1.32.0
 # - smart ptr: 1.23.0
 # - unordered: 1.36.0
 

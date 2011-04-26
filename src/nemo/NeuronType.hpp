@@ -24,38 +24,22 @@ namespace nemo {
  *
  * This class is concerned only with the type of data it contains. The
  * simulation data can be set up based on this, regardless of the neuron
- * dynamics.
+ * dynamics. The neuron dynamics are specified in a plugin which is loaded when
+ * the simulation is set up. The neuron format is described in a seperate
+ * configuration file from which NeuronType instances are initialized.
  */
 class NEMO_BASE_DLL_PUBLIC NeuronType
 {
 	public :
 
-		NeuronType() :
-			mf_nParam(0), mf_nState(0),
-			m_name("null"), m_membranePotential(0),
-			m_nrand(false), m_stateHistory(1) { }
+		/*! Initialise a neuron type from a neuron type description file, in
+		 * .ini format located in one of NeMo's plugin directories */
+		explicit NeuronType(const std::string& name);
 
-		/*! Create a new neuron model specification
-		 * 
-		 * This is a generic neuron type which supports a number of run-time
-		 * constant parameters and a number of state variables.
-		 *
-		 * \param f_nParam number of floating point parameters
-		 * \param f_nState number of floating point state variables
-		 * \param name unique name for this type
-		 * \param mp index of membrane potential state variable
-		 * \param nrand is a per-neuron gaussian RNG required?
-		 */
-		NeuronType(size_t f_nParam,
-				size_t f_nState,
-				const std::string& name,
-				unsigned mp,
-				bool nrand) :
-			mf_nParam(f_nParam), mf_nState(f_nState),
-			m_name(name), m_membranePotential(mp),
-			m_nrand(nrand), m_stateHistory(1) { }
-
+		/* \return number of floating point parameters */
 		size_t f_nParam() const { return mf_nParam; }
+
+		/* \return number of floating point state variables */
 		size_t f_nState() const { return mf_nState; }
 
 		size_t hash_value() const;
@@ -96,6 +80,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		 * whole system, whereas the current state is available to some subset
 		 * of the system (e.g. a thread). */
 		unsigned m_stateHistory;
+
+		void parseConfigurationFile(const std::string& name);
 
 		friend size_t hash_value(const nemo::NeuronType&);
 };
