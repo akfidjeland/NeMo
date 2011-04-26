@@ -13,7 +13,7 @@
 #define SIMULATION_DOC "A simulation is created from a network and a configuration object. The\nsimulation is run by stepping through it, providing stimulus as\nappropriate. It is possible to read back synapse data at run time. The\nsimulation also maintains a timer for both simulated time and wallclock\ntime."
 #define SIMULATION_STEP_DOC "\n\nrun simulation for a single cycle (1ms)\n\nInputs:\nfstim -- An optional list of neurons, which will be forced to fire this cycle\nistim_nidx -- An optional list of neurons which will be given input current stimulus this cycle\nistim_current -- The corresponding list of current input"
 #define SIMULATION_APPLY_STDP_DOC "\n\nupdate synapse weights using the accumulated STDP statistics\n\nInputs:\nreward -- Multiplier for the accumulated weight change"
-#define SIMULATION_GET_MEMBRANE_POTENTIAL_DOC "\n\nget membane potential of a neuron\n\nInputs:\nidx -- neuron index"
+#define SIMULATION_GET_MEMBRANE_POTENTIAL_DOC "\n\nget neuron membane potential\n\nInputs:\nidx -- neuron index\n\nThe neuron index may be either scalar or a list. The output has the same\nlength as the neuron input"
 #define SIMULATION_ELAPSED_WALLCLOCK_DOC "\n\n"
 #define SIMULATION_ELAPSED_SIMULATION_DOC "\n\n"
 #define SIMULATION_RESET_TIMER_DOC "\n\nreset both wall-clock and simulation timer"

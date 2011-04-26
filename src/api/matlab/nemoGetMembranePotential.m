@@ -1,5 +1,5 @@
 function v = nemoGetMembranePotential(idx)
-% nemoGetMembranePotential - get membane potential of a neuron
+% nemoGetMembranePotential - get neuron membane potential
 %  
 % Synopsis:
 %   v = nemoGetMembranePotential(idx)
