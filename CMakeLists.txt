@@ -79,7 +79,6 @@ SET(CPACK_SOURCE_IGNORE_FILES
 	src/api/matlab/sources
 	src/api/python/utils
 	src/gui
-	README.in # only include the generated file
 	ReadMe.txt # for PackageMaker only
 	${CPACK_SOURCE_IGNORE_FILES})
 
