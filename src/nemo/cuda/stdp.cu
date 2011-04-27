@@ -185,7 +185,7 @@ closestPostFire(uint64_t spikes)
 
 __device__
 void
-logStdp(int dt, weight_dt w_diff, unsigned targetNeuron, uint32_t r_synapse)
+logStdp(int dt, weight_dt w_diff, unsigned targetNeuron, rsynapse_t r_synapse)
 {
 	const char* type[] = { "ltd", "ltp" };
 
@@ -211,7 +211,7 @@ weight_dt
 updateRegion(
 		uint64_t spikes,
 		unsigned targetNeuron,
-		uint32_t r_synapse) // used for logging only
+		rsynapse_t r_synapse) // used for logging only
 {
 	/* The potentiation can happen on either side of the firing. We want to
 	 * find the one closest to the firing. We therefore need to compute the
@@ -255,7 +255,7 @@ updateRegion(
 __device__
 weight_dt
 updateSynapse(
-		uint32_t r_synapse,
+		rsynapse_t r_synapse,
 		unsigned targetNeuron,
 		uint64_t* g_sourceFiring)
 {
@@ -336,8 +336,8 @@ updateSTDP_(
 					/* nvcc will warn that gr_address defaults to gmem, as it
 					 * is not clear what address space it belongs to. That's
 					 * ok; this is global memory */
-					uint32_t* gr_address = cr_address[CURRENT_PARTITION];
-					uint32_t r_sdata = gr_address[r_offset];
+					rsynapse_t* gr_address = cr_address[CURRENT_PARTITION];
+					rsynapse_t r_sdata = gr_address[r_offset];
 
 					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 

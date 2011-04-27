@@ -56,10 +56,10 @@ applyStdp(
 	unsigned r_pitch = cr_pitch[CURRENT_PARTITION];
 
 #ifdef NEMO_CUDA_DEBUG_TRACE
-	uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
+	rsynapse_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
 #endif
 
-	uint32_t* gr_faddress = (uint32_t*) cr_faddress[CURRENT_PARTITION];
+	rsynapse_t* gr_faddress = (uint32_t*) cr_faddress[CURRENT_PARTITION];
 
 	if(threadIdx.x == 0) {
 		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
@@ -77,7 +77,7 @@ applyStdp(
 				size_t gr_offset = target * r_pitch + r_sidx;
 				size_t gf_offset = gr_faddress[gr_offset];
 #ifdef NEMO_CUDA_DEBUG_TRACE
-				unsigned rsynapse = gr_address[gr_offset];
+				rsynapse_t rsynapse = gr_address[gr_offset];
 #endif
 
 				if(gf_offset != 0) {

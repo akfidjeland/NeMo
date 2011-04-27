@@ -64,22 +64,24 @@ targetNeuron(unsigned synapse)
 
 
 __host__
-unsigned
+rsynapse_t
 r_packSynapse(unsigned sourcePartition, unsigned sourceNeuron, unsigned delay)
 {
 	assert(!(sourcePartition & ~PARTITION_MASK));
 	assert(!(sourceNeuron & ~NEURON_MASK));
 	assert(!(delay & ~DELAY_MASK));
-	return (sourcePartition << R_PARTITION_SHIFT)
-	     | (sourceNeuron    << R_NEURON_SHIFT)
-	     |  delay;
+	rsynapse_t s = 0;
+	s |= sourcePartition << R_PARTITION_SHIFT;
+	s |= sourceNeuron    << R_NEURON_SHIFT;
+	s |= delay;
+	return s;
 }
 
 
 
 __device__ __host__
 unsigned
-sourceNeuron(unsigned rsynapse)
+sourceNeuron(rsynapse_t rsynapse)
 {
     return (rsynapse >> R_NEURON_SHIFT) & NEURON_MASK;
 }
@@ -87,7 +89,7 @@ sourceNeuron(unsigned rsynapse)
 
 __device__ __host__
 unsigned
-sourcePartition(unsigned rsynapse)
+sourcePartition(rsynapse_t rsynapse)
 {
     return (rsynapse >> R_PARTITION_SHIFT) & PARTITION_MASK;
 }
@@ -96,7 +98,7 @@ sourcePartition(unsigned rsynapse)
 
 __device__ __host__
 unsigned
-r_delay1(unsigned rsynapse)
+r_delay1(rsynapse_t rsynapse)
 {
     return rsynapse & DELAY_MASK; 
 }
@@ -104,7 +106,7 @@ r_delay1(unsigned rsynapse)
 
 __device__
 unsigned
-r_delay0(unsigned rsynapse)
+r_delay0(rsynapse_t rsynapse)
 {
 	return r_delay1(rsynapse) - 1;
 }
