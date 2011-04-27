@@ -87,12 +87,21 @@ NeuronType::parseConfigurationFile(const std::string& name)
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		/* required fields, no defaults */
-		("parameters", po::value<unsigned>(), "number of neuron parameters")
-		("state", po::value<unsigned>(), "number of neuron state variables")
-		("membrane-potential", po::value<unsigned>(), "index of membrane potential variable")
-		("nrand", po::value<bool>(), "is normal RNG required?")
+		("parameters", po::value<unsigned>(),
+			"number of neuron parameters")
+		("state-variables", po::value<unsigned>(),
+			"number of neuron state variables")
+		("membrane-potential", po::value<unsigned>(),
+			"index of membrane potential variable")
+		("rng.normal", po::value<bool>(),
+			"is normal RNG required?")
 		/* optional fields */
-		("history", po::value<unsigned>()->default_value(1), "index of membrane potential variable")
+		("history", po::value<unsigned>()->default_value(1),
+			"index of membrane potential variable")
+		("backends.cpu", po::value<bool>()->default_value(false),
+			"support for CPU backend")
+		("backends.cuda", po::value<bool>()->default_value(false),
+			"support for CUDA backend")
 	;
 
 	fs::path filename = configurationFile(name);
@@ -105,9 +114,9 @@ NeuronType::parseConfigurationFile(const std::string& name)
 		po::notify(vm);
 
 		mf_nParam = getRequired<unsigned>(vm, "parameters", filename);
-		mf_nState = getRequired<unsigned>(vm, "state", filename);
+		mf_nState = getRequired<unsigned>(vm, "state-variables", filename);
 		m_membranePotential = getRequired<unsigned>(vm, "membrane-potential", filename);
-		m_nrand = getRequired<bool>(vm, "nrand", filename);
+		m_nrand = getRequired<bool>(vm, "rng.normal", filename);
 		m_stateHistory = vm["history"].as<unsigned>();
 	} catch (po::error& e) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
