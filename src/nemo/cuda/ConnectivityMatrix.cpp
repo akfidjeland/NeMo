@@ -57,7 +57,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const Mapper& mapper) :
 	m_mapper(mapper),
 	m_maxDelay(0),
-	mh_weights(WARP_SIZE, 0),
+	mhf_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
 	m_delays(1, mapper.partitionCount(), mapper.partitionSize(), true, false),
@@ -65,7 +65,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
 	//! \todo change synapse_t, perhaps to nidx_dt
-	std::vector<synapse_t> h_targets(WARP_SIZE, f_nullSynapse());
+	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
 	WarpAddressTable wtable;
 
 	bool logging = conf.loggingEnabled();
@@ -78,15 +78,20 @@ ConnectivityMatrix::ConnectivityMatrix(
 	}
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
-	 * h_targets/h_weights in advance? It's hard to know exactly how much is
+	 * hf_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(net, mapper, wtable, h_targets, mh_weights);
+	size_t nextFreeWarp = 1; // leave space for null warp at beginning
+	for(network::synapse_iterator s = net.synapse_begin();
+			s != net.synapse_end(); ++s) {
+		addSynapse(*s, mapper, nextFreeWarp, wtable, hf_targets, mhf_weights);
+	}
+	size_t totalWarps = nextFreeWarp;
 
 	verifySynapseTerminals(m_cmAux, mapper);
 
-	moveFcmToDevice(totalWarps, h_targets, mh_weights, logging);
-	h_targets.clear();
+	moveFcmToDevice(totalWarps, hf_targets, mhf_weights, logging);
+	hf_targets.clear();
 
 	setDelays(wtable, &m_delays);
 
@@ -172,24 +177,6 @@ ConnectivityMatrix::addSynapse(
 	}
 }
 
-
-
-size_t
-ConnectivityMatrix::createFcm(
-		const network::Generator& net,
-		const Mapper& mapper,
-		WarpAddressTable& wtable,
-		std::vector<synapse_t>& h_targets,
-		std::vector<weight_dt>& h_weights)
-{
-	size_t nextFreeWarp = 1; // leave space for null warp at beginning
-
-	for(network::synapse_iterator s = net.synapse_begin();
-			s != net.synapse_end(); ++s) {
-		addSynapse(*s, mapper, nextFreeWarp, wtable, h_targets, h_weights);
-	}
-	return nextFreeWarp;
-}
 
 
 
@@ -350,14 +337,14 @@ ConnectivityMatrix::getSynapsesFrom(unsigned source)
 const std::vector<weight_dt>&
 ConnectivityMatrix::syncWeights(cycle_t cycle) const
 {
-	if(cycle != m_lastWeightSync && !mh_weights.empty()) {
+	if(cycle != m_lastWeightSync && !mhf_weights.empty()) {
 		//! \todo refine this by only doing the minimal amount of copying
-		memcpyFromDevice(reinterpret_cast<synapse_t*>(&mh_weights[0]),
+		memcpyFromDevice(reinterpret_cast<synapse_t*>(&mhf_weights[0]),
 					md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize,
 					md_fcmPlaneSize);
 		m_lastWeightSync = cycle;
 	}
-	return mh_weights;
+	return mhf_weights;
 }
 
 

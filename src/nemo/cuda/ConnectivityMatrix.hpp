@@ -160,28 +160,20 @@ class ConnectivityMatrix
 		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
 		rcm_t m_rsynapses;
 
-		/*! Compact FCM on device */
+		/*! Compact forward connectivity matrix on device */
 		boost::shared_ptr<synapse_t> md_fcm;
 
 		/*! Host-side copy of the weight data. This is mutable since it acts as
 		 * a buffer for synapse getters */
-		mutable std::vector<weight_dt> mh_weights;
+		mutable std::vector<weight_dt> mhf_weights;
 
 		/* \post The weight of every synapse in 'synapses' is found up-to-date
-		 * in mh_weights. */
+		 * in mhf_weights. */
 		const std::vector<weight_dt>& syncWeights(cycle_t) const;
 		mutable cycle_t m_lastWeightSync;
 
 		size_t md_fcmPlaneSize; // in words
 		size_t md_fcmAllocated; // in bytes
-
-		/*! \return total number of warps */
-		size_t createFcm(
-				const nemo::network::Generator& net,
-				const Mapper&,
-				WarpAddressTable& wtable,
-				std::vector<synapse_t>& targets,
-				std::vector<weight_dt>& weights);
 
 		void moveFcmToDevice(size_t totalWarps,
 				const std::vector<synapse_t>& h_targets,
