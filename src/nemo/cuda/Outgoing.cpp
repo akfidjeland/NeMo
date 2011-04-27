@@ -105,7 +105,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	/* populate host memory */
 	for(WarpAddressTable::iterator ti = wtable.begin(); ti != wtable.end(); ++ti) {
 
-		const WarpAddressTable::key& k = ti->first;
+		const WarpAddressTable::index_key& k = ti->first;
 
 		pidx_t sourcePartition = get<0>(k);
 		nidx_t sourceNeuron = get<1>(k);
@@ -113,7 +113,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 
 		/* Allocate memory for this row. Add padding to ensure each row starts
 		 * at warp boundaries */
-		unsigned nWarps = wtable.rowLength(k);
+		unsigned nWarps = wtable.indexRowLength(k);
 		unsigned nWords = ALIGN(nWarps, WARP_SIZE);
 		wpitch = std::max(wpitch, nWords);
 		assert(nWords >= nWarps);

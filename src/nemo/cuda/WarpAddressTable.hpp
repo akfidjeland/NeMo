@@ -38,6 +38,11 @@ namespace nemo {
  * 1. allocating addresses (warp index + column index) for each synapse
  * 2. accumulate the addressing data that will be used at run-time.
  *
+ * This class thus needs to refer to two types of data. The first is the
+ * synapse data itself (referred to just as 'data' here), and the second is the
+ * index into the data. The synapse data is only ever lookup up via the index,
+ * but the data key specifies how synapses are grouped into rows.
+ *
  * The warp address table is intended for incremental construction, by adding
  * individual synapses.
  *
@@ -55,11 +60,11 @@ class WarpAddressTable
 		/* Synapses are grouped into 'rows' which share the same source neuron,
 		 * target partition and delay
 		 *                   source  source  target */
-		typedef boost::tuple<pidx_t, nidx_t, pidx_t, delay_t> row_key;
+		typedef boost::tuple<pidx_t, nidx_t, pidx_t, delay_t> data_key;
 
 		/* However, at run-time we get addresses only based on the source
 		 * neuron and delay. */
-		typedef boost::tuple<pidx_t, nidx_t, delay_t> key;
+		typedef boost::tuple<pidx_t, nidx_t, delay_t> index_key;
 
 		/* Each row may be spread over a disparate set of warps. Each target
 		 * partition may have synapses in several warps. */
@@ -67,7 +72,7 @@ class WarpAddressTable
 
 	private :
 
-		typedef boost::unordered_map<key, row_t> warp_map;
+		typedef boost::unordered_map<index_key, row_t> warp_map;
 
 	public :
 
@@ -92,7 +97,7 @@ class WarpAddressTable
 		/*! \return
 		 * 		length of a row in the lookup table, i.e. the number of warps
 		 * 		in a row with the given key */
-		unsigned rowLength(const key& k) const;
+		unsigned indexRowLength(const index_key& k) const;
 
 		/*! \return print histogram of sizes of each synapse
 		 * warp to stdout */
@@ -104,9 +109,9 @@ class WarpAddressTable
 
 		/* In order to keep track of when we need to start a new warp, store
 		 * the number of synapses in each row */
-		boost::unordered_map<row_key, unsigned> m_rowSynapses;
+		boost::unordered_map<data_key, unsigned> m_dataRowLength;
 
-		boost::unordered_map<key, unsigned> m_warpsPerNeuronDelay;
+		boost::unordered_map<index_key, unsigned> m_indexRowLength;
 };
 
 

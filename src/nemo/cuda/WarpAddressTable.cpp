@@ -59,18 +59,18 @@ WarpAddressTable::addSynapse(
 		delay_t delay1,
 		size_t nextFreeWarp)
 {
-	row_key rk(source.partition, source.neuron, targetPartition, delay1);
-	unsigned& rowSynapses = m_rowSynapses[rk];
-	unsigned column = rowSynapses % WARP_SIZE;
-	rowSynapses += 1;
+	data_key dk(source.partition, source.neuron, targetPartition, delay1);
+	unsigned& dataRowLength = m_dataRowLength[dk];
+	unsigned column = dataRowLength % WARP_SIZE;
+	dataRowLength += 1;
 
-	key k(source.partition, source.neuron, delay1);
-	std::vector<size_t>& warps = m_warps[k][targetPartition];
+	index_key lk(source.partition, source.neuron, delay1);
+	std::vector<size_t>& warps = m_warps[lk][targetPartition];
 
 	if(column == 0) {
 		/* Add synapse to a new warp */
 		warps.push_back(nextFreeWarp);
-		m_warpsPerNeuronDelay[k] += 1;
+		m_indexRowLength[lk] += 1;
 		return SynapseAddress(nextFreeWarp, column);
 	} else {
 		/* Add synapse to an existing partially-filled warp */
@@ -86,8 +86,8 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 	unsigned total = 0;
 	std::vector<unsigned> hist(WARP_SIZE+1, 0);
 
-	for(boost::unordered_map<row_key, unsigned>::const_iterator i = m_rowSynapses.begin();
-			i != m_rowSynapses.end(); ++i) {
+	for(boost::unordered_map<data_key, unsigned>::const_iterator i = m_dataRowLength.begin();
+			i != m_dataRowLength.end(); ++i) {
 		unsigned fullWarps = i->second / WARP_SIZE;
 		unsigned partialWarp = i->second % WARP_SIZE;
 		hist.at(WARP_SIZE) += fullWarps;
@@ -108,11 +108,11 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 
 
 unsigned
-WarpAddressTable::rowLength(const key& k) const
+WarpAddressTable::indexRowLength(const index_key& k) const
 {
-	typedef boost::unordered_map<key, unsigned>::const_iterator it;
-	it i = m_warpsPerNeuronDelay.find(k);
-	if(i != m_warpsPerNeuronDelay.end()) {
+	typedef boost::unordered_map<index_key, unsigned>::const_iterator it;
+	it i = m_indexRowLength.find(k);
+	if(i != m_indexRowLength.end()) {
 		return i->second;
 	} else {
 		return 0;
