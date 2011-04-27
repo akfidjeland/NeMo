@@ -79,6 +79,8 @@ SET(CPACK_SOURCE_IGNORE_FILES
 	src/api/matlab/sources
 	src/api/python/utils
 	src/gui
+	doc/manual/src
+	doc/manual/CMakeLists.txt
 	ReadMe.txt # for PackageMaker only
 	${CPACK_SOURCE_IGNORE_FILES})
 
