@@ -54,4 +54,25 @@ state(unsigned cycle, size_t pitch, float* g_state)
 	return g_state + (((cycle % H) * N + V) * PARTITION_COUNT + CURRENT_PARTITION) * pitch; 
 }
 
+
+
+/*! Get a neuron state at a previous point in time
+
+ * This function is intended for random access to the neuron state, i.e.
+ * accesses which cannot be coalesced.
+ *
+ * \param cycle
+ *		Desired time-slot. This is not checked for validity. Generally H-1 or
+ *		H-2 cycles worth of previous data are valid.
+ */
+template<unsigned H, unsigned N, unsigned V>
+__device__
+float
+state(unsigned cycle, size_t pitch, pidx_t partition, nidx_t neuron, const float* g_state)
+{
+	return g_state[(((cycle % H) * N + V) * PARTITION_COUNT + partition) * pitch + neuron];
+}
+
+
+
 #endif

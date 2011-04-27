@@ -91,12 +91,13 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	 * wall-clock second */
 	unsigned long throughput = MS_PER_SECOND * narrivals / elapsedData;
 	double speedup = double(seconds*MS_PER_SECOND)/elapsedData;
+	double updates = double(MS_PER_SECOND*sim->elapsedSimulation())/elapsedData;
 
 	if(verbose) {
 		std::cout << "Total firings: " << nfired << std::endl;
 		std::cout << "Avg. firing rate: " << f << "Hz\n";
 		std::cout << "Spike arrivals: " << narrivals << std::endl;
-		std::cout << "Performace both with and without PCI traffic overheads:\n";
+		std::cout << "Updates/second: " << updates << std::endl;
 		std::cout << "Approx. throughput: " << throughput/1000000
 				<< "Ma/s (million spike arrivals per second)\n";
 		std::cout << "Speedup wrt real-time: " << speedup << std::endl;

@@ -867,3 +867,5 @@ BOOST_AUTO_TEST_SUITE(c_api)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+#include "Kuramoto.cpp"
+

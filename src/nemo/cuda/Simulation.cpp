@@ -305,6 +305,7 @@ Simulation::fire()
 void
 Simulation::postfire()
 {
+#if 0
 	runKernel(::scatter(
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
@@ -336,6 +337,7 @@ Simulation::postfire()
 			md_nFired.get(),
 			m_fired.deviceData()));
 	}
+#endif
 
 	cudaEventSynchronize(m_eventFireDone);
 	m_firingBuffer.sync(m_streamCopy);
