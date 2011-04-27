@@ -30,7 +30,7 @@ namespace nemo {
  * This mapping is a temporary structure used during construction of the device
  * data for the forward connectivity matrix. Synapses are organised in groups,
  * where each group contains synapses sharing the same source neuron, target
- * neuron and delay. Each group is in turn split into fixed-size warps, which
+ * partition and delay. Each group is in turn split into fixed-size warps, which
  * is the basic unit for spike delivery in NeMo.
  *
  * The warp address table serves two purposes:
@@ -44,7 +44,7 @@ namespace nemo {
  * At runtime this mapping is found in the data structure \ref Outgoing.
  *
  * The map structures used internally are boost::unordered_map rather than
- * std::map as noticably speeds up the construction of the table.
+ * std::map as this noticably speeds up the construction of the table.
  *
  * \see nemo::cuda::Outgoing
  */
@@ -89,8 +89,10 @@ class WarpAddressTable
 
 		typedef row_t::const_iterator row_iterator;
 
-		unsigned warpsPerNeuronDelay(pidx_t sourcePartition,
-				nidx_t sourceNeuron, delay_t delay1) const;
+		/*! \return
+		 * 		length of a row in the lookup table, i.e. the number of warps
+		 * 		in a row with the given key */
+		unsigned rowLength(const key& k) const;
 
 		/*! \return print histogram of sizes of each synapse
 		 * warp to stdout */

@@ -108,10 +108,10 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 
 
 unsigned
-WarpAddressTable::warpsPerNeuronDelay(pidx_t p, nidx_t n, delay_t delay1) const
+WarpAddressTable::rowLength(const key& k) const
 {
 	typedef boost::unordered_map<key, unsigned>::const_iterator it;
-	it i = m_warpsPerNeuronDelay.find(key(p,n, delay1));
+	it i = m_warpsPerNeuronDelay.find(k);
 	if(i != m_warpsPerNeuronDelay.end()) {
 		return i->second;
 	} else {

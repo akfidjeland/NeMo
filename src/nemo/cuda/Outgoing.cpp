@@ -113,7 +113,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 
 		/* Allocate memory for this row. Add padding to ensure each row starts
 		 * at warp boundaries */
-		unsigned nWarps = wtable.warpsPerNeuronDelay(sourcePartition, sourceNeuron, delay1);
+		unsigned nWarps = wtable.rowLength(k);
 		unsigned nWords = ALIGN(nWarps, WARP_SIZE);
 		wpitch = std::max(wpitch, nWords);
 		assert(nWords >= nWarps);
