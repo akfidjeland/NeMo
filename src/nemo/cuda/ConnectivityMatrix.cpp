@@ -104,7 +104,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	verifySynapseTerminals(m_cmAux, mapper);
 
-	moveFcmToDevice(totalWarps, hf_targets, mhf_weights, logging);
+	moveFcmToDevice(totalWarps, hf_targets, mhf_weights);
 	hf_targets.clear();
 
 	setDelays(wtable, &m_delays);
@@ -263,11 +263,11 @@ ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapp
 
 
 
+
 void
 ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 		const std::vector<synapse_t>& h_targets,
-		const std::vector<weight_dt>& h_weights,
-		bool logging)
+		const std::vector<weight_dt>& h_weights)
 {
 	md_fcmPlaneSize = totalWarps * WARP_SIZE;
 	size_t bytes = md_fcmPlaneSize * 2 * sizeof(synapse_t);
@@ -276,8 +276,6 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	d_malloc(&d_fcm, bytes, "fcm");
 	md_fcm = boost::shared_ptr<synapse_t>(static_cast<synapse_t*>(d_fcm), d_free);
 	md_fcmAllocated = bytes;
-
-	CUDA_SAFE_CALL(setFcmPlaneSize(md_fcmPlaneSize));
 
 	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
 	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_WEIGHT,

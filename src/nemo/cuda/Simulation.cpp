@@ -232,6 +232,8 @@ Simulation::setParameters()
 	params.fixedPointScale = 1 << fbits;
 	params.fixedPointFractionalBits = fbits;
 
+	params.fcmPlaneSize = m_cm.fcmPlaneSize();
+
 	void* d_ptr;
 	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
 	md_params = boost::shared_ptr<param_t>(static_cast<param_t*>(d_ptr), d_free);

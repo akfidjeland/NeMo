@@ -93,7 +93,7 @@ applyStdp(
 
 						gr_stdp[gr_offset] = 0;
 
-						weight_dt* gf_weight = (weight_dt*) g_fcm + c_fcmPlaneSize * FCM_WEIGHT;
+						weight_dt* gf_weight = (weight_dt*) g_fcm + s_params.fcmPlaneSize * FCM_WEIGHT;
 
 						weight_dt w_old = gf_weight[gf_offset];
 						weight_dt w_new = 0;

@@ -47,6 +47,7 @@
 __device__
 void
 gather( unsigned cycle,
+		const param_t& s_params,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,
 		unsigned* g_gqFill,
@@ -116,7 +117,7 @@ gather( unsigned cycle,
 			/* only warps at the very end of the group are invalid here */
 			if(gwarp < s_groupSize) {
 				postsynaptic = targetNeuron(*base);
-				weight = *((unsigned*)base + c_fcmPlaneSize);
+				weight = *((unsigned*)base + s_params.fcmPlaneSize);
 			}
 
 			if(weight != 0) {
@@ -168,7 +169,7 @@ gather( uint32_t cycle,
 	}
 	__syncthreads();
 
-	gather(cycle, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
+	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
 
 	/* Write back to global memory The global memory roundtrip is so that the
 	 * gather and fire steps can be done in separate kernel invocations. */

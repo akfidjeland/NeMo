@@ -29,24 +29,11 @@
 #define R_NEURON_SHIFT DELAY_BITS
 
 
-
-/* distance (in words) between a synapses's address data and its weight data. */
-__constant__ size_t c_fcmPlaneSize;
-
 __host__
 synapse_t
 f_nullSynapse()
 {
 	return 0;
-}
-
-
-__host__
-cudaError
-setFcmPlaneSize(size_t sz)
-{
-	return cudaMemcpyToSymbol(c_fcmPlaneSize,
-				&sz, sizeof(size_t), 0, cudaMemcpyHostToDevice);
 }
 
 

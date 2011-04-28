@@ -149,6 +149,12 @@ class ConnectivityMatrix
 
 		const NVector<uint64_t>& delayBits() const { return m_delays; }
 
+		/*! \return
+		 * 		size (in words) of a single plane in the forward connectivity
+		 * 		matrix, i.e. all of the address data or all of the weights
+		 */
+		size_t fcmPlaneSize() const { return md_fcmPlaneSize; }
+
 	private:
 
 		const Mapper& m_mapper;
@@ -178,8 +184,7 @@ class ConnectivityMatrix
 
 		void moveFcmToDevice(size_t totalWarps,
 				const std::vector<synapse_t>& h_targets,
-				const std::vector<weight_dt>& h_weights,
-				bool logging);
+				const std::vector<weight_dt>& h_weights);
 
 		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */

@@ -29,8 +29,6 @@
 #define FCM_WEIGHT 1         // float packed as int
 #define FCM_SUBMATRICES 2
 
-cudaError setFcmPlaneSize(size_t planeSize);
-
 synapse_t f_nullSynapse();
 
 rsynapse_t r_packSynapse(
