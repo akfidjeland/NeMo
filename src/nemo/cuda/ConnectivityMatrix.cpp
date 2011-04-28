@@ -88,7 +88,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 		setMaxDelay(s);
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
-		addSynapse(s, mapper, source, target, nextFreeWarp, wtable, hf_targets, mhf_weights);
+		size_t f_addr = addForward(s, source, target, nextFreeWarp, wtable, hf_targets, mhf_weights);
+		addReverse(s, mapper, source, target, f_addr);
 	}
 	size_t totalWarps = nextFreeWarp;
 
@@ -140,19 +141,16 @@ ConnectivityMatrix::setMaxDelay(const Synapse& s)
 
 
 
-void
-ConnectivityMatrix::addSynapse(
+size_t
+ConnectivityMatrix::addForward(
 		const Synapse& s,
-		const Mapper& mapper,
+		const DeviceIdx& d_source,
+		const DeviceIdx& d_target,
 		size_t& nextFreeWarp,
 		WarpAddressTable& wtable,
 		std::vector<synapse_t>& h_targets,
 		std::vector<weight_dt>& h_weights)
 {
-
-	DeviceIdx d_target = mapper.deviceIdx(s.target());
-	DeviceIdx d_source = mapper.deviceIdx(s.source);
-
 	SynapseAddress addr = wtable.addSynapse(d_source, d_target.partition, s.delay, nextFreeWarp);
 
 	if(addr.synapse == 0 && addr.row == nextFreeWarp) {
@@ -176,6 +174,19 @@ ConnectivityMatrix::addSynapse(
 		addAuxTerminal(s, f_addr);
 	}
 
+	return f_addr;
+}
+
+
+
+void
+ConnectivityMatrix::addReverse(
+		const Synapse& s,
+		const Mapper& mapper,
+		const DeviceIdx& d_source,
+		const DeviceIdx& d_target,
+		size_t f_addr)
+{
 	/*! \todo simplify RCM structure, using a format similar to the FCM */
 	//! \todo only need to set this if stdp is enabled
 	if(s.plastic()) {

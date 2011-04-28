@@ -228,15 +228,29 @@ class ConnectivityMatrix
 		/*! Internal buffer for synapse queries */
 		std::vector<synapse_id> m_queriedSynapseIds;
 
-		void addSynapse(
+		/*! Add synapse to forward matrix
+		 *
+		 * \return synapse address, i.e. full word offset into FCM
+		 */
+		size_t addForward(
 				const Synapse&,
-				const Mapper& mapper,
 				const DeviceIdx& source,
 				const DeviceIdx& target,
 				size_t& nextFreeWarp,
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& h_targets,
 				std::vector<weight_dt>& h_weights);
+
+		/*! Add synapse to reverse matrix
+		 *
+		 * \param forwardAddress synapse address in the forward matrix
+		 */
+		void addReverse(
+				const Synapse& s,
+				const Mapper& mapper,
+				const DeviceIdx& d_source,
+				const DeviceIdx& d_target,
+				size_t forwardAddress);
 
 		void setMaxDelay(const Synapse& s);
 
