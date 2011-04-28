@@ -23,13 +23,13 @@
 #include <nemo/types.hpp>
 #include <nemo/network/Generator.hpp>
 #include <nemo/cuda/construction/RcmIndex.hpp>
+#include <nemo/cuda/construction/FcmIndex.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
 #include "Mapper.hpp"
 #include "Outgoing.hpp"
 #include "GlobalQueue.hpp"
-#include "WarpAddressTable.hpp"
 #include "NVector.hpp"
 
 namespace nemo {
@@ -269,7 +269,7 @@ class ConnectivityMatrix
 				const DeviceIdx& source,
 				const DeviceIdx& target,
 				size_t& nextFreeWarp,
-				WarpAddressTable& wtable,
+				construction::FcmIndex&,
 				std::vector<synapse_t>& h_targets,
 				std::vector<weight_dt>& h_weights);
 

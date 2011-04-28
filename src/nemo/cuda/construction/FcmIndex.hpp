@@ -1,9 +1,9 @@
-#ifndef WARP_ADDRESS_TABLE_HPP
-#define WARP_ADDRESS_TABLE_HPP
+#ifndef NEMO_CUDA_CONSTRUCTION_FCM_INDEX_HPP
+#define NEMO_CUDA_CONSTRUCTION_FCM_INDEX_HPP
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
@@ -18,12 +18,13 @@
 
 #include <nemo/types.hpp>
 //! \todo move DeviceIdx to types.hpp
-#include "Mapper.hpp"
-#include "types.h"
+#include <nemo/cuda/Mapper.hpp>
+#include <nemo/cuda/types.h>
 
 
 namespace nemo {
 	namespace cuda {
+		namespace construction {
 
 /*! \brief Construction-time mapping from neuron/delay to synapse warp addresses
  *
@@ -53,7 +54,7 @@ namespace nemo {
  *
  * \see nemo::cuda::Outgoing
  */
-class WarpAddressTable
+class FcmIndex
 {
 	public :
 
@@ -116,6 +117,7 @@ class WarpAddressTable
 
 
 
+		} // end namespace construction
 	} // end namespace cuda
 } // end namespace nemo
 

@@ -20,10 +20,10 @@
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/fixedpoint.hpp>
 #include <nemo/synapse_indices.hpp>
+#include <nemo/cuda/construction/FcmIndex.hpp>
 
 #include "RSMatrix.hpp"
 #include "exception.hpp"
-#include "WarpAddressTable.hpp"
 #include "connectivityMatrix.cu_h"
 #include "kernel.hpp"
 #include "device_memory.hpp"
@@ -34,12 +34,12 @@ namespace nemo {
 
 
 void
-setDelays(const WarpAddressTable& wtable, NVector<uint64_t>* delays)
+setDelays(const construction::FcmIndex& index, NVector<uint64_t>* delays)
 {
 	using namespace boost::tuples;
 
-	for(WarpAddressTable::iterator i = wtable.begin(); i != wtable.end(); ++i) {
-		const WarpAddressTable::index_key& k = i->first;
+	for(construction::FcmIndex::iterator i = index.begin(); i != index.end(); ++i) {
+		const construction::FcmIndex::index_key& k = i->first;
 		pidx_t p = get<0>(k);
 		nidx_t n = get<1>(k);
 		delay_t delay1 = get<2>(k);
@@ -66,7 +66,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 {
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
-	WarpAddressTable wtable;
+	construction::FcmIndex fcm_index;
 
 	std::vector<rsynapse_t> hr_sourceData(WARP_SIZE, INVALID_REVERSE_SYNAPSE);
 	std::vector<rsynapse_t> hr_sourceAddress(WARP_SIZE, 0);
@@ -93,7 +93,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		setMaxDelay(s);
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
-		size_t f_addr = addForward(s, source, target, nextFreeWarp, wtable, hf_targets, mhf_weights);
+		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
 		addReverse(s, mapper, source, target, f_addr, r_nextFreeWarp, rcm_index,
 				hr_sourceData, hr_sourceAddress);
 		if(!m_writeOnlySynapses) {
@@ -110,16 +110,16 @@ ConnectivityMatrix::ConnectivityMatrix(
 	hr_sourceData.clear();
 	hr_sourceAddress.clear();
 
-	setDelays(wtable, &m_delays);
+	setDelays(fcm_index, &m_delays);
 
-	m_outgoing = Outgoing(mapper.partitionCount(), wtable);
+	m_outgoing = Outgoing(mapper.partitionCount(), fcm_index);
 	m_gq.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
 
 	moveRcmToDevice();
 
 	if(conf.loggingEnabled()) {
 		printMemoryUsage(std::cout);
-		// wtable.reportWarpSizeHistogram(std::cout);
+		// fcm_index.reportWarpSizeHistogram(std::cout);
 	}
 }
 
@@ -159,11 +159,11 @@ ConnectivityMatrix::addForward(
 		const DeviceIdx& d_source,
 		const DeviceIdx& d_target,
 		size_t& nextFreeWarp,
-		WarpAddressTable& wtable,
+		construction::FcmIndex& index,
 		std::vector<synapse_t>& h_targets,
 		std::vector<weight_dt>& h_weights)
 {
-	SynapseAddress addr = wtable.addSynapse(d_source, d_target.partition, s.delay, nextFreeWarp);
+	SynapseAddress addr = index.addSynapse(d_source, d_target.partition, s.delay, nextFreeWarp);
 
 	if(addr.synapse == 0 && addr.row == nextFreeWarp) {
 		nextFreeWarp += 1;

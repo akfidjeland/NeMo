@@ -18,6 +18,10 @@
 namespace nemo {
 	namespace cuda {
 
+		namespace construction {
+			class FcmIndex;
+		}
+
 /*! \brief Runtime mapping from neuron/delay pairs to synapse warp addresses
  *
  * This class wraps the runtime data structures that performs this mapping,
@@ -36,10 +40,10 @@ namespace nemo {
  * partition, source neuron, and delay).
  *
  * The \e construction time data structure which is used to build up the
- * mapping found herein is the \ref nemo::cuda::WarpAddressTable "warp address
- * table".
+ * mapping found herein is the \ref nemo::cuda::construction::FcmIndex
+ * "FCM index".
  *
- * \see nemo::cuda::WarpAddressTable
+ * \see nemo::cuda::construction::FcmIndex
  */
 class Outgoing
 {
@@ -48,7 +52,7 @@ class Outgoing
 		Outgoing();
 
 		/*! Set the device data containing the outgoing spike groups. */
-		Outgoing(size_t partitionCount, const class WarpAddressTable& wtable);
+		Outgoing(size_t partitionCount, const construction::FcmIndex&);
 
 		/*! \return device pointer to the outgoing data */
 		outgoing_t* d_data() const { return md_arr.get(); }
@@ -67,7 +71,7 @@ class Outgoing
 
 	private :
 
-		void init(size_t partitionCount, const class WarpAddressTable& wtable);
+		void init(size_t partitionCount, const class construction::FcmIndex&);
 
 		boost::shared_ptr<outgoing_t> md_arr; // device data
 		size_t m_pitch;                       // max pitch

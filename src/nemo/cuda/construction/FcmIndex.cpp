@@ -12,8 +12,8 @@
 
 #include <boost/tuple/tuple_comparison.hpp>
 
-#include "WarpAddressTable.hpp"
-#include "kernel.cu_h"
+#include "FcmIndex.hpp"
+#include <nemo/cuda/kernel.cu_h>
 
 
 namespace boost {
@@ -49,11 +49,12 @@ hash_value(const tuple<T1, T2, T3, T4>& k)
 
 namespace nemo {
 	namespace cuda {
+		namespace construction {
 
 
 
 SynapseAddress
-WarpAddressTable::addSynapse(
+FcmIndex::addSynapse(
 		const DeviceIdx& source,
 		pidx_t targetPartition,
 		delay_t delay1,
@@ -81,7 +82,7 @@ WarpAddressTable::addSynapse(
 
 
 void
-WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
+FcmIndex::reportWarpSizeHistogram(std::ostream& out) const
 {
 	unsigned total = 0;
 	std::vector<unsigned> hist(WARP_SIZE+1, 0);
@@ -108,7 +109,7 @@ WarpAddressTable::reportWarpSizeHistogram(std::ostream& out) const
 
 
 unsigned
-WarpAddressTable::indexRowLength(const index_key& k) const
+FcmIndex::indexRowLength(const index_key& k) const
 {
 	typedef boost::unordered_map<index_key, unsigned>::const_iterator it;
 	it i = m_indexRowLength.find(k);
@@ -120,5 +121,6 @@ WarpAddressTable::indexRowLength(const index_key& k) const
 }
 
 
+		} // end namespace construction
 	} // end namespace cuda
 } // end namespace nemo

@@ -15,8 +15,8 @@
 
 #include <nemo/util.h>
 #include <nemo/bitops.h>
+#include <nemo/cuda/construction/FcmIndex.hpp>
 
-#include "WarpAddressTable.hpp"
 #include "device_memory.hpp"
 #include "exception.hpp"
 #include "kernel.cu_h"
@@ -27,12 +27,12 @@ namespace nemo {
 Outgoing::Outgoing() : m_pitch(0), m_allocated(0), m_maxIncomingWarps(0) {}
 
 
-Outgoing::Outgoing(size_t partitionCount, const WarpAddressTable& wtable) :
+Outgoing::Outgoing(size_t partitionCount, const construction::FcmIndex& index) :
 		m_pitch(0),
 		m_allocated(0),
 		m_maxIncomingWarps(0)
 {
-	init(partitionCount, wtable);
+	init(partitionCount, index);
 }
 
 
@@ -78,7 +78,7 @@ make_outgoing_addr(unsigned offset, unsigned len)
 
 
 void
-Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
+Outgoing::init(size_t partitionCount, const construction::FcmIndex& index)
 {
 	using namespace boost::tuples;
 
@@ -103,9 +103,9 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	unsigned wpitch = 0;  // maximum, so far
 
 	/* populate host memory */
-	for(WarpAddressTable::iterator ti = wtable.begin(); ti != wtable.end(); ++ti) {
+	for(construction::FcmIndex::iterator ti = index.begin(); ti != index.end(); ++ti) {
 
-		const WarpAddressTable::index_key& k = ti->first;
+		const construction::FcmIndex::index_key& k = ti->first;
 
 		pidx_t sourcePartition = get<0>(k);
 		nidx_t sourceNeuron = get<1>(k);
@@ -113,7 +113,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 
 		/* Allocate memory for this row. Add padding to ensure each row starts
 		 * at warp boundaries */
-		unsigned nWarps = wtable.indexRowLength(k);
+		unsigned nWarps = index.indexRowLength(k);
 		unsigned nWords = ALIGN(nWarps, WARP_SIZE);
 		wpitch = std::max(wpitch, nWords);
 		assert(nWords >= nWarps);
@@ -123,8 +123,8 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 		unsigned col = 0;
 
 		/* iterate over target partitions in a row */
-		const WarpAddressTable::row_t& r = ti->second;
-		for(WarpAddressTable::row_iterator ri = r.begin(); ri != r.end(); ++ri) {
+		const construction::FcmIndex::row_t& r = ti->second;
+		for(construction::FcmIndex::row_iterator ri = r.begin(); ri != r.end(); ++ri) {
 
 			pidx_t targetPartition = ri->first;
 			const std::vector<size_t>& warps = ri->second;
@@ -161,7 +161,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 
 	setConstants(wpitch);
 
-	//! \todo compute this on forward pass (in WarpAddressTable)
+	//! \todo compute this on forward pass (in construction::FcmIndex)
 	m_maxIncomingWarps = incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
 }
 
