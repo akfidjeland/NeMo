@@ -100,12 +100,15 @@ ConnectivityMatrix::ConnectivityMatrix(
 			addAuxillary(s, f_addr);
 		}
 	}
-	size_t totalWarps = nextFreeWarp;
 
 	verifySynapseTerminals(m_cmAux, mapper);
 
-	moveFcmToDevice(totalWarps, hf_targets, mhf_weights);
+	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
 	hf_targets.clear();
+
+	moveRcmToDevice(r_nextFreeWarp, hr_sourceData, hr_sourceAddress);
+	hr_sourceData.clear();
+	hr_sourceAddress.clear();
 
 	setDelays(wtable, &m_delays);
 
@@ -280,6 +283,28 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
 	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_WEIGHT,
 			reinterpret_cast<const synapse_t*>(&h_weights[0]), md_fcmPlaneSize);
+}
+
+
+
+void
+ConnectivityMatrix::moveRcmToDevice(size_t totalWarps,
+		const std::vector<rsynapse_t>& sourceData,
+		const std::vector<rsynapse_t>& sourceAddress)
+{
+	md_rcmPlaneSize = totalWarps * WARP_SIZE;
+	size_t bytes = md_rcmPlaneSize * RCM_SUBMATRICES * sizeof(rsynapse_t);
+
+	void* d_rcm;
+	d_malloc(&d_rcm, bytes, "rcm");
+	md_rcm = boost::shared_ptr<rsynapse_t>(static_cast<rsynapse_t*>(d_rcm), d_free);
+	md_rcmAllocated = bytes;
+
+	/* Clear data to ensure STDP accumulators are set to zero */
+	d_memset(d_rcm, 0, bytes);
+
+	memcpyToDevice(md_rcm.get() + md_rcmPlaneSize * RCM_ADDRESS, sourceData, md_rcmPlaneSize);
+	memcpyToDevice(md_rcm.get() + md_rcmPlaneSize * RCM_FADDRESS, sourceAddress, md_rcmPlaneSize);
 }
 
 

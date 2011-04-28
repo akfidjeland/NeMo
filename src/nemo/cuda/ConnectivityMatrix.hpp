@@ -155,6 +155,12 @@ class ConnectivityMatrix
 		 */
 		size_t fcmPlaneSize() const { return md_fcmPlaneSize; }
 
+		/*! \return
+		 * 		size (in words) of a single plane in the reverse connectivity
+		 * 		matrix.
+		 */
+		size_t rcmPlaneSize() const { return md_rcmPlaneSize; }
+
 	private:
 
 		const Mapper& m_mapper;
@@ -169,6 +175,19 @@ class ConnectivityMatrix
 
 		/*! Compact forward connectivity matrix on device */
 		boost::shared_ptr<synapse_t> md_fcm;
+
+		/* Indices of the three planes of the reverse matrix */
+		//! \todo give these better names
+		enum {
+			RCM_ADDRESS = 0, // source information
+			RCM_STDP,
+			RCM_FADDRESS,    // actual word address of synapse
+			RCM_SUBMATRICES
+		};
+
+		/*! Compact reverse connectivity matrix on device */
+		boost::shared_ptr<rsynapse_t> md_rcm;
+
 
 		/*! Host-side copy of the weight data. This is mutable since it acts as
 		 * a buffer for synapse getters */
@@ -185,6 +204,13 @@ class ConnectivityMatrix
 		void moveFcmToDevice(size_t totalWarps,
 				const std::vector<synapse_t>& h_targets,
 				const std::vector<weight_dt>& h_weights);
+
+		size_t md_rcmPlaneSize; // in words
+		size_t md_rcmAllocated; // in bytes
+
+		void moveRcmToDevice(size_t totalWarps,
+				const std::vector<rsynapse_t>& sourceData,
+				const std::vector<rsynapse_t>& sourceAddress);
 
 		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */
