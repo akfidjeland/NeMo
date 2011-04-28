@@ -254,7 +254,8 @@ class ConnectivityMatrix
 				size_t forwardAddress,
 				size_t& nextFreeWarp,
 				construction::RcmIndex& index,
-				std::vector<rsynapse_t>& sources);
+				std::vector<rsynapse_t>& source_data,
+				std::vector<rsynapse_t>& source_address);
 
 		void setMaxDelay(const Synapse& s);
 

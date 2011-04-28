@@ -68,7 +68,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
 	WarpAddressTable wtable;
 
-	std::vector<rsynapse_t> hr_sources(WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+	std::vector<rsynapse_t> hr_sourceData(WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+	std::vector<rsynapse_t> hr_sourceAddress(WARP_SIZE, 0);
 	construction::RcmIndex rcm_index;
 	size_t r_nextFreeWarp = 1; // leave space for a null warp at the beginning
 
@@ -93,7 +94,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, wtable, hf_targets, mhf_weights);
-		addReverse(s, mapper, source, target, f_addr, r_nextFreeWarp, rcm_index, hr_sources);
+		addReverse(s, mapper, source, target, f_addr, r_nextFreeWarp, rcm_index,
+				hr_sourceData, hr_sourceAddress);
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
 		}
@@ -190,9 +192,9 @@ ConnectivityMatrix::addReverse(
 		size_t f_addr,
 		size_t& nextFreeWarp,
 		construction::RcmIndex& index,
-		std::vector<rsynapse_t>& sources)
+		std::vector<rsynapse_t>& sourceData,
+		std::vector<rsynapse_t>& sourceAddress)
 {
-	/*! \todo simplify RCM structure, using a format similar to the FCM */
 	//! \todo only need to set this if stdp is enabled
 	if(s.plastic()) {
 
@@ -203,8 +205,13 @@ ConnectivityMatrix::addReverse(
 			 * allocation scheme could potentially result in a
 			 * large number of reallocations, so we might be better
 			 * off allocating larger chunks here */
-			sources.resize(nextFreeWarp * WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+			sourceData.resize(nextFreeWarp * WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+			sourceAddress.resize(nextFreeWarp * WARP_SIZE, 0);
 		}
+		//! \todo move this into separate method
+		size_t r_addr = addr.row * WARP_SIZE + addr.synapse;
+		sourceData.at(r_addr) = r_packSynapse(d_source.partition, d_source.neuron, s.delay);
+		sourceAddress.at(r_addr) = f_addr;
 
 		rcm_t& rcm = m_rsynapses;
 		if(rcm.find(d_target.partition) == rcm.end()) {
