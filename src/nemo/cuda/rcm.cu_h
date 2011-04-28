@@ -1,0 +1,46 @@
+#ifndef NEMO_CUDA_RCM_CU_H
+#define NEMO_CUDA_RCM_CU_H
+
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*! \file rcm.cu_h Reverse connectivity matrix (device functions)
+ *
+ * \see nemo::cuda::runtime::RcmIndex for more details
+ */
+
+#include <cuda_runtime.h>
+#include "types.h"
+
+/*! Address into the RCM index
+ *
+ * This stores two data relating to a row in the RCM index, i.e. a vector of
+ * warps in the RCM for a particular (target) neuron. The index address stores:
+ *
+ * - the start address of a row (warp-alligned word offset)
+ * - the length (in words)
+ */
+typedef uint2 rcm_index_address_t;
+
+const rcm_index_address_t INVALID_RCM_INDEX_ADDRESS = make_uint2(0, 0);
+
+/*! Entry in the RCM index
+ *
+ * This is simply the offset to a warp in the RCM.
+ */
+typedef uint rcm_address_t;
+
+const rcm_address_t INVALID_RCM_ADDRESS = 0;
+
+
+/*! \return offset into the RCM index for a specific target neuron */
+__host__ __device__ size_t rcm_metaIndexAddress(pidx_t partition, nidx_t neuron);
+
+
+#endif

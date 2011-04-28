@@ -110,6 +110,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveRcmToDevice(r_nextFreeWarp, hr_sourceData, hr_sourceAddress);
 	hr_sourceData.clear();
 	hr_sourceAddress.clear();
+	m_rcmIndex = runtime::RcmIndex(mapper.partitionCount(), rcm_index);
 
 	setDelays(fcm_index, &m_delays);
 

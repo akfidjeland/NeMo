@@ -73,6 +73,7 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	RSMatrix.cpp
 	construction/FcmIndex.cpp
 	construction/RcmIndex.cpp
+	runtime/RcmIndex.cpp
 	device_memory.cpp
 	devices.cpp
 	log.cpp

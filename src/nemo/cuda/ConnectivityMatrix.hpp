@@ -24,6 +24,7 @@
 #include <nemo/network/Generator.hpp>
 #include <nemo/cuda/construction/RcmIndex.hpp>
 #include <nemo/cuda/construction/FcmIndex.hpp>
+#include <nemo/cuda/runtime/RcmIndex.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
@@ -180,7 +181,7 @@ class ConnectivityMatrix
 
 		/*! Compact reverse connectivity matrix on device */
 		boost::shared_ptr<rsynapse_t> md_rcm;
-
+		runtime::RcmIndex m_rcmIndex;
 
 		/*! Host-side copy of the weight data. This is mutable since it acts as
 		 * a buffer for synapse getters */

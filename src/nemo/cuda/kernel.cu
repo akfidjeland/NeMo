@@ -19,6 +19,7 @@
 #include "outgoing.cu"
 #include "globalQueue.cu"
 #include "nvector.cu"
+#include "rcm.cu"
 
 #include "gather.cu"
 #include "scatter.cu"

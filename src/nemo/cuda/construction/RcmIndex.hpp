@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_RCM_INDEX_HPP
-#define NEMO_CUDA_RCM_INDEX_HPP
+#ifndef NEMO_CUDA_CONSTRUCTION_RCM_INDEX_HPP
+#define NEMO_CUDA_CONSTRUCTION_RCM_INDEX_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -14,7 +14,6 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/functional/hash.hpp>
 
 #include <nemo/types.hpp>
 //! \todo move DeviceIdx to types.hpp
@@ -24,6 +23,11 @@
 
 namespace nemo {
 	namespace cuda {
+
+		namespace runtime {
+			class RcmIndex;
+		}
+
 		namespace construction {
 
 class RcmIndex
@@ -52,6 +56,8 @@ class RcmIndex
 		/* In order to keep track of when we need to start a new warp, store
 		 * the number of synapses in each row */
 		boost::unordered_map<key, unsigned> m_dataRowLength;
+
+		friend class runtime::RcmIndex;
 };
 
 
