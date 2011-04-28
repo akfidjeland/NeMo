@@ -9,6 +9,7 @@
 
 #include "Outgoing.hpp"
 
+#include <map>
 #include <vector>
 #include <cuda_runtime.h>
 #include <boost/format.hpp>
@@ -20,6 +21,7 @@
 #include "device_memory.hpp"
 #include "exception.hpp"
 #include "kernel.cu_h"
+#include "parameters.cu_h"
 
 namespace nemo {
 	namespace cuda {
@@ -159,7 +161,7 @@ Outgoing::init(size_t partitionCount, const construction::FcmIndex& index)
 		m_allocated += allocated * sizeof(outgoing_t);
 	}
 
-	setConstants(wpitch);
+	setParameters(wpitch);
 
 	//! \todo compute this on forward pass (in construction::FcmIndex)
 	m_maxIncomingWarps = incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
@@ -167,7 +169,7 @@ Outgoing::init(size_t partitionCount, const construction::FcmIndex& index)
 
 
 
-/*! Set outgoing parameters in constant memory on device
+/*! Set parameters for the outgoing data
  *
  * In the inner loop in scatterGlobal the kernel processes potentially multiple
  * rows of outgoing data. We set the relevant loop parameters in constant
@@ -181,26 +183,31 @@ Outgoing::init(size_t partitionCount, const construction::FcmIndex& index)
  * \todo support handling of pitch greater than THREADS_PER_BLOCK
  */
 void
-Outgoing::setConstants(unsigned maxWarpsPerNeuronDelay)
+Outgoing::setParameters(unsigned maxWarpsPerNeuronDelay)
 {
 	using boost::format;
 
 	/* We need the step to exactly divide the pitch, in order for the inner
 	 * loop in scatterGlobal to work out. */
-	unsigned wpitch = std::max(1U, unsigned(ceilPowerOfTwo(maxWarpsPerNeuronDelay)));
+	m_pitch = std::max(1U, unsigned(ceilPowerOfTwo(maxWarpsPerNeuronDelay)));
 
-	/* Additionally scatterGlobal assumes that wpitch <= THREADS_PER_BLOCK. It
+	/* Additionally scatterGlobal assumes that m_pitch <= THREADS_PER_BLOCK. It
 	 * would possible to modify scatterGLobal to handle the other case as well,
 	 * with different looping logic. Separate kernels might be more sensible. */
-	assert_or_throw(wpitch <= THREADS_PER_BLOCK,
-			str(format("Outgoing pitch too wide (%u, max %u)") % wpitch % THREADS_PER_BLOCK));
+	assert_or_throw(m_pitch <= THREADS_PER_BLOCK,
+			str(format("Outgoing pitch too wide (%u, max %u)") % m_pitch % THREADS_PER_BLOCK));
 
-	CUDA_SAFE_CALL(setOutgoingPitch(wpitch));
+	m_step = THREADS_PER_BLOCK / m_pitch;
+	assert_or_throw(m_step * m_pitch == THREADS_PER_BLOCK, "Invalid outgoing pitch/step");
+}
 
-	unsigned step = THREADS_PER_BLOCK / wpitch;
-	CUDA_SAFE_CALL(setOutgoingStep(step));
 
-	assert_or_throw(step * wpitch == THREADS_PER_BLOCK, "Invalid outgoing pitch/step");
+
+void
+Outgoing::setParameters(param_t* params) const
+{
+	params->outgoingPitch = m_pitch;
+	params->outgoingStep = m_step;
 }
 
 

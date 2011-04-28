@@ -28,6 +28,9 @@ struct param_t {
 
 	/* Size (in words) of a single plane in the reverse connectivity matrix */
 	size_t rcmPlaneSize;
+
+	size_t outgoingPitch;
+	size_t outgoingStep;
 };
 
 #endif

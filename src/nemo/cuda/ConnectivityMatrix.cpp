@@ -552,6 +552,7 @@ ConnectivityMatrix::r_partitionFAddress() const
 void
 ConnectivityMatrix::setParameters(param_t* params) const
 {
+	m_outgoing.setParameters(params);
 	params->fcmPlaneSize = md_fcmPlaneSize;
 	params->rcmPlaneSize = md_rcmPlaneSize;
 }

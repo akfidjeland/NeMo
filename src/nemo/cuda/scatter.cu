@@ -120,6 +120,7 @@ scatterLocal(
 __device__
 void
 scatterGlobal(unsigned cycle,
+		const param_t& s_params,
 		unsigned* g_lqFill,
 		lq_entry_t* g_lq,
 		outgoing_addr_t* g_outgoingAddr,
@@ -172,7 +173,7 @@ scatterGlobal(unsigned cycle,
 			outgoing_addr_t addr = outgoingAddr(neuron, delay0, g_outgoingAddr);
 			s_offset[threadIdx.x] = addr.x;
 			s_len[threadIdx.x] = addr.y;
-			ASSERT(s_len[threadIdx.x] <= c_outgoingPitch);
+			ASSERT(s_len[threadIdx.x] <= s_params.outgoingPitch);
 			DEBUG_MSG_SYNAPSE("c%u[global scatter]: dequeued n%u d%u from local queue (%u warps from %u)\n",
 					cycle, neuron, delay0, s_len[threadIdx.x], s_offset[threadIdx.x]);
 		}
@@ -181,13 +182,13 @@ scatterGlobal(unsigned cycle,
 		/* Now loop over all the entries we just loaded from the local queue.
 		 * Read a number of entries in one go, if possible. Note that a large
 		 * spread in the range of outgoing row lengths (e.g. one extremely long
-		 * one) will adveresely affect performance here. */
+		 * one) will adveresly affect performance here. */
 		unsigned jLqMax = min(THREADS_PER_BLOCK, s_nLq-bLq);
-		for(unsigned jbLq = 0; jbLq < jLqMax; jbLq += c_outgoingStep) {
+		for(unsigned jbLq = 0; jbLq < jLqMax; jbLq += s_params.outgoingStep) {
 
 			/* jLq should be in [0, 256) so that we can point to s_len
 			 * e.g.     0,8,16,24,...,248 + 0,1,...,8 */
-			unsigned jLq = jbLq + threadIdx.x / c_outgoingPitch;
+			unsigned jLq = jbLq + threadIdx.x / s_params.outgoingPitch;
 			ASSERT(jLq < THREADS_PER_BLOCK);
 
 			/* There may be more than THREADS_PER_BLOCK entries in this
@@ -200,7 +201,7 @@ scatterGlobal(unsigned cycle,
 			__syncthreads();
 
 			/* Load row of outgoing data (specific to neuron/delay pair) */
-			unsigned iOut = threadIdx.x % c_outgoingPitch;
+			unsigned iOut = threadIdx.x % s_params.outgoingPitch;
 			unsigned targetPartition = 0;
 			unsigned warpOffset = 0;
 			unsigned localOffset = 0;
@@ -273,6 +274,7 @@ scatter(uint32_t cycle,
 	scatterLocal(cycle, s_params, s_nFired, s_fired, g_delays, g_lqFill, g_lqData);
 
 	scatterGlobal(cycle,
+			s_params,
 			g_lqFill,
 			g_lqData,
 			g_outgoingAddr,

@@ -10,10 +10,11 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <map>
 #include <boost/shared_ptr.hpp>
 
 #include "outgoing.cu_h"
+
+struct param_t;
 
 namespace nemo {
 	namespace cuda {
@@ -69,12 +70,16 @@ class Outgoing
 		 * 		neuron fires every cycle for some time. */
 		size_t maxIncomingWarps() const { return m_maxIncomingWarps; }
 
+		/*! Fill in the relevant fields of the global parameters struct */
+		void setParameters(param_t*) const;
+
 	private :
 
 		void init(size_t partitionCount, const class construction::FcmIndex&);
 
 		boost::shared_ptr<outgoing_t> md_arr; // device data
 		size_t m_pitch;                       // max pitch
+		unsigned m_step;
 
 		/* Store offset/length pairs here in order to address arbitrary entries
 		 * in md_arr where the entries have variable width (for compactness).
@@ -86,7 +91,8 @@ class Outgoing
 
 		size_t m_maxIncomingWarps;
 
-		void setConstants(unsigned wpitch);
+		/*! Store the global parameters relating to this class */
+		void setParameters(unsigned wpitch);
 };
 
 	} // end namespace cuda
