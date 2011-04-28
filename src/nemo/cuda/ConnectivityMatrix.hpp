@@ -231,6 +231,8 @@ class ConnectivityMatrix
 		void addSynapse(
 				const Synapse&,
 				const Mapper& mapper,
+				const DeviceIdx& source,
+				const DeviceIdx& target,
 				size_t& nextFreeWarp,
 				WarpAddressTable& wtable,
 				std::vector<synapse_t>& h_targets,

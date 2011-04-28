@@ -86,7 +86,9 @@ ConnectivityMatrix::ConnectivityMatrix(
 			si != net.synapse_end(); ++si) {
 		const Synapse& s = *si;
 		setMaxDelay(s);
-		addSynapse(s, mapper, nextFreeWarp, wtable, hf_targets, mhf_weights);
+		DeviceIdx source = mapper.deviceIdx(s.source);
+		DeviceIdx target = mapper.deviceIdx(s.target());
+		addSynapse(s, mapper, source, target, nextFreeWarp, wtable, hf_targets, mhf_weights);
 	}
 	size_t totalWarps = nextFreeWarp;
 
