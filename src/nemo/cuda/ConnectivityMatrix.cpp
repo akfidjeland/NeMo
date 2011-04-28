@@ -27,6 +27,7 @@
 #include "connectivityMatrix.cu_h"
 #include "kernel.hpp"
 #include "device_memory.hpp"
+#include "parameters.cu_h"
 
 
 namespace nemo {
@@ -546,6 +547,14 @@ ConnectivityMatrix::r_partitionFAddress() const
 	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));
 }
 
+
+
+void
+ConnectivityMatrix::setParameters(param_t* params) const
+{
+	params->fcmPlaneSize = md_fcmPlaneSize;
+	params->rcmPlaneSize = md_rcmPlaneSize;
+}
 
 
 	} // end namespace cuda

@@ -232,8 +232,7 @@ Simulation::setParameters()
 	params.fixedPointScale = 1 << fbits;
 	params.fixedPointFractionalBits = fbits;
 
-	params.fcmPlaneSize = m_cm.fcmPlaneSize();
-	params.rcmPlaneSize = m_cm.rcmPlaneSize();
+	m_cm.setParameters(&params);
 
 	void* d_ptr;
 	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");

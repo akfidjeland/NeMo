@@ -32,6 +32,8 @@
 #include "GlobalQueue.hpp"
 #include "NVector.hpp"
 
+struct param_t;
+
 namespace nemo {
 
 	class ConfigurationImpl;
@@ -149,17 +151,8 @@ class ConnectivityMatrix
 
 		const NVector<uint64_t>& delayBits() const { return m_delays; }
 
-		/*! \return
-		 * 		size (in words) of a single plane in the forward connectivity
-		 * 		matrix, i.e. all of the address data or all of the weights
-		 */
-		size_t fcmPlaneSize() const { return md_fcmPlaneSize; }
-
-		/*! \return
-		 * 		size (in words) of a single plane in the reverse connectivity
-		 * 		matrix.
-		 */
-		size_t rcmPlaneSize() const { return md_rcmPlaneSize; }
+		/*! Fill in all relevant fields in global parameters data structure */
+		void setParameters(param_t*) const;
 
 	private:
 
