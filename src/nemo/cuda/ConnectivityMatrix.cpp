@@ -82,9 +82,11 @@ ConnectivityMatrix::ConnectivityMatrix(
 	 * needed, though, due the organisation in warp-sized chunks. */
 
 	size_t nextFreeWarp = 1; // leave space for null warp at beginning
-	for(network::synapse_iterator s = net.synapse_begin();
-			s != net.synapse_end(); ++s) {
-		addSynapse(*s, mapper, nextFreeWarp, wtable, hf_targets, mhf_weights);
+	for(network::synapse_iterator si = net.synapse_begin();
+			si != net.synapse_end(); ++si) {
+		const Synapse& s = *si;
+		setMaxDelay(s);
+		addSynapse(s, mapper, nextFreeWarp, wtable, hf_targets, mhf_weights);
 	}
 	size_t totalWarps = nextFreeWarp;
 
@@ -116,15 +118,8 @@ ConnectivityMatrix::~ConnectivityMatrix()
 }
 
 
-
 void
-ConnectivityMatrix::addSynapse(
-		const Synapse& s,
-		const Mapper& mapper,
-		size_t& nextFreeWarp,
-		WarpAddressTable& wtable,
-		std::vector<synapse_t>& h_targets,
-		std::vector<weight_dt>& h_weights)
+ConnectivityMatrix::setMaxDelay(const Synapse& s)
 {
 	using boost::format;
 
@@ -139,6 +134,19 @@ ConnectivityMatrix::addSynapse(
 				str(format("Neuron %u has synapses with delay %ums. The CUDA backend supports a maximum of %ums")
 						% s.source % s.delay % MAX_DELAY));
 	}
+}
+
+
+
+void
+ConnectivityMatrix::addSynapse(
+		const Synapse& s,
+		const Mapper& mapper,
+		size_t& nextFreeWarp,
+		WarpAddressTable& wtable,
+		std::vector<synapse_t>& h_targets,
+		std::vector<weight_dt>& h_weights)
+{
 
 	DeviceIdx d_target = mapper.deviceIdx(s.target());
 	DeviceIdx d_source = mapper.deviceIdx(s.source);

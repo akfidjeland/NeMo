@@ -236,6 +236,8 @@ class ConnectivityMatrix
 				std::vector<synapse_t>& h_targets,
 				std::vector<weight_dt>& h_weights);
 
+		void setMaxDelay(const Synapse& s);
+
 		void verifySynapseTerminals(const aux_map&, const Mapper& mapper);
 
 		const AxonTerminalAux& axonTerminalAux(const synapse_id& id) const;
