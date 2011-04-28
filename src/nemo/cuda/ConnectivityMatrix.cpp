@@ -90,6 +90,9 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, wtable, hf_targets, mhf_weights);
 		addReverse(s, mapper, source, target, f_addr);
+		if(!m_writeOnlySynapses) {
+			addAuxillary(s, f_addr);
+		}
 	}
 	size_t totalWarps = nextFreeWarp;
 
@@ -169,11 +172,6 @@ ConnectivityMatrix::addForward(
 	assert(d_target.neuron < MAX_PARTITION_SIZE);
 	h_targets.at(f_addr) = d_target.neuron;
 	h_weights.at(f_addr) = fx_toFix(s.weight(), m_fractionalBits);
-
-	if(!m_writeOnlySynapses) {
-		addAuxTerminal(s, f_addr);
-	}
-
 	return f_addr;
 }
 
@@ -303,7 +301,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
  * are required to form a contigous range, so every element should be assigned
  * exactly once. */
 void
-ConnectivityMatrix::addAuxTerminal(const Synapse& s, size_t addr)
+ConnectivityMatrix::addAuxillary(const Synapse& s, size_t addr)
 {
 	id32_t id = s.id();
 	aux_row& row= m_cmAux[s.source];

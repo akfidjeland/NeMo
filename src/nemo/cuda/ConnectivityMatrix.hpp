@@ -218,7 +218,7 @@ class ConnectivityMatrix
 		 * in the first place. This can be set via a configuration option*/
 		bool m_writeOnlySynapses;
 
-		void addAuxTerminal(const Synapse&, size_t addr);
+		void addAuxillary(const Synapse&, size_t addr);
 
 #ifndef NDEBUG
 		/* Count synapses to verify that m_cmAux contains dense rows */
