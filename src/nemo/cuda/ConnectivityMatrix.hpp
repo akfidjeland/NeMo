@@ -22,6 +22,7 @@
 
 #include <nemo/types.hpp>
 #include <nemo/network/Generator.hpp>
+#include <nemo/cuda/construction/RcmIndex.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
@@ -250,7 +251,10 @@ class ConnectivityMatrix
 				const Mapper& mapper,
 				const DeviceIdx& d_source,
 				const DeviceIdx& d_target,
-				size_t forwardAddress);
+				size_t forwardAddress,
+				size_t& nextFreeWarp,
+				construction::RcmIndex& index,
+				std::vector<rsynapse_t>& sources);
 
 		void setMaxDelay(const Synapse& s);
 

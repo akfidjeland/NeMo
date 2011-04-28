@@ -68,6 +68,10 @@ ConnectivityMatrix::ConnectivityMatrix(
 	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
 	WarpAddressTable wtable;
 
+	std::vector<rsynapse_t> hr_sources(WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+	construction::RcmIndex rcm_index;
+	size_t r_nextFreeWarp = 1; // leave space for a null warp at the beginning
+
 	bool logging = conf.loggingEnabled();
 
 
@@ -89,7 +93,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, wtable, hf_targets, mhf_weights);
-		addReverse(s, mapper, source, target, f_addr);
+		addReverse(s, mapper, source, target, f_addr, r_nextFreeWarp, rcm_index, hr_sources);
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
 		}
@@ -183,11 +187,25 @@ ConnectivityMatrix::addReverse(
 		const Mapper& mapper,
 		const DeviceIdx& d_source,
 		const DeviceIdx& d_target,
-		size_t f_addr)
+		size_t f_addr,
+		size_t& nextFreeWarp,
+		construction::RcmIndex& index,
+		std::vector<rsynapse_t>& sources)
 {
 	/*! \todo simplify RCM structure, using a format similar to the FCM */
 	//! \todo only need to set this if stdp is enabled
 	if(s.plastic()) {
+
+		SynapseAddress addr = index.addSynapse(d_target,  nextFreeWarp);
+		if(addr.synapse == 0 && addr.row == nextFreeWarp) {
+			nextFreeWarp += 1;
+			/* Resize host buffers to accomodate the new warp. This
+			 * allocation scheme could potentially result in a
+			 * large number of reallocations, so we might be better
+			 * off allocating larger chunks here */
+			sources.resize(nextFreeWarp * WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+		}
+
 		rcm_t& rcm = m_rsynapses;
 		if(rcm.find(d_target.partition) == rcm.end()) {
 			rcm[d_target.partition] = new RSMatrix(mapper.partitionSize());
