@@ -39,7 +39,7 @@ setDelays(const WarpAddressTable& wtable, NVector<uint64_t>* delays)
 	using namespace boost::tuples;
 
 	for(WarpAddressTable::iterator i = wtable.begin(); i != wtable.end(); ++i) {
-		const WarpAddressTable::key& k = i->first;
+		const WarpAddressTable::index_key& k = i->first;
 		pidx_t p = get<0>(k);
 		nidx_t n = get<1>(k);
 		delay_t delay1 = get<2>(k);
