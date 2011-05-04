@@ -13,7 +13,9 @@
 /*! \file Izhikevich.cu Izhikevich neuron update kernel */
 
 #include <nemo/config.h>
-#include <log.cu_h>
+#ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
+#	include <log.cu_h>
+#endif
 #include <bitvector.cu>
 #include <current.cu>
 #include <firing.cu>
@@ -149,8 +151,10 @@ updateNeurons(
 				v = g_c[neuron];
 				u += g_d[neuron];
 
+#ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 				DEBUG_MSG_NEURON("c%u %u-%u fired (forced: %u)\n",
 						s_cycle, CURRENT_PARTITION, neuron, forceFiring);
+#endif
 
 				//! \todo consider *only* updating this here, and setting u and v separately
 				unsigned i = atomicAdd(s_nFired, 1);
@@ -216,7 +220,7 @@ updateNeurons(
 	__shared__ unsigned s_partitionSize;
 
 	if(threadIdx.x == 0) {
-#ifdef NEMO_CUDA_DEBUG_TRACE
+#ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 		s_cycle = cycle;
 #endif
 		s_nFired = 0;

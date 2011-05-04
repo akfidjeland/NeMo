@@ -97,9 +97,11 @@ addCurrentStimulus(unsigned psize,
 			unsigned pstart = CURRENT_PARTITION * pitch;
 			fix_t stimulus = g_current[pstart + neuron];
 			addCurrent(neuron, stimulus, s_current, s_overflow, s_negative);
+#ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 			DEBUG_MSG_SYNAPSE("c%u %u-%u: +%f (external)\n",
 					s_cycle, CURRENT_PARTITION, neuron,
 					fx_tofloat(g_current[pstart + neuron]));
+#endif
 		}
 		__syncthreads();
 	}
