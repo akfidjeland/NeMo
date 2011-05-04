@@ -39,8 +39,25 @@ typedef uint rcm_address_t;
 const rcm_address_t INVALID_RCM_ADDRESS = 0;
 
 
+struct rcm_dt {
+
+	rcm_dt() : data(NULL), index(NULL), meta_index(NULL) {}
+
+	/*! The raw synapse data. The pitch is 32. */
+	const uint32_t* data;
+
+	/*! The index data, which is simply rows of RCM warp offsets. The pitch is 32. */
+	const rcm_address_t* index;
+
+	/*! The 'meta-index', mapping from partition/neuron to row start/length in
+	 * the index data. The pitch is partition size. */
+	const rcm_index_address_t* meta_index;
+};
+
+
 /*! \return offset into the RCM index for a specific target neuron */
 __host__ __device__ size_t rcm_metaIndexAddress(pidx_t partition, nidx_t neuron);
+
 
 
 #endif

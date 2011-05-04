@@ -329,6 +329,7 @@ Simulation::postfire()
 			m_mapper.partitionCount(),
 			m_neurons.d_partitionSize(),
 			md_params.get(),
+			m_cm.d_rcm(),
 			m_recentFiring.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),

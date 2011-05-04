@@ -112,6 +112,10 @@ ConnectivityMatrix::ConnectivityMatrix(
 	hr_sourceAddress.clear();
 	m_rcmIndex = runtime::RcmIndex(mapper.partitionCount(), rcm_index);
 
+	md_rcm.data = md_rcmData.get();
+	md_rcm.index = m_rcmIndex.d_index();
+	md_rcm.meta_index = m_rcmIndex.d_metaIndex();
+
 	setDelays(fcm_index, &m_delays);
 
 	m_outgoing = Outgoing(mapper.partitionCount(), fcm_index);
@@ -299,14 +303,14 @@ ConnectivityMatrix::moveRcmToDevice(size_t totalWarps,
 
 	void* d_rcm;
 	d_malloc(&d_rcm, bytes, "rcm");
-	md_rcm = boost::shared_ptr<rsynapse_t>(static_cast<rsynapse_t*>(d_rcm), d_free);
+	md_rcmData = boost::shared_ptr<rsynapse_t>(static_cast<rsynapse_t*>(d_rcm), d_free);
 	md_rcmAllocated = bytes;
 
 	/* Clear data to ensure STDP accumulators are set to zero */
 	d_memset(d_rcm, 0, bytes);
 
-	memcpyToDevice(md_rcm.get() + md_rcmPlaneSize * RCM_ADDRESS, sourceData, md_rcmPlaneSize);
-	memcpyToDevice(md_rcm.get() + md_rcmPlaneSize * RCM_FADDRESS, sourceAddress, md_rcmPlaneSize);
+	memcpyToDevice(md_rcmData.get() + md_rcmPlaneSize * RCM_ADDRESS, sourceData, md_rcmPlaneSize);
+	memcpyToDevice(md_rcmData.get() + md_rcmPlaneSize * RCM_FADDRESS, sourceAddress, md_rcmPlaneSize);
 }
 
 

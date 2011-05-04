@@ -155,6 +155,9 @@ class ConnectivityMatrix
 		/*! Fill in all relevant fields in global parameters data structure */
 		void setParameters(param_t*) const;
 
+		/*! \return RCM device pointers */
+		const rcm_dt* d_rcm() const { return &md_rcm; }
+
 	private:
 
 		const Mapper& m_mapper;
@@ -180,8 +183,11 @@ class ConnectivityMatrix
 		};
 
 		/*! Compact reverse connectivity matrix on device */
-		boost::shared_ptr<rsynapse_t> md_rcm;
+		boost::shared_ptr<rsynapse_t> md_rcmData;
 		runtime::RcmIndex m_rcmIndex;
+
+		/* Pointer struct passed to the device */
+		rcm_dt md_rcm;
 
 		/*! Host-side copy of the weight data. This is mutable since it acts as
 		 * a buffer for synapse getters */

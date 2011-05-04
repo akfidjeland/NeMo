@@ -32,7 +32,6 @@ make_rcm_index_address(uint start, uint len)
 
 
 RcmIndex::RcmIndex(size_t partitionCount, const construction::RcmIndex& index):
-	m_pitch(0),
 	m_allocated(0)
 {
 	using namespace boost::tuples;
@@ -69,7 +68,7 @@ RcmIndex::RcmIndex(size_t partitionCount, const construction::RcmIndex& index):
 		allocated += nWords;
 	}
 
-	/* Copy index addresses to device */
+	/* Copy meta index to device */
 	if(!h_address.empty()) {
 		md_address = d_array<rcm_index_address_t>(h_address.size(), "RCM index addresses");
 		memcpyToDevice(md_address.get(), h_address);

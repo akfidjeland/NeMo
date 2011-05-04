@@ -41,7 +41,7 @@ class RcmIndex
 {
 	public :
 
-		RcmIndex() : m_pitch(0), m_allocated(0) {}
+		RcmIndex() : m_allocated(0) {}
 
 		/*! Create an RCM on the device */
 		RcmIndex(size_t partitionCount, const construction::RcmIndex&);
@@ -49,12 +49,18 @@ class RcmIndex
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const { return m_allocated; }
 
+		/*! \return device pointer to RCM index data */
+		const rcm_address_t* d_index() const { return md_data.get(); }
+
+		/*! \return device pointer to the RCM meta index, i.e. the index into the index */
+		const rcm_index_address_t* d_metaIndex() const { return md_address.get(); }
+
 	private :
 
 		boost::shared_array<rcm_address_t> md_data;
 		boost::shared_array<rcm_index_address_t> md_address;
 
-		size_t m_pitch;
+		/*! Bytes of allocated device memory */
 		size_t m_allocated;
 };
 

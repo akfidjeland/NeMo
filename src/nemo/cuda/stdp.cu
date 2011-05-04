@@ -15,6 +15,7 @@
 #include "log.cu_h"
 #include "device_assert.cu"
 #include "parameters.cu"
+#include "rcm.cu"
 
 
 /* STDP parameters
@@ -220,7 +221,7 @@ updateRegion(
 	unsigned dt_post = closestPostFire(spikes);
 
 	/* For logging. Positive values: post-fire, negative values: pre-fire */
-#ifdef NEMO_CUDA_DEBUG_TRACE
+#if NEMO_CUDA_DEBUG_TRACE >= 0x8
 	int dt_log;
 #endif
 
@@ -228,12 +229,12 @@ updateRegion(
 	if(spikes) {
 		if(dt_pre < dt_post) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow - 1 - dt_pre];
-#ifdef NEMO_CUDA_DEBUG_TRACE
+#if NEMO_CUDA_DEBUG_TRACE >= 0x8
 			dt_log = -int(dt_pre);
 #endif
 		} else if(dt_post < dt_pre) {
 			w_diff = s_stdpFn[s_stdpPreFireWindow+dt_post];
-#ifdef NEMO_CUDA_DEBUG_TRACE
+#if NEMO_CUDA_DEBUG_TRACE >= 0x8
 			dt_log = int(dt_post);
 #endif
 		}
@@ -282,6 +283,7 @@ updateSTDP_(
 	uint64_t* g_recentFiring,
 	size_t pitch64,
 	unsigned partitionSize,
+	const rcm_dt& g_rcm,
 	uint32_t** cr_address,
 	weight_dt** cr_stdp,
 	size_t* cr_pitch,
@@ -290,6 +292,10 @@ updateSTDP_(
 	/* Determine what postsynaptic neurons needs processing in small batches */
 	for(unsigned nbase = 0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 		unsigned target = nbase + threadIdx.x;
+
+#ifdef NEW_RCM
+		__shared__ rcm_index_address_t s_rcmIndexAddress[THREADS_PER_BLOCK];
+#endif
 
 		uint64_t targetRecentFiring =
 			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * pitch64 + target];
@@ -316,6 +322,9 @@ updateSTDP_(
 		if(fired && target < partitionSize) {
 			unsigned i = atomicAdd(&s_firingCount, 1);
 			s_firingIdx[i] = target;
+#ifdef NEW_RCM
+			s_rcmIndexAddress[i] = rcm_indexAddress(target, g_rcm);
+#endif
 		}
 		__syncthreads();
 
@@ -324,10 +333,29 @@ updateSTDP_(
 			unsigned target = s_firingIdx[i];
 			unsigned r_maxSynapses = cr_pitch[CURRENT_PARTITION];
 
+#ifdef NEW_RCM
+			//! \todo use consistent names
+			rcm_index_address_t row = s_rcmIndexAddress[i];
+#endif
+
 			//! \todo consider using per-neuron maximum here instead
 			for(unsigned sbase = 0; sbase < r_maxSynapses; sbase += THREADS_PER_BLOCK) {
 
 				unsigned r_sidx = sbase + threadIdx.x;
+#ifdef NEW_RCM
+				unsigned bWarp = (sbase / THREADS_PER_BLOCK) * (THREADS_PER_BLOCK / WARP_SIZE);
+
+				//! \todo pre-load 8 index data (or more outside loop)?
+				/* all threads in a warp share the same address */
+				rcm_address_t addr =
+					rcm_address(
+							rcm_indexRowStart(row),
+							bWarp + threadIdx.x / WARP_SIZE,
+							g_rcm
+					);
+
+				rsynapse_t r_sdata0 = rcm_data(addr, g_rcm);
+#endif
 
 				if(r_sidx < r_maxSynapses) {
 
@@ -340,6 +368,9 @@ updateSTDP_(
 					rsynapse_t r_sdata = gr_address[r_offset];
 
 					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
+#ifdef NEW_RCM
+						ASSERT(r_sdata0 == r_sdata);
+#endif
 
 						weight_dt w_diff =
 							updateSynapse(
@@ -387,6 +418,7 @@ updateStdp(
 		uint32_t cycle,
 		unsigned* g_partitionSize,
 		param_t* g_params,
+		rcm_dt g_rcm,
 		uint64_t* g_recentFiring,
 		uint32_t* g_dfired,        // dense firing. pitch = c_bvPitch.
 		unsigned* g_nFired,        // device-only buffer.
@@ -411,6 +443,7 @@ updateStdp(
 			g_recentFiring,
 			s_params.pitch64,
 			g_partitionSize[CURRENT_PARTITION],
+			g_rcm,
 			cr_address, cr_stdp, cr_pitch,
 			s_fired);
 }
@@ -425,6 +458,7 @@ updateStdp(
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		param_t* d_parameters,
+		const rcm_dt* d_rcm,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
@@ -432,7 +466,8 @@ updateStdp(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_parameters, d_recentFiring, d_dfired, d_nFired, d_fired);
+	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_parameters,
+			*d_rcm, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }
 
