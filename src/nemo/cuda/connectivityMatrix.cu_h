@@ -42,13 +42,4 @@ unsigned sourceNeuron(rsynapse_t rsynapse);
 unsigned sourcePartition(rsynapse_t rsynapse);
 unsigned r_delay1(rsynapse_t rsynapse);
 
-
-cudaError
-configureReverseAddressing(
-        size_t* r_pitch,
-        uint32_t* const* r_address,
-        weight_dt* const* r_stdp,
-        uint32_t* const* r_faddress,
-		size_t len);
-
 #endif

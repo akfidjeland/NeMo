@@ -102,8 +102,6 @@ class ConnectivityMatrix
 				const nemo::ConfigurationImpl&,
 				const Mapper&);
 
-		~ConnectivityMatrix();
-
 		delay_t maxDelay() const { return m_maxDelay; }
 
 		/*! \copydoc nemo::Simulation::getSynapsesFrom */
@@ -164,12 +162,6 @@ class ConnectivityMatrix
 
 		delay_t m_maxDelay;
 
-		/* For STDP we need a reverse matrix storing source neuron, source
-		 * partition, and delay. The reverse connectivity is stored separately
-		 * for each partition */
-		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
-		rcm_t m_rsynapses;
-
 		/*! Compact forward connectivity matrix on device */
 		boost::shared_ptr<synapse_t> md_fcm;
 
@@ -225,17 +217,9 @@ class ConnectivityMatrix
 		/* We also need device memory for the global queue */
 		GlobalQueue m_gq;
 
-		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
 
 		unsigned m_fractionalBits;
-
-		/* Per-partition addressing of RCM */
-		void moveRcmToDevice();
-		std::vector<size_t> r_partitionPitch() const;
-		std::vector<uint32_t*> r_partitionAddress() const;
-		std::vector<weight_dt*> r_partitionStdp() const;
-		std::vector<uint32_t*> r_partitionFAddress() const;
 
 		/* Additional synapse data which is only needed for runtime queries.
 		 * Static FCM data for each neuron, required for synapse queries.
@@ -281,7 +265,6 @@ class ConnectivityMatrix
 		 */
 		void addReverse(
 				const Synapse& s,
-				const Mapper& mapper,
 				const DeviceIdx& d_source,
 				const DeviceIdx& d_target,
 				size_t forwardAddress,

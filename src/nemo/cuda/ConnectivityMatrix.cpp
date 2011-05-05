@@ -22,7 +22,6 @@
 #include <nemo/synapse_indices.hpp>
 #include <nemo/cuda/construction/FcmIndex.hpp>
 
-#include "RSMatrix.hpp"
 #include "exception.hpp"
 #include "connectivityMatrix.cu_h"
 #include "kernel.hpp"
@@ -95,7 +94,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
-		addReverse(s, mapper, source, target, f_addr, r_nextFreeWarp, rcm_index,
+		addReverse(s, source, target, f_addr, r_nextFreeWarp, rcm_index,
 				hr_data, hr_forward);
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
@@ -123,22 +122,12 @@ ConnectivityMatrix::ConnectivityMatrix(
 	m_outgoing = Outgoing(mapper.partitionCount(), fcm_index);
 	m_gq.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
 
-	moveRcmToDevice();
-
 	if(conf.loggingEnabled()) {
 		printMemoryUsage(std::cout);
 		// fcm_index.reportWarpSizeHistogram(std::cout);
 	}
 }
 
-
-
-ConnectivityMatrix::~ConnectivityMatrix()
-{
-	for(rcm_t::iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-		delete(i->second);
-	}
-}
 
 
 void
@@ -197,7 +186,6 @@ ConnectivityMatrix::addForward(
 void
 ConnectivityMatrix::addReverse(
 		const Synapse& s,
-		const Mapper& mapper,
 		const DeviceIdx& d_source,
 		const DeviceIdx& d_target,
 		size_t f_addr,
@@ -223,12 +211,6 @@ ConnectivityMatrix::addReverse(
 		size_t r_addr = addr.row * WARP_SIZE + addr.synapse;
 		sourceData.at(r_addr) = r_packSynapse(d_source.partition, d_source.neuron, s.delay);
 		sourceAddress.at(r_addr) = f_addr;
-
-		rcm_t& rcm = m_rsynapses;
-		if(rcm.find(d_target.partition) == rcm.end()) {
-			rcm[d_target.partition] = new RSMatrix(mapper.partitionSize());
-		}
-		rcm[d_target.partition]->addSynapse(d_source, d_target.neuron, s.delay, f_addr);
 	}
 }
 
@@ -323,36 +305,23 @@ ConnectivityMatrix::moveRcmToDevice(size_t totalWarps,
 
 
 void
-ConnectivityMatrix::moveRcmToDevice()
-{
-	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-		i->second->moveToDevice();
-	}
-
-	std::vector<size_t> rpitch = r_partitionPitch();
-
-	CUDA_SAFE_CALL(
-		configureReverseAddressing(
-				&rpitch[0],
-				&r_partitionAddress()[0],
-				&r_partitionStdp()[0],
-				&r_partitionFAddress()[0],
-				rpitch.size())
-	);
-}
-
-
-void
 ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
 	const size_t MEGA = 1<<20;
 	out << "Memory usage on device:\n";
 	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
-	out << "\treverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
+	out << "\treverse matrix: " << (d_allocatedRCM() / MEGA) << "MB\n";
 	out << "\tglobal queue: " << (m_gq.allocated() / MEGA) << "MB\n";
 	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
 
+
+
+size_t
+ConnectivityMatrix::d_allocatedRCM() const
+{
+	return md_rcmAllocated + m_rcmIndex.d_allocated();
+}
 
 
 
@@ -483,21 +452,7 @@ ConnectivityMatrix::getPlastic(const synapse_id& id) const
 void
 ConnectivityMatrix::clearStdpAccumulator()
 {
-	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-		i->second->clearStdpAccumulator();
-	}
-}
-
-
-size_t
-ConnectivityMatrix::d_allocatedRCM() const
-{
-	size_t bytes = 0;
-	for(std::map<pidx_t, RSMatrix*>::const_iterator i = m_rsynapses.begin();
-			i != m_rsynapses.end(); ++i) {
-		bytes += i->second->d_allocated();
-	}
-	return bytes;
+	d_memset(md_rcmAccumulator.get(), 0, md_rcmPlaneSize*sizeof(weight_dt));
 }
 
 
@@ -509,54 +464,6 @@ ConnectivityMatrix::d_allocated() const
 		+ d_allocatedRCM()
 		+ m_gq.allocated()
 		+ m_outgoing.allocated();
-}
-
-
-
-/* Map function over vector of reverse synapse matrix */
-template<typename T, class S>
-std::vector<T>
-mapDevicePointer(const std::map<pidx_t, S*>& vec, std::const_mem_fun_t<T, S> fun)
-{
-	/* Always fill this in with zeros. */
-	std::vector<T> ret(MAX_PARTITION_COUNT, T(0));
-	for(typename std::map<pidx_t, S*>::const_iterator i = vec.begin();
-			i != vec.end(); ++i) {
-		ret.at(i->first) = fun(i->second);
-	}
-	return ret;
-}
-
-
-
-std::vector<size_t>
-ConnectivityMatrix::r_partitionPitch() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::pitch));
-}
-
-
-
-std::vector<uint32_t*>
-ConnectivityMatrix::r_partitionAddress() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_address));
-}
-
-
-
-std::vector<weight_dt*>
-ConnectivityMatrix::r_partitionStdp() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_stdp));
-}
-
-
-
-std::vector<uint32_t*>
-ConnectivityMatrix::r_partitionFAddress() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));
 }
 
 
