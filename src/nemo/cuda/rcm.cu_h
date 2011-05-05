@@ -49,7 +49,7 @@ struct rcm_dt {
 
 	uint32_t* data;     // source partition, source neuron, delay
 	uint32_t* forward;  // word offset into FCM for each synapse
-	float* accumulator; // accumulated weight difference for STDP
+	weight_dt* accumulator; // accumulated weight difference for STDP
 
 	/*! The index data, which is simply rows of RCM warp offsets. The pitch is 32. */
 	const rcm_address_t* index;

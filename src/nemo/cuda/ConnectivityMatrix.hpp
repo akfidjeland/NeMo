@@ -185,7 +185,7 @@ class ConnectivityMatrix
 		/*! Compact reverse connectivity matrix on device */
 		boost::shared_array<uint32_t> md_rcmData;
 		boost::shared_array<uint32_t> md_rcmForward;
-		boost::shared_array<float> md_rcmAccumulator;
+		boost::shared_array<weight_dt> md_rcmAccumulator;
 		runtime::RcmIndex m_rcmIndex;
 
 		/* Pointer struct passed to the device */

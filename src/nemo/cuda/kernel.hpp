@@ -40,6 +40,7 @@ applyStdp(
 		unsigned fractionalBits,
 		param_t* d_params,
 		synapse_t* d_fcm,
+		rcm_dt* d_rcm,
 		float minExcitatoryWeight,
 		float maxExcitatoryWeight,
 		float minInhibitoryWeight,

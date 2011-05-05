@@ -371,6 +371,7 @@ Simulation::applyStdp(float reward)
 				m_cm.fractionalBits(),
 				md_params.get(),
 				m_cm.d_fcm(),
+				m_cm.d_rcm(),
 				m_stdp->minExcitatoryWeight(),
 				m_stdp->maxExcitatoryWeight(),
 				m_stdp->minInhibitoryWeight(),

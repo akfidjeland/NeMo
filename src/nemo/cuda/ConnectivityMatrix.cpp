@@ -311,8 +311,8 @@ ConnectivityMatrix::moveRcmToDevice(size_t totalWarps,
 	md_rcmData = d_array<uint32_t>(md_rcmPlaneSize, "rcm (data)");
 	memcpyToDevice(md_rcmData.get(), h_data, md_rcmPlaneSize);
 
-	md_rcmAccumulator = d_array<float>(md_rcmPlaneSize, "rcm (accumulator)");
-	d_memset(md_rcmAccumulator.get(), 0, md_rcmPlaneSize*sizeof(float));
+	md_rcmAccumulator = d_array<weight_dt>(md_rcmPlaneSize, "rcm (accumulator)");
+	d_memset(md_rcmAccumulator.get(), 0, md_rcmPlaneSize*sizeof(weight_dt));
 
 	md_rcmForward = d_array<uint32_t>(md_rcmPlaneSize, "rcm (forward address)");
 	memcpyToDevice(md_rcmForward.get(), h_forward, md_rcmPlaneSize);
