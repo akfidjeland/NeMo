@@ -1,6 +1,14 @@
 #ifndef NEMO_CUDA_RCM_CU
 #define NEMO_CUDA_RCM_CU
 
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "kernel.cu_h"
 #include "rcm.cu_h"
@@ -49,11 +57,13 @@ rcm_address(uint rowStart, uint rowOffset, const rcm_dt& rcm)
 }
 
 
+
+/*! \return word offset into RCM for a particular synapse */
 __device__
-rsynapse_t
-rcm_data(uint warpOffset, const rcm_dt& rcm)
+size_t
+rcm_offset(rcm_address_t warpOffset)
 {
-	return rcm.data[warpOffset * WARP_SIZE + threadIdx.x % WARP_SIZE];
+	return warpOffset * WARP_SIZE + threadIdx.x % WARP_SIZE;
 }
 
 

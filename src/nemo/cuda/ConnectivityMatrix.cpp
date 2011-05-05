@@ -69,8 +69,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
 	construction::FcmIndex fcm_index;
 
-	std::vector<rsynapse_t> hr_sourceData(WARP_SIZE, INVALID_REVERSE_SYNAPSE);
-	std::vector<rsynapse_t> hr_sourceAddress(WARP_SIZE, 0);
+	std::vector<uint32_t> hr_data(WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+	std::vector<uint32_t> hr_forward(WARP_SIZE, 0);
 	construction::RcmIndex rcm_index;
 	size_t r_nextFreeWarp = 1; // leave space for a null warp at the beginning
 
@@ -96,7 +96,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
 		addReverse(s, mapper, source, target, f_addr, r_nextFreeWarp, rcm_index,
-				hr_sourceData, hr_sourceAddress);
+				hr_data, hr_forward);
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
 		}
@@ -107,12 +107,14 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
 	hf_targets.clear();
 
-	moveRcmToDevice(r_nextFreeWarp, hr_sourceData, hr_sourceAddress);
-	hr_sourceData.clear();
-	hr_sourceAddress.clear();
+	moveRcmToDevice(r_nextFreeWarp, hr_data, hr_forward);
+	hr_data.clear();
+	hr_forward.clear();
 	m_rcmIndex = runtime::RcmIndex(mapper.partitionCount(), rcm_index);
 
 	md_rcm.data = md_rcmData.get();
+	md_rcm.forward = md_rcmForward.get();
+	md_rcm.accumulator = md_rcmAccumulator.get();
 	md_rcm.index = m_rcmIndex.d_index();
 	md_rcm.meta_index = m_rcmIndex.d_metaIndex();
 
@@ -201,8 +203,8 @@ ConnectivityMatrix::addReverse(
 		size_t f_addr,
 		size_t& nextFreeWarp,
 		construction::RcmIndex& index,
-		std::vector<rsynapse_t>& sourceData,
-		std::vector<rsynapse_t>& sourceAddress)
+		std::vector<uint32_t>& sourceData,
+		std::vector<uint32_t>& sourceAddress)
 {
 	//! \todo only need to set this if stdp is enabled
 	if(s.plastic()) {
@@ -295,22 +297,27 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 
 void
 ConnectivityMatrix::moveRcmToDevice(size_t totalWarps,
-		const std::vector<rsynapse_t>& sourceData,
-		const std::vector<rsynapse_t>& sourceAddress)
+		const std::vector<uint32_t>& h_data,
+		const std::vector<uint32_t>& h_forward)
 {
+	assert(h_data.size() == h_forward.size());
+	assert(totalWarps <= h_data.size() + WARP_SIZE);
+
+	/*! \todo remove the warp counting. Instead just set the plane size based
+	 * on the host data. */
+
 	md_rcmPlaneSize = totalWarps * WARP_SIZE;
-	size_t bytes = md_rcmPlaneSize * RCM_SUBMATRICES * sizeof(rsynapse_t);
 
-	void* d_rcm;
-	d_malloc(&d_rcm, bytes, "rcm");
-	md_rcmData = boost::shared_ptr<rsynapse_t>(static_cast<rsynapse_t*>(d_rcm), d_free);
-	md_rcmAllocated = bytes;
+	md_rcmData = d_array<uint32_t>(md_rcmPlaneSize, "rcm (data)");
+	memcpyToDevice(md_rcmData.get(), h_data, md_rcmPlaneSize);
 
-	/* Clear data to ensure STDP accumulators are set to zero */
-	d_memset(d_rcm, 0, bytes);
+	md_rcmAccumulator = d_array<float>(md_rcmPlaneSize, "rcm (accumulator)");
+	d_memset(md_rcmAccumulator.get(), 0, md_rcmPlaneSize*sizeof(float));
 
-	memcpyToDevice(md_rcmData.get() + md_rcmPlaneSize * RCM_ADDRESS, sourceData, md_rcmPlaneSize);
-	memcpyToDevice(md_rcmData.get() + md_rcmPlaneSize * RCM_FADDRESS, sourceAddress, md_rcmPlaneSize);
+	md_rcmForward = d_array<uint32_t>(md_rcmPlaneSize, "rcm (forward address)");
+	memcpyToDevice(md_rcmForward.get(), h_forward, md_rcmPlaneSize);
+
+	md_rcmAllocated += md_rcmPlaneSize * (2*sizeof(uint32_t) + sizeof(float));
 }
 
 

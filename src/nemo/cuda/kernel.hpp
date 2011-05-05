@@ -83,7 +83,7 @@ updateStdp(
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		param_t* d_parameters,
-		const rcm_dt* d_rcm,
+		rcm_dt* d_rcm,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,

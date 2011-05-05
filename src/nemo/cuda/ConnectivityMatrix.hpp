@@ -156,7 +156,7 @@ class ConnectivityMatrix
 		void setParameters(param_t*) const;
 
 		/*! \return RCM device pointers */
-		const rcm_dt* d_rcm() const { return &md_rcm; }
+		rcm_dt* d_rcm() { return &md_rcm; }
 
 	private:
 
@@ -174,7 +174,7 @@ class ConnectivityMatrix
 		boost::shared_ptr<synapse_t> md_fcm;
 
 		/* Indices of the three planes of the reverse matrix */
-		//! \todo give these better names
+		//! \todo give these better names, or better: store separately
 		enum {
 			RCM_ADDRESS = 0, // source information
 			RCM_STDP,
@@ -183,7 +183,9 @@ class ConnectivityMatrix
 		};
 
 		/*! Compact reverse connectivity matrix on device */
-		boost::shared_ptr<rsynapse_t> md_rcmData;
+		boost::shared_array<uint32_t> md_rcmData;
+		boost::shared_array<uint32_t> md_rcmForward;
+		boost::shared_array<float> md_rcmAccumulator;
 		runtime::RcmIndex m_rcmIndex;
 
 		/* Pointer struct passed to the device */
@@ -209,8 +211,8 @@ class ConnectivityMatrix
 		size_t md_rcmAllocated; // in bytes
 
 		void moveRcmToDevice(size_t totalWarps,
-				const std::vector<rsynapse_t>& sourceData,
-				const std::vector<rsynapse_t>& sourceAddress);
+				const std::vector<uint32_t>& h_rcmData,
+				const std::vector<uint32_t>& h_rcmForward);
 
 		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */

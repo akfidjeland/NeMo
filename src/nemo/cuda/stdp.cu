@@ -281,9 +281,9 @@ updateSTDP_(
 	uint32_t cycle,
 	uint32_t* s_dfired,
 	uint64_t* g_recentFiring,
-	size_t pitch64,
+	const param_t& s_params,
 	unsigned partitionSize,
-	const rcm_dt& g_rcm,
+	rcm_dt& g_rcm,
 	uint32_t** cr_address,
 	weight_dt** cr_stdp,
 	size_t* cr_pitch,
@@ -298,14 +298,14 @@ updateSTDP_(
 #endif
 
 		uint64_t targetRecentFiring =
-			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * pitch64 + target];
+			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_params.pitch64 + target];
 
 		const int processingDelay = s_stdpPostFireWindow - 1;
 
 		bool fired = targetRecentFiring & (0x1 << processingDelay);
 
 		/* Write updated history to double buffer */
-		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * pitch64 + target] =
+		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_params.pitch64 + target] =
 				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
 		if(cr_address[CURRENT_PARTITION] == 0) {
@@ -347,14 +347,16 @@ updateSTDP_(
 
 				//! \todo pre-load 8 index data (or more outside loop)?
 				/* all threads in a warp share the same address */
-				rcm_address_t addr =
+				rcm_address_t warp =
 					rcm_address(
 							rcm_indexRowStart(row),
 							bWarp + threadIdx.x / WARP_SIZE,
 							g_rcm
 					);
 
-				rsynapse_t r_sdata0 = rcm_data(addr, g_rcm);
+				//! \todo merge the two preceeding bits of code
+				size_t word = rcm_offset(warp);
+				rsynapse_t r_sdata0 = g_rcm.data[word];
 #endif
 
 				if(r_sidx < r_maxSynapses) {
@@ -376,12 +378,16 @@ updateSTDP_(
 							updateSynapse(
 								r_sdata,
 								target,
-								g_recentFiring + (readBuffer(cycle) * PARTITION_COUNT + sourcePartition(r_sdata)) * pitch64);
+								g_recentFiring + (readBuffer(cycle) * PARTITION_COUNT + sourcePartition(r_sdata)) * s_params.pitch64);
 
 						//! \todo perhaps stage diff in output buffers
 						//! \todo add saturating arithmetic here
 						if(w_diff != 0) {
 							cr_stdp[CURRENT_PARTITION][r_offset] += w_diff;
+#ifdef NEW_RCM
+							g_rcm.accumulator[word] += w_diff;
+#endif
+
 						}
 					}
 				}
@@ -441,7 +447,7 @@ updateStdp(
 			cycle,
 			s_dfired,
 			g_recentFiring,
-			s_params.pitch64,
+			s_params,
 			g_partitionSize[CURRENT_PARTITION],
 			g_rcm,
 			cr_address, cr_stdp, cr_pitch,
@@ -458,7 +464,7 @@ updateStdp(
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		param_t* d_parameters,
-		const rcm_dt* d_rcm,
+		rcm_dt* d_rcm,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
@@ -466,7 +472,7 @@ updateStdp(
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
-	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_parameters,
+	updateStdp<<<dimGrid, dimBlock, 0, stream>>>(cycle, d_partitionSize, d_parameters, 
 			*d_rcm, d_recentFiring, d_dfired, d_nFired, d_fired);
 	return cudaGetLastError();
 }
