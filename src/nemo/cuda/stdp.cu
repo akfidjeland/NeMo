@@ -284,18 +284,13 @@ updateSTDP_(
 	const param_t& s_params,
 	unsigned partitionSize,
 	rcm_dt& g_rcm,
-	uint32_t** cr_address,
-	weight_dt** cr_stdp,
-	size_t* cr_pitch,
 	nidx_dt* s_firingIdx) // s_NIdx, so can handle /all/ neurons firing
 {
 	/* Determine what postsynaptic neurons needs processing in small batches */
 	for(unsigned nbase = 0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
 		unsigned target = nbase + threadIdx.x;
 
-#ifdef NEW_RCM
 		__shared__ rcm_index_address_t s_rcmIndexAddress[THREADS_PER_BLOCK];
-#endif
 
 		uint64_t targetRecentFiring =
 			g_recentFiring[(readBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_params.pitch64 + target];
@@ -308,11 +303,6 @@ updateSTDP_(
 		g_recentFiring[(writeBuffer(cycle) * PARTITION_COUNT + CURRENT_PARTITION) * s_params.pitch64 + target] =
 				(targetRecentFiring << 1) | (bv_isSet(target, s_dfired) ? 0x1 : 0x0);
 
-		if(cr_address[CURRENT_PARTITION] == 0) {
-			/* This partition has no incoming connections, so nothing further to do */
-			continue;
-		}
-
 		__shared__ unsigned s_firingCount;
 		if(threadIdx.x == 0) {
 			s_firingCount = 0;
@@ -322,73 +312,41 @@ updateSTDP_(
 		if(fired && target < partitionSize) {
 			unsigned i = atomicAdd(&s_firingCount, 1);
 			s_firingIdx[i] = target;
-#ifdef NEW_RCM
 			s_rcmIndexAddress[i] = rcm_indexAddress(target, g_rcm);
-#endif
 		}
 		__syncthreads();
 
 		for(unsigned i=0; i<s_firingCount; ++i) {
 
 			unsigned target = s_firingIdx[i];
-			unsigned r_maxSynapses = cr_pitch[CURRENT_PARTITION];
 
-#ifdef NEW_RCM
-			//! \todo use consistent names
 			rcm_index_address_t row = s_rcmIndexAddress[i];
-#endif
 
-			//! \todo consider using per-neuron maximum here instead
-			for(unsigned sbase = 0; sbase < r_maxSynapses; sbase += THREADS_PER_BLOCK) {
+			for(unsigned bIndex=0 ; bIndex < rcm_indexRowLength(row);
+					bIndex += THREADS_PER_BLOCK/WARP_SIZE) {
+				__shared__ rcm_address_t warp[THREADS_PER_BLOCK/WARP_SIZE];
 
-				unsigned r_sidx = sbase + threadIdx.x;
-#ifdef NEW_RCM
-				unsigned bWarp = (sbase / THREADS_PER_BLOCK) * (THREADS_PER_BLOCK / WARP_SIZE);
+				if(threadIdx.x < THREADS_PER_BLOCK/WARP_SIZE) {
+					warp[threadIdx.x] =
+						rcm_address(rcm_indexRowStart(row), bIndex + threadIdx.x, g_rcm);
+				}
+				__syncthreads();
 
-				//! \todo pre-load 8 index data (or more outside loop)?
-				/* all threads in a warp share the same address */
-				rcm_address_t warp =
-					rcm_address(
-							rcm_indexRowStart(row),
-							bWarp + threadIdx.x / WARP_SIZE,
-							g_rcm
-					);
+				size_t word = rcm_offset(warp[threadIdx.x/WARP_SIZE]);
+				rsynapse_t r_sdata = g_rcm.data[word];
 
-				//! \todo merge the two preceeding bits of code
-				size_t word = rcm_offset(warp);
-				rsynapse_t r_sdata0 = g_rcm.data[word];
-#endif
+				if(r_sdata != INVALID_REVERSE_SYNAPSE) {
 
-				if(r_sidx < r_maxSynapses) {
+					weight_dt w_diff =
+						updateSynapse(
+							r_sdata,
+							target,
+							g_recentFiring + (readBuffer(cycle) * PARTITION_COUNT + sourcePartition(r_sdata)) * s_params.pitch64);
 
-					size_t r_offset = target * r_maxSynapses + r_sidx;
-
-					/* nvcc will warn that gr_address defaults to gmem, as it
-					 * is not clear what address space it belongs to. That's
-					 * ok; this is global memory */
-					rsynapse_t* gr_address = cr_address[CURRENT_PARTITION];
-					rsynapse_t r_sdata = gr_address[r_offset];
-
-					if(r_sdata != INVALID_REVERSE_SYNAPSE) {
-#ifdef NEW_RCM
-						ASSERT(r_sdata0 == r_sdata);
-#endif
-
-						weight_dt w_diff =
-							updateSynapse(
-								r_sdata,
-								target,
-								g_recentFiring + (readBuffer(cycle) * PARTITION_COUNT + sourcePartition(r_sdata)) * s_params.pitch64);
-
-						//! \todo perhaps stage diff in output buffers
-						//! \todo add saturating arithmetic here
-						if(w_diff != 0) {
-							cr_stdp[CURRENT_PARTITION][r_offset] += w_diff;
-#ifdef NEW_RCM
-							g_rcm.accumulator[word] += w_diff;
-#endif
-
-						}
+					//! \todo perhaps stage diff in output buffers
+					//! \todo add saturating arithmetic here
+					if(w_diff != 0) {
+						g_rcm.accumulator[word] += w_diff;
 					}
 				}
 			}
@@ -450,7 +408,6 @@ updateStdp(
 			s_params,
 			g_partitionSize[CURRENT_PARTITION],
 			g_rcm,
-			cr_address, cr_stdp, cr_pitch,
 			s_fired);
 }
 
