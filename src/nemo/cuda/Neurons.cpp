@@ -137,7 +137,8 @@ Neurons::update(
 		fix_t* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
-		nidx_dt* d_fired)
+		nidx_dt* d_fired,
+		rcm_dt* d_rcm)
 {
 	syncToDevice();
 	m_cycle = cycle;
@@ -152,7 +153,8 @@ Neurons::update(
 			m_nrng,
 			m_valid.d_data(),
 			d_fstim, d_istim,
-			d_current, d_fout, d_nFired, d_fired);
+			d_current, d_fout, d_nFired, d_fired,
+			d_rcm);
 }
 
 

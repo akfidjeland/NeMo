@@ -297,7 +297,8 @@ cuda_update_neurons(
 		fix_t* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
-		nidx_dt* d_fired)
+		nidx_dt* d_fired,
+		struct rcm_dt* /* unused */)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);

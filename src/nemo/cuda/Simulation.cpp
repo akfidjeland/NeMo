@@ -295,7 +295,8 @@ Simulation::fire()
 			m_current.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
-			m_fired.deviceData()));
+			m_fired.deviceData(),
+			m_cm.d_rcm()));
 	cudaEventRecord(m_eventFireDone, m_streamCompute);
 }
 
