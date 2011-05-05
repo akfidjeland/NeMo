@@ -29,24 +29,11 @@
 #define R_NEURON_SHIFT DELAY_BITS
 
 
-
-/* distance (in words) between a synapses's address data and its weight data. */
-__constant__ size_t c_fcmPlaneSize;
-
 __host__
 synapse_t
 f_nullSynapse()
 {
 	return 0;
-}
-
-
-__host__
-cudaError
-setFcmPlaneSize(size_t sz)
-{
-	return cudaMemcpyToSymbol(c_fcmPlaneSize,
-				&sz, sizeof(size_t), 0, cudaMemcpyHostToDevice);
 }
 
 
@@ -64,22 +51,24 @@ targetNeuron(unsigned synapse)
 
 
 __host__
-unsigned
+rsynapse_t
 r_packSynapse(unsigned sourcePartition, unsigned sourceNeuron, unsigned delay)
 {
 	assert(!(sourcePartition & ~PARTITION_MASK));
 	assert(!(sourceNeuron & ~NEURON_MASK));
 	assert(!(delay & ~DELAY_MASK));
-	return (sourcePartition << R_PARTITION_SHIFT)
-	     | (sourceNeuron    << R_NEURON_SHIFT)
-	     |  delay;
+	rsynapse_t s = 0;
+	s |= sourcePartition << R_PARTITION_SHIFT;
+	s |= sourceNeuron    << R_NEURON_SHIFT;
+	s |= delay;
+	return s;
 }
 
 
 
 __device__ __host__
 unsigned
-sourceNeuron(unsigned rsynapse)
+sourceNeuron(rsynapse_t rsynapse)
 {
     return (rsynapse >> R_NEURON_SHIFT) & NEURON_MASK;
 }
@@ -87,7 +76,7 @@ sourceNeuron(unsigned rsynapse)
 
 __device__ __host__
 unsigned
-sourcePartition(unsigned rsynapse)
+sourcePartition(rsynapse_t rsynapse)
 {
     return (rsynapse >> R_PARTITION_SHIFT) & PARTITION_MASK;
 }
@@ -96,7 +85,7 @@ sourcePartition(unsigned rsynapse)
 
 __device__ __host__
 unsigned
-r_delay1(unsigned rsynapse)
+r_delay1(rsynapse_t rsynapse)
 {
     return rsynapse & DELAY_MASK; 
 }
@@ -104,55 +93,9 @@ r_delay1(unsigned rsynapse)
 
 __device__
 unsigned
-r_delay0(unsigned rsynapse)
+r_delay0(rsynapse_t rsynapse)
 {
 	return r_delay1(rsynapse) - 1;
-}
-
-
-
-/* To improve packing of data in the connectivity matrix, we use different
- * pitches for each partition */
-__constant__ size_t cr_pitch[MAX_PARTITION_COUNT];
-
-/* We also need to store the start of each partitions reverse connectivity
- * data, to support fast lookup. This data should nearly always be in the
- * constant cache */
-__constant__ uint32_t* cr_address[MAX_PARTITION_COUNT];
-
-/* Ditto for the STDP accumulators */
-__constant__ weight_dt* cr_stdp[MAX_PARTITION_COUNT];
-
-/* Ditto for the forward synapse offset */
-__constant__ uint32_t* cr_faddress[MAX_PARTITION_COUNT];
-
-
-
-#define SET_CR_ADDRESS_VECTOR(symbol, vec, len, type)                         \
-    err = cudaMemcpyToSymbol(symbol, vec,                                     \
-            len * sizeof(type), 0, cudaMemcpyHostToDevice);                   \
-    if(cudaSuccess != err) {                                                  \
-        return err;                                                           \
-    }
-
-
-
-__host__
-cudaError
-configureReverseAddressing(
-        size_t* r_pitch,
-        uint32_t* const* r_address,
-        weight_dt* const* r_stdp,
-        uint32_t* const* r_faddress,
-		size_t len)
-{
-	assert(len == MAX_PARTITION_COUNT);
-	cudaError err;
-	SET_CR_ADDRESS_VECTOR(cr_pitch, r_pitch, len, size_t);
-	SET_CR_ADDRESS_VECTOR(cr_address, r_address, len, uint32_t*);
-	SET_CR_ADDRESS_VECTOR(cr_stdp, r_stdp, len, weight_dt*);
-	SET_CR_ADDRESS_VECTOR(cr_faddress, r_faddress, len, uint32_t*);
-	return cudaSuccess;
 }
 
 #endif

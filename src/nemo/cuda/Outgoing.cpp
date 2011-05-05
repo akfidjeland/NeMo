@@ -9,17 +9,19 @@
 
 #include "Outgoing.hpp"
 
+#include <map>
 #include <vector>
 #include <cuda_runtime.h>
 #include <boost/format.hpp>
 
 #include <nemo/util.h>
 #include <nemo/bitops.h>
+#include <nemo/cuda/construction/FcmIndex.hpp>
 
-#include "WarpAddressTable.hpp"
 #include "device_memory.hpp"
 #include "exception.hpp"
 #include "kernel.cu_h"
+#include "parameters.cu_h"
 
 namespace nemo {
 	namespace cuda {
@@ -27,12 +29,12 @@ namespace nemo {
 Outgoing::Outgoing() : m_pitch(0), m_allocated(0), m_maxIncomingWarps(0) {}
 
 
-Outgoing::Outgoing(size_t partitionCount, const WarpAddressTable& wtable) :
+Outgoing::Outgoing(size_t partitionCount, const construction::FcmIndex& index) :
 		m_pitch(0),
 		m_allocated(0),
 		m_maxIncomingWarps(0)
 {
-	init(partitionCount, wtable);
+	init(partitionCount, index);
 }
 
 
@@ -78,7 +80,7 @@ make_outgoing_addr(unsigned offset, unsigned len)
 
 
 void
-Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
+Outgoing::init(size_t partitionCount, const construction::FcmIndex& index)
 {
 	using namespace boost::tuples;
 
@@ -103,9 +105,9 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 	unsigned wpitch = 0;  // maximum, so far
 
 	/* populate host memory */
-	for(WarpAddressTable::iterator ti = wtable.begin(); ti != wtable.end(); ++ti) {
+	for(construction::FcmIndex::iterator ti = index.begin(); ti != index.end(); ++ti) {
 
-		const WarpAddressTable::key& k = ti->first;
+		const construction::FcmIndex::index_key& k = ti->first;
 
 		pidx_t sourcePartition = get<0>(k);
 		nidx_t sourceNeuron = get<1>(k);
@@ -113,7 +115,7 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 
 		/* Allocate memory for this row. Add padding to ensure each row starts
 		 * at warp boundaries */
-		unsigned nWarps = wtable.warpsPerNeuronDelay(sourcePartition, sourceNeuron, delay1);
+		unsigned nWarps = index.indexRowLength(k);
 		unsigned nWords = ALIGN(nWarps, WARP_SIZE);
 		wpitch = std::max(wpitch, nWords);
 		assert(nWords >= nWarps);
@@ -123,8 +125,8 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 		unsigned col = 0;
 
 		/* iterate over target partitions in a row */
-		const WarpAddressTable::row_t& r = ti->second;
-		for(WarpAddressTable::row_iterator ri = r.begin(); ri != r.end(); ++ri) {
+		const construction::FcmIndex::row_t& r = ti->second;
+		for(construction::FcmIndex::row_iterator ri = r.begin(); ri != r.end(); ++ri) {
 
 			pidx_t targetPartition = ri->first;
 			const std::vector<size_t>& warps = ri->second;
@@ -159,15 +161,15 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
 		m_allocated += allocated * sizeof(outgoing_t);
 	}
 
-	setConstants(wpitch);
+	setParameters(wpitch);
 
-	//! \todo compute this on forward pass (in WarpAddressTable)
+	//! \todo compute this on forward pass (in construction::FcmIndex)
 	m_maxIncomingWarps = incoming.size() ? std::max_element(incoming.begin(), incoming.end(), compare_warp_counts)->second : 0;
 }
 
 
 
-/*! Set outgoing parameters in constant memory on device
+/*! Set parameters for the outgoing data
  *
  * In the inner loop in scatterGlobal the kernel processes potentially multiple
  * rows of outgoing data. We set the relevant loop parameters in constant
@@ -181,26 +183,31 @@ Outgoing::init(size_t partitionCount, const WarpAddressTable& wtable)
  * \todo support handling of pitch greater than THREADS_PER_BLOCK
  */
 void
-Outgoing::setConstants(unsigned maxWarpsPerNeuronDelay)
+Outgoing::setParameters(unsigned maxWarpsPerNeuronDelay)
 {
 	using boost::format;
 
 	/* We need the step to exactly divide the pitch, in order for the inner
 	 * loop in scatterGlobal to work out. */
-	unsigned wpitch = std::max(1U, unsigned(ceilPowerOfTwo(maxWarpsPerNeuronDelay)));
+	m_pitch = std::max(1U, unsigned(ceilPowerOfTwo(maxWarpsPerNeuronDelay)));
 
-	/* Additionally scatterGlobal assumes that wpitch <= THREADS_PER_BLOCK. It
+	/* Additionally scatterGlobal assumes that m_pitch <= THREADS_PER_BLOCK. It
 	 * would possible to modify scatterGLobal to handle the other case as well,
 	 * with different looping logic. Separate kernels might be more sensible. */
-	assert_or_throw(wpitch <= THREADS_PER_BLOCK,
-			str(format("Outgoing pitch too wide (%u, max %u)") % wpitch % THREADS_PER_BLOCK));
+	assert_or_throw(m_pitch <= THREADS_PER_BLOCK,
+			str(format("Outgoing pitch too wide (%u, max %u)") % m_pitch % THREADS_PER_BLOCK));
 
-	CUDA_SAFE_CALL(setOutgoingPitch(wpitch));
+	m_step = THREADS_PER_BLOCK / m_pitch;
+	assert_or_throw(m_step * m_pitch == THREADS_PER_BLOCK, "Invalid outgoing pitch/step");
+}
 
-	unsigned step = THREADS_PER_BLOCK / wpitch;
-	CUDA_SAFE_CALL(setOutgoingStep(step));
 
-	assert_or_throw(step * wpitch == THREADS_PER_BLOCK, "Invalid outgoing pitch/step");
+
+void
+Outgoing::setParameters(param_t* params) const
+{
+	params->outgoingPitch = m_pitch;
+	params->outgoingStep = m_step;
 }
 
 

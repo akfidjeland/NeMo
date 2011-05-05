@@ -18,7 +18,9 @@
 #include <nemo/fixedpoint.hpp>
 
 #include "types.h"
-#include "log.cu_h"
+#ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
+#	include "log.cu_h"
+#endif
 
 #include "device_assert.cu"
 #include "bitvector.cu"
@@ -110,11 +112,13 @@ fx_arrSaturatedToFloat(
 		bool overflow = bv_isSet(nidx, s_overflow);
 		bool negative = bv_isSet(nidx, s_negative);
 		s_float[nidx] = fx_saturatedTofloat(s_fix[nidx], overflow, negative, scale);
+#ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 		if(overflow) {
 			DEBUG_MSG("c%u p%un%u input current overflow. Saturated to %+f (%08x)\n",
 					s_cycle, CURRENT_PARTITION, nidx,
 					s_float[nidx], s_fix[nidx]);
 		}
+#endif
 #endif
 	}
 	__syncthreads();

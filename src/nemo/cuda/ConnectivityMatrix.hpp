@@ -22,14 +22,18 @@
 
 #include <nemo/types.hpp>
 #include <nemo/network/Generator.hpp>
+#include <nemo/cuda/construction/RcmIndex.hpp>
+#include <nemo/cuda/construction/FcmIndex.hpp>
+#include <nemo/cuda/runtime/RcmIndex.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
 #include "Mapper.hpp"
 #include "Outgoing.hpp"
 #include "GlobalQueue.hpp"
-#include "WarpAddressTable.hpp"
 #include "NVector.hpp"
+
+struct param_t;
 
 namespace nemo {
 
@@ -98,8 +102,6 @@ class ConnectivityMatrix
 				const nemo::ConfigurationImpl&,
 				const Mapper&);
 
-		~ConnectivityMatrix();
-
 		delay_t maxDelay() const { return m_maxDelay; }
 
 		/*! \copydoc nemo::Simulation::getSynapsesFrom */
@@ -148,45 +150,61 @@ class ConnectivityMatrix
 
 		const NVector<uint64_t>& delayBits() const { return m_delays; }
 
+		/*! Fill in all relevant fields in global parameters data structure */
+		void setParameters(param_t*) const;
+
+		/*! \return RCM device pointers */
+		rcm_dt* d_rcm() { return &md_rcm; }
+
 	private:
 
 		const Mapper& m_mapper;
 
 		delay_t m_maxDelay;
 
-		/* For STDP we need a reverse matrix storing source neuron, source
-		 * partition, and delay. The reverse connectivity is stored separately
-		 * for each partition */
-		typedef std::map<pidx_t, class RSMatrix*> rcm_t;
-		rcm_t m_rsynapses;
-
-		/*! Compact FCM on device */
+		/*! Compact forward connectivity matrix on device */
 		boost::shared_ptr<synapse_t> md_fcm;
+
+		/* Indices of the three planes of the reverse matrix */
+		//! \todo give these better names, or better: store separately
+		enum {
+			RCM_ADDRESS = 0, // source information
+			RCM_STDP,
+			RCM_FADDRESS,    // actual word address of synapse
+			RCM_SUBMATRICES
+		};
+
+		/*! Compact reverse connectivity matrix on device */
+		boost::shared_array<uint32_t> md_rcmData;
+		boost::shared_array<uint32_t> md_rcmForward;
+		boost::shared_array<weight_dt> md_rcmAccumulator;
+		runtime::RcmIndex m_rcmIndex;
+
+		/* Pointer struct passed to the device */
+		rcm_dt md_rcm;
 
 		/*! Host-side copy of the weight data. This is mutable since it acts as
 		 * a buffer for synapse getters */
-		mutable std::vector<weight_dt> mh_weights;
+		mutable std::vector<weight_dt> mhf_weights;
 
 		/* \post The weight of every synapse in 'synapses' is found up-to-date
-		 * in mh_weights. */
+		 * in mhf_weights. */
 		const std::vector<weight_dt>& syncWeights(cycle_t) const;
 		mutable cycle_t m_lastWeightSync;
 
 		size_t md_fcmPlaneSize; // in words
 		size_t md_fcmAllocated; // in bytes
 
-		/*! \return total number of warps */
-		size_t createFcm(
-				const nemo::network::Generator& net,
-				const Mapper&,
-				WarpAddressTable& wtable,
-				std::vector<synapse_t>& targets,
-				std::vector<weight_dt>& weights);
-
 		void moveFcmToDevice(size_t totalWarps,
 				const std::vector<synapse_t>& h_targets,
-				const std::vector<weight_dt>& h_weights,
-				bool logging);
+				const std::vector<weight_dt>& h_weights);
+
+		size_t md_rcmPlaneSize; // in words
+		size_t md_rcmAllocated; // in bytes
+
+		void moveRcmToDevice(size_t totalWarps,
+				const std::vector<uint32_t>& h_rcmData,
+				const std::vector<uint32_t>& h_rcmForward);
 
 		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */
@@ -199,17 +217,9 @@ class ConnectivityMatrix
 		/* We also need device memory for the global queue */
 		GlobalQueue m_gq;
 
-		/*! \return Total device memory usage (in bytes) */
 		size_t d_allocatedRCM() const;
 
 		unsigned m_fractionalBits;
-
-		/* Per-partition addressing of RCM */
-		void moveRcmToDevice();
-		std::vector<size_t> r_partitionPitch() const;
-		std::vector<uint32_t*> r_partitionAddress() const;
-		std::vector<weight_dt*> r_partitionStdp() const;
-		std::vector<uint32_t*> r_partitionFAddress() const;
 
 		/* Additional synapse data which is only needed for runtime queries.
 		 * Static FCM data for each neuron, required for synapse queries.
@@ -226,7 +236,7 @@ class ConnectivityMatrix
 		 * in the first place. This can be set via a configuration option*/
 		bool m_writeOnlySynapses;
 
-		void addAuxTerminal(const Synapse&, size_t addr);
+		void addAuxillary(const Synapse&, size_t addr);
 
 #ifndef NDEBUG
 		/* Count synapses to verify that m_cmAux contains dense rows */
@@ -236,13 +246,34 @@ class ConnectivityMatrix
 		/*! Internal buffer for synapse queries */
 		std::vector<synapse_id> m_queriedSynapseIds;
 
-		void addSynapse(
+		/*! Add synapse to forward matrix
+		 *
+		 * \return synapse address, i.e. full word offset into FCM
+		 */
+		size_t addForward(
 				const Synapse&,
-				const Mapper& mapper,
+				const DeviceIdx& source,
+				const DeviceIdx& target,
 				size_t& nextFreeWarp,
-				WarpAddressTable& wtable,
+				construction::FcmIndex&,
 				std::vector<synapse_t>& h_targets,
 				std::vector<weight_dt>& h_weights);
+
+		/*! Add synapse to reverse matrix
+		 *
+		 * \param forwardAddress synapse address in the forward matrix
+		 */
+		void addReverse(
+				const Synapse& s,
+				const DeviceIdx& d_source,
+				const DeviceIdx& d_target,
+				size_t forwardAddress,
+				size_t& nextFreeWarp,
+				construction::RcmIndex& index,
+				std::vector<rsynapse_t>& source_data,
+				std::vector<rsynapse_t>& source_address);
+
+		void setMaxDelay(const Synapse& s);
 
 		void verifySynapseTerminals(const aux_map&, const Mapper& mapper);
 

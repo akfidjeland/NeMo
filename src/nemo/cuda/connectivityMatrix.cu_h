@@ -29,28 +29,17 @@
 #define FCM_WEIGHT 1         // float packed as int
 #define FCM_SUBMATRICES 2
 
-cudaError setFcmPlaneSize(size_t planeSize);
-
 synapse_t f_nullSynapse();
 
-unsigned r_packSynapse(
+rsynapse_t r_packSynapse(
 		unsigned sourcePartition,
 		unsigned sourceNeuron,
 		unsigned delay);
 
-#define INVALID_REVERSE_SYNAPSE ((unsigned) ~0)
+#define INVALID_REVERSE_SYNAPSE ((rsynapse_t) ~0)
 
-unsigned sourceNeuron(unsigned rsynapse);
-unsigned sourcePartition(unsigned rsynapse);
-unsigned r_delay1(unsigned rsynapse);
-
-
-cudaError
-configureReverseAddressing(
-        size_t* r_pitch,
-        uint32_t* const* r_address,
-        weight_dt* const* r_stdp,
-        uint32_t* const* r_faddress,
-		size_t len);
+unsigned sourceNeuron(rsynapse_t rsynapse);
+unsigned sourcePartition(rsynapse_t rsynapse);
+unsigned r_delay1(rsynapse_t rsynapse);
 
 #endif

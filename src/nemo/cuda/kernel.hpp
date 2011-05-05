@@ -17,6 +17,7 @@
 #include "localQueue.cu_h"
 #include "types.h"
 #include "parameters.cu_h"
+#include "rcm.cu_h"
 
 /*! Update synapse weight using the accumulated eligibility trace
  *
@@ -39,6 +40,7 @@ applyStdp(
 		unsigned fractionalBits,
 		param_t* d_params,
 		synapse_t* d_fcm,
+		rcm_dt* d_rcm,
 		float minExcitatoryWeight,
 		float maxExcitatoryWeight,
 		float minInhibitoryWeight,
@@ -82,6 +84,7 @@ updateStdp(
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		param_t* d_parameters,
+		rcm_dt* d_rcm,
 		uint64_t* d_recentFiring,
 		uint32_t* d_dfired,
 		unsigned* d_nFired,
