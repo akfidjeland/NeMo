@@ -20,9 +20,7 @@
 /* \brief Synapse encoding/decoding
  *
  * Forward synapse: target neuron
- * Reverse synapse: source neuron + delay
  */
-
 
 // planes of forward connectivity matrix
 #define FCM_ADDRESS 0        // target partition and neuron
@@ -31,15 +29,5 @@
 
 synapse_t f_nullSynapse();
 
-rsynapse_t r_packSynapse(
-		unsigned sourcePartition,
-		unsigned sourceNeuron,
-		unsigned delay);
-
-#define INVALID_REVERSE_SYNAPSE ((rsynapse_t) ~0)
-
-unsigned sourceNeuron(rsynapse_t rsynapse);
-unsigned sourcePartition(rsynapse_t rsynapse);
-unsigned r_delay1(rsynapse_t rsynapse);
 
 #endif

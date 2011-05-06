@@ -14,7 +14,6 @@
 
 #include <nemo/cuda/kernel.cu_h>
 #include <nemo/cuda/rcm.cu_h>
-#include <nemo/cuda/connectivityMatrix.cu_h>
 
 #include "RCM.hpp"
 
@@ -96,7 +95,7 @@ RCM::addSynapse(
 		size_t f_addr)
 {
 	size_t addr = allocateSynapse(d_target);
-	m_data.at(addr) = r_packSynapse(d_source.partition, d_source.neuron, s.delay);
+	m_data.at(addr) = make_rsynapse(d_source.partition, d_source.neuron, s.delay);
 	m_forward.at(addr) = f_addr;
 }
 

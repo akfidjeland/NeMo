@@ -12,9 +12,6 @@ typedef unsigned int pidx_t; // partition index
 //! \todo use a union type here?
 typedef uint32_t synapse_t;
 
-/*! Synapse in reverse connectivity matrix. Various data is squeesed into 32b */
-typedef uint32_t rsynapse_t;
-
 /* Type for storing (within-partition) neuron indices on the device. We could
  * use uint16_t here to save some shared memory, in exchange for slightly
  * poorer shared memory access patterns */

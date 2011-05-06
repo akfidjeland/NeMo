@@ -10,8 +10,66 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
+
 #include "kernel.cu_h"
 #include "rcm.cu_h"
+
+/* Bit shifts for packed synapses */
+const rsynapse_t R_NEURON_SHIFT = DELAY_BITS;
+const rsynapse_t R_PARTITION_SHIFT = R_NEURON_SHIFT + NEURON_BITS;
+
+
+__host__
+rsynapse_t
+make_rsynapse(unsigned sourcePartition, unsigned sourceNeuron, unsigned delay)
+{
+	assert(!(sourcePartition & ~PARTITION_MASK));
+	assert(!(sourceNeuron & ~NEURON_MASK));
+	assert(!(delay & ~DELAY_MASK));
+	rsynapse_t s = 0;
+	s |= sourcePartition << R_PARTITION_SHIFT;
+	s |= sourceNeuron    << R_NEURON_SHIFT;
+	s |= delay;
+	return s;
+}
+
+
+
+__device__ __host__
+unsigned
+sourceNeuron(rsynapse_t rsynapse)
+{
+    return (rsynapse >> R_NEURON_SHIFT) & NEURON_MASK;
+}
+
+
+
+__device__ __host__
+unsigned
+sourcePartition(rsynapse_t rsynapse)
+{
+    return (rsynapse >> R_PARTITION_SHIFT) & PARTITION_MASK;
+}
+
+
+
+__device__ __host__
+unsigned
+r_delay1(rsynapse_t rsynapse)
+{
+    return rsynapse & DELAY_MASK;
+}
+
+
+
+__device__
+unsigned
+r_delay0(rsynapse_t rsynapse)
+{
+	return r_delay1(rsynapse) - 1;
+}
+
 
 
 __host__ __device__

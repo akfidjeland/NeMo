@@ -61,7 +61,7 @@ class RCM
 
 	private :
 
-		boost::shared_array<uint32_t> md_data;
+		boost::shared_array<rsynapse_t> md_data;
 		boost::shared_array<uint32_t> md_forward;
 		boost::shared_array<weight_dt> md_accumulator;
 		boost::shared_array<rcm_address_t> md_index;

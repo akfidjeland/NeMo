@@ -10,8 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <assert.h>
-
 #include <nemo/util.h>
 
 #include "kernel.cu_h"
@@ -23,19 +21,12 @@
 
 #define PARTITION_SHIFT NEURON_BITS
 
-/* Reverse synapses */
-#define R_FSYNAPSE_SHIFT (R_PARTITION_SHIFT + PARTITION_BITS)
-#define R_PARTITION_SHIFT (R_NEURON_SHIFT + NEURON_BITS)
-#define R_NEURON_SHIFT DELAY_BITS
-
-
 __host__
 synapse_t
 f_nullSynapse()
 {
 	return 0;
 }
-
 
 
 __host__ __device__
@@ -49,53 +40,5 @@ targetNeuron(unsigned synapse)
 #endif
 }
 
-
-__host__
-rsynapse_t
-r_packSynapse(unsigned sourcePartition, unsigned sourceNeuron, unsigned delay)
-{
-	assert(!(sourcePartition & ~PARTITION_MASK));
-	assert(!(sourceNeuron & ~NEURON_MASK));
-	assert(!(delay & ~DELAY_MASK));
-	rsynapse_t s = 0;
-	s |= sourcePartition << R_PARTITION_SHIFT;
-	s |= sourceNeuron    << R_NEURON_SHIFT;
-	s |= delay;
-	return s;
-}
-
-
-
-__device__ __host__
-unsigned
-sourceNeuron(rsynapse_t rsynapse)
-{
-    return (rsynapse >> R_NEURON_SHIFT) & NEURON_MASK;
-}
-
-
-__device__ __host__
-unsigned
-sourcePartition(rsynapse_t rsynapse)
-{
-    return (rsynapse >> R_PARTITION_SHIFT) & PARTITION_MASK;
-}
-
-
-
-__device__ __host__
-unsigned
-r_delay1(rsynapse_t rsynapse)
-{
-    return rsynapse & DELAY_MASK; 
-}
-
-
-__device__
-unsigned
-r_delay0(rsynapse_t rsynapse)
-{
-	return r_delay1(rsynapse) - 1;
-}
 
 #endif

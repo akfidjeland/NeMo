@@ -44,7 +44,7 @@ RCM::RCM(size_t partitionCount, construction::RCM& index):
 	assert(h_data.size() == h_forward.size());
 	assert(h_data.size() % WARP_SIZE == 0);
 
-	md_data = d_array<uint32_t>(m_planeSize, "rcm (data)");
+	md_data = d_array<rsynapse_t>(m_planeSize, "rcm (data)");
 	memcpyToDevice(md_data.get(), h_data, m_planeSize);
 	h_data.clear();
 
@@ -55,7 +55,7 @@ RCM::RCM(size_t partitionCount, construction::RCM& index):
 	memcpyToDevice(md_forward.get(), h_forward, m_planeSize);
 	h_forward.clear();
 
-	m_allocated += m_planeSize * (2*sizeof(uint32_t) + sizeof(float));
+	m_allocated += m_planeSize * (sizeof(rsynapse_t) + sizeof(uint32_t) + sizeof(float));
 
 	const size_t maxNeuronCount = partitionCount * MAX_PARTITION_SIZE;
 	std::vector<rcm_index_address_t> h_address(maxNeuronCount, INVALID_RCM_INDEX_ADDRESS);

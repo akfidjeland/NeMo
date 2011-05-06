@@ -18,6 +18,19 @@
 #include <cuda_runtime.h>
 #include "types.h"
 
+/*! Synapse in reverse connectivity matrix. */
+typedef uint32_t rsynapse_t;
+
+
+/*! Create a reverse synapse in packed format */
+rsynapse_t make_rsynapse(
+		unsigned sourcePartition,
+		unsigned sourceNeuron,
+		unsigned delay);
+
+const rsynapse_t INVALID_REVERSE_SYNAPSE = ~rsynapse_t(0);
+
+
 /*! Address into the RCM index
  *
  * This stores two data relating to a row in the RCM index, i.e. a vector of
@@ -47,7 +60,7 @@ struct rcm_dt {
 	/*! The raw synapse data is stored in multiple 'fields' all with the same
 	 * layout */
 
-	uint32_t* data;     // source partition, source neuron, delay
+	rsynapse_t* data;     // source partition, source neuron, delay
 	uint32_t* forward;  // word offset into FCM for each synapse
 	weight_dt* accumulator; // accumulated weight difference for STDP
 

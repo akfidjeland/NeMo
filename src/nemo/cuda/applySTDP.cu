@@ -81,7 +81,7 @@ applyStdp(
 			size_t r_offset = rcm_offset(warp[threadIdx.x/WARP_SIZE]);
 			size_t f_offset = g_rcm.forward[r_offset];
 #ifdef NEMO_CUDA_DEBUG_TRACE
-			uint32_t rsynapse = g_rcm.data[r_offset];
+			rsynapse_t rsynapse = g_rcm.data[r_offset];
 #endif
 
 			if(f_offset != 0) {
