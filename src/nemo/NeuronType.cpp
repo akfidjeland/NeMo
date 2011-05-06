@@ -96,6 +96,8 @@ NeuronType::parseConfigurationFile(const std::string& name)
 		("rng.normal", po::value<bool>(),
 			"is normal RNG required?")
 		/* optional fields */
+		("rcm.weights", po::value<bool>()->default_value(false),
+			"are weights required in the reverse connectivity matrix")
 		("history", po::value<unsigned>()->default_value(1),
 			"index of membrane potential variable")
 		("backends.cpu", po::value<bool>()->default_value(false),
@@ -117,6 +119,7 @@ NeuronType::parseConfigurationFile(const std::string& name)
 		mf_nState = getRequired<unsigned>(vm, "state-variables", filename);
 		m_membranePotential = getRequired<unsigned>(vm, "membrane-potential", filename);
 		m_nrand = getRequired<bool>(vm, "rng.normal", filename);
+		m_rcmWeights = vm["rcm.weights"].as<bool>();
 		m_stateHistory = vm["history"].as<unsigned>();
 	} catch (po::error& e) {
 		throw nemo::exception(NEMO_INVALID_INPUT,

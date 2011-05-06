@@ -42,11 +42,12 @@ namespace nemo {
 		namespace construction {
 
 
-RCM::RCM() :
+RCM::RCM(bool useWeights) :
 	/* leave space for null warp at beginning */
 	m_nextFreeWarp(1),
 	m_data(WARP_SIZE, INVALID_REVERSE_SYNAPSE),
-	m_forward(WARP_SIZE, 0)
+	m_forward(WARP_SIZE, 0),
+	m_useWeights(useWeights)
 {}
 
 
@@ -76,13 +77,20 @@ RCM::allocateSynapse(const DeviceIdx& target)
 		/* Resize host buffers to accomodate the new warp. This allocation
 		 * scheme could potentially result in a large number of reallocations,
 		 * so we might be better off allocating larger chunks here */
-		m_data.resize(m_nextFreeWarp * WARP_SIZE, INVALID_REVERSE_SYNAPSE);
-		m_forward.resize(m_nextFreeWarp * WARP_SIZE, 0);
+		size_t size = m_nextFreeWarp * WARP_SIZE;
+		m_data.resize(size, INVALID_REVERSE_SYNAPSE);
+		m_forward.resize(size, 0);
+		if(m_useWeights) {
+			m_weights.resize(size, 0.0f);
+		}
 	} else {
 		/* Add synapse to an existing partially-filled warp */
 		row = *warps.rbegin();
 	}
-	return row * WARP_SIZE + column;
+
+	size_t addr = row * WARP_SIZE + column;
+	assert(addr < m_data.size());
+	return addr;
 }
 
 
@@ -94,9 +102,12 @@ RCM::addSynapse(
 		const DeviceIdx& d_target,
 		size_t f_addr)
 {
-	size_t addr = allocateSynapse(d_target);
-	m_data.at(addr) = make_rsynapse(d_source.partition, d_source.neuron, s.delay);
-	m_forward.at(addr) = f_addr;
+	size_t r_addr = allocateSynapse(d_target);
+	m_data[r_addr] = make_rsynapse(d_source.partition, d_source.neuron, s.delay);
+	m_forward[r_addr] = f_addr;
+	if(m_useWeights) {
+		m_weights[r_addr] = s.weight();
+	}
 }
 
 

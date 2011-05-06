@@ -60,6 +60,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		 * of the system (e.g. a thread). */
 		unsigned stateHistory() const { return m_stateHistory; }
 
+		bool usesRcmWeights() const { return m_rcmWeights; }
+
 	private :
 
 		size_t mf_nParam;
@@ -71,6 +73,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		/*! Does this neuron type require a per-neuron gaussian random number
 		 * generator? */
 		bool m_nrand;
+
+		bool m_rcmWeights;
 
 		/*! How much history (of the state) do we need? In a first order system
 		 * only the latest state is available. In a second order system, a

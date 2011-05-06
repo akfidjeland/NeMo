@@ -34,7 +34,7 @@ class RCM
 {
 	public :
 
-		RCM();
+		explicit RCM(bool useWeights);
 
 		/*! Add a new synapse to the reverse connectivity matrix
 		 *
@@ -56,17 +56,24 @@ class RCM
 
 		warp_map m_warps;
 
-		/* In order to keep track of when we need to start a new warp, store
+		/*! In order to keep track of when we need to start a new warp, store
 		 * the number of synapses in each row */
 		boost::unordered_map<key, unsigned> m_dataRowLength;
 
 		size_t m_nextFreeWarp;
 
-		/* Main reverse synapse data: source partition, source neuron, delay */
+		/*! Main reverse synapse data: source partition, source neuron, delay */
 		std::vector<uint32_t> m_data;
 
-		/* Forward addressing, word offset into the FCM for each synapse */
+		/*! Forward addressing, word offset into the FCM for each synapse */
 		std::vector<uint32_t> m_forward;
+
+		/*! The weights are \em optionally stored in the reverse format as
+		 * well. This is normally not done as the weights are normally used
+		 * only in spike delivery which uses the forward form. However, special
+		 * neuron type plugins may require this. */
+		std::vector<float> m_weights;
+		bool m_useWeights;
 
 		/*! Allocate space for a new RCM synapse for the given (target) neuron.
 		 *

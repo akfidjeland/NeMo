@@ -54,7 +54,7 @@ const rcm_address_t INVALID_RCM_ADDRESS = 0;
 
 struct rcm_dt {
 
-	rcm_dt() : data(NULL), forward(NULL), accumulator(NULL),
+	rcm_dt() : data(NULL), forward(NULL), accumulator(NULL), weights(NULL),
 		index(NULL), meta_index(NULL) {}
 
 	/*! The raw synapse data is stored in multiple 'fields' all with the same
@@ -63,6 +63,9 @@ struct rcm_dt {
 	rsynapse_t* data;     // source partition, source neuron, delay
 	uint32_t* forward;  // word offset into FCM for each synapse
 	weight_dt* accumulator; // accumulated weight difference for STDP
+
+	/* The weights can be stored in reverse format as well, optionally */
+	const float* weights;
 
 	/*! The index data, which is simply rows of RCM warp offsets. The pitch is 32. */
 	const rcm_address_t* index;

@@ -32,14 +32,14 @@ make_rcm_index_address(uint start, uint len)
 
 
 
-RCM::RCM(size_t partitionCount, construction::RCM& index):
+RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
 	m_allocated(0),
-	m_planeSize(index.m_forward.size())
+	m_planeSize(h_rcm.m_forward.size())
 {
 	using namespace boost::tuples;
 
-	std::vector<uint32_t>& h_data = index.m_data;
-	std::vector<uint32_t>& h_forward = index.m_forward;
+	std::vector<uint32_t>& h_data = h_rcm.m_data;
+	std::vector<uint32_t>& h_forward = h_rcm.m_forward;
 
 	assert(h_data.size() == h_forward.size());
 	assert(h_data.size() % WARP_SIZE == 0);
@@ -47,15 +47,23 @@ RCM::RCM(size_t partitionCount, construction::RCM& index):
 	md_data = d_array<rsynapse_t>(m_planeSize, "rcm (data)");
 	memcpyToDevice(md_data.get(), h_data, m_planeSize);
 	h_data.clear();
+	m_allocated += m_planeSize * sizeof(rsynapse_t);
 
 	md_accumulator = d_array<weight_dt>(m_planeSize, "rcm (accumulator)");
 	d_memset(md_accumulator.get(), 0, m_planeSize*sizeof(weight_dt));
+	m_allocated += m_planeSize * sizeof(weight_dt);
+
+	if(h_rcm.m_useWeights) {
+		md_weights = d_array<float>(m_planeSize, "rcm (weights)");
+		memcpyToDevice(md_weights.get(), h_rcm.m_weights, m_planeSize);
+		m_allocated += m_planeSize * sizeof(float);
+	}
 
 	md_forward = d_array<uint32_t>(m_planeSize, "rcm (forward address)");
 	memcpyToDevice(md_forward.get(), h_forward, m_planeSize);
 	h_forward.clear();
+	m_allocated += m_planeSize * sizeof(uint32_t);
 
-	m_allocated += m_planeSize * (sizeof(rsynapse_t) + sizeof(uint32_t) + sizeof(float));
 
 	const size_t maxNeuronCount = partitionCount * MAX_PARTITION_SIZE;
 	std::vector<rcm_index_address_t> h_address(maxNeuronCount, INVALID_RCM_INDEX_ADDRESS);
@@ -68,7 +76,7 @@ RCM::RCM(size_t partitionCount, construction::RCM& index):
 
 	size_t allocated = 0; // words, so far
 
-	for(iterator i = index.m_warps.begin(); i != index.m_warps.end(); ++i) {
+	for(iterator i = h_rcm.m_warps.begin(); i != h_rcm.m_warps.end(); ++i) {
 
 		const key k = i->first;
 		const unsigned targetPartition = get<0>(k);
@@ -106,6 +114,7 @@ RCM::RCM(size_t partitionCount, construction::RCM& index):
 	md_rcm.data = md_data.get();
 	md_rcm.forward = md_forward.get();
 	md_rcm.accumulator = md_accumulator.get();
+	md_rcm.weights = md_weights.get();
 	md_rcm.index = md_index.get();
 	md_rcm.meta_index = md_metaIndex.get();
 }
