@@ -67,11 +67,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
 	construction::FcmIndex fcm_index;
-
-	std::vector<uint32_t> hr_data(WARP_SIZE, INVALID_REVERSE_SYNAPSE);
-	std::vector<uint32_t> hr_forward(WARP_SIZE, 0);
 	construction::RcmIndex rcm_index;
-	size_t r_nextFreeWarp = 1; // leave space for a null warp at the beginning
 
 	bool logging = conf.loggingEnabled();
 
@@ -94,8 +90,9 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
-		addReverse(s, source, target, f_addr, r_nextFreeWarp, rcm_index,
-				hr_data, hr_forward);
+		if(s.plastic()) {
+			rcm_index.addSynapse(s, source, target, f_addr);
+		}
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
 		}
@@ -106,9 +103,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
 	hf_targets.clear();
 
-	m_rcm = runtime::RCM(mapper.partitionCount(), hr_data, hr_forward, rcm_index);
-	hr_data.clear();
-	hr_forward.clear();
+	m_rcm = runtime::RCM(mapper.partitionCount(), rcm_index);
 
 	setDelays(fcm_index, &m_delays);
 
@@ -176,40 +171,6 @@ ConnectivityMatrix::addForward(
 
 
 
-void
-ConnectivityMatrix::addReverse(
-		const Synapse& s,
-		const DeviceIdx& d_source,
-		const DeviceIdx& d_target,
-		size_t f_addr,
-		size_t& nextFreeWarp,
-		construction::RcmIndex& index,
-		std::vector<uint32_t>& sourceData,
-		std::vector<uint32_t>& sourceAddress)
-{
-	//! \todo only need to set this if stdp is enabled
-	if(s.plastic()) {
-
-		SynapseAddress addr = index.addSynapse(d_target,  nextFreeWarp);
-		if(addr.synapse == 0 && addr.row == nextFreeWarp) {
-			nextFreeWarp += 1;
-			/* Resize host buffers to accomodate the new warp. This
-			 * allocation scheme could potentially result in a
-			 * large number of reallocations, so we might be better
-			 * off allocating larger chunks here */
-			sourceData.resize(nextFreeWarp * WARP_SIZE, INVALID_REVERSE_SYNAPSE);
-			sourceAddress.resize(nextFreeWarp * WARP_SIZE, 0);
-		}
-		//! \todo move this into separate method
-		size_t r_addr = addr.row * WARP_SIZE + addr.synapse;
-		sourceData.at(r_addr) = r_packSynapse(d_source.partition, d_source.neuron, s.delay);
-		sourceAddress.at(r_addr) = f_addr;
-	}
-}
-
-
-
-
 /*! \note We could verify the synapse terminals during FCM construction. This
  * was found to be somewhat slower, however, as we then end up performing
  * around twice as many checks (since each source is tested many times).
@@ -246,7 +207,6 @@ ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapp
 		}
 	}
 }
-
 
 
 

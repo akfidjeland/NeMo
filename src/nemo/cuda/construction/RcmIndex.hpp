@@ -34,20 +34,23 @@ class RcmIndex
 {
 	public :
 
-		typedef boost::tuple<pidx_t, nidx_t> key;
+		RcmIndex();
 
-		/*
-		 * \param nextFreeWarp
-		 * 		The next unused warp in the host FCM.
+		/*! Add a new synapse to the reverse connectivity matrix
 		 *
-		 * \return
-		 * 		Address of this synapse in the form of a warp address and a
-		 * 		within-warp address. This might refer to an existing warp or a
-		 * 		new warp.
+		 * \param synapse full synapse
+		 * \param d_source index of source neuron on device
+		 * \param d_target index of target neuron on device
+		 * \param f_addr word address of this synapse in the forward matrix
 		 */
-		SynapseAddress addSynapse(const DeviceIdx& target, size_t nextFreeWarp);
+		void addSynapse(const Synapse& synapse,
+				const DeviceIdx& d_source,
+				const DeviceIdx& d_target,
+				size_t f_addr);
 
 	private :
+
+		typedef boost::tuple<pidx_t, nidx_t> key;
 
 		typedef boost::unordered_map<key, std::vector<size_t> > warp_map;
 
@@ -56,6 +59,22 @@ class RcmIndex
 		/* In order to keep track of when we need to start a new warp, store
 		 * the number of synapses in each row */
 		boost::unordered_map<key, unsigned> m_dataRowLength;
+
+		size_t m_nextFreeWarp;
+
+		/* Main reverse synapse data: source partition, source neuron, delay */
+		std::vector<uint32_t> m_data;
+
+		/* Forward addressing, word offset into the FCM for each synapse */
+		std::vector<uint32_t> m_forward;
+
+		/*! Allocate space for a new RCM synapse for the given (target) neuron.
+		 *
+		 * \return
+		 * 		word offset for the synapse. This is the same for all the different
+		 * 		planes of data.
+		 */
+		size_t allocateSynapse(const DeviceIdx& target);
 
 		friend class runtime::RCM;
 };

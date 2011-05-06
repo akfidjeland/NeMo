@@ -10,7 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <vector>
 #include <boost/shared_array.hpp>
 #include <nemo/cuda/rcm.cu_h>
 
@@ -44,11 +43,13 @@ class RCM
 
 		RCM() : m_allocated(0), m_planeSize(0) {}
 
-		/*! Create an RCM on the device */
-		RCM(size_t partitionCount,
-				const std::vector<uint32_t>& h_data,
-				const std::vector<uint32_t>& h_forward,
-				const construction::RcmIndex& index);
+		/*! Create an RCM on the device.
+		 *
+		 * The (host) data in \a rcm is cleared as a side effect, rendering the
+		 * object essentially void. We clear this data at the earliest possible
+		 * moment since the data structures involved can be quite large.
+		 */
+		RCM(size_t partitionCount, construction::RcmIndex& rcm);
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const { return m_allocated; }

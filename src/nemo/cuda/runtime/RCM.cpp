@@ -7,6 +7,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
 #include <boost/tuple/tuple.hpp>
 
 #include <nemo/util.h>
@@ -31,26 +32,28 @@ make_rcm_index_address(uint start, uint len)
 
 
 
-RCM::RCM(size_t partitionCount,
-		const std::vector<uint32_t>& h_data,
-		const std::vector<uint32_t>& h_forward,
-		const construction::RcmIndex& index):
+RCM::RCM(size_t partitionCount, construction::RcmIndex& index):
 	m_allocated(0),
-	m_planeSize(h_data.size())
+	m_planeSize(index.m_forward.size())
 {
 	using namespace boost::tuples;
+
+	std::vector<uint32_t>& h_data = index.m_data;
+	std::vector<uint32_t>& h_forward = index.m_forward;
 
 	assert(h_data.size() == h_forward.size());
 	assert(h_data.size() % WARP_SIZE == 0);
 
 	md_data = d_array<uint32_t>(m_planeSize, "rcm (data)");
 	memcpyToDevice(md_data.get(), h_data, m_planeSize);
+	h_data.clear();
 
 	md_accumulator = d_array<weight_dt>(m_planeSize, "rcm (accumulator)");
 	d_memset(md_accumulator.get(), 0, m_planeSize*sizeof(weight_dt));
 
 	md_forward = d_array<uint32_t>(m_planeSize, "rcm (forward address)");
 	memcpyToDevice(md_forward.get(), h_forward, m_planeSize);
+	h_forward.clear();
 
 	m_allocated += m_planeSize * (2*sizeof(uint32_t) + sizeof(float));
 

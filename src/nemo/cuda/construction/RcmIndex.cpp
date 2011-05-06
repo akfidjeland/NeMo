@@ -13,6 +13,8 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include <nemo/cuda/kernel.cu_h>
+#include <nemo/cuda/rcm.cu_h>
+#include <nemo/cuda/connectivityMatrix.cu_h>
 
 #include "RcmIndex.hpp"
 
@@ -41,13 +43,24 @@ namespace nemo {
 		namespace construction {
 
 
+RcmIndex::RcmIndex() :
+	/* leave space for null warp at beginning */
+	m_nextFreeWarp(1),
+	m_data(WARP_SIZE, INVALID_REVERSE_SYNAPSE),
+	m_forward(WARP_SIZE, 0)
+{}
 
-SynapseAddress
-RcmIndex::addSynapse(
-		const DeviceIdx& target,
-		size_t nextFreeWarp)
+
+
+/*! Allocate space for a new RCM synapse for the given (target) neuron.
+ *
+ * \return
+ * 		word offset for the synapse. This is the same for all the different
+ * 		planes of data.
+ */
+size_t
+RcmIndex::allocateSynapse(const DeviceIdx& target)
 {
-	// data_key dk(source.partition, source.neuron, targetPartition, delay1);
 	key k(target.partition, target.neuron);
 	unsigned& dataRowLength = m_dataRowLength[k];
 	unsigned column = dataRowLength % WARP_SIZE;
@@ -55,14 +68,36 @@ RcmIndex::addSynapse(
 
 	std::vector<size_t>& warps = m_warps[k];
 
+	size_t row;
 	if(column == 0) {
 		/* Add synapse to a new warp */
-		warps.push_back(nextFreeWarp);
-		return SynapseAddress(nextFreeWarp, column);
+		warps.push_back(m_nextFreeWarp);
+		row = m_nextFreeWarp;
+		m_nextFreeWarp += 1;
+		/* Resize host buffers to accomodate the new warp. This allocation
+		 * scheme could potentially result in a large number of reallocations,
+		 * so we might be better off allocating larger chunks here */
+		m_data.resize(m_nextFreeWarp * WARP_SIZE, INVALID_REVERSE_SYNAPSE);
+		m_forward.resize(m_nextFreeWarp * WARP_SIZE, 0);
 	} else {
 		/* Add synapse to an existing partially-filled warp */
-		return SynapseAddress(*warps.rbegin(), column);
+		row = *warps.rbegin();
 	}
+	return row * WARP_SIZE + column;
+}
+
+
+
+void
+RcmIndex::addSynapse(
+		const Synapse& s,
+		const DeviceIdx& d_source,
+		const DeviceIdx& d_target,
+		size_t f_addr)
+{
+	size_t addr = allocateSynapse(d_target);
+	m_data.at(addr) = r_packSynapse(d_source.partition, d_source.neuron, s.delay);
+	m_forward.at(addr) = f_addr;
 }
 
 

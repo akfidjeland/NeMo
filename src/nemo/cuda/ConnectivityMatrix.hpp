@@ -238,20 +238,6 @@ class ConnectivityMatrix
 				std::vector<synapse_t>& h_targets,
 				std::vector<weight_dt>& h_weights);
 
-		/*! Add synapse to reverse matrix
-		 *
-		 * \param forwardAddress synapse address in the forward matrix
-		 */
-		void addReverse(
-				const Synapse& s,
-				const DeviceIdx& d_source,
-				const DeviceIdx& d_target,
-				size_t forwardAddress,
-				size_t& nextFreeWarp,
-				construction::RcmIndex& index,
-				std::vector<rsynapse_t>& source_data,
-				std::vector<rsynapse_t>& source_address);
-
 		void setMaxDelay(const Synapse& s);
 
 		void verifySynapseTerminals(const aux_map&, const Mapper& mapper);
