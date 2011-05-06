@@ -154,7 +154,7 @@ class ConnectivityMatrix
 		void setParameters(param_t*) const;
 
 		/*! \return RCM device pointers */
-		rcm_dt* d_rcm() { return &md_rcm; }
+		rcm_dt* d_rcm() { return m_rcmIndex.d_rcm(); }
 
 	private:
 
@@ -165,19 +165,7 @@ class ConnectivityMatrix
 		/*! Compact forward connectivity matrix on device */
 		boost::shared_ptr<synapse_t> md_fcm;
 
-		/* Indices of the three planes of the reverse matrix */
-		//! \todo give these better names, or better: store separately
-		enum {
-			RCM_ADDRESS = 0, // source information
-			RCM_STDP,
-			RCM_FADDRESS,    // actual word address of synapse
-			RCM_SUBMATRICES
-		};
-
 		/*! Compact reverse connectivity matrix on device */
-		boost::shared_array<uint32_t> md_rcmData;
-		boost::shared_array<uint32_t> md_rcmForward;
-		boost::shared_array<weight_dt> md_rcmAccumulator;
 		runtime::RcmIndex m_rcmIndex;
 
 		/* Pointer struct passed to the device */
@@ -199,13 +187,6 @@ class ConnectivityMatrix
 				const std::vector<synapse_t>& h_targets,
 				const std::vector<weight_dt>& h_weights);
 
-		size_t md_rcmPlaneSize; // in words
-		size_t md_rcmAllocated; // in bytes
-
-		void moveRcmToDevice(size_t totalWarps,
-				const std::vector<uint32_t>& h_rcmData,
-				const std::vector<uint32_t>& h_rcmForward);
-
 		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */
 		NVector<uint64_t> m_delays;
@@ -216,8 +197,6 @@ class ConnectivityMatrix
 
 		/* We also need device memory for the global queue */
 		GlobalQueue m_gq;
-
-		size_t d_allocatedRCM() const;
 
 		unsigned m_fractionalBits;
 

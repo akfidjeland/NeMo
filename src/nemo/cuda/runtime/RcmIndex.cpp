@@ -31,14 +31,40 @@ make_rcm_index_address(uint start, uint len)
 
 
 
-RcmIndex::RcmIndex(size_t partitionCount, const construction::RcmIndex& index):
-	m_allocated(0)
+RcmIndex::RcmIndex(
+		size_t partitionCount,
+		size_t totalWarps,
+		const std::vector<uint32_t>& h_data,
+		const std::vector<uint32_t>& h_forward,
+		const construction::RcmIndex& index):
+	m_allocated(0),
+	m_planeSize(0)
 {
 	using namespace boost::tuples;
 
+	// set up the raw data before indices
+	assert(h_data.size() == h_forward.size());
+	assert(totalWarps <= h_data.size() + WARP_SIZE);
+
+	/*! \todo remove the warp counting. Instead just set the plane size based
+	 * on the host data. */
+
+	m_planeSize = totalWarps * WARP_SIZE;
+
+	md_data = d_array<uint32_t>(m_planeSize, "rcm (data)");
+	memcpyToDevice(md_data.get(), h_data, m_planeSize);
+
+	md_accumulator = d_array<weight_dt>(m_planeSize, "rcm (accumulator)");
+	d_memset(md_accumulator.get(), 0, m_planeSize*sizeof(weight_dt));
+
+	md_forward = d_array<uint32_t>(m_planeSize, "rcm (forward address)");
+	memcpyToDevice(md_forward.get(), h_forward, m_planeSize);
+
+	m_allocated += m_planeSize * (2*sizeof(uint32_t) + sizeof(float));
+
 	const size_t maxNeuronCount = partitionCount * MAX_PARTITION_SIZE;
 	std::vector<rcm_index_address_t> h_address(maxNeuronCount, INVALID_RCM_INDEX_ADDRESS);
-	std::vector<rcm_address_t> h_data;
+	std::vector<rcm_address_t> h_index;
 
 	/* Populate the host-side data structures */
 
@@ -62,27 +88,40 @@ RcmIndex::RcmIndex(size_t partitionCount, const construction::RcmIndex& index):
 		size_t nWords = ALIGN(nWarps, WARP_SIZE);
 		size_t nPadding = nWords - nWarps;
 
-		std::copy(row.begin(), row.end(), std::back_inserter(h_data));          // data
-		std::fill_n(std::back_inserter(h_data), nPadding, INVALID_RCM_ADDRESS); // padding
+		std::copy(row.begin(), row.end(), std::back_inserter(h_index));          // data
+		std::fill_n(std::back_inserter(h_index), nPadding, INVALID_RCM_ADDRESS); // padding
 
 		allocated += nWords;
 	}
 
 	/* Copy meta index to device */
 	if(!h_address.empty()) {
-		md_address = d_array<rcm_index_address_t>(h_address.size(), "RCM index addresses");
-		memcpyToDevice(md_address.get(), h_address);
+		md_metaIndex = d_array<rcm_index_address_t>(h_address.size(), "RCM index addresses");
+		memcpyToDevice(md_metaIndex.get(), h_address);
 		m_allocated += h_address.size() * sizeof(rcm_index_address_t);
 	}
 
 	/* Copy index data to device */
 	if(allocated != 0) {
-		md_data = d_array<rcm_address_t>(allocated, "RCM index data");
-		memcpyToDevice(md_data.get(), h_data);
+		md_index = d_array<rcm_address_t>(allocated, "RCM index data");
+		memcpyToDevice(md_index.get(), h_index);
 		m_allocated += allocated * sizeof(rcm_address_t);
 	}
+
+	md_rcm.data = md_data.get();
+	md_rcm.forward = md_forward.get();
+	md_rcm.accumulator = md_accumulator.get();
+	md_rcm.index = md_index.get();
+	md_rcm.meta_index = md_metaIndex.get();
+
 }
 
+
+void
+RcmIndex::clearAccumulator()
+{
+	d_memset(md_accumulator.get(), 0, m_planeSize*sizeof(weight_dt));
+}
 
 
 		}

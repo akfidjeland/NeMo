@@ -26,9 +26,6 @@ struct param_t {
 	 * i.e. all of the address data or all of the weights */
 	size_t fcmPlaneSize;
 
-	/* Size (in words) of a single plane in the reverse connectivity matrix */
-	size_t rcmPlaneSize;
-
 	size_t outgoingPitch;
 	size_t outgoingStep;
 };

@@ -106,16 +106,10 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
 	hf_targets.clear();
 
-	moveRcmToDevice(r_nextFreeWarp, hr_data, hr_forward);
+	m_rcmIndex = runtime::RcmIndex(mapper.partitionCount(),
+			r_nextFreeWarp, hr_data, hr_forward, rcm_index);
 	hr_data.clear();
 	hr_forward.clear();
-	m_rcmIndex = runtime::RcmIndex(mapper.partitionCount(), rcm_index);
-
-	md_rcm.data = md_rcmData.get();
-	md_rcm.forward = md_rcmForward.get();
-	md_rcm.accumulator = md_rcmAccumulator.get();
-	md_rcm.index = m_rcmIndex.d_index();
-	md_rcm.meta_index = m_rcmIndex.d_metaIndex();
 
 	setDelays(fcm_index, &m_delays);
 
@@ -278,49 +272,14 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 
 
 void
-ConnectivityMatrix::moveRcmToDevice(size_t totalWarps,
-		const std::vector<uint32_t>& h_data,
-		const std::vector<uint32_t>& h_forward)
-{
-	assert(h_data.size() == h_forward.size());
-	assert(totalWarps <= h_data.size() + WARP_SIZE);
-
-	/*! \todo remove the warp counting. Instead just set the plane size based
-	 * on the host data. */
-
-	md_rcmPlaneSize = totalWarps * WARP_SIZE;
-
-	md_rcmData = d_array<uint32_t>(md_rcmPlaneSize, "rcm (data)");
-	memcpyToDevice(md_rcmData.get(), h_data, md_rcmPlaneSize);
-
-	md_rcmAccumulator = d_array<weight_dt>(md_rcmPlaneSize, "rcm (accumulator)");
-	d_memset(md_rcmAccumulator.get(), 0, md_rcmPlaneSize*sizeof(weight_dt));
-
-	md_rcmForward = d_array<uint32_t>(md_rcmPlaneSize, "rcm (forward address)");
-	memcpyToDevice(md_rcmForward.get(), h_forward, md_rcmPlaneSize);
-
-	md_rcmAllocated += md_rcmPlaneSize * (2*sizeof(uint32_t) + sizeof(float));
-}
-
-
-
-void
 ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
 	const size_t MEGA = 1<<20;
 	out << "Memory usage on device:\n";
 	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
-	out << "\treverse matrix: " << (d_allocatedRCM() / MEGA) << "MB\n";
+	out << "\treverse matrix: " << (m_rcmIndex.d_allocated() / MEGA) << "MB\n";
 	out << "\tglobal queue: " << (m_gq.allocated() / MEGA) << "MB\n";
 	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
-}
-
-
-
-size_t
-ConnectivityMatrix::d_allocatedRCM() const
-{
-	return md_rcmAllocated + m_rcmIndex.d_allocated();
 }
 
 
@@ -452,7 +411,7 @@ ConnectivityMatrix::getPlastic(const synapse_id& id) const
 void
 ConnectivityMatrix::clearStdpAccumulator()
 {
-	d_memset(md_rcmAccumulator.get(), 0, md_rcmPlaneSize*sizeof(weight_dt));
+	m_rcmIndex.clearAccumulator();
 }
 
 
@@ -461,7 +420,7 @@ size_t
 ConnectivityMatrix::d_allocated() const
 {
 	return md_fcmAllocated
-		+ d_allocatedRCM()
+		+ m_rcmIndex.d_allocated()
 		+ m_gq.allocated()
 		+ m_outgoing.allocated();
 }
@@ -473,7 +432,6 @@ ConnectivityMatrix::setParameters(param_t* params) const
 {
 	m_outgoing.setParameters(params);
 	params->fcmPlaneSize = md_fcmPlaneSize;
-	params->rcmPlaneSize = md_rcmPlaneSize;
 }
 
 
