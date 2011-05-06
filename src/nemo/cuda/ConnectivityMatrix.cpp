@@ -21,6 +21,7 @@
 #include <nemo/fixedpoint.hpp>
 #include <nemo/synapse_indices.hpp>
 #include <nemo/cuda/construction/FcmIndex.hpp>
+#include <nemo/cuda/construction/RCM.hpp>
 
 #include "exception.hpp"
 #include "connectivityMatrix.cu_h"
@@ -67,7 +68,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
 	construction::FcmIndex fcm_index;
-	construction::RcmIndex rcm_index;
+	construction::RCM h_rcm;
 
 	bool logging = conf.loggingEnabled();
 
@@ -91,7 +92,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
 		if(s.plastic()) {
-			rcm_index.addSynapse(s, source, target, f_addr);
+			h_rcm.addSynapse(s, source, target, f_addr);
 		}
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
@@ -103,7 +104,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
 	hf_targets.clear();
 
-	m_rcm = runtime::RCM(mapper.partitionCount(), rcm_index);
+	md_rcm = runtime::RCM(mapper.partitionCount(), h_rcm);
 
 	setDelays(fcm_index, &m_delays);
 
@@ -236,7 +237,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 	const size_t MEGA = 1<<20;
 	out << "Memory usage on device:\n";
 	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
-	out << "\treverse matrix: " << (m_rcm.d_allocated() / MEGA) << "MB\n";
+	out << "\treverse matrix: " << (md_rcm.d_allocated() / MEGA) << "MB\n";
 	out << "\tglobal queue: " << (m_gq.allocated() / MEGA) << "MB\n";
 	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
@@ -370,7 +371,7 @@ ConnectivityMatrix::getPlastic(const synapse_id& id) const
 void
 ConnectivityMatrix::clearStdpAccumulator()
 {
-	m_rcm.clearAccumulator();
+	md_rcm.clearAccumulator();
 }
 
 
@@ -379,7 +380,7 @@ size_t
 ConnectivityMatrix::d_allocated() const
 {
 	return md_fcmAllocated
-		+ m_rcm.d_allocated()
+		+ md_rcm.d_allocated()
 		+ m_gq.allocated()
 		+ m_outgoing.allocated();
 }

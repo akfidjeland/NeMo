@@ -22,7 +22,6 @@
 
 #include <nemo/types.hpp>
 #include <nemo/network/Generator.hpp>
-#include <nemo/cuda/construction/RcmIndex.hpp>
 #include <nemo/cuda/construction/FcmIndex.hpp>
 #include <nemo/cuda/runtime/RCM.hpp>
 
@@ -154,7 +153,7 @@ class ConnectivityMatrix
 		void setParameters(param_t*) const;
 
 		/*! \return RCM device pointers */
-		rcm_dt* d_rcm() { return m_rcm.d_rcm(); }
+		rcm_dt* d_rcm() { return md_rcm.d_rcm(); }
 
 	private:
 
@@ -166,10 +165,7 @@ class ConnectivityMatrix
 		boost::shared_ptr<synapse_t> md_fcm;
 
 		/*! Compact reverse connectivity matrix on device */
-		runtime::RCM m_rcm;
-
-		/* Pointer struct passed to the device */
-		rcm_dt md_rcm;
+		runtime::RCM md_rcm;
 
 		/*! Host-side copy of the weight data. This is mutable since it acts as
 		 * a buffer for synapse getters */

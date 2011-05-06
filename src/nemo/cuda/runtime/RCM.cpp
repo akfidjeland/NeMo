@@ -12,7 +12,7 @@
 
 #include <nemo/util.h>
 #include <nemo/cuda/runtime/RCM.hpp>
-#include <nemo/cuda/construction/RcmIndex.hpp>
+#include <nemo/cuda/construction/RCM.hpp>
 #include <nemo/cuda/device_memory.hpp>
 #include <nemo/cuda/parameters.cu_h>
 #include <nemo/cuda/rcm.cu_h>
@@ -32,7 +32,7 @@ make_rcm_index_address(uint start, uint len)
 
 
 
-RCM::RCM(size_t partitionCount, construction::RcmIndex& index):
+RCM::RCM(size_t partitionCount, construction::RCM& index):
 	m_allocated(0),
 	m_planeSize(index.m_forward.size())
 {
@@ -63,8 +63,8 @@ RCM::RCM(size_t partitionCount, construction::RcmIndex& index):
 
 	/* Populate the host-side data structures */
 
-	typedef construction::RcmIndex::warp_map::const_iterator iterator;
-	typedef construction::RcmIndex::key key;
+	typedef construction::RCM::warp_map::const_iterator iterator;
+	typedef construction::RCM::key key;
 
 	size_t allocated = 0; // words, so far
 

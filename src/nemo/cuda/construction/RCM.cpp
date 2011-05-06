@@ -16,7 +16,7 @@
 #include <nemo/cuda/rcm.cu_h>
 #include <nemo/cuda/connectivityMatrix.cu_h>
 
-#include "RcmIndex.hpp"
+#include "RCM.hpp"
 
 
 namespace boost {
@@ -43,7 +43,7 @@ namespace nemo {
 		namespace construction {
 
 
-RcmIndex::RcmIndex() :
+RCM::RCM() :
 	/* leave space for null warp at beginning */
 	m_nextFreeWarp(1),
 	m_data(WARP_SIZE, INVALID_REVERSE_SYNAPSE),
@@ -59,7 +59,7 @@ RcmIndex::RcmIndex() :
  * 		planes of data.
  */
 size_t
-RcmIndex::allocateSynapse(const DeviceIdx& target)
+RCM::allocateSynapse(const DeviceIdx& target)
 {
 	key k(target.partition, target.neuron);
 	unsigned& dataRowLength = m_dataRowLength[k];
@@ -89,7 +89,7 @@ RcmIndex::allocateSynapse(const DeviceIdx& target)
 
 
 void
-RcmIndex::addSynapse(
+RCM::addSynapse(
 		const Synapse& s,
 		const DeviceIdx& d_source,
 		const DeviceIdx& d_target,

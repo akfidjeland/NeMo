@@ -12,7 +12,7 @@
 
 /*! \file rcm.cu_h Reverse connectivity matrix (device functions)
  *
- * \see nemo::cuda::runtime::RcmIndex for more details
+ * \see nemo::cuda::runtime::RCM for more details
  */
 
 #include <cuda_runtime.h>

@@ -17,7 +17,7 @@ namespace nemo {
 	namespace cuda {
 
 		namespace construction {
-			class RcmIndex;
+			class RCM;
 		}
 
 		namespace runtime {
@@ -49,7 +49,7 @@ class RCM
 		 * object essentially void. We clear this data at the earliest possible
 		 * moment since the data structures involved can be quite large.
 		 */
-		RCM(size_t partitionCount, construction::RcmIndex& rcm);
+		RCM(size_t partitionCount, construction::RCM& rcm);
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const { return m_allocated; }

@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_CONSTRUCTION_RCM_INDEX_HPP
-#define NEMO_CUDA_CONSTRUCTION_RCM_INDEX_HPP
+#ifndef NEMO_CUDA_CONSTRUCTION_RCM_HPP
+#define NEMO_CUDA_CONSTRUCTION_RCM_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -30,11 +30,11 @@ namespace nemo {
 
 		namespace construction {
 
-class RcmIndex
+class RCM
 {
 	public :
 
-		RcmIndex();
+		RCM();
 
 		/*! Add a new synapse to the reverse connectivity matrix
 		 *

@@ -127,7 +127,7 @@ namespace nemo {
  *
  * - neuron data (\ref Neurons)
  * - forward connectivity data (\ref nemo::cuda::ConnectivityMatrix, \ref nemo::cuda::Outgoing)
- * - reverse connectivity data (\ref nemo::cuda::ConnectivityMatrix, \ref nemo::cuda::runtime::RcmIndex)
+ * - reverse connectivity data (\ref nemo::cuda::runtime::RCM)
  * - runtime queues (\ref nemo::cuda::LocalQueue, \ref nemo::cuda::GlobalQueue)
  *
  * The forward connectivity data and runtime queues are used for \ref
