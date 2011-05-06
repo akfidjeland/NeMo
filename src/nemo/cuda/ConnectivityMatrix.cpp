@@ -106,8 +106,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
 	hf_targets.clear();
 
-	m_rcm = runtime::RCM(mapper.partitionCount(),
-			r_nextFreeWarp, hr_data, hr_forward, rcm_index);
+	m_rcm = runtime::RCM(mapper.partitionCount(), hr_data, hr_forward, rcm_index);
 	hr_data.clear();
 	hr_forward.clear();
 

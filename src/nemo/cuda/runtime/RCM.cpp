@@ -32,23 +32,16 @@ make_rcm_index_address(uint start, uint len)
 
 
 RCM::RCM(size_t partitionCount,
-		size_t totalWarps,
 		const std::vector<uint32_t>& h_data,
 		const std::vector<uint32_t>& h_forward,
 		const construction::RcmIndex& index):
 	m_allocated(0),
-	m_planeSize(0)
+	m_planeSize(h_data.size())
 {
 	using namespace boost::tuples;
 
-	// set up the raw data before indices
 	assert(h_data.size() == h_forward.size());
-	assert(totalWarps <= h_data.size() + WARP_SIZE);
-
-	/*! \todo remove the warp counting. Instead just set the plane size based
-	 * on the host data. */
-
-	m_planeSize = totalWarps * WARP_SIZE;
+	assert(h_data.size() % WARP_SIZE == 0);
 
 	md_data = d_array<uint32_t>(m_planeSize, "rcm (data)");
 	memcpyToDevice(md_data.get(), h_data, m_planeSize);
@@ -112,8 +105,8 @@ RCM::RCM(size_t partitionCount,
 	md_rcm.accumulator = md_accumulator.get();
 	md_rcm.index = md_index.get();
 	md_rcm.meta_index = md_metaIndex.get();
-
 }
+
 
 
 void

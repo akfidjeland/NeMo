@@ -46,7 +46,6 @@ class RCM
 
 		/*! Create an RCM on the device */
 		RCM(size_t partitionCount,
-				size_t totalWarps,
 				const std::vector<uint32_t>& h_data,
 				const std::vector<uint32_t>& h_forward,
 				const construction::RcmIndex& index);
@@ -73,8 +72,8 @@ class RCM
 		/*! Bytes of allocated device memory */
 		size_t m_allocated;
 
-		size_t m_planeSize; // in words
-
+		/*! Size (words) of each plane of data in the RCM */
+		size_t m_planeSize;
 };
 
 		}
