@@ -106,7 +106,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
 	hf_targets.clear();
 
-	m_rcmIndex = runtime::RcmIndex(mapper.partitionCount(),
+	m_rcm = runtime::RCM(mapper.partitionCount(),
 			r_nextFreeWarp, hr_data, hr_forward, rcm_index);
 	hr_data.clear();
 	hr_forward.clear();
@@ -277,7 +277,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 	const size_t MEGA = 1<<20;
 	out << "Memory usage on device:\n";
 	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
-	out << "\treverse matrix: " << (m_rcmIndex.d_allocated() / MEGA) << "MB\n";
+	out << "\treverse matrix: " << (m_rcm.d_allocated() / MEGA) << "MB\n";
 	out << "\tglobal queue: " << (m_gq.allocated() / MEGA) << "MB\n";
 	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
@@ -411,7 +411,7 @@ ConnectivityMatrix::getPlastic(const synapse_id& id) const
 void
 ConnectivityMatrix::clearStdpAccumulator()
 {
-	m_rcmIndex.clearAccumulator();
+	m_rcm.clearAccumulator();
 }
 
 
@@ -420,7 +420,7 @@ size_t
 ConnectivityMatrix::d_allocated() const
 {
 	return md_fcmAllocated
-		+ m_rcmIndex.d_allocated()
+		+ m_rcm.d_allocated()
 		+ m_gq.allocated()
 		+ m_outgoing.allocated();
 }

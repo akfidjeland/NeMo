@@ -24,7 +24,7 @@
 #include <nemo/network/Generator.hpp>
 #include <nemo/cuda/construction/RcmIndex.hpp>
 #include <nemo/cuda/construction/FcmIndex.hpp>
-#include <nemo/cuda/runtime/RcmIndex.hpp>
+#include <nemo/cuda/runtime/RCM.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
@@ -154,7 +154,7 @@ class ConnectivityMatrix
 		void setParameters(param_t*) const;
 
 		/*! \return RCM device pointers */
-		rcm_dt* d_rcm() { return m_rcmIndex.d_rcm(); }
+		rcm_dt* d_rcm() { return m_rcm.d_rcm(); }
 
 	private:
 
@@ -166,7 +166,7 @@ class ConnectivityMatrix
 		boost::shared_ptr<synapse_t> md_fcm;
 
 		/*! Compact reverse connectivity matrix on device */
-		runtime::RcmIndex m_rcmIndex;
+		runtime::RCM m_rcm;
 
 		/* Pointer struct passed to the device */
 		rcm_dt md_rcm;

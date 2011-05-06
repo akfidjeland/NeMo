@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_RUNTIME_RCM_INDEX_HPP
-#define NEMO_CUDA_RUNTIME_RCM_INDEX_HPP
+#ifndef NEMO_CUDA_RUNTIME_RCM_HPP
+#define NEMO_CUDA_RUNTIME_RCM_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -36,16 +36,16 @@ namespace nemo {
  * - the extent of each row in the index (start and length) is stored in a
  *   separate fixed-size table
  *
- * \see construction::RcmIndex
+ * \see construction::RCM
  */
-class RcmIndex
+class RCM
 {
 	public :
 
-		RcmIndex() : m_allocated(0), m_planeSize(0) {}
+		RCM() : m_allocated(0), m_planeSize(0) {}
 
 		/*! Create an RCM on the device */
-		RcmIndex(size_t partitionCount,
+		RCM(size_t partitionCount,
 				size_t totalWarps,
 				const std::vector<uint32_t>& h_data,
 				const std::vector<uint32_t>& h_forward,

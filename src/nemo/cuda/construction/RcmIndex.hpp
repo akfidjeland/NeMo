@@ -25,7 +25,7 @@ namespace nemo {
 	namespace cuda {
 
 		namespace runtime {
-			class RcmIndex;
+			class RCM;
 		}
 
 		namespace construction {
@@ -57,7 +57,7 @@ class RcmIndex
 		 * the number of synapses in each row */
 		boost::unordered_map<key, unsigned> m_dataRowLength;
 
-		friend class runtime::RcmIndex;
+		friend class runtime::RCM;
 };
 
 

@@ -10,7 +10,7 @@
 #include <boost/tuple/tuple.hpp>
 
 #include <nemo/util.h>
-#include <nemo/cuda/runtime/RcmIndex.hpp>
+#include <nemo/cuda/runtime/RCM.hpp>
 #include <nemo/cuda/construction/RcmIndex.hpp>
 #include <nemo/cuda/device_memory.hpp>
 #include <nemo/cuda/parameters.cu_h>
@@ -31,8 +31,7 @@ make_rcm_index_address(uint start, uint len)
 
 
 
-RcmIndex::RcmIndex(
-		size_t partitionCount,
+RCM::RCM(size_t partitionCount,
 		size_t totalWarps,
 		const std::vector<uint32_t>& h_data,
 		const std::vector<uint32_t>& h_forward,
@@ -118,7 +117,7 @@ RcmIndex::RcmIndex(
 
 
 void
-RcmIndex::clearAccumulator()
+RCM::clearAccumulator()
 {
 	d_memset(md_accumulator.get(), 0, m_planeSize*sizeof(weight_dt));
 }
