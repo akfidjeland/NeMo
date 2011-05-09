@@ -68,7 +68,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> hf_targets(WARP_SIZE, INVALID_FORWARD_SYNAPSE);
 	construction::FcmIndex fcm_index;
-	construction::RCM h_rcm(net.neuronType().usesRcmWeights());
+	construction::RCM h_rcm(conf, net.neuronType());
 
 	bool logging = conf.loggingEnabled();
 
@@ -90,9 +90,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
-		if(s.plastic()) {
-			h_rcm.addSynapse(s, source, target, f_addr);
-		}
+		h_rcm.addSynapse(s, source, target, f_addr);
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
 		}

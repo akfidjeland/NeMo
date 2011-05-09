@@ -22,7 +22,12 @@
 
 
 namespace nemo {
+
+	class ConfigurationImpl;
+	class NeuronType;
+
 	namespace cuda {
+
 
 		namespace runtime {
 			class RCM;
@@ -34,7 +39,7 @@ class RCM
 {
 	public :
 
-		explicit RCM(bool useWeights);
+		RCM(const nemo::ConfigurationImpl&, const nemo::NeuronType&);
 
 		/*! Add a new synapse to the reverse connectivity matrix
 		 *
@@ -48,11 +53,22 @@ class RCM
 				const DeviceIdx& d_target,
 				size_t f_addr);
 
+		size_t synapseCount() const { return m_synapseCount; }
+
+		/*! Number of words allocated in any enabled RCM fields
+		 *
+		 * The class maintains the invariant that all RCM fields are either of
+		 * size this size (if enabled) or WARP_SIZE (if disbled).
+		 */
+		size_t size() const;
+
 	private :
 
 		typedef boost::tuple<pidx_t, nidx_t> key;
 
 		typedef boost::unordered_map<key, std::vector<size_t> > warp_map;
+
+		size_t m_synapseCount;
 
 		warp_map m_warps;
 
@@ -64,9 +80,11 @@ class RCM
 
 		/*! Main reverse synapse data: source partition, source neuron, delay */
 		std::vector<uint32_t> m_data;
+		bool m_useData;
 
 		/*! Forward addressing, word offset into the FCM for each synapse */
 		std::vector<uint32_t> m_forward;
+		bool m_useForward;
 
 		/*! The weights are \em optionally stored in the reverse format as
 		 * well. This is normally not done as the weights are normally used
@@ -74,6 +92,14 @@ class RCM
 		 * neuron type plugins may require this. */
 		std::vector<float> m_weights;
 		bool m_useWeights;
+
+		/*! Is the RCM in use at all? */
+		bool m_enabled;
+
+		/*! If the RCM is in use, do we only keep plastic synapses? See notes
+		 * in constructor. */
+		bool m_stdpEnabled;
+
 
 		/*! Allocate space for a new RCM synapse for the given (target) neuron.
 		 *

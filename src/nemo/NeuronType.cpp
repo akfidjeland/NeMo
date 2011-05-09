@@ -24,7 +24,12 @@ namespace nemo {
 NeuronType::NeuronType(const std::string& name) :
 	mf_nParam(0), mf_nState(0),
 	m_name(name), m_membranePotential(0),
-	m_nrand(false), m_stateHistory(1)
+	m_nrand(false),
+	m_rcmSources(false),
+	m_rcmDelays(false),
+	m_rcmForward(false),
+	m_rcmWeights(false),
+	m_stateHistory(1)
 {
 	parseConfigurationFile(name);
 }
@@ -76,7 +81,6 @@ getRequired(boost::program_options::variables_map vm,
 
 
 
-
 void
 NeuronType::parseConfigurationFile(const std::string& name)
 {
@@ -96,6 +100,12 @@ NeuronType::parseConfigurationFile(const std::string& name)
 		("rng.normal", po::value<bool>(),
 			"is normal RNG required?")
 		/* optional fields */
+		("rcm.sources", po::value<bool>()->default_value(false),
+			"are sources required in the reverse connectivity matrix")
+		("rcm.delays", po::value<bool>()->default_value(false),
+			"are delays required in the reverse connectivity matrix")
+		("rcm.forward", po::value<bool>()->default_value(false),
+			"are links to synapses in the forward matrix required in the reverse connectivity matrix")
 		("rcm.weights", po::value<bool>()->default_value(false),
 			"are weights required in the reverse connectivity matrix")
 		("history", po::value<unsigned>()->default_value(1),
@@ -119,6 +129,9 @@ NeuronType::parseConfigurationFile(const std::string& name)
 		mf_nState = getRequired<unsigned>(vm, "state-variables", filename);
 		m_membranePotential = getRequired<unsigned>(vm, "membrane-potential", filename);
 		m_nrand = getRequired<bool>(vm, "rng.normal", filename);
+		m_rcmSources = vm["rcm.sources"].as<bool>();
+		m_rcmDelays = vm["rcm.delays"].as<bool>();
+		m_rcmForward = vm["rcm.forward"].as<bool>();
 		m_rcmWeights = vm["rcm.weights"].as<bool>();
 		m_stateHistory = vm["history"].as<unsigned>();
 	} catch (po::error& e) {
