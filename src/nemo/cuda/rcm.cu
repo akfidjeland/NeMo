@@ -12,12 +12,19 @@
 
 #include <assert.h>
 
+#include <nemo/util.h>
+
 #include "kernel.cu_h"
 #include "rcm.cu_h"
 
 /* Bit shifts for packed synapses */
 const rsynapse_t R_NEURON_SHIFT = DELAY_BITS;
 const rsynapse_t R_PARTITION_SHIFT = R_NEURON_SHIFT + NEURON_BITS;
+
+/* Bit masks for packed synapses */
+const rsynapse_t NEURON_MASK = MASK(NEURON_BITS);
+const rsynapse_t PARTITION_MASK = MASK(PARTITION_BITS);
+const rsynapse_t DELAY_MASK = MASK(DELAY_BITS);
 
 
 __host__

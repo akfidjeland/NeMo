@@ -15,11 +15,6 @@
 #include "kernel.cu_h"
 #include "connectivityMatrix.cu_h"
 
-#define NEURON_MASK MASK(NEURON_BITS)
-#define PARTITION_MASK MASK(PARTITION_BITS)
-#define DELAY_MASK MASK(DELAY_BITS)
-
-#define PARTITION_SHIFT NEURON_BITS
 
 __host__
 synapse_t
@@ -34,7 +29,8 @@ unsigned
 targetNeuron(unsigned synapse)
 {
 #ifdef __DEVICE_EMULATION__
-    return synapse & NEURON_MASK;
+#	error "Device emulation not supported"
+    // return synapse & NEURON_MASK;
 #else
 	return synapse;
 #endif

@@ -47,7 +47,7 @@ const rcm_index_address_t INVALID_RCM_INDEX_ADDRESS = make_uint2(0, 0);
  *
  * This is simply the offset to a warp in the RCM.
  */
-typedef uint rcm_address_t;
+typedef unsigned rcm_address_t;
 
 const rcm_address_t INVALID_RCM_ADDRESS = 0;
 
