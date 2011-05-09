@@ -4,6 +4,7 @@
 //! \file NetworkImpl.hpp
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include <nemo/config.h>
@@ -46,7 +47,7 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		NetworkImpl();
 
 		/*! \copydoc nemo::Network::addNeuronType */
-		unsigned addNeuronType(const NeuronType&);
+		unsigned addNeuronType(const std::string& name);
 
 		/*! \copydoc nemo::Network::addNeuron */
 		void addNeuron(unsigned type, unsigned idx,

@@ -1,14 +1,6 @@
 #ifndef NEMO_NETWORK_HPP
 #define NEMO_NETWORK_HPP
 
-//! \file Network.hpp
-
-#include <vector>
-#include <nemo/config.h>
-#include <nemo/types.h>
-#include <nemo/ReadableNetwork.hpp>
-#include <nemo/NeuronType.hpp>
-
 /* Copyright 2010 Imperial College London
  *
  * This file is part of NeMo.
@@ -17,6 +9,13 @@
  * General Public Licence (GPL). You should have received a copy of this
  * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <vector>
+#include <string>
+
+#include <nemo/config.h>
+#include <nemo/types.h>
+#include <nemo/ReadableNetwork.hpp>
 
 namespace nemo {
 
@@ -48,13 +47,16 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 
 		/*! \brief Register a new neuron type with the network.
 		 *
+		 * \param name
+		 * 		canonical name of the neuron type. The neuron type data is
+		 * 		loaded from a plugin configuration file of the same name.
 		 * \return
 		 * 		index of the the neuron type, to be used when adding neurons.
 		 *
 		 * This function must be called before neurons of the specified type
 		 * can be added to the network.
 		 */
-		unsigned addNeuronType(const NeuronType&);
+		unsigned addNeuronType(const std::string& name);
 
 		/*! \brief Add a neuron to the network
 		 *

@@ -37,13 +37,13 @@ NetworkImpl::NetworkImpl() :
 
 
 unsigned
-NetworkImpl::addNeuronType(const NeuronType& type)
+NetworkImpl::addNeuronType(const std::string& name)
 {
 	if(!m_neurons.empty()) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "Only a single neuron type per network is supported");
 	}
 	unsigned type_id = m_neurons.size();
-	m_neurons.push_back(Neurons(type));
+	m_neurons.push_back(Neurons(NeuronType(name)));
 	return type_id;
 }
 

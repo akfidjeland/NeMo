@@ -12,7 +12,6 @@
 #include <boost/array.hpp>
 
 #include "NetworkImpl.hpp"
-#include "NeuronType.hpp"
 #include "synapse_indices.hpp"
 
 namespace nemo {
@@ -32,9 +31,9 @@ Network::~Network()
 
 
 unsigned
-Network::addNeuronType(const NeuronType& t)
+Network::addNeuronType(const std::string& name)
 {
-	return m_impl->addNeuronType(t);
+	return m_impl->addNeuronType(name);
 }
 
 
@@ -52,7 +51,7 @@ Network::addNeuron(unsigned idx,
 		float u, float v, float sigma)
 {
 	if(iz_type == ~0U) {
-		iz_type = m_impl->addNeuronType(NeuronType("Izhikevich"));
+		iz_type = m_impl->addNeuronType("Izhikevich");
 	}
 	static boost::array<float, 5> param;
 	static boost::array<float, 2> state;
