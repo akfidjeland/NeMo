@@ -218,7 +218,6 @@ commonOptions()
 		("cuda", "Use the CUDA backend (default device)")
 		("verbose,v", po::value<unsigned>()->default_value(0), "Set verbosity level")
 		("output-file,o", po::value<std::string>(), "output file for firing data")
-		("list-devices", "print the available simulation devices")
 		("benchmark", "report performance results instead of returning firing")
 		("csv", "when benchmarking, output a compact CSV format with the following fields: neurons, synapses, simulation time (ms), wallclock time (ms), STDP enabled, fired neurons, PSPs generated, average firing rate, speedup wrt real-time, throughput (million PSPs/second")
 		("fstim", "provide (very weak) firing stimulus, for benchmarking purposes")
@@ -227,24 +226,6 @@ commonOptions()
 
 	return desc;
 }
-
-
-
-void
-listCudaDevices()
-{
-	unsigned dcount  = nemo::cudaDeviceCount();
-
-	if(dcount == 0) {
-		std::cout << "No CUDA devices available\n";
-		return;
-	}
-
-	for(unsigned d = 0; d < dcount; ++d) {
-		std::cout << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
-	}
-}
-
 
 
 
@@ -262,11 +243,6 @@ processOptions(int argc, char* argv[],
 		std::cout << "Usage:\n\t" << argv[0] << " [OPTIONS]\n\n";
 		std::cout << desc << std::endl;
 		exit(1);
-	}
-
-	if(vm.count("list-devices")) {
-		listCudaDevices();
-		exit(0);
 	}
 
 	return vm;

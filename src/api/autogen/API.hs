@@ -425,8 +425,9 @@ setNeuron =
 
 getMembranePotential =
     ApiFunction "getMembranePotential"
-        "get membane potential of a neuron"
-        Nothing M.empty
+        "get neuron membane potential"
+        Nothing
+        (M.fromList pythonVectorized1)
         [   ApiArg "v" (Just "membrane potential") (Scalar ApiFloat) ]
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)) ]
         []

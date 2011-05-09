@@ -356,8 +356,17 @@ class TestFunctions(unittest.TestCase):
                 else:
                     for (sid, qsrc, tgt) in zip(queried, sources, targets):
                         check_scalar(x, src, sid, qsrc, tgt)
+
+        def check_iterator(x):
+            # Make synapse getter can deal with the iterator returned by the
+            # the synapse query
+            for src in range(ncount):
+                srcs = x.get_synapse_source(x.get_synapses_from(src))
+
         check(net)
         check(sim)
+        check_iterator(net)
+        check_iterator(sim)
 
 
 if __name__ == '__main__':

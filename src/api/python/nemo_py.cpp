@@ -445,6 +445,26 @@ get_neuron_state(T& obj, PyObject* neurons, unsigned param)
 
 
 
+/*! Return the membrane potential of one or more neurons */
+PyObject*
+get_membrane_potential(nemo::Simulation& sim, PyObject* neurons)
+{
+	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 0;
+	if(len == 0) {
+		return PyFloat_FromDouble(sim.getMembranePotential(extract<unsigned>(neurons)));
+	} else {
+		PyObject* list = PyList_New(len);
+		for(Py_ssize_t i=0; i < len; ++i) {
+			const unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			const float val = sim.getMembranePotential(neuron);
+			PyList_SetItem(list, i, PyFloat_FromDouble(val));
+		}
+		return list;
+	}
+}
+
+
+
 /* Convert scalar type to corresponding C++ type. Oddly, boost::python does not
  * seem to have this */
 template<typename T>
@@ -469,13 +489,13 @@ get_synapse_x(const nemo::ReadableNetwork& net,
 		PyObject* ids,
 		std::const_mem_fun1_ref_t<T, nemo::ReadableNetwork, const synapse_id&> get_x)
 {
-	const Py_ssize_t len = PyList_Check(ids) ? PyList_Size(ids) : 0;
+	const Py_ssize_t len = PySequence_Check(ids) ? PySequence_Size(ids) : 0;
 	if(len == 0) {
 		return insert<T>(get_x(net, extract<synapse_id>(ids)));
 	} else {
 		PyObject* list = PyList_New(len);
 		for(Py_ssize_t i=0; i < len; ++i) {
-			synapse_id id = extract<synapse_id>(PyList_GetItem(ids, i));
+			synapse_id id = extract<synapse_id>(PySequence_GetItem(ids, i));
 			const T val = get_x(net, id);
 			PyList_SetItem(list, i, insert<T>(val));
 		}
@@ -653,7 +673,7 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("get_neuron_parameter", get_neuron_parameter<nemo::Simulation>, CONSTRUCTABLE_GET_NEURON_PARAMETER_DOC)
 		.def("set_neuron_state", set_neuron_state<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
 		.def("set_neuron_parameter", set_neuron_parameter<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
-		.def("get_membrane_potential", &nemo::Simulation::getMembranePotential, SIMULATION_GET_MEMBRANE_POTENTIAL_DOC)
+		.def("get_membrane_potential", get_membrane_potential, SIMULATION_GET_MEMBRANE_POTENTIAL_DOC)
 		.def("get_synapses_from", &nemo::Simulation::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
 		.def("get_synapse_source", get_synapse_source<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
 		.def("get_synapse_target", get_synapse_target<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)
