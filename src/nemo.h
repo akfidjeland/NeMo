@@ -210,15 +210,48 @@ NEMO_DLL_PUBLIC
 void nemo_delete_network(nemo_network_t);
 
 
-//! \todo make sure we handle the issue of non-unique indices
-//! \todo add description of neuron indices
+
+/*! Register a new neuron type with the network
+ *
+ * \param name
+ * 		canonical name of the neuron type. The neuron type data is loaded from
+ * 		a plugin configuration file of the same name.
+ * \param[out]
+ * 		index of the the neuron type, to be used when adding neurons.
+ *
+ * \see nemo_add_neuron
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_add_neuron_type(nemo_network_t,
+		const char* name,
+		unsigned* neuron_type);
+
+
 /*! \copydoc nemo::Network::addNeuron */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_add_neuron(nemo_network_t,
+nemo_add_izhikevich_neuron(nemo_network_t,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
+
+
+/*! Add a neuron to the network
+ *
+ * \param type index of the neuron type, as returned by \a add_neuron_type
+ * \param idx user-assigned unique neuron index
+ * \param param floating point parameters of the neuron
+ * \param state floating point state variables of the neuron
+ *
+ * \pre The parameter and state arrays must have dimensions matching the neuron
+ * 		type represented by \a type.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_add_neuron(nemo_network_t,
+		unsigned type, unsigned idx,
+		float params[], float state[]);
 
 
 //! \todo add method to add a single synapse
