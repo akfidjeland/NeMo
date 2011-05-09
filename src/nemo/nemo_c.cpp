@@ -197,7 +197,6 @@ nemo_add_neuron_ps(nemo_network_t net,
 }
 
 
-
 nemo_status_t
 nemo_add_synapse(nemo_network_t net,
 		unsigned source,

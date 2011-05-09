@@ -271,7 +271,6 @@ nemo_add_neuron_ps(nemo_network_t,
 		float params[], float state[]);
 
 
-
 /* Add a single synapse to network
  *
  * \a id

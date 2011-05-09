@@ -610,6 +610,17 @@ testVProbe(backend_t backend)
 TEST_ALL_BACKENDS(vprobe, testVProbe)
 
 
+BOOST_AUTO_TEST_CASE(add_neuron)
+{
+	nemo::Network net;
+	unsigned iz = net.addNeuronType("Izhikevich");
+	std::vector<float> args(7, 0.0f);
+	/* Duplicate neuron indices should report an error */
+	net.addNeuron(iz, 0, args.size(), &args[0]);
+	BOOST_REQUIRE_THROW(net.addNeuron(iz, 0, args.size(), &args[0]), nemo::exception);
+}
+
+
 
 /* Both the simulation and network classes have neuron setters. Here we perform
  * the same test for both. */
