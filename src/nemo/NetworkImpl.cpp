@@ -9,9 +9,7 @@
 
 #include "NetworkImpl.hpp"
 
-#include <sstream>
 #include <limits>
-#include <boost/numeric/conversion/cast.hpp>
 #include <boost/format.hpp>
 
 #include <nemo/bitops.h>

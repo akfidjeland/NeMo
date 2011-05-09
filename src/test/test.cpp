@@ -809,6 +809,28 @@ testSetNeuron(backend_t backend)
 
 TEST_ALL_BACKENDS(set_neuron, testSetNeuron)
 
+
+void
+testInvalidNeuronType()
+{
+	nemo::Network net;
+	unsigned iz = net.addNeuronType("Izhikevich");
+	float state[5] = {0, 0, 0, 0, 0};
+	float params[2] = {0, 0};
+	for(unsigned n=0; n<100; ++n) {
+		if(n != iz) {
+			// incorrect parameter order for n and iz.
+			BOOST_REQUIRE_THROW(net.addNeuron(n, iz, state, params), nemo::exception);
+		}
+	}
+}
+
+
+BOOST_AUTO_TEST_SUITE(plugins)
+	BOOST_AUTO_TEST_CASE(invalid_type) { testInvalidNeuronType(); }
+BOOST_AUTO_TEST_SUITE_END()
+
+
 BOOST_AUTO_TEST_SUITE(regression)
 	BOOST_AUTO_TEST_CASE(torus) {
 		runTorus(false);
