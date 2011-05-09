@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
 
 #include "exception.hpp"
 #include "device_memory.hpp"
@@ -100,8 +99,6 @@ template<typename T>
 const T*
 NVector<T>::copyFromDevice()
 {
-	fprintf(stderr, "Reading %lu words from device\n",
-			m_planes * size());
 	memcpyFromDevice(m_hostData.get(), m_deviceData.get(), m_planes * size());
 	return m_hostData.get();
 }
