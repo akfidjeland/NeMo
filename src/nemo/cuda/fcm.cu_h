@@ -1,7 +1,5 @@
-#ifndef CONNECTIVITY_MATRIX_CU_H
-#define CONNECTIVITY_MATRIX_CU_H
-
-//! \file connectivityMatrix.cu_h
+#ifndef NEMO_CUDA_FCM_CU_H
+#define NEMO_CUDA_FCM_CU_H
 
 /* Copyright 2010 Imperial College London
  *
@@ -12,22 +10,13 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cuda_runtime.h>
-
-#include "kernel.cu_h"
 #include "types.h"
-
-/* \brief Synapse encoding/decoding
- *
- * Forward synapse: target neuron
- */
 
 // planes of forward connectivity matrix
 #define FCM_ADDRESS 0        // target partition and neuron
 #define FCM_WEIGHT 1         // float packed as int
 #define FCM_SUBMATRICES 2
 
-synapse_t f_nullSynapse();
-
+const synapse_t INVALID_FORWARD_SYNAPSE = 0;
 
 #endif

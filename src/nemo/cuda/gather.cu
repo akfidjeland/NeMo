@@ -14,14 +14,11 @@
 #include "log.cu_h"
 
 #include "bitvector.cu"
-#include "connectivityMatrix.cu"
 #include "double_buffer.cu"
 #include "fixedpoint.cu"
 #include "globalQueue.cu"
 #include "parameters.cu"
 #include "current.cu"
-
-
 
 
 /*! Gather incoming current from all spikes due for delivery \e now
@@ -116,7 +113,7 @@ gather( unsigned cycle,
 
 			/* only warps at the very end of the group are invalid here */
 			if(gwarp < s_groupSize) {
-				postsynaptic = targetNeuron(*base);
+				postsynaptic = *base;
 				weight = *((unsigned*)base + s_params.fcmPlaneSize);
 			}
 

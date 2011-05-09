@@ -24,7 +24,7 @@
 #include <nemo/cuda/construction/RCM.hpp>
 
 #include "exception.hpp"
-#include "connectivityMatrix.cu_h"
+#include "fcm.cu_h"
 #include "kernel.hpp"
 #include "device_memory.hpp"
 #include "parameters.cu_h"
@@ -66,7 +66,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
 	//! \todo change synapse_t, perhaps to nidx_dt
-	std::vector<synapse_t> hf_targets(WARP_SIZE, f_nullSynapse());
+	std::vector<synapse_t> hf_targets(WARP_SIZE, INVALID_FORWARD_SYNAPSE);
 	construction::FcmIndex fcm_index;
 	construction::RCM h_rcm(net.neuronType().usesRcmWeights());
 
@@ -156,7 +156,7 @@ ConnectivityMatrix::addForward(
 		 * allocation scheme could potentially result in a
 		 * large number of reallocations, so we might be better
 		 * off allocating larger chunks here */
-		h_targets.resize(nextFreeWarp * WARP_SIZE, f_nullSynapse());
+		h_targets.resize(nextFreeWarp * WARP_SIZE, INVALID_FORWARD_SYNAPSE);
 		h_weights.resize(nextFreeWarp * WARP_SIZE, 0);
 	}
 

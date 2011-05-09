@@ -16,7 +16,7 @@
 #include <nemo/config.h>
 
 #include "parameters.cu_h"
-#include "connectivityMatrix.cu"
+#include "fcm.cu_h"
 #include "fixedpoint.cu"
 
 

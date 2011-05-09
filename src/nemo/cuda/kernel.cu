@@ -15,7 +15,6 @@
 #include "device_assert.cu"
 #include "bitvector.cu"
 #include "double_buffer.cu"
-#include "connectivityMatrix.cu"
 #include "outgoing.cu"
 #include "globalQueue.cu"
 #include "nvector.cu"
