@@ -8,6 +8,7 @@
 #include <nemo/cuda/types.h>
 #include <nemo/cuda/parameters.cu_h>
 #include <nemo/cuda/rng.cu_h>
+#include <nemo/cuda/rcm.cu_h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +29,8 @@ typedef cudaError_t cuda_update_neurons_t(
 		fix_t* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
-		nidx_dt* d_fired);
+		nidx_dt* d_fired,
+		rcm_dt* d_rng);
 
 #ifdef __cplusplus
 }

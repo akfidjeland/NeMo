@@ -10,13 +10,18 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <map>
 #include <boost/shared_ptr.hpp>
 
 #include "outgoing.cu_h"
 
+struct param_t;
+
 namespace nemo {
 	namespace cuda {
+
+		namespace construction {
+			class FcmIndex;
+		}
 
 /*! \brief Runtime mapping from neuron/delay pairs to synapse warp addresses
  *
@@ -36,10 +41,10 @@ namespace nemo {
  * partition, source neuron, and delay).
  *
  * The \e construction time data structure which is used to build up the
- * mapping found herein is the \ref nemo::cuda::WarpAddressTable "warp address
- * table".
+ * mapping found herein is the \ref nemo::cuda::construction::FcmIndex
+ * "FCM index".
  *
- * \see nemo::cuda::WarpAddressTable
+ * \see nemo::cuda::construction::FcmIndex
  */
 class Outgoing
 {
@@ -48,7 +53,7 @@ class Outgoing
 		Outgoing();
 
 		/*! Set the device data containing the outgoing spike groups. */
-		Outgoing(size_t partitionCount, const class WarpAddressTable& wtable);
+		Outgoing(size_t partitionCount, const construction::FcmIndex&);
 
 		/*! \return device pointer to the outgoing data */
 		outgoing_t* d_data() const { return md_arr.get(); }
@@ -65,12 +70,16 @@ class Outgoing
 		 * 		neuron fires every cycle for some time. */
 		size_t maxIncomingWarps() const { return m_maxIncomingWarps; }
 
+		/*! Fill in the relevant fields of the global parameters struct */
+		void setParameters(param_t*) const;
+
 	private :
 
-		void init(size_t partitionCount, const class WarpAddressTable& wtable);
+		void init(size_t partitionCount, const class construction::FcmIndex&);
 
 		boost::shared_ptr<outgoing_t> md_arr; // device data
 		size_t m_pitch;                       // max pitch
+		unsigned m_step;
 
 		/* Store offset/length pairs here in order to address arbitrary entries
 		 * in md_arr where the entries have variable width (for compactness).
@@ -82,7 +91,8 @@ class Outgoing
 
 		size_t m_maxIncomingWarps;
 
-		void setConstants(unsigned wpitch);
+		/*! Store the global parameters relating to this class */
+		void setParameters(unsigned wpitch);
 };
 
 	} // end namespace cuda

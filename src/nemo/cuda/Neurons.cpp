@@ -71,9 +71,11 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 
 		m_valid.setNeuron(dev);
 
-		nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
-		for(unsigned plane = 0; plane < 4; ++plane) {
-			m_nrngState.setNeuron(dev.partition, dev.neuron, rngs[localIdx].state[plane], plane);
+		if(m_type.usesNormalRNG()) {
+			nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
+			for(unsigned plane = 0; plane < 4; ++plane) {
+				m_nrngState.setNeuron(dev.partition, dev.neuron, rngs[localIdx].state[plane], plane);
+			}
 		}
 
 		maxPartitionNeuron[dev.partition] =
@@ -82,7 +84,9 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 
 	mf_param.copyToDevice();
 	mf_state.copyToDevice();
-	m_nrngState.moveToDevice();
+	if(m_type.usesNormalRNG()) {
+		m_nrngState.moveToDevice();
+	}
 	m_nrng.state = m_nrngState.deviceData();
 	m_nrng.pitch = m_nrngState.wordPitch();
 	m_valid.moveToDevice();
@@ -137,7 +141,8 @@ Neurons::update(
 		fix_t* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
-		nidx_dt* d_fired)
+		nidx_dt* d_fired,
+		rcm_dt* d_rcm)
 {
 	syncToDevice();
 	m_cycle = cycle;
@@ -152,7 +157,8 @@ Neurons::update(
 			m_nrng,
 			m_valid.d_data(),
 			d_fstim, d_istim,
-			d_current, d_fout, d_nFired, d_fired);
+			d_current, d_fout, d_nFired, d_fired,
+			d_rcm);
 }
 
 

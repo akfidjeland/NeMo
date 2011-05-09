@@ -21,6 +21,13 @@ struct param_t {
 	size_t pitch1;
 	size_t pitch32;
 	size_t pitch64;
+
+	/* Size (in words) of a single plane in the forward connectivity matrix,
+	 * i.e. all of the address data or all of the weights */
+	size_t fcmPlaneSize;
+
+	size_t outgoingPitch;
+	size_t outgoingStep;
 };
 
 #endif

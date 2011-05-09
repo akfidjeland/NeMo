@@ -70,8 +70,9 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	LocalQueue.cpp
 	Neurons.cpp
 	Outgoing.cpp
-	RSMatrix.cpp
-	WarpAddressTable.cpp
+	construction/FcmIndex.cpp
+	construction/RCM.cpp
+	runtime/RCM.cpp
 	device_memory.cpp
 	devices.cpp
 	log.cpp

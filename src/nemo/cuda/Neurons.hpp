@@ -63,7 +63,8 @@ class Neurons
 				fix_t* d_current,
 				uint32_t* d_fout,
 				unsigned* d_nFired,
-				nidx_dt* d_fired);
+				nidx_dt* d_fired,
+				rcm_dt*);
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const;

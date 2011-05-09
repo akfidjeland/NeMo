@@ -29,6 +29,7 @@
  */
 
 #include "kernel.cu_h"
+#include <nemo/util.h>
 
 /*! \return pointer to beginning of one variables current cycle's data
  *

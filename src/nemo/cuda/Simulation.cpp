@@ -232,6 +232,8 @@ Simulation::setParameters()
 	params.fixedPointScale = 1 << fbits;
 	params.fixedPointFractionalBits = fbits;
 
+	m_cm.setParameters(&params);
+
 	void* d_ptr;
 	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
 	md_params = boost::shared_ptr<param_t>(static_cast<param_t*>(d_ptr), d_free);
@@ -293,7 +295,8 @@ Simulation::fire()
 			m_current.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
-			m_fired.deviceData()));
+			m_fired.deviceData(),
+			m_cm.d_rcm()));
 	cudaEventRecord(m_eventFireDone, m_streamCompute);
 }
 
@@ -327,6 +330,7 @@ Simulation::postfire()
 			m_mapper.partitionCount(),
 			m_neurons.d_partitionSize(),
 			md_params.get(),
+			m_cm.d_rcm(),
 			m_recentFiring.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
@@ -368,6 +372,7 @@ Simulation::applyStdp(float reward)
 				m_cm.fractionalBits(),
 				md_params.get(),
 				m_cm.d_fcm(),
+				m_cm.d_rcm(),
 				m_stdp->minExcitatoryWeight(),
 				m_stdp->maxExcitatoryWeight(),
 				m_stdp->minInhibitoryWeight(),
