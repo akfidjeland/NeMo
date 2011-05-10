@@ -44,6 +44,17 @@ class Neurons
 		 */
 		size_t add(const float fParam[], const float fState[]);
 
+		/*! Add a new neuron
+		 *
+		 * \param args all parameters and state variables (in that order)
+		 *
+		 * \return local index (wihtin this class) of the newly added neuron
+		 *
+		 * \pre the input arguments must have the lengths that was specified by
+		 * 		the neuron type used when this object was created.
+		 */
+		size_t add(const float args[]);
+
 		/*! Modify an existing neuron
 		 *
 		 * \param local neuron index, as returned by \a add

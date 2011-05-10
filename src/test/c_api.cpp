@@ -81,7 +81,7 @@ addExcitatoryNeuron(
 	net->addNeuron(nidx, a, b, c, d, u, v, sigma);
 	float c_params[5] = {a, b, c, d, sigma};
 	float c_state[2] = {u, v};
-	nemo_add_neuron(c_net, c_iz, nidx, c_params, c_state);
+	nemo_add_neuron_ps(c_net, c_iz, nidx, c_params, c_state);
 }
 
 
@@ -124,7 +124,7 @@ addInhibitoryNeuron(
 	net->addNeuron(nidx, a, b, c, d, u, v, sigma);
 	float c_params[5] = {a, b, c, d, sigma};
 	float c_state[2] = {u, v};
-	nemo_add_neuron(c_net, c_iz, nidx, c_params, c_state);
+	nemo_add_neuron_ps(c_net, c_iz, nidx, c_params, c_state);
 }
 
 
@@ -378,7 +378,7 @@ testSetNeuron()
 	/* setNeuron should only succeed for existing neurons */
 	BOOST_REQUIRE(nemo_set_neuron_n(net, 0, a, b, c, d, u, v, sigma) != NEMO_OK);
 
-	nemo_add_izhikevich_neuron(net, 0, a, b, c-0.1f, d, u, v-1.0f, sigma);
+	nemo_add_neuron_iz(net, 0, a, b, c-0.1f, d, u, v-1.0f, sigma);
 
 	/* Invalid neuron */
 	BOOST_REQUIRE(nemo_get_neuron_parameter_n(net, 1, 0, &val) != NEMO_OK);
@@ -505,7 +505,7 @@ testSetNeuron()
 		/* Modify membrane potential after simulation has been created.
 		 * Again the result should be the same */
 		nemo_network_t net1 = nemo_new_network();
-		nemo_add_izhikevich_neuron(net1, 0, a, b, c, d, u, v-1.0f, sigma);
+		nemo_add_neuron_iz(net1, 0, a, b, c, d, u, v-1.0f, sigma);
 		nemo_simulation_t sim = nemo_new_simulation(net1, conf);
 		nemo_set_neuron_s(sim, 0, a, b, c, d, u, v, sigma);
 		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
@@ -535,7 +535,7 @@ testGetSynapses(backend_t backend, unsigned n0)
 	unsigned ncount = 1000;
 	for(unsigned n = 0; n < ncount; ++n) {
 		unsigned source = n0 + n;
-		c_safeCall(nemo_add_izhikevich_neuron(net, source, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f));
+		c_safeCall(nemo_add_neuron_iz(net, source, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f));
 		for(unsigned s = 0; s < n; ++s) {
 			unsigned target = n0 + s;
 			synapse_id id;

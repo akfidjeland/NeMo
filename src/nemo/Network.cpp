@@ -46,6 +46,13 @@ Network::addNeuron(unsigned type, unsigned idx,
 
 
 void
+Network::addNeuron(unsigned type, unsigned idx, const float args[])
+{
+	m_impl->addNeuron(type, idx, args);
+}
+
+
+void
 Network::addNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)

@@ -159,16 +159,6 @@ nemo_delete_simulation(nemo_simulation_t sim)
 
 
 nemo_status_t
-nemo_add_izhikevich_neuron(nemo_network_t net,
-		unsigned idx,
-		float a, float b, float c, float d,
-		float u, float v, float sigma)
-{
-	CATCH_(net, addNeuron(idx, a, b, c, d, u, v, sigma));
-}
-
-
-nemo_status_t
 nemo_add_neuron_type(nemo_network_t net,
 		const char* name,
 		unsigned* type)
@@ -177,8 +167,28 @@ nemo_add_neuron_type(nemo_network_t net,
 }
 
 
+
 nemo_status_t
-nemo_add_neuron(nemo_network_t net,
+nemo_add_neuron_iz(nemo_network_t net,
+		unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	CATCH_(net, addNeuron(idx, a, b, c, d, u, v, sigma));
+}
+
+
+
+nemo_status_t
+nemo_add_neuron_a(nemo_network_t net, unsigned type, unsigned idx, float args[])
+{
+	CATCH_(net, addNeuron(type, idx, args));
+}
+
+
+
+nemo_status_t
+nemo_add_neuron_ps(nemo_network_t net,
 		unsigned type,
 		unsigned idx,
 		float params[], float state[])

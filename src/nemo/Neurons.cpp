@@ -39,6 +39,20 @@ Neurons::add(const float fParam[], const float fState[])
 
 
 
+size_t
+Neurons::add(const float args[])
+{
+	for(unsigned i=0; i < mf_param.size(); ++i) {
+		mf_param[i].push_back(*args++);
+	}
+	for(unsigned i=0; i < mf_state.size(); ++i) {
+		mf_state[i].push_back(*args++);
+	}
+	return m_size++;
+}
+
+
+
 unsigned
 Neurons::parameterIndex(unsigned i) const
 {

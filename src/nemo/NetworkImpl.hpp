@@ -1,7 +1,14 @@
 #ifndef NEMO_NETWORK_IMPL_HPP
 #define NEMO_NETWORK_IMPL_HPP
 
-//! \file NetworkImpl.hpp
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <map>
 #include <string>
@@ -52,6 +59,9 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		/*! \copydoc nemo::Network::addNeuron */
 		void addNeuron(unsigned type, unsigned idx,
 				const float param[], const float state[]);
+
+		/*! \copydoc nemo::Network::addNeuron */
+		void addNeuron(unsigned type, unsigned idx, const float args[]);
 
 		/*! \copydoc nemo::Network::setNeuron */
 		void setNeuron(unsigned idx, const float param[], const float state[]);
