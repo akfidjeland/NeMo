@@ -58,7 +58,8 @@ class RCM
 		/*! Number of words allocated in any enabled RCM fields
 		 *
 		 * The class maintains the invariant that all RCM fields are either of
-		 * size this size (if enabled) or WARP_SIZE (if disbled).
+		 * this size (if enabled) or WARP_SIZE (if disbled). Furthermore, the
+		 * size is always a multiple of WARP_SIZE.
 		 */
 		size_t size() const;
 

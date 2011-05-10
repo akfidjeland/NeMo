@@ -45,9 +45,6 @@ RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
 	std::vector<uint32_t>& h_data = h_rcm.m_data;
 	std::vector<uint32_t>& h_forward = h_rcm.m_forward;
 
-	assert(h_data.size() == h_forward.size());
-	assert(h_data.size() % WARP_SIZE == 0);
-
 	if(h_rcm.m_useData && !empty) {
 		md_data = d_array<rsynapse_t>(m_planeSize, "rcm (data)");
 		memcpyToDevice(md_data.get(), h_data, m_planeSize);
