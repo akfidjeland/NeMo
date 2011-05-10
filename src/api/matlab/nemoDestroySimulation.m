@@ -6,5 +6,5 @@ function nemoDestroySimulation()
 %  
 % The simulation can have a significant amount of memory associated
 % with it. Calling destroySimulation frees up this memory.
-    nemo_mex(uint32(17));
+    nemo_mex(uint32(18));
 end

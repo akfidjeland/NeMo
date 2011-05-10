@@ -4,5 +4,5 @@ function nemoClearNetwork()
 % Synopsis:
 %   nemoClearNetwork()
 %  
-    nemo_mex(uint32(3));
+    nemo_mex(uint32(4));
 end

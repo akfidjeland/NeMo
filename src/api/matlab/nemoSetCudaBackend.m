@@ -15,5 +15,5 @@ function nemoSetCudaBackend(deviceNumber)
 % internally by nemo (see cudaDeviceCount and cudaDeviceDescription).
 % This device numbering may differ from the one provided by the CUDA
 % driver directly, since NeMo ignores any devices it cannot use.
-    nemo_mex(uint32(5), int32(deviceNumber));
+    nemo_mex(uint32(6), int32(deviceNumber));
 end

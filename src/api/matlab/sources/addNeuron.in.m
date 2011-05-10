@@ -16,4 +16,4 @@
 % number of times.
 function addNeuron(type, idx, varargin)
 
-nemo_mex(uint32(1), uint32(type), uint32(idx), varargin{:});
+nemo_mex(uint32(FNID), uint32(type), uint32(idx), varargin{:});

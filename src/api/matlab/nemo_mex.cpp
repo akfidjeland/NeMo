@@ -15,6 +15,8 @@ static nemo_network_t g_network = NULL;
 static nemo_configuration_t g_configuration = NULL;
 static nemo_simulation_t g_simulation = NULL;
 
+const size_t MAX_NEURON_ARGS = 32;
+
 
 
 /* When returning data to Matlab we need to specify the class of the data.
@@ -403,31 +405,74 @@ reset(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	clearNetwork(nlhs, plhs, nrhs, prhs);
 	resetConfiguration(nlhs, plhs, nrhs, prhs);
 }
-/* AUTO-GENERATED CODE START */
+
+
 
 void
 addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    static unsigned arglen[8];
-    size_t elems = vectorDimension(8, prhs + 1, arglen);
-    checkInputCount(nrhs, 8);
+	static unsigned arglen[MAX_NEURON_ARGS];
+	static float args[MAX_NEURON_ARGS];
+
+	int nargs = nrhs-3;
+	if(nargs < 0) {
+		mexErrMsgIdAndTxt("nemo:api", "missing arguments");
+	}
+	if(nargs > MAX_NEURON_ARGS) {
+		mexErrMsgIdAndTxt("nemo:mex", "too many arguments");
+	}
+	size_t elems = vectorDimension(nargs, prhs + 1, arglen);
+	checkOutputCount(nlhs, 0);
+	nemo_network_t hdl = getNetwork();
+	for(size_t i=0; i<elems; ++i){
+		for(int a=0; a<nargs; ++a) {
+			args[a] = scalarAt<float,double>(prhs[3+a], i, arglen[a]);
+		}
+		checkNemoStatus(
+				nemo_add_neuron_a(
+					hdl,
+					scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]),
+					scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]),
+					args
+				)
+		);
+	}
+}
+
+
+
+void
+setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 4);
     checkOutputCount(nlhs, 0);
-    nemo_network_t hdl = getNetwork();
-    for(size_t i=0; i<elems; ++i){
-        checkNemoStatus( 
-                nemo_add_neuron( 
-                        hdl, 
-                        scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
-                        scalarAt<float,double>(prhs[2], i, arglen[1]), 
-                        scalarAt<float,double>(prhs[3], i, arglen[2]), 
-                        scalarAt<float,double>(prhs[4], i, arglen[3]), 
-                        scalarAt<float,double>(prhs[5], i, arglen[4]), 
-                        scalarAt<float,double>(prhs[6], i, arglen[5]), 
-                        scalarAt<float,double>(prhs[7], i, arglen[6]), 
-                        scalarAt<float,double>(prhs[8], i, arglen[7]) 
-                ) 
-        );
-    }
+    std::vector<float> prefire = vector<float, double>(prhs[1]);
+    std::vector<float> postfire = vector<float, double>(prhs[2]);
+    checkNemoStatus(
+            nemo_set_stdp_function(
+                    getConfiguration(),
+                    &prefire[0], prefire.size(),
+                    &postfire[0], postfire.size(),
+					0.0f, scalar<float,double>(prhs[4]),
+                    0.0f, scalar<float,double>(prhs[3])
+            )
+    );
+}
+
+
+
+/* AUTO-GENERATED CODE START */
+
+void
+addNeuronType(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 1);
+    checkOutputCount(nlhs, 1);
+    char* name = mxArrayToString(prhs[1]);
+    unsigned type;
+    checkNemoStatus(nemo_add_neuron_type(getNetwork(), name, &type));
+    mxFree(name);
+    returnScalar<unsigned, uint32_t>(plhs, 0, type);
 }
 
 
@@ -491,28 +536,6 @@ setCudaBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkOutputCount(nlhs, 0);
     checkNemoStatus( 
             nemo_set_cuda_backend(getConfiguration(), scalar<int,int32_t>(prhs[1])) 
-    );
-}
-
-
-
-void
-setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    checkInputCount(nrhs, 4);
-    checkOutputCount(nlhs, 0);
-    std::vector<float> prefire = vector<float, double>(prhs[1]);
-    std::vector<float> postfire = vector<float, double>(prhs[2]);
-    checkNemoStatus( 
-            nemo_set_stdp_function( 
-                    getConfiguration(), 
-                    &prefire[0], prefire.size(), 
-                    &postfire[0], postfire.size(), 
-					0.0f,
-                    scalar<float,double>(prhs[4]),
-					0.0f,
-                    scalar<float,double>(prhs[3]) 
-            ) 
     );
 }
 
@@ -1055,8 +1078,9 @@ getSynapsePlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 30
+#define FN_COUNT 31
 fn_ptr fn_arr[FN_COUNT] = {
+    addNeuronType,
     addNeuron,
     addSynapse,
     neuronCount,

@@ -421,6 +421,7 @@ mexScalarFunction mdl_name fn = mexFunctionDefinition fn body
                 mexDeclareOutputVariables $ fn_output fn,
                 C.statement $ cFunctionCall (text "checkNemoStatus") Nothing $
                         [cFunctionCall (text $ cFunctionName fn) Nothing (ptr : callArgs)],
+                mexFreeTemporaries $ fn_inputs fn,
                 mexReturnOutputVariables $ fn_output fn
             ]
         ptr = cFunctionCall getHandle Nothing []
@@ -467,8 +468,9 @@ mexVectorFunction mname fn = mexFunctionDefinition fn body
             ]
 
 {- For vectors we need to pass a pointer and a length separately, so we need to
- - create the vector before the call. This also the cast from Matlab types if
- - required. In the MEX layer we don't deal with optional arguments. -}
+ - create the vector before the call. This also performs the cast from Matlab
+ - types if required. In the MEX layer we don't deal with optional arguments.
+ -}
 mexDeclareInputVariables :: Int -> [Input] -> Doc
 mexDeclareInputVariables _ [] = empty
 mexDeclareInputVariables firstarg xs = vcat $ zipWith singleDecl [firstarg..] $ map arg xs
@@ -476,13 +478,34 @@ mexDeclareInputVariables firstarg xs = vcat $ zipWith singleDecl [firstarg..] $ 
         singleDecl :: Int -> ApiArg -> Doc
         singleDecl argno x =
             if scalar x
-                then empty
-                else C.statement $ cFunctionCall (call x) (decl x) [text $ printf "prhs[%u]" argno]
+                then case baseType x of
+                    ApiString -> mexDeclareInputString argno x
+                    _         -> empty
+                else mexDeclareInputVector argno x
 
+
+mexDeclareInputString argno x = C.statement $ cFunctionCall call decl [text $ printf "prhs[%u]" argno]
+    where
+        call = text "mxArrayToString"
+        decl = Just $ text "char*" <+> text (name x)
+
+mexDeclareInputVector argno x = C.statement $ cFunctionCall (call x) (decl x) [text $ printf "prhs[%u]" argno]
+    where
         mtype = mexType . baseType . arg_type
         ntype = cppType . baseType . arg_type
         call x = text $ printf "vector<%s, %s>" (ntype x) (mtype x)
         decl x = Just $ text $ printf "std::vector<%s> %s" (ntype x) $ name x
+
+
+{- input strings need to manually managed -}
+mexFreeTemporaries :: [Input] -> Doc
+mexFreeTemporaries xs = vcat $ map (go . arg) xs
+    where
+        go :: ApiArg -> Doc
+        go x =
+            case baseType x of
+                ApiString -> C.statement $ cFunctionCall (text "mxFree") Nothing [text $ name x]
+                _         -> empty
 
 
 
@@ -606,7 +629,9 @@ pointer baseType = (text $ cppType baseType) <> char '*'
 mexInput :: Int -> Input -> Doc
 mexInput argno a = text $
     if scalar a
-        then printf "scalar<%s,%s>(prhs[%d])" (cppType t) (mexType t) argno
+        then case baseType a of
+            ApiString -> name a
+            _         -> printf "scalar<%s,%s>(prhs[%d])" (cppType t) (mexType t) argno
         else if explicitLength (fullType a)
             then printf "&%s[0], %s.size()" n n
             -- TODO: add length check for implicit inputs
@@ -644,6 +669,7 @@ mexOutput arg = text $
 matlabType :: BaseType -> String
 -- TODO: do the conversion on the matlab side instead
 matlabType ApiFloat = "double" -- these are converted on the C side
+matlabType ApiString = error "strings are not cast"
 matlabType ApiUInt = "uint32"
 matlabType ApiUInt64 = "uint64"
 matlabType ApiInt = "int32"
@@ -657,4 +683,10 @@ handleType mdl = text $ "nemo_" ++ (map toLower mdl) ++ "_t"
 
 
 matlabInput :: ApiArg -> String
-matlabInput arg = printf "%s(%s)" (matlabType $ baseType $ arg_type arg) (name arg)
+matlabInput arg =
+    case t of
+        ApiString -> name arg
+        _         -> printf "%s(%s)" (matlabType t) (name arg)
+    where
+        t = baseType $ arg_type arg
+
