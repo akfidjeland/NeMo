@@ -83,6 +83,7 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	}
 
 	mf_param.copyToDevice();
+	mf_state.replicateInitialPlanes(m_type.f_nState());
 	mf_state.copyToDevice();
 	if(m_type.usesNormalRNG()) {
 		m_nrngState.moveToDevice();
@@ -92,6 +93,7 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	m_valid.moveToDevice();
 	configurePartitionSizes(maxPartitionNeuron);
 }
+
 
 
 

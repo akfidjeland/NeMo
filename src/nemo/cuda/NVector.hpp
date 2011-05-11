@@ -105,6 +105,9 @@ class NVector
 		/*! Fill all entries in a single plane with the same value */
 		void fill(const T& val, size_t subvector=0);
 
+		/*! Replicate the first \a n planes to fill the host-side data */
+		void replicateInitialPlanes(size_t n);
+
 		size_t planeCount() const { return m_planes; }
 
 	private :

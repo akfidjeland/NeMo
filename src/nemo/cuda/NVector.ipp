@@ -178,4 +178,17 @@ NVector<T>::fill(const T& val, size_t subvector)
 	std::fill(m_hostData.get() + subvector * size(), m_hostData.get() + (subvector+1) * size(), val);
 }
 
+
+
+template<typename T>
+void
+NVector<T>::replicateInitialPlanes(size_t n)
+{
+	T* base = m_hostData.get();
+	for(size_t tgt=n; tgt < m_planes; tgt += n) {
+		std::copy(base, base+n*size(), base+tgt*size());
+	}
+}
+
+
 }	} // end namespace
