@@ -23,6 +23,8 @@ class NEMO_BASE_DLL_PUBLIC ReadableNetwork
 {
 	public :
 
+		virtual ~ReadableNetwork() { }
+
 		/*! \return source neuron id for a synapse */
 		unsigned getSynapseSource(const synapse_id& id) const {
 			return neuronIndex(id);
