@@ -11,6 +11,19 @@ IF(CUDA_BUILD_EMULATION)
 	ADD_DEFINITIONS(-D__DEVICE_EMULATION__)
 ENDIF()
 
+SET(NEMO_CUDA_DEVICE_MAJOR "1"
+	CACHE STRING "Major device generation number for CUDA code generation. Default=1")
+SET(NEMO_CUDA_DEVICE_MINOR "2"
+	CACHE STRING "Minor device generation number for CUDA code generation. Default=2")
+
+IF(NEMO_CUDA_DEVICE_MAJOR EQUAL 1 AND NEMO_CUDA_DEVICE_MINOR LESS 2)
+	# The 1.2 minimum is because of the need for shared memory atomics
+	MESSAGE(FATAL_ERROR "Minimum CUDA device generation is 1.2")
+ENDIF()
+
+LIST(APPEND CUDA_NVCC_FLAGS "-arch=sm_${NEMO_CUDA_DEVICE_MAJOR}${NEMO_CUDA_DEVICE_MINOR}")
+
+
 IF(NEMO_CUDA_DEBUG_TRACE)
 	IF(NOT CUDA_BUILD_EMULATION)
 		IF(HAVE_CUPRINTF)
@@ -47,11 +60,6 @@ INCLUDE_DIRECTORIES(
 	${CUDA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIR}
   )
-
-
-# We need shared memory atomics
-# TODO: we should generate separate version for later devices
-LIST(APPEND CUDA_NVCC_FLAGS "-arch=sm_12")
 
 
 ##############################################################################
