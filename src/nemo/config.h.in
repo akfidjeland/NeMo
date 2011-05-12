@@ -8,7 +8,6 @@
 #cmakedefine HAVE_POSIX_MEMALIGN
 #cmakedefine HAVE_CUPRINTF
 #cmakedefine CAN_SET_THREAD_AFFINITY
-#cmakedefine NEMO_TIMING_ENABLED
 #cmakedefine NEMO_MPI_ENABLED
 #cmakedefine NEMO_MPI_DEBUG_TRACE
 #cmakedefine NEMO_MPI_DEBUG_TIMING

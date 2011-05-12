@@ -8,18 +8,7 @@ ELSE(NEMO_CUDA_ENABLED)
 	SET(NEMO_CUDA_DYNAMIC_LOADING OFF)
 ENDIF(NEMO_CUDA_ENABLED)
 
-OPTION(
-	NEMO_TIMING_ENABLED
-	"Include API functions for timing (requires boost_date_time library)"
-	ON
-)
-
-LIST(APPEND BOOST_COMPONENTS filesystem program_options)
-
-IF(NEMO_TIMING_ENABLED)
-	LIST(APPEND BOOST_COMPONENTS date_time)
-ENDIF(NEMO_TIMING_ENABLED)
-
+LIST(APPEND BOOST_COMPONENTS filesystem program_options date_time)
 
 OPTION(NEMO_MPI_ENABLED "Create MPI-enabled simulation" OFF)
 IF(NEMO_MPI_ENABLED)

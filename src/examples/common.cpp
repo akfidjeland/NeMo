@@ -26,9 +26,7 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	rng_t rng;
 	uirng_t randomNeuron(rng, boost::uniform_int<>(0, n-1));
 
-#ifdef NEMO_TIMING_ENABLED
 	sim->resetTimer();
-#endif
 
 	unsigned t = 0;
 
@@ -43,11 +41,9 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 			sim->applyStdp(1.0);
 		}
 	}
-#ifdef NEMO_TIMING_ENABLED
 	if(verbose)
 		std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
 	sim->resetTimer();
-#endif
 
 	unsigned seconds = 10;
 
@@ -82,34 +78,28 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 			sim->applyStdp(1.0);
 		}
 	}
-#ifdef NEMO_TIMING_ENABLED
 	long int elapsedData = sim->elapsedWallclock();
 	if(verbose)
 		std::cout << "[" << elapsedData << "ms elapsed]";
-#endif
 	if(verbose)
 		std::cout << std::endl;
 
 	unsigned long narrivals = nfired * m;
 	double f = (double(nfired) / n) / double(seconds);
 
-#ifdef NEMO_TIMING_ENABLED
 	/* Throughput is measured in terms of the number of spike arrivals per
 	 * wall-clock second */
 	unsigned long throughput = MS_PER_SECOND * narrivals / elapsedData;
 	double speedup = double(seconds*MS_PER_SECOND)/elapsedData;
-#endif
 
 	if(verbose) {
 		std::cout << "Total firings: " << nfired << std::endl;
 		std::cout << "Avg. firing rate: " << f << "Hz\n";
 		std::cout << "Spike arrivals: " << narrivals << std::endl;
-#ifdef NEMO_TIMING_ENABLED
 		std::cout << "Performace both with and without PCI traffic overheads:\n";
 		std::cout << "Approx. throughput: " << throughput/1000000
 				<< "Ma/s (million spike arrivals per second)\n";
 		std::cout << "Speedup wrt real-time: " << speedup << std::endl;
-#endif
 	}
 
 	if(csv) {
