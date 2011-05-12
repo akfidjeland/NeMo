@@ -599,6 +599,14 @@ initializeConverters()
 }
 
 
+/* The STDP configuration comes in two forms in the C++ API. Use just the
+ * original form here, in order to avoid breaking existing code. */
+void (nemo::Configuration::*stdp2)(
+		const std::vector<float>& prefire,
+		const std::vector<float>& postfire,
+		float minWeight,
+		float maxWeight) = &nemo::Configuration::setStdpFunction;
+
 
 BOOST_PYTHON_MODULE(_nemo)
 {
@@ -628,7 +636,7 @@ BOOST_PYTHON_MODULE(_nemo)
 		//.def("enable_logging", &nemo::Configuration::enableLogging)
 		//.def("disable_logging", &nemo::Configuration::disableLogging)
 		//.def("logging_enabled", &nemo::Configuration::loggingEnabled)
-		.def("set_stdp_function", &nemo::Configuration::setStdpFunction, CONFIGURATION_SET_STDP_FUNCTION_DOC)
+		.def("set_stdp_function", stdp2, CONFIGURATION_SET_STDP_FUNCTION_DOC)
 		.def("set_cuda_backend", &nemo::Configuration::setCudaBackend, CONFIGURATION_SET_CUDA_BACKEND_DOC)
 		.def("set_cpu_backend", &nemo::Configuration::setCpuBackend, CONFIGURATION_SET_CPU_BACKEND_DOC)
 		.def("backend_description", &nemo::Configuration::backendDescription, CONFIGURATION_BACKEND_DESCRIPTION_DOC)
