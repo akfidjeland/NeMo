@@ -747,7 +747,10 @@ Alternatively, the library can be built from source using \command{cmake} and th
 \subsection{Building from source}
 \label{source_build}
 
-\nemo\ relies on the boost headers.
+\nemo\ relies on several \library{boost} libraries.
+Most of these are header-only, but the following non-header libraries are also required:
+	\library{program\_options}, \library{filesystem}, and \library{date\_time}.
+On Linux/OSX the \library{libltdl} is required for plugin loading.
 Additionally the following dependencies may be needed depending on what \command{cmake} configuration options are set: 
 
 \begin{tabular}{p{.3\textwidth}lp{.3\textwidth}}
@@ -755,11 +758,8 @@ Additionally the following dependencies may be needed depending on what \command
 Feature & \command{cmake} option & Dependency \\
 \hline
 CUDA backend & \command{NEMO\_CUDA\_ENABLED} & Cuda toolkit \\
-\hspace{2em}dynamic loading & \command{NEMO\_CUDA\_DYNAMIC\_LOADING} & \command{libltdl} (Linux/OSX) \\
-Timing functions & \command{NEMO\_TIMING\_ENABLED} & boost date\_time \\
 Python bindings & \command{NEMO\_PYTHON\_ENABLED} & boost python \\
-Matlab bindings & \command{NEMO\_MATLAB\_ENABLED} & Matlab (including \command{mex} compiler) \\
-Example programs & \command{NEMO\_EXAMPLES\_ENABLED} & boost program\_options \\ 
+Matlab bindings & \command{NEMO\_MATLAB\_ENABLED} & Matlab (including the \command{mex} compiler) \\
 \hline
 \end{tabular}
 
