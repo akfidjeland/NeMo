@@ -35,8 +35,6 @@
  * just use a global shared variable. */
 __shared__ uint32_t s_cycle;
 
-#ifdef __CUDA_ARCH__
-
 #ifdef __DEVICE_EMULATION__
 #	include <stdio.h>
 #	define DEBUG_MSG(...) fprintf(stderr, __VA_ARGS__)
@@ -50,7 +48,9 @@ __shared__ uint32_t s_cycle;
 #			include <cuPrintf.cu>
 #			define DEBUG_MSG(...) cuPrintf(__VA_ARGS__)
 #		else // HAVE_CUPRINTF
-#			error "cuPrintf not available (and not in emulation mode)"
+#			ifdef __CUDA_ARCH__
+#				error "cuPrintf not available (and not in emulation mode)"
+#			endif
 #		endif // HAVE_CUPRINTF
 #	endif // __CUDA_ARCH__ >= 200
 #endif // __DEVICE_EMULATION__
@@ -90,6 +90,4 @@ __shared__ uint32_t s_cycle;
 
 #endif // NEMO_CUDA_DEBUG_TRACE
 
-#endif // __CUDA_ARCH__
-
-#endif
+#endif // NEMO_CUDA_LOG_HPP
