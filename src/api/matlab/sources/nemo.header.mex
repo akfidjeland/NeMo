@@ -433,6 +433,7 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 					hdl,
 					scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]),
 					scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]),
+					nargs,
 					args
 				)
 		);

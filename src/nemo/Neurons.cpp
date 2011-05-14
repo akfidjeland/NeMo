@@ -40,8 +40,16 @@ Neurons::add(const float fParam[], const float fState[])
 
 
 size_t
-Neurons::add(const float args[])
+Neurons::add(unsigned nargs, const float args[])
 {
+	using boost::format;
+
+	if(nargs != mf_param.size() + mf_state.size()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Unexpected number of parameters/state variables when adding neuron. Expected %u, found %u")
+						% (mf_param.size() + mf_state.size()) % nargs));
+	}
+
 	for(unsigned i=0; i < mf_param.size(); ++i) {
 		mf_param[i].push_back(*args++);
 	}

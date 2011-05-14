@@ -53,7 +53,7 @@ class Neurons
 		 * \pre the input arguments must have the lengths that was specified by
 		 * 		the neuron type used when this object was created.
 		 */
-		size_t add(const float args[]);
+		size_t add(unsigned nargs, const float args[]);
 
 		/*! Modify an existing neuron
 		 *

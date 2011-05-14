@@ -242,6 +242,7 @@ nemo_add_neuron_iz(nemo_network_t,
  *
  * \param type index of the neuron type, as returned by \a add_neuron_type
  * \param idx user-assigned unique neuron index
+ * \param nargs length of \a args
  * \param args
  * 		floating point parameters followed by state variables of the neuron
  *
@@ -250,7 +251,8 @@ nemo_add_neuron_iz(nemo_network_t,
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_add_neuron_a(nemo_network_t, unsigned type, unsigned idx, float args[]);
+nemo_add_neuron_a(nemo_network_t, unsigned type, unsigned idx,
+		unsigned nargs, float args[]);
 
 
 

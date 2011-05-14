@@ -74,13 +74,16 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		 *
 		 * \param type
 		 * 		index of the neuron type, as returned by \a addNeuronType
+		 * \param nargs
+		 * 		length of \a args
 		 * \param args
 		 * 		parameters and state variables of the neuron (in that order)
 		 *
 		 * \pre The parameter and state arrays must have the dimensions
 		 * 		matching the neuron type represented by \a type.
 		 */
-		void addNeuron(unsigned type, unsigned idx, const float args[]);
+		void addNeuron(unsigned type, unsigned idx,
+				unsigned nargs, const float args[]);
 
 		/*! \brief Add a single Izhikevich neuron to the network
 		 *

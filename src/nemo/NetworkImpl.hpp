@@ -61,7 +61,8 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 				const float param[], const float state[]);
 
 		/*! \copydoc nemo::Network::addNeuron */
-		void addNeuron(unsigned type, unsigned idx, const float args[]);
+		void addNeuron(unsigned type, unsigned idx,
+				unsigned nargs, const float args[]);
 
 		/*! \copydoc nemo::Network::setNeuron */
 		void setNeuron(unsigned idx, const float param[], const float state[]);
