@@ -36,7 +36,13 @@ class RandomMapper : public Mapper<nidx_t, L>
 
 		/*! Add a new global/local neuron index pair */
 		virtual void insert(nidx_t gidx, const L& lidx) {
-			m_bm.insert(typename bm_type::value_type(gidx, lidx));
+			using boost::format;
+			std::pair<typename bm_type::iterator,bool> insertion =
+				m_bm.insert(typename bm_type::value_type(gidx, lidx));
+			if(!insertion.second) {
+				throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("Duplicate neuron index %u") % gidx));
+			}
 		}
 
 		/*! \return local index corresponding to the global neuron index \a gidx 
