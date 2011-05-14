@@ -128,7 +128,7 @@ DeviceMap::DeviceMap() :
 			cudaDeviceProp prop;
 			CUDA_SAFE_CALL(cudaGetDeviceProperties(&prop, device));
 			m_devices[device] = prop;
-			m_description[device] = str(format("%s [%u.%u]\n")
+			m_description[device] = str(format("%s [%u.%u]")
 					% prop.name % prop.major % prop.minor);
 			m_driverIds.push_back(device);
 		}
