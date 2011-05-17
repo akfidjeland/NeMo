@@ -60,18 +60,6 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 
 		/*! \brief Add a neuron to the network
 		 *
-		 * \param type index of the neuron type, as returned by \a addNeuronType
-		 * \param param floating point parameters of the neuron
-		 * \param state floating point state variables of the neuron
-		 *
-		 * \pre The parameter and state arrays must have the dimensions
-		 * 		matching the neuron type represented by \a type.
-		 */
-		void addNeuron(unsigned type, unsigned idx,
-				const float param[], const float state[]);
-
-		/*! \brief Add a neuron to the network
-		 *
 		 * \param type
 		 * 		index of the neuron type, as returned by \a addNeuronType
 		 * \param nargs

@@ -826,12 +826,11 @@ testInvalidNeuronType()
 {
 	nemo::Network net;
 	unsigned iz = net.addNeuronType("Izhikevich");
-	float state[5] = {0, 0, 0, 0, 0};
-	float params[2] = {0, 0};
+	float args[7] = {0, 0, 0, 0, 0, 0, 0};
 	for(unsigned n=0; n<100; ++n) {
 		if(n != iz) {
 			// incorrect parameter order for n and iz.
-			BOOST_REQUIRE_THROW(net.addNeuron(n, iz, state, params), nemo::exception);
+			BOOST_REQUIRE_THROW(net.addNeuron(n, iz, 7, args), nemo::exception);
 		}
 	}
 }

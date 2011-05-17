@@ -190,16 +190,6 @@ nemo_add_neuron_a(nemo_network_t net,
 
 
 nemo_status_t
-nemo_add_neuron_ps(nemo_network_t net,
-		unsigned type,
-		unsigned idx,
-		float params[], float state[])
-{
-	CATCH_(net, addNeuron(type, idx, params, state))
-}
-
-
-nemo_status_t
 nemo_add_synapse(nemo_network_t net,
 		unsigned source,
 		unsigned target,

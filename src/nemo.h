@@ -256,23 +256,6 @@ nemo_add_neuron_a(nemo_network_t, unsigned type, unsigned idx,
 
 
 
-/*! Add a neuron to the network
- *
- * \param type index of the neuron type, as returned by \a add_neuron_type
- * \param idx user-assigned unique neuron index
- * \param param floating point parameters of the neuron
- * \param state floating point state variables of the neuron
- *
- * \pre The parameter and state arrays must have dimensions matching the neuron
- * 		type represented by \a type.
- */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_add_neuron_ps(nemo_network_t,
-		unsigned type, unsigned idx,
-		float params[], float state[]);
-
-
 /* Add a single synapse to network
  *
  * \a id

@@ -25,19 +25,6 @@ Neurons::Neurons(const NeuronType& type) :
 }
 
 
-size_t
-Neurons::add(const float fParam[], const float fState[])
-{
-	for(unsigned i=0; i < mf_param.size(); ++i) {
-		mf_param[i].push_back(fParam[i]);
-	}
-	for(unsigned i=0; i < mf_state.size(); ++i) {
-		mf_state[i].push_back(fState[i]);
-	}
-	return m_size++;
-}
-
-
 
 size_t
 Neurons::add(unsigned nargs, const float args[])

@@ -24,8 +24,7 @@ class Network : public nemo::Network
 {
 	public :
 
-		Network() :
-			m_args(16, 0.0f) { }
+		Network() : m_args(16, 0.0f) { }
 
 		/*! Add one ore more neurons of arbitrary type
 		 *
@@ -72,7 +71,7 @@ class Network : public nemo::Network
 
 /* Add a single neuron of arbitrary type
  *
- * \see nemo::python::addNeuron
+ * \see nemo::python::addNeuronVarargs
  */
 inline
 boost::python::object

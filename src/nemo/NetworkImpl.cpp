@@ -84,21 +84,6 @@ NetworkImpl::neuronCollection(unsigned type_id)
 
 
 void
-NetworkImpl::addNeuron(
-		unsigned type_id,
-		unsigned nidx,
-		const float param[],
-		const float state[])
-{
-	m_maxIdx = std::max(m_maxIdx, int(nidx));
-	m_minIdx = std::min(m_minIdx, int(nidx));
-	unsigned l_nidx = neuronCollection(type_id).add(param, state);
-	m_mapper.insert(nidx, NeuronAddress(type_id, l_nidx));
-}
-
-
-
-void
 NetworkImpl::addNeuron(unsigned type_id, unsigned nidx,
 		unsigned nargs, const float args[])
 {

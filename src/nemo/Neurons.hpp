@@ -34,18 +34,6 @@ class Neurons
 
 		/*! Add a new neuron
 		 *
-		 * \param fParam array of floating point parameters
-		 * \param fState array of floating point state variables
-		 *
-		 * \return local index (wihtin this class) of the newly added neuron
-		 *
-		 * \pre the input arrays have the lengths specified by the neuron type
-		 * 		used when this object was created.
-		 */
-		size_t add(const float fParam[], const float fState[]);
-
-		/*! Add a new neuron
-		 *
 		 * \param args all parameters and state variables (in that order)
 		 *
 		 * \return local index (wihtin this class) of the newly added neuron
