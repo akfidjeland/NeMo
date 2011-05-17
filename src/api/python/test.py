@@ -4,6 +4,16 @@ import unittest
 import random
 import nemo
 
+class IzNetwork(nemo.Network):
+
+    def __init__(self):
+        nemo.Network.__init__(self)
+        self._type = self.add_neuron_type('Izhikevich')
+
+    def add_neuron(self, nidx, a, b, c, d, u, v, sigma):
+        nemo.Network.add_neuron(self, self._type, nidx, a, b, c, d, sigma, u, v)
+
+
 def randomSource():
     return random.randint(0, 999)
 
@@ -49,7 +59,7 @@ class TestFunctions(unittest.TestCase):
         u = b * v
         sigma = 5.0
 
-        net = nemo.Network()
+        net = IzNetwork()
 
         # This should only succeed for existing neurons
         self.assertRaises(RuntimeError, net.set_neuron, 0, a, b, c, d, u, v, sigma)
@@ -132,7 +142,7 @@ class TestFunctions(unittest.TestCase):
         catastrophics failures in the boost::python layer
         """
         for test in range(1000):
-            net = nemo.Network()
+            net = IzNetwork()
             self.check_neuron_function(net.add_neuron, ncount=1000)
 
     def test_set_neuron(self):
@@ -141,7 +151,7 @@ class TestFunctions(unittest.TestCase):
         test calls set_synapse in a large number of ways, checking for
         catastrophics failures in the boost::python layer
         """
-        net = nemo.Network()
+        net = IzNetwork()
         ncount = 1000
         net.add_neuron(range(ncount), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         for test in range(1000):
@@ -197,7 +207,7 @@ class TestFunctions(unittest.TestCase):
         input. This test calls this function in a large number of ways,
         checking for catastrophics failures in the boost::python layer
         """
-        net = nemo.Network()
+        net = IzNetwork()
         pop = range(1000)
         for n in pop:
             net.add_neuron(n, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
@@ -211,7 +221,7 @@ class TestFunctions(unittest.TestCase):
         input. This test calls this function in a large number of ways,
         checking for catastrophics failures in the boost::python layer
         """
-        net = nemo.Network()
+        net = IzNetwork()
         conf = nemo.Configuration()
         pop = range(1000)
         for n in pop:
@@ -220,7 +230,7 @@ class TestFunctions(unittest.TestCase):
         self.check_set_neuron_vector(sim, pop)
 
     def simple_network(self):
-        net = nemo.Network()
+        net = IzNetwork()
         net.add_neuron(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         net.add_neuron(1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         net.add_synapse(0, 1, 1, 5.0, False)
@@ -281,7 +291,7 @@ class TestFunctions(unittest.TestCase):
         test calls set_synapse in a large number of ways, checking for
         catastrophics failures in the boost::python layer
         """
-        net = nemo.Network()
+        net = IzNetwork()
         for test in range(1000):
             vlen = random.randint(2, 500)
             source = arg(vlen, randomSource)
@@ -299,7 +309,7 @@ class TestFunctions(unittest.TestCase):
 
 
     def test_get_synapses_from_unconnected(self):
-        net = nemo.Network()
+        net = IzNetwork()
         net.add_neuron(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         self.assertEqual(len(net.get_synapses_from(0)), 0)
         sim = nemo.Simulation(net, nemo.Configuration())
@@ -326,7 +336,7 @@ class TestFunctions(unittest.TestCase):
 
         ncount = 100
 
-        net = nemo.Network()
+        net = IzNetwork()
         for src in range(ncount):
             net.add_neuron(src, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
             for tgt in range(src+1):

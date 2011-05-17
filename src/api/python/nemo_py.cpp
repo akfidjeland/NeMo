@@ -255,53 +255,6 @@ add_synapse(nemo::python::Network& net, PyObject* sources, PyObject* targets,
 
 
 
-/*! Add one or more neurons
- *
- * The arguments (other than net) may be either scalar or vector. All vectors
- * must be of the same length. If any of the inputs are vectors, the scalar
- * arguments are replicated for each synapse.
- */
-void
-add_neuron(nemo::python::Network& net, PyObject* idxs,
-		PyObject* as, PyObject* bs, PyObject* cs, PyObject* ds,
-		PyObject* us, PyObject* vs, PyObject* ss)
-{
-	unsigned len = 0;
-
-	bool vectorIdx = checkInputVector(idxs, len);
-	bool vectorA = checkInputVector(as, len);
-	bool vectorB = checkInputVector(bs, len);
-	bool vectorC = checkInputVector(cs, len);
-	bool vectorD = checkInputVector(ds, len);
-	bool vectorU = checkInputVector(us, len);
-	bool vectorV = checkInputVector(vs, len);
-	bool vectorS = checkInputVector(ss, len);
-
-	if(len == 0) {
-		/* All inputs are scalars */
-		net.addNeuron(extract<unsigned>(idxs),
-					extract<float>(as), extract<float>(bs),
-					extract<float>(cs), extract<float>(ds),
-					extract<float>(us), extract<float>(vs),
-					extract<float>(ss));
-	} else {
-		/* At least some inputs are vectors */
-		for(unsigned i=0; i != len; ++i) {
-			unsigned idx = extract<unsigned>(vectorIdx ? PyList_GetItem(idxs, i) : idxs);
-			float a = extract<float>(vectorA ? PyList_GetItem(as, i) : as);
-			float b = extract<float>(vectorB ? PyList_GetItem(bs, i) : bs);
-			float c = extract<float>(vectorC ? PyList_GetItem(cs, i) : cs);
-			float d = extract<float>(vectorD ? PyList_GetItem(ds, i) : ds);
-			float u = extract<float>(vectorU ? PyList_GetItem(us, i) : us);
-			float v = extract<float>(vectorV ? PyList_GetItem(vs, i) : vs);
-			float s = extract<float>(vectorS ? PyList_GetItem(ss, i) : ss);
-			net.addNeuron(idx, a, b, c, d, u, v, s);
-		}
-	}
-}
-
-
-
 /*! Modify one or more neurons
  *
  * The arguments (other than net) may be either scalar or vector. All vectors
@@ -347,8 +300,6 @@ set_neuron(T& net, PyObject* idxs,
 		}
 	}
 }
-
-
 
 
 
@@ -655,8 +606,7 @@ BOOST_PYTHON_MODULE(_nemo)
 
 	class_<nemo::python::Network, boost::noncopyable>("Network", NETWORK_DOC)
 		.def("add_neuron_type", &nemo::Network::addNeuronType, NETWORK_ADD_NEURON_TYPE_DOC)
-		.def("add_neuron", raw_function(nemo::python::add_neuron_va, 3))
-		.def("add_neuron", add_neuron, NETWORK_ADD_NEURON_DOC)
+		.def("add_neuron", raw_function(nemo::python::add_neuron_va, 3), NETWORK_ADD_NEURON_DOC)
 		.def("add_synapse", add_synapse, NETWORK_ADD_SYNAPSE_DOC)
 		.def("set_neuron", set_neuron<nemo::python::Network>, CONSTRUCTABLE_SET_NEURON_DOC)
 		.def("get_neuron_state", get_neuron_state<nemo::python::Network>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
