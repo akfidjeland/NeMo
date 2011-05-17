@@ -55,8 +55,8 @@ typedef unsigned __int64 uint64_t;
 /*! Dynamic library loading error */
 #define NEMO_DL_ERROR 12
 
-#define NEMO_UNKNOWN_ERROR 13
-
+#define NEMO_IO_ERROR 13
+#define NEMO_UNKNOWN_ERROR 14
 
 enum {
 	NEMO_BACKEND_CUDA,

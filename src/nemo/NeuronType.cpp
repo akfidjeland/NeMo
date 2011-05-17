@@ -73,7 +73,7 @@ getRequired(boost::program_options::variables_map vm,
 
 	if(vm.count(name) != 1) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				str(format("Missing parameter %s in configuration file %s")
+				str(format("Missing parameter '%s' in configuration file %s")
 					% name % file));
 	}
 	return vm[name].as<T>();
@@ -118,7 +118,12 @@ NeuronType::parseConfigurationFile(const std::string& name)
 
 	fs::path filename = configurationFile(name);
 
-	fs::fstream file(filename);
+	fs::fstream file(filename, std::ios::in);
+	if(!file.is_open()) {
+		throw nemo::exception(NEMO_IO_ERROR,
+				str(format("Failed to open neuron model configuration file %s: %s")
+					% filename % strerror(errno)));
+	}
 
 	try {
 		po::variables_map vm;
