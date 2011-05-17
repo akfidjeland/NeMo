@@ -29,7 +29,7 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 			SET(SUFFIX ${MEX_LIB_SUFFIX})
 		ELSE(MEX_LIB_SUFFIX)
 			# Ask user to set the variable
-			MESSAGE(ERROR "Could not find the mexext utility, required to build the Matlab bindings. Either set the MEX library extension on your platform by hand (in variable MEX_LIB_SUFFIX) or disable Matlab bindings altogether (set NEMO_MATLAB_ENABLED to OFF)")
+			MESSAGE(SEND_ERROR "Could not find the mexext utility, required to build the Matlab bindings. Either set the MEX library extension on your platform by hand (in variable MEX_LIB_SUFFIX) or disable Matlab bindings altogether (set NEMO_MATLAB_ENABLED to OFF)")
 			SET(MEX_LIB_SUFFIX "MEX_LIB_SUFFIX-NOTFOUND"
 				CACHE
 				STRING "Mex library extension on this platform (e.g. dll, mexa64, etc.)"

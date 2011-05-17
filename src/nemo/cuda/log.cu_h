@@ -41,7 +41,7 @@ __shared__ uint32_t s_cycle;
 #else // __DEVICE_EMULATION__
 #	if __CUDA_ARCH__ >= 200
 #		include <stdio.h>
-/* Just use the built-in printing facilities */
+		/* Just use the built-in printing facilities */
 #		define DEBUG_MSG(...) printf(__VA_ARGS__)
 #	else // __CUDA_ARCH__ >= 200
 #		ifdef HAVE_CUPRINTF
@@ -50,6 +50,10 @@ __shared__ uint32_t s_cycle;
 #		else // HAVE_CUPRINTF
 #			ifdef __CUDA_ARCH__
 #				error "cuPrintf not available (and not in emulation mode)"
+#			else
+				/* This should never be required, but we need the macro to be
+				 * defined for the non-device compilation pass */
+#				define DEBUG_MSG(...)
 #			endif
 #		endif // HAVE_CUPRINTF
 #	endif // __CUDA_ARCH__ >= 200
