@@ -278,17 +278,13 @@ addNeuron =
     ApiFunction
         "addNeuron"
         "add a single neuron to the network"
-        (Just "The neuron uses the Izhikevich neuron model. See E. M. Izhikevich \"Simple model of spiking neurons\", IEEE Trans. Neural Networks, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters. ")
+        (Just "The meaning of the parameters and state variables varies depending on the neuron type")
         (M.fromList pythonNeuronFullSetter)
         []
-        [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
-            Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "b" (Just "Sensitivity to sub-threshold fluctuations in the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "c" (Just "After-spike value of the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "d" (Just "After-spike reset of the recovery variable u") (Scalar ApiFloat)),
-            Required (ApiArg "u" (Just "Initial value for the membrane recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "v" (Just "Initial value for the membrane potential") (Scalar ApiFloat)),
-            Required (ApiArg "sigma" (Just "Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated") (Scalar ApiFloat))
+        [   Required (ApiArg "type" (Just "Neuron type") (Scalar ApiUInt)),
+            Required (ApiArg "idx" (Just "Neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "parameters..." (Just "all neuron parameters") (Scalar ApiUInt)),
+            Required (ApiArg "state..." (Just "all state variables") (Scalar ApiUInt))
         ]
         [Matlab, MEX] True
 
