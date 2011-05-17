@@ -1,12 +1,23 @@
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <sstream>
 #include <stdexcept>
 #include <functional>
 
 #include <boost/python.hpp>
+#include <boost/python/raw_function.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include <nemo.hpp>
 
+#include "Network.hpp"
 #include "docstrings.h" // auto-generated
 
 using namespace boost::python;
@@ -23,7 +34,7 @@ typedef int Py_ssize_t;
 /* The simulation is only created via a factory and only accessed throught the
  * returned pointer */
 boost::shared_ptr<nemo::Simulation>
-makeSimulation(const nemo::Network& net, const nemo::Configuration& conf)
+makeSimulation(const nemo::python::Network& net, const nemo::Configuration& conf)
 {
 	return boost::shared_ptr<nemo::Simulation>(simulation(net, conf));
 }
@@ -121,6 +132,7 @@ struct from_py_list_of_pairs
 };
 
 
+
 /* Python list to std::vector convertor */
 template<typename T>
 struct from_py_list
@@ -170,17 +182,16 @@ struct from_py_list
 
 
 
-/*!
- * Determine if input is scalar or vector. If it is a vector, verify that the
- * vector length is the same as other vectors (whose length is already set in
- * \a vectorLength.
+/*! Determine if input is scalar or vector.
+ *
+ * If it is a vector, verify that the vector length is the same as other
+ * vectors (whose length is already set in \a vectorLength.
  *
  * \param obj either a scalar or a vector
  * \param vectorLength length of any other vectors in the same parameter list,
  * 		or '0' if there are no others.
  * \return true if the object is vector (Python list), false if it's a scalar
  */
-inline
 bool
 checkInputVector(PyObject* obj, unsigned &vectorLength)
 {
@@ -205,7 +216,7 @@ checkInputVector(PyObject* obj, unsigned &vectorLength)
  * arguments are replicated for each synapse.
  */
 PyObject*
-add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
+add_synapse(nemo::python::Network& net, PyObject* sources, PyObject* targets,
 		PyObject* delays, PyObject* weights, PyObject* plastics)
 {
 	unsigned len = 0;
@@ -251,7 +262,7 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
  * arguments are replicated for each synapse.
  */
 void
-add_neuron(nemo::Network& net, PyObject* idxs,
+add_neuron(nemo::python::Network& net, PyObject* idxs,
 		PyObject* as, PyObject* bs, PyObject* cs, PyObject* ds,
 		PyObject* us, PyObject* vs, PyObject* ss)
 {
@@ -642,22 +653,24 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("backend_description", &nemo::Configuration::backendDescription, CONFIGURATION_BACKEND_DESCRIPTION_DOC)
 	;
 
-	class_<nemo::Network, boost::noncopyable>("Network", NETWORK_DOC)
+	class_<nemo::python::Network, boost::noncopyable>("Network", NETWORK_DOC)
+		.def("add_neuron_type", &nemo::Network::addNeuronType, NETWORK_ADD_NEURON_TYPE_DOC)
+		.def("add_neuron", raw_function(nemo::python::add_neuron_va, 3))
 		.def("add_neuron", add_neuron, NETWORK_ADD_NEURON_DOC)
 		.def("add_synapse", add_synapse, NETWORK_ADD_SYNAPSE_DOC)
-		.def("set_neuron", set_neuron<nemo::Network>, CONSTRUCTABLE_SET_NEURON_DOC)
-		.def("get_neuron_state", get_neuron_state<nemo::Network>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
-		.def("get_neuron_parameter", get_neuron_parameter<nemo::Network>, CONSTRUCTABLE_GET_NEURON_PARAMETER_DOC)
-		.def("set_neuron_state", set_neuron_state<nemo::Network>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
-		.def("set_neuron_parameter", set_neuron_parameter<nemo::Network>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
-		.def("get_synapse_source", &nemo::Network::getSynapseSource)
-		.def("neuron_count", &nemo::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
-		.def("get_synapses_from", &nemo::Network::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
-		.def("get_synapse_source", get_synapse_source<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
-		.def("get_synapse_target", get_synapse_target<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)
-		.def("get_synapse_delay", get_synapse_delay<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_DELAY_DOC)
-		.def("get_synapse_weight", get_synapse_weight<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_WEIGHT_DOC)
-		.def("get_synapse_plastic", get_synapse_plastic<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_PLASTIC_DOC)
+		.def("set_neuron", set_neuron<nemo::python::Network>, CONSTRUCTABLE_SET_NEURON_DOC)
+		.def("get_neuron_state", get_neuron_state<nemo::python::Network>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
+		.def("get_neuron_parameter", get_neuron_parameter<nemo::python::Network>, CONSTRUCTABLE_GET_NEURON_PARAMETER_DOC)
+		.def("set_neuron_state", set_neuron_state<nemo::python::Network>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
+		.def("set_neuron_parameter", set_neuron_parameter<nemo::python::Network>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
+		.def("get_synapse_source", &nemo::python::Network::getSynapseSource)
+		.def("neuron_count", &nemo::python::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
+		.def("get_synapses_from", &nemo::python::Network::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
+		.def("get_synapse_source", get_synapse_source<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
+		.def("get_synapse_target", get_synapse_target<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)
+		.def("get_synapse_delay", get_synapse_delay<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_DELAY_DOC)
+		.def("get_synapse_weight", get_synapse_weight<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_WEIGHT_DOC)
+		.def("get_synapse_plastic", get_synapse_plastic<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_PLASTIC_DOC)
 	;
 
 	class_<nemo::Simulation, boost::shared_ptr<nemo::Simulation>, boost::noncopyable>(

@@ -5,7 +5,7 @@ import random
 import nemo
 
 
-def add_excitatory(net, nidx, ncount, scount, stdp=False):
+def add_excitatory(net, iz, nidx, ncount, scount, stdp=False):
     v = -65.0
     a = 0.02
     b = 0.2
@@ -16,7 +16,7 @@ def add_excitatory(net, nidx, ncount, scount, stdp=False):
     d = 8.0 - 6.0 * r2
     u = b * v
     sigma = 5.0
-    net.add_neuron(nidx, a, b, c, d, u, v, sigma)
+    net.add_neuron(iz, nidx, a, b, c, d, sigma, u, v)
     for s in range(scount):
         target = random.randint(0, ncount-1)
         weight = 0.5 * random.random()
@@ -24,7 +24,7 @@ def add_excitatory(net, nidx, ncount, scount, stdp=False):
     return net
 
 
-def add_inhibitory(net, nidx, ncount, scount):
+def add_inhibitory(net, iz, nidx, ncount, scount):
     v = -65.0
     r1 = random.random()
     a = 0.02 + 0.08 * r1
@@ -34,7 +34,7 @@ def add_inhibitory(net, nidx, ncount, scount):
     d = 2.0
     u = b * v
     sigma = 2.0
-    net.add_neuron(nidx, a, b, c, d, u, v, sigma)
+    net.add_neuron(iz, nidx, a, b, c, d, sigma, u, v)
     for s in range(scount):
         target = random.randint(0, ncount-1)
         weight = -random.random()
@@ -44,18 +44,18 @@ def add_inhibitory(net, nidx, ncount, scount):
 
 def construct_random(ncount, scount):
     """
-    Construct a randomly connected network with n neurons each of which connect to m postsynaptic neurons.
-
+    Construct a randomly connected network with n neurons each of which connects to m postsynaptic neurons.
     """
     def is_excitatory(nidx):
         return nidx < (ncount * 4 / 5)
 
     net = nemo.Network()
+    iz = net.add_neuron_type('Izhikevich')
     for nidx in range(ncount):
         if is_excitatory(nidx):
-            add_excitatory(net, nidx, ncount, scount)
+            add_excitatory(net, iz, nidx, ncount, scount)
         else:
-            add_inhibitory(net, nidx, ncount, scount)
+            add_inhibitory(net, iz, nidx, ncount, scount)
     return net
 
 
