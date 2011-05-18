@@ -109,7 +109,7 @@ Neurons::d_allocated() const
 void
 Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
 {
-	md_partitionSize = d_array<unsigned>(MAX_PARTITION_COUNT, "partition size array");
+	md_partitionSize = d_array<unsigned>(MAX_PARTITION_COUNT, true, "partition size array");
 	std::vector<unsigned> h_partitionSize(MAX_PARTITION_COUNT, 0);
 	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
 			i != maxPartitionNeuron.end(); ++i) {

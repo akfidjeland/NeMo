@@ -46,26 +46,25 @@ RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
 	std::vector<uint32_t>& h_forward = h_rcm.m_forward;
 
 	if(h_rcm.m_useData && !empty) {
-		md_data = d_array<rsynapse_t>(m_planeSize, "rcm (data)");
+		md_data = d_array<rsynapse_t>(m_planeSize, false, "rcm (data)");
 		memcpyToDevice(md_data.get(), h_data, m_planeSize);
 		h_data.clear();
 		m_allocated += m_planeSize * sizeof(rsynapse_t);
 	}
 
 	if(h_rcm.m_stdpEnabled && !empty) {
-		md_accumulator = d_array<weight_dt>(m_planeSize, "rcm (accumulator)");
-		d_memset(md_accumulator.get(), 0, m_planeSize*sizeof(weight_dt));
+		md_accumulator = d_array<weight_dt>(m_planeSize, true, "rcm (accumulator)");
 		m_allocated += m_planeSize * sizeof(weight_dt);
 	}
 
 	if(h_rcm.m_useWeights && !empty) {
-		md_weights = d_array<float>(m_planeSize, "rcm (weights)");
+		md_weights = d_array<float>(m_planeSize, false, "rcm (weights)");
 		memcpyToDevice(md_weights.get(), h_rcm.m_weights, m_planeSize);
 		m_allocated += m_planeSize * sizeof(float);
 	}
 
 	if(h_rcm.m_useForward && !empty) {
-		md_forward = d_array<uint32_t>(m_planeSize, "rcm (forward address)");
+		md_forward = d_array<uint32_t>(m_planeSize, false, "rcm (forward address)");
 		memcpyToDevice(md_forward.get(), h_forward, m_planeSize);
 		h_forward.clear();
 		m_allocated += m_planeSize * sizeof(uint32_t);
@@ -104,13 +103,13 @@ RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
 	}
 
 	/* Copy meta index to device */
-	md_metaIndex = d_array<rcm_index_address_t>(h_address.size(), "RCM index addresses");
+	md_metaIndex = d_array<rcm_index_address_t>(h_address.size(), false, "RCM index addresses");
 	memcpyToDevice(md_metaIndex.get(), h_address);
 	m_allocated += h_address.size() * sizeof(rcm_index_address_t);
 
 	/* Copy index data to device */
 	if(allocated != 0) {
-		md_index = d_array<rcm_address_t>(allocated, "RCM index data");
+		md_index = d_array<rcm_address_t>(allocated, false, "RCM index data");
 		memcpyToDevice(md_index.get(), h_index);
 		m_allocated += allocated * sizeof(rcm_address_t);
 	}

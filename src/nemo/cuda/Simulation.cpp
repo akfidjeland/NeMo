@@ -73,7 +73,7 @@ Simulation::Simulation(
 	m_current(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingBuffer(m_mapper),
 	m_fired(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
-	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), "Fired count")),
+	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), true, "Fired count")),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_stdp(conf.stdpFunction()),
 	md_istim(NULL),
@@ -305,7 +305,6 @@ Simulation::fire()
 void
 Simulation::postfire()
 {
-#if 0
 	runKernel(::scatter(
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
@@ -337,7 +336,6 @@ Simulation::postfire()
 			md_nFired.get(),
 			m_fired.deviceData()));
 	}
-#endif
 
 	cudaEventSynchronize(m_eventFireDone);
 	m_firingBuffer.sync(m_streamCopy);
