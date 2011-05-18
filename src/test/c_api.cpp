@@ -220,7 +220,7 @@ c_runSimulation(
 	}
 
 	// try replacing a neuron, just to make sure it doesn't make things fall over.
-	nemo_set_neuron_s(sim, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -64.0f, 0.0f);
+	nemo_set_neuron_iz_s(sim, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -64.0f, 0.0f);
 	{
 		float v;
 		nemo_get_membrane_potential(sim, 0, &v);
@@ -374,7 +374,7 @@ testSetNeuron()
 	nemo_network_t net = nemo_new_network();
 
 	/* setNeuron should only succeed for existing neurons */
-	BOOST_REQUIRE(nemo_set_neuron_n(net, 0, a, b, c, d, u, v, sigma) != NEMO_OK);
+	BOOST_REQUIRE(nemo_set_neuron_iz_n(net, 0, a, b, c, d, u, v, sigma) != NEMO_OK);
 
 	nemo_add_neuron_iz(net, 0, a, b, c-0.1f, d, u, v-1.0f, sigma);
 
@@ -387,7 +387,7 @@ testSetNeuron()
 	BOOST_REQUIRE(nemo_get_neuron_state_n(net, 0, 2, &val) != NEMO_OK);
 
 	float e = 0.1f;
-	BOOST_REQUIRE_EQUAL(nemo_set_neuron_n(net, 0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e), NEMO_OK);
+	BOOST_REQUIRE_EQUAL(nemo_set_neuron_iz_n(net, 0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e), NEMO_OK);
 	nemo_get_neuron_parameter_n(net, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, a-e);
 	nemo_get_neuron_parameter_n(net, 0, 1, &val); BOOST_REQUIRE_EQUAL(val, b-e);
 	nemo_get_neuron_parameter_n(net, 0, 2, &val); BOOST_REQUIRE_EQUAL(val, c-e);
@@ -488,7 +488,7 @@ testSetNeuron()
 		 * fires (which it shouldn't do this cycle). This modification
 		 * therefore should not affect the simulation result (here measured via
 		 * the membrane potential) */
-		nemo_set_neuron_s(sim, 0, a, b, c+1.0f, d, u, v, sigma);
+		nemo_set_neuron_iz_s(sim, 0, a, b, c+1.0f, d, u, v, sigma);
 		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
 		nemo_get_membrane_potential(sim, 0, &val); BOOST_REQUIRE_EQUAL(v0, val);
 		nemo_get_neuron_parameter_s(sim, 0, 0, &val); BOOST_REQUIRE_EQUAL(val, a);
@@ -505,7 +505,7 @@ testSetNeuron()
 		nemo_network_t net1 = nemo_new_network();
 		nemo_add_neuron_iz(net1, 0, a, b, c, d, u, v-1.0f, sigma);
 		nemo_simulation_t sim = nemo_new_simulation(net1, conf);
-		nemo_set_neuron_s(sim, 0, a, b, c, d, u, v, sigma);
+		nemo_set_neuron_iz_s(sim, 0, a, b, c, d, u, v, sigma);
 		nemo_step(sim, NULL, 0, NULL, NULL, 0, NULL, NULL);
 		nemo_get_membrane_potential(sim, 0, &val); BOOST_REQUIRE_EQUAL(v0, val);
 		nemo_delete_simulation(sim);

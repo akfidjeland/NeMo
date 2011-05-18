@@ -61,9 +61,7 @@ class Neurons
 		}
 
 		/*! \copydoc nemo::Network::setNeuron */
-		void set(unsigned g_idx, const float param[], const float state[]) {
-			setLocal(m_mapper.localIdx(g_idx), param, state);
-		}
+		void set(unsigned g_idx, unsigned nargs, const float args[]);
 
 		/*! \copydoc nemo::Network::setNeuronState */
 		void setState(unsigned g_idx, unsigned var, float val) {
@@ -122,7 +120,7 @@ class Neurons
 		state_type m_state;
 
 		/*! Set neuron, like \a cpu::Neurons::set, but with a local index */
-		void setLocal(unsigned l_idx, const float fParam[], const float fState[]);
+		void setLocal(unsigned l_idx, const float param[], const float state[]);
 
 		/*! Number of neurons in this collection */
 		size_t m_size;

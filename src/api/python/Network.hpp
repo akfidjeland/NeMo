@@ -42,7 +42,7 @@ class Network : public nemo::Network
 		 * The neuron type is expected to be a scalar. The remaining arguments
 		 * may be either scalar or vector. All vectors must be of the same
 		 * length. If any of the inputs are vectors, the scalar arguments are
-		 * replicated for each synapse.
+		 * replicated for each neuron.
 		 *
 		 * \param args parameters and state variables
 		 * \param kwargs unused, but required by boost::python
@@ -80,8 +80,6 @@ add_neuron_va(boost::python::tuple args, boost::python::dict kwargs)
 	return boost::python::extract<nemo::python::Network&>(args[0])()
 						.addNeuronVarargs(args, kwargs);
 }
-
-
 
 
 }	}

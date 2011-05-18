@@ -75,13 +75,21 @@ Neurons::stateIndex(unsigned i) const
 
 
 void
-Neurons::set(size_t n, const float fParam[], const float fState[])
+Neurons::set(size_t n, unsigned nargs, const float args[])
 {
+	using boost::format;
+
+	if(nargs != mf_param.size() + mf_state.size()) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Unexpected number of parameters/state variables when modifying neuron. Expected %u, found %u")
+						% (mf_param.size() + mf_state.size()) % nargs));
+	}
+
 	for(unsigned i=0; i < mf_param.size(); ++i) {
-		mf_param[i][n] = fParam[i];
+		mf_param[i][n] = *args++;
 	}
 	for(unsigned i=0; i < mf_state.size(); ++i) {
-		mf_state[i][n] = fState[i];
+		mf_state[i][n] = *args++;
 	}
 }
 

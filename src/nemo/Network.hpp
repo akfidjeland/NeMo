@@ -114,7 +114,7 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		 * 		matching the neuron type specified when the neuron was first
 		 * 		added.
 		 */
-		void setNeuron(unsigned idx, const float param[], const float state[]);
+		void setNeuron(unsigned idx, unsigned nargs, const float args[]);
 
 		/*! Change parameters/state variables of a single existing Izhikevich-type neuron
 		 *

@@ -16,4 +16,4 @@
 % number of times.
 function setNeuron(idx, varargin)
 
-nemo_mex(uint32(20), uint32(idx), varargin{:});
+nemo_mex(uint32(FNID), uint32(idx), varargin{:});

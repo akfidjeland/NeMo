@@ -209,9 +209,9 @@ Simulation::readFiring()
 
 
 void
-Simulation::setNeuron(unsigned g_idx, const float param[], const float state[])
+Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 {
-	m_neurons.set(g_idx, param, state);
+	m_neurons.set(g_idx, nargs, args);
 }
 
 

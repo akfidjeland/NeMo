@@ -16,4 +16,15 @@ Simulation::~Simulation()
 	;
 }
 
+
+void
+Simulation::setNeuron(unsigned idx,
+		float a, float b, float c, float d,
+		float u, float v, float sigma)
+{
+	const float args[7] = {a, b, c, d, sigma, u, v};
+	setNeuron(idx, 7, args);
+}
+
+
 } // end namespace nemo

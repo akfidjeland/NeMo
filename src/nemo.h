@@ -587,7 +587,36 @@ nemo_get_synapses_from_s(nemo_simulation_t, unsigned source, synapse_id *synapse
  * simulation.
  * \{ */
 
-/*! Modify the parameters/state for a single neuron during construction
+
+/*! Modify an existing neuron during network construction
+ *
+ * \param idx user-assigned unique neuron index
+ * \param nargs length of \a args
+ * \param args floating point parameters followed by state variables of the neuron
+ *
+ * \pre The parameter and state arrays must have dimensions matching the neuron
+ * 		type assigned to this neuron when it was created.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_n(nemo_network_t, unsigned idx, unsigned nargs, float args[]);
+
+
+/*! Modify an existing neuron during simulation
+ *
+ * \param idx user-assigned unique neuron index
+ * \param nargs length of \a args
+ * \param args floating point parameters followed by state variables of the neuron
+ *
+ * \pre The parameter and state arrays must have dimensions matching the neuron
+ * 		type assigned to this neuron when it was created.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_s(nemo_simulation_t, unsigned idx, unsigned nargs, float args[]);
+
+
+/*! Modify the parameters/state for a single Izhikevich neuron during construction
  *
  * The neuron must already exist.
  *
@@ -595,14 +624,13 @@ nemo_get_synapses_from_s(nemo_simulation_t, unsigned source, synapse_id *synapse
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_neuron_n(nemo_network_t net,
+nemo_set_neuron_iz_n(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
 
 
-
-/*! Modify the parameters/state for a single neuron during simulation
+/*! Modify the parameters/state for a single Izhikevich neuron during simulation
  *
  * The neuron must already exist.
  *
@@ -610,11 +638,10 @@ nemo_set_neuron_n(nemo_network_t net,
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_neuron_s(nemo_simulation_t sim,
+nemo_set_neuron_iz_s(nemo_simulation_t sim,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
-
 
 
 /*! Modify a single state variable for a single neuron during construction
@@ -635,7 +662,6 @@ nemo_status_t
 nemo_set_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float val);
 
 
-
 /*! Modify a single parameter for a single neuron during construction
  *
  * \param[in] net network object
@@ -654,7 +680,6 @@ nemo_status_t
 nemo_set_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float val);
 
 
-
 /*! Modify a single state variable for a single neuron during simulation
  *
  * \param[in] sim simulation object
@@ -671,7 +696,6 @@ nemo_set_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param,
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float val);
-
 
 
 /*! Modify a single parameter for a single neuron during simulation

@@ -40,13 +40,28 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 
 
 void
-Neurons::setLocal(unsigned l_idx, const float fParam[], const float fState[])
+Neurons::set(unsigned g_idx, unsigned nargs, const float args[])
+{
+	using boost::format;
+
+	if(nargs != m_nParam + m_nState) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Unexpected number of parameters/state variables when modifying neuron. Expected %u, found %u")
+						% (m_nParam + m_nState) % nargs));
+	}
+
+	setLocal(m_mapper.localIdx(g_idx), args, args+m_nParam);
+}
+
+
+void
+Neurons::setLocal(unsigned l_idx, const float param[], const float state[])
 {
 	for(unsigned i=0; i < m_nParam; ++i) {
-		m_param[i][l_idx] = fParam[i];
+		m_param[i][l_idx] = param[i];
 	}
 	for(unsigned i=0; i < m_nState; ++i) {
-		m_state[i][l_idx] = fState[i];
+		m_state[i][l_idx] = state[i];
 	}
 }
 

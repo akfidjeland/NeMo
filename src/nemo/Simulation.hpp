@@ -91,13 +91,24 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 		 * in the current version of NeMo
 		 */
 
-		/*! Change the parameters of an existing neuron.
+		/*! Set an existing neuron
+		 *
+		 * \param nargs number of parameters and state variables
+		 * \param args parameters and state variables (in that order) of the neuron
+		 *
+		 * \pre The parameter and state array must have the dimensions
+		 * 		matching the neuron type specified when the neuron was first
+		 * 		added.
+		 */
+		virtual void setNeuron(unsigned idx, unsigned nargs, const float args[]) = 0;
+
+		/*! Change an existing Izhikevich neuron.
 		 *
 		 * \see nemo::Network::addNeuron for parameters
 		 */
-		virtual void setNeuron(unsigned idx,
+		void setNeuron(unsigned idx,
 				float a, float b, float c, float d,
-				float u, float v, float sigma) = 0;
+				float u, float v, float sigma);
 
 		/*! \copydoc nemo::Network::setNeuronState */
 		virtual void setNeuronState(unsigned neuron, unsigned var, float val) = 0;

@@ -251,8 +251,25 @@ nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned par
 }
 
 
+
 nemo_status_t
-nemo_set_neuron_n(nemo_network_t net,
+nemo_set_neuron_n(nemo_network_t net, unsigned idx, unsigned nargs, float args[])
+{
+	CATCH_(net, setNeuron(idx, nargs, args));
+}
+
+
+
+nemo_status_t
+nemo_set_neuron_s(nemo_simulation_t sim, unsigned idx, unsigned nargs, float args[])
+{
+	CATCH_(sim, setNeuron(idx, nargs, args));
+}
+
+
+
+nemo_status_t
+nemo_set_neuron_iz_n(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
@@ -262,7 +279,7 @@ nemo_set_neuron_n(nemo_network_t net,
 
 
 nemo_status_t
-nemo_set_neuron_s(nemo_simulation_t sim,
+nemo_set_neuron_iz_s(nemo_simulation_t sim,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)

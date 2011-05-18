@@ -62,9 +62,9 @@ Network::addNeuron(unsigned idx,
 
 
 void
-Network::setNeuron(unsigned idx, const float param[], const float state[])
+Network::setNeuron(unsigned idx, unsigned nargs, const float args[])
 {
-	m_impl->setNeuron(idx, param, state);
+	m_impl->setNeuron(idx, nargs, args);
 }
 
 
@@ -73,12 +73,11 @@ Network::setNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	static boost::array<float, 5> param;
-	static boost::array<float, 2> state;
+	static boost::array<float, 7> args;
 
-	param[0] = a; param[1] = b; param[2] = c; param[3] = d; param[4] = sigma;
-	state[0] = u; state[1] = v;
-	m_impl->setNeuron(idx, param.c_array(), state.c_array());
+	args[0] = a; args[1] = b; args[2] = c; args[3] = d; args[4] = sigma;
+	args[5] = u; args[6] = v;
+	m_impl->setNeuron(idx, 7, args.c_array());
 }
 
 

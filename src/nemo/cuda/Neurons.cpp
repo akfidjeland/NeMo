@@ -196,15 +196,26 @@ Neurons::currentStateVariable(unsigned var) const
 
 
 void
-Neurons::setNeuron(const DeviceIdx& dev, const float param[], const float state[])
+Neurons::setNeuron(const DeviceIdx& dev, unsigned nargs, const float args[])
 {
+	using boost::format;
+
+	//! \todo pre-compute these
+	unsigned nparam = parameterCount();
+	unsigned nstate = stateVarCount();
+	if(nargs != nparam + nstate) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Unexpected number of parameters/state variables when modifying neuron. Expected %u, found %u")
+						% (nparam + nstate) % nargs));
+	}
+
 	readStateFromDevice();
-	for(unsigned i=0, i_end=parameterCount(); i < i_end; ++i) {
-		mf_param.setNeuron(dev.partition, dev.neuron, param[i], i);
+	for(unsigned i=0; i < nparam; ++i) {
+		mf_param.setNeuron(dev.partition, dev.neuron, *args++, i);
 	}
 	mf_paramDirty = true;
-	for(unsigned i=0, i_end=stateVarCount(); i < i_end; ++i) {
-		mf_state.setNeuron(dev.partition, dev.neuron, state[i], currentStateVariable(i));
+	for(unsigned i=0; i < nstate; ++i) {
+		mf_state.setNeuron(dev.partition, dev.neuron, *args++, currentStateVariable(i));
 	}
 	mf_stateDirty = true;
 }

@@ -1,11 +1,11 @@
-% nemoAddNeuron - add a single neuron to the network
+% nemoAddNeuron - add one or more neurons to the network
 %  
 % Synopsis:
 %   nemoAddNeuron(type, idx, param0, param1..., state0, state1...)
 %  
 % Inputs:
 %   type    - neuron type, as returned by nemoAddNeuronType
-%   idx     - neuron index (0-based)
+%   idx     - neuron index
 %   paramX  - neuron parameters
 %   stateX  - neuron state variables
 %

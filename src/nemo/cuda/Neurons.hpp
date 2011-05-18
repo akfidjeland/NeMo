@@ -77,7 +77,7 @@ class Neurons
 		size_t wordPitch1() const { return m_valid.wordPitch(); }
 
 		/*! \copydoc nemo::Network::setNeuron */
-		void setNeuron(const DeviceIdx&, const float param[], const float state[]);
+		void setNeuron(const DeviceIdx&, unsigned nargs, const float args[]);
 
 		/*! Get a single parameter for a single neuron
 		 *

@@ -34,6 +34,7 @@ class Neurons
 
 		/*! Add a new neuron
 		 *
+		 * \param nargs number of parameters and state variables
 		 * \param args all parameters and state variables (in that order)
 		 *
 		 * \return local index (wihtin this class) of the newly added neuron
@@ -45,15 +46,14 @@ class Neurons
 
 		/*! Modify an existing neuron
 		 *
-		 * \param local neuron index, as returned by \a add
-		 * \param fParam array of floating point parameters
-		 * \param fState array of floating point state variables
+		 * \param nargs number of parameters and state variables
+		 * \param args all parameters and state variables (in that order)
 		 *
 		 * \pre nidx refers to a valid neuron in this collection
-		 * \pre the input arrays have the lengths specified by the neuron type
+		 * \pre the input array have the lengths specified by the neuron type
 		 * 		used when this object was created.
 		 */
-		void set(size_t nidx, const float fParam[], const float fState[]);
+		void set(size_t nidx, unsigned nargs, const float args[]);
 
 		/*! \copydoc NetworkImpl::getNeuronParameter */
 		float getParameter(size_t nidx, unsigned pidx) const;

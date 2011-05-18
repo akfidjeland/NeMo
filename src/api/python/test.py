@@ -10,7 +10,7 @@ class IzNetwork(nemo.Network):
         nemo.Network.__init__(self)
         self._type = self.add_neuron_type('Izhikevich')
 
-    def add_neuron(self, nidx, a, b, c, d, u, v, sigma):
+    def add_neuron(self, nidx, a, b, c, d, sigma, u, v):
         nemo.Network.add_neuron(self, self._type, nidx, a, b, c, d, sigma, u, v)
 
 
@@ -62,9 +62,9 @@ class TestFunctions(unittest.TestCase):
         net = IzNetwork()
 
         # This should only succeed for existing neurons
-        self.assertRaises(RuntimeError, net.set_neuron, 0, a, b, c, d, u, v, sigma)
+        self.assertRaises(RuntimeError, net.set_neuron, 0, a, b, c, d, sigma, u, v)
 
-        net.add_neuron(0, a, b, c-0.1, d, u, v-1.0, sigma)
+        net.add_neuron(0, a, b, c-0.1, d, sigma, u, v-1.0)
 
         # Getters should fail if given invalid neuron or parameter
         self.assertRaises(RuntimeError, net.get_neuron_parameter, 1, 0) # neuron
@@ -75,7 +75,7 @@ class TestFunctions(unittest.TestCase):
         e = 0.1
 
         # Test setting whole neuron, reading back by parts
-        net.set_neuron(0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e)
+        net.set_neuron(0, a-e, b-e, c-e, d-e, sigma-e, u-e, v-e)
 
         # Since Python uses double precision and NeMo uses single precision
         # internally, the parameters may not be exactly the same after reading
@@ -131,9 +131,9 @@ class TestFunctions(unittest.TestCase):
         s = arg(vlen, random.random)
         vectorized = any(isinstance(x, list) for x in [a, b, c, d, u, v, s])
         if vectorized:
-            fun(range(vlen), a, b, c, d, u, v, s)
+            fun(range(vlen), a, b, c, d, s, u, v)
         else:
-            fun(random.randint(0,1000), a, b, c, d, u, v, s)
+            fun(random.randint(0,1000), a, b, c, d, s, u, v)
 
     def test_add_neuron(self):
         """

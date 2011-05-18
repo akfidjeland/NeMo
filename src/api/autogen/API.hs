@@ -277,7 +277,7 @@ addNeuronType =
 addNeuron =
     ApiFunction
         "addNeuron"
-        "add a single neuron to the network"
+        "add one or more neurons to the network"
         (Just "The meaning of the parameters and state variables varies depending on the neuron type")
         (M.fromList pythonNeuronFullSetter)
         []
@@ -414,21 +414,18 @@ applyStdp =
 
 
 setNeuron =
-    ApiFunction "setNeuron"
-        "modify an existing neuron"
-        Nothing
+    ApiFunction
+        "setNeuron"
+        "modify one or more existing neurons"
+        (Just "The meaning of the parameters and state variables varies depending on the neuron type (specified when the neuron was created)")
         (M.fromList pythonNeuronFullSetter)
         []
-        [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
-            Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "b" (Just "Sensitivity to sub-threshold fluctuations in the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "c" (Just "After-spike value of the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "d" (Just "After-spike reset of the recovery variable u") (Scalar ApiFloat)),
-            Required (ApiArg "u" (Just "Initial value for the membrane recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "v" (Just "Initial value for the membrane potential") (Scalar ApiFloat)),
-            Required (ApiArg "sigma" (Just "Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated") (Scalar ApiFloat))
+        [
+            Required (ApiArg "idx" (Just "Neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "parameters..." (Just "all neuron parameters") (Scalar ApiUInt)),
+            Required (ApiArg "state..." (Just "all state variables") (Scalar ApiUInt))
         ]
-        [] True
+        [Matlab, MEX] True
 
 
 

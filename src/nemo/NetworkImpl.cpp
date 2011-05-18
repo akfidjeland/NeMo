@@ -96,10 +96,10 @@ NetworkImpl::addNeuron(unsigned type_id, unsigned nidx,
 
 
 void
-NetworkImpl::setNeuron(unsigned nidx, const float param[], const float state[])
+NetworkImpl::setNeuron(unsigned nidx, unsigned nargs, const float args[])
 {
 	const NeuronAddress& addr = m_mapper.localIdx(nidx);
-	neuronCollection(addr.first).set(addr.second, param, state);
+	neuronCollection(addr.first).set(addr.second, nargs, args);
 }
 
 

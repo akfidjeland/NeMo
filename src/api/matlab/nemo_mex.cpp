@@ -443,6 +443,42 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+	static unsigned arglen[MAX_NEURON_ARGS];
+	static float args[MAX_NEURON_ARGS];
+
+	int nargs = nrhs-2;
+	if(nargs < 0) {
+		mexErrMsgIdAndTxt("nemo:api", "missing arguments");
+	}
+	if(nargs > MAX_NEURON_ARGS) {
+		mexErrMsgIdAndTxt("nemo:mex", "too many arguments");
+	}
+	size_t elems = vectorDimension(nargs, prhs + 1, arglen);
+	checkOutputCount(nlhs, 0);
+	if(isSimulating()) {
+		nemo_simulation_t hdl = getSimulation();
+		for(size_t i=0; i<elems; ++i){
+			for(int a=0; a<nargs; ++a) {
+				args[a] = scalarAt<float,double>(prhs[2+a], i, arglen[a]);
+			}
+			checkNemoStatus(nemo_set_neuron_s(hdl, scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), nargs, args));
+		}
+	} else {
+		nemo_network_t hdl = getNetwork();
+		for(size_t i=0; i<elems; ++i){
+			for(int a=0; a<nargs; ++a) {
+				args[a] = scalarAt<float,double>(prhs[2+a], i, arglen[a]);
+			}
+			checkNemoStatus(nemo_set_neuron_n(hdl, scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), nargs, args));
+		}
+	}
+}
+
+
+
+void
 setStdpFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 4);
@@ -650,52 +686,6 @@ resetTimer(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 0);
     checkNemoStatus(nemo_reset_timer(getSimulation()));
-}
-
-
-
-void
-setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
-{
-    static unsigned arglen[8];
-    size_t elems = vectorDimension(8, prhs + 1, arglen);
-    checkInputCount(nrhs, 8);
-    checkOutputCount(nlhs, 0);
-    if(isSimulating()){
-        nemo_simulation_t hdl = getSimulation();
-        for(size_t i=0; i<elems; ++i){
-            checkNemoStatus( 
-                    nemo_set_neuron_s( 
-                            hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
-                            scalarAt<float,double>(prhs[2], i, arglen[1]), 
-                            scalarAt<float,double>(prhs[3], i, arglen[2]), 
-                            scalarAt<float,double>(prhs[4], i, arglen[3]), 
-                            scalarAt<float,double>(prhs[5], i, arglen[4]), 
-                            scalarAt<float,double>(prhs[6], i, arglen[5]), 
-                            scalarAt<float,double>(prhs[7], i, arglen[6]), 
-                            scalarAt<float,double>(prhs[8], i, arglen[7]) 
-                    ) 
-            );
-        }
-    } else {
-        nemo_network_t hdl = getNetwork();
-        for(size_t i=0; i<elems; ++i){
-            checkNemoStatus( 
-                    nemo_set_neuron_n( 
-                            hdl, 
-                            scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), 
-                            scalarAt<float,double>(prhs[2], i, arglen[1]), 
-                            scalarAt<float,double>(prhs[3], i, arglen[2]), 
-                            scalarAt<float,double>(prhs[4], i, arglen[3]), 
-                            scalarAt<float,double>(prhs[5], i, arglen[4]), 
-                            scalarAt<float,double>(prhs[6], i, arglen[5]), 
-                            scalarAt<float,double>(prhs[7], i, arglen[6]), 
-                            scalarAt<float,double>(prhs[8], i, arglen[7]) 
-                    ) 
-            );
-        }
-    }
 }
 
 
