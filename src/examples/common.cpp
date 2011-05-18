@@ -20,6 +20,7 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	bool verbose = !csv;
 	bool provideFiringStimulus = vm.count("fstim") != 0;
 	bool provideCurrentStimulus = vm.count("istim") != 0;
+	bool vprobe = vm.count("vprobe");
 
 	const unsigned MS_PER_SECOND = 1000;
 
@@ -29,6 +30,7 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	sim->resetTimer();
 
 	unsigned t = 0;
+	float v = 0;
 
 	/* Run for a few seconds to warm up the network */
 	if(verbose)
@@ -73,6 +75,11 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 
 			const std::vector<unsigned>& fired = sim->step(firingStimulus, currentStimulus);
 			nfired += fired.size();
+
+			if(vprobe) {
+				/* Just read a single value. The whole neuron population will be synced */
+				float v = sim->getMembranePotential(0);
+			}
 		}
 		if(stdp && t % stdp == 0) {
 			sim->applyStdp(1.0);
@@ -213,6 +220,7 @@ commonOptions()
 		("csv", "when benchmarking, output a compact CSV format with the following fields: neurons, synapses, simulation time (ms), wallclock time (ms), STDP enabled, fired neurons, PSPs generated, average firing rate, speedup wrt real-time, throughput (million PSPs/second")
 		("fstim", "provide (very weak) firing stimulus, for benchmarking purposes")
 		("istim", "provide (very weak) current stimulus, for benchmarking purposes")
+		("vprobe", "probe membrane potential every cycle")
 	;
 
 	return desc;
