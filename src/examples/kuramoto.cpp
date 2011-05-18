@@ -17,8 +17,7 @@ typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 namespace nemo {
-	namespace examples {
-		namespace kuramoto {
+	namespace kuramoto {
 
 class OscillatorNetwork : public nemo::Network
 {
@@ -68,8 +67,7 @@ construct(unsigned ncount, unsigned scount)
 	return net;
 }
 
-		} // namespace kuramoto
-	} // namespace examples
+	} // namespace kuramoto
 } // namespace nemo
 
 
@@ -99,7 +97,7 @@ main(int argc, char* argv[])
 		unsigned verbose = vm["verbose"].as<unsigned>();
 
 		LOG(verbose, "Constructing network");
-		boost::scoped_ptr<nemo::Network> net(nemo::examples::kuramoto::construct(ncount, scount));
+		boost::scoped_ptr<nemo::Network> net(nemo::kuramoto::construct(ncount, scount));
 		LOG(verbose, "Creating configuration");
 		nemo::Configuration conf = configuration(vm);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription());

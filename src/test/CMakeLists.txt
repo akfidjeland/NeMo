@@ -22,6 +22,7 @@ ADD_EXECUTABLE(test
 	networks.cpp
 	rtest.cpp
 	c_api.cpp
+	${EXAMPLES_DIR}/kuramoto.cpp
 	${EXAMPLES_DIR}/torus.cpp
 	${EXAMPLES_DIR}/random.cpp)
 TARGET_LINK_LIBRARIES(test nemo ${Boost_LIBRARIES})
@@ -30,6 +31,7 @@ ADD_EXECUTABLE(create_rtest_data
 	create_rtest_data.cpp
 	rtest.cpp
 	utils.cpp
+	${EXAMPLES_DIR}/kuramoto.cpp
 	${EXAMPLES_DIR}/torus.cpp
 	${EXAMPLES_DIR}/random.cpp)
 TARGET_LINK_LIBRARIES(create_rtest_data nemo ${Boost_LIBRARIES})

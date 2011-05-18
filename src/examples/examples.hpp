@@ -19,6 +19,10 @@ namespace nemo {
 	namespace torus {
 		nemo::Network* construct(unsigned pcount, unsigned m, bool stdp, double sigma, bool logging);
 	}
+
+	namespace kuramoto {
+		nemo::Network* construct(unsigned ncount, unsigned scount);
+	}
 }
 
 #endif

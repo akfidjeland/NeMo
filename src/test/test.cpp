@@ -842,11 +842,9 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 BOOST_AUTO_TEST_SUITE(regression)
-	BOOST_AUTO_TEST_CASE(torus) {
-		runTorus(false);
-	}
+	BOOST_AUTO_TEST_CASE(torus)    { runTorus(false);    }
+	BOOST_AUTO_TEST_CASE(kuramoto) { runKuramoto(false); }
 BOOST_AUTO_TEST_SUITE_END()
-
 
 
 BOOST_AUTO_TEST_SUITE(c_api)
