@@ -16,13 +16,12 @@
  * 		Number of synapses per neuron. This must be the same for each neuron in
  * 		order for the throughput-measurement to work out. This constraint is
  * 		not checked.
- * \param stdp
- * 		Period (in ms) between STDP applications. If 0, run without STDP.
- * \param csv
- * 		Output a compact CSV format instead of regular format
+ *
+ * \return milliseconds elapsed for the actual simulation (wallclock)
  */
-void benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
-				boost::program_options::variables_map& opts);
+float benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
+				boost::program_options::variables_map& opts,
+				unsigned seconds=10);
 
 
 /*! Run simulation for some time, writing data to output stream

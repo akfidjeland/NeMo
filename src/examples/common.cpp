@@ -10,9 +10,9 @@ typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 
-void
+float
 benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
-				boost::program_options::variables_map& vm)
+				boost::program_options::variables_map& vm, unsigned seconds)
 {
 
 	unsigned stdp = vm["stdp"].as<unsigned>();
@@ -46,8 +46,6 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	if(verbose)
 		std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
 	sim->resetTimer();
-
-	unsigned seconds = 10;
 
 	if(verbose) {
 		std::cout << std::endl;
@@ -104,7 +102,6 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 		std::cout << "Total firings: " << nfired << std::endl;
 		std::cout << "Avg. firing rate: " << f << "Hz\n";
 		std::cout << "Spike arrivals: " << narrivals << std::endl;
-		std::cout << "Updates/second: " << updates << std::endl;
 		std::cout << "Approx. throughput: " << throughput/1000000
 				<< "Ma/s (million spike arrivals per second)\n";
 		std::cout << "Speedup wrt real-time: " << speedup << std::endl;
@@ -119,6 +116,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 		std::cout << sep << narrivals << sep << f << sep << speedup
 			<< sep << throughput/1000000 << std::endl;
 	}
+
+	return elapsedData;
 }
 
 

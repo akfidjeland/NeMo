@@ -100,11 +100,19 @@ main(int argc, char* argv[])
 		boost::scoped_ptr<nemo::Network> net(nemo::kuramoto::construct(ncount, scount));
 		LOG(verbose, "Creating configuration");
 		nemo::Configuration conf = configuration(vm);
+		conf.setCudaBackend();
+		conf.setCudaPartitionSize(256);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription());
 		LOG(verbose, "Creating simulation");
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 		LOG(verbose, "Running simulation");
-		benchmark(sim.get(), ncount, scount, vm);
+		unsigned seconds = 10;
+		double elapsed = benchmark(sim.get(), ncount, scount, vm, seconds); // ms
+		std::cout << "Elapsed: " << elapsed << "ms\n";
+		uint64_t oscUpdates = uint64_t(seconds)*1000000/uint64_t(elapsed);
+		std::cout << "Updates/second: " << oscUpdates << std::endl;
+		uint64_t cplUpdatesM = uint64_t(seconds*ncount*scount)/uint64_t(elapsed); // a bunch of factors cancel out
+		std::cout << "Couplings processed/second: " << cplUpdatesM << std::endl;
 		LOG(verbose, "Simulation complete");
 		return 0;
 	} catch(std::exception& e) {
