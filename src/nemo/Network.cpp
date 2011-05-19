@@ -9,8 +9,6 @@
 
 #include "Network.hpp"
 
-#include <boost/array.hpp>
-
 #include "NetworkImpl.hpp"
 #include "synapse_indices.hpp"
 
@@ -53,11 +51,8 @@ Network::addNeuron(unsigned idx,
 	if(iz_type == ~0U) {
 		iz_type = m_impl->addNeuronType("Izhikevich");
 	}
-	static boost::array<float, 7> args;
-
-	args[0] = a; args[1] = b; args[2] = c; args[3] = d; args[4] = sigma;
-	args[5] = u; args[6] = v;
-	m_impl->addNeuron(iz_type, idx, 7, args.c_array());
+	float args[7] = {a, b, c, d, sigma, u, v};
+	m_impl->addNeuron(iz_type, idx, 7, args);
 }
 
 
@@ -73,11 +68,8 @@ Network::setNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	static boost::array<float, 7> args;
-
-	args[0] = a; args[1] = b; args[2] = c; args[3] = d; args[4] = sigma;
-	args[5] = u; args[6] = v;
-	m_impl->setNeuron(idx, 7, args.c_array());
+	float args[7] = {a, b, c, d, sigma, u, v};
+	m_impl->setNeuron(idx, 7, args);
 }
 
 

@@ -8,9 +8,6 @@
  */
 
 #include "SimulationBackend.hpp"
-
-#include <boost/array.hpp>
-
 #include "fixedpoint.hpp"
 
 namespace nemo {
