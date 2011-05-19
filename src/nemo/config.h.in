@@ -23,6 +23,8 @@
 #cmakedefine NEMO_SYSTEM_PLUGIN_DIR "@NEMO_SYSTEM_PLUGIN_DIR@"
 #cmakedefine NEMO_USER_PLUGIN_DIR "@NEMO_USER_PLUGIN_DIR@"
 
+const unsigned NEMO_MAX_NEURON_ARGS = 16;
+
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef NEMO_EXPORTS

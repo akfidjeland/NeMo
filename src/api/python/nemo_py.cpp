@@ -16,6 +16,7 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include <nemo.hpp>
+#include <nemo/config.h>
 
 #include "docstrings.h" // auto-generated
 
@@ -253,8 +254,6 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 }
 
 
-#define NEMO_NEURON_MAX_ARGS 16
-
 
 /*! Add one ore more neurons of arbitrary type
  *
@@ -294,10 +293,10 @@ add_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 
 	/* Get raw pointers and determine the mix of scalar and vector arguments */
 	//! \todo skip initial objects if possible
-	PyObject* objects[NEMO_NEURON_MAX_ARGS];
-	bool vectorized[NEMO_NEURON_MAX_ARGS];
+	PyObject* objects[NEMO_MAX_NEURON_ARGS];
+	bool vectorized[NEMO_MAX_NEURON_ARGS];
 
-	assert(nargs < NEMO_NEURON_MAX_ARGS);
+	assert(nargs < NEMO_MAX_NEURON_ARGS-3);
 
 	for(unsigned i=2; i<nargs; ++i) {
 		objects[i] = static_cast<boost::python::object>(py_args[i]).ptr();
@@ -311,7 +310,7 @@ add_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 	}
 
 	/* Get all scalar parameters and state variables */
-	float args[NEMO_NEURON_MAX_ARGS];
+	float args[NEMO_MAX_NEURON_ARGS];
 	for(unsigned i=3; i<nargs; ++i) {
 		if(!vectorized[i]) {
 			args[i] = extract<float>(objects[i]);
@@ -376,10 +375,10 @@ set_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 	unsigned nargs = boost::python::len(py_args);
 	T& net = boost::python::extract<T&>(py_args[0])();
 
-	PyObject* objects[NEMO_NEURON_MAX_ARGS];
-	bool vectorized[NEMO_NEURON_MAX_ARGS];
+	PyObject* objects[NEMO_MAX_NEURON_ARGS];
+	bool vectorized[NEMO_MAX_NEURON_ARGS];
 
-	assert(nargs < NEMO_NEURON_MAX_ARGS);
+	assert(nargs < NEMO_MAX_NEURON_ARGS-2);
 
 	//! \todo shift everything down to minimise space usage
 	/* Get raw pointers and determine the mix of scalar and vector arguments */
@@ -397,7 +396,7 @@ set_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 
 	/* Get all scalar parameters and state variables */
 	//! \todo fold this back into previous loop? Need to deal with index first, then loop
-	float args[NEMO_NEURON_MAX_ARGS];
+	float args[NEMO_MAX_NEURON_ARGS];
 	for(unsigned i=2; i<nargs; ++i) {
 		if(!vectorized[i]) {
 			args[i] = extract<float>(objects[i]);

@@ -15,8 +15,6 @@ static nemo_network_t g_network = NULL;
 static nemo_configuration_t g_configuration = NULL;
 static nemo_simulation_t g_simulation = NULL;
 
-const size_t MAX_NEURON_ARGS = 32;
-
 
 
 /* When returning data to Matlab we need to specify the class of the data.
@@ -411,14 +409,14 @@ reset(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	static unsigned arglen[MAX_NEURON_ARGS];
-	static float args[MAX_NEURON_ARGS];
+	unsigned arglen[NEMO_MAX_NEURON_ARGS];
+	float args[NEMO_MAX_NEURON_ARGS];
 
 	int nargs = nrhs-3;
 	if(nargs < 0) {
 		mexErrMsgIdAndTxt("nemo:api", "missing arguments");
 	}
-	if(nargs > MAX_NEURON_ARGS) {
+	if(nargs > NEMO_MAX_NEURON_ARGS) {
 		mexErrMsgIdAndTxt("nemo:mex", "too many arguments");
 	}
 	size_t elems = vectorDimension(nargs, prhs + 1, arglen);
@@ -445,14 +443,14 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	static unsigned arglen[MAX_NEURON_ARGS];
-	static float args[MAX_NEURON_ARGS];
+	unsigned arglen[NEMO_MAX_NEURON_ARGS];
+	float args[NEMO_MAX_NEURON_ARGS];
 
 	int nargs = nrhs-2;
 	if(nargs < 0) {
 		mexErrMsgIdAndTxt("nemo:api", "missing arguments");
 	}
-	if(nargs > MAX_NEURON_ARGS) {
+	if(nargs > NEMO_MAX_NEURON_ARGS) {
 		mexErrMsgIdAndTxt("nemo:mex", "too many arguments");
 	}
 	size_t elems = vectorDimension(nargs, prhs + 1, arglen);
