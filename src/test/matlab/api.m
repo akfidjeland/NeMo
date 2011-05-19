@@ -36,18 +36,20 @@ s = zeros(n, 1);
 
 % Network construction
 
+iz = nemoAddNeuronType('Izhikevich');
+
 % Add neuron (scalar form)
-nemoAddNeuron(0, a(1), b(1), c(1), d(1), u(1), v(1), s(1));
+nemoAddNeuron(iz, 0, a(1), b(1), c(1), d(1), s(1), u(1), v(1));
 
 % Add neuron (vector form) 
-nemoAddNeuron(1:n, a, b, c, d, u, v, s);
+nemoAddNeuron(iz, 1:n, a, b, c, d, s, u, v);
 
 % The shape of the input vectors should not need to match
-nemoAddNeuron(n+1:n+n, a', b, c', d, u', v, s');
+nemoAddNeuron(iz, n+1:n+n, a', b, c', d, s', u', v);
 
 % However, the length of the vectors must be the same
 try
-    nemoAddNeuron(2*n+1:2*n+n, a(1:10), b, c, d, u, v, s);
+    nemoAddNeuron(iz, 2*n+1:2*n+n, a(1:10), b, c, d, s, u, v);
     error('nemo:test', 'Invalid use of addNeuron not detected correctly');
 catch e
     if ~strcmp(e.identifier, 'nemo:api')

@@ -30,13 +30,14 @@ function createRandom(stdp)
 	M=1000;
 	re=rand(Ne,1);
 	v=-65;
-	nemoAddNeuron(0:Ne-1, 0.02, 0.2, -65+15*re.^2, 8-6*re.^2, v*0.2, v, 5);
+	iz = nemoAddNeuronType('Izhikevich');
+	nemoAddNeuron(iz, 0:Ne-1, 0.02, 0.2, -65+15*re.^2, 8-6*re.^2, 5, v*0.2, v);
 	for src = 0:Ne-1
 		nemoAddSynapse(src, 0:N-1, floor(20*rand(N,1))+1, 0.5*rand(N,1), stdp);
 	end
 	ri=rand(Ni,1);
 	bi=0.25-0.05*ri;
-	nemoAddNeuron(Ne:Ne+Ni-1, 0.02+0.08*ri, bi, -65, 2, bi*v, v, 2);
+	nemoAddNeuron(iz, Ne:Ne+Ni-1, 0.02+0.08*ri, bi, -65, 2, 2, bi*v, v);
 	for src = Ne:Ne+Ni-1
 		nemoAddSynapse(src, 0:N-1, 1, -rand(N,1), false);
 	end
