@@ -80,7 +80,7 @@ addExcitatoryNeuron(
 	float sigma = 5.0f;
 	net->addNeuron(nidx, a, b, c, d, u, v, sigma);
 	float c_args[7] = {a, b, c, d, sigma, u, v};
-	nemo_add_neuron_a(c_net, c_iz, nidx, 7, c_args);
+	nemo_add_neuron(c_net, c_iz, nidx, 7, c_args);
 }
 
 
@@ -122,7 +122,7 @@ addInhibitoryNeuron(
 	float sigma = 2.0f;
 	net->addNeuron(nidx, a, b, c, d, u, v, sigma);
 	float c_args[7] = {a, b, c, d, sigma, u, v};
-	nemo_add_neuron_a(c_net, c_iz, nidx, 7, c_args);
+	nemo_add_neuron(c_net, c_iz, nidx, 7, c_args);
 }
 
 

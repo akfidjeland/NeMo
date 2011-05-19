@@ -180,7 +180,7 @@ nemo_add_neuron_iz(nemo_network_t net,
 
 
 nemo_status_t
-nemo_add_neuron_a(nemo_network_t net,
+nemo_add_neuron(nemo_network_t net,
 		unsigned type, unsigned idx,
 		unsigned nargs, float args[])
 {

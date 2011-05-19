@@ -251,7 +251,7 @@ nemo_add_neuron_iz(nemo_network_t,
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_add_neuron_a(nemo_network_t, unsigned type, unsigned idx,
+nemo_add_neuron(nemo_network_t, unsigned type, unsigned idx,
 		unsigned nargs, float args[]);
 
 

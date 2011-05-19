@@ -427,7 +427,7 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 			args[a] = scalarAt<float,double>(prhs[3+a], i, arglen[a]);
 		}
 		checkNemoStatus(
-				nemo_add_neuron_a(
+				nemo_add_neuron(
 					hdl,
 					scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]),
 					scalarAt<unsigned,uint32_t>(prhs[2], i, arglen[1]),
