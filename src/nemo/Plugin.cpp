@@ -9,6 +9,7 @@
 
 #include <cstdlib>
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
 
 #include <nemo/config.h>
 #include "Plugin.hpp"
@@ -17,10 +18,8 @@
 #include "plugin.ipp"
 
 #ifdef _MSC_VER
-const char DIRSEP_CHAR = '\\';
 const char* HOME_ENV_VAR = "userprofile";
 #else
-const char DIRSEP_CHAR = '/';
 const char* HOME_ENV_VAR = "HOME";
 #endif
 
@@ -85,6 +84,7 @@ void
 Plugin::setpath(const std::string& subdir)
 {
 	using boost::format;
+	using namespace boost::filesystem;
 
 	char* home = getenv(HOME_ENV_VAR);
 	if(home == NULL) {
@@ -92,19 +92,20 @@ Plugin::setpath(const std::string& subdir)
 				"Could not locate user's home directory when searching for plugins");
 	}
 
-	const std::string userPath = str(format("%s%c%s%c%s")
-			% home % DIRSEP_CHAR
-			% NEMO_USER_PLUGIN_DIR % DIRSEP_CHAR
-			% subdir);
-	if(!dl_setsearchpath(userPath.c_str())) {
+	path userPath = path(home) / NEMO_USER_PLUGIN_DIR / subdir;
+	if(exists(userPath) && !dl_setsearchpath(userPath.string().c_str())) {
 		throw nemo::exception(NEMO_DL_ERROR,
 				str(format("Error when setting user plugin search path (%s): %s")
 					% userPath % dl_error()));
 	}
 
-	const std::string systemPath = str(format("%s%c%s")
-			% NEMO_SYSTEM_PLUGIN_DIR % DIRSEP_CHAR % subdir);
-	if(!dl_addsearchdir(systemPath.c_str())) {
+	path systemPath = path(NEMO_SYSTEM_PLUGIN_DIR) / subdir;
+	if(!exists(systemPath)) {
+		throw nemo::exception(NEMO_DL_ERROR,
+				str(format("System plugin path does not exist: %s") % systemPath));
+	}
+
+	if(!dl_addsearchdir(systemPath.string().c_str())) {
 		throw nemo::exception(NEMO_DL_ERROR,
 				str(format("Error when setting system plugin search path (%s): %s")
 					% userPath % dl_error()));
