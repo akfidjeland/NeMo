@@ -17,7 +17,6 @@
 
 #include <nemo.hpp>
 
-#include "Network.hpp"
 #include "docstrings.h" // auto-generated
 
 using namespace boost::python;
@@ -34,7 +33,7 @@ typedef int Py_ssize_t;
 /* The simulation is only created via a factory and only accessed throught the
  * returned pointer */
 boost::shared_ptr<nemo::Simulation>
-makeSimulation(const nemo::python::Network& net, const nemo::Configuration& conf)
+makeSimulation(const nemo::Network& net, const nemo::Configuration& conf)
 {
 	return boost::shared_ptr<nemo::Simulation>(simulation(net, conf));
 }
@@ -216,7 +215,7 @@ checkInputVector(PyObject* obj, unsigned &vectorLength)
  * arguments are replicated for each synapse.
  */
 PyObject*
-add_synapse(nemo::python::Network& net, PyObject* sources, PyObject* targets,
+add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 		PyObject* delays, PyObject* weights, PyObject* plastics)
 {
 	unsigned len = 0;
@@ -255,6 +254,94 @@ add_synapse(nemo::python::Network& net, PyObject* sources, PyObject* targets,
 
 
 #define NEMO_NEURON_MAX_ARGS 16
+
+
+/*! Add one ore more neurons of arbitrary type
+ *
+ * This function expects the following arguments:
+ *
+ * - neuron type (unsigned scalar)
+ * - neuron index (unsigned scalar/vector)
+ * - a variable number of parameters (float scalar/vector)
+ * - a variable number of state variables (float scalar/vector)
+ *
+ * The corresponding python prototype would be
+ *
+ * add_neuron(self, neuron_type, neuron_idx, *args)
+ *
+ * The neuron type is expected to be a scalar. The remaining arguments
+ * may be either scalar or vector. All vectors must be of the same
+ * length. If any of the inputs are vectors, the scalar arguments are
+ * replicated for each neuron.
+ *
+ * \param args parameters and state variables
+ * \param kwargs unused, but required by boost::python
+ * \return None
+ *
+ * \see nemo::Network::addNeuron nemo::Network::addNeuronType
+ */
+boost::python::object
+add_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
+{
+	using namespace boost::python;
+
+	unsigned vlen = 0;
+	unsigned nargs = boost::python::len(py_args);
+	nemo::Network& net = boost::python::extract<nemo::Network&>(py_args[0])();
+
+	/* The neuron type should always be a scalar */
+	unsigned neuron_type = extract<unsigned>(py_args[1]);
+
+	/* Get raw pointers and determine the mix of scalar and vector arguments */
+	//! \todo skip initial objects if possible
+	PyObject* objects[NEMO_NEURON_MAX_ARGS];
+	bool vectorized[NEMO_NEURON_MAX_ARGS];
+
+	assert(nargs < NEMO_NEURON_MAX_ARGS);
+
+	for(unsigned i=2; i<nargs; ++i) {
+		objects[i] = static_cast<boost::python::object>(py_args[i]).ptr();
+		vectorized[i] = checkInputVector(objects[i], vlen);
+	}
+
+	/* Get the neuron index, if it's a scalar */
+	unsigned neuron_index = 0;
+	if(!vectorized[2]) {
+		neuron_index = extract<unsigned>(py_args[2]);
+	}
+
+	/* Get all scalar parameters and state variables */
+	float args[NEMO_NEURON_MAX_ARGS];
+	for(unsigned i=3; i<nargs; ++i) {
+		if(!vectorized[i]) {
+			args[i] = extract<float>(objects[i]);
+		}
+	}
+
+	if(vlen == 0) {
+		/* All inputs are scalars, the 'scalars' array has already been
+		 * populated. */
+		//! \todo deal with empty list
+		net.addNeuron(neuron_type, neuron_index, nargs-3, &args[3]);
+	} else {
+		/* At least some inputs are vectors */
+		for(unsigned i=0; i < vlen; ++i) {
+			/* Fill in the vector arguments */
+			if(vectorized[2]) {
+				neuron_index = extract<unsigned>(PyList_GetItem(objects[2], i));
+			}
+			for(unsigned j=3; j<nargs; ++j) {
+				if(vectorized[j]) {
+					args[j] = extract<float>(PyList_GetItem(objects[j], i));
+				}
+			}
+			net.addNeuron(neuron_type, neuron_index, nargs-3, &args[3]);
+		}
+	}
+	return object();
+}
+
+
 
 /*! Modify one or more neurons of arbitrary type
  *
@@ -642,23 +729,23 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("backend_description", &nemo::Configuration::backendDescription, CONFIGURATION_BACKEND_DESCRIPTION_DOC)
 	;
 
-	class_<nemo::python::Network, boost::noncopyable>("Network", NETWORK_DOC)
+	class_<nemo::Network, boost::noncopyable>("Network", NETWORK_DOC)
 		.def("add_neuron_type", &nemo::Network::addNeuronType, NETWORK_ADD_NEURON_TYPE_DOC)
-		.def("add_neuron", raw_function(nemo::python::add_neuron_va, 3), NETWORK_ADD_NEURON_DOC)
+		.def("add_neuron", raw_function(add_neuron_va, 3), NETWORK_ADD_NEURON_DOC)
 		.def("add_synapse", add_synapse, NETWORK_ADD_SYNAPSE_DOC)
-		.def("set_neuron", raw_function(set_neuron_va<nemo::python::Network>, 2), CONSTRUCTABLE_SET_NEURON_DOC)
-		.def("get_neuron_state", get_neuron_state<nemo::python::Network>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
-		.def("get_neuron_parameter", get_neuron_parameter<nemo::python::Network>, CONSTRUCTABLE_GET_NEURON_PARAMETER_DOC)
-		.def("set_neuron_state", set_neuron_state<nemo::python::Network>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
-		.def("set_neuron_parameter", set_neuron_parameter<nemo::python::Network>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
-		.def("get_synapse_source", &nemo::python::Network::getSynapseSource)
-		.def("neuron_count", &nemo::python::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
-		.def("get_synapses_from", &nemo::python::Network::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
-		.def("get_synapse_source", get_synapse_source<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
-		.def("get_synapse_target", get_synapse_target<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)
-		.def("get_synapse_delay", get_synapse_delay<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_DELAY_DOC)
-		.def("get_synapse_weight", get_synapse_weight<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_WEIGHT_DOC)
-		.def("get_synapse_plastic", get_synapse_plastic<nemo::python::Network>, CONSTRUCTABLE_GET_SYNAPSE_PLASTIC_DOC)
+		.def("set_neuron", raw_function(set_neuron_va<nemo::Network>, 2), CONSTRUCTABLE_SET_NEURON_DOC)
+		.def("get_neuron_state", get_neuron_state<nemo::Network>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
+		.def("get_neuron_parameter", get_neuron_parameter<nemo::Network>, CONSTRUCTABLE_GET_NEURON_PARAMETER_DOC)
+		.def("set_neuron_state", set_neuron_state<nemo::Network>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
+		.def("set_neuron_parameter", set_neuron_parameter<nemo::Network>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
+		.def("get_synapse_source", &nemo::Network::getSynapseSource)
+		.def("neuron_count", &nemo::Network::neuronCount, NETWORK_NEURON_COUNT_DOC)
+		.def("get_synapses_from", &nemo::Network::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
+		.def("get_synapse_source", get_synapse_source<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
+		.def("get_synapse_target", get_synapse_target<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)
+		.def("get_synapse_delay", get_synapse_delay<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_DELAY_DOC)
+		.def("get_synapse_weight", get_synapse_weight<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_WEIGHT_DOC)
+		.def("get_synapse_plastic", get_synapse_plastic<nemo::Network>, CONSTRUCTABLE_GET_SYNAPSE_PLASTIC_DOC)
 	;
 
 	class_<nemo::Simulation, boost::shared_ptr<nemo::Simulation>, boost::noncopyable>(
