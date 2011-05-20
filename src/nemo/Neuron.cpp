@@ -9,82 +9,82 @@ namespace nemo {
 
 
 Neuron::Neuron(const NeuronType& type) :
-	mf_param(type.f_nParam(), 0.0f),
-	mf_state(type.f_nState(), 0.0f)
+	m_param(type.parameterCount(), 0.0f),
+	m_state(type.stateVarCount(), 0.0f)
 { }
 
 
-Neuron::Neuron(const NeuronType& type, float fParam[], float fState[]) :
-	mf_param(fParam, fParam + type.f_nParam()),
-	mf_state(fState, fState + type.f_nState())
+Neuron::Neuron(const NeuronType& type, float param[], float state[]) :
+	m_param(param, param + type.parameterCount()),
+	m_state(state, state + type.stateVarCount())
 { }
 
 
 
 void
-Neuron::set(float fParam[], float fState[])
+Neuron::set(float param[], float state[])
 {
-	std::copy(fParam, fParam + mf_param.size(), mf_param.begin());
-	std::copy(fState, fState + mf_state.size(), mf_state.begin());
+	std::copy(param, param + m_param.size(), m_param.begin());
+	std::copy(state, state + m_state.size(), m_state.begin());
 }
 
 
 
 float
-Neuron::f_getParameter(size_t i) const
+Neuron::getParameter(size_t i) const
 {
-	return f_paramRef(i);
+	return paramRef(i);
 }
 
 
 
 float
-Neuron::f_getState(size_t i) const
+Neuron::getState(size_t i) const
 {
-	return f_stateRef(i);
+	return stateRef(i);
 }
 
 
 
 const float&
-Neuron::f_paramRef(size_t i) const
+Neuron::paramRef(size_t i) const
 {
 	using boost::format;
-	if(i >= mf_param.size()) {
+	if(i >= m_param.size()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid neuron parameter index (%u)") % i));
 	}
-	return mf_param[i];
+	return m_param[i];
 }
 
 
 
 
 const float&
-Neuron::f_stateRef(size_t i) const
+Neuron::stateRef(size_t i) const
 {
 	using boost::format;
-	if(i >= mf_state.size()) {
+	if(i >= m_state.size()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid neuron state variable index (%u)") % i));
 	}
-	return mf_state[i];
+	return m_state[i];
 }
 
 
 
 void
-Neuron::f_setParameter(size_t i, float val)
+Neuron::setParameter(size_t i, float val)
 {
-	const_cast<float&>(f_paramRef(i)) = val;
+	const_cast<float&>(paramRef(i)) = val;
 }
 
 
 
 void
-Neuron::f_setState(size_t i, float val)
+Neuron::setState(size_t i, float val)
 {
-	const_cast<float&>(f_stateRef(i)) = val;
+	const_cast<float&>(stateRef(i)) = val;
 }
 
 }

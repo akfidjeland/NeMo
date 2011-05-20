@@ -22,7 +22,7 @@ namespace nemo {
 
 
 NeuronType::NeuronType(const std::string& name) :
-	mf_nParam(0), mf_nState(0),
+	m_nParam(0), m_nState(0),
 	m_name(name), m_membranePotential(0),
 	m_nrand(false),
 	m_rcmSources(false),
@@ -130,8 +130,8 @@ NeuronType::parseConfigurationFile(const std::string& name)
 		po::store(po::parse_config_file(file, desc), vm);
 		po::notify(vm);
 
-		mf_nParam = getRequired<unsigned>(vm, "parameters", filename);
-		mf_nState = getRequired<unsigned>(vm, "state-variables", filename);
+		m_nParam = getRequired<unsigned>(vm, "parameters", filename);
+		m_nState = getRequired<unsigned>(vm, "state-variables", filename);
 		m_membranePotential = getRequired<unsigned>(vm, "membrane-potential", filename);
 		m_nrand = getRequired<bool>(vm, "rng.normal", filename);
 		m_rcmSources = vm["rcm.sources"].as<bool>();

@@ -148,15 +148,15 @@ class Neurons
 
 		NeuronType m_type;
 
-		size_t parameterCount() const { return m_type.f_nParam(); }
-		size_t stateVarCount() const { return m_type.f_nState(); }
+		size_t parameterCount() const { return m_type.parameterCount(); }
+		size_t stateVarCount() const { return m_type.stateVarCount(); }
 
 		/* Neuron parameters do not change at run-time (unless the user
 		 * specifically does it through \a setParameter) */
-		NVector<float> mf_param;
+		NVector<float> m_param;
 
 		/* Neuron state variables are updated during simulation. */
-		mutable NVector<float> mf_state;
+		mutable NVector<float> m_state;
 
 		/* Index of state buffer corresponding to most recent state */
 		unsigned m_stateCurrent;
@@ -176,10 +176,10 @@ class Neurons
 		Bitvector m_valid;
 
 		cycle_t m_cycle;
-		mutable cycle_t mf_lastSync;
+		mutable cycle_t m_lastSync;
 
-		bool mf_paramDirty;
-		bool mf_stateDirty;
+		bool m_paramDirty;
+		bool m_stateDirty;
 
 		/*! Load vector of the size of each partition onto the device */
 		void configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron);

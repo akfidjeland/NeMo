@@ -29,15 +29,15 @@ namespace nemo {
 Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	m_mapper(mapper),
 	m_type(net.neuronType()),
-	mf_param(m_type.f_nParam(), mapper.partitionCount(), mapper.partitionSize(), true, false),
-	mf_state(m_type.f_nState() * m_type.stateHistory(),
+	m_param(m_type.parameterCount(), mapper.partitionCount(), mapper.partitionSize(), true, false),
+	m_state(m_type.stateVarCount() * m_type.stateHistory(),
 			mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_stateCurrent(0),
 	m_valid(mapper.partitionCount(), true),
 	m_cycle(~0),
-	mf_lastSync(~0),
-	mf_paramDirty(false),
-	mf_stateDirty(false),
+	m_lastSync(~0),
+	m_paramDirty(false),
+	m_stateDirty(false),
 	m_plugin(m_type.name(), "cuda"),
 	m_update_neurons((cuda_update_neurons_t*) m_plugin.function("cuda_update_neurons"))
 {
@@ -62,11 +62,11 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 		const nemo::Neuron& n = i->second;
 
 		for(unsigned i=0, i_end=parameterCount(); i < i_end; ++i) {
-			mf_param.setNeuron(dev.partition, dev.neuron, n.f_getParameter(i), i);
+			m_param.setNeuron(dev.partition, dev.neuron, n.getParameter(i), i);
 		}
 		for(unsigned i=0, i_end=stateVarCount(); i < i_end; ++i) {
 			// no need to offset based on time here, since this is beginning of the simulation.
-			mf_state.setNeuron(dev.partition, dev.neuron, n.f_getState(i), i);
+			m_state.setNeuron(dev.partition, dev.neuron, n.getState(i), i);
 		}
 
 		m_valid.setNeuron(dev);
@@ -82,9 +82,9 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 			std::max(maxPartitionNeuron[dev.partition], dev.neuron);
 	}
 
-	mf_param.copyToDevice();
-	mf_state.replicateInitialPlanes(m_type.f_nState());
-	mf_state.copyToDevice();
+	m_param.copyToDevice();
+	m_state.replicateInitialPlanes(m_type.stateVarCount());
+	m_state.copyToDevice();
 	if(m_type.usesNormalRNG()) {
 		m_nrngState.moveToDevice();
 	}
@@ -100,8 +100,8 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 size_t
 Neurons::d_allocated() const
 {
-	return mf_param.d_allocated()
-		+ mf_state.d_allocated()
+	return m_param.d_allocated()
+		+ m_state.d_allocated()
 		+ m_nrngState.d_allocated();
 }
 
@@ -123,8 +123,8 @@ Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeu
 size_t
 Neurons::wordPitch32() const
 {
-	size_t f_param_pitch = mf_param.wordPitch();
-	size_t f_state_pitch = mf_state.wordPitch();
+	size_t f_param_pitch = m_param.wordPitch();
+	size_t f_state_pitch = m_state.wordPitch();
 	if(f_param_pitch != f_state_pitch) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitches");
 	}
@@ -154,8 +154,8 @@ Neurons::update(
 			m_mapper.partitionCount(),
 			md_partitionSize.get(),
 			d_params,
-			mf_param.deviceData(),
-			mf_state.deviceData(),
+			m_param.deviceData(),
+			m_state.deviceData(),
 			m_nrng,
 			m_valid.d_data(),
 			d_fstim, d_istim,
@@ -182,7 +182,7 @@ float
 Neurons::getParameter(const DeviceIdx& idx, unsigned parameter) const
 {
 	verifyParameterIndex(parameter, parameterCount());
-	return mf_param.getNeuron(idx.partition, idx.neuron, parameter);
+	return m_param.getNeuron(idx.partition, idx.neuron, parameter);
 }
 
 
@@ -211,13 +211,13 @@ Neurons::setNeuron(const DeviceIdx& dev, unsigned nargs, const float args[])
 
 	readStateFromDevice();
 	for(unsigned i=0; i < nparam; ++i) {
-		mf_param.setNeuron(dev.partition, dev.neuron, *args++, i);
+		m_param.setNeuron(dev.partition, dev.neuron, *args++, i);
 	}
-	mf_paramDirty = true;
+	m_paramDirty = true;
 	for(unsigned i=0; i < nstate; ++i) {
-		mf_state.setNeuron(dev.partition, dev.neuron, *args++, currentStateVariable(i));
+		m_state.setNeuron(dev.partition, dev.neuron, *args++, currentStateVariable(i));
 	}
-	mf_stateDirty = true;
+	m_stateDirty = true;
 }
 
 
@@ -226,8 +226,8 @@ void
 Neurons::setParameter(const DeviceIdx& idx, unsigned parameter, float value)
 {
 	verifyParameterIndex(parameter, parameterCount());
-	mf_param.setNeuron(idx.partition, idx.neuron, value, parameter);
-	mf_paramDirty = true;
+	m_param.setNeuron(idx.partition, idx.neuron, value, parameter);
+	m_paramDirty = true;
 }
 
 
@@ -235,10 +235,10 @@ Neurons::setParameter(const DeviceIdx& idx, unsigned parameter, float value)
 void
 Neurons::readStateFromDevice() const
 {
-	if(mf_lastSync != m_cycle) {
+	if(m_lastSync != m_cycle) {
 		//! \todo read only part of the data here
-		mf_state.copyFromDevice();
-		mf_lastSync = m_cycle;
+		m_state.copyFromDevice();
+		m_lastSync = m_cycle;
 	}
 }
 
@@ -270,7 +270,7 @@ Neurons::getState(const DeviceIdx& idx, unsigned var) const
 {
 	verifyStateVariableIndex(var, stateVarCount());
 	readStateFromDevice();
-	return mf_state.getNeuron(idx.partition, idx.neuron, currentStateVariable(var));
+	return m_state.getNeuron(idx.partition, idx.neuron, currentStateVariable(var));
 }
 
 
@@ -280,8 +280,8 @@ Neurons::setState(const DeviceIdx& idx, unsigned var, float value)
 {
 	verifyStateVariableIndex(var, stateVarCount());
 	readStateFromDevice();
-	mf_state.setNeuron(idx.partition, idx.neuron, value, currentStateVariable(var));
-	mf_stateDirty = true;
+	m_state.setNeuron(idx.partition, idx.neuron, value, currentStateVariable(var));
+	m_stateDirty = true;
 }
 
 
@@ -289,13 +289,13 @@ Neurons::setState(const DeviceIdx& idx, unsigned var, float value)
 void
 Neurons::syncToDevice()
 {
-	if(mf_paramDirty) {
-		mf_param.copyToDevice();
-		mf_paramDirty = false;
+	if(m_paramDirty) {
+		m_param.copyToDevice();
+		m_paramDirty = false;
 	}
-	if(mf_stateDirty) {
-		mf_state.copyToDevice();
-		mf_stateDirty = false;
+	if(m_stateDirty) {
+		m_state.copyToDevice();
+		m_stateDirty = false;
 	}
 }
 

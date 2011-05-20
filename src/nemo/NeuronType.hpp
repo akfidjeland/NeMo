@@ -37,10 +37,10 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		explicit NeuronType(const std::string& name);
 
 		/* \return number of floating point parameters */
-		size_t f_nParam() const { return mf_nParam; }
+		size_t parameterCount() const { return m_nParam; }
 
 		/* \return number of floating point state variables */
-		size_t f_nState() const { return mf_nState; }
+		size_t stateVarCount() const { return m_nState; }
 
 		/*! Return the name of the neuron model
 		 *
@@ -67,8 +67,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 
 	private :
 
-		size_t mf_nParam;
-		size_t mf_nState;
+		size_t m_nParam;
+		size_t m_nState;
 		std::string m_name;
 
 		unsigned m_membranePotential;

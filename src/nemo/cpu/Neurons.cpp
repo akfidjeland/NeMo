@@ -9,8 +9,8 @@ namespace nemo {
 
 Neurons::Neurons(const nemo::network::Generator& net) :
 	m_type(net.neuronType()),
-	m_nParam(m_type.f_nParam()),
-	m_nState(m_type.f_nState()),
+	m_nParam(m_type.parameterCount()),
+	m_nState(m_type.stateVarCount()),
 	m_param(boost::extents[m_nParam][net.neuronCount()]),
 	m_state(boost::extents[m_nState][net.neuronCount()]),
 	m_size(0),
@@ -29,7 +29,7 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 		m_mapper.insert(g_idx, l_idx);
 
 		const Neuron& n = i->second;
-		setLocal(l_idx, n.f_getParameters(), n.f_getState());
+		setLocal(l_idx, n.getParameters(), n.getState());
 
 		m_size++;
 	}

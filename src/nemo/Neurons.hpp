@@ -81,8 +81,8 @@ class NEMO_BASE_DLL_PUBLIC Neurons
 		/* Neurons are stored in several Structure-of-arrays, supporting
 		 * arbitrary neuron types. Functions modifying these maintain the
 		 * invariant that the shapes are the same. */
-		std::vector< std::vector<float> > mf_param;
-		std::vector< std::vector<float> > mf_state;
+		std::vector< std::vector<float> > m_param;
+		std::vector< std::vector<float> > m_state;
 
 		size_t m_size;
 

@@ -277,7 +277,7 @@ NetworkImpl::neuron_begin() const
 	}
 	const Neurons& neurons = m_neurons.front();
 	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.begin(),
-				neurons.mf_param, neurons.mf_state, neurons.type()));
+				neurons.m_param, neurons.m_state, neurons.type()));
 }
 
 
@@ -290,7 +290,7 @@ NetworkImpl::neuron_end() const
 	}
 	const Neurons& neurons = m_neurons.front();
 	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.end(),
-				neurons.mf_param, neurons.mf_state, neurons.type()));
+				neurons.m_param, neurons.m_state, neurons.type()));
 }
 
 

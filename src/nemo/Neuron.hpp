@@ -17,41 +17,41 @@ class NEMO_BASE_DLL_PUBLIC Neuron
 
 		explicit Neuron(const NeuronType&);
 
-		Neuron(const NeuronType&, float fParam[], float fState[]);
+		Neuron(const NeuronType&, float param[], float state[]);
 
 		/*! \return all parameters of neuron (or NULL if there are none) */
-		const float* f_getParameters() const {
-			return mf_param.empty() ? NULL : &mf_param[0];
+		const float* getParameters() const {
+			return m_param.empty() ? NULL : &m_param[0];
 		}
 
 		/*! \return all state variables of neuron (or NULL if there are none) */
-		const float* f_getState() const {
-			return mf_state.empty() ? NULL : &mf_state[0];
+		const float* getState() const {
+			return m_state.empty() ? NULL : &m_state[0];
 		}
 
 		/*! \return i'th parameter of neuron */
-		float f_getParameter(size_t i) const;
+		float getParameter(size_t i) const;
 
 		/*! \return i'th state variable of neuron */
-		float f_getState(size_t i) const;
+		float getState(size_t i) const;
 
 		/*! set i'th parameter of neuron */
-		void f_setParameter(size_t i, float val);
+		void setParameter(size_t i, float val);
 
 		/*! set i'th state variable of neuron */
-		void f_setState(size_t i, float val);
+		void setState(size_t i, float val);
 
 	private :
 
 		void init(const NeuronType& type);
 
-		void set(float fParam[], float fState[]);
+		void set(float param[], float state[]);
 
-		std::vector<float> mf_param;
-		std::vector<float> mf_state;
+		std::vector<float> m_param;
+		std::vector<float> m_state;
 
-		const float& f_paramRef(size_t i) const;
-		const float& f_stateRef(size_t i) const;
+		const float& paramRef(size_t i) const;
+		const float& stateRef(size_t i) const;
 
 #ifdef NEMO_MPI_ENABLED
 #	error "MPI serialisation of neuron type is broken"

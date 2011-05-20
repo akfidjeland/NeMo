@@ -32,10 +32,10 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 			size_t n = m_it->second.second;
 			m_data.first = m_it->first;
 			for(size_t i=0; i < m_param.size(); ++i) {
-				m_data.second.f_setParameter(i, m_param[i][n]);
+				m_data.second.setParameter(i, m_param[i][n]);
 			}
 			for(size_t i=0; i < m_state.size(); ++i) {
-				m_data.second.f_setState(i, m_state[i][n]);
+				m_data.second.setState(i, m_state[i][n]);
 			}
 		}
 

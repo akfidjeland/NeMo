@@ -16,8 +16,8 @@
 namespace nemo {
 
 Neurons::Neurons(const NeuronType& type) :
-	mf_param(type.f_nParam()),
-	mf_state(type.f_nState()),
+	m_param(type.parameterCount()),
+	m_state(type.stateVarCount()),
 	m_size(0),
 	m_type(type)
 {
@@ -31,17 +31,17 @@ Neurons::add(unsigned nargs, const float args[])
 {
 	using boost::format;
 
-	if(nargs != mf_param.size() + mf_state.size()) {
+	if(nargs != m_param.size() + m_state.size()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Unexpected number of parameters/state variables when adding neuron. Expected %u, found %u")
-						% (mf_param.size() + mf_state.size()) % nargs));
+						% (m_param.size() + m_state.size()) % nargs));
 	}
 
-	for(unsigned i=0; i < mf_param.size(); ++i) {
-		mf_param[i].push_back(*args++);
+	for(unsigned i=0; i < m_param.size(); ++i) {
+		m_param[i].push_back(*args++);
 	}
-	for(unsigned i=0; i < mf_state.size(); ++i) {
-		mf_state[i].push_back(*args++);
+	for(unsigned i=0; i < m_state.size(); ++i) {
+		m_state[i].push_back(*args++);
 	}
 	return m_size++;
 }
@@ -52,7 +52,7 @@ unsigned
 Neurons::parameterIndex(unsigned i) const
 {
 	using boost::format;
-	if(i >= mf_param.size()) {
+	if(i >= m_param.size()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid parameter index %u") % i));
 	}
@@ -65,7 +65,7 @@ unsigned
 Neurons::stateIndex(unsigned i) const
 {
 	using boost::format;
-	if(i >= mf_state.size()) {
+	if(i >= m_state.size()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Invalid state variable index %u") % i));
 	}
@@ -79,17 +79,17 @@ Neurons::set(size_t n, unsigned nargs, const float args[])
 {
 	using boost::format;
 
-	if(nargs != mf_param.size() + mf_state.size()) {
+	if(nargs != m_param.size() + m_state.size()) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
 				str(format("Unexpected number of parameters/state variables when modifying neuron. Expected %u, found %u")
-						% (mf_param.size() + mf_state.size()) % nargs));
+						% (m_param.size() + m_state.size()) % nargs));
 	}
 
-	for(unsigned i=0; i < mf_param.size(); ++i) {
-		mf_param[i][n] = *args++;
+	for(unsigned i=0; i < m_param.size(); ++i) {
+		m_param[i][n] = *args++;
 	}
-	for(unsigned i=0; i < mf_state.size(); ++i) {
-		mf_state[i][n] = *args++;
+	for(unsigned i=0; i < m_state.size(); ++i) {
+		m_state[i][n] = *args++;
 	}
 }
 
@@ -98,7 +98,7 @@ Neurons::set(size_t n, unsigned nargs, const float args[])
 float
 Neurons::getParameter(size_t nidx, unsigned pidx) const
 {
-	return mf_param[parameterIndex(pidx)][nidx];
+	return m_param[parameterIndex(pidx)][nidx];
 }
 
 
@@ -106,7 +106,7 @@ Neurons::getParameter(size_t nidx, unsigned pidx) const
 float
 Neurons::getState(size_t nidx, unsigned sidx) const
 {
-	return mf_state[stateIndex(sidx)][nidx];
+	return m_state[stateIndex(sidx)][nidx];
 }
 
 
@@ -122,14 +122,14 @@ Neurons::getMembranePotential(size_t nidx) const
 void
 Neurons::setParameter(size_t nidx, unsigned pidx, float val)
 {
-	mf_param[parameterIndex(pidx)][nidx] = val;
+	m_param[parameterIndex(pidx)][nidx] = val;
 }
 
 
 void
 Neurons::setState(size_t nidx, unsigned sidx, float val)
 {
-	mf_state[stateIndex(sidx)][nidx] = val;
+	m_state[stateIndex(sidx)][nidx] = val;
 }
 
 
