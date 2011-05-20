@@ -25,7 +25,7 @@ namespace nemo {
 
 inline
 rcm_index_address_t
-make_rcm_index_address(uint start, uint len)
+make_rcm_index_address(unsigned start, unsigned len)
 {
 	return make_uint2(start, len);
 }

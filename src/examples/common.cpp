@@ -10,7 +10,7 @@ typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 
-float
+long
 benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 				boost::program_options::variables_map& vm, unsigned seconds)
 {
@@ -20,7 +20,7 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	bool verbose = !csv;
 	bool provideFiringStimulus = vm.count("fstim") != 0;
 	bool provideCurrentStimulus = vm.count("istim") != 0;
-	bool vprobe = vm.count("vprobe");
+	bool vprobe = vm.count("vprobe") != 0;
 
 	const unsigned MS_PER_SECOND = 1000;
 

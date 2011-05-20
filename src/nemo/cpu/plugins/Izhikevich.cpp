@@ -3,12 +3,12 @@
 
 #include "neuron_model.h"
 
-#define SUBSTEPS 4
-#define SUBSTEP_MULT 0.25
+const unsigned SUBSTEPS = 4;
+const float SUBSTEP_MULT = 0.25f;
 
 
 extern "C"
-NEMO_CPU_DLL_PUBLIC
+NEMO_PLUGIN_DLL_PUBLIC
 void
 cpu_update_neurons(
 		int start, int end,
@@ -41,9 +41,9 @@ cpu_update_neurons(
 
 		fired[n] = 0;
 
-		for(unsigned int t=0; t<SUBSTEPS; ++t) {
+		for(unsigned t=0; t<SUBSTEPS; ++t) {
 			if(!fired[n]) {
-				v[n] += SUBSTEP_MULT * ((0.04* v[n] + 5.0) * v[n] + 140.0 - u[n] + I);
+				v[n] += SUBSTEP_MULT * ((0.04* v[n] + 5.0) * v[n] + 140.0- u[n] + I);
 				u[n] += SUBSTEP_MULT * (a[n] * (b[n] * v[n] - u[n]));
 				fired[n] = v[n] >= 30.0;
 			}

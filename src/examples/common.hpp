@@ -19,7 +19,7 @@
  *
  * \return milliseconds elapsed for the actual simulation (wallclock)
  */
-float benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
+long benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 				boost::program_options::variables_map& opts,
 				unsigned seconds=10);
 

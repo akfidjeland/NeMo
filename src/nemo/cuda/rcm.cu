@@ -89,7 +89,7 @@ rcm_metaIndexAddress(pidx_t partition, nidx_t neuron)
 
 
 __device__
-uint
+unsigned
 rcm_indexRowStart(rcm_index_address_t addr)
 {
 	return addr.x;
@@ -97,7 +97,7 @@ rcm_indexRowStart(rcm_index_address_t addr)
 
 
 __device__
-uint
+unsigned
 rcm_indexRowLength(rcm_index_address_t addr)
 {
 	return addr.y;
@@ -116,7 +116,7 @@ rcm_indexAddress(nidx_t neuron, const rcm_dt& rcm)
 
 __device__
 rcm_address_t
-rcm_address(uint rowStart, uint rowOffset, const rcm_dt& rcm)
+rcm_address(unsigned rowStart, unsigned rowOffset, const rcm_dt& rcm)
 {
 	return rcm.index[rowStart + rowOffset];
 }

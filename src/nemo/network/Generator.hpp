@@ -1,6 +1,7 @@
 #ifndef NEMO_NETWORK_GENERATOR_HPP
 #define NEMO_NETWORK_GENERATOR_HPP
 
+#include <nemo/config.h>
 #include <nemo/types.hpp>
 #include <nemo/network/iterator.hpp>
 #include <nemo/NeuronType.hpp>
@@ -12,7 +13,7 @@ namespace nemo {
 /* A network generator is simply a class which can produce a sequence of
  * neurons and a sequence of synapses. Network generators are expected to
  * provide all neurons first, then all synapses. */
-class Generator
+class NEMO_BASE_DLL_PUBLIC Generator
 {
 	public : 
 

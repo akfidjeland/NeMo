@@ -26,7 +26,7 @@ namespace nemo {
  * A network consisting of neurons of multiple types can be created from
  * several instances of this class.
  */
-class Neurons 
+class NEMO_BASE_DLL_PUBLIC Neurons
 {
 	public :
 		

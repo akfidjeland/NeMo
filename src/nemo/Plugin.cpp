@@ -32,7 +32,7 @@ Plugin::Plugin(const std::string& name) :
 	init(name);
 	try {
 		load(name);
-	} catch(nemo::exception& e) {
+	} catch(nemo::exception&) {
 		dl_exit();
 		throw;
 	}
@@ -47,7 +47,7 @@ Plugin::Plugin(const std::string& name, const std::string& subdir) :
 	try {
 		setpath(subdir);
 		load(name);
-	} catch(nemo::exception& e) {
+	} catch(nemo::exception&) {
 		dl_exit();
 		throw;
 	}

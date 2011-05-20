@@ -22,13 +22,14 @@ typedef lt_dlhandle dl_handle;
 #endif
 #include <string>
 #include <boost/utility.hpp>
+#include <nemo/config.h>
 
 
 namespace nemo {
 
 
 /* Wrapper for a dynamically loaded library or plugin */
-class Plugin : private boost::noncopyable
+class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 {
 	public :
 

@@ -11,6 +11,7 @@
 
 #include <boost/random.hpp>
 #include <nemo.hpp>
+#include <nemo/util.h>
 
 typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
@@ -27,10 +28,10 @@ class OscillatorNetwork : public nemo::Network
 			m_type = addNeuronType("Kuramoto");
 		}
 
-		void add(unsigned idx, float frequency, float phase) {
+		void add(unsigned idx, double frequency, double phase) {
 			static float args[2];
-			args[0] = frequency;
-			args[1] = phase;
+			args[0] = float(frequency);
+			args[1] = float(phase);
 			addNeuron(m_type, idx, 2, args);
 		}
 
@@ -107,11 +108,11 @@ main(int argc, char* argv[])
 		boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 		LOG(verbose, "Running simulation");
 		unsigned seconds = 10;
-		double elapsed = benchmark(sim.get(), ncount, scount, vm, seconds); // ms
+		uint64_t elapsed = benchmark(sim.get(), ncount, scount, vm, seconds); // ms
 		std::cout << "Elapsed: " << elapsed << "ms\n";
-		uint64_t oscUpdates = uint64_t(seconds)*1000000/uint64_t(elapsed);
+		uint64_t oscUpdates = uint64_t(seconds)*1000000/elapsed;
 		std::cout << "Updates/second: " << oscUpdates << std::endl;
-		uint64_t cplUpdatesM = uint64_t(seconds*ncount*scount)/uint64_t(elapsed); // a bunch of factors cancel out
+		uint64_t cplUpdatesM = uint64_t(seconds*ncount*scount)/elapsed; // a bunch of factors cancel out
 		std::cout << "Couplings processed/second: " << cplUpdatesM << std::endl;
 		LOG(verbose, "Simulation complete");
 		return 0;

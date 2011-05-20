@@ -15,10 +15,10 @@ extern "C" {
 #endif
 
 /*! \return uniform random 32-bit number */
-unsigned urand(RNG* rng);
+NEMO_BASE_DLL_PUBLIC unsigned urand(RNG* rng);
 
 /*! \return normal random number drawn from N(0, 1) */
-float nrand(RNG* rng);
+NEMO_BASE_DLL_PUBLIC float nrand(RNG* rng);
 
 #ifdef __cplusplus
 }

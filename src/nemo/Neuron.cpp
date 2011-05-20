@@ -30,6 +30,22 @@ Neuron::set(float fParam[], float fState[])
 
 
 
+float
+Neuron::f_getParameter(size_t i) const
+{
+	return f_paramRef(i);
+}
+
+
+
+float
+Neuron::f_getState(size_t i) const
+{
+	return f_stateRef(i);
+}
+
+
+
 const float&
 Neuron::f_paramRef(size_t i) const
 {

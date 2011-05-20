@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/scoped_ptr.hpp>
 #include <nemo.hpp>
+#include <nemo/util.h>
 
 namespace nemo {
 	namespace test {
@@ -65,7 +66,7 @@ testSimpleCoupled()
 	OscillatorNetwork net;
 
 	float freq[2] = {0.1f, 0.1f};
-	float phase[2] = {0.0f, 0.11+M_PI_2};
+	float phase[2] = {0.0f, 0.11f};
 
 	net.add(0, freq[0], phase[0]);
 	net.add(1, freq[1], phase[1]);
@@ -82,7 +83,7 @@ testSimpleCoupled()
 		phase[0] += freq[0];
 		
 		for(unsigned i=0; i<net.neuronCount(); ++i) {
-			phase[i] = fmodf(phase[i], 2*M_PI);
+			phase[i] = fmodf(phase[i], float(2*M_PI));
 			const float tolerance = 0.001f; // percent
 			BOOST_REQUIRE_CLOSE(sim->getNeuronState(i,0), phase[i], tolerance);
 		}
@@ -136,9 +137,9 @@ testNto1(unsigned ncount, bool noise)
 
 		/* Sum of weights is one */
 		phase0 += frequency + ncount * strength * sinf(phase0-phaseN);
-		phase0 = fmod(phase0, 2*M_PI);
+		phase0 = fmod(phase0, float(2*M_PI));
 		phaseN += frequency;
-		phaseN = fmod(phaseN, 2*M_PI);
+		phaseN = fmod(phaseN, float(2*M_PI));
 
 		const float tolerance = 0.001f; // percent
 		BOOST_REQUIRE_CLOSE(sim->getNeuronState(0,0), phase0, tolerance);

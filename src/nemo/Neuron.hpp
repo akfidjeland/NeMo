@@ -9,7 +9,7 @@
 
 namespace nemo {
 
-class Neuron
+class NEMO_BASE_DLL_PUBLIC Neuron
 {
 	public :
 
@@ -30,10 +30,10 @@ class Neuron
 		}
 
 		/*! \return i'th parameter of neuron */
-		float f_getParameter(size_t i) const { return f_paramRef(i); }
+		float f_getParameter(size_t i) const;
 
 		/*! \return i'th state variable of neuron */
-		float f_getState(size_t i) const { return f_stateRef(i); }
+		float f_getState(size_t i) const;
 
 		/*! set i'th parameter of neuron */
 		void f_setParameter(size_t i, float val);

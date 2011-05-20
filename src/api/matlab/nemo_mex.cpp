@@ -173,7 +173,7 @@ vectorDimension(int nrhs, const mxArray* prhs[], unsigned arglen[])
 	size_t i = 0U;
 
 	/* Skip initial scalars */
-	for(; i < nrhs && dim == 1U; ++i) {
+	for(size_t i_max = nrhs; i < i_max && dim == 1U; ++i) {
 		dim = arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
 	}
 

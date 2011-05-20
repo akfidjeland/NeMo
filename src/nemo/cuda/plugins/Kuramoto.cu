@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_STEP_CU
-#define NEMO_CUDA_STEP_CU
+#ifndef NEMO_CUDA_PLUGINS_KURAMOTO_CU
+#define NEMO_CUDA_PLUGINS_KURAMOTO_CU
 
 /* Copyright 2010 Imperial College London
  *
@@ -11,6 +11,8 @@
  */
 
 /*! \file Kuramoto.cu Kuramoto oscillator kernel */ 
+
+#include <math.h>
 
 #include <nemo/config.h>
 #include <rng.cu_h>
@@ -192,7 +194,7 @@ updateOscillators(
 
 /*! Wrapper for the __global__ call that performs a single simulation step */
 extern "C"
-NEMO_CUDA_DLL_PUBLIC
+NEMO_PLUGIN_DLL_PUBLIC
 cudaError_t
 cuda_update_neurons( 
 		cudaStream_t stream,
