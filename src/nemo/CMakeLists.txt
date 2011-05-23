@@ -141,7 +141,7 @@ ENDIF(WIN32)
 
 SET(NEMO_USER_PLUGIN_DIR ".nemo/plugins")
 IF(WIN32)
-	SET(NEMO_SYSTEM_PLUGIN_DIR "Application Data/NeMo/plugins")
+	SET(NEMO_USER_PLUGIN_DIR "Application Data/NeMo/plugins")
 ENDIF(WIN32)
 
 CONFIGURE_FILE(
