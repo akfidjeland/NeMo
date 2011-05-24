@@ -78,7 +78,7 @@ testSimpleCoupled()
 	for(unsigned t=0; t<100; ++t) {
 		sim->step();
 
-		float shift = sinf(phase[1]-phase[0]); // weight is 1
+		float shift = sinf(phase[0]-phase[1]); // weight is 1
 		phase[1] += freq[1] + shift;
 		phase[0] += freq[0];
 		
@@ -136,7 +136,7 @@ testNto1(unsigned ncount, bool noise)
 		sim->step();
 
 		/* Sum of weights is one */
-		phase0 += frequency + ncount * strength * sinf(phase0-phaseN);
+		phase0 += frequency + ncount * strength * sinf(phaseN-phase0);
 		phase0 = fmod(phase0, float(2*M_PI));
 		phaseN += frequency;
 		phaseN = fmod(phaseN, float(2*M_PI));

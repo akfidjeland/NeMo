@@ -97,7 +97,7 @@ computeIncoming(
 						sourcePartition(synapse), sourceNeuron(synapse),
 						g_state);
 			//! \todo check performance difference if using __sinf
-			incoming = g_rcm.weights[r_offset] * sinf(targetPhase-sourcePhase);
+			incoming = g_rcm.weights[r_offset] * sinf(sourcePhase-targetPhase);
 		}
 		s_sourcePhase[tid] = incoming;
 		__syncthreads();
