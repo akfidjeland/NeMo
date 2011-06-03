@@ -25,7 +25,7 @@
 
 #include <nemo/plugins/Kuramoto.h>
 
-#define MAX_INDEGREE 1024
+#define INCOMING_BUFFER_SIZE 1024
 
 
 //! \todo use more optimal reduction here
@@ -76,29 +76,24 @@ sumN(float s_weight[],
 
 
 
-/*! Compute the influence from other oscillators, for a single target oscillator.
+/*! Load up to INCOMING_BUFFER_SIZE couping strength/source phase pairs for a single target oscillator 
+ *
+ * \pre s_sourcePhase has INCOMING_BUFFER_SIZE elements
+ * \pre s_weight has INCOMING_BUFFER_SIZE elements
  */
 __device__
 void
-computePhaseShift(
-	unsigned cycle,
-	unsigned partitionSize,
-	const param_t& s_params,
-	float* g_state,
-	rcm_dt g_rcm,
-	rcm_index_address_t s_row,
-	float targetPhase,
-	float targetFrequency,
-	float* s_phaseShift)
+loadIncoming(
+		unsigned cycle,
+		unsigned inWarps,
+		const param_t& s_params,
+		float* g_state,
+		rcm_dt g_rcm,
+		rcm_index_address_t s_row,
+		float s_sourcePhase[],
+		float s_weight[])
 {
     unsigned tid = threadIdx.x;
-	//! \todo pre-load index addresses for a bunch of targets, and pass this in
-
-	__shared__ float s_sourcePhase[MAX_INDEGREE];
-	__shared__ float s_weight[MAX_INDEGREE];
-
-	const unsigned inWarps = rcm_indexRowLength(s_row);
-
 	/*! \todo add a second loop and pre-load THREADS_PER_BLOCK warp
 	 * addresses */
 	for(unsigned bIndex=0 ; bIndex < inWarps; bIndex += THREADS_PER_BLOCK/WARP_SIZE) {
@@ -132,6 +127,34 @@ computePhaseShift(
 		}
 		__syncthreads(); // to protect 'warp'
 	}
+}
+
+
+
+/*! Compute the influence from other oscillators, for a single target oscillator.
+ */
+__device__
+void
+computePhaseShift(
+	unsigned cycle,
+	unsigned partitionSize,
+	const param_t& s_params,
+	float* g_state,
+	rcm_dt g_rcm,
+	rcm_index_address_t s_row,
+	float targetPhase,
+	float targetFrequency,
+	float* s_phaseShift)
+{
+    unsigned tid = threadIdx.x;
+	//! \todo pre-load index addresses for a bunch of targets, and pass this in
+
+	__shared__ float s_sourcePhase[INCOMING_BUFFER_SIZE];
+	__shared__ float s_weight[INCOMING_BUFFER_SIZE];
+
+	const unsigned inWarps = rcm_indexRowLength(s_row);
+
+	loadIncoming(cycle, inWarps, s_params, g_state, g_rcm, s_row, s_sourcePhase, s_weight);
 
 	__shared__ float s_k[4];
 	if(tid < 4) {
