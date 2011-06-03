@@ -25,12 +25,13 @@
 
 #include <nemo/plugins/Kuramoto.h>
 
+#define MAX_INDEGREE 1024
 
 
 //! \todo use more optimal reduction here
 __device__
 void
-sum(float* sdata, float *s_out)
+sum256(float* sdata, float *s_out)
 {  
     unsigned tid = threadIdx.x;
 
@@ -47,34 +48,62 @@ sum(float* sdata, float *s_out)
 }
 
 
-
-
-/*! Compute the influence from other oscillators */
+/* Compute the phase shift induced in a single oscillator
+ *
+ * \return theta_i = sum_j { w_ij * sin(theta_j - theta_i) }
+ */
 __device__
 void
-computeIncoming(
+sumN(float s_weight[],
+		float s_sourcePhase[],
+		unsigned indegree,
+		float targetPhase,
+		float* out)
+{
+	unsigned tid = threadIdx.x;
+	__shared__ float s_tmp[THREADS_PER_BLOCK]; // partial sums
+	s_tmp[tid] = 0.0f;
+	for(unsigned i=0; i<indegree; i += THREADS_PER_BLOCK) {
+		unsigned sid = i+tid;
+		if(sid < indegree) {
+			s_tmp[tid] += s_weight[sid] * sinf(s_sourcePhase[sid] - targetPhase);
+		}
+	}
+	__syncthreads();
+	sum256(s_tmp, out);
+	__syncthreads();
+}
+
+
+
+/*! Compute the influence from other oscillators, for a single target oscillator.
+ */
+__device__
+void
+computePhaseShift(
 	unsigned cycle,
 	unsigned partitionSize,
 	const param_t& s_params,
 	float* g_state,
 	rcm_dt g_rcm,
-	unsigned target,
 	rcm_index_address_t s_row,
 	float targetPhase,
+	float targetFrequency,
 	float* s_phaseShift)
 {
     unsigned tid = threadIdx.x;
 	//! \todo pre-load index addresses for a bunch of targets, and pass this in
 
+	__shared__ float s_sourcePhase[MAX_INDEGREE];
+	__shared__ float s_weight[MAX_INDEGREE];
+
+	const unsigned inWarps = rcm_indexRowLength(s_row);
+
 	/*! \todo add a second loop and pre-load THREADS_PER_BLOCK warp
 	 * addresses */
-	for(unsigned bIndex=0 ; bIndex < rcm_indexRowLength(s_row);
-			bIndex += THREADS_PER_BLOCK/WARP_SIZE) {
+	for(unsigned bIndex=0 ; bIndex < inWarps; bIndex += THREADS_PER_BLOCK/WARP_SIZE) {
 
 		__shared__ rcm_address_t warp[THREADS_PER_BLOCK/WARP_SIZE];
-
-		/* Incoming phase, all going into a single neuron */
-		__shared__ float s_sourcePhase[THREADS_PER_BLOCK];
 
 		if(tid < THREADS_PER_BLOCK/WARP_SIZE) {
 			warp[tid] = rcm_address(rcm_indexRowStart(s_row), bIndex + tid, g_rcm);
@@ -83,28 +112,44 @@ computeIncoming(
 
 		size_t r_offset = rcm_offset(warp[tid/WARP_SIZE]);
 		rsynapse_t synapse = g_rcm.data[r_offset];
-		float incoming = 0.0f;
+
+		size_t sid = bIndex * WARP_SIZE + tid;
+		s_weight[sid] = 0.0f;
+		s_sourcePhase[sid] = 0.0f;
 
 		if(synapse != INVALID_REVERSE_SYNAPSE) {
 			ASSERT(r_delay1(synapse) < MAX_HISTORY_LENGTH-1);
 			/* Reading the source state here is non-coalesced. Much of this
 			 * should be cachable, however, so for > 2.0 devices we should use
 			 * a large L1. */
-			float sourcePhase =
+			s_sourcePhase[sid] =
 				state<MAX_HISTORY_LENGTH, 1, STATE_PHASE>(
 						int(cycle)-int(r_delay0(synapse)),
 						s_params.pitch32,
 						sourcePartition(synapse), sourceNeuron(synapse),
 						g_state);
-			//! \todo check performance difference if using __sinf
-			incoming = g_rcm.weights[r_offset] * sinf(sourcePhase-targetPhase);
+			s_weight[sid] = g_rcm.weights[r_offset];
 		}
-		s_sourcePhase[tid] = incoming;
-		__syncthreads();
-
-		sum(s_sourcePhase, s_phaseShift);
 		__syncthreads(); // to protect 'warp'
 	}
+
+	__shared__ float s_k[4];
+	if(tid < 4) {
+		s_k[tid] = targetFrequency;
+	}
+	__syncthreads();
+
+	unsigned indegree = inWarps * WARP_SIZE; // possible some padding
+	sumN(s_weight, s_sourcePhase, indegree, targetPhase            , s_k+0);
+	sumN(s_weight, s_sourcePhase, indegree, targetPhase+s_k[0]*0.5f, s_k+1);
+	sumN(s_weight, s_sourcePhase, indegree, targetPhase+s_k[1]*0.5f, s_k+2);
+	sumN(s_weight, s_sourcePhase, indegree, targetPhase+s_k[2]     , s_k+3);
+
+	//! \todo use precomputed factor and multiply
+	if(tid == 0) {
+		*s_phaseShift = (s_k[0] + 2*s_k[1] + 2*s_k[2] + s_k[3])/6.0f;
+	}
+	__syncthreads();
 }
 
 
@@ -154,10 +199,13 @@ updateOscillators(
 
 		__shared__ float s_phase0[THREADS_PER_BLOCK];
 		__shared__ float s_phaseShift[THREADS_PER_BLOCK];
+		__shared__ float s_frequency[THREADS_PER_BLOCK];
 		__shared__ rcm_index_address_t s_row[THREADS_PER_BLOCK];
 
 		unsigned oscillator = bOscillator + tid;
+
 		s_phase0[tid] = g_phase0[oscillator];
+		s_frequency[tid] = g_frequency[oscillator];
 		s_phaseShift[tid] = 0.0f;
 		s_row[tid] = rcm_indexAddress(oscillator, g_rcm);
 		__syncthreads();
@@ -165,22 +213,18 @@ updateOscillators(
 		/* now compute the incoming phase for each sequentially */
 		//! \todo cut loop short when we get to end?
 		for(unsigned iTarget=0; iTarget < THREADS_PER_BLOCK; iTarget+= 1) {
-			computeIncoming(cycle, s_partitionSize,
-					s_params, g_nstate, g_rcm,
-					iTarget, s_row[iTarget], s_phase0[iTarget], s_phaseShift + iTarget);
+			if(bv_isSet(bOscillator+iTarget, s_valid)) {
+				computePhaseShift(cycle, s_partitionSize,
+						s_params, g_nstate, g_rcm,
+						s_row[iTarget], s_phase0[iTarget], s_frequency[iTarget],
+						s_phaseShift + iTarget);
+			}
 		}
-		__syncthreads();
 
 		/* Set next state for THREADS_PER_BLOCK oscillators */
-		//! \todo use RK4 here instead
-		//! \todo is the validity check really needed here?
+		//! \todo remove this test. Use the earlier escape.
 		if(bv_isSet(oscillator, s_valid)) {
-			float phase = s_phase0[tid]
-			            + g_frequency[oscillator] 
-			            + s_phaseShift[tid]; 
-			DEBUG_MSG_NEURON("phase[%u] (%p+%u) = %f + %f + %f\n",
-					oscillator, g_phase1, oscillator,
-					s_phase0[tid], g_frequency[oscillator], s_phaseShift[tid]);
+			float phase = s_phase0[tid] + s_phaseShift[tid];
 			g_phase1[oscillator] = fmodf(phase, 2*M_PI);
 		}
 	}
