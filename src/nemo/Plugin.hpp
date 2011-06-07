@@ -22,6 +22,7 @@ typedef lt_dlhandle dl_handle;
 #endif
 #include <string>
 #include <boost/utility.hpp>
+#include <boost/filesystem.hpp>
 #include <nemo/config.h>
 
 
@@ -60,6 +61,18 @@ class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 		 * \throws nemo::exception for load errors
 		 */
 		void* function(const std::string& name) const;
+
+		/*! \return path to user plugin directory
+		 *
+		 * The path may not exist
+		 */
+		static boost::filesystem::path userDirectory();
+
+		/*! \return path to system plugin directory
+		 *
+		 * \throws if the directory does not exist
+		 */
+		static boost::filesystem::path systemDirectory();
 
 	private:
 

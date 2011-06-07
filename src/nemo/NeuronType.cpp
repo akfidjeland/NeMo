@@ -16,6 +16,7 @@
 
 #include "NeuronType.hpp"
 #include "exception.hpp"
+#include "Plugin.hpp"
 
 
 namespace nemo {
@@ -48,12 +49,12 @@ configurationFile(const std::string& name)
 	using boost::format;
 	using namespace boost::filesystem;
 
-	path userPath = path(NEMO_USER_PLUGIN_DIR) / (name + ".ini");
+	path userPath = Plugin::userDirectory() / (name + ".ini");
 	if(exists(userPath)) {
 		return userPath;
 	}
 
-	path systemPath = path(NEMO_SYSTEM_PLUGIN_DIR) / (name + ".ini");
+	path systemPath = Plugin::systemDirectory() / (name + ".ini");
 	if(exists(systemPath)) {
 		return systemPath;
 	}
