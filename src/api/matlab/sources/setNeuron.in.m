@@ -14,6 +14,9 @@
 % The input arguments can be a mix of scalars and vectors as long as all
 % vectors have the same length. Scalar arguments are replicated the appropriate
 % number of times.
+%
+% The neuron index input must be a vector if any of the parameter or state
+% arguments are vectors (as the neuron index cannot be replicated).
 function setNeuron(idx, varargin)
 
 nemo_mex(uint32(FNID), uint32(idx), varargin{:});

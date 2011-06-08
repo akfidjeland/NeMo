@@ -412,6 +412,7 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	unsigned arglen[NEMO_MAX_NEURON_ARGS];
 	float args[NEMO_MAX_NEURON_ARGS];
 
+	/* Number of arguments in variable-length argument list */
 	int nargs = nrhs-3;
 	if(nargs < 0) {
 		mexErrMsgIdAndTxt("nemo:api", "missing arguments");
@@ -419,12 +420,12 @@ addNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	if(nargs > NEMO_MAX_NEURON_ARGS) {
 		mexErrMsgIdAndTxt("nemo:mex", "too many arguments");
 	}
-	size_t elems = vectorDimension(nargs, prhs + 1, arglen);
+	size_t elems = vectorDimension(nargs+2, prhs + 1, arglen);
 	checkOutputCount(nlhs, 0);
 	nemo_network_t hdl = getNetwork();
 	for(size_t i=0; i<elems; ++i){
 		for(int a=0; a<nargs; ++a) {
-			args[a] = scalarAt<float,double>(prhs[3+a], i, arglen[a]);
+			args[a] = scalarAt<float,double>(prhs[3+a], i, arglen[2+a]);
 		}
 		checkNemoStatus(
 				nemo_add_neuron(
@@ -446,6 +447,7 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	unsigned arglen[NEMO_MAX_NEURON_ARGS];
 	float args[NEMO_MAX_NEURON_ARGS];
 
+	/* Number of arguments in variable-length argument list */
 	int nargs = nrhs-2;
 	if(nargs < 0) {
 		mexErrMsgIdAndTxt("nemo:api", "missing arguments");
@@ -453,13 +455,13 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	if(nargs > NEMO_MAX_NEURON_ARGS) {
 		mexErrMsgIdAndTxt("nemo:mex", "too many arguments");
 	}
-	size_t elems = vectorDimension(nargs, prhs + 1, arglen);
+	size_t elems = vectorDimension(nargs+1, prhs+1, arglen);
 	checkOutputCount(nlhs, 0);
 	if(isSimulating()) {
 		nemo_simulation_t hdl = getSimulation();
 		for(size_t i=0; i<elems; ++i){
 			for(int a=0; a<nargs; ++a) {
-				args[a] = scalarAt<float,double>(prhs[2+a], i, arglen[a]);
+				args[a] = scalarAt<float,double>(prhs[2+a], i, arglen[1+a]);
 			}
 			checkNemoStatus(nemo_set_neuron_s(hdl, scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), nargs, args));
 		}
@@ -467,7 +469,7 @@ setNeuron(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		nemo_network_t hdl = getNetwork();
 		for(size_t i=0; i<elems; ++i){
 			for(int a=0; a<nargs; ++a) {
-				args[a] = scalarAt<float,double>(prhs[2+a], i, arglen[a]);
+				args[a] = scalarAt<float,double>(prhs[2+a], i, arglen[1+a]);
 			}
 			checkNemoStatus(nemo_set_neuron_n(hdl, scalarAt<unsigned,uint32_t>(prhs[1], i, arglen[0]), nargs, args));
 		}
