@@ -269,7 +269,7 @@ The input current is drawn from $\mathcal{N}(0, \sigma^2)$,
 	where $\sigma$ is set separately for each neuron.
 If $\sigma$ is set to zero, no input current is generated.
 
-\subsection{Delay coupled Kuramoto oscillators}
+\subsection{Delay-coupled Kuramoto oscillators}
 \label{model:neuron:kuramoto}
 
 \begin{tabular}{ll}
@@ -309,6 +309,9 @@ where
 There is an intrinsic unit of time, with no physical meaning.
 Delays are expressed in term of this time step.
 The state is updated every time step using fourth-order Runge-Kutta.
+
+In the present version of \nemo\ the Kuramoto model should be considered experimental.
+The present version has the limitation that the in-degree of each oscillator is limited to 1024.
 
 \subsection{Basic synapse model}
 \label{model:synapse}
