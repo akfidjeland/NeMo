@@ -248,7 +248,7 @@ updateOscillators(
 		//! \todo remove this test. Use the earlier escape.
 		if(bv_isSet(oscillator, s_valid)) {
 			float phase = s_phase0[tid] + s_phaseShift[tid];
-			g_phase1[oscillator] = fmodf(phase, 2*M_PI);
+			g_phase1[oscillator] = fmodf(phase, 2.0f*M_PI) + (phase < 0.0f ? 2.0f*M_PI: 0.0f);
 		}
 	}
 
