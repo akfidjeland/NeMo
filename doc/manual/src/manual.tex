@@ -16,10 +16,6 @@
 \lstset{
 	tabsize=2,
 	basicstyle=\small \ttfamily,
-	%basicstyle=\small \ttfamily,
-	%basicstyle={\rmfamily},
-	%basicstyle={\ttfamily},
-	%numbers=left,
 	numberstyle=\tiny,
 	stepnumber=1,
 	numbersep=5pt,
@@ -28,34 +24,10 @@
 	backgroundcolor=\color{light-gray}
 }
 
-\lstnewenvironment
-	{matlab}
-	{ 	\lstset{
-			language=Matlab,
-			% basicstyle=\small \ttfamily,
-			numbers=none
-	}	}
-	{ }
-
-\lstnewenvironment
-	{ccode}
-	{ 	\lstset{
-			language=C,
-			% basicstyle=\small \ttfamily,
-			numbers=none
-	}	}
-	{ }
-
-\lstnewenvironment
-	{shell}
-	{ 	\lstset{
-			%language=Matlab,
-			%basicstyle=\small \ttfamily,
-			basicstyle={\ttfamily},
-			numbers=none
-	}	}
-	{ }
-
+\lstnewenvironment{matlab}{\lstset{language=Matlab, numbers=none}} {}
+\lstnewenvironment{python}{\lstset{language=Python, numbers=none}} {}
+\lstnewenvironment{ccode}{\lstset{language=C, numbers=none}} {}
+\lstnewenvironment{shell}{\lstset{basicstyle={\ttfamily}, numbers=none}} {}
 
 \newcommand{\nemo}{\texttt{NeMo}}
 \newcommand{\code}[1]{\texttt{#1}}
@@ -96,8 +68,12 @@ The library has interfaces in \cpp, C, Python, and Matlab.
 
 \section{A short tutorial introduction}
 
-The \nemo\ library can be used to simulate a network of neurons based on the
-	Izhikevich neuron model \cite{izhikevich2003simple_model}.
+The \nemo\ library can be used to simulate a network of point neurons.
+The library can support different types neuron models via a plugin-system.
+The current version of the library ships with support for 
+Izhikevich neurons \cite{izhikevich2003simple_model} 
+and Kuramoto oscillators.
+
 The library exposes three basic types of objects:
 	network, configuration, and simulation.
 Setting up and running such a simulation involves:
@@ -108,41 +84,71 @@ Setting up and running such a simulation involves:
 	\item Creating a simulation object from the network and configuration objects and running the simulation.
 \end{enumerate}
 
-The following section shows basic usage of the library using the \cpp\ interface.
-The other language interfaces (Section~\ref{api}) have very similar usage.
+The following section illustrates basic usage of the library using the Python interface.
+The other language interfaces (Section~\ref{api}) have similar usage.
 
 \subsection{Constructing a network}
 
 Network construction is performed using a low-level interface
-	where neurons and synapses are added individually.
+	where neurons and synapses are added individually. 
+The Python and Matlab APIs have vector forms for some functions,
+	but fundamentally each neuron and synapse must be individually specified.
 Higher-level construction interfaces,
 	e.g. using various forms of projections,
 	can be built on top of this,
 	but is not part of \nemo.
 
-First create an empty network and add a few neurons:
+Each neuron is specified in terms of its
+	neuron type,
+	a user-specified index,
+	a list of parameters,
+	and a list of initial values for state variables. 
+The number of parameters and state variables varies between neuron types.
+To create neurons of a specific type,
+	the neuron type must be registered with the network.
+The following creates 1000 Izhikevich neurons with some variation in parameters: 
 
-\begin{ccode}
-nemo::Network net;
-net.addNeuron(0, 0.02, 0.20, -61.3, 6.5, -13.0, -65.0, 0.0);
-net.addNeuron(1, 0.06, 0.23, -65.0, 2.0, -14.6, -65.0, 0.0);
-\end{ccode}
+\begin{python}
+net = nemo.Network()
+iz = net.add_neuron_type('Izhikevich')
 
-To create a neuron the user specifies a unique index
-	(which can be used when adding connections)
-	as well as the neuron parameters (Section~\ref{model:neuron}).
+# excitatory neurons
+re = random.random()**2
+c = -65.0+15*re
+d = 8.0 - 6.0*re
+net.add_neuron(iz, range(0,800), 0.02, 0.2, c, d, 5.0, 0.2*c, c)
+
+# inhibitory neurons
+ri = random.random()
+a = 0.02+0.08*ri
+b = 0.25-0.05*ri
+c = -65.0
+net.add_neuron(iz, range(800,1000), a, b, c, 2.0, 2.0, b*c, c)
+\end{python}
+
+Note that the \code{add\_neuron} functions accepts a mix of scalars and vectors.
+The C++ and C API has scalar versions only.
+For the meaning of the parameters, refer to the documentation for the Izhikevich model.
 
 Synapses can be added by specifying the source and target neurons as well as
 	the weight, conductance delay (in milliseconds), and a plasticity flag.
-For example, to connect the two above neurons in a recurrent fashion
-	with one excitatory synapse and one inhibitory synapse one could do something like:
+For example, to create all-to-all static connections with a delay of one
+between the neurons defined above:
 
-\begin{ccode}
-net.addSynapse(0, 1, 10, 1.0, true);
-net.addSynapse(1, 0, 1, -0.5, false);
-\end{ccode}
+\begin{python}
+# excitatory connections
+for nidx in range(0,800):
+    targets = range(1000)
+    weights = [0.5*random.random() for tgt in targets]
+    net.add_synapse(nidx, targets, 1, weights, False)
 
-This simple network is sufficient for illustrating the usage of the library. 
+# inhibitory connections
+for nidx in range(800, 1000):
+    r = random.random()
+    targets = range(1000)
+    weights = [-random.random() for tgt in targets]
+    net.add_synapse(nidx, targets, 1, weights, False)
+\end{python}
 
 \subsection{Creating a configuration}
 
@@ -153,72 +159,86 @@ It also specifies which of the available backends
 will be used.
 In many cases a default configuration can be used.
 
-\begin{ccode}
-nemo::Configuration conf;
-\end{ccode}
+\begin{python}
+conf = nemo.Configuration()
+\end{python}
 
 A default-constructed configuration object will choose the best backend,
 	but if a specific backend is desired the user can set this explicitly:
 
-\begin{ccode}
-conf.setCudaBackend();
-\end{ccode}
+\begin{python}
+conf.set_cuda_backend();
+\end{python}
 
 or
 
-\begin{ccode}
-conf.setCpuBackend();
-\end{ccode}
+\begin{python}
+conf.set_cpu_backend();
+\end{python}
 
 \subsection{Creating and running a simulation}
 
 We can now create a simulation object from the network and configuration objects.
 
-\begin{ccode}
-nemo::Simulation* sim = simulation(net, conf); 
-\end{ccode}
+\begin{python}
+sim = nemo.Simulation(net, conf)
+\end{python}
 
-We can then run the simulation by stepping through it one millisecond at a time,
-getting back a vector of fired neuron indices for each call:
+The simulation is run by stepping through it one millisecond-sized step at a time,
+getting back a vector of fired neuron indices for each call.
+So, to run for a second:
 
-\begin{ccode}
-for(unsigned ms=0; ms < 1000; ++ms) {
-	const std::vector<unsigned>& fired = sim->step();
-}
-\end{ccode}
+\begin{python}
+for t in range(1000):
+	fired = sim.step()
+\end{python}
 
 We can also provide external stimulus to the network, by forcing specific neurons to fire.
 For example, to force neuron 0 and 1 to fire synchronized at a steady 10Hz for 10 seconds
 	one could do the following (ignoring firing output for the time being):
 
-\begin{ccode}
-std::vector<unsigned> stimulus;
-stimulus.push_back(0);
-stimulus.push_back(1);
-for(unsigned ms=0; ms < 10000; ++ms) {
-	if(ms % 100 == 0) {
-		sim->step(stimulus);
-	} else {
-		sim->step();
-	}
-}
-\end{ccode}
+\begin{python}
+stimulus = [0, 1]
+for t in range(10000):
+	if t % 100 = 0:
+		sim.step(stimulus)
+	else:
+		sim.step()
+\end{python}
 
 The above shows the basic usage of the simulator.
 The user can perform other actions on the simulation object as well
 	including querying synapse data,
 	and use STDP.
 
-For full details of library usage refer to the language-specific notes (Section~\ref{api}).
+For full details of library usage refer to the language-specific notes (Section~\ref{api})
+and the online per-language function reference.
 
 \section{Simulation model}
 \label{model}
 
-\subsection{Neuron model}
-\label{model:neuron}
+As of version 0.7, \nemo\ has a plugin system which can support different types of neurons.
+This version ships with support for 
+Izhikevich neurons (Section~\ref{model:neuron:izhikevich} and 
+Kuramoto oscillators (Section~\ref{model:neuron:kuramoto}.
 
-Neurons are based on the Izhikevich neuron model \cite{izhikevich2003simple_model}.
-The model consists of a two-dimensional system of ordinary differential equations defined by
+\subsection{Izhikevich neurons}
+\label{model:neuron:izhikevich}
+
+\begin{tabular}{ll}
+Parameters      & $a, b, c, d, \sigma$              \\
+State variables & $u, v$                           \\
+Dynamics        & $\frac{dv}{dt} = 0.04v^2+5v+140-u+I + \mathcal{N}(0,\sigma^2)$ \\
+                & $\frac{du}{dt} = a(bv-u)$        \\ 
+Fire            & $v \ge 30$                       \\
+Reset:          & $v\leftarrow c$                  \\
+                & $u\leftarrow u+d$                \\
+Numerical integration & Euler with step size of 0.25ms \\
+\end{tabular}
+
+The Izhikevich neuron model 
+\cite{izhikevich2003simple_model}.
+consists of a two-dimensional system of ordinary differential equations defined by
 \begin{align}
 	\dot{v} & = 0.04v^2+5v+140-u+I    \label{eq:update_v} \\
 	\dot{u} & = a(bv-u)               \label{eq:update_u}
@@ -234,24 +254,61 @@ where $v$ represents the membrane potential
 	accounting for the activation of K$^+$
 	and the inactivation of Na$^+$ 
 	providing post-potential negative feedback to $v$.
-	% and $' = d/dt$ where $t$ is time. 
 The parameter $a$ describes the time scale of the recovery variable, 
 	$b$ describes its sensitivity to sub-threshold fluctuations, 
 	$c$ gives the after-spike reset value of the membrane potential, 
 	and $d$ describes the after-spike reset of the recovery variable. 
 The variables $a$--$d$ can be set so as to reproduce the behaviour of different types of neurons.
-%Typically these values are randomised around some default values,
-%	such as $a=0.02$, $b=0.2$, $c=-65$, and $d=2$.
 The term $I$ in Equation~\ref{eq:update_v} represents the combined 
 	current from spike arrivals from all presynaptic neurons,
 	which are summed every simulation cycle.
 
 In addition to the basic model parameters $a$--$d$ and state variables $u$ and $v$,
 	the user can specify a random input current to each neuron. 
-The input current is drawn from $\mathcal{N}(0, \sigma)$,
+The input current is drawn from $\mathcal{N}(0, \sigma^2)$,
 	where $\sigma$ is set separately for each neuron.
 If $\sigma$ is set to zero, no input current is generated.
 
+\subsection{Delay coupled Kuramoto oscillators}
+\label{model:neuron:kuramoto}
+
+\begin{tabular}{ll}
+Parameters      & $\omega$ \\ 
+State variables & $\theta$ \\
+Dynamics        & see below \\
+Fire            & never \\
+Reset:          & N/A \\
+Numerical integration & RK4 \\
+\end{tabular}
+
+Kuramoto oscillators are not strictly neuron models,
+	however they are sometimes used for modelling neural synchronisation phenomena
+	and fit reasonably well into the framework of \nemo.
+There are significant differences with the common spiking neuron framework, however.
+For example, oscillators never fire and there is no notion of a membrane potential.
+
+We implement a Kuramoto model with weighted couplings and delays. 
+Each oscillator is described by its phase $\theta$,
+	which is measured in radians and which are always in the range $[0, 2\pi)$.
+Each oscillator has an intrinsic frequency $\omega$ at which it oscillates in the
+absence of couplings.
+
+Couplings between oscillators have a coupling strength (corresponding to synaptic weight in other models) and a phase lag (corresponding to conduction delay).
+
+The model is described by
+
+\[
+\frac{d\theta_i}{dt}(T) = \omega_i + \sum_{j} w_{ij} \sin(\theta_j(t-\tau_{ij}) - \theta_i(t)) 
+\]
+
+where
+	$\theta_i(t)$ is the phase of oscillator $i$ at time $t$,
+	and $\omega_i$ is the natural frequency of oscillator $i$, and
+	$w_{ij}$ and $\tau_{ij}$ are the coupling strength and phase lag between oscillators $i$ and $j$.
+
+There is an intrinsic unit of time, with no physical meaning.
+Delays are expressed in term of this time step.
+The state is updated every time step using fourth-order Runge-Kutta.
 
 \subsection{Basic synapse model}
 \label{model:synapse}
@@ -361,14 +418,12 @@ Synapse indices are only required if querying the synapse state at run-time.
 
 \subsection{Numerical precision}
 
-The state update step uses the Euler method with a step size of 0.25ms. 
-
 The weights are stored internally in a fixed-point format (Q11.20) for two reasons.
 First,
 	it is then possible to get repeatable results regardless of the order in which synapses are processed in a parallel setting (fixed-point addition is associative, unlike floating point addition).
 Second, 
 	it results in better performance,
-		at least on the CUDA backend with older cards,
+		at least on the CUDA backend with older cards (device capability < 2.0),
 		where atomic operations are available for integer/fixed-point but not for floating point. 
 The fixed-point format should not overflow for synapses with remotely plausible weights,
 	but the current accumulation uses saturating arithmetic nonetheless.
@@ -397,9 +452,9 @@ Neuron parameters are stored as single-precision floating point.
 
 \nemo\ is implemented as a \cpp\ class library and can thus be used directly in programs written in \cpp.
 There are also bindings in
-	C (\ref{api:c}),
-	Python (\ref{api:python}),
-	and Matlab (\ref{api:matlab}).
+	C (Section \ref{api:c}),
+	Python (Section \ref{api:python}),
+	and Matlab (Section \ref{api:matlab}).
 The different language APIs follow largely the same programming model.
 The following sections specify the language-specific issues
 	(linking, naming schemes, etc)
