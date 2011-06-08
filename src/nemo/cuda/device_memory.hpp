@@ -27,26 +27,30 @@ namespace nemo {
 	namespace cuda {
 
 
-void
-d_malloc(void** d_ptr, size_t sz, const char* name);
+void d_malloc(void** d_ptr, size_t sz, const char* name);
+void d_free(void*);
+void d_memset(void* d_ptr, int value, size_t count);
+void d_memset2D(void* d_ptr, size_t bytePitch, int value, size_t height);
 
 
-void
-d_free(void*);
-
-
-/*! Allocate memory block and put in smart pointer
+/*! Allocate and optionally initialise memory block and wrap in smart pointer
  *
  * \param len length in /words/
+ * \param clear if set, set to all zero
  * \param name name of data structure (for error reporting)
  */
 template<typename T>
 boost::shared_array<T>
-d_array(size_t len, const char* name)
+d_array(size_t len, bool clear, const char* name)
 {
 	void* d_ptr = NULL;
-	d_malloc(&d_ptr, len * sizeof(T), name);
-	return boost::shared_array<T>(static_cast<T*>(d_ptr), d_free);
+	size_t bytes = len * sizeof(T);
+	d_malloc(&d_ptr, bytes, name);
+	boost::shared_array<T> ret(static_cast<T*>(d_ptr), d_free);
+	if(clear) {
+		d_memset(d_ptr, 0, bytes);
+	}
+	return ret;
 }
 
 
@@ -158,11 +162,6 @@ memcpyFromDevice(std::vector<T>& vec, const void* src, size_t count)
 	}
 	memcpyBytesFromDevice(&vec[0], src, count * sizeof(T));
 }
-
-
-void d_memset(void* d_ptr, int value, size_t count);
-
-void d_memset2D(void* d_ptr, size_t bytePitch, int value, size_t height);
 
 
 void

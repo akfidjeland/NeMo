@@ -16,22 +16,9 @@
 #include "device_assert.cu"
 
 
-/*! \i word pitch (i.e. number of 32-bit words per partition) for global memory bit-vectors */
-__constant__ size_t c_bv_pitch;
-
-
 // pitch for shared memory bit-vectors (no padding)
 #define S_BV_PITCH (MAX_PARTITION_SIZE/32)
 
-
-/*! Set common pitch for bitvectors. */
-__host__
-cudaError
-bv_setPitch(size_t pitch)
-{
-	return cudaMemcpyToSymbol(c_bv_pitch,
-				&pitch, sizeof(size_t), 0, cudaMemcpyHostToDevice);
-}
 
 
 /*! Clear whole bitvector */

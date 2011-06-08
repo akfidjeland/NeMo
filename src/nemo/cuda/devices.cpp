@@ -73,6 +73,9 @@ class DeviceMap
 		/*! All the suitable devices, indexed by driver id */
 		std::map<driver_id, cudaDeviceProp> m_devices;
 
+		/*! Full description of the device */
+		std::map<driver_id, std::string> m_description;
+
 		/*! Mapping from local ids to driver ids */
 		std::vector<driver_id> m_driverIds;
 
@@ -112,9 +115,12 @@ DeviceMap::DeviceMap() :
 	driver_id dev;
 	CUDA_SAFE_CALL(cudaChooseDevice(&dev, &prop));
 	m_devices[0] = prop;
+	m_description[0] = prop.name;
 	m_defaultDevice = 0;
 	m_driverIds.push_back(0);
 #else
+	using boost::format;
+
 	driver_id dcount = 0;
 	CUDA_SAFE_CALL(cudaGetDeviceCount(&dcount));
 	for(driver_id device = 0; device < dcount; ++device) {
@@ -122,6 +128,8 @@ DeviceMap::DeviceMap() :
 			cudaDeviceProp prop;
 			CUDA_SAFE_CALL(cudaGetDeviceProperties(&prop, device));
 			m_devices[device] = prop;
+			m_description[device] = str(format("%s [%u.%u]")
+					% prop.name % prop.major % prop.minor);
 			m_driverIds.push_back(device);
 		}
 	}
@@ -204,7 +212,7 @@ DeviceMap::driverId(local_id l_id) const
 const char*
 DeviceMap::description(local_id device) const
 {
-	return m_devices.find(m_driverIds.at(device))->second.name;
+	return m_description.find(m_driverIds.at(device))->second.c_str();
 }
 
 

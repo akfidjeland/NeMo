@@ -48,9 +48,10 @@ functionDoc :: String -> ApiFunction -> Doc
 functionDoc mname fn = text "#define" <+> macroName <+> docstring
     where
         macroName = underscoredUpper [mname, camelToUnderscore (name fn), "doc"]
-        docstring = doubleQuotes $ mergeLinesWith "\\n\\n" $ empty : filter (not . isEmpty) [synopsis, inputs, description]
+        docstring = doubleQuotes $ mergeLinesWith "\\n\\n" $ empty : filter (not . isEmpty) [synopsis, inputs, ret, description]
         synopsis = text $ fn_brief fn
         inputs = inputDoc $ fn_inputs fn
+        ret = outputDoc $ fn_output fn
         description = maybe empty (docRender . escape) $ describeLanguage Python fn
 
 
@@ -61,6 +62,12 @@ inputDoc xs = mergeLines $ (text "Inputs:" : map (go . arg) xs)
         -- TODO: deal with optional arguments here
         go :: ApiArg -> Doc
         go arg = text (name arg) <+> maybe empty (\a -> text "--" <+> text a) (describe arg)
+
+
+outputDoc :: [ApiArg] -> Doc
+outputDoc [] = empty
+outputDoc [x] = text "Returns" <+> maybe empty text (describe x)
+outputDoc _ = error "Documentation for multiple output arguments not supported"
 
 
 -- functionName :: ApiFunction -> Doc

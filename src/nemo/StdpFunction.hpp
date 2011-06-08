@@ -36,11 +36,23 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 {
 	public :
 
-		StdpFunction() : m_minWeight(0.0), m_maxWeight(0.0) { }
+		StdpFunction() :
+			m_minExcitatoryWeight(0.0),
+			m_maxExcitatoryWeight(0.0),
+			m_minInhibitoryWeight(0.0),
+			m_maxInhibitoryWeight(0.0) { }
 
+		/*! Create an STDP function
+		 *
+		 * Excitatory synapses are allowed to vary in the range
+		 * [\a minExcitatoryWeight, \a maxExcitatoryWeight].
+		 * Inhibitory synapses are allowed to vary in the range
+		 * [\a minInhibitoryWeight \a maxInhibitoryWeight].
+		 */
 		StdpFunction(const std::vector<float>& prefire,
 				const std::vector<float>& postfire,
-				float minWeight, float maxWeight);
+				float minExcitatoryWeight, float maxExcitatoryWeight,
+				float minInhibitoryWeight, float maxInhibitoryWeight);
 
 		/* pre-fire part of STDP function, from dt=-1 and down */
 		const std::vector<float>& prefire() const { return m_prefire; }
@@ -48,9 +60,11 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 		/* pre-fire part of STDP function, from dt=+1 and up */
 		const std::vector<float>& postfire() const { return m_postfire; }
 
-		float minWeight() const { return m_minWeight; }
+		float minInhibitoryWeight() const { return m_minInhibitoryWeight; }
+		float maxInhibitoryWeight() const { return m_maxInhibitoryWeight; }
 
-		float maxWeight() const { return m_maxWeight; }
+		float minExcitatoryWeight() const { return m_minExcitatoryWeight; }
+		float maxExcitatoryWeight() const { return m_maxExcitatoryWeight; }
 
 		/*! \return bit mask indicating which cycles correspond to
 		 * potentiation.  LSB = end of STDP window. */
@@ -66,9 +80,11 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 
 		std::vector<float> m_postfire;
 
-		float m_minWeight;
+		float m_minExcitatoryWeight;
+		float m_maxExcitatoryWeight;
 
-		float m_maxWeight;
+		float m_minInhibitoryWeight;
+		float m_maxInhibitoryWeight;
 
 		uint64_t getBits(bool (*pred)(float)) const;
 
@@ -79,8 +95,10 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 		void serialize(Archive & ar, const unsigned int version) {
 			ar & m_prefire;
 			ar & m_postfire;
-			ar & m_maxWeight;
-			ar & m_minWeight;
+			ar & m_minExcitatoryWeight;
+			ar & m_maxExcitatoryWeight;
+			ar & m_minInhibitoryWeight;
+			ar & m_maxInhibitoryWeight;
 		}
 #endif
 };

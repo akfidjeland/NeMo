@@ -6,8 +6,8 @@
 
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-#include "dyn_load.hpp"
-#include <boost/format.hpp>
+#include <boost/scoped_ptr.hpp>
+#include "Plugin.hpp"
 #endif
 #endif
 
@@ -27,41 +27,22 @@ namespace nemo {
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
 
-dl_handle libcuda = NULL;
 
-void
-unloadCudaLibrary()
+boost::scoped_ptr<Plugin> libcuda;
+
+
+/*! \return pointer to unique global handle for the CUDA simulator plugin */
+const Plugin*
+cudaPlugin()
 {
-	if(libcuda != NULL) {
-		dl_unload(libcuda);
-		dl_exit(); // since the cuda backend is the only dynamically opened library
+	if(!libcuda) {
+		libcuda.reset(new Plugin("nemo_cuda"));
 	}
-}
-
-
-dl_handle
-loadCudaLibrary()
-{
-	using boost::format;
-
-	if(libcuda == NULL) {
-		if(!dl_init()) {
-			throw nemo::exception(NEMO_DL_ERROR, dl_error());
-		}
-		libcuda = dl_load(LIB_NAME("nemo_cuda"));
-		if(libcuda == NULL) {
-			throw nemo::exception(NEMO_DL_ERROR,
-					str(format("failed to open nemo_cuda library (%s): %s")
-						% LIB_NAME("nemo_cuda") % dl_error()));
-		}
-		atexit(unloadCudaLibrary);
-	}
-	return libcuda;
+	return libcuda.get();
 }
 
 #endif
 #endif
-
 
 
 
@@ -71,11 +52,7 @@ cudaDeviceCount()
 #ifdef NEMO_CUDA_ENABLED
 	try {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-		dl_handle hdl  = loadCudaLibrary();
-		cuda_device_count_t* fn = (cuda_device_count_t*) dl_sym(hdl, "cuda_device_count");
-		if(fn == NULL) {
-			return 0;
-		}
+		cuda_device_count_t* fn = (cuda_device_count_t*) cudaPlugin()->function("cuda_device_count");
 		return fn();
 #else
 		return cuda_device_count();
@@ -85,10 +62,9 @@ cudaDeviceCount()
 	}
 #else // NEMO_CUDA_ENABLED
 	throw nemo::exception(NEMO_API_UNSUPPORTED,
-			"libnemo compiled without CUDA support");
+			"Cannot return CUDA device count: library compiled without CUDA support");
 #endif // NEMO_CUDA_ENABLED
 }
-
 
 
 /* Throws on error */
@@ -97,12 +73,8 @@ cudaDeviceDescription(unsigned device)
 {
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-	dl_handle hdl  = loadCudaLibrary();
 	cuda_device_description_t* fn =
-		(cuda_device_description_t*) dl_sym(hdl, "cuda_device_description");
-	if(fn == NULL) {
-		throw nemo::exception(NEMO_DL_ERROR, dl_error());
-	}
+		(cuda_device_description_t*) cudaPlugin()->function("cuda_device_description");
 	return fn(device);
 #else
 	return cuda_device_description(device);
@@ -114,17 +86,14 @@ cudaDeviceDescription(unsigned device)
 }
 
 
+
 #ifdef NEMO_CUDA_ENABLED
 
 SimulationBackend*
 cudaSimulation(const network::Generator& net, const ConfigurationImpl& conf)
 {
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-	dl_handle hdl = loadCudaLibrary();
-	cuda_simulation_t* ctor = (cuda_simulation_t*) dl_sym(hdl, "cuda_simulation");
-	if(ctor == NULL) {
-		throw nemo::exception(NEMO_DL_ERROR, dl_error());
-	}
+	cuda_simulation_t* ctor = (cuda_simulation_t*) cudaPlugin()->function("cuda_simulation");
 	return ctor(&net, &conf);
 #else
 	return cuda_simulation(&net, &conf);
@@ -186,9 +155,7 @@ setCudaDeviceConfiguration(nemo::ConfigurationImpl& conf, int device)
 {
 #ifdef NEMO_CUDA_ENABLED
 #ifdef NEMO_CUDA_DYNAMIC_LOADING
-	dl_handle hdl = loadCudaLibrary();
-	cuda_set_configuration_t* fn =
-		(cuda_set_configuration_t*) dl_sym(hdl, "cuda_set_configuration");
+	cuda_set_configuration_t* fn = (cuda_set_configuration_t*) cudaPlugin()->function("cuda_set_configuration");
 	fn(&conf, device);
 #else
 	cuda_set_configuration(&conf, device);

@@ -1,22 +1,31 @@
 #ifndef NEMO_NETWORK_IMPL_HPP
 #define NEMO_NETWORK_IMPL_HPP
 
-//! \file NetworkImpl.hpp
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include <nemo/config.h>
 #include <nemo/network/Generator.hpp>
 #include "Axon.hpp"
+#include "Neurons.hpp"
 #include "ReadableNetwork.hpp"
+#include "RandomMapper.hpp"
 
 namespace nemo {
 
 	namespace cuda {
 		// needed for 'friend' declarations
 		class ConnectivityMatrix;
-		class NeuronParameters;
 		class ThalamicInput;
 	}
 
@@ -36,25 +45,22 @@ namespace nemo {
 			class synapse_iterator;
 		}
 
+
+
 class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwork
 {
 	public :
 
 		NetworkImpl();
 
-		/*! \copydoc nemo::Network::addNeuron */
-		void addNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
+		/*! \copydoc nemo::Network::addNeuronType */
+		unsigned addNeuronType(const std::string& name);
 
-		void addNeuron(nidx_t nidx, const Neuron<float>&);
+		/*! \copydoc nemo::Network::addNeuron */
+		void addNeuron(unsigned type, unsigned idx, unsigned nargs, const float args[]);
 
 		/*! \copydoc nemo::Network::setNeuron */
-		void setNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
-
-		void setNeuron(nidx_t nidx, const Neuron<float>& n);
+		void setNeuron(unsigned idx, unsigned nargs, const float args[]);
 
 		/*! \copydoc nemo::Network::addSynapse */
 		synapse_id addSynapse(
@@ -98,8 +104,8 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		nidx_t maxNeuronIndex() const;
 
 		delay_t maxDelay() const { return m_maxDelay; }
-		weight_t maxWeight() const { return m_maxWeight; }
-		weight_t minWeight() const { return m_minWeight; }
+		float maxWeight() const { return m_maxWeight; }
+		float minWeight() const { return m_minWeight; }
 
 		unsigned neuronCount() const;
 
@@ -109,16 +115,22 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		synapse_iterator synapse_begin() const;
 		synapse_iterator synapse_end() const;
 
+		/*! \copydoc nemo::network::Generator::neuronType */
+		const NeuronType& neuronType() const;
+
 	private :
 
-		typedef nemo::Neuron<weight_t> neuron_t;
-		std::map<nidx_t, neuron_t> m_neurons;
+		/* Neurons are grouped by neuron type */
+		std::vector<Neurons> m_neurons;
 
-		/*! \return neuron with given index
-		 * Throws if neuron does not exist
-		 */
-		const neuron_t& getNeuron(unsigned idx) const;
-		neuron_t& getNeuron(unsigned idx);
+		const Neurons& neuronCollection(unsigned type_id) const;
+		Neurons& neuronCollection(unsigned type_id);
+
+		/* could use a separate type here, but kept it simple while we use this
+		 * type in the neuron_iterator class */
+		typedef std::pair<unsigned, unsigned> NeuronAddress;
+
+		nemo::RandomMapper<NeuronAddress> m_mapper;
 
 		/*! \todo consider using unordered here instead, esp. after removing
 		 * iterator interface. Currently we need rbegin, which is not found in
@@ -130,12 +142,11 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		int m_minIdx;
 		int m_maxIdx;
 		delay_t m_maxDelay;
-		weight_t m_minWeight;
-		weight_t m_maxWeight;
+		float m_minWeight;
+		float m_maxWeight;
 
 		//! \todo modify public interface to avoid friendship here
 		friend class nemo::cuda::ConnectivityMatrix;
-		friend class nemo::cuda::NeuronParameters;
 		friend class nemo::cuda::ThalamicInput;
 		friend class nemo::ConnectivityMatrix;
 		friend class nemo::cpu::Simulation;
@@ -147,8 +158,10 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		std::vector<synapse_id> m_queriedSynapseIds;
 
 		const Axon& axon(nidx_t source) const;
+
 };
 
 	} // end namespace network
 } // end namespace nemo
+
 #endif

@@ -9,5 +9,5 @@ function nemoSetWriteOnlySynapses()
 % starting the simulation. If the synapse state is not required at
 % run-time, specify that synapses are write-only in order to save
 % memory and setup time. By default synapses are readable
-    nemo_mex(uint32(8));
+    nemo_mex(uint32(9));
 end

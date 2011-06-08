@@ -16,6 +16,9 @@ TARGET_LINK_LIBRARIES(torus nemo ${Boost_LIBRARIES})
 ADD_EXECUTABLE(random random.cpp common.cpp)
 TARGET_LINK_LIBRARIES(random nemo ${Boost_LIBRARIES})
 
+ADD_EXECUTABLE(kuramoto kuramoto.cpp common.cpp)
+TARGET_LINK_LIBRARIES(kuramoto nemo ${Boost_LIBRARIES})
+
 SET(INSTALL_FILES torus.cpp random.cpp common.cpp)
 
 IF(UNIX)

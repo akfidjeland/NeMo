@@ -8,16 +8,7 @@ ELSE(NEMO_CUDA_ENABLED)
 	SET(NEMO_CUDA_DYNAMIC_LOADING OFF)
 ENDIF(NEMO_CUDA_ENABLED)
 
-OPTION(
-	NEMO_TIMING_ENABLED
-	"Include API functions for timing (requires boost_date_time library)"
-	ON
-)
-
-IF(NEMO_TIMING_ENABLED)
-	LIST(APPEND BOOST_COMPONENTS date_time)
-ENDIF(NEMO_TIMING_ENABLED)
-
+LIST(APPEND BOOST_COMPONENTS filesystem program_options date_time)
 
 OPTION(NEMO_MPI_ENABLED "Create MPI-enabled simulation" OFF)
 IF(NEMO_MPI_ENABLED)
@@ -60,7 +51,9 @@ ENDIF(WIN32 OR APPLE)
 #
 # - date/time: 1.29.0
 # - format:    1.29.0
+# - filesystem: 1.30.0
 # - optional:  1.30.0
+# - program options: 1.32.0
 # - smart ptr: 1.23.0
 # - unordered: 1.36.0
 
@@ -76,9 +69,10 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 IF(CMAKE_COMPILER_IS_GNUCC)
-	SET(CMAKE_CXX_FLAGS "-Wall" ${CMAKE_CXX_FLAGS})
+	SET(CMAKE_CXX_FLAGS "-Wall ${CMAKE_CXX_FLAGS}")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
+INCLUDE(SetRpath)
 INCLUDE(LinkStaticMSVCR)
 
 SUBDIRS(nemo api app ${DIRS})

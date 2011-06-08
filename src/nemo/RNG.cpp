@@ -1,34 +1,18 @@
 #include "RNG.hpp"
 
 #include <cmath>
-#include <algorithm>
 #include <boost/random.hpp>
-
-namespace nemo {
-
-
-RNG::RNG()
-{
-	std::fill(m_state, m_state+4, 0U);
-}
-
-
-RNG::RNG(unsigned seeds[])
-{
-	std::copy(seeds, seeds+4, m_state);
-}
-
 
 
 unsigned
-RNG::uniform()
+urand(RNG* rng)
 {
-	unsigned t = (m_state[0]^(m_state[0]<<11));
-	m_state[0] = m_state[1];
-	m_state[1] = m_state[2];
-	m_state[2] = m_state[3];
-	m_state[3] = (m_state[3]^(m_state[3]>>19))^(t^(t>>8));
-	return m_state[3];
+	unsigned t = (rng->state[0]^(rng->state[0]<<11));
+	rng->state[0] = rng->state[1];
+	rng->state[1] = rng->state[2];
+	rng->state[2] = rng->state[3];
+	rng->state[3] = (rng->state[3]^(rng->state[3]>>19))^(t^(t>>8));
+	return rng->state[3];
 }
 
 
@@ -37,16 +21,17 @@ RNG::uniform()
  * then you can just stash one of them somewhere until the next time it is
  * needed or something.  */
 float
-RNG::gaussian()
+nrand(RNG* rng)
 {
-	float a = uniform() * 1.4629180792671596810513378043098e-9f;
-	float b = uniform() * 0.00000000023283064365386962890625f;
+	float a = urand(rng) * 1.4629180792671596810513378043098e-9f;
+	float b = urand(rng) * 0.00000000023283064365386962890625f;
 	float r = sqrtf(-2*logf(1-b));
 	// cosf(a) * r // ignore the second random
 	return sinf(a) * r;
 }
 
 
+namespace nemo {
 
 void
 initialiseRng(nidx_t minNeuronIdx, nidx_t maxNeuronIdx, std::vector<RNG>& rngs)
@@ -64,11 +49,11 @@ initialiseRng(nidx_t minNeuronIdx, nidx_t maxNeuronIdx, std::vector<RNG>& rngs)
 
 	for(unsigned gidx = minNeuronIdx, gidx_end = maxNeuronIdx;
 			gidx <= gidx_end; ++gidx) {
-		unsigned seeds[4];
+		// some of these neuron indices may be invalid
+		RNG& seeds = rngs.at(gidx - minNeuronIdx);
 		for(unsigned plane=0; plane < 4; ++plane) {
-			seeds[plane] = seed();
+			seeds.state[plane] = seed();
 		}
-		rngs.at(gidx - minNeuronIdx) = RNG(seeds); // some of these neuron indices may be invalid
 	}
 }
 

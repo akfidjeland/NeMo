@@ -76,5 +76,4 @@ SimulationBackend::step(const firing_stimulus& fstim, const current_stimulus& is
 	return readFiring().neurons;
 }
 
-
 }

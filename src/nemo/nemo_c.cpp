@@ -159,12 +159,32 @@ nemo_delete_simulation(nemo_simulation_t sim)
 
 
 nemo_status_t
-nemo_add_neuron(nemo_network_t net,
+nemo_add_neuron_type(nemo_network_t net,
+		const char* name,
+		unsigned* type)
+{
+	CATCH(net, addNeuronType(name), *type);
+}
+
+
+
+nemo_status_t
+nemo_add_neuron_iz(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
 	CATCH_(net, addNeuron(idx, a, b, c, d, u, v, sigma));
+}
+
+
+
+nemo_status_t
+nemo_add_neuron(nemo_network_t net,
+		unsigned type, unsigned idx,
+		unsigned nargs, float args[])
+{
+	CATCH_(net, addNeuron(type, idx, nargs, args));
 }
 
 
@@ -231,8 +251,25 @@ nemo_get_neuron_parameter_s(nemo_simulation_t sim, unsigned neuron, unsigned par
 }
 
 
+
 nemo_status_t
-nemo_set_neuron_n(nemo_network_t net,
+nemo_set_neuron_n(nemo_network_t net, unsigned idx, unsigned nargs, float args[])
+{
+	CATCH_(net, setNeuron(idx, nargs, args));
+}
+
+
+
+nemo_status_t
+nemo_set_neuron_s(nemo_simulation_t sim, unsigned idx, unsigned nargs, float args[])
+{
+	CATCH_(sim, setNeuron(idx, nargs, args));
+}
+
+
+
+nemo_status_t
+nemo_set_neuron_iz_n(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
@@ -242,7 +279,7 @@ nemo_set_neuron_n(nemo_network_t net,
 
 
 nemo_status_t
-nemo_set_neuron_s(nemo_simulation_t sim,
+nemo_set_neuron_iz_s(nemo_simulation_t sim,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
@@ -485,13 +522,13 @@ nemo_status_t
 nemo_set_stdp_function(nemo_configuration_t conf,
 		float* pre_fn, size_t pre_len,
 		float* post_fn, size_t post_len,
-		float w_min,
-		float w_max)
+		float we_min, float we_max,
+		float wi_min, float wi_max)
 {
 	CATCH_(conf, setStdpFunction(
 				std::vector<float>(pre_fn, pre_fn+pre_len),
 				std::vector<float>(post_fn, post_fn+post_len),
-				w_min, w_max));
+				we_min, we_max, wi_min, wi_max));
 }
 
 

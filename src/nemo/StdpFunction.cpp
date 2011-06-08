@@ -3,32 +3,44 @@
 
 namespace nemo {
 
+
 StdpFunction::StdpFunction(
 		const std::vector<float>& prefire,
 		const std::vector<float>& postfire,
-		float minWeight,
-		float maxWeight):
+		float minExcitatoryWeight, float maxExcitatoryWeight,
+		float minInhibitoryWeight, float maxInhibitoryWeight) :
 	m_prefire(prefire),
 	m_postfire(postfire),
-	m_minWeight(minWeight),
-	m_maxWeight(maxWeight)
+	m_minExcitatoryWeight(minExcitatoryWeight),
+	m_maxExcitatoryWeight(maxExcitatoryWeight),
+	m_minInhibitoryWeight(minInhibitoryWeight),
+	m_maxInhibitoryWeight(maxInhibitoryWeight)
 { 
-	if(minWeight > 0.0f) {
+	if(m_maxInhibitoryWeight > 0.0f || m_minInhibitoryWeight > 0.0f) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				"STDP function should have a negative minimum weight");
+				"STDP function should not have positive limits for inhibitory synapses");
 	}
 
-	if(maxWeight < 0.0f) {
+	if(m_maxExcitatoryWeight < 0.0f || m_minExcitatoryWeight < 0.0f) {
 		throw nemo::exception(NEMO_INVALID_INPUT,
-				"STDP function should have a positive maximum weight");
+				"STDP function should not have negative limits for inhibitory synapses");
+	}
+
+	if(m_maxExcitatoryWeight < m_minExcitatoryWeight) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"STDP should have maximum excitatory weight >= minimum excitatory weight");
+	}
+
+	if(m_maxInhibitoryWeight > m_minInhibitoryWeight) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				"STDP should have abs(maximum inhibitory weight) >= abs(minimum inhibitory weight)");
 	}
 
 	/*! \todo This constraint is too weak. Also need to consider max delay in
 	 * network here */
-	if(prefire.size() + postfire.size() > 64) {
+	if(m_prefire.size() + m_postfire.size() > 64) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "size of STDP window too large");
 	}
-
 }
 
 

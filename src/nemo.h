@@ -111,18 +111,32 @@ nemo_status_t nemo_log_stdout(nemo_configuration_t);
  * \param postfire_len
  * 		Length, in cycles, of the part of the STDP window that comes after the
  * 		postsynaptic firing.
- * \param min_weight
- * 		Weight beyond which inhibitory synapses are not allowed to move
- * \param max_weight
- * 		Weight beyond which excitatory synapses are not allowed to move
+ * \param min_excitatory_weight
+ * 		Smallest positive weight below which excitatory synapses are not
+ * 		allowed to fall
+ * \param max_excitatory_weight
+ * 		Smallest positive weight above which excitatory synapses are not
+ * 		allowed to rise
+ * \param min_inhibitory_weight
+ * 		Smallest (in absolute terms) negative weight below which inhibitory
+ * 		synapses are not allowed to fall
+ * \param max_inhibitory_weight
+ * 		Smallest (in absolute terms) negative weight above which inhibitory
+ * 		synapses are not allowed to rise
+ *
+ * Note that synapses, both excitatory and inhibitory, stick at zero. I.e. once
+ * they reach zero, they never recover. If the minimum weight is non-zero,
+ * however, this will not happen.
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_stdp_function(nemo_configuration_t,
 		float prefire_fn[], size_t prefire_len,
 		float postfire_fn[], size_t postfire_len,
-		float min_weight,
-		float max_weight);
+		float min_excitatory_weight,
+		float max_excitatory_weight,
+		float min_inhibitory_weight,
+		float max_inhibitory_weight);
 
 
 /*! \copydoc nemo::Configuration::setCpuBackend */
@@ -196,19 +210,50 @@ NEMO_DLL_PUBLIC
 void nemo_delete_network(nemo_network_t);
 
 
-//! \todo make sure we handle the issue of non-unique indices
-//! \todo add description of neuron indices
+
+/*! Register a new neuron type with the network
+ *
+ * \param name
+ * 		canonical name of the neuron type. The neuron type data is loaded from
+ * 		a plugin configuration file of the same name.
+ * \param[out]
+ * 		index of the the neuron type, to be used when adding neurons.
+ *
+ * \see nemo_add_neuron
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_add_neuron_type(nemo_network_t,
+		const char* name,
+		unsigned* neuron_type);
+
+
 /*! \copydoc nemo::Network::addNeuron */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_add_neuron(nemo_network_t,
+nemo_add_neuron_iz(nemo_network_t,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
 
 
-//! \todo add method to add a single synapse
-//! \todo add documentation on the possible failure codes
+
+/*! Add a neuron to the network
+ *
+ * \param type index of the neuron type, as returned by \a add_neuron_type
+ * \param idx user-assigned unique neuron index
+ * \param nargs length of \a args
+ * \param args
+ * 		floating point parameters followed by state variables of the neuron
+ *
+ * \pre The parameter and state arrays must have dimensions matching the neuron
+ * 		type represented by \a type.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_add_neuron(nemo_network_t, unsigned type, unsigned idx,
+		unsigned nargs, float args[]);
+
 
 
 /* Add a single synapse to network
@@ -542,7 +587,36 @@ nemo_get_synapses_from_s(nemo_simulation_t, unsigned source, synapse_id *synapse
  * simulation.
  * \{ */
 
-/*! Modify the parameters/state for a single neuron during construction
+
+/*! Modify an existing neuron during network construction
+ *
+ * \param idx user-assigned unique neuron index
+ * \param nargs length of \a args
+ * \param args floating point parameters followed by state variables of the neuron
+ *
+ * \pre The parameter and state arrays must have dimensions matching the neuron
+ * 		type assigned to this neuron when it was created.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_n(nemo_network_t, unsigned idx, unsigned nargs, float args[]);
+
+
+/*! Modify an existing neuron during simulation
+ *
+ * \param idx user-assigned unique neuron index
+ * \param nargs length of \a args
+ * \param args floating point parameters followed by state variables of the neuron
+ *
+ * \pre The parameter and state arrays must have dimensions matching the neuron
+ * 		type assigned to this neuron when it was created.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_set_neuron_s(nemo_simulation_t, unsigned idx, unsigned nargs, float args[]);
+
+
+/*! Modify the parameters/state for a single Izhikevich neuron during construction
  *
  * The neuron must already exist.
  *
@@ -550,14 +624,13 @@ nemo_get_synapses_from_s(nemo_simulation_t, unsigned source, synapse_id *synapse
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_neuron_n(nemo_network_t net,
+nemo_set_neuron_iz_n(nemo_network_t net,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
 
 
-
-/*! Modify the parameters/state for a single neuron during simulation
+/*! Modify the parameters/state for a single Izhikevich neuron during simulation
  *
  * The neuron must already exist.
  *
@@ -565,11 +638,10 @@ nemo_set_neuron_n(nemo_network_t net,
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_neuron_s(nemo_simulation_t sim,
+nemo_set_neuron_iz_s(nemo_simulation_t sim,
 		unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma);
-
 
 
 /*! Modify a single state variable for a single neuron during construction
@@ -590,7 +662,6 @@ nemo_status_t
 nemo_set_neuron_state_n(nemo_network_t net, unsigned neuron, unsigned var, float val);
 
 
-
 /*! Modify a single parameter for a single neuron during construction
  *
  * \param[in] net network object
@@ -609,7 +680,6 @@ nemo_status_t
 nemo_set_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param, float val);
 
 
-
 /*! Modify a single state variable for a single neuron during simulation
  *
  * \param[in] sim simulation object
@@ -626,7 +696,6 @@ nemo_set_neuron_parameter_n(nemo_network_t net, unsigned neuron, unsigned param,
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_set_neuron_state_s(nemo_simulation_t sim, unsigned neuron, unsigned var, float val);
-
 
 
 /*! Modify a single parameter for a single neuron during simulation

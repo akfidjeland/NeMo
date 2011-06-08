@@ -11,5 +11,5 @@ function nemoSetCpuBackend(tcount)
 % the number of threads to use. If the default thread count of -1 is
 % used, the backend will choose a sensible value based on the
 % available hardware concurrency.
-    nemo_mex(uint32(4), int32(tcount));
+    nemo_mex(uint32(5), int32(tcount));
 end

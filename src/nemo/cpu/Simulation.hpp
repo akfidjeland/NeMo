@@ -10,19 +10,19 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <map>
 #include <vector>
 
 #include <nemo/config.h>
 #include <nemo/internal_types.h>
 #include <nemo/internals.hpp>
 #include <nemo/ConnectivityMatrix.hpp>
-#include <nemo/Timer.hpp>
 #include <nemo/FiringBuffer.hpp>
-#include <nemo/RNG.hpp>
+#include <nemo/Neurons.hpp>
+#include <nemo/RandomMapper.hpp>
+#include <nemo/Timer.hpp>
 
 #include "Worker.hpp"
-#include "Mapper.hpp"
+#include "Neurons.hpp"
 
 
 namespace nemo {
@@ -66,10 +66,8 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::applyStdp */
 		void applyStdp(float reward);
 
-		/*! \copydoc nemo::Simulation::setNeuron */
-		void setNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
+		/*! \copydoc nemo::SimulationBackend::setNeuron */
+		void setNeuron(unsigned idx, unsigned nargs, const float args[]);
 
 		/*! \copydoc nemo::Simulation::setNeuronState */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
@@ -110,34 +108,16 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::resetTimer */
 		void resetTimer();
 
-		/*! \copydoc nemo::SimulationBackend::mapper */
-		virtual Mapper& mapper() { return m_mapper; }
-
 	private:
 
-		Mapper m_mapper;
+		Neurons m_neurons;
+
+		const RandomMapper<nidx_t>& m_mapper;
 
 		typedef std::vector<fix_t> current_vector_t;
-		typedef std::vector<unsigned> stimulus_vector_t;
 
+		//! \todo can we get rid of this?
 		size_t m_neuronCount;
-
-		/* At run-time data is put into regular vectors for vectorizable
-		 * operations */
-		//! \todo enforce 16-byte allignment to support vectorisation
-		std::vector<float> m_a;
-		std::vector<float> m_b;
-		std::vector<float> m_c;
-		std::vector<float> m_d;
-
-		std::vector<float> m_u;
-		std::vector<float> m_v;
-		std::vector<float> m_sigma;
-
-		/* Not all neuron indices may correspond to actual neurons. At run-time
-		 * this is read-only. */
-		//! \todo consider *not* using vector<bool> due to the odd optimisations which are done to it
-		std::vector<bool> m_valid;
 
 		/* last cycles firing, one entry per neuron */
 		std::vector<unsigned> m_fired;
@@ -149,13 +129,8 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		 * synapses */
 		std::vector<uint64_t> m_delays;
 
-		/* Set all neuron parameters from input network in
-		 * local data structures. Also add valid neuron
-		 * indices to the mapper as a side effect.  */
-		void setNeuronParameters(const network::Generator& net, Mapper& mapper);
-
 		/*! Update state of all neurons */
-		void update(const stimulus_vector_t&, const current_vector_t&);
+		void update(const current_vector_t&);
 
 		nemo::ConnectivityMatrix m_cm;
 
@@ -164,12 +139,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		/*! Deliver spikes due for delivery */
 		current_vector_t& deliverSpikes();
-
-		/* firing stimulus (for a single cycle) */
-		stimulus_vector_t m_fstim;
-
-		//! \todo may want to have one rng per neuron or at least per thread
-		std::vector<nemo::RNG> m_rng;
 
 		void setFiring();
 

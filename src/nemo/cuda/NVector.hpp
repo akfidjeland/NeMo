@@ -21,15 +21,17 @@ namespace nemo {
 
 /*! \brief Per-neuron data array 
  *
- * Neuron data are organised on a per-partition basis. There are M copies
- * (planes, subvectors) of the data.
+ * Neuron data are organised on a per-partition basis, with possibly several
+ * copies (planes, subvectors) of the data.
  *
  * \author Andreas Fidjeland
  */
-template<typename T, int M = 1>
+template<typename T>
 class NVector
 {
 	public :
+
+		NVector() : m_planes(0), m_partitionCount(0), m_pitch(0) { }
 
 		/*! Initialise a 1D parameter vector, potentially for several
 		 * partitions. 
@@ -55,10 +57,11 @@ class NVector
 		 * 		faster at the cost of reducing the amount of virtual memory
 		 * 		available to the host system.
 		 */
-		NVector(size_t partitionCount,
+		NVector(size_t planes,
+				size_t partitionCount,
 				size_t maxPartitionSize,
 				bool allocHostData,
-				bool pinHostData = false);
+				bool pinHostData);
         
 		/*! \return pointer to device data */
 		T* deviceData() const;
@@ -90,10 +93,6 @@ class NVector
 		/*! Asynchronously copy to device */
 		void copyToDeviceAsync(cudaStream_t);
 		
-		/*! Set row of data (in host buffer) for a single partition */ 
-		//! \todo change parameter order, with vector first
-		void setPartition(size_t partitionIdx, const T* arr, size_t length, size_t subvector=0);
-
 		/*! Set value (in host buffer) for a single neuron */
 		//! \todo change parameter order, with vector first
 		void setNeuron(size_t partitionIdx, size_t neuronIdx, const T& val, size_t subvector=0);
@@ -106,23 +105,24 @@ class NVector
 		/*! Fill all entries in a single plane with the same value */
 		void fill(const T& val, size_t subvector=0);
 
+		/*! Replicate the first \a n planes to fill the host-side data */
+		void replicateInitialPlanes(size_t n);
+
+		size_t planeCount() const { return m_planes; }
+
 	private :
 
 		boost::shared_array<T> m_deviceData;
 		boost::shared_array<T> m_hostData;
 
-		const size_t m_partitionCount;
-
+		size_t m_planes;
+		size_t m_partitionCount;
 		size_t m_pitch;
 
 		size_t offset(size_t subvector, size_t partitionIdx, size_t neuronIdx) const;
 };
 
 }	} // end namespace
-
-/* Functions to set pitch on device. Defined in nvector.cu */
-cudaError nv_setPitch32(size_t pitch32);
-cudaError nv_setPitch64(size_t pitch64);
 
 #include "NVector.ipp"
 

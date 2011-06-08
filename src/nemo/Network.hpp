@@ -1,13 +1,6 @@
 #ifndef NEMO_NETWORK_HPP
 #define NEMO_NETWORK_HPP
 
-//! \file Network.hpp
-
-#include <vector>
-#include <nemo/config.h>
-#include <nemo/types.h>
-#include <nemo/ReadableNetwork.hpp>
-
 /* Copyright 2010 Imperial College London
  *
  * This file is part of NeMo.
@@ -16,6 +9,13 @@
  * General Public Licence (GPL). You should have received a copy of this
  * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <vector>
+#include <string>
+
+#include <nemo/config.h>
+#include <nemo/types.h>
+#include <nemo/ReadableNetwork.hpp>
 
 namespace nemo {
 
@@ -45,7 +45,35 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 
 		~Network();
 
-		/*! \brief Add a single neuron to the network
+		/*! \brief Register a new neuron type with the network.
+		 *
+		 * \param name
+		 * 		canonical name of the neuron type. The neuron type data is
+		 * 		loaded from a plugin configuration file of the same name.
+		 * \return
+		 * 		index of the the neuron type, to be used when adding neurons.
+		 *
+		 * This function must be called before neurons of the specified type
+		 * can be added to the network.
+		 */
+		unsigned addNeuronType(const std::string& name);
+
+		/*! \brief Add a neuron to the network
+		 *
+		 * \param type
+		 * 		index of the neuron type, as returned by \a addNeuronType
+		 * \param nargs
+		 * 		length of \a args
+		 * \param args
+		 * 		parameters and state variables of the neuron (in that order)
+		 *
+		 * \pre The parameter and state arrays must have the dimensions
+		 * 		matching the neuron type represented by \a type.
+		 */
+		void addNeuron(unsigned type, unsigned idx,
+				unsigned nargs, const float args[]);
+
+		/*! \brief Add a single Izhikevich neuron to the network
 		 *
 		 * The neuron uses the Izhikevich neuron model. See E. M. Izhikevich
 		 * "Simple model of spiking neurons", \e IEEE \e Trans. \e Neural \e
@@ -77,7 +105,18 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 				float a, float b, float c, float d,
 				float u, float v, float sigma);
 
-		/*! Change parameters/state variables of a single existing neuron
+		/*! Set an existing neuron
+		 *
+		 * \param param floating point parameters of the neuron
+		 * \param state floating point state variables of the neuron
+		 *
+		 * \pre The parameter and state arrays must have the dimensions
+		 * 		matching the neuron type specified when the neuron was first
+		 * 		added.
+		 */
+		void setNeuron(unsigned idx, unsigned nargs, const float args[]);
+
+		/*! Change parameters/state variables of a single existing Izhikevich-type neuron
 		 *
 		 * The parameters are the same as for \a nemo::Network::addNeuron
 		 */
@@ -93,43 +132,46 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 				float weight,
 				unsigned char plastic);
 
-		/*!
+
+		/*! Get a single parameter for a single neuron
+		 *
+		 * \param neuron neuron index
+		 * \param parameter parameter index
+		 * \return parameter with index \a parameter.
+		 *
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
+		 */
+		float getNeuronParameter(unsigned neuron, unsigned parameter) const;
+
+		/*! Get a single state variable for a single neuron
+		 *
 		 * \param neuron neuron index
 		 * \param var variable index
-		 * \return state variable \a n.
+		 * \return state variable with index \a var.
 		 *
-		 * For the Izhikevich model the variable indices are 0 = u, 1 = v.
+		 * For the Izhikevich model the variable indices are 0=u, 1=v.
 		 */
 		float getNeuronState(unsigned neuron, unsigned var) const;
-
-		/*!
-		 * \param neuron neuron index
-		 * \param param parameter index
-		 * \return parameter \a n.
-		 *
-		 * For the Izhikevich model the parameter indices are 0 = a, 1 = b, 2 = c, 3 = d.
-		 */
-		float getNeuronParameter(unsigned neuron, unsigned param) const;
 
 		/*! Change a single parameter for an existing neuron
 		 *
 		 * \param neuron neuron index
-		 * \param param parameter index
-		 * \param val new value of the state variable
+		 * \param parameter parameter index
+		 * \param value new value of the state variable
 		 *
-		 * For the Izhikevich model 0 = a, 1 = b, 2 = c, 3 = d
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
 		 */
-		void setNeuronParameter(unsigned neuron, unsigned param, float val);
+		void setNeuronParameter(unsigned neuron, unsigned parameter, float value);
 
 		/*! Change a single state variable for an existing neuron
 		 *
 		 * \param neuron neuron index
 		 * \param var state variable index
-		 * \param val new value of the state variable
+		 * \param value new value of the state variable
 		 *
-		 * For the Izhikevich model variable indices 0 = u, 1 = v
+		 * For the Izhikevich model variable indices 0=u, 1=v.
 		 */
-		void setNeuronState(unsigned neuron, unsigned var, float val);
+		void setNeuronState(unsigned neuron, unsigned var, float value);
 
 		/*! \return target neuron id for a synapse */
 		unsigned getSynapseTarget(const synapse_id&) const;
@@ -163,7 +205,11 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		// undefined
 		Network(const Network&);
 		Network& operator=(const Network&);
+
+		/* hack for backwards-compatability with original construction API */
+		unsigned iz_type;
 };
+
 
 } // end namespace nemo
 

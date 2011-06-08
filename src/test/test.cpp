@@ -158,6 +158,32 @@ runSimple(unsigned startNeuron, unsigned neuronCount)
 }
 
 
+/* Verify that neuron count actually counts the number of neurons.
+ *
+ * Create a fixed number of neurons with indices at fixed intervals starting
+ * from \a startNeuron */
+void
+testNeuronCount(unsigned startNeuron, unsigned step)
+{
+	nemo::Network net;
+	unsigned ncount = 2000U;
+	for(unsigned i = 0; i < ncount; ++i) {
+		unsigned nidx = startNeuron + i * step;
+		net.addNeuron(nidx, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
+	}
+	BOOST_REQUIRE_EQUAL(ncount, net.neuronCount());
+}
+
+
+
+BOOST_AUTO_TEST_SUITE(neuron_count)
+	BOOST_AUTO_TEST_CASE(cont_zero) { testNeuronCount(0, 1); }
+	BOOST_AUTO_TEST_CASE(cont_nonzero) { testNeuronCount(1000, 1); }
+	BOOST_AUTO_TEST_CASE(noncont_zero) { testNeuronCount(0, 5); }
+	BOOST_AUTO_TEST_CASE(noncont_nonzero) { testNeuronCount(1000, 5); }
+BOOST_AUTO_TEST_SUITE_END()
+
+
 
 BOOST_AUTO_TEST_CASE(simulation_unary_network)
 {
@@ -255,7 +281,29 @@ testCurrentStimulus(backend_t backend)
 }
 
 
-TEST_ALL_BACKENDS(istim, testCurrentStimulus)
+void
+testInvalidCurrentStimulus(backend_t backend)
+{
+	unsigned ncount = 1000U;
+	nemo::Configuration conf = configuration(false, 1024, backend);
+	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+
+	sim->step();
+	sim->step();
+
+	nemo::Simulation::current_stimulus istim;
+	istim.push_back(std::make_pair(ncount+1, 0.5));
+	BOOST_REQUIRE_THROW(sim->step(istim), nemo::exception);
+}
+
+
+
+BOOST_AUTO_TEST_SUITE(istim)
+	TEST_ALL_BACKENDS(single_injection, testCurrentStimulus)
+	TEST_ALL_BACKENDS(invalid_injection, testInvalidCurrentStimulus)
+BOOST_AUTO_TEST_SUITE_END()
+
 
 
 void
@@ -562,6 +610,17 @@ testVProbe(backend_t backend)
 TEST_ALL_BACKENDS(vprobe, testVProbe)
 
 
+BOOST_AUTO_TEST_CASE(add_neuron)
+{
+	nemo::Network net;
+	unsigned iz = net.addNeuronType("Izhikevich");
+	std::vector<float> args(7, 0.0f);
+	/* Duplicate neuron indices should report an error */
+	net.addNeuron(iz, 0, args.size(), &args[0]);
+	BOOST_REQUIRE_THROW(net.addNeuron(iz, 0, args.size(), &args[0]), nemo::exception);
+}
+
+
 
 /* Both the simulation and network classes have neuron setters. Here we perform
  * the same test for both. */
@@ -751,6 +810,7 @@ testSetNeuron(backend_t backend)
 		net1.addNeuron(0, a, b, c, d, u, v-1.0f, sigma);
 		boost::scoped_ptr<nemo::Simulation> sim(simulation(net1, conf));
 		sim->setNeuron(0, a, b, c, d, u, v, sigma);
+		BOOST_REQUIRE_EQUAL(v, sim->getMembranePotential(0));
 		sim->step();
 		BOOST_REQUIRE_EQUAL(v0, sim->getMembranePotential(0));
 	}
@@ -760,12 +820,31 @@ testSetNeuron(backend_t backend)
 
 TEST_ALL_BACKENDS(set_neuron, testSetNeuron)
 
-BOOST_AUTO_TEST_SUITE(regression)
-	BOOST_AUTO_TEST_CASE(torus) {
-		runTorus(false);
+
+void
+testInvalidNeuronType()
+{
+	nemo::Network net;
+	unsigned iz = net.addNeuronType("Izhikevich");
+	float args[7] = {0, 0, 0, 0, 0, 0, 0};
+	for(unsigned n=0; n<100; ++n) {
+		if(n != iz) {
+			// incorrect parameter order for n and iz.
+			BOOST_REQUIRE_THROW(net.addNeuron(n, iz, 7, args), nemo::exception);
+		}
 	}
+}
+
+
+BOOST_AUTO_TEST_SUITE(plugins)
+	BOOST_AUTO_TEST_CASE(invalid_type) { testInvalidNeuronType(); }
 BOOST_AUTO_TEST_SUITE_END()
 
+
+BOOST_AUTO_TEST_SUITE(regression)
+	BOOST_AUTO_TEST_CASE(torus)    { runTorus(false);    }
+	BOOST_AUTO_TEST_CASE(kuramoto) { runKuramoto(false); }
+BOOST_AUTO_TEST_SUITE_END()
 
 
 BOOST_AUTO_TEST_SUITE(c_api)
@@ -785,4 +864,6 @@ BOOST_AUTO_TEST_SUITE(c_api)
 	BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#include "Kuramoto.cpp"
 

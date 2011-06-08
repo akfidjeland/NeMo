@@ -260,24 +260,33 @@ clearNetwork =
         False
 
 
+addNeuronType =
+    ApiFunction "addNeuronType"
+        "register a new neuron type with the network"
+        (Just "This function must be called before neurons of the specified type can be added to the network.")
+        M.empty
+        [
+            ApiArg "type" (Just "index of the the neuron type, to be used when adding neurons") (Scalar ApiUInt)]
+        [
+            Required (ApiArg "name" (Just "canonical name of the neuron type. The neuron type data is loaded from a plugin configuration file of the same name.") (Scalar ApiString))
+        ]
+        [] False
+
+
 
 addNeuron =
     ApiFunction
         "addNeuron"
-        "add a single neuron to the network"
-        (Just "The neuron uses the Izhikevich neuron model. See E. M. Izhikevich \"Simple model of spiking neurons\", IEEE Trans. Neural Networks, vol 14, pp 1569-1572, 2003 for a full description of the model and the parameters. ")
+        "add one or more neurons to the network"
+        (Just "The meaning of the parameters and state variables varies depending on the neuron type")
         (M.fromList pythonNeuronFullSetter)
         []
-        [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
-            Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "b" (Just "Sensitivity to sub-threshold fluctuations in the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "c" (Just "After-spike value of the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "d" (Just "After-spike reset of the recovery variable u") (Scalar ApiFloat)),
-            Required (ApiArg "u" (Just "Initial value for the membrane recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "v" (Just "Initial value for the membrane potential") (Scalar ApiFloat)),
-            Required (ApiArg "sigma" (Just "Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated") (Scalar ApiFloat))
+        [   Required (ApiArg "type" (Just "Neuron type") (Scalar ApiUInt)),
+            Required (ApiArg "idx" (Just "Neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "parameters..." (Just "all neuron parameters") (Scalar ApiUInt)),
+            Required (ApiArg "state..." (Just "all state variables") (Scalar ApiUInt))
         ]
-        [] True
+        [Matlab, MEX] True
 
 
 pythonVectorizedFull = [(Python, "The input arguments can be any combination of lists \
@@ -369,7 +378,7 @@ network =
     ApiModule "Network" "net"
         (Just "A Network is constructed by adding individual neurons and synapses to the network. Neurons are given indices (from 0) which should be unique for each neuron. When adding synapses the source or target neurons need not necessarily exist yet, but should be defined before the network is finalised.")
         defaultConstructor
-        [addNeuron, addSynapse, neuronCount, clearNetwork]
+        [addNeuronType, addNeuron, addSynapse, neuronCount, clearNetwork]
         constructable
 
 
@@ -405,28 +414,26 @@ applyStdp =
 
 
 setNeuron =
-    ApiFunction "setNeuron"
-        "modify an existing neuron"
-        Nothing
+    ApiFunction
+        "setNeuron"
+        "modify one or more existing neurons"
+        (Just "The meaning of the parameters and state variables varies depending on the neuron type (specified when the neuron was created)")
         (M.fromList pythonNeuronFullSetter)
         []
-        [   Required (ApiArg "idx" (Just "Neuron index (0-based)") (Scalar ApiUInt)),
-            Required (ApiArg "a" (Just "Time scale of the recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "b" (Just "Sensitivity to sub-threshold fluctuations in the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "c" (Just "After-spike value of the membrane potential v") (Scalar ApiFloat)),
-            Required (ApiArg "d" (Just "After-spike reset of the recovery variable u") (Scalar ApiFloat)),
-            Required (ApiArg "u" (Just "Initial value for the membrane recovery variable") (Scalar ApiFloat)),
-            Required (ApiArg "v" (Just "Initial value for the membrane potential") (Scalar ApiFloat)),
-            Required (ApiArg "sigma" (Just "Parameter for a random gaussian per-neuron process which generates random input current drawn from an N(0, sigma) distribution. If set to zero no random input current will be generated") (Scalar ApiFloat))
+        [
+            Required (ApiArg "idx" (Just "Neuron index") (Scalar ApiUInt)),
+            Required (ApiArg "parameters..." (Just "all neuron parameters") (Scalar ApiUInt)),
+            Required (ApiArg "state..." (Just "all state variables") (Scalar ApiUInt))
         ]
-        [] True
+        [Matlab, MEX] True
 
 
 
 getMembranePotential =
     ApiFunction "getMembranePotential"
-        "get membane potential of a neuron"
-        Nothing M.empty
+        "get neuron membane potential"
+        Nothing
+        (M.fromList pythonVectorized1)
         [   ApiArg "v" (Just "membrane potential") (Scalar ApiFloat) ]
         [   Required (ApiArg "idx" (Just "neuron index") (Scalar ApiUInt)) ]
         []
@@ -595,7 +602,7 @@ setStdpFunction =
             Required (ApiArg "postfire" (Just "STDP function values for spikes arrival times after the postsynaptic firing, starting closest to the postsynaptic firing") (Vector ApiFloat ExplicitLength)),
             Required (ApiArg "minWeight" (Just "Lowest (negative) weight beyond which inhibitory synapses are not potentiated") (Scalar ApiFloat)),
             Required (ApiArg "maxWeight" (Just "Highest (positive) weight beyond which excitatory synapses are not potentiated") (Scalar ApiFloat))
-        ] [] False
+        ] [MEX] False
 
 
 backendDescription =

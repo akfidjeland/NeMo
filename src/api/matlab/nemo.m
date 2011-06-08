@@ -43,6 +43,7 @@
 % respective functions for more detail.
 %
 % Construction:
+%  nemoAddNeuronType
 %  nemoAddNeuron
 %  nemoAddSynapse
 %  nemoNeuronCount

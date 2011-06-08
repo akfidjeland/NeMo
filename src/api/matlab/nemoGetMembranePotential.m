@@ -1,5 +1,5 @@
 function v = nemoGetMembranePotential(idx)
-% nemoGetMembranePotential - get membane potential of a neuron
+% nemoGetMembranePotential - get neuron membane potential
 %  
 % Synopsis:
 %   v = nemoGetMembranePotential(idx)
@@ -16,5 +16,5 @@ function v = nemoGetMembranePotential(idx)
 % the appropriate number of times. If all input arguments are scalar,
 % the output is scalar. Otherwise the output has the same length as
 % the vector input arguments.
-    v = nemo_mex(uint32(12), uint32(idx));
+    v = nemo_mex(uint32(13), uint32(idx));
 end

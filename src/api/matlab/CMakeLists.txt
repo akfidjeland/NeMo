@@ -29,7 +29,7 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 			SET(SUFFIX ${MEX_LIB_SUFFIX})
 		ELSE(MEX_LIB_SUFFIX)
 			# Ask user to set the variable
-			MESSAGE(ERROR "Could not find the mexext utility, required to build the Matlab bindings. Either set the MEX library extension on your platform by hand (in variable MEX_LIB_SUFFIX) or disable Matlab bindings altogether (set NEMO_MATLAB_ENABLED to OFF)")
+			MESSAGE(SEND_ERROR "Could not find the mexext utility, required to build the Matlab bindings. Either set the MEX library extension on your platform by hand (in variable MEX_LIB_SUFFIX) or disable Matlab bindings altogether (set NEMO_MATLAB_ENABLED to OFF)")
 			SET(MEX_LIB_SUFFIX "MEX_LIB_SUFFIX-NOTFOUND"
 				CACHE
 				STRING "Mex library extension on this platform (e.g. dll, mexa64, etc.)"
@@ -60,19 +60,29 @@ IF(NOT MEX STREQUAL MEX-NOTFOUND)
 
 	ADD_DEPENDENCIES(mex-api nemo)
 
+	# Sometimes the m-files changes and the install list along with it, but the
+	# installed targets are deemed up-to-date. This might be because the list
+	# of install targets is loaded from a file, but not sure why. Just force
+	# all files to always be installed to work around this issue.
+	SET(CMAKE_INSTALL_ALWAYS ON)
+
 	IF(WIN32)
-		SET(INSTALL_DIR Matlab)
+		SET(MATLAB_INSTALL_DIR Matlab)
 	ELSE(WIN32)
-		SET(INSTALL_DIR share/nemo/matlab)
+		SET(MATLAB_INSTALL_DIR share/nemo/matlab)
 	ENDIF(WIN32)
 
 	FILE(STRINGS "install.cmake" AUTO_MATLAB_FILES)
 
+	SET(DEPRECATED_MATLAB_FILES nemoGetDelays.m nemoGetPlastic.m nemoGetTargets.m nemoGetWeights.m)
+
 	INSTALL(
-		FILES ${MEX_OUTPUT} ${AUTO_MATLAB_FILES} nemo.m example.m
-		DESTINATION ${INSTALL_DIR}
+		FILES ${MEX_OUTPUT} ${AUTO_MATLAB_FILES} ${DEPRECATED_MATLAB_FILES} nemo.m example.m
+		DESTINATION ${MATLAB_INSTALL_DIR}
 	)
 
 ELSE(NOT MEX STREQUAL MEX-NOTFOUND)
 	MESSAGE("MEX compiler not found. Skipping Matlab API generation") 
 ENDIF(NOT MEX STREQUAL MEX-NOTFOUND)
+
+SUBDIRS(kuramoto)

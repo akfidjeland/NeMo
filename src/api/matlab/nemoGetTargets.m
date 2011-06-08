@@ -11,5 +11,6 @@ function targets = nemoGetTargets(synapses)
 % Outputs:
 %   targets - indices of target neurons
 %    
-    targets = nemo_mex(uint32(14), uint64(synapses));
+	warning('nemo:api', 'nemoGetTargets is deprecated; Use nemoGetSynapseTarget instead');
+	targets = nemoGetSynapseTarget(synapses);
 end

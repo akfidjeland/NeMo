@@ -16,5 +16,5 @@ function delay = nemoGetSynapseDelay(synapse)
 % the appropriate number of times. If all input arguments are scalar,
 % the output is scalar. Otherwise the output has the same length as
 % the vector input arguments.
-    delay = nemo_mex(uint32(27), uint64(synapse));
+    delay = nemo_mex(uint32(28), uint64(synapse));
 end

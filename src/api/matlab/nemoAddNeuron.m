@@ -1,40 +1,22 @@
-function nemoAddNeuron(idx, a, b, c, d, u, v, sigma)
-% nemoAddNeuron - add a single neuron to the network
+% nemoAddNeuron - add one or more neurons to the network
 %  
 % Synopsis:
-%   nemoAddNeuron(idx, a, b, c, d, u, v, sigma)
+%   nemoAddNeuron(type, idx, param0, param1..., state0, state1...)
 %  
 % Inputs:
-%   idx     - Neuron index (0-based)
-%   a       - Time scale of the recovery variable
-%   b       - Sensitivity to sub-threshold fluctuations in the membrane
-%             potential v
-%   c       - After-spike value of the membrane potential v
-%   d       - After-spike reset of the recovery variable u
-%   u       - Initial value for the membrane recovery variable
-%   v       - Initial value for the membrane potential
-%   sigma   - Parameter for a random gaussian per-neuron process which
-%             generates random input current drawn from an N(0, sigma)
-%             distribution. If set to zero no random input current will be
-%             generated
-%    
-% The neuron uses the Izhikevich neuron model. See E. M. Izhikevich
-% "Simple model of spiking neurons", IEEE Trans. Neural Networks, vol
-% 14, pp 1569-1572, 2003 for a full description of the model and the
-% parameters.
+%   type    - neuron type, as returned by nemoAddNeuronType
+%   idx     - neuron index
+%   paramX  - neuron parameters
+%   stateX  - neuron state variables
+%
+% The number of parameters and state variables must match the neuron type.
 %  
-% The input arguments can be a mix of scalars and vectors as long as
-% all vectors have the same length. Scalar arguments are replicated
-% the appropriate number of times.
-    nemo_mex(...
-            uint32(0),...
-            uint32(idx),...
-            double(a),...
-            double(b),...
-            double(c),...
-            double(d),...
-            double(u),...
-            double(v),...
-            double(sigma)...
-    );
-end
+% The input arguments can be a mix of scalars and vectors as long as all
+% vectors have the same length. Scalar arguments are replicated the appropriate
+% number of times.
+%
+% The neuron index input must be a vector if any of the parameter or state
+% arguments are vectors (as the neuron index cannot be replicated).
+function addNeuron(type, idx, varargin)
+
+nemo_mex(uint32(1), uint32(type), uint32(idx), varargin{:});

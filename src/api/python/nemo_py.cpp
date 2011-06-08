@@ -1,11 +1,22 @@
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with NeMo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <sstream>
 #include <stdexcept>
 #include <functional>
 
 #include <boost/python.hpp>
+#include <boost/python/raw_function.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include <nemo.hpp>
+#include <nemo/config.h>
 
 #include "docstrings.h" // auto-generated
 
@@ -121,6 +132,7 @@ struct from_py_list_of_pairs
 };
 
 
+
 /* Python list to std::vector convertor */
 template<typename T>
 struct from_py_list
@@ -170,17 +182,16 @@ struct from_py_list
 
 
 
-/*!
- * Determine if input is scalar or vector. If it is a vector, verify that the
- * vector length is the same as other vectors (whose length is already set in
- * \a vectorLength.
+/*! Determine if input is scalar or vector.
+ *
+ * If it is a vector, verify that the vector length is the same as other
+ * vectors (whose length is already set in \a vectorLength.
  *
  * \param obj either a scalar or a vector
  * \param vectorLength length of any other vectors in the same parameter list,
  * 		or '0' if there are no others.
  * \return true if the object is vector (Python list), false if it's a scalar
  */
-inline
 bool
 checkInputVector(PyObject* obj, unsigned &vectorLength)
 {
@@ -244,100 +255,175 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 
 
 
-/*! Add one or more neurons
+/*! Add one ore more neurons of arbitrary type
  *
- * The arguments (other than net) may be either scalar or vector. All vectors
- * must be of the same length. If any of the inputs are vectors, the scalar
- * arguments are replicated for each synapse.
+ * This function expects the following arguments:
+ *
+ * - neuron type (unsigned scalar)
+ * - neuron index (unsigned scalar/vector)
+ * - a variable number of parameters (float scalar/vector)
+ * - a variable number of state variables (float scalar/vector)
+ *
+ * The corresponding python prototype would be
+ *
+ * add_neuron(self, neuron_type, neuron_idx, *args)
+ *
+ * The neuron type is expected to be a scalar. The remaining arguments
+ * may be either scalar or vector. All vectors must be of the same
+ * length. If any of the inputs are vectors, the scalar arguments are
+ * replicated for each neuron.
+ *
+ * \param args parameters and state variables
+ * \param kwargs unused, but required by boost::python
+ * \return None
+ *
+ * \see nemo::Network::addNeuron nemo::Network::addNeuronType
  */
-void
-add_neuron(nemo::Network& net, PyObject* idxs,
-		PyObject* as, PyObject* bs, PyObject* cs, PyObject* ds,
-		PyObject* us, PyObject* vs, PyObject* ss)
+boost::python::object
+add_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 {
-	unsigned len = 0;
+	using namespace boost::python;
 
-	bool vectorIdx = checkInputVector(idxs, len);
-	bool vectorA = checkInputVector(as, len);
-	bool vectorB = checkInputVector(bs, len);
-	bool vectorC = checkInputVector(cs, len);
-	bool vectorD = checkInputVector(ds, len);
-	bool vectorU = checkInputVector(us, len);
-	bool vectorV = checkInputVector(vs, len);
-	bool vectorS = checkInputVector(ss, len);
+	unsigned vlen = 0;
+	unsigned nargs = boost::python::len(py_args);
+	nemo::Network& net = boost::python::extract<nemo::Network&>(py_args[0])();
 
-	if(len == 0) {
-		/* All inputs are scalars */
-		net.addNeuron(extract<unsigned>(idxs),
-					extract<float>(as), extract<float>(bs),
-					extract<float>(cs), extract<float>(ds),
-					extract<float>(us), extract<float>(vs),
-					extract<float>(ss));
-	} else {
-		/* At least some inputs are vectors */
-		for(unsigned i=0; i != len; ++i) {
-			unsigned idx = extract<unsigned>(vectorIdx ? PyList_GetItem(idxs, i) : idxs);
-			float a = extract<float>(vectorA ? PyList_GetItem(as, i) : as);
-			float b = extract<float>(vectorB ? PyList_GetItem(bs, i) : bs);
-			float c = extract<float>(vectorC ? PyList_GetItem(cs, i) : cs);
-			float d = extract<float>(vectorD ? PyList_GetItem(ds, i) : ds);
-			float u = extract<float>(vectorU ? PyList_GetItem(us, i) : us);
-			float v = extract<float>(vectorV ? PyList_GetItem(vs, i) : vs);
-			float s = extract<float>(vectorS ? PyList_GetItem(ss, i) : ss);
-			net.addNeuron(idx, a, b, c, d, u, v, s);
+	/* The neuron type should always be a scalar */
+	unsigned neuron_type = extract<unsigned>(py_args[1]);
+
+	/* Get raw pointers and determine the mix of scalar and vector arguments */
+	//! \todo skip initial objects if possible
+	PyObject* objects[NEMO_MAX_NEURON_ARGS];
+	bool vectorized[NEMO_MAX_NEURON_ARGS];
+
+	assert(nargs < NEMO_MAX_NEURON_ARGS-3);
+
+	for(unsigned i=2; i<nargs; ++i) {
+		objects[i] = static_cast<boost::python::object>(py_args[i]).ptr();
+		vectorized[i] = checkInputVector(objects[i], vlen);
+	}
+
+	/* Get the neuron index, if it's a scalar */
+	unsigned neuron_index = 0;
+	if(!vectorized[2]) {
+		neuron_index = extract<unsigned>(py_args[2]);
+	}
+
+	/* Get all scalar parameters and state variables */
+	float args[NEMO_MAX_NEURON_ARGS];
+	for(unsigned i=3; i<nargs; ++i) {
+		if(!vectorized[i]) {
+			args[i] = extract<float>(objects[i]);
 		}
 	}
+
+	if(vlen == 0) {
+		/* All inputs are scalars, the 'scalars' array has already been
+		 * populated. */
+		//! \todo deal with empty list
+		net.addNeuron(neuron_type, neuron_index, nargs-3, &args[3]);
+	} else {
+		/* At least some inputs are vectors */
+		for(unsigned i=0; i < vlen; ++i) {
+			/* Fill in the vector arguments */
+			if(vectorized[2]) {
+				neuron_index = extract<unsigned>(PyList_GetItem(objects[2], i));
+			}
+			for(unsigned j=3; j<nargs; ++j) {
+				if(vectorized[j]) {
+					args[j] = extract<float>(PyList_GetItem(objects[j], i));
+				}
+			}
+			net.addNeuron(neuron_type, neuron_index, nargs-3, &args[3]);
+		}
+	}
+	return object();
 }
 
 
 
-/*! Modify one or more neurons
+/*! Modify one or more neurons of arbitrary type
  *
- * The arguments (other than net) may be either scalar or vector. All vectors
- * must be of the same length. If any of the inputs are vectors, the scalar
- * arguments are replicated for each synapse.
+ * \param args parameters and state variables, see below
+ * \param kwargs unused, but required by boost::python
+ * \return None
+ *
+ * This function expects the following arguments:
+ *
+ * - 0  : network or simulation (class reference scalar)
+ * - 1  : neuron index (unsigned scalar/vector)
+ * - >2 : parameters and state variables (float scalar/vector)
+ *
+ * The corresponding python prototype would be
+ *
+ * set_neuron(self, neuron_idx, *args)
+ *
+ * The non-self arguments may be either scalar or vector. All vectors must be
+ * of the same length. If any of the inputs are vectors, the scalar arguments
+ * are replicated for each neuron.
+ *
+ * \see nemo::Network::setNeuron nemo::Simulation::setNeuron
  */
 template<class T>
-void
-set_neuron(T& net, PyObject* idxs,
-		PyObject* as, PyObject* bs, PyObject* cs, PyObject* ds,
-		PyObject* us, PyObject* vs, PyObject* ss)
+boost::python::object
+set_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 {
-	unsigned len = 0;
+	using namespace boost::python;
 
-	bool vectorIdx = checkInputVector(idxs, len);
-	bool vectorA = checkInputVector(as, len);
-	bool vectorB = checkInputVector(bs, len);
-	bool vectorC = checkInputVector(cs, len);
-	bool vectorD = checkInputVector(ds, len);
-	bool vectorU = checkInputVector(us, len);
-	bool vectorV = checkInputVector(vs, len);
-	bool vectorS = checkInputVector(ss, len);
+	/* Common length of all non-scalar arguments */
+	unsigned vlen = 0;
+	unsigned nargs = boost::python::len(py_args);
+	T& net = boost::python::extract<T&>(py_args[0])();
 
-	if(len == 0) {
-		/* All inputs are scalars */
-		net.setNeuron(extract<unsigned>(idxs),
-					extract<float>(as), extract<float>(bs),
-					extract<float>(cs), extract<float>(ds),
-					extract<float>(us), extract<float>(vs),
-					extract<float>(ss));
-	} else {
-		/* At least some inputs are vectors */
-		for(unsigned i=0; i != len; ++i) {
-			unsigned idx = extract<unsigned>(vectorIdx ? PyList_GetItem(idxs, i) : idxs);
-			float a = extract<float>(vectorA ? PyList_GetItem(as, i) : as);
-			float b = extract<float>(vectorB ? PyList_GetItem(bs, i) : bs);
-			float c = extract<float>(vectorC ? PyList_GetItem(cs, i) : cs);
-			float d = extract<float>(vectorD ? PyList_GetItem(ds, i) : ds);
-			float u = extract<float>(vectorU ? PyList_GetItem(us, i) : us);
-			float v = extract<float>(vectorV ? PyList_GetItem(vs, i) : vs);
-			float s = extract<float>(vectorS ? PyList_GetItem(ss, i) : ss);
-			net.setNeuron(idx, a, b, c, d, u, v, s);
+	PyObject* objects[NEMO_MAX_NEURON_ARGS];
+	bool vectorized[NEMO_MAX_NEURON_ARGS];
+
+	assert(nargs < NEMO_MAX_NEURON_ARGS-2);
+
+	//! \todo shift everything down to minimise space usage
+	/* Get raw pointers and determine the mix of scalar and vector arguments */
+
+	for(unsigned i=1; i<nargs; ++i) {
+		objects[i] = static_cast<boost::python::object>(py_args[i]).ptr();
+		vectorized[i] = checkInputVector(objects[i], vlen);
+	}
+
+	/* Get the neuron index, if it's a scalar */
+	unsigned neuron_index = 0;
+	if(!vectorized[1]) {
+		neuron_index = extract<unsigned>(py_args[1]);
+	}
+
+	/* Get all scalar parameters and state variables */
+	//! \todo fold this back into previous loop? Need to deal with index first, then loop
+	float args[NEMO_MAX_NEURON_ARGS];
+	for(unsigned i=2; i<nargs; ++i) {
+		if(!vectorized[i]) {
+			args[i] = extract<float>(objects[i]);
 		}
 	}
+
+	if(vlen == 0) {
+		/* All inputs are scalars */
+		//! \todo deal with empty list
+		net.setNeuron(neuron_index, nargs-2, &args[2]);
+	} else {
+		/* At least some inputs are vectors */
+		for(unsigned i=0; i < vlen; ++i) {
+			/* Fill in the vector arguments */
+			if(vectorized[1]) {
+				neuron_index = extract<unsigned>(PyList_GetItem(objects[1], i));
+			}
+			for(unsigned j=2; j<nargs; ++j) {
+				if(vectorized[j]) {
+					args[j] = extract<float>(PyList_GetItem(objects[j], i));
+				}
+			}
+			net.setNeuron(neuron_index, nargs-2, &args[2]);
+		}
+	}
+	return object();
 }
-
-
 
 
 
@@ -445,6 +531,26 @@ get_neuron_state(T& obj, PyObject* neurons, unsigned param)
 
 
 
+/*! Return the membrane potential of one or more neurons */
+PyObject*
+get_membrane_potential(nemo::Simulation& sim, PyObject* neurons)
+{
+	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 0;
+	if(len == 0) {
+		return PyFloat_FromDouble(sim.getMembranePotential(extract<unsigned>(neurons)));
+	} else {
+		PyObject* list = PyList_New(len);
+		for(Py_ssize_t i=0; i < len; ++i) {
+			const unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			const float val = sim.getMembranePotential(neuron);
+			PyList_SetItem(list, i, PyFloat_FromDouble(val));
+		}
+		return list;
+	}
+}
+
+
+
 /* Convert scalar type to corresponding C++ type. Oddly, boost::python does not
  * seem to have this */
 template<typename T>
@@ -469,13 +575,13 @@ get_synapse_x(const nemo::ReadableNetwork& net,
 		PyObject* ids,
 		std::const_mem_fun1_ref_t<T, nemo::ReadableNetwork, const synapse_id&> get_x)
 {
-	const Py_ssize_t len = PyList_Check(ids) ? PyList_Size(ids) : 0;
+	const Py_ssize_t len = PySequence_Check(ids) ? PySequence_Size(ids) : 0;
 	if(len == 0) {
 		return insert<T>(get_x(net, extract<synapse_id>(ids)));
 	} else {
 		PyObject* list = PyList_New(len);
 		for(Py_ssize_t i=0; i < len; ++i) {
-			synapse_id id = extract<synapse_id>(PyList_GetItem(ids, i));
+			synapse_id id = extract<synapse_id>(PySequence_GetItem(ids, i));
 			const T val = get_x(net, id);
 			PyList_SetItem(list, i, insert<T>(val));
 		}
@@ -579,6 +685,14 @@ initializeConverters()
 }
 
 
+/* The STDP configuration comes in two forms in the C++ API. Use just the
+ * original form here, in order to avoid breaking existing code. */
+void (nemo::Configuration::*stdp2)(
+		const std::vector<float>& prefire,
+		const std::vector<float>& postfire,
+		float minWeight,
+		float maxWeight) = &nemo::Configuration::setStdpFunction;
+
 
 BOOST_PYTHON_MODULE(_nemo)
 {
@@ -608,16 +722,17 @@ BOOST_PYTHON_MODULE(_nemo)
 		//.def("enable_logging", &nemo::Configuration::enableLogging)
 		//.def("disable_logging", &nemo::Configuration::disableLogging)
 		//.def("logging_enabled", &nemo::Configuration::loggingEnabled)
-		.def("set_stdp_function", &nemo::Configuration::setStdpFunction, CONFIGURATION_SET_STDP_FUNCTION_DOC)
+		.def("set_stdp_function", stdp2, CONFIGURATION_SET_STDP_FUNCTION_DOC)
 		.def("set_cuda_backend", &nemo::Configuration::setCudaBackend, CONFIGURATION_SET_CUDA_BACKEND_DOC)
 		.def("set_cpu_backend", &nemo::Configuration::setCpuBackend, CONFIGURATION_SET_CPU_BACKEND_DOC)
 		.def("backend_description", &nemo::Configuration::backendDescription, CONFIGURATION_BACKEND_DESCRIPTION_DOC)
 	;
 
 	class_<nemo::Network, boost::noncopyable>("Network", NETWORK_DOC)
-		.def("add_neuron", add_neuron, NETWORK_ADD_NEURON_DOC)
+		.def("add_neuron_type", &nemo::Network::addNeuronType, NETWORK_ADD_NEURON_TYPE_DOC)
+		.def("add_neuron", raw_function(add_neuron_va, 3), NETWORK_ADD_NEURON_DOC)
 		.def("add_synapse", add_synapse, NETWORK_ADD_SYNAPSE_DOC)
-		.def("set_neuron", set_neuron<nemo::Network>, CONSTRUCTABLE_SET_NEURON_DOC)
+		.def("set_neuron", raw_function(set_neuron_va<nemo::Network>, 2), CONSTRUCTABLE_SET_NEURON_DOC)
 		.def("get_neuron_state", get_neuron_state<nemo::Network>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
 		.def("get_neuron_parameter", get_neuron_parameter<nemo::Network>, CONSTRUCTABLE_GET_NEURON_PARAMETER_DOC)
 		.def("set_neuron_state", set_neuron_state<nemo::Network>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
@@ -648,12 +763,12 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("step_i", step_i, return_internal_reference<1>())
 		.def("step_fi", step_fi, return_internal_reference<1>())
 		.def("apply_stdp", &nemo::Simulation::applyStdp, SIMULATION_APPLY_STDP_DOC)
-		.def("set_neuron", set_neuron<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_DOC)
+		.def("set_neuron", raw_function(set_neuron_va<nemo::Simulation>, 2), CONSTRUCTABLE_SET_NEURON_DOC)
 		.def("get_neuron_state", get_neuron_state<nemo::Simulation>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
 		.def("get_neuron_parameter", get_neuron_parameter<nemo::Simulation>, CONSTRUCTABLE_GET_NEURON_PARAMETER_DOC)
 		.def("set_neuron_state", set_neuron_state<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_STATE_DOC)
 		.def("set_neuron_parameter", set_neuron_parameter<nemo::Simulation>, CONSTRUCTABLE_SET_NEURON_PARAMETER_DOC)
-		.def("get_membrane_potential", &nemo::Simulation::getMembranePotential, SIMULATION_GET_MEMBRANE_POTENTIAL_DOC)
+		.def("get_membrane_potential", get_membrane_potential, SIMULATION_GET_MEMBRANE_POTENTIAL_DOC)
 		.def("get_synapses_from", &nemo::Simulation::getSynapsesFrom, return_value_policy<copy_const_reference>(), CONSTRUCTABLE_GET_SYNAPSES_FROM_DOC)
 		.def("get_synapse_source", get_synapse_source<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_SOURCE_DOC)
 		.def("get_synapse_target", get_synapse_target<nemo::Simulation>, CONSTRUCTABLE_GET_SYNAPSE_TARGET_DOC)

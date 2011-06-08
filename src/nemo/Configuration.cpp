@@ -84,7 +84,19 @@ Configuration::setStdpFunction(
 				float minWeight,
 				float maxWeight)
 {
-	m_impl->setStdpFunction(prefire, postfire, minWeight, maxWeight);
+	setStdpFunction(prefire, postfire, 0, maxWeight, 0, minWeight);
+}
+
+
+
+void
+Configuration::setStdpFunction(
+		const std::vector<float>& prefire,
+		const std::vector<float>& postfire,
+		float minE, float maxE,
+		float minI, float maxI)
+{
+	m_impl->setStdpFunction(prefire, postfire, minE, maxE, minI, maxI);
 }
 
 

@@ -15,7 +15,8 @@
 #include <nemo/util.h>
 #include <nemo/config.h>
 
-#include "connectivityMatrix.cu"
+#include "parameters.cu_h"
+#include "fcm.cu_h"
 #include "fixedpoint.cu"
 
 
@@ -34,77 +35,83 @@
 __global__
 void
 applyStdp(
+	unsigned* g_partitionSize,
+	param_t* g_params,
 	synapse_t* g_fcm,
-	weight_dt reward,
-	weight_dt maxWeight, // for excitatory synapses
-	weight_dt minWeight) // for inhibitory synapses
+	rcm_dt g_rcm,
+	weight_dt minExcitatoryWeight,
+	weight_dt maxExcitatoryWeight,
+	weight_dt minInhibitoryWeight,
+	weight_dt maxInhibitoryWeight,
+	weight_dt reward)
 	/*! \note reverse connectivity addresses are found in constant memory,
 	 * while forward connectivity addresses are found in texture memory */
 {
-	__shared__ unsigned s_chunkCount;
 	__shared__ unsigned s_partitionSize;
 
-	weight_dt* gr_stdp = (weight_dt*) cr_stdp[CURRENT_PARTITION];
-	unsigned r_pitch = cr_pitch[CURRENT_PARTITION];
-
-#ifdef NEMO_CUDA_DEBUG_TRACE
-	uint32_t* gr_address = (uint32_t*) cr_address[CURRENT_PARTITION];
-#endif
-
-	uint32_t* gr_faddress = (uint32_t*) cr_faddress[CURRENT_PARTITION];
+	__shared__ param_t s_params;
+	loadParameters(g_params, &s_params);
 
 	if(threadIdx.x == 0) {
-		s_partitionSize = c_partitionSize[CURRENT_PARTITION];
-		s_chunkCount = DIV_CEIL(r_pitch, THREADS_PER_BLOCK);
+		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
 	}
 	__syncthreads();
 
 	for(unsigned target=0; target < s_partitionSize; ++target) {
-		for(unsigned chunk=0; chunk < s_chunkCount; ++chunk) {
 
-			unsigned r_sidx = chunk * THREADS_PER_BLOCK + threadIdx.x;
+		__shared__ rcm_index_address_t row;
+		if(threadIdx.x == 0) {
+			row = rcm_indexAddress(target, g_rcm);
+		}
+		__syncthreads();
 
-			if(r_sidx < r_pitch) {
+		/*! \todo add a second loop and pre-load THREADS_PER_BLOCK warp
+		 * addresses */
+		for(unsigned bIndex=0 ; bIndex < rcm_indexRowLength(row);
+				bIndex += THREADS_PER_BLOCK/WARP_SIZE) {
 
-				size_t gr_offset = target * r_pitch + r_sidx;
-				size_t gf_offset = gr_faddress[gr_offset];
+			__shared__ rcm_address_t warp[THREADS_PER_BLOCK/WARP_SIZE];
+
+			if(threadIdx.x < THREADS_PER_BLOCK/WARP_SIZE) {
+				warp[threadIdx.x] =
+					rcm_address(rcm_indexRowStart(row), bIndex + threadIdx.x, g_rcm);
+			}
+			__syncthreads();
+
+			size_t r_offset = rcm_offset(warp[threadIdx.x/WARP_SIZE]);
+			size_t f_offset = g_rcm.forward[r_offset];
 #ifdef NEMO_CUDA_DEBUG_TRACE
-				unsigned rsynapse = gr_address[gr_offset];
+			rsynapse_t rsynapse = g_rcm.data[r_offset];
 #endif
 
-				if(gf_offset != 0) {
+			if(f_offset != 0) {
 
-					/*! \todo try using atomicExch here instead. For m=20
-					 * atomicExch is slightly faster, but this will probably
-					 * work less well for e.g. m=1000 */
-					//weight_dt w_diff = gr_stdp[gr_offset] * reward;
-					//float w_diff = reward * __int_as_float(atomicExch(gr_stdp + gr_offset, __float_as_int(0.0f)));
-					weight_dt w_diff = fx_mul(gr_stdp[gr_offset], reward);
+				weight_dt w_diff =
+					fx_mul(g_rcm.accumulator[r_offset], reward,
+							s_params.fixedPointFractionalBits);
 
-					if(w_diff != 0) {
+				if(w_diff != 0) {
+					g_rcm.accumulator[r_offset] = 0;
 
-						gr_stdp[gr_offset] = 0;
+					weight_dt* gf_weight = (weight_dt*) g_fcm + s_params.fcmPlaneSize * FCM_WEIGHT;
 
-						weight_dt* gf_weight = (weight_dt*) g_fcm + c_fcmPlaneSize * FCM_WEIGHT;
-
-						weight_dt w_old = gf_weight[gf_offset];
-						weight_dt w_new = 0;
-						if(w_old > 0) {
-							w_new = min(maxWeight, max(w_old + w_diff, 0));
-						} else if(w_old < 0) {
-							w_new = min(0, max(w_old + w_diff, minWeight));
-						}
-
-						if(w_old != w_new) {
-							gf_weight[gf_offset] = w_new;
-							DEBUG_MSG_STDP("stdp (%u-%u -> %u-%u) %f %+f = %f\n",
-									sourcePartition(rsynapse), sourceNeuron(rsynapse),
-									CURRENT_PARTITION, target,
-									fx_tofloat(w_old), fx_tofloat(w_diff), fx_tofloat(w_new));
-						}
+					weight_dt w_old = gf_weight[f_offset];
+					weight_dt w_new = 0;
+					if(w_old > 0) {
+						w_new = min(maxExcitatoryWeight, max(w_old + w_diff, minExcitatoryWeight));
+					} else if(w_old < 0) {
+						w_new = min(minInhibitoryWeight, max(w_old + w_diff, maxInhibitoryWeight));
+					}
+					if(w_old != w_new) {
+						gf_weight[f_offset] = w_new;
+						DEBUG_MSG_STDP("stdp (%u-%u -> %u-%u) %f %+f = %f\n",
+								sourcePartition(rsynapse), sourceNeuron(rsynapse),
+								CURRENT_PARTITION, target,
+								fx_tofloat(w_old), fx_tofloat(w_diff), fx_tofloat(w_new));
 					}
 				}
 			}
+			__syncthreads(); // to protect 'warp'
 		}
 		//! \todo remove sync?
 		__syncthreads();
@@ -117,20 +124,30 @@ void
 applyStdp(
 		cudaStream_t stream,
 		unsigned partitionCount,
+		unsigned* d_partitionSize,
 		unsigned fractionalBits,
+		param_t* d_params,
 		synapse_t* d_fcm,
-		float maxWeight,
-		float minWeight,
+		rcm_dt* d_rcm,
+		float minExcitatoryWeight,
+		float maxExcitatoryWeight,
+		float minInhibitoryWeight,
+		float maxInhibitoryWeight,
 		float reward)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
 
 	applyStdp<<<dimGrid, dimBlock, 0, stream>>>(
+			d_partitionSize,
+			d_params,
 			d_fcm,
-			fx_toFix(reward, fractionalBits),
-			fx_toFix(maxWeight, fractionalBits),
-			fx_toFix(minWeight, fractionalBits));
+			*d_rcm,
+			fx_toFix(minExcitatoryWeight, fractionalBits),
+			fx_toFix(maxExcitatoryWeight, fractionalBits),
+			fx_toFix(minInhibitoryWeight, fractionalBits),
+			fx_toFix(maxInhibitoryWeight, fractionalBits),
+			fx_toFix(reward, fractionalBits));
 }
 
 

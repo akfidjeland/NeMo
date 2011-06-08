@@ -44,7 +44,7 @@ run(nemo::Network* net,
 	file.open(filename.c_str(), creating ? ios::out : ios::in);
 	if(!file.is_open()) {
 		std::cerr << "Failed to open file " << filename << std::endl;
-		return;
+		BOOST_REQUIRE(false);
 	}
 
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
@@ -117,4 +117,71 @@ void runTorus(bool creating)
 		run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu-stdp.dat", stdp, false, creating);
 		run(torus.get(), NEMO_BACKEND_CPU, 4, "test-cpu-stdp-stim.dat", stdp, true, creating);
 	}
+}
+
+
+
+void runKuramoto(bool creating)
+{
+#ifdef NEMO_CUDA_ENABLED
+	using namespace std;
+
+	boost::scoped_ptr<nemo::Network> net(nemo::kuramoto::construct(2048, 32));
+	const std::string filename = "test-cuda-kuramoto.dat";
+
+	nemo::Configuration conf;
+	conf.setCudaBackend();
+	std::cerr << "running kuramoto test on " << conf.backendDescription() << std::endl;
+
+	fstream file;
+	file.open(filename.c_str(), creating ? ios::out : ios::in);
+	if(!file.is_open()) {
+		std::cerr << "Failed to open file " << filename << std::endl;
+		BOOST_REQUIRE(false);
+	}
+
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+
+	/* Test for just a few values */
+	std::vector<unsigned> sample;
+	sample.push_back(0);
+	sample.push_back(100);
+	sample.push_back(500);
+	sample.push_back(1500);
+
+	// expexted values
+	unsigned ce, ne;
+	float pe;
+
+	unsigned seconds = 4;
+	for(unsigned s = 0; s < seconds; ++s) {
+		for(unsigned ms = 0; ms < 1000; ++ms) {
+
+			sim->step();
+
+			for(std::vector<unsigned>::const_iterator ni = sample.begin(); ni != sample.end(); ++ni) {
+				unsigned c = s * 1000 + ms;
+				unsigned n = *ni;
+				float p = sim->getMembranePotential(n);
+				if(creating) {
+					file << c << "\t" << n << "\t" << p << "\n";
+				} else {
+					BOOST_REQUIRE(!file.eof());
+					file >> ce >> ne >> pe;
+					BOOST_REQUIRE(c == ce);
+					BOOST_REQUIRE(n == ne);
+					BOOST_REQUIRE_CLOSE(p, pe, 0.001f);
+				}
+			}
+		}
+	}
+
+	if(!creating) {
+		/* Read one more word to read off the end of the file. We need to make
+		 * sure that we're at the end of the file, as otherwise the test will
+		 * pass if the simulation produces no firing */
+		file >> ce >> ne >> pe;
+		BOOST_REQUIRE(file.eof());
+	}
+#endif
 }

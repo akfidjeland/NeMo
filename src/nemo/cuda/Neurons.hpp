@@ -10,14 +10,17 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! \file Neurons.hpp
-
 #include <map>
+
+#include <nemo/cuda/plugins/neuron_model.h>
+#include <nemo/NeuronType.hpp>
+#include <nemo/Plugin.hpp>
 
 #include "Mapper.hpp"
 #include "NVector.hpp"
 #include "Bitvector.hpp"
 #include "kernel.cu_h"
+#include "parameters.cu_h"
 #include "types.h"
 
 namespace nemo {
@@ -46,25 +49,22 @@ class Neurons
 {
 	public:
 
-		Neurons(const network::Generator& net, Mapper&);
+		typedef Mapper mapper_type;
 
-		/*! Perform any required synchronisation between host and device data.
-		 * Such synchronisation may be required if the user has requested that
-		 * the data should be updated. The step function should be called for
-		 * every simulation cycle. */
-		void step(cycle_t cycle);
+		Neurons(const network::Generator&, const mapper_type&);
 
-		/*! \return device pointer to floating-point neuron parameter data */
-		float* df_parameters() const { return mf_param.deviceData(); }
-
-		/*! \return device pointer to floating-point neuron state data */
-		float* df_state() const { return mf_state.deviceData(); }
-
-		/*! \return device pointer to unsigned neuron state data */
-		unsigned* du_state() const { return mu_state.deviceData(); }
-
-		/*! \return device pointer to bit vector with only valid/existing neurons set */
-		uint32_t* d_valid() const { return m_valid.d_data(); }
+		/*! Update the state of all neurons */
+		cudaError_t update(
+				cudaStream_t stream,
+				cycle_t cycle,
+				param_t* d_params,
+				uint32_t* d_fstim,
+				fix_t* d_istim,
+				fix_t* d_current,
+				uint32_t* d_fout,
+				unsigned* d_nFired,
+				nidx_dt* d_fired,
+				rcm_dt*);
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const;
@@ -76,61 +76,97 @@ class Neurons
 		/*! \return the word pitch of bitvectors */
 		size_t wordPitch1() const { return m_valid.wordPitch(); }
 
-		/*!
-		 * \param idx neuron index
-		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
-		 * \return a parameter for a single neuron
-		 */
-		float getParameter(const DeviceIdx& idx, unsigned parameter) const;
+		/*! \copydoc nemo::Network::setNeuron */
+		void setNeuron(const DeviceIdx&, unsigned nargs, const float args[]);
 
-		/* Set parameter for a single neuron
+		/*! Get a single parameter for a single neuron
 		 *
-		 * \param idx neuron index
-		 * \param parameter PARAM_A, PARAM_B, PARAM_C, or PARAM_D
-		 * \param value
-		 */
-		void setParameter(const DeviceIdx& idx, unsigned parameter, float value);
-
-		/*! Get a state variable for a single neuron
+		 * \param neuron neuron index
+		 * \param parameter parameter index
+		 * \return parameter with index \a parameter.
 		 *
-		 * \param idx neuron index
-		 * \param var STATE_U or STATE_V
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
 		 *
 		 * The first call to this function in any given cycle may take some
 		 * time, since synchronisation is needed between the host and the
 		 * device.
 		 */
-		float getState(const DeviceIdx& idx, unsigned var) const;
+		float getParameter(const DeviceIdx& neuron, unsigned parameter) const;
 
-		/*! Set a state variable for a single neuron
+		/*! Change a single parameter for an existing neuron
 		 *
-		 * \param idx neuron index
-		 * \param var STATE_U or STATE_V
-		 * \param value
+		 * \param neuron neuron index
+		 * \param parameter parameter index
+		 * \param value new value of the state variable
+		 *
+		 * For the Izhikevich model the parameter indices are 0=a, 1=b, 2=c, 3=d, 4=sigma.
 		 *
 		 * The first call to this function in any given cycle may take some
 		 * time, since synchronisation is needed between the host and the
 		 * device. Additionaly, the next simulation step will involve copying
-		 * data from host *to* device.
+		 * data from the host to the device.
 		 */
-		void setState(const DeviceIdx& idx, unsigned var, float value);
+		void setParameter(const DeviceIdx& idx, unsigned parameter, float value);
 
-		bool rngEnabled() const { return m_rngEnabled; }
+		/*! Get a single state variable for a single neuron
+		 *
+		 * \param neuron neuron index
+		 * \param var variable index
+		 * \return state variable \a n.
+		 *
+		 * For the Izhikevich model the variable indices are 0=u, 1=v.
+		 *
+		 * The first call to this function in any given cycle may take some
+		 * time, since synchronisation is needed between the host and the
+		 * device.
+		 */
+		float getState(const DeviceIdx& neuron, unsigned var) const;
+
+		float getMembranePotential(const DeviceIdx&) const;
+
+		/*! Change a single state variable for an existing neuron
+		 *
+		 * \param neuron neuron index
+		 * \param var state variable index
+		 * \param value new value of the state variable
+		 *
+		 * For the Izhikevich model variable indices 0=u, 1=v.
+		 *
+		 * The first call to this function in any given cycle may take some
+		 * time, since synchronisation is needed between the host and the
+		 * device. Additionaly, the next simulation step will involve copying
+		 * data from the host to the device.
+		 */
+		void setState(const DeviceIdx& neuron, unsigned var, float value);
+
+		/*! \return array of sizes for each partition (which may differ). */
+		unsigned* d_partitionSize() const { return md_partitionSize.get(); }
 
 	private:
 
-		const unsigned mf_nParams;
-		const unsigned mf_nStateVars;
-		const unsigned mu_nStateVars;
+		const mapper_type& m_mapper;
+
+		NeuronType m_type;
+
+		size_t parameterCount() const { return m_type.parameterCount(); }
+		size_t stateVarCount() const { return m_type.stateVarCount(); }
 
 		/* Neuron parameters do not change at run-time (unless the user
 		 * specifically does it through \a setParameter) */
-		NVector<float, NEURON_FLOAT_PARAM_COUNT> mf_param;
+		NVector<float> m_param;
 
 		/* Neuron state variables are updated during simulation. */
-		mutable NVector<float, NEURON_FLOAT_STATE_COUNT> mf_state;
+		mutable NVector<float> m_state;
 
-		NVector<unsigned, NEURON_UNSIGNED_STATE_COUNT> mu_state;
+		/* Index of state buffer corresponding to most recent state */
+		unsigned m_stateCurrent;
+
+		/*! \return offset (in terms of 'planes') to the up-to-date data for variable \a var */
+		size_t currentStateVariable(unsigned var) const;
+
+		/*! Normal RNG state */
+		NVector<unsigned> m_nrngState;
+		nrng_t m_nrng;
 
 		/* In the translation from global neuron indices to device indices,
 		 * there may be 'holes' left in the index space. The valid bitvector
@@ -140,10 +176,10 @@ class Neurons
 		Bitvector m_valid;
 
 		cycle_t m_cycle;
-		mutable cycle_t mf_lastSync;
+		mutable cycle_t m_lastSync;
 
-		bool mf_paramDirty;
-		bool mf_stateDirty;
+		bool m_paramDirty;
+		bool m_stateDirty;
 
 		/*! Load vector of the size of each partition onto the device */
 		void configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron);
@@ -152,7 +188,19 @@ class Neurons
 		 * already cached on the host */
 		void readStateFromDevice() const; // conceptually const, this is just caching
 
-		bool m_rngEnabled;
+		/*! Perform any required synchronisation between host and device data.
+		 * Such synchronisation may be required if the user has requested that
+		 * the data should be updated. The sync function should be called for
+		 * every simulation cycle. */
+		void syncToDevice();
+
+		/*! \see d_partitionSize() */
+		boost::shared_array<unsigned> md_partitionSize;
+
+		/* The update function itself is found in a plugin which is loaded
+		 * dynamically */
+		Plugin m_plugin;
+		cuda_update_neurons_t* m_update_neurons;
 };
 
 

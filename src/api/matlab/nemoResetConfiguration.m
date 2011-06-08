@@ -4,5 +4,5 @@ function nemoResetConfiguration()
 % Synopsis:
 %   nemoResetConfiguration()
 %  
-    nemo_mex(uint32(9));
+    nemo_mex(uint32(10));
 end

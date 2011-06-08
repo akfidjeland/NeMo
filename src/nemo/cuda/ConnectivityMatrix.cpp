@@ -20,13 +20,14 @@
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/fixedpoint.hpp>
 #include <nemo/synapse_indices.hpp>
+#include <nemo/cuda/construction/FcmIndex.hpp>
+#include <nemo/cuda/construction/RCM.hpp>
 
-#include "RSMatrix.hpp"
 #include "exception.hpp"
-#include "WarpAddressTable.hpp"
-#include "connectivityMatrix.cu_h"
+#include "fcm.cu_h"
 #include "kernel.hpp"
 #include "device_memory.hpp"
+#include "parameters.cu_h"
 
 
 namespace nemo {
@@ -34,12 +35,12 @@ namespace nemo {
 
 
 void
-setDelays(const WarpAddressTable& wtable, NVector<uint64_t>* delays)
+setDelays(const construction::FcmIndex& index, NVector<uint64_t>* delays)
 {
 	using namespace boost::tuples;
 
-	for(WarpAddressTable::iterator i = wtable.begin(); i != wtable.end(); ++i) {
-		const WarpAddressTable::key& k = i->first;
+	for(construction::FcmIndex::iterator i = index.begin(); i != index.end(); ++i) {
+		const construction::FcmIndex::index_key& k = i->first;
 		pidx_t p = get<0>(k);
 		nidx_t n = get<1>(k);
 		delay_t delay1 = get<2>(k);
@@ -57,70 +58,66 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const Mapper& mapper) :
 	m_mapper(mapper),
 	m_maxDelay(0),
-	mh_weights(WARP_SIZE, 0),
+	mhf_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
-	m_delays(mapper.partitionCount(), mapper.partitionSize(), true, false),
+	m_delays(1, mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_fractionalBits(conf.fractionalBits()),
 	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
 	//! \todo change synapse_t, perhaps to nidx_dt
-	std::vector<synapse_t> h_targets(WARP_SIZE, f_nullSynapse());
-	WarpAddressTable wtable;
+	std::vector<synapse_t> hf_targets(WARP_SIZE, INVALID_FORWARD_SYNAPSE);
+	construction::FcmIndex fcm_index;
+	construction::RCM h_rcm(conf, net.neuronType());
 
 	bool logging = conf.loggingEnabled();
-
 
 	if(logging) {
 		//! \todo log to correct output stream
 		std::cout << "Using fixed point format Q"
 			<< 31-m_fractionalBits << "." << m_fractionalBits << " for weights\n";
 	}
-	CUDA_SAFE_CALL(fx_setFormat(m_fractionalBits));
 
 	/*! \todo perhaps we should reserve a large chunk of memory for
-	 * h_targets/h_weights in advance? It's hard to know exactly how much is
+	 * hf_targets/h_weights in advance? It's hard to know exactly how much is
 	 * needed, though, due the organisation in warp-sized chunks. */
 
-	size_t totalWarps = createFcm(net, mapper, wtable, h_targets, mh_weights);
+	size_t nextFreeWarp = 1; // leave space for null warp at beginning
+	for(network::synapse_iterator si = net.synapse_begin();
+			si != net.synapse_end(); ++si) {
+		const Synapse& s = *si;
+		setMaxDelay(s);
+		DeviceIdx source = mapper.deviceIdx(s.source);
+		DeviceIdx target = mapper.deviceIdx(s.target());
+		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
+		h_rcm.addSynapse(s, source, target, f_addr);
+		if(!m_writeOnlySynapses) {
+			addAuxillary(s, f_addr);
+		}
+	}
 
 	verifySynapseTerminals(m_cmAux, mapper);
 
-	moveFcmToDevice(totalWarps, h_targets, mh_weights, logging);
-	h_targets.clear();
+	moveFcmToDevice(nextFreeWarp, hf_targets, mhf_weights);
+	hf_targets.clear();
 
-	setDelays(wtable, &m_delays);
+	md_rcm = runtime::RCM(mapper.partitionCount(), h_rcm);
 
-	m_outgoing = Outgoing(mapper.partitionCount(), wtable);
+	setDelays(fcm_index, &m_delays);
+
+	m_outgoing = Outgoing(mapper.partitionCount(), fcm_index);
 	m_gq.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
-
-	moveRcmToDevice();
 
 	if(conf.loggingEnabled()) {
 		printMemoryUsage(std::cout);
-		// wtable.reportWarpSizeHistogram(std::cout);
-	}
-}
-
-
-
-ConnectivityMatrix::~ConnectivityMatrix()
-{
-	for(rcm_t::iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-		delete(i->second);
+		// fcm_index.reportWarpSizeHistogram(std::cout);
 	}
 }
 
 
 
 void
-ConnectivityMatrix::addSynapse(
-		const Synapse& s,
-		const Mapper& mapper,
-		size_t& nextFreeWarp,
-		WarpAddressTable& wtable,
-		std::vector<synapse_t>& h_targets,
-		std::vector<weight_dt>& h_weights)
+ConnectivityMatrix::setMaxDelay(const Synapse& s)
 {
 	using boost::format;
 
@@ -135,11 +132,21 @@ ConnectivityMatrix::addSynapse(
 				str(format("Neuron %u has synapses with delay %ums. The CUDA backend supports a maximum of %ums")
 						% s.source % s.delay % MAX_DELAY));
 	}
+}
 
-	DeviceIdx d_target = mapper.deviceIdx(s.target());
-	DeviceIdx d_source = mapper.deviceIdx(s.source);
 
-	SynapseAddress addr = wtable.addSynapse(d_source, d_target.partition, s.delay, nextFreeWarp);
+
+size_t
+ConnectivityMatrix::addForward(
+		const Synapse& s,
+		const DeviceIdx& d_source,
+		const DeviceIdx& d_target,
+		size_t& nextFreeWarp,
+		construction::FcmIndex& index,
+		std::vector<synapse_t>& h_targets,
+		std::vector<weight_dt>& h_weights)
+{
+	SynapseAddress addr = index.addSynapse(d_source, d_target.partition, s.delay, nextFreeWarp);
 
 	if(addr.synapse == 0 && addr.row == nextFreeWarp) {
 		nextFreeWarp += 1;
@@ -147,7 +154,7 @@ ConnectivityMatrix::addSynapse(
 		 * allocation scheme could potentially result in a
 		 * large number of reallocations, so we might be better
 		 * off allocating larger chunks here */
-		h_targets.resize(nextFreeWarp * WARP_SIZE, f_nullSynapse());
+		h_targets.resize(nextFreeWarp * WARP_SIZE, INVALID_FORWARD_SYNAPSE);
 		h_weights.resize(nextFreeWarp * WARP_SIZE, 0);
 	}
 
@@ -157,39 +164,7 @@ ConnectivityMatrix::addSynapse(
 	assert(d_target.neuron < MAX_PARTITION_SIZE);
 	h_targets.at(f_addr) = d_target.neuron;
 	h_weights.at(f_addr) = fx_toFix(s.weight(), m_fractionalBits);
-
-	if(!m_writeOnlySynapses) {
-		addAuxTerminal(s, f_addr);
-	}
-
-	/*! \todo simplify RCM structure, using a format similar to the FCM */
-	//! \todo only need to set this if stdp is enabled
-	if(s.plastic()) {
-		rcm_t& rcm = m_rsynapses;
-		if(rcm.find(d_target.partition) == rcm.end()) {
-			rcm[d_target.partition] = new RSMatrix(mapper.partitionSize());
-		}
-		rcm[d_target.partition]->addSynapse(d_source, d_target.neuron, s.delay, f_addr);
-	}
-}
-
-
-
-size_t
-ConnectivityMatrix::createFcm(
-		const network::Generator& net,
-		const Mapper& mapper,
-		WarpAddressTable& wtable,
-		std::vector<synapse_t>& h_targets,
-		std::vector<weight_dt>& h_weights)
-{
-	size_t nextFreeWarp = 1; // leave space for null warp at beginning
-
-	for(network::synapse_iterator s = net.synapse_begin();
-			s != net.synapse_end(); ++s) {
-		addSynapse(*s, mapper, nextFreeWarp, wtable, h_targets, h_weights);
-	}
-	return nextFreeWarp;
+	return f_addr;
 }
 
 
@@ -236,8 +211,7 @@ ConnectivityMatrix::verifySynapseTerminals(const aux_map& cm, const Mapper& mapp
 void
 ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 		const std::vector<synapse_t>& h_targets,
-		const std::vector<weight_dt>& h_weights,
-		bool logging)
+		const std::vector<weight_dt>& h_weights)
 {
 	md_fcmPlaneSize = totalWarps * WARP_SIZE;
 	size_t bytes = md_fcmPlaneSize * 2 * sizeof(synapse_t);
@@ -247,8 +221,6 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 	md_fcm = boost::shared_ptr<synapse_t>(static_cast<synapse_t*>(d_fcm), d_free);
 	md_fcmAllocated = bytes;
 
-	CUDA_SAFE_CALL(setFcmPlaneSize(md_fcmPlaneSize));
-
 	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_ADDRESS, h_targets, md_fcmPlaneSize);
 	memcpyToDevice(md_fcm.get() + md_fcmPlaneSize * FCM_WEIGHT,
 			reinterpret_cast<const synapse_t*>(&h_weights[0]), md_fcmPlaneSize);
@@ -257,36 +229,15 @@ ConnectivityMatrix::moveFcmToDevice(size_t totalWarps,
 
 
 void
-ConnectivityMatrix::moveRcmToDevice()
-{
-	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-		i->second->moveToDevice();
-	}
-
-	std::vector<size_t> rpitch = r_partitionPitch();
-
-	CUDA_SAFE_CALL(
-		configureReverseAddressing(
-				&rpitch[0],
-				&r_partitionAddress()[0],
-				&r_partitionStdp()[0],
-				&r_partitionFAddress()[0],
-				rpitch.size())
-	);
-}
-
-
-void
 ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 {
 	const size_t MEGA = 1<<20;
 	out << "Memory usage on device:\n";
 	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
-	out << "\treverse matrix: " << (d_allocatedRCM() / MEGA) << "MB (" << m_rsynapses.size() << " groups)\n";
+	out << "\treverse matrix: " << (md_rcm.d_allocated() / MEGA) << "MB\n";
 	out << "\tglobal queue: " << (m_gq.allocated() / MEGA) << "MB\n";
 	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
-
 
 
 
@@ -296,7 +247,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
  * are required to form a contigous range, so every element should be assigned
  * exactly once. */
 void
-ConnectivityMatrix::addAuxTerminal(const Synapse& s, size_t addr)
+ConnectivityMatrix::addAuxillary(const Synapse& s, size_t addr)
 {
 	id32_t id = s.id();
 	aux_row& row= m_cmAux[s.source];
@@ -351,14 +302,14 @@ ConnectivityMatrix::getSynapsesFrom(unsigned source)
 const std::vector<weight_dt>&
 ConnectivityMatrix::syncWeights(cycle_t cycle) const
 {
-	if(cycle != m_lastWeightSync && !mh_weights.empty()) {
+	if(cycle != m_lastWeightSync && !mhf_weights.empty()) {
 		//! \todo refine this by only doing the minimal amount of copying
-		memcpyFromDevice(reinterpret_cast<synapse_t*>(&mh_weights[0]),
+		memcpyFromDevice(reinterpret_cast<synapse_t*>(&mhf_weights[0]),
 					md_fcm.get() + FCM_WEIGHT * md_fcmPlaneSize,
 					md_fcmPlaneSize);
 		m_lastWeightSync = cycle;
 	}
-	return mh_weights;
+	return mhf_weights;
 }
 
 
@@ -417,21 +368,7 @@ ConnectivityMatrix::getPlastic(const synapse_id& id) const
 void
 ConnectivityMatrix::clearStdpAccumulator()
 {
-	for(rcm_t::const_iterator i = m_rsynapses.begin(); i != m_rsynapses.end(); ++i) {
-		i->second->clearStdpAccumulator();
-	}
-}
-
-
-size_t
-ConnectivityMatrix::d_allocatedRCM() const
-{
-	size_t bytes = 0;
-	for(std::map<pidx_t, RSMatrix*>::const_iterator i = m_rsynapses.begin();
-			i != m_rsynapses.end(); ++i) {
-		bytes += i->second->d_allocated();
-	}
-	return bytes;
+	md_rcm.clearAccumulator();
 }
 
 
@@ -440,59 +377,19 @@ size_t
 ConnectivityMatrix::d_allocated() const
 {
 	return md_fcmAllocated
-		+ d_allocatedRCM()
+		+ md_rcm.d_allocated()
 		+ m_gq.allocated()
 		+ m_outgoing.allocated();
 }
 
 
 
-/* Map function over vector of reverse synapse matrix */
-template<typename T, class S>
-std::vector<T>
-mapDevicePointer(const std::map<pidx_t, S*>& vec, std::const_mem_fun_t<T, S> fun)
+void
+ConnectivityMatrix::setParameters(param_t* params) const
 {
-	/* Always fill this in with zeros. */
-	std::vector<T> ret(MAX_PARTITION_COUNT, T(0));
-	for(typename std::map<pidx_t, S*>::const_iterator i = vec.begin();
-			i != vec.end(); ++i) {
-		ret.at(i->first) = fun(i->second);
-	}
-	return ret;
+	m_outgoing.setParameters(params);
+	params->fcmPlaneSize = md_fcmPlaneSize;
 }
-
-
-
-std::vector<size_t>
-ConnectivityMatrix::r_partitionPitch() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::pitch));
-}
-
-
-
-std::vector<uint32_t*>
-ConnectivityMatrix::r_partitionAddress() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_address));
-}
-
-
-
-std::vector<weight_dt*>
-ConnectivityMatrix::r_partitionStdp() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_stdp));
-}
-
-
-
-std::vector<uint32_t*>
-ConnectivityMatrix::r_partitionFAddress() const
-{
-	return mapDevicePointer(m_rsynapses, std::mem_fun(&RSMatrix::d_faddress));
-}
-
 
 
 	} // end namespace cuda

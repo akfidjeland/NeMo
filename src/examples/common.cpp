@@ -10,9 +10,9 @@ typedef boost::mt19937 rng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
 
-void
+long
 benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
-				boost::program_options::variables_map& vm)
+				boost::program_options::variables_map& vm, unsigned seconds)
 {
 
 	unsigned stdp = vm["stdp"].as<unsigned>();
@@ -20,17 +20,17 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	bool verbose = !csv;
 	bool provideFiringStimulus = vm.count("fstim") != 0;
 	bool provideCurrentStimulus = vm.count("istim") != 0;
+	bool vprobe = vm.count("vprobe") != 0;
 
 	const unsigned MS_PER_SECOND = 1000;
 
 	rng_t rng;
 	uirng_t randomNeuron(rng, boost::uniform_int<>(0, n-1));
 
-#ifdef NEMO_TIMING_ENABLED
 	sim->resetTimer();
-#endif
 
 	unsigned t = 0;
+	float v = 0;
 
 	/* Run for a few seconds to warm up the network */
 	if(verbose)
@@ -43,13 +43,9 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 			sim->applyStdp(1.0);
 		}
 	}
-#ifdef NEMO_TIMING_ENABLED
 	if(verbose)
 		std::cout << "[" << sim->elapsedWallclock() << "ms elapsed]";
 	sim->resetTimer();
-#endif
-
-	unsigned seconds = 10;
 
 	if(verbose) {
 		std::cout << std::endl;
@@ -77,39 +73,38 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 
 			const std::vector<unsigned>& fired = sim->step(firingStimulus, currentStimulus);
 			nfired += fired.size();
+
+			if(vprobe) {
+				/* Just read a single value. The whole neuron population will be synced */
+				float v = sim->getMembranePotential(0);
+			}
 		}
 		if(stdp && t % stdp == 0) {
 			sim->applyStdp(1.0);
 		}
 	}
-#ifdef NEMO_TIMING_ENABLED
 	long int elapsedData = sim->elapsedWallclock();
 	if(verbose)
 		std::cout << "[" << elapsedData << "ms elapsed]";
-#endif
 	if(verbose)
 		std::cout << std::endl;
 
 	unsigned long narrivals = nfired * m;
 	double f = (double(nfired) / n) / double(seconds);
 
-#ifdef NEMO_TIMING_ENABLED
 	/* Throughput is measured in terms of the number of spike arrivals per
 	 * wall-clock second */
 	unsigned long throughput = MS_PER_SECOND * narrivals / elapsedData;
 	double speedup = double(seconds*MS_PER_SECOND)/elapsedData;
-#endif
+	double updates = double(MS_PER_SECOND*sim->elapsedSimulation())/elapsedData;
 
 	if(verbose) {
 		std::cout << "Total firings: " << nfired << std::endl;
 		std::cout << "Avg. firing rate: " << f << "Hz\n";
 		std::cout << "Spike arrivals: " << narrivals << std::endl;
-#ifdef NEMO_TIMING_ENABLED
-		std::cout << "Performace both with and without PCI traffic overheads:\n";
 		std::cout << "Approx. throughput: " << throughput/1000000
 				<< "Ma/s (million spike arrivals per second)\n";
 		std::cout << "Speedup wrt real-time: " << speedup << std::endl;
-#endif
 	}
 
 	if(csv) {
@@ -121,6 +116,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 		std::cout << sep << narrivals << sep << f << sep << speedup
 			<< sep << throughput/1000000 << std::endl;
 	}
+
+	return elapsedData;
 }
 
 
@@ -218,33 +215,15 @@ commonOptions()
 		("cuda", "Use the CUDA backend (default device)")
 		("verbose,v", po::value<unsigned>()->default_value(0), "Set verbosity level")
 		("output-file,o", po::value<std::string>(), "output file for firing data")
-		("list-devices", "print the available simulation devices")
 		("benchmark", "report performance results instead of returning firing")
 		("csv", "when benchmarking, output a compact CSV format with the following fields: neurons, synapses, simulation time (ms), wallclock time (ms), STDP enabled, fired neurons, PSPs generated, average firing rate, speedup wrt real-time, throughput (million PSPs/second")
 		("fstim", "provide (very weak) firing stimulus, for benchmarking purposes")
 		("istim", "provide (very weak) current stimulus, for benchmarking purposes")
+		("vprobe", "probe membrane potential every cycle")
 	;
 
 	return desc;
 }
-
-
-
-void
-listCudaDevices()
-{
-	unsigned dcount  = nemo::cudaDeviceCount();
-
-	if(dcount == 0) {
-		std::cout << "No CUDA devices available\n";
-		return;
-	}
-
-	for(unsigned d = 0; d < dcount; ++d) {
-		std::cout << d << ": " << nemo::cudaDeviceDescription(d) << std::endl;
-	}
-}
-
 
 
 
@@ -262,11 +241,6 @@ processOptions(int argc, char* argv[],
 		std::cout << "Usage:\n\t" << argv[0] << " [OPTIONS]\n\n";
 		std::cout << desc << std::endl;
 		exit(1);
-	}
-
-	if(vm.count("list-devices")) {
-		listCudaDevices();
-		exit(0);
 	}
 
 	return vm;

@@ -3,7 +3,7 @@
 
 /* Copyright 2010 Imperial College London
  *
- * This file is part of nemo.
+ * This file is part of NeMo.
  *
  * This software is licenced for non-commercial academic use under the GNU
  * General Public Licence (GPL). You should have received a copy of this
@@ -20,8 +20,8 @@
 
 #include <nemo/config.h>
 #include "types.hpp"
-#include "Mapper.hpp"
-#include "STDP.hpp"
+#include "RandomMapper.hpp"
+#include "StdpProcess.hpp"
 #include "OutgoingDelays.hpp"
 
 #define ASSUMED_CACHE_LINE_SIZE 64
@@ -81,7 +81,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 {
 	public:
 
-		typedef Mapper<nidx_t, nidx_t> mapper_t;
+		typedef RandomMapper<nidx_t> mapper_t;
 
 		ConnectivityMatrix(const ConfigurationImpl& conf, const mapper_t&);
 

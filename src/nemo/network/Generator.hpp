@@ -1,8 +1,10 @@
 #ifndef NEMO_NETWORK_GENERATOR_HPP
 #define NEMO_NETWORK_GENERATOR_HPP
 
+#include <nemo/config.h>
 #include <nemo/types.hpp>
 #include <nemo/network/iterator.hpp>
+#include <nemo/NeuronType.hpp>
 
 
 namespace nemo {
@@ -11,13 +13,13 @@ namespace nemo {
 /* A network generator is simply a class which can produce a sequence of
  * neurons and a sequence of synapses. Network generators are expected to
  * provide all neurons first, then all synapses. */
-class Generator
+class NEMO_BASE_DLL_PUBLIC Generator
 {
 	public : 
 
 		virtual ~Generator() { }
 
-		typedef std::pair<nidx_t, Neuron<float> > neuron;
+		typedef std::pair<nidx_t, Neuron> neuron;
 		typedef Synapse synapse;
 		
 		virtual neuron_iterator neuron_begin() const = 0;
@@ -30,6 +32,9 @@ class Generator
 
 		virtual unsigned minNeuronIndex() const = 0;
 		virtual unsigned maxNeuronIndex() const = 0;
+
+		/*! \return the \i unique neuron type found in this network */
+		virtual const class NeuronType& neuronType() const = 0;
 };
 
 

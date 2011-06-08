@@ -10,5 +10,6 @@
  * 		function in 'create' mode.
  */ 	
 void runTorus(bool creating);
+void runKuramoto(bool creating);
 
 #endif

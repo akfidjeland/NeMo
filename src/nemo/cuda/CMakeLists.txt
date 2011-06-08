@@ -1,3 +1,5 @@
+SUBDIRS(plugins)
+
 ##############################################################################
 # CUDA configuration
 
@@ -9,17 +11,29 @@ IF(CUDA_BUILD_EMULATION)
 	ADD_DEFINITIONS(-D__DEVICE_EMULATION__)
 ENDIF()
 
+SET(NEMO_CUDA_DEVICE_MAJOR "1"
+	CACHE STRING "Major device generation number for CUDA code generation. Default=1")
+SET(NEMO_CUDA_DEVICE_MINOR "2"
+	CACHE STRING "Minor device generation number for CUDA code generation. Default=2")
+
+IF(NEMO_CUDA_DEVICE_MAJOR EQUAL 1 AND NEMO_CUDA_DEVICE_MINOR LESS 2)
+	# The 1.2 minimum is because of the need for shared memory atomics
+	MESSAGE(FATAL_ERROR "Minimum CUDA device generation is 1.2")
+ENDIF()
+
+LIST(APPEND CUDA_NVCC_FLAGS "-arch=sm_${NEMO_CUDA_DEVICE_MAJOR}${NEMO_CUDA_DEVICE_MINOR}")
+
+
 IF(NEMO_CUDA_DEBUG_TRACE)
-	IF(NOT CUDA_BUILD_EMULATION)
+	IF(NOT CUDA_BUILD_EMULATION AND NEMO_CUDA_DEVICE_MAJOR LESS 2)
 		IF(HAVE_CUPRINTF)
 			CUDA_INCLUDE_DIRECTORIES(${CUPRINTF_INCLUDE_DIR})
 			INCLUDE_DIRECTORIES(${CUPRINTF_INCLUDE_DIR})
 		ELSE()
 			MESSAGE(WARNING "Cannot provide debugging trace for CUDA backend. Either device emulation must be enabled (CUDA_BUILD_EMULATION) or cuPrintf must be available")
 		ENDIF(HAVE_CUPRINTF)
-	ENDIF(NOT CUDA_BUILD_EMULATION)
+	ENDIF(NOT CUDA_BUILD_EMULATION AND NEMO_CUDA_DEVICE_MAJOR LESS 2)
 ENDIF(NEMO_CUDA_DEBUG_TRACE)
-
 
 
 
@@ -47,11 +61,6 @@ INCLUDE_DIRECTORIES(
   )
 
 
-# We need shared memory atomics
-# TODO: we should generate separate version for later devices
-LIST(APPEND CUDA_NVCC_FLAGS "-arch=sm_12")
-
-
 ##############################################################################
 SET(BUILD_SHARED_LIBS TRUE)
 
@@ -67,10 +76,10 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	GlobalQueue.cpp
 	LocalQueue.cpp
 	Neurons.cpp
-	Mapper.cpp
 	Outgoing.cpp
-	RSMatrix.cpp
-	WarpAddressTable.cpp
+	construction/FcmIndex.cpp
+	construction/RCM.cpp
+	runtime/RCM.cpp
 	device_memory.cpp
 	devices.cpp
 	log.cpp

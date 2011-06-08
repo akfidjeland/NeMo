@@ -17,6 +17,4 @@ typedef uint32_t synapse_t;
  * poorer shared memory access patterns */
 typedef uint32_t nidx_dt;
 
-typedef uint32_t cycle_counter_t;
-
 #endif

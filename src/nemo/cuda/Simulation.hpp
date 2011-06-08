@@ -15,7 +15,6 @@
 #include <boost/optional.hpp>
 
 #include <nemo/config.h>
-#include <nemo/STDP.hpp>
 #include <nemo/Timer.hpp>
 #include <nemo/internal_types.h>
 #include <nemo/ConfigurationImpl.hpp>
@@ -29,6 +28,8 @@
 #include "FiringBuffer.hpp"
 #include "Neurons.hpp"
 #include "LocalQueue.hpp"
+
+#include "parameters.cu_h"
 
 namespace nemo {
 
@@ -126,7 +127,7 @@ namespace nemo {
  *
  * - neuron data (\ref Neurons)
  * - forward connectivity data (\ref nemo::cuda::ConnectivityMatrix, \ref nemo::cuda::Outgoing)
- * - reverse connectivity data (\ref RSMatrix)
+ * - reverse connectivity data (\ref nemo::cuda::runtime::RCM)
  * - runtime queues (\ref nemo::cuda::LocalQueue, \ref nemo::cuda::GlobalQueue)
  *
  * The forward connectivity data and runtime queues are used for \ref
@@ -241,9 +242,7 @@ class Simulation : public nemo::SimulationBackend
 		void applyStdp(float reward);
 
 		/*! \copydoc nemo::Simulation::setNeuron */
-		void setNeuron(unsigned idx,
-				float a, float b, float c, float d,
-				float u, float v, float sigma);
+		void setNeuron(unsigned idx, unsigned nargs, const float args[]);
 
 		/*! \copydoc nemo::Simulation::setNeuronState */
 		void setNeuronState(unsigned neuron, unsigned var, float val);
@@ -279,9 +278,6 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::Simulation::resetTimer */
 		void resetTimer();
 
-		/*! \copydoc nemo::SimulationBackend::mapper */
-		virtual Mapper& mapper() { return m_mapper; }
-
 	private :
 
 		/* Use factory method for generating objects */
@@ -307,7 +303,7 @@ class Simulation : public nemo::SimulationBackend
 
 		LocalQueue m_lq;
 
-		NVector<uint64_t, 2> m_recentFiring;
+		NVector<uint64_t> m_recentFiring;
 
 		FiringStimulus m_firingStimulus;
 
@@ -323,12 +319,10 @@ class Simulation : public nemo::SimulationBackend
 		NVector<nidx_dt> m_fired;
 		boost::shared_array<unsigned> md_nFired;
 
+		boost::shared_ptr<param_t> md_params;
+		void setParameters();
+
 		DeviceAssertions m_deviceAssertions;
-
-		void setPitch();
-
-		size_t m_pitch32;
-		size_t m_pitch64;
 
 		boost::optional<StdpFunction> m_stdp;
 

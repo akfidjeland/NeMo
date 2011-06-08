@@ -1,3 +1,4 @@
+nemoAddNeuronType.m
 nemoAddNeuron.m
 nemoAddSynapse.m
 nemoNeuronCount.m

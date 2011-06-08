@@ -4,8 +4,8 @@ PROJECT(NeMo)
 
 SET(CPACK_PACKAGE_NAME nemo)
 SET(CPACK_PACKAGE_VERSION_MAJOR 0)
-SET(CPACK_PACKAGE_VERSION_MINOR 6)
-SET(CPACK_PACKAGE_VERSION_PATCH 10)
+SET(CPACK_PACKAGE_VERSION_MINOR 7)
+SET(CPACK_PACKAGE_VERSION_PATCH 0)
 SET(CPACK_PACKAGE_CONTACT "Andreas Fidjeland <andreas.fidjeland@imperial.ac.uk>")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_SOURCE_DIR}/description.txt)
 
@@ -60,29 +60,28 @@ ENDIF(APPLE)
 SET(CPACK_SOURCE_GENERATOR "TGZ" "ZIP")
 
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${NEMO_VERSION}")
+
+# By default cpack grabs everything in the source tree. However, the local
+# source tree may contain user-specific files which should not be included.
+# A list of such files (or patterns) can be specified in the file
+# CMake/cpack.ignore
+IF(EXISTS CMake/cpack.ignore)
+	FILE(READ CMake/cpack.ignore USER_CPACK_SOURCE_IGNORE_FILES)
+	SET(CPACK_SOURCE_IGNORE_FILES ${USER_PACK_SOURCE_IGNORE_FILES} ${CPACK_SOURCE_IGNORE_FILES})
+ENDIF(EXISTS CMake/cpack.ignore)
+
 SET(CPACK_SOURCE_IGNORE_FILES
 	"\\\\.gitignore"
 	".git"
-	".later"
-	".*swp$"
-	release_notes
 	build
-	src/build
 	src/mpi
 	src/api/autogen
 	src/api/matlab/sources
-	src/api/matlab/examples
 	src/api/python/utils
 	src/gui
-	src/nemo/remote2
-	doc/wiki
-	doc/manual
-	util
-	benchmarking
-	dsl
-	README.in # only include the generated file
+	doc/manual/src
+	doc/manual/CMakeLists.txt
 	ReadMe.txt # for PackageMaker only
-	"tmp.*"
 	${CPACK_SOURCE_IGNORE_FILES})
 
 INCLUDE(CPack)

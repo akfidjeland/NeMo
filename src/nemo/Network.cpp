@@ -1,11 +1,22 @@
+/* Copyright 2010 Imperial College London
+ *
+ * This file is part of NeMo.
+ *
+ * This software is licenced for non-commercial academic use under the GNU
+ * General Public Licence (GPL). You should have received a copy of this
+ * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "Network.hpp"
+
 #include "NetworkImpl.hpp"
 #include "synapse_indices.hpp"
 
 namespace nemo {
 
 Network::Network() :
-	m_impl(new network::NetworkImpl())
+	m_impl(new network::NetworkImpl()),
+	iz_type(~0U)
 {
 	;
 }
@@ -17,15 +28,39 @@ Network::~Network()
 }
 
 
+unsigned
+Network::addNeuronType(const std::string& name)
+{
+	return m_impl->addNeuronType(name);
+}
+
+
+void
+Network::addNeuron(unsigned type, unsigned idx,
+		unsigned nargs, const float args[])
+{
+	m_impl->addNeuron(type, idx, nargs, args);
+}
+
+
 void
 Network::addNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	//! \todo could use internal network type here
-	m_impl->addNeuron(idx, a, b, c, d, u, v, sigma);
+	if(iz_type == ~0U) {
+		iz_type = m_impl->addNeuronType("Izhikevich");
+	}
+	float args[7] = {a, b, c, d, sigma, u, v};
+	m_impl->addNeuron(iz_type, idx, 7, args);
 }
 
+
+void
+Network::setNeuron(unsigned idx, unsigned nargs, const float args[])
+{
+	m_impl->setNeuron(idx, nargs, args);
+}
 
 
 void
@@ -33,7 +68,8 @@ Network::setNeuron(unsigned idx,
 		float a, float b, float c, float d,
 		float u, float v, float sigma)
 {
-	m_impl->setNeuron(idx, a, b, c, d, u, v, sigma);
+	float args[7] = {a, b, c, d, sigma, u, v};
+	m_impl->setNeuron(idx, 7, args);
 }
 
 

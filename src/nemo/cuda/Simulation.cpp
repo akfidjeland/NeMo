@@ -32,24 +32,49 @@ namespace nemo {
 	namespace cuda {
 
 
+/* Map global neuron indices to compact local indices */
+Mapper
+mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
+{
+	using namespace nemo::network;
+
+	Mapper mapper(partitionSize);
+
+	pidx_t pidx = 0;
+	nidx_t nidx = 0;
+
+	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+			i != i_end; ++i) {
+		unsigned g_idx = i->first;
+		DeviceIdx l_idx(pidx, nidx);
+		mapper.insert(g_idx, l_idx);
+		nidx++;
+		if(nidx == partitionSize) {
+			nidx = 0;
+			pidx++;
+		}
+	}
+	return mapper;
+}
+
+
+
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
-	m_mapper(net, conf.cudaPartitionSize()),
+	m_mapper(mapCompact(net, conf.cudaPartitionSize())),
 	m_conf(conf),
 	m_neurons(net, m_mapper),
 	m_cm(net, conf, m_mapper),
 	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
-	m_recentFiring(m_mapper.partitionCount(), m_mapper.partitionSize(), false),
+	m_recentFiring(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingStimulus(m_mapper.partitionCount()),
-	m_currentStimulus(m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
-	m_current(m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
+	m_currentStimulus(1, m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
+	m_current(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingBuffer(m_mapper),
-	m_fired(m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
-	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), "Fired count")),
+	m_fired(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
+	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), true, "Fired count")),
 	m_deviceAssertions(m_mapper.partitionCount()),
-	m_pitch32(0),
-	m_pitch64(0),
 	m_stdp(conf.stdpFunction()),
 	md_istim(NULL),
 	m_streamCompute(0),
@@ -58,7 +83,7 @@ Simulation::Simulation(
 	if(m_stdp) {
 		configureStdp();
 	}
-	setPitch();
+	setParameters();
 	resetTimer();
 
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
@@ -191,18 +216,28 @@ Simulation::d_allocated() const
 /* Set common pitch and check that all relevant arrays have the same pitch. The
  * kernel uses a single pitch for all 32-bit data */ 
 void
-Simulation::setPitch()
+Simulation::setParameters()
 {
-	size_t pitch1 = m_firingStimulus.wordPitch();
-	m_pitch32 = m_neurons.wordPitch32();
-	m_pitch64 = m_recentFiring.wordPitch();
-	checkPitch(m_pitch32, m_currentStimulus.wordPitch());
-	checkPitch(m_pitch64, m_cm.delayBits().wordPitch());
-	checkPitch(pitch1, m_firingBuffer.wordPitch());
-	checkPitch(pitch1, m_neurons.wordPitch1());
-	CUDA_SAFE_CALL(nv_setPitch32(m_pitch32));
-	CUDA_SAFE_CALL(nv_setPitch64(m_pitch64));
-	CUDA_SAFE_CALL(bv_setPitch(pitch1));
+	param_t params;
+
+	params.pitch1 = m_firingStimulus.wordPitch();
+	params.pitch32 = m_neurons.wordPitch32();
+	params.pitch64 = m_recentFiring.wordPitch();
+	checkPitch(params.pitch32, m_currentStimulus.wordPitch());
+	checkPitch(params.pitch64, m_cm.delayBits().wordPitch());
+	checkPitch(params.pitch1, m_firingBuffer.wordPitch());
+	checkPitch(params.pitch1, m_neurons.wordPitch1());
+
+	unsigned fbits = m_cm.fractionalBits();
+	params.fixedPointScale = 1 << fbits;
+	params.fixedPointFractionalBits = fbits;
+
+	m_cm.setParameters(&params);
+
+	void* d_ptr;
+	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
+	md_params = boost::shared_ptr<param_t>(static_cast<param_t*>(d_ptr), d_free);
+	memcpyBytesToDevice(d_ptr, &params, sizeof(param_t));
 }
 
 
@@ -231,14 +266,14 @@ Simulation::runKernel(cudaError_t status)
 void
 Simulation::prefire()
 {
-	m_timer.step();
-	m_neurons.step(m_timer.elapsedSimulation());
 	initLog();
 
 	runKernel(::gather(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
+			m_mapper.partitionCount(),
+			m_neurons.d_partitionSize(),
+			md_params.get(),
 			m_current.deviceData(),
 			m_cm.d_fcm(),
 			m_cm.d_gqData(),
@@ -251,21 +286,17 @@ Simulation::fire()
 {
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_firingStimulusDone));
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_currentStimulusDone));
-	runKernel(::fire(
+	runKernel(m_neurons.update(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
-			m_neurons.rngEnabled(),
-			m_neurons.df_parameters(),
-			m_neurons.df_state(),
-			m_neurons.du_state(),
-			m_neurons.d_valid(),
+			md_params.get(),
 			m_firingStimulus.d_buffer(),
 			md_istim,
 			m_current.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
-			m_fired.deviceData()));
+			m_fired.deviceData(),
+			m_cm.d_rcm()));
 	cudaEventRecord(m_eventFireDone, m_streamCompute);
 }
 
@@ -276,8 +307,9 @@ Simulation::postfire()
 {
 	runKernel(::scatter(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
+			m_mapper.partitionCount(),
+			md_params.get(),
 			// firing buffers
 			md_nFired.get(),
 			m_fired.deviceData(),
@@ -294,8 +326,11 @@ Simulation::postfire()
 	if(m_stdp) {
 		runKernel(::updateStdp(
 			m_streamCompute,
-			m_mapper.partitionCount(),
 			m_timer.elapsedSimulation(),
+			m_mapper.partitionCount(),
+			m_neurons.d_partitionSize(),
+			md_params.get(),
+			m_cm.d_rcm(),
 			m_recentFiring.deviceData(),
 			m_firingBuffer.d_buffer(),
 			md_nFired.get(),
@@ -312,6 +347,8 @@ Simulation::postfire()
 
 	flushLog();
 	endLog();
+
+	m_timer.step();
 }
 
 
@@ -331,10 +368,15 @@ Simulation::applyStdp(float reward)
 		::applyStdp(
 				m_streamCompute,
 				m_mapper.partitionCount(),
+				m_neurons.d_partitionSize(),
 				m_cm.fractionalBits(),
+				md_params.get(),
 				m_cm.d_fcm(),
-				m_stdp->maxWeight(),
-				m_stdp->minWeight(),
+				m_cm.d_rcm(),
+				m_stdp->minExcitatoryWeight(),
+				m_stdp->maxExcitatoryWeight(),
+				m_stdp->minInhibitoryWeight(),
+				m_stdp->maxInhibitoryWeight(),
 				reward);
 		flushLog();
 		endLog();
@@ -346,18 +388,9 @@ Simulation::applyStdp(float reward)
 
 
 void
-Simulation::setNeuron(unsigned g_idx,
-			float a, float b, float c, float d,
-			float u, float v, float sigma)
+Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 {
-	DeviceIdx d_idx = m_mapper.deviceIdx(g_idx);
-	m_neurons.setParameter(d_idx, PARAM_A, a);
-	m_neurons.setParameter(d_idx, PARAM_B, b);
-	m_neurons.setParameter(d_idx, PARAM_C, c);
-	m_neurons.setParameter(d_idx, PARAM_D, d);
-	m_neurons.setParameter(d_idx, PARAM_SIGMA, sigma);
-	m_neurons.setState(d_idx, STATE_V, v);
-	m_neurons.setState(d_idx, STATE_U, u);
+	m_neurons.setNeuron(m_mapper.deviceIdx(g_idx), nargs, args);
 }
 
 
@@ -413,7 +446,7 @@ Simulation::readFiring()
 void
 Simulation::setNeuronState(unsigned neuron, unsigned var, float val)
 {
-	return m_neurons.setState(m_mapper.existingDeviceIdx(neuron), var, val);
+	return m_neurons.setState(m_mapper.deviceIdx(neuron), var, val);
 }
 
 
@@ -421,7 +454,7 @@ Simulation::setNeuronState(unsigned neuron, unsigned var, float val)
 void
 Simulation::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
 {
-	return m_neurons.setParameter(m_mapper.existingDeviceIdx(neuron), parameter, val);
+	return m_neurons.setParameter(m_mapper.deviceIdx(neuron), parameter, val);
 }
 
 
@@ -429,7 +462,7 @@ Simulation::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
 float
 Simulation::getNeuronState(unsigned neuron, unsigned var) const
 {
-	return m_neurons.getState(m_mapper.existingDeviceIdx(neuron), var);
+	return m_neurons.getState(m_mapper.deviceIdx(neuron), var);
 }
 
 
@@ -437,7 +470,7 @@ Simulation::getNeuronState(unsigned neuron, unsigned var) const
 float
 Simulation::getNeuronParameter(unsigned neuron, unsigned parameter) const
 {
-	return m_neurons.getParameter(m_mapper.existingDeviceIdx(neuron), parameter);
+	return m_neurons.getParameter(m_mapper.deviceIdx(neuron), parameter);
 }
 
 
@@ -445,7 +478,7 @@ Simulation::getNeuronParameter(unsigned neuron, unsigned parameter) const
 float
 Simulation::getMembranePotential(unsigned neuron) const
 {
-	return m_neurons.getState(m_mapper.deviceIdx(neuron), STATE_V);
+	return m_neurons.getMembranePotential(m_mapper.deviceIdx(neuron));
 }
 
 
