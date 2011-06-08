@@ -3,3 +3,4 @@
 api;
 regression(false, false);
 regression(false, true);
+vectorized;
