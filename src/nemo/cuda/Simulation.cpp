@@ -32,7 +32,13 @@ namespace nemo {
 	namespace cuda {
 
 
-/* Map global neuron indices to compact local indices */
+/*! Map global neuron indices to compact local indices
+ *
+ * Multiple neuron types are mapped such that
+ *
+ * 1. no partition contains more than one neuron type
+ * 2. all neurons of a single type are found in a contigous range of partitions
+ */
 Mapper
 mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 {
@@ -41,18 +47,25 @@ mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 	Mapper mapper(partitionSize);
 
 	pidx_t pidx = 0;
-	nidx_t nidx = 0;
 
-	//! \todo deal with multiple neuron types here
-	unsigned type_id = 0;
-	for(neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
-			i != i_end; ++i) {
-		unsigned g_idx = i->first;
-		DeviceIdx l_idx(pidx, nidx);
-		mapper.insert(g_idx, l_idx);
-		nidx++;
-		if(nidx == partitionSize) {
-			nidx = 0;
+	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+
+		nidx_t nidx = 0;
+
+		for(neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
+				i != i_end; ++i) {
+			unsigned g_idx = i->first;
+			DeviceIdx l_idx(pidx, nidx);
+			mapper.insert(g_idx, l_idx);
+			nidx++;
+			if(nidx == partitionSize) {
+				nidx = 0;
+				pidx++;
+			}
+		}
+
+		/* neuron types should never cross partition boundaries */
+		if(nidx != 0) {
 			pidx++;
 		}
 	}
