@@ -109,14 +109,20 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		unsigned neuronCount() const;
 
-		neuron_iterator neuron_begin() const;
-		neuron_iterator neuron_end() const;
+		/*! \copydoc nemo::Network::Generator::neuronTypeCount */
+		unsigned neuronTypeCount() const;
+
+		/*! \copydoc nemo::Network::Generator::neuron_begin */
+		neuron_iterator neuron_begin(unsigned type) const;
+
+		/*! \copydoc nemo::Network::Generator::neuron_end */
+		neuron_iterator neuron_end(unsigned type) const;
 
 		synapse_iterator synapse_begin() const;
 		synapse_iterator synapse_end() const;
 
 		/*! \copydoc nemo::network::Generator::neuronType */
-		const NeuronType& neuronType() const;
+		const NeuronType& neuronType(unsigned) const;
 
 	private :
 

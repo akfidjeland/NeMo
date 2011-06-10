@@ -48,16 +48,13 @@ NetworkImpl::addNeuronType(const std::string& name)
 
 
 const NeuronType&
-NetworkImpl::neuronType() const
+NetworkImpl::neuronType(unsigned id) const
 {
 	/* only a single neuron model supported currently */
 	if(m_neurons.size() == 0) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network, so neuron type unkown");
-	} else if (m_neurons.size() > 1) {
-		// this ought to work, but in the current scheme we only support a single neuron type
-		throw nemo::exception(NEMO_LOGIC_ERROR, "Multiple neuron types specified");
 	}
-	return m_neurons.front().type();
+	return m_neurons.at(id).type();
 }
 
 
@@ -267,28 +264,32 @@ NetworkImpl::maxNeuronIndex() const
 /* Neuron iterators */
 
 
+unsigned
+NetworkImpl::neuronTypeCount() const
+{
+	return m_neurons.size();
+}
+
 
 neuron_iterator
-NetworkImpl::neuron_begin() const
+NetworkImpl::neuron_begin(unsigned id) const
 {
-	/* only a single neuron model supported here */
-	if(m_neurons.size() != 1) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network");
+	if(id != 0) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Only a single neuron model supported");
 	}
-	const Neurons& neurons = m_neurons.front();
+	const Neurons& neurons = m_neurons.at(id);
 	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.begin(),
 				neurons.m_param, neurons.m_state, neurons.type()));
 }
 
 
 neuron_iterator
-NetworkImpl::neuron_end() const
+NetworkImpl::neuron_end(unsigned id) const
 {
-	/* only a single neuron model supported here */
-	if(m_neurons.size() != 1) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network");
+	if(id != 0) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Only a single neuron model supported");
 	}
-	const Neurons& neurons = m_neurons.front();
+	const Neurons& neurons = m_neurons.at(id);
 	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.end(),
 				neurons.m_param, neurons.m_state, neurons.type()));
 }

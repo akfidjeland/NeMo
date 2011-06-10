@@ -51,7 +51,7 @@ class Neurons
 
 		typedef Mapper mapper_type;
 
-		Neurons(const network::Generator&, const mapper_type&);
+		Neurons(const nemo::network::Generator&, unsigned type_id, const mapper_type&);
 
 		/*! Update the state of all neurons */
 		cudaError_t update(

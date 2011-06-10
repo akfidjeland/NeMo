@@ -68,7 +68,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> hf_targets(WARP_SIZE, INVALID_FORWARD_SYNAPSE);
 	construction::FcmIndex fcm_index;
-	construction::RCM h_rcm(conf, net.neuronType());
+	//! \todo deal with multiple neuron types here
+	construction::RCM h_rcm(conf, net.neuronType(0));
 
 	bool logging = conf.loggingEnabled();
 

@@ -33,10 +33,11 @@ class Neurons
 {
 	public :
 
-		/*! Set up local storage for all neurons. Doing so also creates a
-		 * mapping from global to dense local neuron indices. The resulting
-		 * mapper can be queried via \a mapper */
-		Neurons(const nemo::network::Generator& net);
+		/*! Set up local storage for all neurons with the generator neuron type id.
+		 *
+		 * Doing so also creates a mapping from global to dense local neuron
+		 * indices. The resulting mapper can be queried via \a mapper */
+		Neurons(const network::Generator& net, unsigned id);
 
 		/*! Update the state of all neurons
 		 *

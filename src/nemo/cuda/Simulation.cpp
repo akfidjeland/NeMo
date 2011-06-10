@@ -43,7 +43,9 @@ mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 	pidx_t pidx = 0;
 	nidx_t nidx = 0;
 
-	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+	//! \todo deal with multiple neuron types here
+	unsigned type_id = 0;
+	for(neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
 			i != i_end; ++i) {
 		unsigned g_idx = i->first;
 		DeviceIdx l_idx(pidx, nidx);
@@ -64,7 +66,8 @@ Simulation::Simulation(
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(mapCompact(net, conf.cudaPartitionSize())),
 	m_conf(conf),
-	m_neurons(net, m_mapper),
+	//! \todo deal with multiple neuron types here
+	m_neurons(net, 0, m_mapper),
 	m_cm(net, conf, m_mapper),
 	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
 	m_recentFiring(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),

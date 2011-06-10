@@ -7,8 +7,8 @@ namespace nemo {
 	namespace cpu {
 
 
-Neurons::Neurons(const nemo::network::Generator& net) :
-	m_type(net.neuronType()),
+Neurons::Neurons(const nemo::network::Generator& net, unsigned id) :
+	m_type(net.neuronType(id)),
 	m_nParam(m_type.parameterCount()),
 	m_nState(m_type.stateVarCount()),
 	m_param(boost::extents[m_nParam][net.neuronCount()]),
@@ -21,7 +21,7 @@ Neurons::Neurons(const nemo::network::Generator& net) :
 {
 	using namespace nemo::network;
 
-	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+	for(neuron_iterator i = net.neuron_begin(id), i_end = net.neuron_end(id);
 			i != i_end; ++i) {
 
 		unsigned g_idx = i->first;

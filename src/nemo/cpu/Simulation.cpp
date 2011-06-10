@@ -38,7 +38,8 @@ Simulation::Simulation(
 		const nemo::ConfigurationImpl& conf) :
 	/* Creating the neuron population also creates a mapping from global to
 	 * (dense) local neuron indices */
-	m_neurons(net),
+	//! \todo create separate collections for each neuron type
+	m_neurons(net, 0),
 	m_mapper(m_neurons.mapper()),
 	m_neuronCount(net.neuronCount()),
 	m_fired(m_neuronCount, 0),
