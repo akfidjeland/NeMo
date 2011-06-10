@@ -11,7 +11,8 @@
  */
 
 #include <vector>
-#include <nemo/synapse_indices.hpp>
+#include <nemo/config.h>
+#include <nemo/types.h>
 
 namespace nemo {
 
@@ -26,9 +27,7 @@ class NEMO_BASE_DLL_PUBLIC ReadableNetwork
 		virtual ~ReadableNetwork() { }
 
 		/*! \return source neuron id for a synapse */
-		unsigned getSynapseSource(const synapse_id& id) const {
-			return neuronIndex(id);
-		}
+		unsigned getSynapseSource(const synapse_id& id) const;
 
 		/*! \return target neuron id for a synapse */
 		virtual unsigned getSynapseTarget(const synapse_id&) const = 0;

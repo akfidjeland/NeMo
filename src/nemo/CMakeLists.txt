@@ -52,6 +52,7 @@ ADD_LIBRARY(nemo_base
 	SimulationBackend.cpp
 	OutgoingDelays.cpp
 	Plugin.cpp
+	ReadableNetwork.cpp
 	RNG.cpp
 	StdpFunction.cpp
 	StdpProcess.cpp
@@ -69,6 +70,7 @@ TARGET_LINK_LIBRARIES(nemo nemo_base ${BACKEND_LIBS} ${LTDL_LIBRARY} ${Boost_LIB
 INSTALL(TARGETS nemo nemo_base DESTINATION ${INSTALL_LIB_DIR})
 
 INSTALL(FILES
+		exception.hpp
 		types.h
 		Configuration.hpp
 		Network.hpp
