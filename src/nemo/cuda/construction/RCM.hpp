@@ -24,10 +24,12 @@
 namespace nemo {
 
 	class ConfigurationImpl;
-	class NeuronType;
+
+	namespace network {
+		class Generator;
+	}
 
 	namespace cuda {
-
 
 		namespace runtime {
 			class RCM;
@@ -39,7 +41,8 @@ class RCM
 {
 	public :
 
-		RCM(const nemo::ConfigurationImpl&, const nemo::NeuronType&);
+		/*! Initialise an empty reverse connectivity matrix */
+		RCM(const nemo::ConfigurationImpl& conf, const nemo::network::Generator&);
 
 		/*! Add a new synapse to the reverse connectivity matrix
 		 *

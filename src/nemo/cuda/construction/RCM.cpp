@@ -13,7 +13,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 #include <nemo/ConfigurationImpl.hpp>
-#include <nemo/NeuronType.hpp>
+#include <nemo/network/Generator.hpp>
 #include <nemo/cuda/kernel.cu_h>
 #include <nemo/cuda/rcm.cu_h>
 
@@ -44,15 +44,31 @@ namespace nemo {
 		namespace construction {
 
 
-RCM::RCM(const nemo::ConfigurationImpl& conf, const nemo::NeuronType& type) :
+bool
+fieldRequired(const network::Generator& net,
+		std::const_mem_fun_ref_t<bool, nemo::NeuronType> predicate)
+{
+	bool required = false;
+	for(unsigned i=0, i_end=net.neuronTypeCount(); i < i_end; ++i) {
+		required = required || predicate(net.neuronType(i));
+	}
+	return required;
+}
+
+
+
+RCM::RCM(const nemo::ConfigurationImpl& conf,
+		const nemo::network::Generator& net) :
 	/* leave space for null warp at beginning */
 	m_synapseCount(0),
 	m_nextFreeWarp(1),
 	m_data(WARP_SIZE, INVALID_REVERSE_SYNAPSE),
-	m_useData(type.usesRcmSources() || type.usesRcmDelays() || conf.stdpFunction()),
+	m_useData(fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmSources))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmDelays))
+			|| conf.stdpFunction()),
 	m_forward(WARP_SIZE, 0),
-	m_useForward(type.usesRcmForward() || conf.stdpFunction()),
-	m_useWeights(type.usesRcmWeights()),
+	m_useForward(fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmForward)) || conf.stdpFunction()),
+	m_useWeights(fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmWeights))),
 	m_enabled(m_useData || m_useForward || m_useWeights),
 	m_stdpEnabled(conf.stdpFunction())
 {
@@ -71,10 +87,10 @@ RCM::RCM(const nemo::ConfigurationImpl& conf, const nemo::NeuronType& type) :
 	 * present).
 	 */
 	bool typeRequiresRcm =
-			   type.usesRcmSources()
-			|| type.usesRcmDelays()
-			|| type.usesRcmForward()
-			|| type.usesRcmWeights();
+			   fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmSources))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmDelays ))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmForward))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmWeights));
 	if(typeRequiresRcm && conf.stdpFunction()) {
 		throw nemo::exception(NEMO_API_UNSUPPORTED,
 				"The current version does not support a mix of STDP with neuron types which require reverse connectivity for other purposes");
