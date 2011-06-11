@@ -322,6 +322,9 @@ class Simulation : public nemo::SimulationBackend
 		boost::shared_ptr<param_t> md_params;
 		void setParameters();
 
+		/* Size of each partition, stored on the device in a single array. */
+		boost::shared_array<unsigned> md_partitionSize;
+
 		DeviceAssertions m_deviceAssertions;
 
 		boost::optional<StdpFunction> m_stdp;

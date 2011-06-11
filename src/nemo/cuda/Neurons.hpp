@@ -58,6 +58,7 @@ class Neurons
 				cudaStream_t stream,
 				cycle_t cycle,
 				param_t* d_params,
+				unsigned* d_psize,
 				uint32_t* d_fstim,
 				fix_t* d_istim,
 				fix_t* d_current,
@@ -139,8 +140,15 @@ class Neurons
 		 */
 		void setState(const DeviceIdx& neuron, unsigned var, float value);
 
-		/*! \return array of sizes for each partition (which may differ). */
-		unsigned* d_partitionSize() const { return md_partitionSize.get(); }
+		/*! \return iterator to beginning of partition size vector */
+		std::vector<unsigned>::const_iterator psize_begin() const {
+			return mh_partitionSize.begin();
+		}
+
+		/*! \return iterator to end of partition size vector */
+		std::vector<unsigned>::const_iterator psize_end() const {
+			return mh_partitionSize.end();
+		}
 
 	private:
 
@@ -181,9 +189,6 @@ class Neurons
 		bool m_paramDirty;
 		bool m_stateDirty;
 
-		/*! Load vector of the size of each partition onto the device */
-		void configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron);
-
 		/*! Read the neuron state from the device, if it the device data is not
 		 * already cached on the host */
 		void readStateFromDevice() const; // conceptually const, this is just caching
@@ -194,8 +199,7 @@ class Neurons
 		 * every simulation cycle. */
 		void syncToDevice();
 
-		/*! \see d_partitionSize() */
-		boost::shared_array<unsigned> md_partitionSize;
+		std::vector<unsigned> mh_partitionSize;
 
 		/* The update function itself is found in a plugin which is loaded
 		 * dynamically */

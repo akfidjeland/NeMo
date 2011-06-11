@@ -74,6 +74,23 @@ mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 
 
 
+/*! Create partition-size array on the device
+ *
+ * \return device pointer to array
+ */
+boost::shared_array<unsigned>
+configurePartitionSizes(const Neurons& neurons)
+{
+	boost::shared_array<unsigned> d_partitionSize =
+		d_array<unsigned>(MAX_PARTITION_COUNT, true, "partition size array");
+	std::vector<unsigned> h_partitionSize(MAX_PARTITION_COUNT, 0);
+	std::copy(neurons.psize_begin(), neurons.psize_end(), h_partitionSize.begin());
+	memcpyToDevice(d_partitionSize.get(), h_partitionSize);
+	return d_partitionSize;
+}
+
+
+
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
@@ -96,6 +113,8 @@ Simulation::Simulation(
 	m_streamCompute(0),
 	m_streamCopy(0)
 {
+	md_partitionSize = configurePartitionSizes(m_neurons);
+
 	if(m_stdp) {
 		configureStdp();
 	}
@@ -208,6 +227,7 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 void
 checkPitch(size_t expected, size_t found)
 {
+	//! \todo use format here instead
 	if(expected != found) {
 		std::ostringstream msg;
 		msg << "Simulation::checkPitch: pitch mismatch in device memory allocation. "
@@ -288,7 +308,7 @@ Simulation::prefire()
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
 			m_mapper.partitionCount(),
-			m_neurons.d_partitionSize(),
+			md_partitionSize.get(),
 			md_params.get(),
 			m_current.deviceData(),
 			m_cm.d_fcm(),
@@ -306,6 +326,7 @@ Simulation::fire()
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
 			md_params.get(),
+			md_partitionSize.get(),
 			m_firingStimulus.d_buffer(),
 			md_istim,
 			m_current.deviceData(),
@@ -344,7 +365,7 @@ Simulation::postfire()
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
 			m_mapper.partitionCount(),
-			m_neurons.d_partitionSize(),
+			md_partitionSize.get(),
 			md_params.get(),
 			m_cm.d_rcm(),
 			m_recentFiring.deviceData(),
@@ -384,7 +405,7 @@ Simulation::applyStdp(float reward)
 		::applyStdp(
 				m_streamCompute,
 				m_mapper.partitionCount(),
-				m_neurons.d_partitionSize(),
+				md_partitionSize.get(),
 				m_cm.fractionalBits(),
 				md_params.get(),
 				m_cm.d_fcm(),

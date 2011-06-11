@@ -91,7 +91,14 @@ Neurons::Neurons(const network::Generator& net, unsigned type_id, const mapper_t
 	m_nrng.state = m_nrngState.deviceData();
 	m_nrng.pitch = m_nrngState.wordPitch();
 	m_valid.moveToDevice();
-	configurePartitionSizes(maxPartitionNeuron);
+
+	/* The partitions should form a contigous range here. If not, there is a
+	 * logic error in the mapping.  */
+	mh_partitionSize.resize(maxPartitionNeuron.size(), 0);
+	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
+			i != maxPartitionNeuron.end(); ++i) {
+		mh_partitionSize.at(i->first) = i->second + 1;
+	}
 }
 
 
@@ -103,19 +110,6 @@ Neurons::d_allocated() const
 	return m_param.d_allocated()
 		+ m_state.d_allocated()
 		+ m_nrngState.d_allocated();
-}
-
-
-void
-Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
-{
-	md_partitionSize = d_array<unsigned>(MAX_PARTITION_COUNT, true, "partition size array");
-	std::vector<unsigned> h_partitionSize(MAX_PARTITION_COUNT, 0);
-	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
-			i != maxPartitionNeuron.end(); ++i) {
-		h_partitionSize.at(i->first) = i->second + 1;
-	}
-	memcpyToDevice(md_partitionSize.get(), h_partitionSize);
 }
 
 
@@ -138,6 +132,7 @@ Neurons::update(
 		cudaStream_t stream,
 		cycle_t cycle,
 		param_t* d_params,
+		unsigned* d_psize,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
 		fix_t* d_current,
@@ -152,7 +147,7 @@ Neurons::update(
 	return m_update_neurons(stream,
 			cycle,
 			m_mapper.partitionCount(),
-			md_partitionSize.get(),
+			d_psize,
 			d_params,
 			m_param.deviceData(),
 			m_state.deviceData(),

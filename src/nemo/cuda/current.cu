@@ -111,8 +111,8 @@ addCurrentStimulus(unsigned psize,
 
 /*! Copy per-neuron accumulated current between two memory areas
  *
- * \param[in] current_in Per-neuron accumulated current (shared or global memory)
- * \param[out] current_out Per-neuron accumulated current (shared or global memory)
+ * \param[in] current_in per-neuron accumulated current (shared or global memory)
+ * \param[out] current_out per-neuron accumulated current (shared or global memory)
  *
  * Global memory arguments must be offset to the appropriate partition.
  */
