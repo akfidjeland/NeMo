@@ -50,10 +50,17 @@ mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 
 	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
 
+		mapper.insertType(type_id, pidx);
 		nidx_t nidx = 0;
 
 		for(neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
 				i != i_end; ++i) {
+
+			if(nidx == 0) {
+				/* First neuron in a new partition */
+				mapper.insertPartition(pidx, type_id);
+			}
+
 			unsigned g_idx = i->first;
 			DeviceIdx l_idx(pidx, nidx);
 			mapper.insert(g_idx, l_idx);
