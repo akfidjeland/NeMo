@@ -129,10 +129,9 @@ ringNeuronIndex(unsigned nth, unsigned ncount, unsigned n0, unsigned nstep)
 
 
 
-nemo::Network*
-createRing(unsigned ncount, unsigned n0, bool plastic, unsigned nstep)
+void
+createRing(nemo::Network* net, unsigned ncount, unsigned n0, bool plastic, unsigned nstep)
 {
-	nemo::Network* net = new nemo::Network;
 	for(unsigned i_source=0; i_source < ncount; ++i_source) {
 		float v = -65.0f;
 		float b = 0.2f;
@@ -143,6 +142,14 @@ createRing(unsigned ncount, unsigned n0, bool plastic, unsigned nstep)
 		unsigned target = ringNeuronIndex(i_source+1, ncount, n0, nstep);
 		net->addSynapse(source, target, 1, 1000.0f, plastic);
 	}
-	return net;
 }
 
+
+
+nemo::Network*
+createRing(unsigned ncount, unsigned n0, bool plastic, unsigned nstep)
+{
+	nemo::Network* net = new nemo::Network;
+	createRing(net, ncount, n0, plastic, nstep);
+	return net;
+}
