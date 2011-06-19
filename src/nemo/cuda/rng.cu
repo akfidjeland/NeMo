@@ -83,3 +83,33 @@ nrand(unsigned pcount, unsigned partition, unsigned neuron, nrng_t g_nrng)
 	/* We're throwing away one random number here */
 	return r.x;
 }
+
+
+
+/*! Generate a uniform random number in the range [0,2^32) for a specific neuron
+ *
+ * \param pcount total number of partitions in the whole network
+ * \param global partition index
+ */
+__device__
+unsigned
+urand(unsigned pcount, unsigned partition, unsigned neuron, nrng_t g_nrng)
+{
+	unsigned state[4];
+
+	/* Copy the input state from memory into our local state */
+	for(unsigned i=0; i < 4; i++){
+		state[i] = *rng_state(pcount, partition, neuron, i, g_nrng);
+	}
+
+	unsigned r = rng_urand(state);
+
+	/* Copy the current RNG state back to memory (not strictly necessary, you
+	 * can just generate a new random state every time if you want). */
+	for(unsigned i=0; i < 4; i++){
+		*rng_state(pcount, partition, neuron, i, g_nrng) = state[i];
+	}
+
+	/* We're throwing away one random number here */
+	return r;
+}
