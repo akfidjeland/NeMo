@@ -14,10 +14,21 @@
 extern "C" {
 #endif
 
+/*! Update the state of a group of neurons of the same type
+ *
+ * \param globalPartitionCount number of partitions in network
+ * \param localPartitionCount number of partitions in this group
+ * \param basePartition global index of the first partition in this group
+ * \param d_valid
+ * 		bit vector indicating the valid neurons. This is a vector for all
+ * 		partitions for the current neuron type only.
+ */
 typedef cudaError_t cuda_update_neurons_t(
 		cudaStream_t stream,
 		unsigned cycle,
-		unsigned partitionCount,
+		unsigned globalPartitionCount,
+		unsigned localPartitionCount,
+		unsigned basePartition,
 		unsigned* d_partitionSize,
 		param_t* d_globalParameters,
 		float* df_neuronParameters,

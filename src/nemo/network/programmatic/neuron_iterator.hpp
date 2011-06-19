@@ -3,11 +3,9 @@
 
 #include <typeinfo>
 #include <vector>
-#include <deque>
 
 #include <nemo/network/iterator.hpp>
 #include <nemo/NeuronType.hpp>
-#include <nemo/RandomMapper.hpp>
 
 
 namespace nemo {
@@ -19,23 +17,22 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 {
 	public :
 
-		typedef RandomMapper<std::pair<unsigned, unsigned> >::const_iterator base_iterator;
+		typedef std::vector<unsigned>::const_iterator base_iterator;
 
 		neuron_iterator(base_iterator it,
 			const std::vector< std::vector<float> >& param,
 			const std::vector< std::vector<float> >& state,
 			const NeuronType& type) :
-			m_it(it), m_nt(type), m_param(param), m_state(state) {}
+			m_it(it), m_nt(type), m_param(param), m_state(state), m_lidx(0) {}
 
 		void set_value() const {
 			m_data.second = Neuron(m_nt);
-			size_t n = m_it->second.second;
-			m_data.first = m_it->first;
+			m_data.first = *m_it;
 			for(size_t i=0; i < m_param.size(); ++i) {
-				m_data.second.setParameter(i, m_param[i][n]);
+				m_data.second.setParameter(i, m_param[i][m_lidx]);
 			}
 			for(size_t i=0; i < m_state.size(); ++i) {
-				m_data.second.setState(i, m_state[i][n]);
+				m_data.second.setState(i, m_state[i][m_lidx]);
 			}
 		}
 
@@ -55,6 +52,7 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 
 		nemo::network::abstract_neuron_iterator& operator++() {
 			++m_it;
+			++m_lidx;
 			return *this;
 		}
 
@@ -77,6 +75,10 @@ class NEMO_BASE_DLL_PUBLIC neuron_iterator : public abstract_neuron_iterator
 
 		const std::vector< std::vector<float> >& m_param;
 		const std::vector< std::vector<float> >& m_state;
+
+		/* Current local index in the underlying neuron collection. This is a
+		 * contigous 0-based space of neurons */
+		unsigned m_lidx;
 };
 
 }	}	}

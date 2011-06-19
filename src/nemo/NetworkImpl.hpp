@@ -129,6 +129,11 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		/* Neurons are grouped by neuron type */
 		std::vector<Neurons> m_neurons;
 
+		/* Users keep access neuron type groups by via indices (returned by \a
+		 * addNeuronType). For error-detecting purposes, keep the type name ->
+		 * index mapping */
+		std::map<std::string, unsigned> m_typeIds;
+
 		const Neurons& neuronCollection(unsigned type_id) const;
 		Neurons& neuronCollection(unsigned type_id);
 

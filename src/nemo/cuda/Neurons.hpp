@@ -12,6 +12,8 @@
 
 #include <map>
 
+#include <boost/utility.hpp>
+
 #include <nemo/cuda/plugins/neuron_model.h>
 #include <nemo/NeuronType.hpp>
 #include <nemo/Plugin.hpp>
@@ -45,18 +47,17 @@ namespace nemo {
  * variables can be read or written. The need for doing this with integer data
  * does not arise when using Izhikevich neurons.
  */
-class Neurons
+class Neurons : boost::noncopyable
 {
 	public:
 
-		typedef Mapper mapper_type;
-
-		Neurons(const nemo::network::Generator&, unsigned type_id, const mapper_type&);
+		Neurons(const nemo::network::Generator&, unsigned type_id, const Mapper&);
 
 		/*! Update the state of all neurons */
 		cudaError_t update(
 				cudaStream_t stream,
 				cycle_t cycle,
+				unsigned globalPartitionCount,
 				param_t* d_params,
 				unsigned* d_psize,
 				uint32_t* d_fstim,
@@ -152,8 +153,6 @@ class Neurons
 
 	private:
 
-		const mapper_type& m_mapper;
-
 		NeuronType m_type;
 
 		size_t parameterCount() const { return m_type.parameterCount(); }
@@ -189,6 +188,16 @@ class Neurons
 		bool m_paramDirty;
 		bool m_stateDirty;
 
+		/* Each neuron type has a contigous range of partition indices starting
+		 * from \a m_basePartition */
+		unsigned m_basePartition;
+
+		/* Size of each partition */
+		std::vector<unsigned> mh_partitionSize;
+
+		/* Number of partitions of \i this type */
+		unsigned localPartitionCount() const;
+
 		/*! Read the neuron state from the device, if it the device data is not
 		 * already cached on the host */
 		void readStateFromDevice() const; // conceptually const, this is just caching
@@ -198,8 +207,6 @@ class Neurons
 		 * the data should be updated. The sync function should be called for
 		 * every simulation cycle. */
 		void syncToDevice();
-
-		std::vector<unsigned> mh_partitionSize;
 
 		/* The update function itself is found in a plugin which is loaded
 		 * dynamically */

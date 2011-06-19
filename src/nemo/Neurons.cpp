@@ -27,7 +27,7 @@ Neurons::Neurons(const NeuronType& type) :
 
 
 size_t
-Neurons::add(unsigned nargs, const float args[])
+Neurons::add(unsigned gidx, unsigned nargs, const float args[])
 {
 	using boost::format;
 
@@ -43,6 +43,7 @@ Neurons::add(unsigned nargs, const float args[])
 	for(unsigned i=0; i < m_state.size(); ++i) {
 		m_state[i].push_back(*args++);
 	}
+	m_gidx.push_back(gidx);
 	return m_size++;
 }
 

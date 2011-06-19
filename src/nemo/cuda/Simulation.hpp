@@ -11,6 +11,7 @@
  */
 
 #include <vector>
+#include <boost/shared_ptr.hpp>
 
 #include <boost/optional.hpp>
 
@@ -297,7 +298,8 @@ class Simulation : public nemo::SimulationBackend
 		 * of memory, so this value could be useful for diagnostic purposes */
 		size_t d_allocated() const;
 
-		Neurons m_neurons;
+		typedef std::vector< boost::shared_ptr<Neurons> > neuron_groups;
+		neuron_groups m_neurons;
 
 		ConnectivityMatrix m_cm;
 
@@ -320,7 +322,7 @@ class Simulation : public nemo::SimulationBackend
 		boost::shared_array<unsigned> md_nFired;
 
 		boost::shared_ptr<param_t> md_params;
-		void setParameters();
+		void setParameters(size_t pitch1, size_t pitch32);
 
 		/* Size of each partition, stored on the device in a single array. */
 		boost::shared_array<unsigned> md_partitionSize;

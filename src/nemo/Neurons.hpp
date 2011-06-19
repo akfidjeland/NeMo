@@ -34,6 +34,7 @@ class NEMO_BASE_DLL_PUBLIC Neurons
 
 		/*! Add a new neuron
 		 *
+		 * \param gidx global neuron index
 		 * \param nargs number of parameters and state variables
 		 * \param args all parameters and state variables (in that order)
 		 *
@@ -42,7 +43,7 @@ class NEMO_BASE_DLL_PUBLIC Neurons
 		 * \pre the input arguments must have the lengths that was specified by
 		 * 		the neuron type used when this object was created.
 		 */
-		size_t add(unsigned nargs, const float args[]);
+		size_t add(unsigned gidx, unsigned nargs, const float args[]);
 
 		/*! Modify an existing neuron
 		 *
@@ -83,6 +84,11 @@ class NEMO_BASE_DLL_PUBLIC Neurons
 		 * invariant that the shapes are the same. */
 		std::vector< std::vector<float> > m_param;
 		std::vector< std::vector<float> > m_state;
+
+		/* We store the global neuron indices as well, in order to avoid
+		 * reverse lookup in the mapper, when getting data out of the
+		 * simulation */
+		std::vector<unsigned> m_gidx;
 
 		size_t m_size;
 

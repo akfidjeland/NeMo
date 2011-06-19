@@ -60,6 +60,8 @@ addCurrent(nidx_t neuron,
  * The user can provide per-neuron current stimulus
  * (\ref nemo::cuda::Simulation::addCurrentStimulus).
  *
+ * \param[in] partition
+ *		\i global index of partition
  * \param[in] psize
  *		number of neurons in current partition
  * \param[in] pitch
@@ -84,7 +86,9 @@ addCurrent(nidx_t neuron,
  */
 __device__
 void
-addCurrentStimulus(unsigned psize,
+addCurrentStimulus(
+		unsigned partition,
+		unsigned psize,
 		size_t pitch,
 		const fix_t* g_current,
 		fix_t* s_current,
@@ -94,12 +98,12 @@ addCurrentStimulus(unsigned psize,
 	if(g_current != NULL) {
 		for(unsigned nbase=0; nbase < psize; nbase += THREADS_PER_BLOCK) {
 			unsigned neuron = nbase + threadIdx.x;
-			unsigned pstart = CURRENT_PARTITION * pitch;
+			unsigned pstart = partition * pitch;
 			fix_t stimulus = g_current[pstart + neuron];
 			addCurrent(neuron, stimulus, s_current, s_overflow, s_negative);
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 			DEBUG_MSG_SYNAPSE("c%u %u-%u: +%f (external)\n",
-					s_cycle, CURRENT_PARTITION, neuron,
+					s_cycle, partition, neuron,
 					fx_tofloat(g_current[pstart + neuron]));
 #endif
 		}

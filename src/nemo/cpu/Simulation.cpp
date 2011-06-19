@@ -192,7 +192,7 @@ void
 Simulation::setFiring()
 {
 	m_firingBuffer.enqueueCycle();
-	for(unsigned n=0; n < m_neuronCount; ++n) { 
+	for(unsigned n=0; n < m_neuronCount; ++n) {
 		if(m_fired[n]) {
 			m_firingBuffer.addFiredNeuron(m_mapper.globalIdx(n));
 		}
