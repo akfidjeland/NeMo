@@ -326,6 +326,50 @@ runRing(unsigned ncount, nemo::Configuration conf)
 }
 
 
+
+
+/* Run a regular ring network test, but with an additional population of
+ * unconnected neurons of a different type.
+ *
+ * The additional poisson source neurons should not have any effect on the
+ * simulation but should expose errors related to mixing local/global partition
+ * indices. */
+void
+testNeuronTypeMixture(bool izFirst)
+{
+	const unsigned szRing = 1024;
+	boost::scoped_ptr<nemo::Network> net(new nemo::Network());
+	if(izFirst) {
+		createRing(net.get(), szRing);
+	}
+	unsigned poisson = net->addNeuronType("PoissonSource");
+	float p = 0.001f;
+	for(unsigned n=szRing; n<2*szRing; ++n) {
+		net->addNeuron(poisson, n, 1, &p);
+	}
+	if(!izFirst) {
+		createRing(net.get(), szRing);
+	}
+
+	nemo::Configuration conf = configuration(false, 1024, NEMO_BACKEND_CUDA);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+	/* Stimulate a single neuron to get the ring going */
+	sim->step(std::vector<unsigned>(1, 0));
+
+	const unsigned duration = 1000;
+	for(unsigned ms=1; ms < duration; ++ms) {
+		std::vector<unsigned> fired = sim->step();
+		BOOST_REQUIRE(fired.size() > 0);
+		std::sort(fired.begin(), fired.end());
+		BOOST_REQUIRE_EQUAL(fired[0], ms % szRing);
+		if(fired.size() > 1) {
+			BOOST_REQUIRE(fired[1] >= szRing);
+		}
+	}
+}
+
+
+
 BOOST_AUTO_TEST_SUITE(ring_tests)
 	nemo::Configuration conf = configuration(false, 1024);
 	BOOST_AUTO_TEST_CASE(n1000) {
@@ -865,6 +909,13 @@ BOOST_AUTO_TEST_SUITE(c_api)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+
+BOOST_AUTO_TEST_SUITE(mix)
+	BOOST_AUTO_TEST_CASE(IP) { testNeuronTypeMixture(true); }
+	BOOST_AUTO_TEST_CASE(PI) { testNeuronTypeMixture(false); }
+BOOST_AUTO_TEST_SUITE_END()
+
+/* Neuron-type specific tests */
 
 #include "PoissonSource.cpp"
 #include "Input.cpp"
