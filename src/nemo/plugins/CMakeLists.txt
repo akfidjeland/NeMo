@@ -1,4 +1,5 @@
 INSTALL(FILES
+		Input.ini
 		PoissonSource.ini
 		Izhikevich.ini
 		Kuramoto.ini

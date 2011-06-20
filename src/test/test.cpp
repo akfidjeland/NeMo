@@ -315,7 +315,7 @@ runRing(unsigned ncount, nemo::Configuration conf)
 	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
-	/* Simulate a single neuron to get the ring going */
+	/* Stimulate a single neuron to get the ring going */
 	sim->step(std::vector<unsigned>(1, 0));
 
 	for(unsigned ms=1; ms < duration; ++ms) {
@@ -867,5 +867,6 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 #include "PoissonSource.cpp"
+#include "Input.cpp"
 #include "Kuramoto.cpp"
 
