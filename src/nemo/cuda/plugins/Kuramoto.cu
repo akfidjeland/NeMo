@@ -266,7 +266,9 @@ cudaError_t
 cuda_update_neurons( 
 		cudaStream_t stream,
 		unsigned cycle,
-		unsigned partitionCount,
+		unsigned globalPartitionCount,
+		unsigned localPartitionCount,
+		unsigned basePartition,
 		unsigned* d_partitionSize,
 		param_t* d_params,
 		float* df_neuronParameters,
@@ -282,7 +284,10 @@ cuda_update_neurons(
 		rcm_dt* d_rcm)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
-	dim3 dimGrid(partitionCount);
+	dim3 dimGrid(localPartitionCount);
+
+	/*! \todo add support for 'singleton' types, which do not mix */
+	assert(globalPartitionCount == localPartitionCount);
 
 	updateOscillators<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle, d_partitionSize, d_params,
