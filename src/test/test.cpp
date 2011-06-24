@@ -586,6 +586,10 @@ testStdpWithAllStatic(backend_t backend)
 }
 
 
+void testInvalidBounds();
+void testInvalidStaticLength();
+void testInvalidDynamicLength(bool stdp);
+
 
 BOOST_AUTO_TEST_SUITE(stdp);
 	TEST_ALL_BACKENDS_N(simple, testStdp, false, 1.0)
@@ -594,6 +598,12 @@ BOOST_AUTO_TEST_SUITE(stdp);
 	TEST_ALL_BACKENDS_N(noise_fractional_reward, testStdp, true, 0.9)
 	TEST_ALL_BACKENDS(invalid, testInvalidStdpUsage)
 	TEST_ALL_BACKENDS(all_static, testStdpWithAllStatic)
+	BOOST_AUTO_TEST_SUITE(configuration)
+		BOOST_AUTO_TEST_CASE(limits) { testInvalidBounds(); }
+		BOOST_AUTO_TEST_CASE(dlength) { testInvalidStaticLength(); }
+		BOOST_AUTO_TEST_CASE(slength_on) { testInvalidDynamicLength(true); }
+		BOOST_AUTO_TEST_CASE(slength_off) { testInvalidDynamicLength(false); }
+	BOOST_AUTO_TEST_SUITE_END();
 BOOST_AUTO_TEST_SUITE_END();
 
 
