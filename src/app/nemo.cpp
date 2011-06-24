@@ -54,7 +54,12 @@ main(int argc, char* argv[])
 	;
 
 	po::variables_map vm;
-	po::store(po::parse_command_line(argc, argv, desc), vm);
+	try {
+		po::store(po::parse_command_line(argc, argv, desc), vm);
+	} catch(boost::program_options::error& e) {
+		std::cerr << "Error: " << e.what() << std::endl;
+		exit(1);
+	}
 	po::notify(vm);
 
 	if(vm.count("help") != 0) {
