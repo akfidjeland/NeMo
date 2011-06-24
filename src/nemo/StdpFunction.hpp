@@ -54,6 +54,10 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 				float minExcitatoryWeight, float maxExcitatoryWeight,
 				float minInhibitoryWeight, float maxInhibitoryWeight);
 
+		/*! Verify that the STDP window length is not too long, considering the
+		 * longest network delay */
+		void verifyDynamicWindowLength(unsigned d_max) const;
+
 		/* pre-fire part of STDP function, from dt=-1 and down */
 		const std::vector<float>& prefire() const { return m_prefire; }
 
@@ -87,6 +91,8 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 		float m_maxInhibitoryWeight;
 
 		uint64_t getBits(bool (*pred)(float)) const;
+
+		static const unsigned MAX_FIRING_HISTORY = 64;
 
 #ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;

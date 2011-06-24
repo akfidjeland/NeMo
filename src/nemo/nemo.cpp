@@ -115,6 +115,8 @@ simulationBackend(const network::Generator& net, const ConfigurationImpl& conf)
 		return NULL;
 	}
 
+	conf.verifyStdp(net.maxDelay());
+
 	switch(conf.backend()) {
 #ifdef NEMO_CUDA_ENABLED
 		case NEMO_BACKEND_CUDA:

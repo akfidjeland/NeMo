@@ -108,6 +108,16 @@ ConfigurationImpl::setBackend(backend_t backend)
 }
 
 
+
+void
+ConfigurationImpl::verifyStdp(unsigned d_max) const
+{
+	if(m_stdpFn) {
+		m_stdpFn->verifyDynamicWindowLength(d_max);
+	}
+}
+
+
 } // namespace nemo
 
 
