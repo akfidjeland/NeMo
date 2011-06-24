@@ -188,11 +188,13 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		/*! \copydoc nemo::ReadableNetwork::getSynapsesFrom */
 		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
+		/*! \copydoc nemo::network::Generator::maxDelay */
 		unsigned maxDelay() const;
 
 		float maxWeight() const;
 		float minWeight() const;
 
+		/*! \copydoc nemo::network::Generator::maxDelay */
 		unsigned neuronCount() const;
 
 	private :

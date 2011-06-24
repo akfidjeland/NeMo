@@ -37,7 +37,11 @@ class NEMO_BASE_DLL_PUBLIC Generator
 		virtual synapse_iterator synapse_begin() const = 0;
 		virtual synapse_iterator synapse_end() const = 0;
 
+		/*! \return number of neurons in the network */
 		virtual unsigned neuronCount() const = 0;
+
+		/*! \return maximum delay (in milliseconds) in the network */
+		virtual unsigned maxDelay() const = 0;
 
 		virtual unsigned minNeuronIndex() const = 0;
 		virtual unsigned maxNeuronIndex() const = 0;
