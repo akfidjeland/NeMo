@@ -92,7 +92,7 @@ class NEMO_BASE_DLL_PUBLIC StdpFunction
 
 		uint64_t getBits(bool (*pred)(float)) const;
 
-		static const unsigned MAX_FIRING_HISTORY = 64;
+		static const unsigned MAX_FIRING_HISTORY;
 
 #ifdef NEMO_MPI_ENABLED
 		friend class boost::serialization::access;

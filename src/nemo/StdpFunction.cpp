@@ -6,6 +6,8 @@
 
 namespace nemo {
 
+const unsigned StdpFunction::MAX_FIRING_HISTORY = 64;
+
 
 StdpFunction::StdpFunction(
 		const std::vector<float>& prefire,
