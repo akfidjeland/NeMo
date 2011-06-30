@@ -154,7 +154,8 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 void
 Simulation::updateRange(int start, int end)
 {
-	m_neurons.update(start, end, getFractionalBits(),
+	m_neurons.update(start, end,
+			m_timer.elapsedSimulation(), getFractionalBits(),
 			&m_current[0], &m_recentFiring[0], &m_fired[0]);
 }
 

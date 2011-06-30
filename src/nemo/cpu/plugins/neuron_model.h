@@ -10,11 +10,15 @@
 extern "C" {
 #endif
 
-/* Update a number of neurons in a contigous range */
+/*! Update a number of neurons in a contigous range
+ *
+ * \param cycle current simulation cycle
+ */
 typedef void cpu_update_neurons_t(
 		int start, int end,
+		unsigned cycle,
 		float* paramBase, size_t paramStride,
-		float* stateBase, size_t stateStride,
+		float* stateBase, size_t stateHistoryStride, size_t stateVarStride,
 		unsigned fbits,
 		unsigned fstim[],
 		RNG rng[],

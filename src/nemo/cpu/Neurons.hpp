@@ -44,13 +44,11 @@ class Neurons
 		 * \post the input current vector is set to all zero.
 		 * \post the internal firing stimulus buffer (\a m_fstim) is set to all false.
 		 */
-		void update(int start, int end, unsigned fbits,
+		void update(int start, int end, unsigned cycle, unsigned fbits,
 			fix_t current[], uint64_t recentFiring[], unsigned fired[]);
 
 		/*! \copydoc nemo::Network::getNeuronState */
-		float getState(unsigned g_idx, unsigned var) const {
-			return m_state[0][stateIndex(var)][m_mapper.localIdx(g_idx)];
-		}
+		float getState(unsigned g_idx, unsigned var) const;
 
 		/*! \copydoc nemo::Network::getNeuronParameter */
 		float getParameter(unsigned g_idx, unsigned param) const {
@@ -65,9 +63,7 @@ class Neurons
 		void set(unsigned g_idx, unsigned nargs, const float args[]);
 
 		/*! \copydoc nemo::Network::setNeuronState */
-		void setState(unsigned g_idx, unsigned var, float val) {
-			m_state[0][stateIndex(var)][m_mapper.localIdx(g_idx)] = val;
-		}
+		void setState(unsigned g_idx, unsigned var, float val);
 
 		/*! \copydoc nemo::Network::setNeuronParameter */
 		void setParameter(unsigned g_idx, unsigned param, float val) {
@@ -115,11 +111,14 @@ class Neurons
 		 * The indices here are:
 		 *
 		 * 1. (outer) history index
-		 * 2.         parameter index
+		 * 2.         variable index
 		 * 3. (inner) neuron index
 		 */
 		typedef boost::multi_array<float, 3> state_type;
 		state_type m_state;
+
+		/* History index corresponding to most recent state */
+		unsigned m_stateCurrent;
 
 		/*! Set neuron, like \a cpu::Neurons::set, but with a local index */
 		void setLocal(unsigned l_idx, const float param[], const float state[]);
@@ -149,7 +148,6 @@ class Neurons
 		 * dynamically */
 		Plugin m_plugin;
 		cpu_update_neurons_t* m_update_neurons;
-
 };
 
 

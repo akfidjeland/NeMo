@@ -12,8 +12,9 @@ NEMO_PLUGIN_DLL_PUBLIC
 void
 cpu_update_neurons(
 		int start, int end,
+		unsigned cycle,
 		float* paramBase, size_t paramStride,
-		float* stateBase, size_t stateStride,
+		float* stateBase, size_t stateHistoryStride, size_t stateVarStride,
 		unsigned fbits,
 		unsigned fstim[],
 		RNG rng[],
@@ -27,8 +28,17 @@ cpu_update_neurons(
 	const float* d = paramBase + PARAM_D * paramStride;
 	const float* sigma = paramBase + PARAM_SIGMA * paramStride;
 
-	float* u = stateBase + STATE_U * stateStride;
-	float* v = stateBase + STATE_V * stateStride;
+	const size_t historyLength = 1;
+
+	/* Current state */
+	size_t b0 = cycle % historyLength;
+	const float* u0 = stateBase + b0 * stateHistoryStride + STATE_U * stateVarStride;
+	const float* v0 = stateBase + b0 * stateHistoryStride + STATE_V * stateVarStride;
+
+	/* Next state */
+	size_t b1 = (cycle+1) % historyLength;
+	float* u1 = stateBase + b1 * stateHistoryStride + STATE_U * stateVarStride;
+	float* v1 = stateBase + b1 * stateHistoryStride + STATE_V * stateVarStride;
 
 	for(int n=start; n < end; n++) {
 
@@ -41,11 +51,14 @@ cpu_update_neurons(
 
 		fired[n] = 0;
 
+		float u = u0[n];
+		float v = v0[n];
+
 		for(unsigned t=0; t<SUBSTEPS; ++t) {
 			if(!fired[n]) {
-				v[n] += SUBSTEP_MULT * ((0.04* v[n] + 5.0) * v[n] + 140.0- u[n] + I);
-				u[n] += SUBSTEP_MULT * (a[n] * (b[n] * v[n] - u[n]));
-				fired[n] = v[n] >= 30.0;
+				v += SUBSTEP_MULT * ((0.04* v + 5.0) * v + 140.0- u + I);
+				u += SUBSTEP_MULT * (a[n] * (b[n] * v - u));
+				fired[n] = v >= 30.0;
 			}
 		}
 
@@ -54,10 +67,12 @@ cpu_update_neurons(
 		recentFiring[n] = (recentFiring[n] << 1) | (uint64_t) fired[n];
 
 		if(fired[n]) {
-			v[n] = c[n];
-			u[n] += d[n];
+			v = c[n];
+			u += d[n];
 			// LOG("c%lu: n%u fired\n", elapsedSimulation(), m_mapper.globalIdx(n));
 		}
-	}
 
+		u1[n] = u;
+		v1[n] = v;
+	}
 }
