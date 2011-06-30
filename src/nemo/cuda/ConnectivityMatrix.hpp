@@ -85,7 +85,7 @@ namespace nemo {
  * The reverse connectivity matrix (RCM) stores the target synapse and an
  * accumulator variable (for STDP) for each synapse. The data are organised in
  * rows indexed by neuron. To avoid excessive padding due to potentially
- * variable-width rows, the RCM is split into separte chunks for each
+ * variable-width rows, the RCM is split into separate chunks for each
  * partition, each with its own pitch. This leads to a rather inelegant method
  * for indexing the RCM. The organisation of the RCM will be changed in future
  * versions.

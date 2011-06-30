@@ -98,7 +98,18 @@ Plugin::systemDirectory()
 	using boost::format;
 	using namespace boost::filesystem;
 
+#if defined _WIN32 || defined __CYGWIN__
+	/* On Windows, where there aren't any standard library locations, NeMo
+	 * might be relocated. To support this, look for a plugin directory relative
+	 * to the library location path rather than relative to the hard-coded
+	 * installation prefix.  */
+	HMODULE dll = GetModuleHandle("nemo_base.dll");
+	TCHAR dllPath[MAX_PATH];
+	GetModuleFileName(dll, dllPath, MAX_PATH);
+	path systemPath = path(dllPath).parent_path().parent_path() / NEMO_SYSTEM_PLUGIN_DIR;
+#else
 	path systemPath(NEMO_SYSTEM_PLUGIN_DIR);
+#endif
 	if(!exists(systemPath)) {
 		throw nemo::exception(NEMO_DL_ERROR,
 				str(format("System plugin path does not exist: %s") % systemPath));

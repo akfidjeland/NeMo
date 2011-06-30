@@ -20,7 +20,12 @@
 // #cmakedefine NEMO_CPU_MULTITHREADED
 
 #cmakedefine NEMO_VERSION "@NEMO_VERSION@"
+#if defined _WIN32 || defined __CYGWIN__
+/* The system plugin directory is relative to the dll location */
+#cmakedefine NEMO_SYSTEM_PLUGIN_DIR "@NEMO_SYSTEM_PLUGIN_DIR@"
+#else
 #cmakedefine NEMO_SYSTEM_PLUGIN_DIR "@CMAKE_INSTALL_PREFIX@/@NEMO_SYSTEM_PLUGIN_DIR@"
+#endif
 #cmakedefine NEMO_USER_PLUGIN_DIR "@NEMO_USER_PLUGIN_DIR@"
 
 const unsigned NEMO_MAX_NEURON_ARGS = 16;
