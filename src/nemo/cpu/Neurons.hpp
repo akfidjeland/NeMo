@@ -49,7 +49,7 @@ class Neurons
 
 		/*! \copydoc nemo::Network::getNeuronState */
 		float getState(unsigned g_idx, unsigned var) const {
-			return m_state[stateIndex(var)][m_mapper.localIdx(g_idx)];
+			return m_state[0][stateIndex(var)][m_mapper.localIdx(g_idx)];
 		}
 
 		/*! \copydoc nemo::Network::getNeuronParameter */
@@ -66,7 +66,7 @@ class Neurons
 
 		/*! \copydoc nemo::Network::setNeuronState */
 		void setState(unsigned g_idx, unsigned var, float val) {
-			m_state[stateIndex(var)][m_mapper.localIdx(g_idx)] = val;
+			m_state[0][stateIndex(var)][m_mapper.localIdx(g_idx)] = val;
 		}
 
 		/*! \copydoc nemo::Network::setNeuronParameter */
@@ -114,10 +114,11 @@ class Neurons
 		 *
 		 * The indices here are:
 		 *
-		 * 1. (outer) parameter index
-		 * 2. (inner) neuron index
+		 * 1. (outer) history index
+		 * 2.         parameter index
+		 * 3. (inner) neuron index
 		 */
-		typedef boost::multi_array<float, 2> state_type;
+		typedef boost::multi_array<float, 3> state_type;
 		state_type m_state;
 
 		/*! Set neuron, like \a cpu::Neurons::set, but with a local index */

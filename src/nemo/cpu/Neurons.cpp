@@ -12,7 +12,7 @@ Neurons::Neurons(const nemo::network::Generator& net, unsigned id) :
 	m_nParam(m_type.parameterCount()),
 	m_nState(m_type.stateVarCount()),
 	m_param(boost::extents[m_nParam][net.neuronCount()]),
-	m_state(boost::extents[m_nState][net.neuronCount()]),
+	m_state(boost::extents[1][m_nState][net.neuronCount()]),
 	m_size(0),
 	m_rng(net.neuronCount()),
 	m_fstim(net.neuronCount(), 0),
@@ -61,7 +61,7 @@ Neurons::setLocal(unsigned l_idx, const float param[], const float state[])
 		m_param[i][l_idx] = param[i];
 	}
 	for(unsigned i=0; i < m_nState; ++i) {
-		m_state[i][l_idx] = state[i];
+		m_state[0][i][l_idx] = state[i];
 	}
 }
 
@@ -90,7 +90,7 @@ Neurons::update(int start, int end,
 
 	m_update_neurons(start, end,
 			m_param.data(), m_param.strides()[0],
-			m_state.data(), m_state.strides()[0],
+			m_state.data(), m_state.strides()[1],
 			fbits,
 			&m_fstim[0],
 			&m_rng[0],
