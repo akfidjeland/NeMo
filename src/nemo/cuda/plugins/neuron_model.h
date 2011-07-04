@@ -41,7 +41,7 @@ typedef cudaError_t cuda_update_neurons_t(
 		uint32_t* d_fout,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
-		rcm_dt* d_rng);
+		rcm_dt* d_rcm);
 
 #ifdef __cplusplus
 }

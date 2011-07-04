@@ -23,7 +23,10 @@ namespace nemo {
 		namespace runtime {
 
 
-/*! \brief Runtime index into the reverse connectivity matrix  
+/*! \brief Runtime representation of the reverse connectivity matrix
+ *
+ * The main data is stored in a structure-of-arrays format. Lookups into this
+ * data is done via an index.
  *
  * The index is logically a map from neuron to a list of warp numbers (row),
  * where the warp number is an offset into the reverse connectivity matrix.
@@ -31,7 +34,7 @@ namespace nemo {
  * The length of the different rows may differ greatly. In order to save memory
  * the index itself is stored in a compact form where
  *
- * - each row is stored in a contigous chunk of memory
+ * - each row is stored in a contiguous chunk of memory
  * - the extent of each row in the index (start and length) is stored in a
  *   separate fixed-size table
  *

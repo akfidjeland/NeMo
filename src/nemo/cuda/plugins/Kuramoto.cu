@@ -54,8 +54,8 @@ sum256(float* sdata, float *s_out)
  */
 __device__
 void
-sumN(float s_weight[],
-		float s_sourcePhase[],
+sumN(const float s_weight[],
+		const float s_sourcePhase[],
 		unsigned indegree,
 		float targetPhase,
 		float* out)
