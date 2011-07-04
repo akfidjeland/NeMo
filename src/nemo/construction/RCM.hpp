@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_CONSTRUCTION_RCM_HPP
-#define NEMO_CUDA_CONSTRUCTION_RCM_HPP
+#ifndef NEMO_CONSTRUCTION_RCM_HPP
+#define NEMO_CONSTRUCTION_RCM_HPP
 
 /* Copyright 2010 Imperial College London
  *
@@ -26,12 +26,12 @@ namespace nemo {
 	}
 
 	namespace cuda {
-
 		namespace runtime {
 			class RCM;
 		}
+	}
 
-		namespace construction {
+	namespace construction {
 
 
 /*! \brief Construction-time reverse connectivity matrix
@@ -52,13 +52,13 @@ namespace nemo {
  * At the end of construction, the data has the format to be used at run-time,
  * whereas the index may have to be converted (depending on the backend).
  *
- * \tparam Index type of the neuron index used at run time
+ * \tparam Key type of the neuron index used at run time
  * \tparam Data type of the default data containing source neuron and delay
  * \tparam Width width of each row
  *
  * \see nemo::cuda::runtime::RCM
  */
-template<class Index, class Data, size_t Width>
+template<class Key, class Data, size_t Width>
 class RCM
 {
 	public :
@@ -73,14 +73,14 @@ class RCM
 
 		/*! Add a new synapse to the reverse connectivity matrix
 		 *
+		 * \param target index of target neuron on device
+		 * \param data packed format for default payload containing source and delay
 		 * \param synapse full synapse
-		 * \param packed format for default payload containing source and delay
-		 * \param d_target index of target neuron on device
 		 * \param f_addr word address of this synapse in the forward matrix
 		 */
-		void addSynapse(const Synapse& synapse,
+		void addSynapse(const Key& target,
 				const Data& data,
-				const Index& target,
+				const Synapse& synapse,
 				size_t f_addr);
 
 		size_t synapseCount() const { return m_synapseCount; }
@@ -95,9 +95,7 @@ class RCM
 
 	private :
 
-		typedef boost::tuple<pidx_t, nidx_t> key;
-
-		typedef boost::unordered_map<key, std::vector<size_t> > warp_map;
+		typedef boost::unordered_map<Key, std::vector<size_t> > warp_map;
 
 		const Data& m_paddingData;
 
@@ -107,12 +105,12 @@ class RCM
 
 		/*! In order to keep track of when we need to start a new warp, store
 		 * the number of synapses in each row */
-		boost::unordered_map<key, unsigned> m_dataRowLength;
+		boost::unordered_map<Key, unsigned> m_dataRowLength;
 
 		size_t m_nextFreeWarp;
 
 		/*! Main reverse synapse data: source partition, source neuron, delay */
-		std::vector<uint32_t> m_data;
+		std::vector<Data> m_data;
 		bool m_useData;
 
 		/*! Forward addressing, word offset into the FCM for each synapse */
@@ -133,22 +131,19 @@ class RCM
 		 * in constructor. */
 		bool m_stdpEnabled;
 
-
 		/*! Allocate space for a new RCM synapse for the given (target) neuron.
 		 *
 		 * \return
 		 * 		word offset for the synapse. This is the same for all the different
 		 * 		planes of data.
 		 */
-		size_t allocateSynapse(const DeviceIdx& target);
+		size_t allocateSynapse(const Key& target);
 
-		friend class runtime::RCM;
+		friend class cuda::runtime::RCM;
 };
 
 
-
-		} // end namespace construction
-	} // end namespace cuda
+	} // end namespace construction
 } // end namespace nemo
 
 

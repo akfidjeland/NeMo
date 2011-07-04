@@ -11,6 +11,7 @@
 
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <nemo/exception.hpp>
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/network/Generator.hpp>
 
@@ -37,8 +38,7 @@ hash_value(const tuple<T1, T2>& k)
 
 
 namespace nemo {
-	namespace cuda {
-		namespace construction {
+	namespace construction {
 
 
 inline
@@ -55,8 +55,8 @@ fieldRequired(const network::Generator& net,
 
 
 
-template<class Index, class Data, size_t Width>
-RCM<Index,Data,Width>::RCM(const nemo::ConfigurationImpl& conf,
+template<class Key, class Data, size_t Width>
+RCM<Key,Data,Width>::RCM(const nemo::ConfigurationImpl& conf,
 		const nemo::network::Generator& net,
 		const Data& paddingData) :
 	m_paddingData(paddingData),
@@ -106,18 +106,17 @@ RCM<Index,Data,Width>::RCM(const nemo::ConfigurationImpl& conf,
  * 		word offset for the synapse. This is the same for all the different
  * 		planes of data.
  */
-template<class Index, class Data, size_t Width>
+template<class Key, class Data, size_t Width>
 size_t
-RCM<Index,Data,Width>::allocateSynapse(const DeviceIdx& target)
+RCM<Key,Data,Width>::allocateSynapse(const Key& target)
 {
 	m_synapseCount += 1;
 
-	key k(target.partition, target.neuron);
-	unsigned& dataRowLength = m_dataRowLength[k];
+	unsigned& dataRowLength = m_dataRowLength[target];
 	unsigned column = dataRowLength % Width;
 	dataRowLength += 1;
 
-	std::vector<size_t>& warps = m_warps[k];
+	std::vector<size_t>& warps = m_warps[target];
 
 	size_t row;
 	if(column == 0) {
@@ -148,17 +147,17 @@ RCM<Index,Data,Width>::allocateSynapse(const DeviceIdx& target)
 
 
 
-template<class Index, class Data, size_t Width>
+template<class Key, class Data, size_t Width>
 void
-RCM<Index,Data,Width>::addSynapse(
-		const Synapse& s,
+RCM<Key,Data,Width>::addSynapse(
+		const Key& target,
 		const Data& data,
-		const Index& d_target,
+		const Synapse& s,
 		size_t f_addr)
 {
 	if(m_enabled) {
 		if(!m_stdpEnabled || s.plastic()) {
-			size_t r_addr = allocateSynapse(d_target);
+			size_t r_addr = allocateSynapse(target);
 			if(m_useData) {
 				m_data[r_addr] = data;
 			}
@@ -174,13 +173,12 @@ RCM<Index,Data,Width>::addSynapse(
 
 
 
-template<class Index, class Data, size_t Width>
+template<class Key, class Data, size_t Width>
 size_t
-RCM<Index,Data,Width>::size() const
+RCM<Key,Data,Width>::size() const
 {
 	return m_nextFreeWarp * Width;
 }
 
-		} // end namespace construction
-	} // end namespace cuda
+	} // end namespace construction
 } // end namespace nemo

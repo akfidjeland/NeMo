@@ -17,11 +17,12 @@
 #include <nemo/cuda/Mapper.hpp>
 
 namespace nemo {
-	namespace cuda {
 
-		namespace construction {
-			template<class I, class D, size_t W> class RCM;
-		}
+	namespace construction {
+		template<class I, class D, size_t W> class RCM;
+	}
+
+	namespace cuda {
 
 		namespace runtime {
 
@@ -41,13 +42,14 @@ namespace nemo {
  * - the extent of each row in the index (start and length) is stored in a
  *   separate fixed-size table
  *
- * \see construction::RCM
+ * \see nemo::construction::RCM
  */
 class RCM
 {
 	public :
 
-		typedef construction::RCM<DeviceIdx, uint32_t, WARP_SIZE> construction_t;
+		typedef boost::tuple<pidx_t, nidx_t> key_t;
+		typedef nemo::construction::RCM<key_t, uint32_t, WARP_SIZE> construction_t;
 
 		RCM() : m_allocated(0), m_planeSize(0) {}
 

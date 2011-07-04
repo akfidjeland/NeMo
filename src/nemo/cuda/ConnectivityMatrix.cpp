@@ -20,8 +20,8 @@
 #include <nemo/ConfigurationImpl.hpp>
 #include <nemo/fixedpoint.hpp>
 #include <nemo/synapse_indices.hpp>
+#include <nemo/construction/RCM.hpp>
 #include <nemo/cuda/construction/FcmIndex.hpp>
-#include <nemo/cuda/construction/RCM.hpp>
 
 #include "exception.hpp"
 #include "fcm.cu_h"
@@ -68,7 +68,8 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo change synapse_t, perhaps to nidx_dt
 	std::vector<synapse_t> hf_targets(WARP_SIZE, INVALID_FORWARD_SYNAPSE);
 	construction::FcmIndex fcm_index;
-	construction::RCM<DeviceIdx, uint32_t, WARP_SIZE> h_rcm(conf, net, INVALID_REVERSE_SYNAPSE);
+	typedef runtime::RCM::key_t rcm_key;
+	nemo::construction::RCM<rcm_key, uint32_t, WARP_SIZE> h_rcm(conf, net, INVALID_REVERSE_SYNAPSE);
 
 	bool logging = conf.loggingEnabled();
 
@@ -90,8 +91,9 @@ ConnectivityMatrix::ConnectivityMatrix(
 		DeviceIdx source = mapper.deviceIdx(s.source);
 		DeviceIdx target = mapper.deviceIdx(s.target());
 		size_t f_addr = addForward(s, source, target, nextFreeWarp, fcm_index, hf_targets, mhf_weights);
+		rcm_key rkey(target.partition, target.neuron);
 		rsynapse_t rsynapse = make_rsynapse(source.partition, source.neuron, s.delay);
-		h_rcm.addSynapse(s, rsynapse, target, f_addr);
+		h_rcm.addSynapse(rkey, rsynapse, s, f_addr);
 		if(!m_writeOnlySynapses) {
 			addAuxillary(s, f_addr);
 		}
