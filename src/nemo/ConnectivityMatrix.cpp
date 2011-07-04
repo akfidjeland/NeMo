@@ -68,6 +68,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const mapper_t& mapper) :
 	m_mapper(mapper),
 	m_fractionalBits(conf.fractionalBits()),
+	m_rcm(conf, net, RData(~0U,0)),
 	m_maxDelay(0),
 	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
@@ -103,6 +104,7 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 	if(plastic) {
 		m_racc[target].push_back(RSynapse(source, delay, sidx));
 	}
+	m_rcm.addSynapse(target, RData(source, delay), s, sidx);
 
 	if(!m_writeOnlySynapses) {
 		/* The auxillary synapse maps always uses the global (user-specified)

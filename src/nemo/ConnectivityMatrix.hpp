@@ -19,6 +19,8 @@
 #include <boost/optional.hpp>
 
 #include <nemo/config.h>
+#include <nemo/construction/RCM.hpp>
+
 #include "types.hpp"
 #include "RandomMapper.hpp"
 #include "StdpProcess.hpp"
@@ -56,6 +58,16 @@ struct Row
 	boost::shared_array< FAxonTerminal> data;
 
 	const FAxonTerminal& operator[](unsigned i) const { return data[i]; }
+};
+
+
+
+struct RData
+{
+	nidx_t source;
+	unsigned delay;
+
+	RData(nidx_t s, unsigned d) : source(s), delay(d) { }
 };
 
 
@@ -176,10 +188,10 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::vector<Row> m_cm;
 		void finalizeForward(const mapper_t&, bool verifySources);
 
-		/* For the reverse matrix we don't need to group by delay */
-		//! \todo move into std::vector when finalizing
 		typedef std::vector<RSynapse> Incoming;
 		std::map<nidx_t, Incoming> m_racc;
+		construction::RCM<nidx_t, RData, 32> m_rcm;
+
 		boost::optional<StdpProcess> m_stdp;
 
 		OutgoingDelaysAcc m_delaysAcc;
