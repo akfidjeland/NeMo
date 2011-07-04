@@ -83,8 +83,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		typedef RandomMapper<nidx_t> mapper_t;
 
-		ConnectivityMatrix(const ConfigurationImpl& conf, const mapper_t&);
-
 		/*! Populate runtime CM from existing network.
 		 *
 		 * The mapper can translate neuron indices (both source and target)

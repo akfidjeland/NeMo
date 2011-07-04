@@ -49,21 +49,6 @@ Row::Row(const std::vector<FAxonTerminal>& ss) :
 
 
 
-
-ConnectivityMatrix::ConnectivityMatrix(
-		const ConfigurationImpl& conf,
-		const mapper_t& mapper) :
-	m_mapper(mapper),
-	m_fractionalBits(conf.fractionalBits()),
-	m_maxDelay(0),
-	m_writeOnlySynapses(conf.writeOnlySynapses())
-{
-	if(conf.stdpFunction()) {
-		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
-	}
-}
-
-
 /* Insert into vector, resizing if appropriate */
 template<typename T>
 void
