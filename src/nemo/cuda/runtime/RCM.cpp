@@ -32,7 +32,7 @@ make_rcm_index_address(unsigned start, unsigned len)
 
 
 
-RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
+RCM::RCM(size_t partitionCount, construction_t& h_rcm):
 	m_allocated(0),
 	m_planeSize(h_rcm.size())
 {
@@ -76,8 +76,8 @@ RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
 
 	/* Populate the host-side data structures */
 
-	typedef construction::RCM::warp_map::const_iterator iterator;
-	typedef construction::RCM::key key;
+	typedef construction_t::warp_map::const_iterator iterator;
+	typedef construction_t::key key;
 
 	size_t allocated = 0; // words, so far
 

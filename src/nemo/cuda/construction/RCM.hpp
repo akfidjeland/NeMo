@@ -14,11 +14,7 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/unordered_map.hpp>
-
 #include <nemo/types.hpp>
-//! \todo move DeviceIdx to types.hpp
-#include <nemo/cuda/Mapper.hpp>
-#include <nemo/cuda/types.h>
 
 
 namespace nemo {
@@ -37,23 +33,54 @@ namespace nemo {
 
 		namespace construction {
 
+
+/*! \brief Construction-time reverse connectivity matrix
+ *
+ * At construction-time the reverse connectivity matrix (RCM) is stored as a
+ * structure-of-arrays (SoA).
+ *
+ * The RCM always contains a default payload containing target neuron and
+ * delay. Other fields may or may not be included, depending on
+ *
+ * 1. STDP configuration
+ * 2. Neuron type requirements
+ *
+ * Each (target) neuron has a row in the RCM. The row is always rounded up to
+ * the nearest \a Width boundary. Rows are placed back-to-back within each
+ * vector in the SoA. Lookups into the SoA is done via an index.
+ *
+ * At the end of construction, the data has the format to be used at run-time,
+ * whereas the index may have to be converted (depending on the backend).
+ *
+ * \tparam Index type of the neuron index used at run time
+ * \tparam Data type of the default data containing source neuron and delay
+ * \tparam Width width of each row
+ *
+ * \see nemo::cuda::runtime::RCM
+ */
+template<class Index, class Data, size_t Width>
 class RCM
 {
 	public :
 
-		/*! Initialise an empty reverse connectivity matrix */
-		RCM(const nemo::ConfigurationImpl& conf, const nemo::network::Generator&);
+		/*! Initialise an empty reverse connectivity matrix
+		 *
+		 * \param padding synapse data value to use for padding
+		 */
+		RCM(const nemo::ConfigurationImpl& conf,
+				const nemo::network::Generator&,
+				const Data& padding);
 
 		/*! Add a new synapse to the reverse connectivity matrix
 		 *
 		 * \param synapse full synapse
-		 * \param d_source index of source neuron on device
+		 * \param packed format for default payload containing source and delay
 		 * \param d_target index of target neuron on device
 		 * \param f_addr word address of this synapse in the forward matrix
 		 */
 		void addSynapse(const Synapse& synapse,
-				const DeviceIdx& d_source,
-				const DeviceIdx& d_target,
+				const Data& data,
+				const Index& target,
 				size_t f_addr);
 
 		size_t synapseCount() const { return m_synapseCount; }
@@ -61,8 +88,8 @@ class RCM
 		/*! Number of words allocated in any enabled RCM fields
 		 *
 		 * The class maintains the invariant that all RCM fields are either of
-		 * this size (if enabled) or WARP_SIZE (if disbled). Furthermore, the
-		 * size is always a multiple of WARP_SIZE.
+		 * this size (if enabled) or \a Width (if disbled). Furthermore, the
+		 * size is always a multiple of \a Width.
 		 */
 		size_t size() const;
 
@@ -71,6 +98,8 @@ class RCM
 		typedef boost::tuple<pidx_t, nidx_t> key;
 
 		typedef boost::unordered_map<key, std::vector<size_t> > warp_map;
+
+		const Data& m_paddingData;
 
 		size_t m_synapseCount;
 
@@ -122,5 +151,7 @@ class RCM
 	} // end namespace cuda
 } // end namespace nemo
 
+
+#include "RCM.cpp"
 
 #endif

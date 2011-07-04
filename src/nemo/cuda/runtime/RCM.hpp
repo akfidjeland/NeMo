@@ -12,12 +12,15 @@
 
 #include <boost/shared_array.hpp>
 #include <nemo/cuda/rcm.cu_h>
+#include <nemo/cuda/kernel.cu_h>
+//! \todo define DeviceIdx somewhere else
+#include <nemo/cuda/Mapper.hpp>
 
 namespace nemo {
 	namespace cuda {
 
 		namespace construction {
-			class RCM;
+			template<class I, class D, size_t W> class RCM;
 		}
 
 		namespace runtime {
@@ -44,6 +47,8 @@ class RCM
 {
 	public :
 
+		typedef construction::RCM<DeviceIdx, uint32_t, WARP_SIZE> construction_t;
+
 		RCM() : m_allocated(0), m_planeSize(0) {}
 
 		/*! Create an RCM on the device.
@@ -52,7 +57,7 @@ class RCM
 		 * object essentially void. We clear this data at the earliest possible
 		 * moment since the data structures involved can be quite large.
 		 */
-		RCM(size_t partitionCount, construction::RCM& rcm);
+		RCM(size_t partitionCount, construction_t& rcm);
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const { return m_allocated; }

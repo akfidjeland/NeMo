@@ -78,7 +78,6 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	Neurons.cpp
 	Outgoing.cpp
 	construction/FcmIndex.cpp
-	construction/RCM.cpp
 	runtime/RCM.cpp
 	device_memory.cpp
 	devices.cpp
