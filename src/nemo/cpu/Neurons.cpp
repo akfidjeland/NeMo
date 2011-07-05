@@ -21,7 +21,7 @@ Neurons::Neurons(const nemo::network::Generator& net, unsigned id) :
 {
 	using namespace nemo::network;
 
-	//! \todo initialise state history correctly
+	std::fill(m_state.data(), m_state.data() + m_state.num_elements(), 0.0f);
 
 	for(neuron_iterator i = net.neuron_begin(id), i_end = net.neuron_end(id);
 			i != i_end; ++i) {
