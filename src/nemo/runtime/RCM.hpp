@@ -53,8 +53,11 @@ class RCM
 		/*! \return iterator to end of all warp indices */
 		warp_iterator warp_end() const { return m_warps.end(); }
 
+		/*! \return reference to the warps of a specific target neuron */
+		const std::vector<size_t>& warps(nidx_t target) const;
+
 		/*! \return number of incoming synapses for the given target neuron */
-		unsigned indegree(nidx_t target) const { return m_indegree.at(target); }
+		unsigned indegree(nidx_t target) const;
 
 		/*! \return a single warp of reverse synape data */
 		const RSynapse* data(size_t warp) const;
@@ -64,6 +67,9 @@ class RCM
 
 		/*! \return a single warp of FCM addresses */
 		const uint32_t* forward(size_t warp) const; 
+
+		/*! \return a single warp of weights */
+		const float* weight(size_t warp) const;
 
 	private :
 
