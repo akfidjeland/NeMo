@@ -25,6 +25,10 @@ namespace nemo {
 		class Generator;
 	}
 
+	namespace runtime {
+		class RCM;
+	}
+
 	namespace cuda {
 		namespace runtime {
 			class RCM;
@@ -140,6 +144,7 @@ class RCM
 		size_t allocateSynapse(const Key& target);
 
 		friend class cuda::runtime::RCM;
+		friend class runtime::RCM;
 };
 
 

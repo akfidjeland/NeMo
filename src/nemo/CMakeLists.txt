@@ -54,6 +54,7 @@ ADD_LIBRARY(nemo_base
 	Plugin.cpp
 	ReadableNetwork.cpp
 	RNG.cpp
+	runtime/RCM.cpp
 	StdpFunction.cpp
 	StdpProcess.cpp
 )

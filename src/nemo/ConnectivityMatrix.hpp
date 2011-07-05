@@ -20,6 +20,7 @@
 
 #include <nemo/config.h>
 #include <nemo/construction/RCM.hpp>
+#include <nemo/runtime/RCM.hpp>
 
 #include "types.hpp"
 #include "RandomMapper.hpp"
@@ -60,15 +61,6 @@ struct Row
 	const FAxonTerminal& operator[](unsigned i) const { return data[i]; }
 };
 
-
-
-struct RData
-{
-	nidx_t source;
-	unsigned delay;
-
-	RData(nidx_t s, unsigned d) : source(s), delay(d) { }
-};
 
 
 namespace network {
@@ -188,9 +180,9 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::vector<Row> m_cm;
 		void finalizeForward(const mapper_t&, bool verifySources);
 
-		typedef std::vector<RSynapse> Incoming;
-		std::map<nidx_t, Incoming> m_racc;
-		construction::RCM<nidx_t, RData, 32> m_rcm;
+		//! \todo make this local data instead
+		construction::RCM<nidx_t, RSynapse, 32> m_racc;
+		runtime::RCM m_rcm;
 
 		boost::optional<StdpProcess> m_stdp;
 
@@ -204,9 +196,15 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		void verifySynapseTerminals(fidx_t idx,
 				const row_t& row, const mapper_t&, bool verifySource) const;
 
-		/*! \return address of the synapse weight in the forward matrix, given
-		 * a synapse in the reverse matrix */
-		fix_t* weight(const RSynapse&) const;
+		/*! Get address to synapse weight
+		 *
+		 * \return address of the synapse weight in the forward matrix, given
+		 * 		a synapse in the reverse matrix
+		 *
+		 * \param rdata source/delay
+		 * \param sidx synapse index within synapse groups for given postsynaptic neuron
+		 */
+		fix_t* weight(const RSynapse& rdata, uint32_t sidx) const;
 
 		/* Internal buffers for synapse queries */
 		std::vector<synapse_id> m_queriedSynapseIds;

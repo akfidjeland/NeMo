@@ -107,16 +107,10 @@ class RSynapse
 {
 	public :
 
-		RSynapse() :
-			source(~0), delay(0), synapse(~0), w_diff(0) {}
-
-		RSynapse(nidx_t source, delay_t delay, sidx_t fsynapse) :
-			source(source), delay(delay), synapse(fsynapse), w_diff(0) { }
-
 		nidx_t source;
-		delay_t delay;
-		sidx_t synapse; // index in the forward connectivity matrix
-		fix_t w_diff;
+		unsigned delay;
+
+		RSynapse(nidx_t s, unsigned d) : source(s), delay(d) { }
 };
 
 
