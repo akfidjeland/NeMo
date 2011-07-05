@@ -24,7 +24,8 @@ typedef void cpu_update_neurons_t(
 		RNG rng[],
 		fix_t current[],
 		uint64_t recentFiring[],
-		unsigned fired[]);
+		unsigned fired[],
+		void* rcm_ptr);
 
 #ifdef __cplusplus
 }

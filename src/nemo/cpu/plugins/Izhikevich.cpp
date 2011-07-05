@@ -20,7 +20,8 @@ cpu_update_neurons(
 		RNG rng[],
 		fix_t current[],
 		uint64_t recentFiring[],
-		unsigned fired[])
+		unsigned fired[],
+		void* /* rcm */)
 {
 	const float* a = paramBase + PARAM_A * paramStride;
 	const float* b = paramBase + PARAM_B * paramStride;
@@ -76,3 +77,6 @@ cpu_update_neurons(
 		v1[n] = v;
 	}
 }
+
+
+cpu_update_neurons_t* test = &cpu_update_neurons;

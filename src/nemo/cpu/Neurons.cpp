@@ -102,7 +102,8 @@ Neurons::update(int start, int end,
 		unsigned fbits,
 		fix_t current[],
 		uint64_t recentFiring[],
-		unsigned fired[])
+		unsigned fired[],
+		void* rcm)
 {
 	if(0 > start || start > end || end > int(size())) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
@@ -117,7 +118,8 @@ Neurons::update(int start, int end,
 			&m_rng[0],
 			current,
 			recentFiring,
-			fired);
+			fired,
+			rcm);
 }
 
 

@@ -161,6 +161,9 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * Only call this after finalize has been called. */
 		uint64_t delayBits(nidx_t l_source) const { return m_delays.delayBits(l_source); }
 
+		/*! \return pointer to reverse connectivity matrix */
+		const runtime::RCM* rcm() const { return &m_rcm; }
+
 	private:
 
 		const mapper_t& m_mapper;

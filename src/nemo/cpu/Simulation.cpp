@@ -156,7 +156,8 @@ Simulation::updateRange(int start, int end)
 {
 	m_neurons.update(start, end,
 			m_timer.elapsedSimulation(), getFractionalBits(),
-			&m_current[0], &m_recentFiring[0], &m_fired[0]);
+			&m_current[0], &m_recentFiring[0], &m_fired[0],
+			const_cast<void*>(static_cast<const void*>(m_cm.rcm())));
 }
 
 
