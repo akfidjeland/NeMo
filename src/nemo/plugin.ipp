@@ -116,7 +116,15 @@ dl_exit()
 dl_handle
 dl_load(const char* name)
 {	
+#if __APPLE__
+	/* Until recently (March 2011) LTDL tried to open '.so' on OSX rather than
+	 * the more common '.dylib'. We're only ever loading our own libraries
+	 * here, so force the extension */ 
+	std::string fullname = std::string(name).append(".dylib");
+	return lt_dlopen(fullname.c_str());
+#else
 	return lt_dlopenext(name);
+#endif
 }
 
 bool
