@@ -8,8 +8,9 @@ ELSE(NEMO_CUDA_ENABLED)
 	SET(NEMO_CUDA_DYNAMIC_LOADING OFF)
 ENDIF(NEMO_CUDA_ENABLED)
 
-LIST(APPEND BOOST_COMPONENTS filesystem program_options date_time)
+LIST(APPEND BOOST_COMPONENTS date_time filesystem program_options system)
 
+# TODO: move MPI-related libraries to mpi directory
 OPTION(NEMO_MPI_ENABLED "Create MPI-enabled simulation" OFF)
 IF(NEMO_MPI_ENABLED)
 	LIST(APPEND BOOST_COMPONENTS mpi serialization)
