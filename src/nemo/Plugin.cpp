@@ -64,7 +64,6 @@ Plugin::~Plugin()
 
 
 
-
 void
 Plugin::init(const std::string& name)
 {
@@ -115,18 +114,36 @@ Plugin::setpath(const std::string& subdir)
 	using boost::format;
 	using namespace boost::filesystem;
 
+	std::vector<path> paths;
+
 	path userPath = userDirectory() / subdir;
-	if(exists(userPath) && !dl_setsearchpath(userPath.string().c_str())) {
-		throw nemo::exception(NEMO_DL_ERROR,
-				str(format("Error when setting user plugin search path (%s): %s")
-					% userPath % dl_error()));
+	if(exists(userPath)) {
+		paths.push_back(userPath);
 	}
 
 	path systemPath = systemDirectory() / subdir;
-	if(!dl_addsearchdir(systemPath.string().c_str())) {
-		throw nemo::exception(NEMO_DL_ERROR,
-				str(format("Error when setting system plugin search path (%s): %s")
-					% systemPath % dl_error()));
+	paths.push_back(systemPath);
+
+	/*! \todo there's a potential issue here when loading on Windows. Ideally
+	 * we'd like to set the /exclusive/ search path for library loading here,
+	 * since the same plugin has the same name for different backends. The
+	 * windows API, however, seems to only ever add to the existing path.
+	 *
+	 * \see dl_setsearchpath
+	 */
+	for(std::vector<path>::const_iterator i = paths.begin();
+			i != paths.end(); ++i) {
+		bool success = false;
+		if(i == paths.begin()) {
+			success = dl_setsearchpath(i->string().c_str());
+		} else {
+			success = dl_addsearchdir(i->string().c_str());
+		}
+		if(!success) {
+			throw nemo::exception(NEMO_DL_ERROR,
+					str(format("Error when setting plugin search path (%s): %s")
+						% (*i) % dl_error()));
+		}
 	}
 }
 
