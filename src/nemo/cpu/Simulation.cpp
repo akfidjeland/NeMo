@@ -47,9 +47,7 @@ Simulation::Simulation(
 	m_delays(m_neuronCount, 0),
 	m_current(m_neuronCount, 0)
 {
-	//! \todo can we finalize cm right away?
 	m_cm.reset(new nemo::ConnectivityMatrix(net, conf, m_mapper));
-	m_cm->finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
 
 	for(size_t source=0; source < m_neuronCount; ++source) {
 		m_delays[source] = m_cm->delayBits(source);

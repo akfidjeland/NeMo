@@ -92,11 +92,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * The mapper can translate neuron indices (both source and target)
 		 * from one index space to another. All later accesses to the CM data
 		 * are assumed to be in terms of the translated indices.
-		 *
-		 * 'finalize' must be called prior to use. This slightly clumsy
-		 * interface is there so that we can ensure that the mapper will have a
-		 * complete list of valid neuron indices by the time of finalization,
-		 * so that we can report invalid synapse terminals.
 		 */
 		ConnectivityMatrix(
 				const network::Generator& net,
@@ -127,8 +122,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		/*! \copydoc nemo::Simulation::getPlastic */
 		unsigned char getPlastic(const synapse_id& synapse) const;
-
-		void finalize(const mapper_t& mapper, bool verifySources);
 
 		typedef OutgoingDelays::const_iterator delay_iterator;
 
@@ -178,8 +171,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::map<fidx_t, row_t> m_acc;
 
 		/* At run-time, however, we want a fast lookup of the rows. We
-		 * therefore use a vector with linear addressing.  This is constructed
-		 * in \a finalize which must be called prior to getRow being called */
+		 * therefore use a vector with linear addressing.  */
 		std::vector<Row> m_cm;
 		void finalizeForward(const mapper_t&, bool verifySources);
 

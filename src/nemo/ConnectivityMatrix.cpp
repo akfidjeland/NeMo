@@ -82,6 +82,10 @@ ConnectivityMatrix::ConnectivityMatrix(
 	for( ; i != i_end; ++i) {
 		addSynapse(mapper.localIdx(i->source), mapper.localIdx(i->target()), *i);
 	}
+
+	bool verifySources = true;
+	finalizeForward(mapper, verifySources);
+	m_rcm = runtime::RCM(m_racc);
 }
 
 
@@ -108,15 +112,6 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 		aux_row& auxRow = m_cmAux[s.source];
 		insert(s.id(), AxonTerminalAux(sidx, delay, s.plastic() != 0), auxRow);
 	}
-}
-
-
-
-void
-ConnectivityMatrix::finalize(const mapper_t& mapper, bool verifySources)
-{
-	finalizeForward(mapper, verifySources);
-	m_rcm = runtime::RCM(m_racc);
 }
 
 
