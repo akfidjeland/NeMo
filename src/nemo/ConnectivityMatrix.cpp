@@ -68,7 +68,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 		const mapper_t& mapper) :
 	m_mapper(mapper),
 	m_fractionalBits(conf.fractionalBits()),
-	m_racc(conf, net, RSynapse(~0U,0)),
 	m_maxDelay(0),
 	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
@@ -76,13 +75,18 @@ ConnectivityMatrix::ConnectivityMatrix(
 		m_stdp = StdpProcess(conf.stdpFunction().get(), m_fractionalBits);
 	}
 
+	construction::RCM<nidx_t, RSynapse, 32> m_racc(conf, net, RSynapse(~0U,0));
 	network::synapse_iterator i = net.synapse_begin();
 	network::synapse_iterator i_end = net.synapse_end();
 
 	for( ; i != i_end; ++i) {
-		addSynapse(mapper.localIdx(i->source), mapper.localIdx(i->target()), *i);
+		nidx_t source = mapper.localIdx(i->source);
+		nidx_t target = mapper.localIdx(i->target());
+		sidx_t sidx = addSynapse(source, target, *i);
+		m_racc.addSynapse(target, RSynapse(source, i->delay), *i, sidx);
 	}
 
+	//! \todo avoid two passes here
 	bool verifySources = true;
 	finalizeForward(mapper, verifySources);
 	m_rcm = runtime::RCM(m_racc);
@@ -90,7 +94,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 
 
-void
+sidx_t
 ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 {
 	delay_t delay = s.delay;
@@ -103,7 +107,6 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 
 	//! \todo could do this on finalize pass, since there are fewer steps there
 	m_delaysAcc.addDelay(source, delay);
-	m_racc.addSynapse(target, RSynapse(source, delay), s, sidx);
 
 	if(!m_writeOnlySynapses) {
 		/* The auxillary synapse maps always uses the global (user-specified)
@@ -112,6 +115,7 @@ ConnectivityMatrix::addSynapse(nidx_t source, nidx_t target, const Synapse& s)
 		aux_row& auxRow = m_cmAux[s.source];
 		insert(s.id(), AxonTerminalAux(sidx, delay, s.plastic() != 0), auxRow);
 	}
+	return sidx;
 }
 
 

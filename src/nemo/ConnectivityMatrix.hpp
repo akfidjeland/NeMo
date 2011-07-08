@@ -104,7 +104,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * than the ones provided in the underlying synapse. The caller can
 		 * thus provide an appropriate mapping of either index.
 		 */
-		void addSynapse(nidx_t source, nidx_t target, const Synapse&);
+		sidx_t addSynapse(nidx_t source, nidx_t target, const Synapse&);
 
 		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
@@ -175,8 +175,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::vector<Row> m_cm;
 		void finalizeForward(const mapper_t&, bool verifySources);
 
-		//! \todo make this local data instead
-		construction::RCM<nidx_t, RSynapse, 32> m_racc;
 		runtime::RCM m_rcm;
 
 		boost::optional<StdpProcess> m_stdp;
