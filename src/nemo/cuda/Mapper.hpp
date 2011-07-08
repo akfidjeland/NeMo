@@ -66,31 +66,6 @@ class Mapper : public nemo::RandomMapper<DeviceIdx>
 			nemo::RandomMapper<DeviceIdx>::insert(g_idx, l_idx);
 		}
 
-		/*! Add a new neuron type to mapper
-		 *
-		 * \pre type_id increases monotonically on subsequent calls to this function
-		 */
-		void insertType(unsigned type_id, unsigned basePartition) {
-			if(type_id != m_basePartition.size()) {
-				throw nemo::exception(NEMO_LOGIC_ERROR,
-						"Internal error: unexpected neuron type added to mapper");
-			}
-			m_basePartition.push_back(basePartition);
-		}
-
-		/*! Add a new partition to mapper
-		 *
-		 * \pre pidx increases monotonically on subsequent calls to this function
-		 * \pre function is called only once for each partition
-		 */
-		void insertPartition(unsigned pidx, unsigned type_id) {
-			if(pidx != m_typeIndex.size()) {
-				throw nemo::exception(NEMO_LOGIC_ERROR,
-						"Internal error: unexpected partition added to mapper");
-			}
-			m_typeIndex.push_back(type_id);
-		}
-
 		/*! Convert from device index (2D) to local 1D index.
 		 *
 		 * The existence of the input device index is not checked.
@@ -126,28 +101,11 @@ class Mapper : public nemo::RandomMapper<DeviceIdx>
 			return std::count(m_typeIndex.begin(), m_typeIndex.end(), tidx);
 		}
 
-		/*! \return the base partition index for a neuron type */
-		unsigned basePartition(unsigned tidx) const { return m_basePartition.at(tidx); }
-
-		/*! \return type index of a given partition */
-		unsigned typeIdx(unsigned pidx) const { return m_typeIndex.at(pidx); }
-
 	private :
 
 		unsigned m_partitionSize;
 
 		unsigned m_partitionCount;
-
-		/* First partition for neuron group
-		 *
-		 * All neurons belonging to a single neuron type are found in a
-		 * contigous range of partitions following this.
-		 */
-		std::vector<unsigned> m_basePartition;
-
-		/* Mapping from partition (0-based, contigous) to neuron type index
-		 * (0-based, contigous) */
-		std::vector<unsigned> m_typeIndex;
 };
 
 	} // end namespace cuda

@@ -47,7 +47,7 @@ mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 
 	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
 
-		mapper.insertType(type_id, pidx);
+		mapper.insertTypeBase(type_id, pidx);
 		nidx_t nidx = 0;
 
 		for(neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
@@ -55,7 +55,7 @@ mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 
 			if(nidx == 0) {
 				/* First neuron in a new partition */
-				mapper.insertPartition(pidx, type_id);
+				mapper.insertTypeMapping(pidx, type_id);
 			}
 
 

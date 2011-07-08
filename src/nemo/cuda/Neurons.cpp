@@ -39,7 +39,7 @@ Neurons::Neurons(const network::Generator& net,
 	m_lastSync(~0),
 	m_paramDirty(false),
 	m_stateDirty(false),
-	m_basePartition(mapper.basePartition(type_id)),
+	m_basePartition(mapper.typeBase(type_id)),
 	m_plugin(m_type.name(), "cuda"),
 	m_update_neurons((cuda_update_neurons_t*) m_plugin.function("cuda_update_neurons"))
 {
