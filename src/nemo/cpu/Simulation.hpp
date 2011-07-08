@@ -11,11 +11,11 @@
  */
 
 #include <vector>
+#include <boost/scoped_ptr.hpp>
 
 #include <nemo/config.h>
 #include <nemo/internal_types.h>
 #include <nemo/internals.hpp>
-#include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/FiringBuffer.hpp>
 #include <nemo/Neurons.hpp>
 #include <nemo/RandomMapper.hpp>
@@ -26,6 +26,9 @@
 
 
 namespace nemo {
+
+	class ConnectivityMatrix;
+
 	namespace cpu {
 
 class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
@@ -132,7 +135,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/*! Update state of all neurons */
 		void update(const current_vector_t&);
 
-		nemo::ConnectivityMatrix m_cm;
+		boost::scoped_ptr<nemo::ConnectivityMatrix> m_cm;
 
 		/* accumulated current from incoming spikes for each neuron */
 		std::vector<fix_t> m_current;

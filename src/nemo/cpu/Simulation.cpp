@@ -13,6 +13,7 @@
 #include <nemo/exception.hpp>
 #include <nemo/bitops.h>
 #include <nemo/fixedpoint.hpp>
+#include <nemo/ConnectivityMatrix.hpp>
 
 #ifdef NEMO_CPU_DEBUG_TRACE
 
@@ -32,7 +33,6 @@ namespace nemo {
 	namespace cpu {
 
 
-
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
@@ -45,14 +45,16 @@ Simulation::Simulation(
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
-	m_cm(net, conf, m_mapper),
 	m_current(m_neuronCount, 0)
 {
 	//! \todo can we finalize cm right away?
-	m_cm.finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
+	m_cm.reset(new nemo::ConnectivityMatrix(net, conf, m_mapper));
+	m_cm->finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
+
 	for(size_t source=0; source < m_neuronCount; ++source) {
-		m_delays[source] = m_cm.delayBits(source);
+		m_delays[source] = m_cm->delayBits(source);
 	}
+
 #ifdef NEMO_CPU_MULTITHREADED
 	initWorkers(m_neuronCount, conf.cpuThreadCount());
 #endif
@@ -80,7 +82,7 @@ Simulation::initWorkers(size_t neurons, unsigned threads)
 unsigned
 Simulation::getFractionalBits() const
 {
-	return m_cm.fractionalBits();
+	return m_cm->fractionalBits();
 }
 
 
@@ -157,7 +159,7 @@ Simulation::updateRange(int start, int end)
 	m_neurons.update(start, end,
 			m_timer.elapsedSimulation(), getFractionalBits(),
 			&m_current[0], &m_recentFiring[0], &m_fired[0],
-			const_cast<void*>(static_cast<const void*>(m_cm.rcm())));
+			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
 }
 
 
@@ -184,7 +186,7 @@ Simulation::update(
 		updateRange(0, m_neuronCount);
 #endif
 
-	m_cm.accumulateStdp(m_recentFiring);
+	m_cm->accumulateStdp(m_recentFiring);
 }
 
 
@@ -238,7 +240,7 @@ Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 void
 Simulation::applyStdp(float reward)
 {
-	m_cm.applyStdp(reward);
+	m_cm->applyStdp(reward);
 }
 
 
@@ -248,7 +250,7 @@ Simulation::deliverSpikes()
 {
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
 	 * may be needed for STDP */
-	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_cm.maxDelay());
+	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_cm->maxDelay());
 
 	for(size_t source=0; source < m_neuronCount; ++source) {
 
@@ -271,7 +273,7 @@ Simulation::deliverSpikes()
 void
 Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 {
-	const nemo::Row& row = m_cm.getRow(source, delay);
+	const nemo::Row& row = m_cm->getRow(source, delay);
 
 	for(unsigned s=0; s < row.len; ++s) {
 		const FAxonTerminal& terminal = row[s];
@@ -312,7 +314,7 @@ Simulation::getMembranePotential(unsigned g_idx) const
 const std::vector<synapse_id>&
 Simulation::getSynapsesFrom(unsigned neuron)
 {
-	return m_cm.getSynapsesFrom(neuron);
+	return m_cm->getSynapsesFrom(neuron);
 }
 
 
@@ -320,7 +322,7 @@ Simulation::getSynapsesFrom(unsigned neuron)
 unsigned
 Simulation::getSynapseTarget(const synapse_id& synapse) const
 {
-	return m_cm.getTarget(synapse);
+	return m_cm->getTarget(synapse);
 }
 
 
@@ -328,7 +330,7 @@ Simulation::getSynapseTarget(const synapse_id& synapse) const
 unsigned
 Simulation::getSynapseDelay(const synapse_id& synapse) const
 {
-	return m_cm.getDelay(synapse);
+	return m_cm->getDelay(synapse);
 }
 
 
@@ -336,7 +338,7 @@ Simulation::getSynapseDelay(const synapse_id& synapse) const
 float
 Simulation::getSynapseWeight(const synapse_id& synapse) const
 {
-	return m_cm.getWeight(synapse);
+	return m_cm->getWeight(synapse);
 }
 
 
@@ -344,7 +346,7 @@ Simulation::getSynapseWeight(const synapse_id& synapse) const
 unsigned char
 Simulation::getSynapsePlastic(const synapse_id& synapse) const
 {
-	return m_cm.getPlastic(synapse);
+	return m_cm->getPlastic(synapse);
 }
 
 
