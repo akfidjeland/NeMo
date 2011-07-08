@@ -7,8 +7,11 @@ namespace nemo {
 	namespace cpu {
 
 
-Neurons::Neurons(const nemo::network::Generator& net, unsigned id) :
-	m_type(net.neuronType(id)),
+Neurons::Neurons(const nemo::network::Generator& net,
+				unsigned type_id,
+				RandomMapper<nidx_t>& mapper) :
+	m_mapper(mapper),
+	m_type(net.neuronType(type_id)),
 	m_nParam(m_type.parameterCount()),
 	m_nState(m_type.stateVarCount()),
 	m_param(boost::extents[m_nParam][net.neuronCount()]),
@@ -24,12 +27,15 @@ Neurons::Neurons(const nemo::network::Generator& net, unsigned id) :
 
 	std::fill(m_state.data(), m_state.data() + m_state.num_elements(), 0.0f);
 
-	for(neuron_iterator i = net.neuron_begin(id), i_end = net.neuron_end(id);
+	unsigned base = mapper.typeBase(type_id);
+
+	for(neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
 			i != i_end; ++i) {
 
 		unsigned g_idx = i->first;
-		unsigned l_idx = m_size;
-		m_mapper.insert(g_idx, l_idx);
+		unsigned l_idx = base + m_size;
+		mapper.insert(g_idx, l_idx);
+		mapper.insertTypeMapping(l_idx, type_id);
 
 		const Neuron& n = i->second;
 		setLocal(l_idx, n.getParameters(), n.getState());

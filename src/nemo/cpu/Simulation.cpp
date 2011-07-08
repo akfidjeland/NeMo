@@ -36,17 +36,23 @@ namespace nemo {
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
-	/* Creating the neuron population also creates a mapping from global to
-	 * (dense) local neuron indices */
-	//! \todo create separate collections for each neuron type
-	m_neurons(net, 0),
-	m_mapper(m_neurons.mapper()),
 	m_neuronCount(net.neuronCount()),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
 	m_current(m_neuronCount, 0)
 {
+	/* Contigous local neuron indices */
+	nidx_t l_idx = 0;
+
+	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+		/* Wrap in smart pointer to ensure the class is not copied */
+		m_mapper.insertTypeBase(type_id, l_idx);
+		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
+		l_idx += ns->size();
+		m_neurons.push_back(ns);
+	}
+
 	m_cm.reset(new nemo::ConnectivityMatrix(net, conf, m_mapper));
 
 	for(size_t source=0; source < m_neuronCount; ++source) {
@@ -99,7 +105,8 @@ Simulation::fire()
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 {
-	m_neurons.setFiringStimulus(fstim);
+	//! \todo map to local indices?
+	m_neurons.front()->setFiringStimulus(fstim);
 }
 
 
@@ -154,7 +161,7 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 void
 Simulation::updateRange(int start, int end)
 {
-	m_neurons.update(start, end,
+	m_neurons.front()->update(start, end,
 			m_timer.elapsedSimulation(), getFractionalBits(),
 			&m_current[0], &m_recentFiring[0], &m_fired[0],
 			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
@@ -214,7 +221,7 @@ Simulation::readFiring()
 void
 Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 {
-	m_neurons.set(g_idx, nargs, args);
+	m_neurons.front()->set(g_idx, nargs, args);
 }
 
 
@@ -222,7 +229,7 @@ Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 void
 Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 {
-	m_neurons.setState(g_idx, var, val);
+	m_neurons.front()->setState(g_idx, var, val);
 }
 
 
@@ -230,7 +237,7 @@ Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 void
 Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 {
-	m_neurons.setParameter(g_idx, parameter, val);
+	m_neurons.front()->setParameter(g_idx, parameter, val);
 }
 
 
@@ -289,7 +296,7 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 float
 Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 {
-	return m_neurons.getState(g_idx, var);
+	return m_neurons.front()->getState(g_idx, var);
 }
 
 
@@ -297,14 +304,14 @@ Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 float
 Simulation::getNeuronParameter(unsigned g_idx, unsigned param) const
 {
-	return m_neurons.getParameter(g_idx, param);
+	return m_neurons.front()->getParameter(g_idx, param);
 }
 
 
 float
 Simulation::getMembranePotential(unsigned g_idx) const
 {
-	return m_neurons.getMembranePotential(g_idx);
+	return m_neurons.front()->getMembranePotential(g_idx);
 }
 
 

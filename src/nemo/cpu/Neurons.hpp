@@ -35,9 +35,13 @@ class Neurons
 
 		/*! Set up local storage for all neurons with the generator neuron type id.
 		 *
-		 * Doing so also creates a mapping from global to dense local neuron
-		 * indices. The resulting mapper can be queried via \a mapper */
-		Neurons(const network::Generator& net, unsigned id);
+		 * As a side effect, the mapper is updated to contain mappings between
+		 * global and local indices for the relevant neurons, as well as
+		 * mappings between type_id and local neuron index.
+		 */
+		Neurons(const network::Generator& net,
+				unsigned type_id,
+				RandomMapper<nidx_t>& mapper);
 
 		/*! Update the state of all neurons
 		 *
@@ -76,16 +80,12 @@ class Neurons
 		 */
 		void setFiringStimulus(const std::vector<unsigned>& fstim);
 
-		typedef RandomMapper<nidx_t> mapper_type;
-
-		const mapper_type& mapper() const { return m_mapper; }
-
 		/*! \return number of neurons in this collection */
 		size_t size() const { return m_size; }
 
 	private :
 
-		mapper_type m_mapper;
+		RandomMapper<nidx_t>& m_mapper;
 
 		/*! Common type for all neurons in this collection */
 		NeuronType m_type;

@@ -113,9 +113,10 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 	private:
 
-		Neurons m_neurons;
+		typedef std::vector< boost::shared_ptr<Neurons> > neuron_groups;
+		neuron_groups m_neurons;
 
-		const RandomMapper<nidx_t>& m_mapper;
+		RandomMapper<nidx_t> m_mapper;
 
 		typedef std::vector<fix_t> current_vector_t;
 
