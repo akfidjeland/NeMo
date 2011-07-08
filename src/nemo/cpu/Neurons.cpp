@@ -13,6 +13,7 @@ Neurons::Neurons(const nemo::network::Generator& net, unsigned id) :
 	m_nState(m_type.stateVarCount()),
 	m_param(boost::extents[m_nParam][net.neuronCount()]),
 	m_state(boost::extents[m_type.stateHistory()][m_nState][net.neuronCount()]),
+	m_stateCurrent(0),
 	m_size(0),
 	m_rng(net.neuronCount()),
 	m_fstim(net.neuronCount(), 0),
