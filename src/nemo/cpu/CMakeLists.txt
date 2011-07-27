@@ -1,4 +1,4 @@
-OPTION(NEMO_CPU_MULTITHREADED "Use multithreaded CPU backend" OFF)
+#OPTION(NEMO_CPU_MULTITHREADED "Use multithreaded CPU backend" OFF)
 
 SUBDIRS(plugins)
 
@@ -6,6 +6,7 @@ SET(SOURCES Simulation.cpp Neurons.cpp)
 
 
 IF(NEMO_CPU_MULTITHREADED)
+	WARNING(SEND_ERROR "CPU multi-threading is not supported in the current version")
 	FIND_PACKAGE(Boost REQUIRED COMPONENTS thread)
 	LIST(APPEND SOURCES "Worker.cpp")
 	IF(CAN_SET_THREAD_AFFINITY)
