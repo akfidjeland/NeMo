@@ -40,7 +40,8 @@ Simulation::Simulation(
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
-	m_current(m_neuronCount, 0)
+	m_current(m_neuronCount, 0),
+	m_fstim(m_neuronCount, 0)
 {
 	/* Contigous local neuron indices */
 	nidx_t l_idx = 0;
@@ -94,11 +95,15 @@ Simulation::getFractionalBits() const
 void
 Simulation::fire()
 {
-	const current_vector_t& current = deliverSpikes();
-	m_neurons.front()->update(
+	current_vector_t& current = deliverSpikes();
+	for(neuron_groups::const_iterator i = m_neurons.begin();
+			i != m_neurons.end(); ++i) {
+		(*i)->update(
 			m_timer.elapsedSimulation(), getFractionalBits(),
-			&m_current[0], &m_recentFiring[0], &m_fired[0],
+			&current[0], &m_fstim[0], &m_recentFiring[0], &m_fired[0],
 			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
+	}
+
 	//! \todo do this in the postfire step
 	m_cm->accumulateStdp(m_recentFiring);
 	setFiring();
@@ -110,8 +115,10 @@ Simulation::fire()
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 {
-	//! \todo map to local indices?
-	m_neurons.front()->setFiringStimulus(fstim);
+	for(std::vector<unsigned>::const_iterator i = fstim.begin();
+			i != fstim.end(); ++i) {
+		m_fstim.at(m_mapper.localIdx(*i)) = 1;
+	}
 }
 
 
@@ -188,7 +195,9 @@ Simulation::readFiring()
 void
 Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 {
-	m_neurons.front()->set(g_idx, nargs, args);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	m_neurons.at(type)->set(l_idx, nargs, args);
 }
 
 
@@ -196,7 +205,9 @@ Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 void
 Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 {
-	m_neurons.front()->setState(g_idx, var, val);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	m_neurons.at(type)->setState(l_idx, var, val);
 }
 
 
@@ -204,7 +215,9 @@ Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 void
 Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 {
-	m_neurons.front()->setParameter(g_idx, parameter, val);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	m_neurons.at(type)->setParameter(l_idx, parameter, val);
 }
 
 
@@ -263,7 +276,9 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 float
 Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 {
-	return m_neurons.front()->getState(g_idx, var);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	return m_neurons.at(type)->getState(l_idx, var);
 }
 
 
@@ -271,14 +286,18 @@ Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 float
 Simulation::getNeuronParameter(unsigned g_idx, unsigned param) const
 {
-	return m_neurons.front()->getParameter(g_idx, param);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	return m_neurons.at(type)->getParameter(l_idx, param);
 }
 
 
 float
 Simulation::getMembranePotential(unsigned g_idx) const
 {
-	return m_neurons.front()->getMembranePotential(g_idx);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	return m_neurons.at(type)->getMembranePotential(l_idx);
 }
 
 

@@ -46,50 +46,63 @@ class Neurons
 		/*! Update the state of all neurons
 		 *
 		 * \post the input current vector is set to all zero.
-		 * \post the internal firing stimulus buffer (\a m_fstim) is set to all false.
+		 * \post the firing stimulus buffer (\a fstim) is set to all false.
 		 */
 		void update(unsigned cycle, unsigned fbits,
-			fix_t current[], uint64_t recentFiring[], unsigned fired[], void* rcm);
+			fix_t current[], unsigned fstim[], uint64_t recentFiring[],
+			unsigned fired[], void* rcm);
 
-		/*! \copydoc nemo::Network::getNeuronState */
-		float getState(unsigned g_idx, unsigned var) const;
+		/*! Get a single state variable for a single neuron
+		 *
+		 * \param l_idx local neuron index
+		 * \param var variable index
+		 * \return state variable with index \a var.
+		 */
+		float getState(unsigned l_idx, unsigned var) const;
 
 		/*! \copydoc nemo::Network::getNeuronParameter */
-		float getParameter(unsigned g_idx, unsigned param) const {
-			return m_param[parameterIndex(param)][m_mapper.localIdx(g_idx)];
-		}
+		/*! Get a single parameter for a single neuron
+		 *
+		 * \param l_idx local neuron index
+		 * \param parameter parameter index
+		 * \return parameter with index \a parameter.
+		 */
+		float getParameter(unsigned l_idx, unsigned param) const;
 
-		float getMembranePotential(unsigned g_idx) const {
-			return getState(g_idx, m_type.membranePotential());
+		float getMembranePotential(unsigned l_idx) const {
+			return getState(l_idx, m_type.membranePotential());
 		}
 
 		/*! \copydoc nemo::Network::setNeuron */
-		void set(unsigned g_idx, unsigned nargs, const float args[]);
+		void set(unsigned l_idx, unsigned nargs, const float args[]);
 
-		/*! \copydoc nemo::Network::setNeuronState */
-		void setState(unsigned g_idx, unsigned var, float val);
-
-		/*! \copydoc nemo::Network::setNeuronParameter */
-		void setParameter(unsigned g_idx, unsigned param, float val) {
-			m_param[parameterIndex(param)][m_mapper.localIdx(g_idx)] = val;
-		}
-
-		/*! \copydoc nemo::SimulationBackend::setFiringStimulus
+		/*! Change a single state variable for an existing neuron
 		 *
-		 * \pre the internal firing stimulus buffer (\a m_fstim) is all false
+		 * \param l_idx local neuron index
+		 * \param var state variable index
+		 * \param value new value of the state variable
 		 */
-		void setFiringStimulus(const std::vector<unsigned>& fstim);
+		void setState(unsigned l_idx, unsigned var, float val);
+
+		/*! Change a single parameter for an existing neuron
+		 *
+		 * \param l_idx local neuron index
+		 * \param parameter parameter index
+		 * \param value new value of the state variable
+		 */
+		void setParameter(unsigned l_idx, unsigned param, float val);
 
 		/*! \return number of neurons in this collection */
 		size_t size() const { return m_size; }
 
 	private :
 
-		RandomMapper<nidx_t>& m_mapper;
+		unsigned m_base;
 
 		/*! Common type for all neurons in this collection */
 		NeuronType m_type;
 
+		/* Number of parameters and state variables */
 		const unsigned m_nParam;
 		const unsigned m_nState;
 
@@ -120,8 +133,8 @@ class Neurons
 		/* History index corresponding to most recent state */
 		unsigned m_stateCurrent;
 
-		/*! Set neuron, like \a cpu::Neurons::set, but with a local index */
-		void setLocal(unsigned l_idx, const float param[], const float state[]);
+		/*! Set neuron, like \a cpu::Neurons::set, but with fewer checks */
+		void setUnsafe(unsigned l_idx, const float param[], const float state[]);
 
 		/*! Number of neurons in this collection */
 		size_t m_size;
@@ -134,13 +147,6 @@ class Neurons
 
 		/*! RNG with separate state for each neuron */
 		std::vector<RNG> m_rng;
-
-		/*! firing stimulus (for a single cycle).
-		 *
-		 * This is really a boolean vector, but use unsigned to support
-		 * parallelisation
-		 */
-		std::vector<unsigned> m_fstim;
 
 		//! \todo maintain firing buffer etc. here instead?
 

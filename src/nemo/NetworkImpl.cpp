@@ -240,6 +240,14 @@ NetworkImpl::neuronCount() const
 
 
 
+unsigned
+NetworkImpl::neuronCount(unsigned type_id) const
+{
+	return m_neurons.at(type_id).size();
+}
+
+
+
 nidx_t
 NetworkImpl::minNeuronIndex() const
 {

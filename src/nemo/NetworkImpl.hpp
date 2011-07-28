@@ -109,6 +109,8 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		unsigned neuronCount() const;
 
+		unsigned neuronCount(unsigned type_id) const;
+
 		/*! \copydoc nemo::Network::Generator::neuronTypeCount */
 		unsigned neuronTypeCount() const;
 

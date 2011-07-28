@@ -39,7 +39,10 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		unsigned getFractionalBits() const;
 
-		/*! \copydoc nemo::SimulationBackend::setFiringStimulus */
+		/*! \copydoc nemo::SimulationBackend::setFiringStimulus
+		 *
+		 * \pre the internal firing stimulus buffer (\a m_fstim) is all false
+		 */
 		void setFiringStimulus(const std::vector<unsigned>& fstim);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
@@ -138,6 +141,13 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		/* accumulated current from incoming spikes for each neuron */
 		std::vector<fix_t> m_current;
 
+		/*! firing stimulus (for a single cycle).
+		 *
+		 * This is really a boolean vector, but use unsigned to support
+		 * parallelisation
+		 */
+		std::vector<unsigned> m_fstim;
+
 		/*! Deliver spikes due for delivery */
 		current_vector_t& deliverSpikes();
 
@@ -159,6 +169,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		Timer m_timer;
 
 		nidx_t validLocalIndex(unsigned g_idx) const;
+
 };
 
 
