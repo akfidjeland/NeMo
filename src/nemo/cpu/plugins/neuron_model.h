@@ -3,6 +3,7 @@
 
 /* Common API for CPU neuron model plugins */
 
+#include <nemo/config.h>
 #include <nemo/internal_types.h>
 #include <nemo/RNG.hpp>
 

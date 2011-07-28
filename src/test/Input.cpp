@@ -27,11 +27,11 @@ addNeurons(nemo::Network& net, unsigned ncount, bool izhikevich)
  *
  * Input neurons are special in that they have neither parameters nor state */
 void
-create(unsigned ncount, bool iz)
+create(backend_t backend, unsigned ncount, bool iz)
 {
 	nemo::Network net;
 	addNeurons(net, ncount, iz);
-	nemo::Configuration conf;
+	nemo::Configuration conf = configuration(false, 1024, backend);
 	boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
 	sim->step();
 }
@@ -39,11 +39,11 @@ create(unsigned ncount, bool iz)
 
 /* Ensure that the input neurons fire, as instructed */
 void
-simple(unsigned ncount, bool iz)
+simple(backend_t backend, unsigned ncount, bool iz)
 {
 	nemo::Network net;
 	addNeurons(net, ncount, iz);
-	nemo::Configuration conf;
+	nemo::Configuration conf = configuration(false, 1024, backend);
 	boost::scoped_ptr<nemo::Simulation> sim(simulation(net, conf));
 	std::vector<unsigned> fstim;
 	rng_t rng;
@@ -68,12 +68,12 @@ simple(unsigned ncount, bool iz)
 	}
 }
 BOOST_AUTO_TEST_SUITE(input)
-	BOOST_AUTO_TEST_CASE(create1)   { nemo::test::input::create(   1, false); }
-	BOOST_AUTO_TEST_CASE(create1k)  { nemo::test::input::create(1000, false); }
-	BOOST_AUTO_TEST_CASE(create1N)  { nemo::test::input::create(   1, true ); }
-	BOOST_AUTO_TEST_CASE(create1kN) { nemo::test::input::create(1000, true ); }
-	BOOST_AUTO_TEST_CASE(simple1)   { nemo::test::input::simple(   1, false); }
-	BOOST_AUTO_TEST_CASE(simple1k)  { nemo::test::input::simple(1000, false); }
-	BOOST_AUTO_TEST_CASE(simple1N)  { nemo::test::input::simple(   1, true ); }
-	BOOST_AUTO_TEST_CASE(simple1kN) { nemo::test::input::simple(1000, true ); }
+	TEST_ALL_BACKENDS_N(create1,   nemo::test::input::create,    1, false)
+	TEST_ALL_BACKENDS_N(create1k,  nemo::test::input::create, 1000, false)
+	TEST_ALL_BACKENDS_N(create1N,  nemo::test::input::create,    1, true )
+	TEST_ALL_BACKENDS_N(create1kN, nemo::test::input::create, 1000, true )
+	TEST_ALL_BACKENDS_N(simple1,   nemo::test::input::simple,    1, false)
+	TEST_ALL_BACKENDS_N(simple1k,  nemo::test::input::simple, 1000, false)
+	TEST_ALL_BACKENDS_N(simple1N,  nemo::test::input::simple,    1, true )
+	TEST_ALL_BACKENDS_N(simple1kN, nemo::test::input::simple, 1000, true )
 BOOST_AUTO_TEST_SUITE_END()

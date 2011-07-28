@@ -13,3 +13,4 @@ ENDFUNCTION(PLUGIN)
 
 PLUGIN(Izhikevich)
 PLUGIN(Kuramoto)
+PLUGIN(Input)
