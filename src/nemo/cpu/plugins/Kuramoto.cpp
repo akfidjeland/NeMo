@@ -82,7 +82,7 @@ extern "C"
 NEMO_PLUGIN_DLL_PUBLIC
 void
 cpu_update_neurons(
-		int start, int end,
+		unsigned start, unsigned end,
 		unsigned cycle,
 		float* paramBase, size_t paramStride,
 		float* stateBase, size_t stateHistoryStride, size_t stateVarStride,
@@ -104,7 +104,7 @@ cpu_update_neurons(
 	std::vector<float> weight;
 	std::vector<float> sourcePhase;
 
-	for(int n=start; n < end; n++) {
+	for(unsigned n=start; n < end; n++) {
 
 		const float f = frequency[n];
 		float targetPhase = phase0[n];

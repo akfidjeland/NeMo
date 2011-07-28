@@ -1,8 +1,5 @@
 #include "Neurons.hpp"
 
-#include <nemo/fixedpoint.hpp>
-
-
 namespace nemo {
 	namespace cpu {
 
@@ -104,7 +101,7 @@ Neurons::setFiringStimulus(const std::vector<unsigned>& fstim)
 
 
 void
-Neurons::update(int start, int end,
+Neurons::update(
 		unsigned cycle,
 		unsigned fbits,
 		fix_t current[],
@@ -112,9 +109,10 @@ Neurons::update(int start, int end,
 		unsigned fired[],
 		void* rcm)
 {
-	if(0 > start || start > end || end > int(size())) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron range in CPU backend neuron update");
-	}
+	unsigned start = m_mapper.minLocalIdx();
+	unsigned end = m_mapper.maxLocalIdx() + 1;
+
+	assert_or_throw(end <= size(), "Invalid neuron range in CPU backend neuron update");
 
 	m_stateCurrent = (cycle+1) % m_type.stateHistory();
 	m_update_neurons(start, end, cycle,

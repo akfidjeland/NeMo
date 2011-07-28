@@ -48,7 +48,7 @@ class Neurons
 		 * \post the input current vector is set to all zero.
 		 * \post the internal firing stimulus buffer (\a m_fstim) is set to all false.
 		 */
-		void update(int start, int end, unsigned cycle, unsigned fbits,
+		void update(unsigned cycle, unsigned fbits,
 			fix_t current[], uint64_t recentFiring[], unsigned fired[], void* rcm);
 
 		/*! \copydoc nemo::Network::getNeuronState */

@@ -11,7 +11,7 @@ extern "C"
 NEMO_PLUGIN_DLL_PUBLIC
 void
 cpu_update_neurons(
-		int start, int end,
+		unsigned start, unsigned end,
 		unsigned cycle,
 		float* paramBase, size_t paramStride,
 		float* stateBase, size_t stateHistoryStride, size_t stateVarStride,
@@ -41,40 +41,44 @@ cpu_update_neurons(
 	float* u1 = stateBase + b1 * stateHistoryStride + STATE_U * stateVarStride;
 	float* v1 = stateBase + b1 * stateHistoryStride + STATE_V * stateVarStride;
 
-	for(int n=start; n < end; n++) {
+	/* Each neuron has two indices: a local index (within the group containing
+	 * neurons of the same type) and a global index. */
 
-		float I = fx_toFloat(current[n], fbits);
-		current[n] = 0;
 
-		if(sigma[n] != 0.0f) {
-			I += sigma[n] * nrand(&rng[n]);
+	for(unsigned ng=start, nl=0U; ng < end; ng++, nl++) {
+
+		float I = fx_toFloat(current[ng], fbits);
+		current[ng] = 0;
+
+		if(sigma[nl] != 0.0f) {
+			I += sigma[nl] * nrand(&rng[nl]);
 		}
 
-		fired[n] = 0;
+		fired[ng] = 0;
 
-		float u = u0[n];
-		float v = v0[n];
+		float u = u0[nl];
+		float v = v0[nl];
 
 		for(unsigned t=0; t<SUBSTEPS; ++t) {
-			if(!fired[n]) {
+			if(!fired[ng]) {
 				v += SUBSTEP_MULT * ((0.04* v + 5.0) * v + 140.0- u + I);
-				u += SUBSTEP_MULT * (a[n] * (b[n] * v - u));
-				fired[n] = v >= 30.0;
+				u += SUBSTEP_MULT * (a[nl] * (b[nl] * v - u));
+				fired[ng] = v >= 30.0;
 			}
 		}
 
-		fired[n] |= fstim[n];
-		fstim[n] = 0;
-		recentFiring[n] = (recentFiring[n] << 1) | (uint64_t) fired[n];
+		fired[ng] |= fstim[ng];
+		fstim[ng] = 0;
+		recentFiring[ng] = (recentFiring[ng] << 1) | (uint64_t) fired[ng];
 
-		if(fired[n]) {
-			v = c[n];
-			u += d[n];
+		if(fired[ng]) {
+			v = c[nl];
+			u += d[nl];
 			// LOG("c%lu: n%u fired\n", elapsedSimulation(), m_mapper.globalIdx(n));
 		}
 
-		u1[n] = u;
-		v1[n] = v;
+		u1[nl] = u;
+		v1[nl] = v;
 	}
 }
 

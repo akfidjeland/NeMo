@@ -80,7 +80,6 @@ class RandomMapper : public Mapper<nidx_t, L>
 
 		L minLocalIdx() const {
 			return m_bm.size() == 0 ? 0 : m_bm.right.begin()->first;
-
 		}
 
 		L maxLocalIdx() const {
@@ -89,7 +88,6 @@ class RandomMapper : public Mapper<nidx_t, L>
 
 		nidx_t minGlobalIdx() const {
 			return m_bm.size() == 0 ? 0 : m_bm.left.begin()->first;
-
 		}
 
 		nidx_t maxGlobalIdx() const {
@@ -102,7 +100,7 @@ class RandomMapper : public Mapper<nidx_t, L>
 		const_iterator begin() const { return m_bm.left.begin(); }
 		const_iterator end() const { return m_bm.left.end(); }
 
-		/*! Add a new local 0-base contiguous index to mapper
+		/*! Add a new local 0-based contiguous index to mapper
 		 *
 		 * \pre local increases monotonically on subsequent calls to this function
 		 * \pre function is called only once for each partition

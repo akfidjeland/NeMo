@@ -133,9 +133,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		 * synapses */
 		std::vector<uint64_t> m_delays;
 
-		/*! Update state of all neurons */
-		void update(const current_vector_t&);
-
 		boost::scoped_ptr<nemo::ConnectivityMatrix> m_cm;
 
 		/* accumulated current from incoming spikes for each neuron */
@@ -156,8 +153,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		friend class Worker;
 #endif
-
-		void updateRange(int begin, int end);
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 

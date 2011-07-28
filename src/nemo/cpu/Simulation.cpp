@@ -95,7 +95,12 @@ void
 Simulation::fire()
 {
 	const current_vector_t& current = deliverSpikes();
-	update(current);
+	m_neurons.front()->update(
+			m_timer.elapsedSimulation(), getFractionalBits(),
+			&m_current[0], &m_recentFiring[0], &m_fired[0],
+			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
+	//! \todo do this in the postfire step
+	m_cm->accumulateStdp(m_recentFiring);
 	setFiring();
 	m_timer.step();
 }
@@ -154,44 +159,6 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 	}
 	m_current = current;
 #endif
-}
-
-
-
-void
-Simulation::updateRange(int start, int end)
-{
-	m_neurons.front()->update(start, end,
-			m_timer.elapsedSimulation(), getFractionalBits(),
-			&m_current[0], &m_recentFiring[0], &m_fired[0],
-			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
-}
-
-
-
-void
-Simulation::update(
-		const current_vector_t& current)
-{
-#ifdef NEMO_CPU_MULTITHREADED
-	if(m_workers.size() > 1) {
-		/* It's possible to reduce thread creation overheads here by creating
-		 * threads in the nemo::Simulation ctor and send signals to activate the
-		 * threads. However, this was found to not produce any measurable speedup
-		 * over this simpler implementation */
-		boost::thread_group threads;
-		for(std::vector<Worker>::const_iterator i = m_workers.begin();
-				i != m_workers.end(); ++i) {
-			threads.create_thread(*i);
-		}
-		/* All threads work here, filling in different part of the simulation data */
-		threads.join_all();
-	} else
-#else
-		updateRange(0, m_neuronCount);
-#endif
-
-	m_cm->accumulateStdp(m_recentFiring);
 }
 
 
