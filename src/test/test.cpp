@@ -335,7 +335,7 @@ runRing(unsigned ncount, nemo::Configuration conf)
  * simulation but should expose errors related to mixing local/global partition
  * indices. */
 void
-testNeuronTypeMixture(bool izFirst)
+testNeuronTypeMixture(backend_t backend, bool izFirst)
 {
 	const unsigned szRing = 1024;
 	boost::scoped_ptr<nemo::Network> net(new nemo::Network());
@@ -351,7 +351,7 @@ testNeuronTypeMixture(bool izFirst)
 		createRing(net.get(), szRing);
 	}
 
-	nemo::Configuration conf = configuration(false, 1024, NEMO_BACKEND_CUDA);
+	nemo::Configuration conf = configuration(false, 1024, backend);
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 	/* Stimulate a single neuron to get the ring going */
 	sim->step(std::vector<unsigned>(1, 0));
@@ -921,8 +921,8 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 BOOST_AUTO_TEST_SUITE(mix)
-	BOOST_AUTO_TEST_CASE(IP) { testNeuronTypeMixture(true); }
-	BOOST_AUTO_TEST_CASE(PI) { testNeuronTypeMixture(false); }
+	TEST_ALL_BACKENDS_N(IP, testNeuronTypeMixture, true)
+	TEST_ALL_BACKENDS_N(PI, testNeuronTypeMixture, false)
 BOOST_AUTO_TEST_SUITE_END()
 
 /* Neuron-type specific tests */

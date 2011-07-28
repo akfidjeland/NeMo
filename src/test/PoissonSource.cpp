@@ -3,12 +3,11 @@ namespace nemo {
 		namespace poisson {
 
 /* Crudely test that the average rate over a long run approaches the expected value */
-//! \todo test for both backends
 void
-testRate(unsigned duration, bool otherNeurons)
+testRate(backend_t backend, unsigned duration, bool otherNeurons)
 {
 	nemo::Network net;
-	nemo::Configuration conf;
+	nemo::Configuration conf = configuration(false, 1024, backend);
 	if(otherNeurons) {
 		/* This population will never fire */
 		createRing(&net, 1024, 1);
@@ -35,9 +34,9 @@ testRate(unsigned duration, bool otherNeurons)
 }
 
 BOOST_AUTO_TEST_SUITE(poisson)
-	BOOST_AUTO_TEST_CASE(rate1s) { nemo::test::poisson::testRate(1000, false); }
-	BOOST_AUTO_TEST_CASE(rate10s) { nemo::test::poisson::testRate(10000, false); }
-	BOOST_AUTO_TEST_CASE(rate1sMix) { nemo::test::poisson::testRate(1000, true); }
-	BOOST_AUTO_TEST_CASE(rate10sMix) { nemo::test::poisson::testRate(10000, true); }
+	TEST_ALL_BACKENDS_N(rate1s, nemo::test::poisson::testRate, 1000, false)
+	TEST_ALL_BACKENDS_N(rate10s, nemo::test::poisson::testRate, 10000, false)
+	TEST_ALL_BACKENDS_N(rate1sMix, nemo::test::poisson::testRate, 1000, true)
+	TEST_ALL_BACKENDS_N(rate10sMix, nemo::test::poisson::testRate, 10000, true)
 BOOST_AUTO_TEST_SUITE_END()
 
