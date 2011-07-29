@@ -28,6 +28,20 @@ typedef void cpu_update_neurons_t(
 		unsigned fired[],
 		void* rcm_ptr);
 
+
+/*! Initialise all neurons in the network 
+ *
+ * For neuron types which requires some state history this may be required,
+ * whereas for types which only stores the current value, this step is
+ * redundant.
+ */
+typedef void cpu_init_neurons_t(
+		unsigned start, unsigned end,
+		float* paramBase, size_t paramStride,
+		float* stateBase, size_t stateHistoryStride, size_t stateVarStride,
+		RNG rng[]);
+
+
 #ifdef __cplusplus
 }
 #endif

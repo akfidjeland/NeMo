@@ -39,6 +39,12 @@ Neurons::Neurons(const nemo::network::Generator& net,
 	}
 
 	nemo::initialiseRng(m_base, m_base+m_size-1, m_rng);
+
+	cpu_init_neurons_t* init_neurons = (cpu_init_neurons_t*) m_plugin.function("cpu_init_neurons");
+	init_neurons(m_base, m_base + size(),
+			m_param.data(), m_param.strides()[0],
+			m_state.data(), m_state.strides()[0], m_state.strides()[1],
+			&m_rng[0]);
 }
 
 
@@ -100,7 +106,6 @@ Neurons::getParameter(unsigned l_idx, unsigned param) const
 {
 	return m_param[parameterIndex(param)][l_idx];
 }
-
 
 
 void

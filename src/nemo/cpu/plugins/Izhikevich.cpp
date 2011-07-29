@@ -84,3 +84,7 @@ cpu_update_neurons(
 
 
 cpu_update_neurons_t* test = &cpu_update_neurons;
+
+
+#include "default_init.c"
+

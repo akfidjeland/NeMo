@@ -1,4 +1,3 @@
-#include <map>
 #include <vector>
 #include <cmath>
 
@@ -124,4 +123,35 @@ cpu_update_neurons(
 }
 
 
-cpu_update_neurons_t* test = &cpu_update_neurons;
+cpu_update_neurons_t* test_update = &cpu_update_neurons;
+
+
+/* Run model backwards without coupling in order to fill history */
+extern "C"
+NEMO_PLUGIN_DLL_PUBLIC
+void
+cpu_init_neurons(
+		unsigned start, unsigned end,
+		float* paramBase, size_t paramStride,
+		float* stateBase, size_t stateHistoryStride, size_t stateVarStride,
+		RNG rng[])
+{
+	const float* frequency = paramBase;
+
+	for(unsigned t=0; t < MAX_HISTORY_LENGTH-1; t++) {
+		/* The C standard ensures that unsigned values wrap around in the
+		 * expected manner */
+		unsigned current = 0U - t;
+		unsigned previous = 0U - (t+1U);
+		const float* phase0 = phase(stateBase, stateHistoryStride, current);
+		float* phase1 = phase(stateBase, stateHistoryStride, previous);
+		for(unsigned n=start; n < end; n++) {
+			//! \todo ensure neuron is valid
+			float phase = phase0[n] - frequency[n]; // negate to run backwards
+			phase1[n] = fmodf(phase, 2.0f*M_PI) + (phase < 0.0f ? 2.0f*M_PI: 0.0f);
+		}
+	}
+}
+
+
+cpu_init_neurons_t* test_init = &cpu_init_neurons;
