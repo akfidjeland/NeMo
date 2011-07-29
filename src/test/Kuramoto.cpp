@@ -34,6 +34,35 @@ class OscillatorNetwork : public nemo::Network
 };
 
 
+
+/* Make sure history initialisation works correctly
+ *
+ * This only tests that the initial state is as expecteed, /not/ that all the
+ * previous values are correct.
+ */
+void
+testInit(backend_t backend)
+{
+	OscillatorNetwork net;
+
+	const unsigned ncount = 1;
+	const float frequency = 0.1f;
+	float phase = 0.0f;
+	for(unsigned n=0; n<ncount; ++n) {
+		net.add(n, frequency, phase);
+	}
+
+	Configuration conf = configuration(false, 1024, backend);
+	boost::scoped_ptr<Simulation> sim(simulation(net, conf));
+
+	BOOST_REQUIRE_EQUAL(sim->getNeuronState(0, 0), phase);
+	sim->step();
+	const float tolerance = 0.001f; // percent
+	BOOST_REQUIRE_CLOSE(sim->getNeuronState(0, 0), phase+frequency, tolerance);
+}
+
+
+
 void
 testUncoupled(backend_t backend)
 {
@@ -163,6 +192,7 @@ testNto1(backend_t backend, unsigned ncount, bool noise)
 
 
 BOOST_AUTO_TEST_SUITE(kuramoto)
+	TEST_ALL_BACKENDS(init, nemo::test::kuramoto::testInit)
 	TEST_ALL_BACKENDS(uncoupled, nemo::test::kuramoto::testUncoupled)
 	BOOST_AUTO_TEST_SUITE(coupled)
 		TEST_ALL_BACKENDS(onetoone, nemo::test::kuramoto::testSimpleCoupled)
