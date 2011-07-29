@@ -5,10 +5,10 @@
 #include <nemo/types.hpp>
 #include <nemo/runtime/RCM.hpp>
 
+#include <nemo/plugins/Kuramoto.h>
+
 #include "neuron_model.h"
 
-
-const size_t HISTORY_LENGTH = 32;
 
 
 /* Compute the phase shift induced in a single oscillator
@@ -35,7 +35,7 @@ sumN(const std::vector<float>& weight,
 float*
 phase(float* base, size_t stride, unsigned cycle)
 {
-	size_t b0 = cycle % HISTORY_LENGTH;
+	size_t b0 = cycle % MAX_HISTORY_LENGTH;
 	return base + b0 * stride;
 }
 
