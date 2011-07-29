@@ -106,6 +106,26 @@ Neurons::Neurons(const network::Generator& net,
 
 
 
+cudaError_t
+Neurons::initHistory(
+		unsigned globalPartitionCount,
+		param_t* d_params,
+		unsigned* d_psize)
+{
+	cuda_init_neurons_t* init_neurons = (cuda_init_neurons_t*) m_plugin.function("cuda_init_neurons");
+	return init_neurons(globalPartitionCount,
+			localPartitionCount(),
+			m_basePartition,
+			d_psize,
+			d_params,
+			m_param.deviceData(),
+			m_state.deviceData(),
+			m_nrng,
+			m_valid.d_data());
+}
+
+
+
 unsigned
 Neurons::localPartitionCount() const
 {

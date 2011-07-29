@@ -322,7 +322,14 @@ class Simulation : public nemo::SimulationBackend
 		boost::shared_array<unsigned> md_nFired;
 
 		boost::shared_ptr<param_t> md_params;
-		void setParameters(size_t pitch1, size_t pitch32);
+
+		/* Initialise the simulation-wide parameters on the device
+		 *
+		 * \return device pointer to reference
+		 *
+		 * The device memory is handled by the class rather than the caller.
+		 */
+		param_t* setParameters(size_t pitch1, size_t pitch32);
 
 		/* Size of each partition, stored on the device in a single array. */
 		boost::shared_array<unsigned> md_partitionSize;

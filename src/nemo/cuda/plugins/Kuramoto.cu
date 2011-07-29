@@ -25,6 +25,8 @@
 
 #include <nemo/plugins/Kuramoto.h>
 
+#include "neuron_model.h"
+
 #define INCOMING_BUFFER_SIZE 1024
 
 
@@ -297,5 +299,93 @@ cuda_update_neurons(
 	return cudaGetLastError();
 }
 
+
+cuda_update_neurons_t* test_update = &cuda_update_neurons;
+
+
+
+
+/* Run model backwards without coupling in order to fill history */
+__global__
+void
+initOscillators(
+		unsigned* g_partitionSize,
+		param_t* g_params,
+		float* g_nparams,
+		float* g_nstate,
+		uint32_t* g_valid)
+{
+	__shared__ unsigned s_partitionSize;
+	__shared__ param_t s_params;
+	__shared__ uint32_t s_valid[S_BV_PITCH];
+
+	unsigned tid = threadIdx.x;
+
+	loadParameters(g_params, &s_params);
+	if(tid == 0) {
+		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
+    }
+	__syncthreads();
+
+	bv_copy(g_valid + CURRENT_PARTITION * s_params.pitch1, s_valid);
+	__syncthreads();
+
+	/* Natural frequency of oscillations */
+	const float* g_frequency = g_nparams + CURRENT_PARTITION * s_params.pitch32;
+
+	for(unsigned t=0; t < MAX_HISTORY_LENGTH-1; t++) {
+
+		/* These unsigned values wrap around */
+		unsigned current = 0U - t;
+		unsigned previous = 0U - (t+1U);
+
+		/* Current phase */
+		const float* g_phase0 =
+			state<MAX_HISTORY_LENGTH, 1, STATE_PHASE>(current, s_params.pitch32, g_nstate);
+
+		/* Next phase */
+		float* g_phase1 =
+			state<MAX_HISTORY_LENGTH, 1, STATE_PHASE>(previous, s_params.pitch32, g_nstate);
+
+		for(unsigned bOscillator=0; bOscillator < s_partitionSize; bOscillator += THREADS_PER_BLOCK) {
+			unsigned oscillator = bOscillator + tid;
+			if(bv_isSet(oscillator, s_valid)) {
+				/* negate frequency to run backwards */
+				float phase = g_phase0[oscillator] - g_frequency[oscillator];
+				g_phase1[oscillator] = fmodf(phase, 2.0f*M_PI) + (phase < 0.0f ? 2.0f*M_PI: 0.0f);
+			}
+		}
+	}
+}
+
+
+
+extern "C"
+NEMO_PLUGIN_DLL_PUBLIC
+cudaError_t
+cuda_init_neurons(
+		unsigned globalPartitionCount,
+		unsigned localPartitionCount,
+		unsigned basePartition,
+		unsigned* d_partitionSize,
+		param_t* d_params,
+		float* df_neuronParameters,
+		float* df_neuronState,
+		nrng_t /* rng */,
+		uint32_t* d_valid)
+{
+	dim3 dimBlock(THREADS_PER_BLOCK);
+	dim3 dimGrid(localPartitionCount);
+
+	/*! \todo add support for 'singleton' types, which do not mix */
+	assert(globalPartitionCount == localPartitionCount);
+
+	initOscillators<<<dimGrid, dimBlock>>>(
+			d_partitionSize, d_params, df_neuronParameters, df_neuronState, d_valid);
+
+	return cudaGetLastError();
+}
+
+cuda_init_neurons_t* test_init = &cuda_init_neurons;
 
 #endif

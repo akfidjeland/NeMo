@@ -153,7 +153,7 @@ Simulation::Simulation(
 	if(m_stdp) {
 		configureStdp();
 	}
-	setParameters(pitch1, pitch32);
+	param_t* d_params = setParameters(pitch1, pitch32);
 	resetTimer();
 
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
@@ -165,6 +165,14 @@ Simulation::Simulation(
 	//! \todo do m_cm size reporting here as well
 	if(conf.loggingEnabled()) {
 		std::cout << "\tLocal queue: " << m_lq.allocated() / (1<<20) << "MB\n";
+	}
+
+	for(neuron_groups::const_iterator i = m_neurons.begin();
+			i != m_neurons.end(); ++i) {
+		runKernel((*i)->initHistory(
+				m_mapper.partitionCount(),
+				d_params,
+				md_partitionSize.get()));
 	}
 }
 
@@ -284,7 +292,7 @@ Simulation::d_allocated() const
  * \param pitch1 pitch of 1-bit per-neuron data
  * \param pitch32 pitch of 32-bit per-neuron data
  */
-void
+param_t*
 Simulation::setParameters(size_t pitch1, size_t pitch32)
 {
 	param_t params;
@@ -307,6 +315,7 @@ Simulation::setParameters(size_t pitch1, size_t pitch32)
 	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
 	md_params = boost::shared_ptr<param_t>(static_cast<param_t*>(d_ptr), d_free);
 	memcpyBytesToDevice(d_ptr, &params, sizeof(param_t));
+	return md_params.get();
 }
 
 

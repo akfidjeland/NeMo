@@ -53,6 +53,12 @@ class Neurons : boost::noncopyable
 
 		Neurons(const nemo::network::Generator&, unsigned type_id, const Mapper&);
 
+		/*! Initialise the state of all neurons */
+		cudaError_t initHistory(
+				unsigned globalPartitionCount,
+				param_t* d_params,
+				unsigned* d_psize);
+
 		/*! Update the state of all neurons */
 		cudaError_t update(
 				cudaStream_t stream,

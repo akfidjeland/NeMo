@@ -314,4 +314,6 @@ cuda_update_neurons(
 }
 
 
+#include "default_init.c"
+
 #endif

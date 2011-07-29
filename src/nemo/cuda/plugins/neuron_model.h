@@ -43,6 +43,24 @@ typedef cudaError_t cuda_update_neurons_t(
 		nidx_dt* d_fired,
 		rcm_dt* d_rcm);
 
+
+/*! Initialise all neurons in the network
+ *
+ * For neuron types which requires some state history this may be required,
+ * whereas for types which only stores the current value, this step is
+ * redundant.
+ */
+typedef cudaError_t cuda_init_neurons_t(
+		unsigned globalPartitionCount,
+		unsigned localPartitionCount,
+		unsigned basePartition,
+		unsigned* d_partitionSize,
+		param_t* d_params,
+		float* df_neuronParameters,
+		float* df_neuronState,
+		nrng_t /* rng */,
+		uint32_t* d_valid);
+
 #ifdef __cplusplus
 }
 #endif
