@@ -310,6 +310,10 @@ There is an intrinsic unit of time, with no physical meaning.
 Delays are expressed in term of this time step.
 The state is updated every time step using fourth-order Runge-Kutta.
 
+The phase history is initialised by running the model ``backwards''.
+At the start of simulation the phase of each oscillator is thus the value specified when the oscillator was created,
+	and previous phases have sensible values.
+
 In the present version of \nemo\ the Kuramoto model should be considered experimental.
 The present version has the limitation that the in-degree of each oscillator is limited to 1024.
 
