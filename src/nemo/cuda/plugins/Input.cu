@@ -10,9 +10,6 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define NEMO_CUDA_PLUGIN_DEBUG_TRACE
-#include <stdio.h>
-
 /*! \file Input.cu Input neuron update kernel */
 
 #include <nemo/config.h>
@@ -23,6 +20,7 @@
 #include <firing.cu>
 #include <parameters.cu>
 #include <rng.cu_h>
+#include "neuron_model.h"
 
 
 /*! \brief Update input neurons
@@ -119,6 +117,7 @@ cuda_update_neurons(
 	return cudaGetLastError();
 }
 
+cuda_update_neurons_t* test_update = &cuda_update_neurons;
 
 #include "default_init.c"
 

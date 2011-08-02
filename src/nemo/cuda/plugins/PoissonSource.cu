@@ -20,6 +20,8 @@
 #include <parameters.cu>
 #include <rng.cu>
 
+#include "neuron_model.h"
+
 
 __global__
 void
@@ -134,6 +136,8 @@ cuda_update_neurons(
 	return cudaGetLastError();
 }
 
+
+cuda_update_neurons_t* test_update = &cuda_update_neurons;
 
 #include "default_init.c"
 

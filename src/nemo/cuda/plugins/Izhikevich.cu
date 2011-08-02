@@ -25,6 +25,7 @@
 #include <rng.cu>
 
 #include <nemo/plugins/Izhikevich.h>
+#include "neuron_model.h"
 
 
 __device__
