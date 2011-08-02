@@ -1,5 +1,3 @@
-SUBDIRS(plugins)
-
 ##############################################################################
 # CUDA configuration
 
@@ -91,3 +89,5 @@ TARGET_LINK_LIBRARIES(nemo_cuda nemo_base)
 CUDA_BUILD_CLEAN_TARGET()
 
 INSTALL(TARGETS nemo_cuda DESTINATION ${INSTALL_LIB_DIR})
+
+ADD_SUBDIRECTORY(plugins)
