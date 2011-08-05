@@ -217,22 +217,24 @@ and the online per-language function reference.
 \section{Simulation model}
 \label{model}
 
-As of version 0.7, \nemo\ has a plugin system which can support different types of neurons.
+\nemo\ has a plugin system which can support different types of neurons.
 This version ships with support for 
-Izhikevich neurons (Section~\ref{model:neuron:izhikevich} and 
-Kuramoto oscillators (Section~\ref{model:neuron:kuramoto}.
+	Izhikevich neurons (Section~\ref{model:neuron:izhikevich}),
+	Poisson spike sources (Section~\ref{model:neuron:poisson}),
+	input neurons (Section~\ref{model:neuron:input}), and
+	delay-coupled Kuramoto oscillators (Section~\ref{model:neuron:kuramoto}).
 
 \subsection{Izhikevich neurons}
 \label{model:neuron:izhikevich}
 
 \begin{tabular}{ll}
-Parameters      & $a, b, c, d, \sigma$              \\
-State variables & $u, v$                           \\
+Parameters      & $a, b, c, d, \sigma$                 \\
+State variables & $u, v$                               \\
 Dynamics        & $\frac{dv}{dt} = 0.04v^2+5v+140-u+I + \mathcal{N}(0,\sigma^2)$ \\
-                & $\frac{du}{dt} = a(bv-u)$        \\ 
-Fire            & $v \ge 30$                       \\
-Reset:          & $v\leftarrow c$                  \\
-                & $u\leftarrow u+d$                \\
+                & $\frac{du}{dt} = a(bv-u)$            \\
+Fire            & $v \ge 30$                           \\
+Reset           & $v\leftarrow c$                      \\
+                & $u\leftarrow u+d$                    \\
 Numerical integration & Euler with step size of 0.25ms \\
 \end{tabular}
 
@@ -269,15 +271,47 @@ The input current is drawn from $\mathcal{N}(0, \sigma^2)$,
 	where $\sigma$ is set separately for each neuron.
 If $\sigma$ is set to zero, no input current is generated.
 
+\subsection{Poisson spike source}
+\label{model:neuron:poisson}
+
+\begin{tabular}{ll}
+Parameters	    & $\lambda$         \\
+State variables & none              \\
+Dynamics        & none              \\
+Fire            & urand $< \lambda$ \\
+Reset           & N/A               \\
+\end{tabular}
+
+A Poisson spike source generates spikes according to a Poisson process with parameter $\lambda$.
+During a single simulation cycle a Poisson spike source generates either zero or one spike (with probability $\lambda$).
+Inter-spike intervals are thus never smaller than the time step,
+	and $\lambda$ must be set taking into account the size of the time step.
+
+
+\subsection{Input neuron}
+\label{model:neuron:input}
+
+\begin{tabular}{ll}
+Parameters	    & none           \\
+State variables & none           \\
+Dynamics        & none           \\
+Fire            & user-specified \\
+Reset           & N/A            \\
+\end{tabular}
+
+An input neuron has no internal dynamics, but can be forced to fire (via the \code{step} function).
+It can thus be used for neurons providing input to the network,
+	e.g. from a sensor.
+
 \subsection{Delay-coupled Kuramoto oscillators}
 \label{model:neuron:kuramoto}
 
 \begin{tabular}{ll}
-Parameters      & $\omega$ \\ 
-State variables & $\theta$ \\
+Parameters      & $\omega$  \\
+State variables & $\theta$  \\
 Dynamics        & see below \\
-Fire            & never \\
-Reset:          & N/A \\
+Fire            & never     \\
+Reset:          & N/A       \\
 Numerical integration & RK4 \\
 \end{tabular}
 
