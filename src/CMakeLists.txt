@@ -1,3 +1,18 @@
+# Expand paths before passing to linker
+CMAKE_POLICY(SET CMP0015 NEW)
+
+# Ensure that we can load libraries at run-time when running from the build
+# directory. The runtime loader uses rpath for this. CMake sets the rpath based
+# on path to linked dynamic libraries. The CUDA backend is only loaded at
+# run-time so it's not specified on the link command. Adding the build
+# directory containing the build tree version of the CUDA backend library
+# ensures that it gets added to the rpath in the build tree. In the install the
+# rpath points only to the install tree itself.
+#
+# This link path must be applied to all binaries, and is therefore set near the
+# root of the build
+LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/src/nemo/cuda)
+
 OPTION(NEMO_CUDA_ENABLED "Enabled simulation on CUDA devices" ON)
 
 IF(NEMO_CUDA_ENABLED)
