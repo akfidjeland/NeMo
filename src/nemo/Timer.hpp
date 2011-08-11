@@ -75,6 +75,7 @@ Timer::reset()
 {
 	using namespace boost::posix_time;
 	m_start = ptime(microsec_clock::local_time());
+	m_simCycles = 0;
 }
 
 }

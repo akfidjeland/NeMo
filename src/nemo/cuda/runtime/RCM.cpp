@@ -11,8 +11,8 @@
 #include <boost/tuple/tuple.hpp>
 
 #include <nemo/util.h>
+#include <nemo/construction/RCM.hpp>
 #include <nemo/cuda/runtime/RCM.hpp>
-#include <nemo/cuda/construction/RCM.hpp>
 #include <nemo/cuda/device_memory.hpp>
 #include <nemo/cuda/parameters.cu_h>
 #include <nemo/cuda/rcm.cu_h>
@@ -32,7 +32,7 @@ make_rcm_index_address(unsigned start, unsigned len)
 
 
 
-RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
+RCM::RCM(size_t partitionCount, construction_t& h_rcm):
 	m_allocated(0),
 	m_planeSize(h_rcm.size())
 {
@@ -76,14 +76,13 @@ RCM::RCM(size_t partitionCount, construction::RCM& h_rcm):
 
 	/* Populate the host-side data structures */
 
-	typedef construction::RCM::warp_map::const_iterator iterator;
-	typedef construction::RCM::key key;
+	typedef construction_t::warp_map::const_iterator iterator;
 
 	size_t allocated = 0; // words, so far
 
 	for(iterator i = h_rcm.m_warps.begin(); i != h_rcm.m_warps.end(); ++i) {
 
-		const key k = i->first;
+		const key_t k = i->first;
 		const unsigned targetPartition = get<0>(k);
 		const unsigned targetNeuron = get<1>(k);
 		const std::vector<size_t>& row = i->second;

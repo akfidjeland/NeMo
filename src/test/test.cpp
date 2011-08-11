@@ -315,7 +315,7 @@ runRing(unsigned ncount, nemo::Configuration conf)
 	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
-	/* Simulate a single neuron to get the ring going */
+	/* Stimulate a single neuron to get the ring going */
 	sim->step(std::vector<unsigned>(1, 0));
 
 	for(unsigned ms=1; ms < duration; ++ms) {
@@ -324,6 +324,50 @@ runRing(unsigned ncount, nemo::Configuration conf)
 		BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
 	}
 }
+
+
+
+
+/* Run a regular ring network test, but with an additional population of
+ * unconnected neurons of a different type.
+ *
+ * The additional poisson source neurons should not have any effect on the
+ * simulation but should expose errors related to mixing local/global partition
+ * indices. */
+void
+testNeuronTypeMixture(backend_t backend, bool izFirst)
+{
+	const unsigned szRing = 1024;
+	boost::scoped_ptr<nemo::Network> net(new nemo::Network());
+	if(izFirst) {
+		createRing(net.get(), szRing);
+	}
+	unsigned poisson = net->addNeuronType("PoissonSource");
+	float p = 0.001f;
+	for(unsigned n=szRing; n<2*szRing; ++n) {
+		net->addNeuron(poisson, n, 1, &p);
+	}
+	if(!izFirst) {
+		createRing(net.get(), szRing);
+	}
+
+	nemo::Configuration conf = configuration(false, 1024, backend);
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+	/* Stimulate a single neuron to get the ring going */
+	sim->step(std::vector<unsigned>(1, 0));
+
+	const unsigned duration = 1000;
+	for(unsigned ms=1; ms < duration; ++ms) {
+		std::vector<unsigned> fired = sim->step();
+		BOOST_REQUIRE(fired.size() > 0);
+		std::sort(fired.begin(), fired.end());
+		BOOST_REQUIRE_EQUAL(fired[0], ms % szRing);
+		if(fired.size() > 1) {
+			BOOST_REQUIRE(fired[1] >= szRing);
+		}
+	}
+}
+
 
 
 BOOST_AUTO_TEST_SUITE(ring_tests)
@@ -542,6 +586,10 @@ testStdpWithAllStatic(backend_t backend)
 }
 
 
+void testInvalidBounds();
+void testInvalidStaticLength();
+void testInvalidDynamicLength(bool stdp);
+
 
 BOOST_AUTO_TEST_SUITE(stdp);
 	TEST_ALL_BACKENDS_N(simple, testStdp, false, 1.0)
@@ -550,6 +598,12 @@ BOOST_AUTO_TEST_SUITE(stdp);
 	TEST_ALL_BACKENDS_N(noise_fractional_reward, testStdp, true, 0.9)
 	TEST_ALL_BACKENDS(invalid, testInvalidStdpUsage)
 	TEST_ALL_BACKENDS(all_static, testStdpWithAllStatic)
+	BOOST_AUTO_TEST_SUITE(configuration)
+		BOOST_AUTO_TEST_CASE(limits) { testInvalidBounds(); }
+		BOOST_AUTO_TEST_CASE(dlength) { testInvalidStaticLength(); }
+		BOOST_AUTO_TEST_CASE(slength_on) { testInvalidDynamicLength(true); }
+		BOOST_AUTO_TEST_CASE(slength_off) { testInvalidDynamicLength(false); }
+	BOOST_AUTO_TEST_SUITE_END();
 BOOST_AUTO_TEST_SUITE_END();
 
 
@@ -865,5 +919,15 @@ BOOST_AUTO_TEST_SUITE(c_api)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+
+BOOST_AUTO_TEST_SUITE(mix)
+	TEST_ALL_BACKENDS_N(IP, testNeuronTypeMixture, true)
+	TEST_ALL_BACKENDS_N(PI, testNeuronTypeMixture, false)
+BOOST_AUTO_TEST_SUITE_END()
+
+/* Neuron-type specific tests */
+
+#include "PoissonSource.cpp"
+#include "Input.cpp"
 #include "Kuramoto.cpp"
 

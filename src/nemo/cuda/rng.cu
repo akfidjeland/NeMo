@@ -13,12 +13,16 @@
 #include "rng.cu_h"
 
 
-/*! \return offset into the RNG state vector for a given \a neuron and \a plane */
+/*! \return offset into the RNG state vector for a given \a neuron and \a plane.
+ *
+ * \param pcount total number of partitions in the whole network
+ * \param global partition index
+ */
 __device__
 unsigned*
-rng_state(unsigned neuron, unsigned plane, nrng_t g_nrng)
+rng_state(unsigned pcount, unsigned partition, unsigned neuron, unsigned plane, nrng_t g_nrng)
 {
-    return g_nrng.state + (plane * PARTITION_COUNT + CURRENT_PARTITION) * g_nrng.pitch + neuron;
+    return g_nrng.state + (plane * pcount + partition) * g_nrng.pitch + neuron;
 }
 
 
@@ -52,16 +56,20 @@ rng_nrand(unsigned state[])
 
 
 
-/*! Generate a gaussian random number from N(0,1) for a specific neuron */
+/*! Generate a gaussian random number from N(0,1) for a specific neuron
+ *
+ * \param pcount total number of partitions in the whole network
+ * \param global partition index
+ */
 __device__
 float
-nrand(unsigned neuron, nrng_t g_nrng)
+nrand(unsigned pcount, unsigned partition, unsigned neuron, nrng_t g_nrng)
 {
 	unsigned state[4];
 
 	/* Copy the input state from memory into our local state */
 	for(unsigned i=0; i < 4; i++){
-		state[i] = *rng_state(neuron, i, g_nrng);
+		state[i] = *rng_state(pcount, partition, neuron, i, g_nrng);
 	}
 
 	float2 r = rng_nrand(state);
@@ -69,9 +77,39 @@ nrand(unsigned neuron, nrng_t g_nrng)
 	/* Copy the current RNG state back to memory (not strictly necessary, you
 	 * can just generate a new random state every time if you want). */
 	for(unsigned i=0; i < 4; i++){
-		*rng_state(neuron, i, g_nrng) = state[i];
+		*rng_state(pcount, partition, neuron, i, g_nrng) = state[i];
 	}
 
 	/* We're throwing away one random number here */
 	return r.x;
+}
+
+
+
+/*! Generate a uniform random number in the range [0,2^32) for a specific neuron
+ *
+ * \param pcount total number of partitions in the whole network
+ * \param global partition index
+ */
+__device__
+unsigned
+urand(unsigned pcount, unsigned partition, unsigned neuron, nrng_t g_nrng)
+{
+	unsigned state[4];
+
+	/* Copy the input state from memory into our local state */
+	for(unsigned i=0; i < 4; i++){
+		state[i] = *rng_state(pcount, partition, neuron, i, g_nrng);
+	}
+
+	unsigned r = rng_urand(state);
+
+	/* Copy the current RNG state back to memory (not strictly necessary, you
+	 * can just generate a new random state every time if you want). */
+	for(unsigned i=0; i < 4; i++){
+		*rng_state(pcount, partition, neuron, i, g_nrng) = state[i];
+	}
+
+	/* We're throwing away one random number here */
+	return r;
 }

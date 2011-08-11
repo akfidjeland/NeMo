@@ -25,11 +25,14 @@
 #include <rng.cu>
 
 #include <nemo/plugins/Izhikevich.h>
+#include "neuron_model.h"
 
 
 __device__
 void
 thalamicInput(
+		unsigned pcount,
+		unsigned partition,
 		size_t partitionSize,
 		size_t pitch,
 		float* g_nparam,    // not offset
@@ -46,7 +49,7 @@ thalamicInput(
 		unsigned neuron = nbase + threadIdx.x;
 		float sigma = g_sigma[neuron];
 		if(neuron < partitionSize && sigma != 0.0f) {
-			s_current[neuron] += nrand(neuron, g_nrng) * sigma;
+			s_current[neuron] += nrand(pcount, partition, neuron, g_nrng) * sigma;
 		}
 	}
 }
@@ -152,7 +155,7 @@ updateNeurons(
 				u += g_d[neuron];
 
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
-				DEBUG_MSG_NEURON("c%u %u-%u fired (forced: %u)\n",
+				DEBUG_MSG("c%u ?+%u-%u fired (forced: %u)\n",
 						s_cycle, CURRENT_PARTITION, neuron, forceFiring);
 #endif
 
@@ -178,23 +181,13 @@ updateNeurons(
 
 
 
-/*! \brief Perform a single simulation step
- *
- * A simulation step consists of five main parts:
- *
- * - gather incoming current from presynaptic firing for each neuron (\ref gather)
- * - add externally or internally provided input current for each neuron
- * - update the neuron state (\ref fire)
- * - enque outgoing spikes for neurons which fired (\ref scatterLocal and \ref scatterGlobal)
- * - accumulate STDP statistics
- *
- * The data structures involved in each of these stages are documentated more
- * with the individual functions and in \ref cuda_delivery.
- */
+/*! Update the state of all Izhikevich neurons in the network */
 __global__
 void
 updateNeurons(
 		uint32_t cycle,
+		unsigned globalPartitionCount,
+		unsigned basePartition,
 		unsigned* g_partitionSize,
 		param_t* g_params,
 		// neuron state
@@ -219,12 +212,15 @@ updateNeurons(
 	__shared__ unsigned s_nFired;
 	__shared__ unsigned s_partitionSize;
 
+	__shared__ unsigned s_globalPartition;
+
 	if(threadIdx.x == 0) {
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 		s_cycle = cycle;
 #endif
 		s_nFired = 0;
-		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
+		s_globalPartition = basePartition + CURRENT_PARTITION;
+		s_partitionSize = g_partitionSize[s_globalPartition];
     }
 	__syncthreads();
 
@@ -236,22 +232,23 @@ updateNeurons(
 
 	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
 	copyCurrent(s_partitionSize,
-			g_current + CURRENT_PARTITION * s_params.pitch32,
+			g_current + s_globalPartition * s_params.pitch32,
 			s_current);
 	__syncthreads();
 
-	addCurrentStimulus(s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
+	addCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current, s_params.fixedPointScale);
 
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the neuron update
 	 * kernel), is smaller. */
-	thalamicInput(s_partitionSize, s_params.pitch32,
+	thalamicInput(globalPartitionCount, s_globalPartition,
+			s_partitionSize, s_params.pitch32,
 			gf_neuronParameters, g_nrng, (float*) s_current);
 	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
-	loadFiringInput(s_params.pitch1, g_fstim, s_fstim);
+	loadFiringInput(s_globalPartition, s_params.pitch1, g_fstim, s_fstim);
 
 	__shared__ uint32_t s_valid[S_BV_PITCH];
 	bv_copy(g_valid + CURRENT_PARTITION * s_params.pitch1, s_valid);
@@ -272,8 +269,8 @@ updateNeurons(
 
 	__syncthreads();
 
-	storeDenseFiring(s_nFired, s_params.pitch1, s_fired, g_firingOutput);
-	storeSparseFiring(s_nFired, s_params.pitch32, s_fired, g_nFired, g_fired);
+	storeDenseFiring(s_nFired, s_globalPartition, s_params.pitch1, s_fired, g_firingOutput);
+	storeSparseFiring(s_nFired, s_globalPartition, s_params.pitch32, s_fired, g_nFired, g_fired);
 }
 
 
@@ -285,7 +282,9 @@ cudaError_t
 cuda_update_neurons(
 		cudaStream_t stream,
 		unsigned cycle,
-		unsigned partitionCount,
+		unsigned globalPartitionCount,
+		unsigned localPartitionCount,
+		unsigned basePartition,
 		unsigned* d_partitionSize,
 		param_t* d_params,
 		float* df_neuronParameters,
@@ -301,10 +300,11 @@ cuda_update_neurons(
 		struct rcm_dt* /* unused */)
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
-	dim3 dimGrid(partitionCount);
+	dim3 dimGrid(localPartitionCount);
 
 	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
-			cycle, d_partitionSize, d_params,
+			cycle, globalPartitionCount, basePartition,
+			d_partitionSize, d_params,
 			df_neuronParameters, df_neuronState, d_nrng, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus
@@ -314,5 +314,7 @@ cuda_update_neurons(
 	return cudaGetLastError();
 }
 
+
+#include "default_init.c"
 
 #endif

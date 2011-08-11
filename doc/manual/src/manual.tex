@@ -5,6 +5,7 @@
 \usepackage[colorlinks=true]{hyperref}
 \usepackage{amsmath}
 \usepackage{color}
+\usepackage{url}
 
 %\usepackage{multitoc}
 
@@ -217,22 +218,24 @@ and the online per-language function reference.
 \section{Simulation model}
 \label{model}
 
-As of version 0.7, \nemo\ has a plugin system which can support different types of neurons.
+\nemo\ has a plugin system which can support different types of neurons.
 This version ships with support for 
-Izhikevich neurons (Section~\ref{model:neuron:izhikevich} and 
-Kuramoto oscillators (Section~\ref{model:neuron:kuramoto}.
+	Izhikevich neurons (Section~\ref{model:neuron:izhikevich}),
+	Poisson spike sources (Section~\ref{model:neuron:poisson}),
+	input neurons (Section~\ref{model:neuron:input}), and
+	delay-coupled Kuramoto oscillators (Section~\ref{model:neuron:kuramoto}).
 
 \subsection{Izhikevich neurons}
 \label{model:neuron:izhikevich}
 
 \begin{tabular}{ll}
-Parameters      & $a, b, c, d, \sigma$              \\
-State variables & $u, v$                           \\
+Parameters      & $a, b, c, d, \sigma$                 \\
+State variables & $u, v$                               \\
 Dynamics        & $\frac{dv}{dt} = 0.04v^2+5v+140-u+I + \mathcal{N}(0,\sigma^2)$ \\
-                & $\frac{du}{dt} = a(bv-u)$        \\ 
-Fire            & $v \ge 30$                       \\
-Reset:          & $v\leftarrow c$                  \\
-                & $u\leftarrow u+d$                \\
+                & $\frac{du}{dt} = a(bv-u)$            \\
+Fire            & $v \ge 30$                           \\
+Reset           & $v\leftarrow c$                      \\
+                & $u\leftarrow u+d$                    \\
 Numerical integration & Euler with step size of 0.25ms \\
 \end{tabular}
 
@@ -269,15 +272,47 @@ The input current is drawn from $\mathcal{N}(0, \sigma^2)$,
 	where $\sigma$ is set separately for each neuron.
 If $\sigma$ is set to zero, no input current is generated.
 
+\subsection{Poisson spike source}
+\label{model:neuron:poisson}
+
+\begin{tabular}{ll}
+Parameters	    & $\lambda$         \\
+State variables & none              \\
+Dynamics        & none              \\
+Fire            & urand $< \lambda$ \\
+Reset           & N/A               \\
+\end{tabular}
+
+A Poisson spike source generates spikes according to a Poisson process with parameter $\lambda$.
+During a single simulation cycle a Poisson spike source generates either zero or one spike (with probability $\lambda$).
+Inter-spike intervals are thus never smaller than the time step,
+	and $\lambda$ must be set taking into account the size of the time step.
+
+
+\subsection{Input neuron}
+\label{model:neuron:input}
+
+\begin{tabular}{ll}
+Parameters	    & none           \\
+State variables & none           \\
+Dynamics        & none           \\
+Fire            & user-specified \\
+Reset           & N/A            \\
+\end{tabular}
+
+An input neuron has no internal dynamics, but can be forced to fire (via the \code{step} function).
+It can thus be used for neurons providing input to the network,
+	e.g. from a sensor.
+
 \subsection{Delay-coupled Kuramoto oscillators}
 \label{model:neuron:kuramoto}
 
 \begin{tabular}{ll}
-Parameters      & $\omega$ \\ 
-State variables & $\theta$ \\
+Parameters      & $\omega$  \\
+State variables & $\theta$  \\
 Dynamics        & see below \\
-Fire            & never \\
-Reset:          & N/A \\
+Fire            & never     \\
+Reset:          & N/A       \\
 Numerical integration & RK4 \\
 \end{tabular}
 
@@ -309,6 +344,10 @@ where
 There is an intrinsic unit of time, with no physical meaning.
 Delays are expressed in term of this time step.
 The state is updated every time step using fourth-order Runge-Kutta.
+
+The phase history is initialised by running the model ``backwards''.
+At the start of simulation the phase of each oscillator is thus the value specified when the oscillator was created,
+	and previous phases have sensible values.
 
 In the present version of \nemo\ the Kuramoto model should be considered experimental.
 The present version has the limitation that the in-degree of each oscillator is limited to 1024.
@@ -632,7 +671,7 @@ The Python path then has to be set manually to include the relevant path from Ta
 
 \paragraph{PyNN}
 Python users may be interested in using the PyNN interface to \nemo.
-PyNN is a common API for a number of spiking neural network simulators 
+PyNN \cite{davison08pynn} is a common API for a number of spiking neural network simulators
 	including NEURON, NEST, PCSIM and Brian.
 % TODO: add references
 This interface provides more complex connection patterns,
@@ -642,7 +681,7 @@ PyNN operates with a number of standard neuron models.
 \nemo\ currently only supports the Izhikevich model.
 To use PyNN, ensure the \library{nemo} module is installed and on the python path,
 	and then do \code{from pyNN.nemo import *}.
-PyNN is a separate larger project, which is fully documented elsewhere.
+PyNN is a separate larger project, which is fully documented \href{http://neuralensemble.org/trac/PyNN}{online}.
 
 \paragraph{Help}
 The classes and functions in the \library{nemo} module are documented using standard docstrings,
@@ -748,6 +787,9 @@ Unless the stars are aligned just so this standard library version will be
 different from the default \cpp\ standard libraries on the system (which \nemo\ should have been built against), resulting in an error when loading the MEX file.
 This can be fixed by setting \code{LD\_PRELOAD} by doing something like this
 
+If using \nemo\ installed from a binary package, ensure that the architecture (32/64-bit) matches that of Matlab.
+A mismatch will mean the Matlab bindings won't work.
+
 \begin{shell}
 export LD_PRELOAD=/lib/libgcc_s.so.1:/usr/lib/libstdc++.so.6.0.13
 \end{shell}
@@ -778,6 +820,8 @@ This installs \nemo\ to \directory{C:\textbackslash Program Files\textbackslash 
 		libraries in the \directory{bin} subdirectory and
 		headers in the \directory{include} subdirectory,
 Python bindings, Matlab bindings, and examples are stored in separate subdirectories.
+Note that binary installer may be built against a specific version of CUDA, as well as for a particular architecture (32-bit vs 64-bit).
+If the binary installer does not match your system, building from source might be the best option. 
 
 Alternatively, the library can be built from source using \command{cmake} to generate a Visual Studio project file,
 	and then building from within Visual Studio (see Section~\ref{source_build}).
@@ -800,6 +844,8 @@ By default,
 	library files are installed to \directory{/usr/lib},
 	while
 	Python bindings, Matlab bindings, examples and documentation are found in subdirectories of \directory{/usr/share/nemo}.
+While the installer allows changing the install path,
+	this may lead to runtime in the current version.
 Alternatively, the library can be built from source using \command{cmake} and the GNU build tools (see Section~\ref{source_build}).
 
 \subsection{Building from source}

@@ -8,14 +8,12 @@
  */
 
 #include <vector>
-#include <iostream>
 
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <nemo/exception.hpp>
 #include <nemo/ConfigurationImpl.hpp>
-#include <nemo/NeuronType.hpp>
-#include <nemo/cuda/kernel.cu_h>
-#include <nemo/cuda/rcm.cu_h>
+#include <nemo/network/Generator.hpp>
 
 #include "RCM.hpp"
 
@@ -40,19 +38,38 @@ hash_value(const tuple<T1, T2>& k)
 
 
 namespace nemo {
-	namespace cuda {
-		namespace construction {
+	namespace construction {
 
 
-RCM::RCM(const nemo::ConfigurationImpl& conf, const nemo::NeuronType& type) :
-	/* leave space for null warp at beginning */
+inline
+bool
+fieldRequired(const network::Generator& net,
+		std::const_mem_fun_ref_t<bool, nemo::NeuronType> predicate)
+{
+	bool required = false;
+	for(unsigned i=0, i_end=net.neuronTypeCount(); i < i_end; ++i) {
+		required = required || predicate(net.neuronType(i));
+	}
+	return required;
+}
+
+
+
+template<class Key, class Data, size_t Width>
+RCM<Key,Data,Width>::RCM(const nemo::ConfigurationImpl& conf,
+		const nemo::network::Generator& net,
+		const Data& paddingData) :
+	m_paddingData(paddingData),
 	m_synapseCount(0),
+	/* leave space for null warp at beginning */
 	m_nextFreeWarp(1),
-	m_data(WARP_SIZE, INVALID_REVERSE_SYNAPSE),
-	m_useData(type.usesRcmSources() || type.usesRcmDelays() || conf.stdpFunction()),
-	m_forward(WARP_SIZE, 0),
-	m_useForward(type.usesRcmForward() || conf.stdpFunction()),
-	m_useWeights(type.usesRcmWeights()),
+	m_data(Width, paddingData),
+	m_useData(fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmSources))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmDelays))
+			|| conf.stdpFunction()),
+	m_forward(Width, 0),
+	m_useForward(fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmForward)) || conf.stdpFunction()),
+	m_useWeights(fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmWeights))),
 	m_enabled(m_useData || m_useForward || m_useWeights),
 	m_stdpEnabled(conf.stdpFunction())
 {
@@ -71,10 +88,10 @@ RCM::RCM(const nemo::ConfigurationImpl& conf, const nemo::NeuronType& type) :
 	 * present).
 	 */
 	bool typeRequiresRcm =
-			   type.usesRcmSources()
-			|| type.usesRcmDelays()
-			|| type.usesRcmForward()
-			|| type.usesRcmWeights();
+			   fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmSources))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmDelays ))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmForward))
+			|| fieldRequired(net, std::mem_fun_ref(&NeuronType::usesRcmWeights));
 	if(typeRequiresRcm && conf.stdpFunction()) {
 		throw nemo::exception(NEMO_API_UNSUPPORTED,
 				"The current version does not support a mix of STDP with neuron types which require reverse connectivity for other purposes");
@@ -89,17 +106,17 @@ RCM::RCM(const nemo::ConfigurationImpl& conf, const nemo::NeuronType& type) :
  * 		word offset for the synapse. This is the same for all the different
  * 		planes of data.
  */
+template<class Key, class Data, size_t Width>
 size_t
-RCM::allocateSynapse(const DeviceIdx& target)
+RCM<Key,Data,Width>::allocateSynapse(const Key& target)
 {
 	m_synapseCount += 1;
 
-	key k(target.partition, target.neuron);
-	unsigned& dataRowLength = m_dataRowLength[k];
-	unsigned column = dataRowLength % WARP_SIZE;
+	unsigned& dataRowLength = m_dataRowLength[target];
+	unsigned column = dataRowLength % Width;
 	dataRowLength += 1;
 
-	std::vector<size_t>& warps = m_warps[k];
+	std::vector<size_t>& warps = m_warps[target];
 
 	size_t row;
 	if(column == 0) {
@@ -110,9 +127,9 @@ RCM::allocateSynapse(const DeviceIdx& target)
 		/* Resize host buffers to accomodate the new warp. This allocation
 		 * scheme could potentially result in a large number of reallocations,
 		 * so we might be better off allocating larger chunks here */
-		size_t size = m_nextFreeWarp * WARP_SIZE;
+		size_t size = m_nextFreeWarp * Width;
 		if(m_useData) {
-			m_data.resize(size, INVALID_REVERSE_SYNAPSE);
+			m_data.resize(size, m_paddingData);
 		}
 		if(m_useForward) {
 			m_forward.resize(size, 0);
@@ -125,23 +142,24 @@ RCM::allocateSynapse(const DeviceIdx& target)
 		row = *warps.rbegin();
 	}
 
-	return row * WARP_SIZE + column;
+	return row * Width + column;
 }
 
 
 
+template<class Key, class Data, size_t Width>
 void
-RCM::addSynapse(
+RCM<Key,Data,Width>::addSynapse(
+		const Key& target,
+		const Data& data,
 		const Synapse& s,
-		const DeviceIdx& d_source,
-		const DeviceIdx& d_target,
 		size_t f_addr)
 {
 	if(m_enabled) {
 		if(!m_stdpEnabled || s.plastic()) {
-			size_t r_addr = allocateSynapse(d_target);
+			size_t r_addr = allocateSynapse(target);
 			if(m_useData) {
-				m_data[r_addr] = make_rsynapse(d_source.partition, d_source.neuron, s.delay);
+				m_data[r_addr] = data;
 			}
 			if(m_useForward) {
 				m_forward[r_addr] = f_addr;
@@ -154,12 +172,13 @@ RCM::addSynapse(
 }
 
 
+
+template<class Key, class Data, size_t Width>
 size_t
-RCM::size() const
+RCM<Key,Data,Width>::size() const
 {
-	return m_nextFreeWarp * WARP_SIZE;
+	return m_nextFreeWarp * Width;
 }
 
-		} // end namespace construction
-	} // end namespace cuda
+	} // end namespace construction
 } // end namespace nemo

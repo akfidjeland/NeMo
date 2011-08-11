@@ -106,23 +106,23 @@ nemo_status_t nemo_log_stdout(nemo_configuration_t);
  * 		Length, in cycles, of the part of the STDP window that precedes the
  * 		postsynaptic firing.
  * \param postfire_fn
- * 		STDP function sampled at integer cycle intervals in the postfire part of
- * 		the STDP window
+ * 		STDP function sampled at integer cycle intervals in the postfire part
+ * 		of the STDP window
  * \param postfire_len
  * 		Length, in cycles, of the part of the STDP window that comes after the
  * 		postsynaptic firing.
  * \param min_excitatory_weight
- * 		Smallest positive weight below which excitatory synapses are not
+ * 		Smallest positive value below which excitatory synapse weights are not
  * 		allowed to fall
  * \param max_excitatory_weight
- * 		Smallest positive weight above which excitatory synapses are not
+ * 		Largest positive value above which excitatory synapse weights are not
  * 		allowed to rise
  * \param min_inhibitory_weight
- * 		Smallest (in absolute terms) negative weight below which inhibitory
- * 		synapses are not allowed to fall
+ * 		Smallest (in absolute terms) negative value below which inhibitory
+ * 		synapse weights are not allowed to fall
  * \param max_inhibitory_weight
- * 		Smallest (in absolute terms) negative weight above which inhibitory
- * 		synapses are not allowed to rise
+ * 		Largest (in absolute terms) negative value above which inhibitory
+ * 		synapse weights are not allowed to rise
  *
  * Note that synapses, both excitatory and inhibitory, stick at zero. I.e. once
  * they reach zero, they never recover. If the minimum weight is non-zero,

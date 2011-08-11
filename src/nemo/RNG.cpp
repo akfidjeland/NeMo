@@ -3,6 +3,8 @@
 #include <cmath>
 #include <boost/random.hpp>
 
+#include "exception.hpp"
+
 
 unsigned
 urand(RNG* rng)
@@ -36,6 +38,9 @@ namespace nemo {
 void
 initialiseRng(nidx_t minNeuronIdx, nidx_t maxNeuronIdx, std::vector<RNG>& rngs)
 {
+	assert_or_throw(minNeuronIdx <= maxNeuronIdx,
+			"Invalid neuron range when initialising RNG");
+
 	//! \todo allow users to seed this RNG
 	typedef boost::mt19937 rng_t;
 	rng_t rng;

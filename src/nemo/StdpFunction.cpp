@@ -1,7 +1,12 @@
+#include <boost/format.hpp>
+
 #include "StdpFunction.hpp"
 #include "exception.hpp"
 
+
 namespace nemo {
+
+const unsigned StdpFunction::MAX_FIRING_HISTORY = 64;
 
 
 StdpFunction::StdpFunction(
@@ -36,10 +41,21 @@ StdpFunction::StdpFunction(
 				"STDP should have abs(maximum inhibitory weight) >= abs(minimum inhibitory weight)");
 	}
 
-	/*! \todo This constraint is too weak. Also need to consider max delay in
-	 * network here */
-	if(m_prefire.size() + m_postfire.size() > 64) {
+	if(m_prefire.size() + m_postfire.size() > MAX_FIRING_HISTORY) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "size of STDP window too large");
+	}
+}
+
+
+
+void
+StdpFunction::verifyDynamicWindowLength(unsigned d_max) const
+{
+	using boost::format;
+	if(d_max + m_postfire.size() > MAX_FIRING_HISTORY) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("Max delay + postfire part of STDP function must be <= %s")
+					% MAX_FIRING_HISTORY));
 	}
 }
 

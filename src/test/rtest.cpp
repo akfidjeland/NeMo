@@ -94,7 +94,8 @@ run(nemo::Network* net,
 
 
 
-void runTorus(bool creating)
+void
+runTorus(bool creating)
 {
 	{
 		bool stdp = false;
@@ -121,7 +122,8 @@ void runTorus(bool creating)
 
 
 
-void runKuramoto(bool creating)
+void
+runKuramoto(bool creating)
 {
 #ifdef NEMO_CUDA_ENABLED
 	using namespace std;

@@ -10,9 +10,6 @@
 #include "Simulation.hpp"
 
 #include <vector>
-#include <sstream>
-#include <iostream>
-#include <fstream>
 
 #include <boost/format.hpp>
 
@@ -32,7 +29,13 @@ namespace nemo {
 	namespace cuda {
 
 
-/* Map global neuron indices to compact local indices */
+/*! Map global neuron indices to compact local indices
+ *
+ * Multiple neuron types are mapped such that
+ *
+ * 1. no partition contains more than one neuron type
+ * 2. all neurons of a single type are found in a contigous range of partitions
+ */
 Mapper
 mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 {
@@ -41,21 +44,70 @@ mapCompact(const nemo::network::Generator& net, unsigned partitionSize)
 	Mapper mapper(partitionSize);
 
 	pidx_t pidx = 0;
-	nidx_t nidx = 0;
 
-	for(neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
-			i != i_end; ++i) {
-		unsigned g_idx = i->first;
-		DeviceIdx l_idx(pidx, nidx);
-		mapper.insert(g_idx, l_idx);
-		nidx++;
-		if(nidx == partitionSize) {
-			nidx = 0;
+	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+
+		mapper.insertTypeBase(type_id, pidx);
+		nidx_t nidx = 0;
+
+		for(neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
+				i != i_end; ++i) {
+
+			if(nidx == 0) {
+				/* First neuron in a new partition */
+				mapper.insertTypeMapping(pidx, type_id);
+			}
+
+
+			unsigned g_idx = i->first;
+			DeviceIdx l_idx(pidx, nidx);
+			mapper.insert(g_idx, l_idx);
+			nidx++;
+			if(nidx == partitionSize) {
+				nidx = 0;
+				pidx++;
+			}
+		}
+
+		/* neuron types should never cross partition boundaries */
+		if(nidx != 0) {
 			pidx++;
 		}
 	}
 	return mapper;
 }
+
+
+/*! Verify device memory pitch
+ *
+ * On the device a number of arrays have exactly the same shape. These share a
+ * common pitch parameter. This function verifies that the memory allocation
+ * does what we expect.
+ */
+void
+checkPitch(size_t found, size_t expected)
+{
+	using boost::format;
+	if(expected != 0 && expected != found) {
+		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR,
+				str(format("Pitch mismatch in device memory allocation. Found %u, expected %u")
+					% found % expected));
+	}
+}
+
+
+
+void
+setPitch(size_t found, size_t* expected)
+{
+	if(*expected == 0) {
+		*expected = found;
+	} else {
+		checkPitch(found, *expected);
+	}
+}
+
+
 
 
 
@@ -64,7 +116,6 @@ Simulation::Simulation(
 		const nemo::ConfigurationImpl& conf) :
 	m_mapper(mapCompact(net, conf.cudaPartitionSize())),
 	m_conf(conf),
-	m_neurons(net, m_mapper),
 	m_cm(net, conf, m_mapper),
 	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
 	m_recentFiring(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
@@ -74,16 +125,35 @@ Simulation::Simulation(
 	m_firingBuffer(m_mapper),
 	m_fired(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), true, "Fired count")),
+	md_partitionSize(d_array<unsigned>(MAX_PARTITION_COUNT, true, "partition size array")),
 	m_deviceAssertions(m_mapper.partitionCount()),
 	m_stdp(conf.stdpFunction()),
 	md_istim(NULL),
 	m_streamCompute(0),
 	m_streamCopy(0)
 {
+
+	size_t pitch1 = 0;
+	size_t pitch32 = 0;
+	/* Populate all neuron collections */
+	std::vector<unsigned> h_partitionSize; //MAX_PARTITION_COUNT, 0);
+	for(unsigned i=0, i_end=net.neuronTypeCount(); i < i_end; ++i) {
+		//! \todo could do mapping here to avoid two passes over neurons
+		/* Wrap in smart pointer to ensure the class is not copied */
+		boost::shared_ptr<Neurons> ns(new Neurons(net, i, m_mapper));
+		setPitch(ns->wordPitch32(), &pitch32);
+		setPitch(ns->wordPitch1(), &pitch1);
+		//! \todo verify contigous range
+		std::copy(ns->psize_begin(), ns->psize_end(), std::back_inserter(h_partitionSize));
+		m_neurons.push_back(ns);
+	}
+	h_partitionSize.resize(MAX_PARTITION_COUNT, 0); // extend
+	memcpyToDevice(md_partitionSize.get(), h_partitionSize);
+
 	if(m_stdp) {
 		configureStdp();
 	}
-	setParameters();
+	param_t* d_params = setParameters(pitch1, pitch32);
 	resetTimer();
 
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
@@ -95,6 +165,14 @@ Simulation::Simulation(
 	//! \todo do m_cm size reporting here as well
 	if(conf.loggingEnabled()) {
 		std::cout << "\tLocal queue: " << m_lq.allocated() / (1<<20) << "MB\n";
+	}
+
+	for(neuron_groups::const_iterator i = m_neurons.begin();
+			i != m_neurons.end(); ++i) {
+		runKernel((*i)->initHistory(
+				m_mapper.partitionCount(),
+				d_params,
+				md_partitionSize.get()));
 	}
 }
 
@@ -189,44 +267,43 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 
 
 
-void
-checkPitch(size_t expected, size_t found)
-{
-	if(expected != found) {
-		std::ostringstream msg;
-		msg << "Simulation::checkPitch: pitch mismatch in device memory allocation. "
-			"Found " << found << ", expected " << expected << std::endl;
-		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR, msg.str());
-	}
-}
-
-
 size_t
 Simulation::d_allocated() const
 {
+	size_t nsz = 0;
+	for(neuron_groups::const_iterator i = m_neurons.begin();
+			i != m_neurons.end(); ++i) {
+		nsz += (*i)->d_allocated();
+	}
+
 	return m_firingStimulus.d_allocated()
 		+ m_currentStimulus.d_allocated()
 		+ m_recentFiring.d_allocated()
-		+ m_neurons.d_allocated()
+		+ nsz
 		+ m_firingBuffer.d_allocated()
 		+ m_cm.d_allocated();
 }
 
 
-/* Set common pitch and check that all relevant arrays have the same pitch. The
- * kernel uses a single pitch for all 32-bit data */ 
-void
-Simulation::setParameters()
+/*! Set common pitches and check that all relevant arrays have the same pitch.
+ *
+ * The kernel uses a single pitch for all 64-, 32-, and 1-bit per-neuron data
+ *
+ * \param pitch1 pitch of 1-bit per-neuron data
+ * \param pitch32 pitch of 32-bit per-neuron data
+ */
+param_t*
+Simulation::setParameters(size_t pitch1, size_t pitch32)
 {
 	param_t params;
 
-	params.pitch1 = m_firingStimulus.wordPitch();
-	params.pitch32 = m_neurons.wordPitch32();
+	params.pitch1 = pitch1;
+	params.pitch32 = pitch32;
 	params.pitch64 = m_recentFiring.wordPitch();
-	checkPitch(params.pitch32, m_currentStimulus.wordPitch());
-	checkPitch(params.pitch64, m_cm.delayBits().wordPitch());
-	checkPitch(params.pitch1, m_firingBuffer.wordPitch());
-	checkPitch(params.pitch1, m_neurons.wordPitch1());
+	checkPitch(m_currentStimulus.wordPitch(), params.pitch32);
+	checkPitch(m_cm.delayBits().wordPitch(), params.pitch64);
+	checkPitch(m_firingBuffer.wordPitch(), params.pitch1);
+	checkPitch(m_firingStimulus.wordPitch(), params.pitch1);;
 
 	unsigned fbits = m_cm.fractionalBits();
 	params.fixedPointScale = 1 << fbits;
@@ -238,6 +315,7 @@ Simulation::setParameters()
 	d_malloc(&d_ptr, sizeof(param_t), "Global parameters");
 	md_params = boost::shared_ptr<param_t>(static_cast<param_t*>(d_ptr), d_free);
 	memcpyBytesToDevice(d_ptr, &params, sizeof(param_t));
+	return md_params.get();
 }
 
 
@@ -272,7 +350,7 @@ Simulation::prefire()
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
 			m_mapper.partitionCount(),
-			m_neurons.d_partitionSize(),
+			md_partitionSize.get(),
 			md_params.get(),
 			m_current.deviceData(),
 			m_cm.d_fcm(),
@@ -286,17 +364,24 @@ Simulation::fire()
 {
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_firingStimulusDone));
 	CUDA_SAFE_CALL(cudaEventSynchronize(m_currentStimulusDone));
-	runKernel(m_neurons.update(
-			m_streamCompute,
-			m_timer.elapsedSimulation(),
-			md_params.get(),
-			m_firingStimulus.d_buffer(),
-			md_istim,
-			m_current.deviceData(),
-			m_firingBuffer.d_buffer(),
-			md_nFired.get(),
-			m_fired.deviceData(),
-			m_cm.d_rcm()));
+	/*! \todo if we separate input neurons from others, we could run input
+	 * neurons in advance of gather completion */
+	for(neuron_groups::const_iterator i = m_neurons.begin();
+			i != m_neurons.end(); ++i) {
+		runKernel((*i)->update(
+				m_streamCompute,
+				m_timer.elapsedSimulation(),
+				m_mapper.partitionCount(),
+				md_params.get(),
+				md_partitionSize.get(),
+				m_firingStimulus.d_buffer(),
+				md_istim,
+				m_current.deviceData(),
+				m_firingBuffer.d_buffer(),
+				md_nFired.get(),
+				m_fired.deviceData(),
+				m_cm.d_rcm()));
+	}
 	cudaEventRecord(m_eventFireDone, m_streamCompute);
 }
 
@@ -328,7 +413,7 @@ Simulation::postfire()
 			m_streamCompute,
 			m_timer.elapsedSimulation(),
 			m_mapper.partitionCount(),
-			m_neurons.d_partitionSize(),
+			md_partitionSize.get(),
 			md_params.get(),
 			m_cm.d_rcm(),
 			m_recentFiring.deviceData(),
@@ -368,7 +453,7 @@ Simulation::applyStdp(float reward)
 		::applyStdp(
 				m_streamCompute,
 				m_mapper.partitionCount(),
-				m_neurons.d_partitionSize(),
+				md_partitionSize.get(),
 				m_cm.fractionalBits(),
 				md_params.get(),
 				m_cm.d_fcm(),
@@ -388,9 +473,11 @@ Simulation::applyStdp(float reward)
 
 
 void
-Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
+Simulation::setNeuron(unsigned h_neuron, unsigned nargs, const float args[])
 {
-	m_neurons.setNeuron(m_mapper.deviceIdx(g_idx), nargs, args);
+	DeviceIdx d_neuron = m_mapper.deviceIdx(h_neuron);
+	unsigned type = m_mapper.typeIdx(d_neuron.partition);
+	m_neurons.at(type)->setNeuron(d_neuron, nargs, args);
 }
 
 
@@ -444,41 +531,51 @@ Simulation::readFiring()
 
 
 void
-Simulation::setNeuronState(unsigned neuron, unsigned var, float val)
+Simulation::setNeuronState(unsigned h_neuron, unsigned var, float val)
 {
-	return m_neurons.setState(m_mapper.deviceIdx(neuron), var, val);
+	DeviceIdx d_neuron = m_mapper.deviceIdx(h_neuron);
+	unsigned type = m_mapper.typeIdx(d_neuron.partition);
+	return m_neurons.at(type)->setState(d_neuron, var, val);
 }
 
 
 
 void
-Simulation::setNeuronParameter(unsigned neuron, unsigned parameter, float val)
+Simulation::setNeuronParameter(unsigned h_neuron, unsigned parameter, float val)
 {
-	return m_neurons.setParameter(m_mapper.deviceIdx(neuron), parameter, val);
+	DeviceIdx d_neuron = m_mapper.deviceIdx(h_neuron);
+	unsigned type = m_mapper.typeIdx(d_neuron.partition);
+	return m_neurons.at(type)->setParameter(d_neuron, parameter, val);
 }
 
 
 
 float
-Simulation::getNeuronState(unsigned neuron, unsigned var) const
+Simulation::getNeuronState(unsigned h_neuron, unsigned var) const
 {
-	return m_neurons.getState(m_mapper.deviceIdx(neuron), var);
+	DeviceIdx d_neuron = m_mapper.deviceIdx(h_neuron);
+	unsigned type = m_mapper.typeIdx(d_neuron.partition);
+	return m_neurons.at(type)->getState(d_neuron, var);
 }
 
 
 
 float
-Simulation::getNeuronParameter(unsigned neuron, unsigned parameter) const
+Simulation::getNeuronParameter(unsigned h_neuron, unsigned parameter) const
 {
-	return m_neurons.getParameter(m_mapper.deviceIdx(neuron), parameter);
+	DeviceIdx d_neuron = m_mapper.deviceIdx(h_neuron);
+	unsigned type = m_mapper.typeIdx(d_neuron.partition);
+	return m_neurons.at(type)->getParameter(d_neuron, parameter);
 }
 
 
 
 float
-Simulation::getMembranePotential(unsigned neuron) const
+Simulation::getMembranePotential(unsigned h_neuron) const
 {
-	return m_neurons.getMembranePotential(m_mapper.deviceIdx(neuron));
+	DeviceIdx d_neuron = m_mapper.deviceIdx(h_neuron);
+	unsigned type = m_mapper.typeIdx(d_neuron.partition);
+	return m_neurons.at(type)->getMembranePotential(d_neuron);
 }
 
 

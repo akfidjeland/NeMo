@@ -90,6 +90,12 @@ class NEMO_BASE_DLL_PUBLIC ConfigurationImpl
 		void setBackendDescription(const char* descr) { m_backendDescription.assign(descr); }
 		const char* backendDescription() const { return m_backendDescription.c_str(); }
 
+		/*! Verify that the STDP configuration is valid
+		 *
+		 * \param d_max maximum delay in network
+		 */
+		void verifyStdp(unsigned d_max) const;
+
 	private:
 
 		bool m_logging;

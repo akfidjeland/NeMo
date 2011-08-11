@@ -32,6 +32,31 @@ static const unsigned preFire = 10; // ms within epoch
 static const unsigned postFireDelay = 10; // ms within epoch
 
 
+/* Return prefire part of standard STDP function */
+std::vector<float>
+standardStdpPre(float alpha, unsigned tau)
+{
+	std::vector<float> fn(tau);
+	for(unsigned dt = 0; dt < tau; ++dt) {
+		fn.at(dt) = alpha * expf(-float(dt) / float(tau));
+	}
+	return fn;
+}
+
+
+
+std::vector<float>
+standardStdpPost(float alpha, unsigned tau)
+{
+	std::vector<float> fn(tau);
+	for(unsigned dt = 0; dt < tau; ++dt) {
+		fn.at(dt) = alpha * expf(-float(dt) / float(tau));
+	}
+	return fn;
+}
+
+
+
 float
 dwPre(int dt)
 {
@@ -258,4 +283,69 @@ testInvalidStdpUsage(backend_t backend)
 	nemo::Configuration conf;
 	setBackend(backend, conf);
 	BOOST_REQUIRE_THROW(simpleStdpRun(*net, conf), nemo::exception);
+}
+
+
+
+
+/* Mixing up excitatory and inhibitory limits should throw */
+void
+testInvalidBounds()
+{
+	nemo::Configuration conf;
+	std::vector<float> pre  = standardStdpPre(1.0, 20);
+	std::vector<float> post = standardStdpPost(1.0, 20);
+
+	// negative excitatory
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, -0.01f,  1.0f, -0.01f, -1.0f), nemo::exception);
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post,  0.01f, -1.0f, -0.01f, -1.0f), nemo::exception);
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, -0.01f, -1.0f, -0.01f, -1.0f), nemo::exception);
+
+	// positive inhibitory
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, 0.01f, 1.0f,  0.01f, -1.0f), nemo::exception);
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, 0.01f, 1.0f, -0.01f,  1.0f), nemo::exception);
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, 0.01f, 1.0f,  0.01f,  1.0f), nemo::exception);
+
+	// incorrect order of excitatory
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, 1.0f, 0.01f, -0.01f, -1.0), nemo::exception);
+
+	// incorrect order of inhibitory
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, 0.01f, 1.0f, -1.0f, -0.01f), nemo::exception);
+}
+
+
+
+/* Too long STDP window (on its own) should throw */
+void
+testInvalidStaticLength()
+{
+	nemo::Configuration conf;
+	std::vector<float> pre  = standardStdpPre(1.0, 35);
+	std::vector<float> post = standardStdpPost(1.0, 35);
+	BOOST_REQUIRE_THROW(conf.setStdpFunction(pre, post, 0.01f,  1.0f, -0.01f, -1.0f), nemo::exception);
+}
+
+
+
+/* Too long STDP window (considering max network delay) should throw */
+void
+testInvalidDynamicLength(bool stdp)
+{
+	nemo::Configuration conf;
+	std::vector<float> pre  = standardStdpPre(1.0, 30);
+	std::vector<float> post = standardStdpPost(1.0, 30);
+	conf.setStdpFunction(pre, post, 0.01f,  1.0f, -0.01f, -1.0f);
+
+	nemo::Network net;
+	unsigned iz = net.addNeuronType("Izhikevich");
+	float param[7] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+	net.addNeuron(iz, 0, 7, param);
+	net.addNeuron(iz, 1, 7, param);
+	net.addSynapse(0, 1, 32, 1.0, stdp);
+
+	if(stdp) {
+		BOOST_REQUIRE_THROW(nemo::simulation(net, conf), nemo::exception);
+	} else {
+		BOOST_REQUIRE_NO_THROW(nemo::simulation(net, conf));
+	}
 }

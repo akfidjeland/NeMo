@@ -37,27 +37,25 @@ NetworkImpl::NetworkImpl() :
 unsigned
 NetworkImpl::addNeuronType(const std::string& name)
 {
-	if(!m_neurons.empty()) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "Only a single neuron type per network is supported");
+	if(m_typeIds.find(name) == m_typeIds.end()) {
+		unsigned type_id = m_neurons.size();
+		m_neurons.push_back(Neurons(NeuronType(name)));
+		m_typeIds[name] = type_id;
+		return type_id;
+	} else {
+		return m_typeIds[name];
 	}
-	unsigned type_id = m_neurons.size();
-	m_neurons.push_back(Neurons(NeuronType(name)));
-	return type_id;
 }
 
 
 
 const NeuronType&
-NetworkImpl::neuronType() const
+NetworkImpl::neuronType(unsigned id) const
 {
-	/* only a single neuron model supported currently */
 	if(m_neurons.size() == 0) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network, so neuron type unkown");
-	} else if (m_neurons.size() > 1) {
-		// this ought to work, but in the current scheme we only support a single neuron type
-		throw nemo::exception(NEMO_LOGIC_ERROR, "Multiple neuron types specified");
 	}
-	return m_neurons.front().type();
+	return m_neurons.at(id).type();
 }
 
 
@@ -84,13 +82,13 @@ NetworkImpl::neuronCollection(unsigned type_id)
 
 
 void
-NetworkImpl::addNeuron(unsigned type_id, unsigned nidx,
+NetworkImpl::addNeuron(unsigned type_id, unsigned g_idx,
 		unsigned nargs, const float args[])
 {
-	m_maxIdx = std::max(m_maxIdx, int(nidx));
-	m_minIdx = std::min(m_minIdx, int(nidx));
-	unsigned l_nidx = neuronCollection(type_id).add(nargs, args);
-	m_mapper.insert(nidx, NeuronAddress(type_id, l_nidx));
+	m_maxIdx = std::max(m_maxIdx, int(g_idx));
+	m_minIdx = std::min(m_minIdx, int(g_idx));
+	unsigned l_nidx = neuronCollection(type_id).add(g_idx, nargs, args);
+	m_mapper.insert(g_idx, NeuronAddress(type_id, l_nidx));
 }
 
 
@@ -242,6 +240,14 @@ NetworkImpl::neuronCount() const
 
 
 
+unsigned
+NetworkImpl::neuronCount(unsigned type_id) const
+{
+	return m_neurons.at(type_id).size();
+}
+
+
+
 nidx_t
 NetworkImpl::minNeuronIndex() const
 {
@@ -267,29 +273,36 @@ NetworkImpl::maxNeuronIndex() const
 /* Neuron iterators */
 
 
+unsigned
+NetworkImpl::neuronTypeCount() const
+{
+	return m_neurons.size();
+}
+
 
 neuron_iterator
-NetworkImpl::neuron_begin() const
+NetworkImpl::neuron_begin(unsigned id) const
 {
-	/* only a single neuron model supported here */
-	if(m_neurons.size() != 1) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network");
+	if(id >= m_neurons.size()) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron type id");
 	}
-	const Neurons& neurons = m_neurons.front();
-	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.begin(),
+	const Neurons& neurons = m_neurons.at(id);
+	//! \todo fold this into Neurons
+	return neuron_iterator(new programmatic::neuron_iterator(
+				neurons.m_gidx.begin(),
 				neurons.m_param, neurons.m_state, neurons.type()));
 }
 
 
 neuron_iterator
-NetworkImpl::neuron_end() const
+NetworkImpl::neuron_end(unsigned id) const
 {
-	/* only a single neuron model supported here */
-	if(m_neurons.size() != 1) {
-		throw nemo::exception(NEMO_LOGIC_ERROR, "No neurons in network");
+	if(id >= m_neurons.size()) {
+		throw nemo::exception(NEMO_LOGIC_ERROR, "Invalid neuron type id");
 	}
-	const Neurons& neurons = m_neurons.front();
-	return neuron_iterator(new programmatic::neuron_iterator(m_mapper.end(),
+	const Neurons& neurons = m_neurons.at(id);
+	//! \todo fold this into Neurons
+	return neuron_iterator(new programmatic::neuron_iterator(neurons.m_gidx.end(),
 				neurons.m_param, neurons.m_state, neurons.type()));
 }
 

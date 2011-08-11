@@ -34,8 +34,37 @@ class OscillatorNetwork : public nemo::Network
 };
 
 
+
+/* Make sure history initialisation works correctly
+ *
+ * This only tests that the initial state is as expecteed, /not/ that all the
+ * previous values are correct.
+ */
 void
-testUncoupled()
+testInit(backend_t backend)
+{
+	OscillatorNetwork net;
+
+	const unsigned ncount = 1;
+	const float frequency = 0.1f;
+	float phase = 0.0f;
+	for(unsigned n=0; n<ncount; ++n) {
+		net.add(n, frequency, phase);
+	}
+
+	Configuration conf = configuration(false, 1024, backend);
+	boost::scoped_ptr<Simulation> sim(simulation(net, conf));
+
+	BOOST_REQUIRE_EQUAL(sim->getNeuronState(0, 0), phase);
+	sim->step();
+	const float tolerance = 0.001f; // percent
+	BOOST_REQUIRE_CLOSE(sim->getNeuronState(0, 0), phase+frequency, tolerance);
+}
+
+
+
+void
+testUncoupled(backend_t backend)
 {
 	OscillatorNetwork net;
 
@@ -46,7 +75,7 @@ testUncoupled()
 		net.add(n, frequency, phase);
 	}
 
-	Configuration conf;
+	Configuration conf = configuration(false, 1024, backend);
 	boost::scoped_ptr<Simulation> sim(simulation(net, conf));
 
 	const float tolerance = 0.001f; // percent
@@ -61,7 +90,7 @@ testUncoupled()
 
 
 void
-testSimpleCoupled()
+testSimpleCoupled(backend_t backend)
 {
 	OscillatorNetwork net;
 
@@ -72,7 +101,7 @@ testSimpleCoupled()
 	net.add(1, freq[1], phase[1]);
 	net.connect(0, 1, 1, 1.0);
 
-	Configuration conf;
+	Configuration conf = configuration(false, 1024, backend);
 	boost::scoped_ptr<Simulation> sim(simulation(net, conf));
 
 	for(unsigned t=0; t<100; ++t) {
@@ -96,7 +125,6 @@ testSimpleCoupled()
 
 
 
-
 /*! Test n-to-1 coupling
  *
  * Using a large number of oscillators, one of which is coupled with all the
@@ -109,7 +137,7 @@ testSimpleCoupled()
  * resulting from race conditions.
  */
 void
-testNto1(unsigned ncount, bool noise)
+testNto1(backend_t backend, unsigned ncount, bool noise)
 {
 	OscillatorNetwork net;
 
@@ -134,7 +162,7 @@ testNto1(unsigned ncount, bool noise)
 		}
 	}
 
-	Configuration conf;
+	Configuration conf = configuration(false, 1024, backend);
 	boost::scoped_ptr<Simulation> sim(simulation(net, conf));
 
 	for(unsigned t=0; t<duration; ++t) {
@@ -164,17 +192,18 @@ testNto1(unsigned ncount, bool noise)
 
 
 BOOST_AUTO_TEST_SUITE(kuramoto)
-	BOOST_AUTO_TEST_CASE(uncoupled) { nemo::test::kuramoto::testUncoupled(); }
+	TEST_ALL_BACKENDS(init, nemo::test::kuramoto::testInit)
+	TEST_ALL_BACKENDS(uncoupled, nemo::test::kuramoto::testUncoupled)
 	BOOST_AUTO_TEST_SUITE(coupled)
-		BOOST_AUTO_TEST_CASE(onetoone) { nemo::test::kuramoto::testSimpleCoupled(); }
-		BOOST_AUTO_TEST_CASE(in2) { nemo::test::kuramoto::testNto1(2, false); }
-		BOOST_AUTO_TEST_CASE(in100) { nemo::test::kuramoto::testNto1(100, false); }
-		BOOST_AUTO_TEST_CASE(in100n) { nemo::test::kuramoto::testNto1(100, true); }
-		BOOST_AUTO_TEST_CASE(in256) { nemo::test::kuramoto::testNto1(256, false); }
-		BOOST_AUTO_TEST_CASE(in257) { nemo::test::kuramoto::testNto1(257, false); }
-		BOOST_AUTO_TEST_CASE(in1000) { nemo::test::kuramoto::testNto1(1000, false); }
-		BOOST_AUTO_TEST_CASE(in1000n) { nemo::test::kuramoto::testNto1(1000, true); }
+		TEST_ALL_BACKENDS(onetoone, nemo::test::kuramoto::testSimpleCoupled)
+		TEST_ALL_BACKENDS_N(   in2 , nemo::test::kuramoto::testNto1,    2, false)
+		TEST_ALL_BACKENDS_N( in100 , nemo::test::kuramoto::testNto1,  100, false)
+		TEST_ALL_BACKENDS_N( in100n, nemo::test::kuramoto::testNto1,  100, true )
+		TEST_ALL_BACKENDS_N( in256 , nemo::test::kuramoto::testNto1,  256, false)
+		TEST_ALL_BACKENDS_N( in257 , nemo::test::kuramoto::testNto1,  257, false)
+		TEST_ALL_BACKENDS_N(in1000 , nemo::test::kuramoto::testNto1, 1000, false)
+		TEST_ALL_BACKENDS_N(in1000n, nemo::test::kuramoto::testNto1, 1000, true )
 		/* This fails because the max indegree is 1024. */
-		BOOST_AUTO_TEST_CASE(in2000noise) { nemo::test::kuramoto::testNto1(2000, true); }
+		TEST_ALL_BACKENDS_N(in2000n, nemo::test::kuramoto::testNto1, 2000, true )
 	BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

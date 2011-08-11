@@ -151,15 +151,13 @@ gather( uint32_t cycle,
 	/* Per-partition parameters */
 	__shared__ unsigned s_partitionSize;
 
-	loadParameters(g_params, &s_params);
-
 	if(threadIdx.x == 0) {
 #ifdef NEMO_CUDA_DEBUG_TRACE
 		s_cycle = cycle;
 #endif
 		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
-    }
-	__syncthreads();
+	} // sync done in loadParameters
+	loadParameters(g_params, &s_params);
 
 	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
 		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0U;

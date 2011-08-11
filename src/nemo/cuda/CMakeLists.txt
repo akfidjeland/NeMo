@@ -1,5 +1,3 @@
-SUBDIRS(plugins)
-
 ##############################################################################
 # CUDA configuration
 
@@ -78,7 +76,6 @@ CUDA_ADD_LIBRARY(nemo_cuda SHARED
 	Neurons.cpp
 	Outgoing.cpp
 	construction/FcmIndex.cpp
-	construction/RCM.cpp
 	runtime/RCM.cpp
 	device_memory.cpp
 	devices.cpp
@@ -92,3 +89,5 @@ TARGET_LINK_LIBRARIES(nemo_cuda nemo_base)
 CUDA_BUILD_CLEAN_TARGET()
 
 INSTALL(TARGETS nemo_cuda DESTINATION ${INSTALL_LIB_DIR})
+
+ADD_SUBDIRECTORY(plugins)

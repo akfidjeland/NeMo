@@ -12,18 +12,25 @@
 
 #include <boost/shared_array.hpp>
 #include <nemo/cuda/rcm.cu_h>
+#include <nemo/cuda/kernel.cu_h>
+//! \todo define DeviceIdx somewhere else
+#include <nemo/cuda/Mapper.hpp>
 
 namespace nemo {
-	namespace cuda {
 
-		namespace construction {
-			class RCM;
-		}
+	namespace construction {
+		template<class I, class D, size_t W> class RCM;
+	}
+
+	namespace cuda {
 
 		namespace runtime {
 
 
-/*! \brief Runtime index into the reverse connectivity matrix  
+/*! \brief Runtime representation of the reverse connectivity matrix
+ *
+ * The main data is stored in a structure-of-arrays format. Lookups into this
+ * data is done via an index.
  *
  * The index is logically a map from neuron to a list of warp numbers (row),
  * where the warp number is an offset into the reverse connectivity matrix.
@@ -31,15 +38,18 @@ namespace nemo {
  * The length of the different rows may differ greatly. In order to save memory
  * the index itself is stored in a compact form where
  *
- * - each row is stored in a contigous chunk of memory
+ * - each row is stored in a contiguous chunk of memory
  * - the extent of each row in the index (start and length) is stored in a
  *   separate fixed-size table
  *
- * \see construction::RCM
+ * \see nemo::construction::RCM
  */
 class RCM
 {
 	public :
+
+		typedef boost::tuple<pidx_t, nidx_t> key_t;
+		typedef nemo::construction::RCM<key_t, uint32_t, WARP_SIZE> construction_t;
 
 		RCM() : m_allocated(0), m_planeSize(0) {}
 
@@ -49,7 +59,7 @@ class RCM
 		 * object essentially void. We clear this data at the earliest possible
 		 * moment since the data structures involved can be quite large.
 		 */
-		RCM(size_t partitionCount, construction::RCM& rcm);
+		RCM(size_t partitionCount, construction_t& rcm);
 
 		/*! \return number of bytes allocated on the device */
 		size_t d_allocated() const { return m_allocated; }

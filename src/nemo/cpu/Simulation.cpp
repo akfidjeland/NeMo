@@ -13,6 +13,7 @@
 #include <nemo/exception.hpp>
 #include <nemo/bitops.h>
 #include <nemo/fixedpoint.hpp>
+#include <nemo/ConnectivityMatrix.hpp>
 
 #ifdef NEMO_CPU_DEBUG_TRACE
 
@@ -32,26 +33,33 @@ namespace nemo {
 	namespace cpu {
 
 
-
 Simulation::Simulation(
 		const nemo::network::Generator& net,
 		const nemo::ConfigurationImpl& conf) :
-	/* Creating the neuron population also creates a mapping from global to
-	 * (dense) local neuron indices */
-	m_neurons(net),
-	m_mapper(m_neurons.mapper()),
 	m_neuronCount(net.neuronCount()),
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
-	m_cm(net, conf, m_mapper),
-	m_current(m_neuronCount, 0)
+	m_current(m_neuronCount, 0),
+	m_fstim(m_neuronCount, 0)
 {
-	//! \todo can we finalize cm right away?
-	m_cm.finalize(m_mapper, true); // all valid neuron indices are known. See CM ctor.
-	for(size_t source=0; source < m_neuronCount; ++source) {
-		m_delays[source] = m_cm.delayBits(source);
+	/* Contigous local neuron indices */
+	nidx_t l_idx = 0;
+
+	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+		/* Wrap in smart pointer to ensure the class is not copied */
+		m_mapper.insertTypeBase(type_id, l_idx);
+		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
+		l_idx += ns->size();
+		m_neurons.push_back(ns);
 	}
+
+	m_cm.reset(new nemo::ConnectivityMatrix(net, conf, m_mapper));
+
+	for(size_t source=0; source < m_neuronCount; ++source) {
+		m_delays[source] = m_cm->delayBits(source);
+	}
+
 #ifdef NEMO_CPU_MULTITHREADED
 	initWorkers(m_neuronCount, conf.cpuThreadCount());
 #endif
@@ -79,7 +87,7 @@ Simulation::initWorkers(size_t neurons, unsigned threads)
 unsigned
 Simulation::getFractionalBits() const
 {
-	return m_cm.fractionalBits();
+	return m_cm->fractionalBits();
 }
 
 
@@ -87,8 +95,17 @@ Simulation::getFractionalBits() const
 void
 Simulation::fire()
 {
-	const current_vector_t& current = deliverSpikes();
-	update(current);
+	current_vector_t& current = deliverSpikes();
+	for(neuron_groups::const_iterator i = m_neurons.begin();
+			i != m_neurons.end(); ++i) {
+		(*i)->update(
+			m_timer.elapsedSimulation(), getFractionalBits(),
+			&current[0], &m_fstim[0], &m_recentFiring[0], &m_fired[0],
+			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
+	}
+
+	//! \todo do this in the postfire step
+	m_cm->accumulateStdp(m_recentFiring);
 	setFiring();
 	m_timer.step();
 }
@@ -98,7 +115,10 @@ Simulation::fire()
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 {
-	m_neurons.setFiringStimulus(fstim);
+	for(std::vector<unsigned>::const_iterator i = fstim.begin();
+			i != fstim.end(); ++i) {
+		m_fstim.at(m_mapper.localIdx(*i)) = 1;
+	}
 }
 
 
@@ -150,48 +170,12 @@ Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 
 
 
-void
-Simulation::updateRange(int start, int end)
-{
-	m_neurons.update(start, end, getFractionalBits(),
-			&m_current[0], &m_recentFiring[0], &m_fired[0]);
-}
-
-
-
-void
-Simulation::update(
-		const current_vector_t& current)
-{
-#ifdef NEMO_CPU_MULTITHREADED
-	if(m_workers.size() > 1) {
-		/* It's possible to reduce thread creation overheads here by creating
-		 * threads in the nemo::Simulation ctor and send signals to activate the
-		 * threads. However, this was found to not produce any measurable speedup
-		 * over this simpler implementation */
-		boost::thread_group threads;
-		for(std::vector<Worker>::const_iterator i = m_workers.begin();
-				i != m_workers.end(); ++i) {
-			threads.create_thread(*i);
-		}
-		/* All threads work here, filling in different part of the simulation data */
-		threads.join_all();
-	} else
-#else
-		updateRange(0, m_neuronCount);
-#endif
-
-	m_cm.accumulateStdp(m_recentFiring);
-}
-
-
-
 //! \todo use per-thread buffers and just copy these in bulk
 void
 Simulation::setFiring()
 {
 	m_firingBuffer.enqueueCycle();
-	for(unsigned n=0; n < m_neuronCount; ++n) { 
+	for(unsigned n=0; n < m_neuronCount; ++n) {
 		if(m_fired[n]) {
 			m_firingBuffer.addFiredNeuron(m_mapper.globalIdx(n));
 		}
@@ -211,7 +195,9 @@ Simulation::readFiring()
 void
 Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 {
-	m_neurons.set(g_idx, nargs, args);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	m_neurons.at(type)->set(l_idx, nargs, args);
 }
 
 
@@ -219,7 +205,9 @@ Simulation::setNeuron(unsigned g_idx, unsigned nargs, const float args[])
 void
 Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 {
-	m_neurons.setState(g_idx, var, val);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	m_neurons.at(type)->setState(l_idx, var, val);
 }
 
 
@@ -227,7 +215,9 @@ Simulation::setNeuronState(unsigned g_idx, unsigned var, float val)
 void
 Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 {
-	m_neurons.setParameter(g_idx, parameter, val);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	m_neurons.at(type)->setParameter(l_idx, parameter, val);
 }
 
 
@@ -235,7 +225,7 @@ Simulation::setNeuronParameter(unsigned g_idx, unsigned parameter, float val)
 void
 Simulation::applyStdp(float reward)
 {
-	m_cm.applyStdp(reward);
+	m_cm->applyStdp(reward);
 }
 
 
@@ -245,7 +235,7 @@ Simulation::deliverSpikes()
 {
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
 	 * may be needed for STDP */
-	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_cm.maxDelay());
+	uint64_t validSpikes = ~(((uint64_t) (~0)) << m_cm->maxDelay());
 
 	for(size_t source=0; source < m_neuronCount; ++source) {
 
@@ -268,7 +258,7 @@ Simulation::deliverSpikes()
 void
 Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 {
-	const nemo::Row& row = m_cm.getRow(source, delay);
+	const nemo::Row& row = m_cm->getRow(source, delay);
 
 	for(unsigned s=0; s < row.len; ++s) {
 		const FAxonTerminal& terminal = row[s];
@@ -286,7 +276,9 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 float
 Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 {
-	return m_neurons.getState(g_idx, var);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	return m_neurons.at(type)->getState(l_idx, var);
 }
 
 
@@ -294,14 +286,18 @@ Simulation::getNeuronState(unsigned g_idx, unsigned var) const
 float
 Simulation::getNeuronParameter(unsigned g_idx, unsigned param) const
 {
-	return m_neurons.getParameter(g_idx, param);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	return m_neurons.at(type)->getParameter(l_idx, param);
 }
 
 
 float
 Simulation::getMembranePotential(unsigned g_idx) const
 {
-	return m_neurons.getMembranePotential(g_idx);
+	unsigned l_idx = m_mapper.localIdx(g_idx);
+	unsigned type = m_mapper.typeIdx(l_idx);
+	return m_neurons.at(type)->getMembranePotential(l_idx);
 }
 
 
@@ -309,7 +305,7 @@ Simulation::getMembranePotential(unsigned g_idx) const
 const std::vector<synapse_id>&
 Simulation::getSynapsesFrom(unsigned neuron)
 {
-	return m_cm.getSynapsesFrom(neuron);
+	return m_cm->getSynapsesFrom(neuron);
 }
 
 
@@ -317,7 +313,7 @@ Simulation::getSynapsesFrom(unsigned neuron)
 unsigned
 Simulation::getSynapseTarget(const synapse_id& synapse) const
 {
-	return m_cm.getTarget(synapse);
+	return m_cm->getTarget(synapse);
 }
 
 
@@ -325,7 +321,7 @@ Simulation::getSynapseTarget(const synapse_id& synapse) const
 unsigned
 Simulation::getSynapseDelay(const synapse_id& synapse) const
 {
-	return m_cm.getDelay(synapse);
+	return m_cm->getDelay(synapse);
 }
 
 
@@ -333,7 +329,7 @@ Simulation::getSynapseDelay(const synapse_id& synapse) const
 float
 Simulation::getSynapseWeight(const synapse_id& synapse) const
 {
-	return m_cm.getWeight(synapse);
+	return m_cm->getWeight(synapse);
 }
 
 
@@ -341,7 +337,7 @@ Simulation::getSynapseWeight(const synapse_id& synapse) const
 unsigned char
 Simulation::getSynapsePlastic(const synapse_id& synapse) const
 {
-	return m_cm.getPlastic(synapse);
+	return m_cm->getPlastic(synapse);
 }
 
 

@@ -26,22 +26,23 @@ namespace nemo {
 	namespace cuda {
 
 
-Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
-	m_mapper(mapper),
-	m_type(net.neuronType()),
-	m_param(m_type.parameterCount(), mapper.partitionCount(), mapper.partitionSize(), true, false),
+Neurons::Neurons(const network::Generator& net,
+		unsigned type_id,
+		const Mapper& mapper) :
+	m_type(net.neuronType(type_id)),
+	m_param(m_type.parameterCount(), mapper.partitionCount(type_id), mapper.partitionSize(), true, false),
 	m_state(m_type.stateVarCount() * m_type.stateHistory(),
-			mapper.partitionCount(), mapper.partitionSize(), true, false),
-	m_stateCurrent(0),
-	m_valid(mapper.partitionCount(), true),
+			mapper.partitionCount(type_id), mapper.partitionSize(), true, false),
+	m_stateCurrent(0U),
+	m_valid(mapper.partitionCount(type_id), true),
 	m_cycle(~0),
 	m_lastSync(~0),
 	m_paramDirty(false),
 	m_stateDirty(false),
+	m_basePartition(mapper.typeBase(type_id)),
 	m_plugin(m_type.name(), "cuda"),
 	m_update_neurons((cuda_update_neurons_t*) m_plugin.function("cuda_update_neurons"))
 {
-
 	if(m_type.usesNormalRNG()) {
 		m_nrngState = NVector<unsigned>(RNG_STATE_COUNT,
 				mapper.partitionCount(), mapper.partitionSize(), true, false);
@@ -54,11 +55,12 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	std::vector<RNG> rngs(mapper.maxHandledGlobalIdx() - mapper.minHandledGlobalIdx() + 1);
 	initialiseRng(mapper.minHandledGlobalIdx(), mapper.maxHandledGlobalIdx(), rngs);
 
-	for(network::neuron_iterator i = net.neuron_begin(), i_end = net.neuron_end();
+	for(network::neuron_iterator i = net.neuron_begin(type_id), i_end = net.neuron_end(type_id);
 			i != i_end; ++i) {
 
 		//! \todo insertion here, but make sure the usage is correct in the Simulation class
-		DeviceIdx dev = mapper.localIdx(i->first);
+		DeviceIdx devGlobal = mapper.localIdx(i->first);
+		DeviceIdx dev(devGlobal.partition - m_basePartition, devGlobal.neuron);
 		const nemo::Neuron& n = i->second;
 
 		for(unsigned i=0, i_end=parameterCount(); i < i_end; ++i) {
@@ -72,9 +74,10 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 		m_valid.setNeuron(dev);
 
 		if(m_type.usesNormalRNG()) {
-			nidx_t localIdx = mapper.globalIdx(dev) - mapper.minHandledGlobalIdx();
+			//! \todo avoid mapping back again
+			nidx_t localIdx = mapper.globalIdx(devGlobal) - mapper.minHandledGlobalIdx();
 			for(unsigned plane = 0; plane < 4; ++plane) {
-				m_nrngState.setNeuron(dev.partition, dev.neuron, rngs[localIdx].state[plane], plane);
+				m_nrngState.setNeuron(devGlobal.partition, devGlobal.neuron, rngs[localIdx].state[plane], plane);
 			}
 		}
 
@@ -91,9 +94,43 @@ Neurons::Neurons(const network::Generator& net, const mapper_type& mapper) :
 	m_nrng.state = m_nrngState.deviceData();
 	m_nrng.pitch = m_nrngState.wordPitch();
 	m_valid.moveToDevice();
-	configurePartitionSizes(maxPartitionNeuron);
+
+	/* The partitions should form a contigous range here. If not, there is a
+	 * logic error in the mapping.  */
+	mh_partitionSize.resize(maxPartitionNeuron.size(), 0);
+	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
+			i != maxPartitionNeuron.end(); ++i) {
+		mh_partitionSize.at(i->first) = i->second + 1;
+	}
 }
 
+
+
+cudaError_t
+Neurons::initHistory(
+		unsigned globalPartitionCount,
+		param_t* d_params,
+		unsigned* d_psize)
+{
+	cuda_init_neurons_t* init_neurons = (cuda_init_neurons_t*) m_plugin.function("cuda_init_neurons");
+	return init_neurons(globalPartitionCount,
+			localPartitionCount(),
+			m_basePartition,
+			d_psize,
+			d_params,
+			m_param.deviceData(),
+			m_state.deviceData(),
+			m_nrng,
+			m_valid.d_data());
+}
+
+
+
+unsigned
+Neurons::localPartitionCount() const
+{
+	return mh_partitionSize.size();
+}
 
 
 
@@ -106,26 +143,15 @@ Neurons::d_allocated() const
 }
 
 
-void
-Neurons::configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron)
-{
-	md_partitionSize = d_array<unsigned>(MAX_PARTITION_COUNT, true, "partition size array");
-	std::vector<unsigned> h_partitionSize(MAX_PARTITION_COUNT, 0);
-	for(std::map<pidx_t, nidx_t>::const_iterator i = maxPartitionNeuron.begin();
-			i != maxPartitionNeuron.end(); ++i) {
-		h_partitionSize.at(i->first) = i->second + 1;
-	}
-	memcpyToDevice(md_partitionSize.get(), h_partitionSize);
-}
-
-
 
 size_t
 Neurons::wordPitch32() const
 {
 	size_t f_param_pitch = m_param.wordPitch();
 	size_t f_state_pitch = m_state.wordPitch();
-	if(f_param_pitch != f_state_pitch) {
+	if(f_param_pitch != f_state_pitch
+			&& f_param_pitch != 0
+			&& f_state_pitch != 0) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitches");
 	}
 	return f_param_pitch;
@@ -137,7 +163,9 @@ cudaError_t
 Neurons::update(
 		cudaStream_t stream,
 		cycle_t cycle,
+		unsigned globalPartitionCount,
 		param_t* d_params,
+		unsigned* d_psize,
 		uint32_t* d_fstim,
 		fix_t* d_istim,
 		fix_t* d_current,
@@ -151,8 +179,10 @@ Neurons::update(
 	m_stateCurrent = (cycle+1) % m_type.stateHistory();
 	return m_update_neurons(stream,
 			cycle,
-			m_mapper.partitionCount(),
-			md_partitionSize.get(),
+			globalPartitionCount,
+			localPartitionCount(),
+			m_basePartition,
+			d_psize,
 			d_params,
 			m_param.deviceData(),
 			m_state.deviceData(),

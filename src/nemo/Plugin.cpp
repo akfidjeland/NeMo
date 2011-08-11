@@ -64,7 +64,6 @@ Plugin::~Plugin()
 
 
 
-
 void
 Plugin::init(const std::string& name)
 {
@@ -99,7 +98,18 @@ Plugin::systemDirectory()
 	using boost::format;
 	using namespace boost::filesystem;
 
+#if defined _WIN32 || defined __CYGWIN__
+	/* On Windows, where there aren't any standard library locations, NeMo
+	 * might be relocated. To support this, look for a plugin directory relative
+	 * to the library location path rather than relative to the hard-coded
+	 * installation prefix.  */
+	HMODULE dll = GetModuleHandle("nemo_base.dll");
+	TCHAR dllPath[MAX_PATH];
+	GetModuleFileName(dll, dllPath, MAX_PATH);
+	path systemPath = path(dllPath).parent_path().parent_path() / NEMO_SYSTEM_PLUGIN_DIR;
+#else
 	path systemPath(NEMO_SYSTEM_PLUGIN_DIR);
+#endif
 	if(!exists(systemPath)) {
 		throw nemo::exception(NEMO_DL_ERROR,
 				str(format("System plugin path does not exist: %s") % systemPath));
@@ -115,18 +125,36 @@ Plugin::setpath(const std::string& subdir)
 	using boost::format;
 	using namespace boost::filesystem;
 
+	std::vector<path> paths;
+
 	path userPath = userDirectory() / subdir;
-	if(exists(userPath) && !dl_setsearchpath(userPath.string().c_str())) {
-		throw nemo::exception(NEMO_DL_ERROR,
-				str(format("Error when setting user plugin search path (%s): %s")
-					% userPath % dl_error()));
+	if(exists(userPath)) {
+		paths.push_back(userPath);
 	}
 
 	path systemPath = systemDirectory() / subdir;
-	if(!dl_addsearchdir(systemPath.string().c_str())) {
-		throw nemo::exception(NEMO_DL_ERROR,
-				str(format("Error when setting system plugin search path (%s): %s")
-					% systemPath % dl_error()));
+	paths.push_back(systemPath);
+
+	/*! \todo there's a potential issue here when loading on Windows. Ideally
+	 * we'd like to set the /exclusive/ search path for library loading here,
+	 * since the same plugin has the same name for different backends. The
+	 * windows API, however, seems to only ever add to the existing path.
+	 *
+	 * \see dl_setsearchpath
+	 */
+	for(std::vector<path>::const_iterator i = paths.begin();
+			i != paths.end(); ++i) {
+		bool success = false;
+		if(i == paths.begin()) {
+			success = dl_setsearchpath(i->string().c_str());
+		} else {
+			success = dl_addsearchdir(i->string().c_str());
+		}
+		if(!success) {
+			throw nemo::exception(NEMO_DL_ERROR,
+					str(format("Error when setting plugin search path (%s): %s")
+						% (*i) % dl_error()));
+		}
 	}
 }
 

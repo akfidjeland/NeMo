@@ -19,6 +19,9 @@
 #include <boost/optional.hpp>
 
 #include <nemo/config.h>
+#include <nemo/construction/RCM.hpp>
+#include <nemo/runtime/RCM.hpp>
+
 #include "types.hpp"
 #include "RandomMapper.hpp"
 #include "StdpProcess.hpp"
@@ -59,6 +62,7 @@ struct Row
 };
 
 
+
 namespace network {
 	class Generator;
 }
@@ -83,18 +87,11 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		typedef RandomMapper<nidx_t> mapper_t;
 
-		ConnectivityMatrix(const ConfigurationImpl& conf, const mapper_t&);
-
 		/*! Populate runtime CM from existing network.
 		 *
 		 * The mapper can translate neuron indices (both source and target)
 		 * from one index space to another. All later accesses to the CM data
 		 * are assumed to be in terms of the translated indices.
-		 *
-		 * 'finalize' must be called prior to use. This slightly clumsy
-		 * interface is there so that we can ensure that the mapper will have a
-		 * complete list of valid neuron indices by the time of finalization,
-		 * so that we can report invalid synapse terminals.
 		 */
 		ConnectivityMatrix(
 				const network::Generator& net,
@@ -107,7 +104,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * than the ones provided in the underlying synapse. The caller can
 		 * thus provide an appropriate mapping of either index.
 		 */
-		void addSynapse(nidx_t source, nidx_t target, const Synapse&);
+		sidx_t addSynapse(nidx_t source, nidx_t target, const Synapse&);
 
 		const std::vector<synapse_id>& getSynapsesFrom(unsigned neuron);
 
@@ -125,8 +122,6 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 
 		/*! \copydoc nemo::Simulation::getPlastic */
 		unsigned char getPlastic(const synapse_id& synapse) const;
-
-		void finalize(const mapper_t& mapper, bool verifySources);
 
 		typedef OutgoingDelays::const_iterator delay_iterator;
 
@@ -159,6 +154,9 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		 * Only call this after finalize has been called. */
 		uint64_t delayBits(nidx_t l_source) const { return m_delays.delayBits(l_source); }
 
+		/*! \return pointer to reverse connectivity matrix */
+		const runtime::RCM* rcm() const { return &m_rcm; }
+
 	private:
 
 		const mapper_t& m_mapper;
@@ -173,15 +171,12 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::map<fidx_t, row_t> m_acc;
 
 		/* At run-time, however, we want a fast lookup of the rows. We
-		 * therefore use a vector with linear addressing.  This is constructed
-		 * in \a finalize which must be called prior to getRow being called */
+		 * therefore use a vector with linear addressing.  */
 		std::vector<Row> m_cm;
 		void finalizeForward(const mapper_t&, bool verifySources);
 
-		/* For the reverse matrix we don't need to group by delay */
-		//! \todo move into std::vector when finalizing
-		typedef std::vector<RSynapse> Incoming;
-		std::map<nidx_t, Incoming> m_racc;
+		runtime::RCM m_rcm;
+
 		boost::optional<StdpProcess> m_stdp;
 
 		OutgoingDelaysAcc m_delaysAcc;
@@ -194,9 +189,15 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		void verifySynapseTerminals(fidx_t idx,
 				const row_t& row, const mapper_t&, bool verifySource) const;
 
-		/*! \return address of the synapse weight in the forward matrix, given
-		 * a synapse in the reverse matrix */
-		fix_t* weight(const RSynapse&) const;
+		/*! Get address to synapse weight
+		 *
+		 * \return address of the synapse weight in the forward matrix, given
+		 * 		a synapse in the reverse matrix
+		 *
+		 * \param rdata source/delay
+		 * \param sidx synapse index within synapse groups for given postsynaptic neuron
+		 */
+		fix_t* weight(const RSynapse& rdata, uint32_t sidx) const;
 
 		/* Internal buffers for synapse queries */
 		std::vector<synapse_id> m_queriedSynapseIds;

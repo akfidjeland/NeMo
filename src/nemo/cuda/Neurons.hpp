@@ -12,6 +12,8 @@
 
 #include <map>
 
+#include <boost/utility.hpp>
+
 #include <nemo/cuda/plugins/neuron_model.h>
 #include <nemo/NeuronType.hpp>
 #include <nemo/Plugin.hpp>
@@ -45,19 +47,25 @@ namespace nemo {
  * variables can be read or written. The need for doing this with integer data
  * does not arise when using Izhikevich neurons.
  */
-class Neurons
+class Neurons : boost::noncopyable
 {
 	public:
 
-		typedef Mapper mapper_type;
+		Neurons(const nemo::network::Generator&, unsigned type_id, const Mapper&);
 
-		Neurons(const network::Generator&, const mapper_type&);
+		/*! Initialise the state of all neurons */
+		cudaError_t initHistory(
+				unsigned globalPartitionCount,
+				param_t* d_params,
+				unsigned* d_psize);
 
 		/*! Update the state of all neurons */
 		cudaError_t update(
 				cudaStream_t stream,
 				cycle_t cycle,
+				unsigned globalPartitionCount,
 				param_t* d_params,
+				unsigned* d_psize,
 				uint32_t* d_fstim,
 				fix_t* d_istim,
 				fix_t* d_current,
@@ -139,12 +147,17 @@ class Neurons
 		 */
 		void setState(const DeviceIdx& neuron, unsigned var, float value);
 
-		/*! \return array of sizes for each partition (which may differ). */
-		unsigned* d_partitionSize() const { return md_partitionSize.get(); }
+		/*! \return iterator to beginning of partition size vector */
+		std::vector<unsigned>::const_iterator psize_begin() const {
+			return mh_partitionSize.begin();
+		}
+
+		/*! \return iterator to end of partition size vector */
+		std::vector<unsigned>::const_iterator psize_end() const {
+			return mh_partitionSize.end();
+		}
 
 	private:
-
-		const mapper_type& m_mapper;
 
 		NeuronType m_type;
 
@@ -181,8 +194,15 @@ class Neurons
 		bool m_paramDirty;
 		bool m_stateDirty;
 
-		/*! Load vector of the size of each partition onto the device */
-		void configurePartitionSizes(const std::map<pidx_t, nidx_t>& maxPartitionNeuron);
+		/* Each neuron type has a contigous range of partition indices starting
+		 * from \a m_basePartition */
+		unsigned m_basePartition;
+
+		/* Size of each partition */
+		std::vector<unsigned> mh_partitionSize;
+
+		/* Number of partitions of \i this type */
+		unsigned localPartitionCount() const;
 
 		/*! Read the neuron state from the device, if it the device data is not
 		 * already cached on the host */
@@ -193,9 +213,6 @@ class Neurons
 		 * the data should be updated. The sync function should be called for
 		 * every simulation cycle. */
 		void syncToDevice();
-
-		/*! \see d_partitionSize() */
-		boost::shared_array<unsigned> md_partitionSize;
 
 		/* The update function itself is found in a plugin which is loaded
 		 * dynamically */

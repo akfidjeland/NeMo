@@ -10,6 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <nemo/RandomMapper.hpp>
 
 #include "types.h"
@@ -55,6 +56,10 @@ class Mapper : public nemo::RandomMapper<DeviceIdx>
 			m_partitionSize(partitionSize),
 			m_partitionCount(0) {}
 
+		/* Add a new neuron to mapper
+		 *
+		 * \pre device indices are added in incremental order
+		 */
 		void insert(nidx_t g_idx, const DeviceIdx& l_idx) {
 			//! \todo range-check device index
 			m_partitionCount = std::max(m_partitionCount, l_idx.partition+1);
@@ -90,6 +95,11 @@ class Mapper : public nemo::RandomMapper<DeviceIdx>
 		//! \todo remove this method
 		/*! \return maximum global indexed supported by this mapper */
 		unsigned maxHandledGlobalIdx() const { return maxGlobalIdx(); }
+
+		/*! \return the number of partitions for the given neuron type */
+		unsigned partitionCount(unsigned tidx) const {
+			return std::count(m_typeIndex.begin(), m_typeIndex.end(), tidx);
+		}
 
 	private :
 

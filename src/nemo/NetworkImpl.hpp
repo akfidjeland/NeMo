@@ -23,28 +23,11 @@
 
 namespace nemo {
 
-	namespace cuda {
-		// needed for 'friend' declarations
-		class ConnectivityMatrix;
-		class ThalamicInput;
-	}
-
-	namespace cpu {
-		class Simulation;
-	}
-
-	class ConnectivityMatrix;
-
-	namespace mpi {
-		class Master;
-	}
-
 	namespace network {
 
 		namespace programmatic {
 			class synapse_iterator;
 		}
-
 
 
 class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwork
@@ -109,19 +92,32 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 
 		unsigned neuronCount() const;
 
-		neuron_iterator neuron_begin() const;
-		neuron_iterator neuron_end() const;
+		unsigned neuronCount(unsigned type_id) const;
+
+		/*! \copydoc nemo::Network::Generator::neuronTypeCount */
+		unsigned neuronTypeCount() const;
+
+		/*! \copydoc nemo::Network::Generator::neuron_begin */
+		neuron_iterator neuron_begin(unsigned type) const;
+
+		/*! \copydoc nemo::Network::Generator::neuron_end */
+		neuron_iterator neuron_end(unsigned type) const;
 
 		synapse_iterator synapse_begin() const;
 		synapse_iterator synapse_end() const;
 
 		/*! \copydoc nemo::network::Generator::neuronType */
-		const NeuronType& neuronType() const;
+		const NeuronType& neuronType(unsigned) const;
 
 	private :
 
 		/* Neurons are grouped by neuron type */
 		std::vector<Neurons> m_neurons;
+
+		/* Users keep access neuron type groups by via indices (returned by \a
+		 * addNeuronType). For error-detecting purposes, keep the type name ->
+		 * index mapping */
+		std::map<std::string, unsigned> m_typeIds;
 
 		const Neurons& neuronCollection(unsigned type_id) const;
 		Neurons& neuronCollection(unsigned type_id);
@@ -144,13 +140,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		delay_t m_maxDelay;
 		float m_minWeight;
 		float m_maxWeight;
-
-		//! \todo modify public interface to avoid friendship here
-		friend class nemo::cuda::ConnectivityMatrix;
-		friend class nemo::cuda::ThalamicInput;
-		friend class nemo::ConnectivityMatrix;
-		friend class nemo::cpu::Simulation;
-		friend class nemo::mpi::Master;
 
 		friend class programmatic::synapse_iterator;
 
