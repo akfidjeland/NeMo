@@ -5,6 +5,7 @@
 \usepackage[colorlinks=true]{hyperref}
 \usepackage{amsmath}
 \usepackage{color}
+\usepackage{url}
 
 %\usepackage{multitoc}
 
@@ -670,7 +671,7 @@ The Python path then has to be set manually to include the relevant path from Ta
 
 \paragraph{PyNN}
 Python users may be interested in using the PyNN interface to \nemo.
-PyNN is a common API for a number of spiking neural network simulators 
+PyNN \cite{davison08pynn} is a common API for a number of spiking neural network simulators
 	including NEURON, NEST, PCSIM and Brian.
 % TODO: add references
 This interface provides more complex connection patterns,
@@ -680,7 +681,7 @@ PyNN operates with a number of standard neuron models.
 \nemo\ currently only supports the Izhikevich model.
 To use PyNN, ensure the \library{nemo} module is installed and on the python path,
 	and then do \code{from pyNN.nemo import *}.
-PyNN is a separate larger project, which is fully documented elsewhere.
+PyNN is a separate larger project, which is fully documented \href{http://neuralensemble.org/trac/PyNN}{online}.
 
 \paragraph{Help}
 The classes and functions in the \library{nemo} module are documented using standard docstrings,
