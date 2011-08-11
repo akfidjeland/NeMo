@@ -23,28 +23,11 @@
 
 namespace nemo {
 
-	namespace cuda {
-		// needed for 'friend' declarations
-		class ConnectivityMatrix;
-		class ThalamicInput;
-	}
-
-	namespace cpu {
-		class Simulation;
-	}
-
-	class ConnectivityMatrix;
-
-	namespace mpi {
-		class Master;
-	}
-
 	namespace network {
 
 		namespace programmatic {
 			class synapse_iterator;
 		}
-
 
 
 class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwork
@@ -157,13 +140,6 @@ class NEMO_BASE_DLL_PUBLIC NetworkImpl : public Generator, public ReadableNetwor
 		delay_t m_maxDelay;
 		float m_minWeight;
 		float m_maxWeight;
-
-		//! \todo modify public interface to avoid friendship here
-		friend class nemo::cuda::ConnectivityMatrix;
-		friend class nemo::cuda::ThalamicInput;
-		friend class nemo::ConnectivityMatrix;
-		friend class nemo::cpu::Simulation;
-		friend class nemo::mpi::Master;
 
 		friend class programmatic::synapse_iterator;
 
