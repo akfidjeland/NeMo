@@ -16,6 +16,7 @@
 #include <nemo/config.h>
 #include <nemo/internal_types.h>
 #include <nemo/internals.hpp>
+#include <nemo/ConnectivityMatrix.hpp>
 #include <nemo/FiringBuffer.hpp>
 #include <nemo/Neurons.hpp>
 #include <nemo/RandomMapper.hpp>
@@ -26,8 +27,6 @@
 
 
 namespace nemo {
-
-	class ConnectivityMatrix;
 
 	namespace cpu {
 

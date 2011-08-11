@@ -21,7 +21,7 @@ namespace nemo {
 
 	namespace runtime {
 
-class RCM
+class NEMO_BASE_DLL_PUBLIC RCM
 {
 	private :
 

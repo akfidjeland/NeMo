@@ -1,6 +1,7 @@
 #include <vector>
 #include <cmath>
 
+#include <nemo/util.h>
 #include <nemo/fixedpoint.hpp>
 #include <nemo/types.hpp>
 #include <nemo/runtime/RCM.hpp>
