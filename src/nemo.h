@@ -229,7 +229,7 @@ nemo_add_neuron_type(nemo_network_t,
 
 
 /*! \brief Add a single Izhikevich neuron to the network
- * \deprecated in favour of the generic \a nemo_add_neuron function
+ * \deprecated in favour of the generic nemo_add_neuron() function
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
@@ -623,7 +623,7 @@ nemo_set_neuron_s(nemo_simulation_t, unsigned idx, unsigned nargs, float args[])
  * The neuron must already exist.
  *
  * \see nemo_add_neuron for parameters
- * \deprecated in favour of the generic \a nemo_set_neuron_n function
+ * \deprecated in favour of the generic nemo_set_neuron_n() function
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
@@ -638,7 +638,7 @@ nemo_set_neuron_iz_n(nemo_network_t net,
  * The neuron must already exist.
  *
  * \see nemo_add_neuron for parameters
- * \deprecated in favour of the generic \a nemo_set_neuron_s function
+ * \deprecated in favour of the generic nemo_set_neuron_s() function
  */
 NEMO_DLL_PUBLIC
 nemo_status_t

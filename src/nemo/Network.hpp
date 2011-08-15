@@ -103,7 +103,7 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		 * 		distribution. If set to zero no random input current will be
 		 * 		generated.
 		 *
- 		 * \deprecated
+ 		 * \deprecated in favour of the generic Network::addNeuron function
 		 */
 		void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
@@ -127,6 +127,8 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		/*! Change parameters/state variables of a single existing Izhikevich-type neuron
 		 *
 		 * The parameters are the same as for \a nemo::Network::addNeuron
+		 *
+ 		 * \deprecated in favour of the generic nemo::Network::setNeuron function
 		 */
 		void setNeuron(unsigned idx,
 				float a, float b, float c, float d,
