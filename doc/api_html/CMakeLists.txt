@@ -19,6 +19,10 @@ IF(NEMO_DOC_API_REBUILD)
 		${CMAKE_SOURCE_DIR}/src/nemo/Network.hpp
 		${CMAKE_SOURCE_DIR}/src/nemo/Simulation.hpp
 		${CMAKE_SOURCE_DIR}/src/nemo/types.h
+		# Some classes required for correct processing, but not really desired
+		# in the output.
+		${CMAKE_SOURCE_DIR}/src/nemo/network/Generator.hpp
+		${CMAKE_SOURCE_DIR}/src/nemo/ReadableNetwork.hpp
 	) 
 
 	# Convert source list to space-separated string

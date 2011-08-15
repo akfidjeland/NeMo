@@ -81,7 +81,7 @@ class NEMO_DLL_PUBLIC Configuration
 		 * Inhibitory synapses are allowed to vary in the range
 		 * [\a minInhibitoryWeight \a maxInhibitoryWeight].
 		 *
-		 * We take minimum and maximum here to refer to the \i effect of the
+		 * We take minimum and maximum here to refer to the \em effect of the
 		 * synapse. This might cause some confusion for inhibitory weights.
 		 * Since these are negative, \a minInhibitoryWeight > \a
 		 * maxInhibitoryWeight. However, abs(minInhibitoryWeight) >

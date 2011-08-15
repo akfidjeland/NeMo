@@ -23,13 +23,13 @@ class NEMO_BASE_DLL_PUBLIC Generator
 		typedef std::pair<nidx_t, Neuron> neuron;
 		typedef Synapse synapse;
 		
-		/*! \return iterator to beginning of the \i th neuron collection
+		/*! \return iterator to beginning of the ith neuron collection
 		 *
 		 * \pre 0 <= i < neuronTypeCount
 		 */
 		virtual neuron_iterator neuron_begin(unsigned i) const = 0;
 
-		/*! \return iterator to end of the \i th neuron collection
+		/*! \return iterator to end of the ith neuron collection
 		 * \pre 0 <= i < neuronTypeCount
 		 */
 		virtual neuron_iterator neuron_end(unsigned i) const = 0;
