@@ -635,8 +635,19 @@ resetConfiguration =
         [MEX]
         False
 
+logStdout =
+    ApiFunction
+        "logStdout"
+        "Switch on logging to standard output"
+        Nothing M.empty
+        []
+        []
+        []
+        False
+
+
 configuration = ApiModule "Configuration" "conf" (Just "Global configuration") defaultConstructor
-    [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription, setWriteOnlySynapses, resetConfiguration]
+    [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription, setWriteOnlySynapses, logStdout, resetConfiguration]
     []
 
 

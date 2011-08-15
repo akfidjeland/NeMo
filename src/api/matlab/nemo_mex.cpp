@@ -601,6 +601,16 @@ setWriteOnlySynapses(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 void
+logStdout(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 0);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus(nemo_log_stdout(getConfiguration()));
+}
+
+
+
+void
 step(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     checkInputCount(nrhs, 3);
@@ -1069,7 +1079,7 @@ getSynapsePlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 31
+#define FN_COUNT 32
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuronType,
     addNeuron,
@@ -1081,6 +1091,7 @@ fn_ptr fn_arr[FN_COUNT] = {
     setStdpFunction,
     backendDescription,
     setWriteOnlySynapses,
+    logStdout,
     resetConfiguration,
     step,
     applyStdp,

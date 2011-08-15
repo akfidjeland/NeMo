@@ -19,4 +19,4 @@
 % arguments are vectors (as the neuron index cannot be replicated).
 function setNeuron(idx, varargin)
 
-nemo_mex(uint32(20), uint32(idx), varargin{:});
+nemo_mex(uint32(21), uint32(idx), varargin{:});
