@@ -24,8 +24,10 @@
  *		0-based index of the target neuron
  * \param[in] current
  *		current in mA in fixed-point format
- * \param s_current
- *		shared memory vector containing current for all neurons in partition
+ * \param s_currentE
+ *		shared memory vector containing current from EPSPs for all neurons in partition
+ * \param s_currentI
+ *		shared memory vector containing current from IPSPs for all neurons in partition
  * \param[out] s_overflow
  *		bit vector indicating overflow status for all neurons in partition
  * \param[out] s_negative
@@ -40,11 +42,13 @@ __device__
 void
 addCurrent(nidx_t neuron,
 		fix_t current,
-		fix_t* s_current,
+		fix_t* s_currentE,
+		fix_t* s_currentI,
 		uint32_t* s_overflow,
 		uint32_t* s_negative)
 {
 	ASSERT(neuron < MAX_PARTITION_SIZE);
+	fix_t *s_current = current >= 0 ? s_currentE : s_currentI;
 	bool overflow = fx_atomicAdd(s_current + neuron, current);
 	bv_atomicSetPredicated(overflow, neuron, s_overflow);
 	bv_atomicSetPredicated(overflow && fx_isNegative(current), neuron, s_negative);
@@ -58,7 +62,7 @@ addCurrent(nidx_t neuron,
 /*! \brief Add externally provided current stimulus
  *
  * The user can provide per-neuron current stimulus
- * (\ref nemo::cuda::Simulation::addCurrentStimulus).
+ * (nemo::cuda::Simulation::addCurrentStimulus).
  *
  * \param[in] partition
  *		\i global index of partition
@@ -100,7 +104,7 @@ addCurrentStimulus(
 			unsigned neuron = nbase + threadIdx.x;
 			unsigned pstart = partition * pitch;
 			fix_t stimulus = g_current[pstart + neuron];
-			addCurrent(neuron, stimulus, s_current, s_overflow, s_negative);
+			addCurrent(neuron, stimulus, s_current, s_current, s_overflow, s_negative);
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 			DEBUG_MSG_SYNAPSE("c%u %u-%u: +%f (external)\n",
 					s_cycle, partition, neuron,
@@ -128,6 +132,45 @@ copyCurrent(unsigned nNeurons, fix_t* current_in, fix_t* current_out)
 		unsigned neuron = bNeuron + threadIdx.x;
 		current_out[neuron] = current_in[neuron];
 	}
+}
+
+
+
+
+/*
+ * \param pcount
+ *		partition count considering \em all neuron types. Note that for some
+ *		kernels PARTITION_COUNT refers to this global count, whereas for other
+ *		kernels it refers to a local count.
+ * \param partition
+ *		\em global index of current partition
+ *
+ * \return gmem pointer to accumulated incoming excitatory current
+ */
+__device__
+fix_t*
+incomingExcitatory(fix_t* g_base, unsigned /* pcount */, unsigned partition, size_t pitch32)
+{
+	return g_base + partition * pitch32;
+}
+
+
+
+/*
+ * \param pcount
+ *		partition count considering \em all neuron types. Note that for some
+ *		kernels PARTITION_COUNT refers to this global count, whereas for other
+ *		kernels it refers to a local count.
+ * \param partition
+ *		\em global index of current partition
+
+ * \return gmem pointer to accumulated incoming inhbitory current
+ */
+__device__
+fix_t*
+incomingInhibitory(fix_t* g_base, unsigned pcount, unsigned partition, size_t pitch32)
+{
+	return g_base + (pcount + partition) * pitch32;
 }
 
 #endif

@@ -48,7 +48,8 @@ gather( unsigned cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,
 		unsigned* g_gqFill,
-		fix_t* s_current,
+		fix_t* s_currentE,
+		fix_t* s_currentI,
 		uint32_t* s_overflow, // 1b per neuron overflow detection
 		uint32_t* s_negative) // ditto
 {
@@ -118,7 +119,7 @@ gather( unsigned cycle,
 			}
 
 			if(weight != 0) {
-				addCurrent(postsynaptic, weight, s_current, s_overflow, s_negative);
+				addCurrent(postsynaptic, weight, s_currentE, s_currentI, s_overflow, s_negative);
 				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",
 						s_cycle, CURRENT_PARTITION, postsynaptic,
 						fx_tofloat(weight), (s_warpAddress[gwarp] - g_fcm) / WARP_SIZE);
@@ -140,7 +141,8 @@ gather( uint32_t cycle,
 		unsigned* g_gqFill,
 		fix_t* g_current)
 {
-	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
+	__shared__ fix_t s_currentE[MAX_PARTITION_SIZE];
+	__shared__ fix_t s_currentI[MAX_PARTITION_SIZE];
 
 	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
 	__shared__ uint32_t s_overflow[S_BV_PITCH];
@@ -159,16 +161,22 @@ gather( uint32_t cycle,
 	} // sync done in loadParameters
 	loadParameters(g_params, &s_params);
 
-	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
-		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0U;
+	for(int nBase=0; nBase < MAX_PARTITION_SIZE; nBase += THREADS_PER_BLOCK) {
+		unsigned neuron = nBase + threadIdx.x;
+		s_currentE[neuron] = 0U;
+		s_currentI[neuron] = 0U;
 	}
 	__syncthreads();
 
-	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
+	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill,
+			s_currentE, s_currentI, s_overflow, s_negative);
 
 	/* Write back to global memory The global memory roundtrip is so that the
 	 * gather and fire steps can be done in separate kernel invocations. */
-	copyCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * s_params.pitch32);
+	copyCurrent(s_partitionSize, s_currentE,
+			incomingExcitatory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32));
+	copyCurrent(s_partitionSize, s_currentI,
+			incomingInhibitory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32));
 }
 
 

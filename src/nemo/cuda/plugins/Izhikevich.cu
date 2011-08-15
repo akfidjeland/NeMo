@@ -230,11 +230,25 @@ updateNeurons(
 	bv_clear(s_overflow);
 	bv_clear(s_negative);
 
-	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
+	__shared__ fix_t s_currentE[MAX_PARTITION_SIZE];
+	__shared__ fix_t s_currentI[MAX_PARTITION_SIZE];
 	copyCurrent(s_partitionSize,
-			g_current + s_globalPartition * s_params.pitch32,
-			s_current);
+			incomingExcitatory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32),
+			s_currentE);
+	copyCurrent(s_partitionSize,
+			incomingInhibitory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32),
+			s_currentI);
 	__syncthreads();
+
+	/* Since we're just doing Dirac pulses in this model, just add up
+	 * excitatory and inhibitory contributions here. In a more refined model
+	 * these might be kept separate until the state update */
+	for(int nBase=0; nBase < MAX_PARTITION_SIZE; nBase += THREADS_PER_BLOCK) {
+		unsigned neuron = nBase + threadIdx.x;
+		s_currentE[neuron] += s_currentI[neuron];
+	}
+	__syncthreads();
+	fix_t* s_current = s_currentE;
 
 	addCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
 	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current, s_params.fixedPointScale);

@@ -121,7 +121,7 @@ Simulation::Simulation(
 	m_recentFiring(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingStimulus(m_mapper.partitionCount()),
 	m_currentStimulus(1, m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
-	m_current(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
+	m_current(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingBuffer(m_mapper),
 	m_fired(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), true, "Fired count")),
