@@ -22,7 +22,6 @@
 #include <nemo/RandomMapper.hpp>
 #include <nemo/Timer.hpp>
 
-#include "Worker.hpp"
 #include "Neurons.hpp"
 
 
@@ -162,15 +161,6 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		void setFiring();
 
 		FiringBuffer m_firingBuffer;
-
-#ifdef NEMO_CPU_MULTITHREADED
-
-		std::vector<Worker> m_workers;
-
-		void initWorkers(size_t neurons, unsigned threads);
-
-		friend class Worker;
-#endif
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 

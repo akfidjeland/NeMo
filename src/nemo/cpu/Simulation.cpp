@@ -4,9 +4,6 @@
 #include <algorithm>
 
 
-#ifdef NEMO_CPU_MULTITHREADED
-#include <boost/thread.hpp>
-#endif
 #include <boost/format.hpp>
 
 #include <nemo/internals.hpp>
@@ -62,27 +59,8 @@ Simulation::Simulation(
 		m_delays[source] = m_cm->delayBits(source);
 	}
 
-#ifdef NEMO_CPU_MULTITHREADED
-	initWorkers(m_neuronCount, conf.cpuThreadCount());
-#endif
 	resetTimer();
 }
-
-
-#ifdef NEMO_CPU_MULTITHREADED
-
-/* Allocate work to each thread */
-void
-Simulation::initWorkers(size_t neurons, unsigned threads)
-{
-	//! \todo log level of hardware concurrency
-	size_t jobSize = neurons / threads;
-	for(unsigned t=0; t < threads; ++t) {
-		m_workers.push_back(Worker(t, jobSize, neurons, this));
-	}
-}
-
-#endif
 
 
 
@@ -371,21 +349,14 @@ Simulation::resetTimer()
 void
 chooseHardwareConfiguration(nemo::ConfigurationImpl& conf, int threadCount)
 {
+	//! \todo get rid of the thread count variable from this function and from config object
 	conf.setBackend(NEMO_BACKEND_CPU);
 	/*! \todo get processor name */
-#ifdef NEMO_CPU_MULTITHREADED
-	if(threadCount < 1) {
-		conf.setCpuThreadCount(std::max(1U, boost::thread::hardware_concurrency()));
-	} else {
-		conf.setCpuThreadCount(threadCount);
-	}
-#else
 	if(threadCount > 1) {
 		throw nemo::exception(NEMO_INVALID_INPUT, "nemo compiled without multithreading support.");
 	} else {
 		conf.setCpuThreadCount(1);
 	}
-#endif
 }
 
 

@@ -1,31 +1,10 @@
-#OPTION(NEMO_CPU_MULTITHREADED "Use multithreaded CPU backend" OFF)
-
-INCLUDE(CheckCSourceCompiles)
-FILE(READ "thread_affinity.c" THREAD_AFFINITY_C)
-CHECK_C_SOURCE_COMPILES(${THREAD_AFFINITY_C} CAN_SET_THREAD_AFFINITY)
-
-SET(SOURCES Simulation.cpp Neurons.cpp)
-
-
-IF(NEMO_CPU_MULTITHREADED)
-	WARNING(SEND_ERROR "CPU multi-threading is not supported in the current version")
-	FIND_PACKAGE(Boost REQUIRED COMPONENTS thread)
-	LIST(APPEND SOURCES "Worker.cpp")
-	IF(CAN_SET_THREAD_AFFINITY)
-		LIST(APPEND SOURCES "thread_affinity.c")
-	ELSE(CAN_SET_THREAD_AFFINITY)
-		MESSAGE(WARNING "Cannot set thread affinity on this platform. Multi-threaded code may not perform well")
-	ENDIF(CAN_SET_THREAD_AFFINITY)
-ENDIF(NEMO_CPU_MULTITHREADED)
-
-
 INCLUDE_DIRECTORIES(
 	${CMAKE_BINARY_DIR}/src  # for configuration files
 	${CMAKE_SOURCE_DIR}/src
 	${Boost_INCLUDE_DIR}
 )
 
-ADD_LIBRARY(nemo_cpu ${SOURCES})
+ADD_LIBRARY(nemo_cpu Simulation.cpp Neurons.cpp)
 SET_TARGET_PROPERTIES(nemo_cpu PROPERTIES DEFINE_SYMBOL NEMO_CPU_EXPORTS)
 TARGET_LINK_LIBRARIES(nemo_cpu nemo_base ${Boost_LIBRARIES})
 INSTALL(TARGETS nemo_cpu DESTINATION ${INSTALL_LIB_DIR})
