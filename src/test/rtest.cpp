@@ -73,8 +73,8 @@ run(nemo::Network* net,
 				} else {
 					BOOST_REQUIRE(!file.eof());
 					file >> ce >> ne;
-					BOOST_REQUIRE(c == ce);
-					BOOST_REQUIRE(n == ne);
+					BOOST_REQUIRE_EQUAL(c, ce);
+					BOOST_REQUIRE_EQUAL(n, ne);
 				}
 			}
 		}
