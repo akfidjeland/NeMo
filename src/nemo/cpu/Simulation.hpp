@@ -137,8 +137,14 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		boost::scoped_ptr<nemo::ConnectivityMatrix> m_cm;
 
-		/* accumulated current from incoming spikes for each neuron */
-		std::vector<fix_t> m_current;
+		/* Per-neuron accumulated current from EPSPs */
+		std::vector<fix_t> m_currentE;
+
+		/* Per-neuron accumulated current from IPSPs */
+		std::vector<fix_t> m_currentI;
+
+		/* Per-neuron user-provided input current */
+		std::vector<fix_t> m_currentExt;
 
 		/*! firing stimulus (for a single cycle).
 		 *
@@ -147,8 +153,11 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		 */
 		std::vector<unsigned> m_fstim;
 
-		/*! Deliver spikes due for delivery */
-		current_vector_t& deliverSpikes();
+		/*! Deliver spikes due for delivery.
+		 *
+		 * Updates m_currentE and m_currentI
+		 */
+		void deliverSpikes();
 
 		void setFiring();
 

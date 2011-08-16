@@ -18,7 +18,9 @@ cpu_update_neurons(
 		unsigned fbits,
 		unsigned fstim[],
 		RNG rng[],
-		fix_t current[],
+		fix_t currentEPSP[],
+		fix_t currentIPSP[],
+		fix_t currentExternal[],
 		uint64_t recentFiring[],
 		unsigned fired[],
 		void* /* rcm */)
@@ -47,8 +49,10 @@ cpu_update_neurons(
 
 	for(unsigned ng=start, nl=0U; ng < end; ng++, nl++) {
 
-		float I = fx_toFloat(current[ng], fbits);
-		current[ng] = 0;
+		float I = fx_toFloat(currentEPSP[ng] + currentIPSP[ng] + currentExternal[ng], fbits);
+		currentEPSP[ng] = 0;
+		currentIPSP[ng] = 0;
+		currentExternal[ng] = 0;
 
 		if(sigma[nl] != 0.0f) {
 			I += sigma[nl] * nrand(&rng[nl]);

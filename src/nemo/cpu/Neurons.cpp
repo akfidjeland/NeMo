@@ -112,7 +112,9 @@ void
 Neurons::update(
 		unsigned cycle,
 		unsigned fbits,
-		fix_t current[],
+		fix_t currentEPSP[],
+		fix_t currentIPSP[],
+		fix_t currentExternal[],
 		unsigned fstim[],
 		uint64_t recentFiring[],
 		unsigned fired[],
@@ -126,7 +128,9 @@ Neurons::update(
 			fbits,
 			fstim,
 			&m_rng[0],
-			current,
+			currentEPSP,
+			currentIPSP,
+			currentExternal,
 			recentFiring,
 			fired,
 			rcm);

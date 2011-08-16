@@ -40,7 +40,9 @@ Simulation::Simulation(
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
-	m_current(m_neuronCount, 0),
+	m_currentE(m_neuronCount, 0),
+	m_currentI(m_neuronCount, 0),
+	m_currentExt(m_neuronCount, 0),
 	m_fstim(m_neuronCount, 0)
 {
 	/* Contigous local neuron indices */
@@ -95,12 +97,13 @@ Simulation::getFractionalBits() const
 void
 Simulation::fire()
 {
-	current_vector_t& current = deliverSpikes();
+	deliverSpikes();
 	for(neuron_groups::const_iterator i = m_neurons.begin();
 			i != m_neurons.end(); ++i) {
 		(*i)->update(
 			m_timer.elapsedSimulation(), getFractionalBits(),
-			&current[0], &m_fstim[0], &m_recentFiring[0], &m_fired[0],
+			&m_currentE[0], &m_currentI[0], &m_currentExt[0],
+			&m_fstim[0], &m_recentFiring[0], &m_fired[0],
 			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
 	}
 
@@ -134,7 +137,7 @@ Simulation::initCurrentStimulus(size_t count)
 void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
-	m_current[m_mapper.localIdx(neuron)] = fx_toFix(current, getFractionalBits());
+	m_currentExt[m_mapper.localIdx(neuron)] = fx_toFix(current, getFractionalBits());
 }
 
 
@@ -150,7 +153,7 @@ Simulation::finalizeCurrentStimulus(size_t count)
 void
 Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
 {
-	if(current.empty()) {
+	if(m_currentExt.empty()) {
 		//! do we need to clear current?
 		return;
 	}
@@ -230,7 +233,7 @@ Simulation::applyStdp(float reward)
 
 
 
-Simulation::current_vector_t&
+void
 Simulation::deliverSpikes()
 {
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
@@ -249,8 +252,6 @@ Simulation::deliverSpikes()
 			deliverSpikesOne(source, delay);
 		}
 	}
-
-	return m_current;
 }
 
 
@@ -262,7 +263,8 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 	for(unsigned s=0; s < row.len; ++s) {
 		const FAxonTerminal& terminal = row[s];
-		m_current.at(terminal.target) += terminal.weight;
+		std::vector<fix_t>& current = terminal.weight >= 0 ? m_currentE : m_currentI;
+		current.at(terminal.target) += terminal.weight;
 		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",
 				elapsedSimulation(),
 				m_mapper.globalIdx(source),

@@ -11,7 +11,9 @@ cpu_update_neurons(
 		unsigned /* fbits */,
 		unsigned fstim[],
 		RNG rng[],
-		fix_t /*current*/[],
+		fix_t /*currentEPSP*/[],
+		fix_t /*currentIPSP*/[],
+		fix_t /*currentExternal*/[],
 		uint64_t recentFiring[],
 		unsigned fired[],
 		void* /* rcm */)
