@@ -178,10 +178,10 @@ setDefaultHardware(nemo::ConfigurationImpl& conf)
 	try {
 		setCudaDeviceConfiguration(conf, -1);
 	} catch(...) {
-		cpu::chooseHardwareConfiguration(conf);
+		conf.setBackend(NEMO_BACKEND_CPU);
 	}
 #else
-		cpu::chooseHardwareConfiguration(conf);
+		conf.setBackend(NEMO_BACKEND_CPU);
 #endif
 }
 

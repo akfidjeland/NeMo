@@ -1,10 +1,12 @@
 #include "Simulation.hpp"
 
 #include <cmath>
-#include <algorithm>
-
 
 #include <boost/format.hpp>
+
+#ifdef NEMO_CPU_OPENMP_ENABLED
+#include <omp.h>
+#endif
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -346,11 +348,15 @@ Simulation::resetTimer()
 
 
 
-void
-chooseHardwareConfiguration(nemo::ConfigurationImpl& conf)
+std::string
+deviceDescription()
 {
-	conf.setBackend(NEMO_BACKEND_CPU);
-	/*! \todo get processor name */
+	using boost::format;
+#ifdef NEMO_CPU_OPENMP_ENABLED
+	return str(format("CPU backend (OpenMP, %u cores)") % omp_get_num_procs());
+#else
+	return "CPU backend (single-threaded)";
+#endif
 }
 
 

@@ -173,7 +173,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 
 NEMO_CPU_DLL_PUBLIC
-void chooseHardwareConfiguration(nemo::ConfigurationImpl&);
+std::string deviceDescription();
 
 
 	} // namespace cpu

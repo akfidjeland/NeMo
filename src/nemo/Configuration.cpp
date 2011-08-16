@@ -119,7 +119,7 @@ Configuration::writeOnlySynapses() const
 void
 Configuration::setCpuBackend()
 {
-	cpu::chooseHardwareConfiguration(*m_impl);
+	m_impl->setBackend(NEMO_BACKEND_CPU);
 	setBackendDescription();
 }
 
@@ -169,7 +169,7 @@ Configuration::setBackendDescription()
 			m_impl->setBackendDescription(cudaDeviceDescription(m_impl->cudaDevice()));
 			break;
 		case NEMO_BACKEND_CPU :
-			m_impl->setBackendDescription("CPU backend");
+			m_impl->setBackendDescription(cpu::deviceDescription().c_str());
 			break;
 		default :
 			throw std::runtime_error("Invalid backend selected");
