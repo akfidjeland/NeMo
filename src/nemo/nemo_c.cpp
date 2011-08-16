@@ -533,17 +533,9 @@ nemo_set_stdp_function(nemo_configuration_t conf,
 
 
 nemo_status_t
-nemo_set_cpu_backend(nemo_configuration_t conf, int threadCount)
+nemo_set_cpu_backend(nemo_configuration_t conf)
 {
-	CATCH_(conf, setCpuBackend(threadCount));
-}
-
-
-
-nemo_status_t
-nemo_cpu_thread_count(nemo_configuration_t conf, int* threadCount)
-{
-	CATCH(conf, cpuThreadCount(), *threadCount);
+	CATCH_(conf, setCpuBackend());
 }
 
 

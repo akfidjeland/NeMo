@@ -54,7 +54,7 @@ void
 setBackend(nemo_configuration_t conf, backend_t backend)
 {
 	switch(backend) {
-		case NEMO_BACKEND_CPU: nemo_set_cpu_backend(conf, 1); break;
+		case NEMO_BACKEND_CPU: nemo_set_cpu_backend(conf); break;
 		case NEMO_BACKEND_CUDA: nemo_set_cuda_backend(conf, 0); break;
 		default: BOOST_REQUIRE(false);
 	}

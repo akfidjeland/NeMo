@@ -557,11 +557,9 @@ neuronCount(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 setCpuBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    checkInputCount(nrhs, 1);
+    checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 0);
-    checkNemoStatus( 
-            nemo_set_cpu_backend(getConfiguration(), scalar<int,int32_t>(prhs[1])) 
-    );
+    checkNemoStatus(nemo_set_cpu_backend(getConfiguration()));
 }
 
 

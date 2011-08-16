@@ -117,10 +117,9 @@ Configuration::writeOnlySynapses() const
 
 
 void
-Configuration::setCpuBackend(int threadCount)
+Configuration::setCpuBackend()
 {
-	// try setting the CUDA backend
-	cpu::chooseHardwareConfiguration(*m_impl, threadCount);
+	cpu::chooseHardwareConfiguration(*m_impl);
 	setBackendDescription();
 }
 
@@ -153,17 +152,6 @@ Configuration::cudaDevice() const
 }
 
 
-int
-Configuration::cpuThreadCount() const
-{
-	if(m_impl->backend() == NEMO_BACKEND_CPU) {
-		return m_impl->cpuThreadCount();
-	} else {
-		return -1;
-	}
-}
-
-
 
 const char*
 Configuration::backendDescription() const
@@ -176,21 +164,12 @@ Configuration::backendDescription() const
 void
 Configuration::setBackendDescription()
 {
-	using boost::format;
-
-	unsigned tcount;
 	switch(m_impl->backend()) {
 		case NEMO_BACKEND_CUDA :
 			m_impl->setBackendDescription(cudaDeviceDescription(m_impl->cudaDevice()));
 			break;
 		case NEMO_BACKEND_CPU :
-			//! \todo throw from cpuThreadCount. Set post condition
-			tcount = m_impl->cpuThreadCount();
-			if(tcount == 1) {
-				m_impl->setBackendDescription("CPU backend (single-threaded)");
-			} else {
-				m_impl->setBackendDescription(str(format("CPU backend (%u threads)") % tcount).c_str());
-			}
+			m_impl->setBackendDescription("CPU backend");
 			break;
 		default :
 			throw std::runtime_error("Invalid backend selected");

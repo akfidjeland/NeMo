@@ -347,16 +347,10 @@ Simulation::resetTimer()
 
 
 void
-chooseHardwareConfiguration(nemo::ConfigurationImpl& conf, int threadCount)
+chooseHardwareConfiguration(nemo::ConfigurationImpl& conf)
 {
-	//! \todo get rid of the thread count variable from this function and from config object
 	conf.setBackend(NEMO_BACKEND_CPU);
 	/*! \todo get processor name */
-	if(threadCount > 1) {
-		throw nemo::exception(NEMO_INVALID_INPUT, "nemo compiled without multithreading support.");
-	} else {
-		conf.setCpuThreadCount(1);
-	}
 }
 
 

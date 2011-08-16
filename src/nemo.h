@@ -142,13 +142,7 @@ nemo_set_stdp_function(nemo_configuration_t,
 /*! \copydoc nemo::Configuration::setCpuBackend */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_cpu_backend(nemo_configuration_t, int thread_count);
-
-
-/*! \copydoc nemo::Configuration::cpuThreadCount */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_cpu_thread_count(nemo_configuration_t conf, int* thread_count);
+nemo_set_cpu_backend(nemo_configuration_t);
 
 
 /*! \copydoc nemo::Configuration::setCudaBackend */

@@ -117,20 +117,14 @@ class NEMO_DLL_PUBLIC Configuration
 		 * directly, since NeMo ignores any devices it cannot use. */
 		void setCudaBackend(int device = -1);
 
-		/*! Specify that the CPU backend should be used and optionally specify
-		 * the number of threads to use. If the default thread count of -1 is
-		 * used, the backend will choose a sensible value */
-		void setCpuBackend(int threadCount = -1);
+		/*! Specify that the CPU backend should be used */
+		void setCpuBackend();
 
 		backend_t backend() const;
 
 		/*! \return the chosen CUDA device or -1 if CUDA is not the selected
 		 * backend. */
 		int cudaDevice() const;
-
-		/*! \return the number of threads used by the CPU backend or -1 if CPU
-		 * is not the selected backend. */
-		int cpuThreadCount() const;
 
 		/*! \return description of the chosen backend */
 		const char* backendDescription() const;
