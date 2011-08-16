@@ -22,8 +22,8 @@ ConfigurationImpl::ConfigurationImpl() :
 	m_fractionalBits(20),
 	// m_cpuThreadCount(0), // set properly by interface class ctor
 	m_cudaPartitionSize(0),
-	m_cudaDevice(-1),
-	m_backend(-1), // the wrapper class will set this
+	m_cudaDevice(~0U),
+	m_backend(~0U), // the wrapper class will set this
 	m_backendDescription("No backend specified")
 {
 	;

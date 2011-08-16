@@ -7,7 +7,7 @@ namespace nemo {
 FiringBuffer::FiringBuffer() :
 	/* Need a dummy entry, to pop on first call to readFiring */
 	m_fired(1),
-	m_oldestCycle(-1)
+	m_oldestCycle(~0U)
 {
 }
 
