@@ -46,8 +46,12 @@ cpu_update_neurons(
 	/* Each neuron has two indices: a local index (within the group containing
 	 * neurons of the same type) and a global index. */
 
+	unsigned nn = end-start;
 
-	for(unsigned ng=start, nl=0U; ng < end; ng++, nl++) {
+#pragma omp parallel for default(shared)
+	for(unsigned nl=0; nl < nn; nl++) {
+
+		unsigned ng = start + nl;
 
 		float I = fx_toFloat(currentEPSP[ng] + currentIPSP[ng] + currentExternal[ng], fbits);
 		currentEPSP[ng] = 0;
