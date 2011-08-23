@@ -51,46 +51,44 @@ gather( unsigned cycle,
 	__shared__ uint32_t s_overflowE[S_BV_PITCH];
 	__shared__ uint32_t s_overflowI[S_BV_PITCH];
 
+	bv_clear(s_overflowE);
+	bv_clear(s_overflowI);
+
 	/* Accumulation is done using fixed-point, but the conversion back to
 	 * floating point is done in-place. */
 	fix_t* s_currentE = (fix_t*) sf_currentE;
 	fix_t* s_currentI = (fix_t*) sf_currentI;
 
-	//! \todo move init of current to here, so that we can ensure that it's zero
-	/* Update incoming current in-place in fixed-point format */
+	for(int bNeuron=0; bNeuron < MAX_PARTITION_SIZE; bNeuron += THREADS_PER_BLOCK) {
+		unsigned neuron = bNeuron + threadIdx.x;
+		s_currentE[neuron] = 0U;
+		s_currentI[neuron] = 0U;
+	}
+	// __syncthreads();
+
 	__shared__ unsigned s_incomingCount;
-
-	bv_clear(s_overflowE);
-	bv_clear(s_overflowI);
-
 	if(threadIdx.x == 0) {
-		//! \todo use atomicExch here instead
 		size_t addr = gq_fillOffset(CURRENT_PARTITION, readBuffer(cycle));
 		s_incomingCount = g_gqFill[addr];
 		g_gqFill[addr] = 0;
 	}
 	__syncthreads();
 
+	__shared__ synapse_t* s_warpAddress[THREADS_PER_BLOCK];
+
 	/* Process the incoming warps in fixed size groups */
-	/*! \note Could use THREADS_PER_BLOCK here, but we're bit low on shared
-	 * memory. */
-#define GROUP_SIZE 128
+	for(unsigned bGroup = 0; bGroup < s_incomingCount; bGroup += THREADS_PER_BLOCK) {
 
-	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
+		unsigned group = bGroup + threadIdx.x;
 
-	//! \todo rename variables here
-	for(unsigned groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
-
-		unsigned group = groupBase + threadIdx.x;
-
-		/* In each loop iteration we process /up to/ GROUP_SIZE warps. For the
-		 * last iteration of the outer loop we process fewer */
+		/* In each loop iteration we process /up to/ THREADS_PER_BLOCK warps.
+		 * For the last iteration of the outer loop we process fewer */
 		__shared__ unsigned s_groupSize;
 		if(threadIdx.x == 0) {
 			s_groupSize =
-				(groupBase + GROUP_SIZE) > s_incomingCount
-				? s_incomingCount % GROUP_SIZE
-				: GROUP_SIZE;
+				(bGroup + THREADS_PER_BLOCK) > s_incomingCount
+				? s_incomingCount % THREADS_PER_BLOCK
+				: THREADS_PER_BLOCK;
 			DEBUG_MSG_SYNAPSE("c%u: group size=%u, incoming=%u\n", cycle, s_groupSize, s_incomingCount);
 		}
 		__syncthreads();
@@ -169,13 +167,6 @@ gather( uint32_t cycle,
 		s_partitionSize = g_partitionSize[CURRENT_PARTITION];
 	} // sync done in loadParameters
 	loadParameters(g_params, &s_params);
-
-	for(int nBase=0; nBase < MAX_PARTITION_SIZE; nBase += THREADS_PER_BLOCK) {
-		unsigned neuron = nBase + threadIdx.x;
-		s_currentE[neuron] = 0.0f;
-		s_currentI[neuron] = 0.0f;
-	}
-	__syncthreads();
 
 	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill, s_currentE, s_currentI);
 
