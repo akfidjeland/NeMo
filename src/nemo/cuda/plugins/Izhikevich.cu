@@ -219,13 +219,14 @@ updateNeurons(
 	 * excitatory and inhibitory contributions here. In a more refined model
 	 * these might be kept separate until the state update */
 	__shared__ float s_current[MAX_PARTITION_SIZE];
+	loadCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current);
+
 	for(unsigned bNeuron=0; bNeuron < s_partitionSize; bNeuron += THREADS_PER_BLOCK) {
 		unsigned neuron = bNeuron + threadIdx.x;
-		s_current[neuron] = g_currentE[neuron] + g_currentI[neuron];
+		s_current[neuron] += g_currentE[neuron] + g_currentI[neuron];
 	}
 	__syncthreads();
 
-	addCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current);
 
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the neuron update
