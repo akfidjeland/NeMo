@@ -116,6 +116,7 @@ gather( unsigned cycle,
 			/* only warps at the very end of the group are invalid here */
 			if(gwarp < s_groupSize) {
 				postsynaptic = *base;
+				ASSERT(postsynaptic < MAX_PARTITION_SIZE);
 				weight = *((unsigned*)base + s_params.fcmPlaneSize);
 			}
 
@@ -124,7 +125,11 @@ gather( unsigned cycle,
 			uint32_t* s_overflow = excitatory ? s_overflowE : s_overflowI;
 
 			if(weight != 0) {
-				addCurrent(postsynaptic, weight, s_current, s_overflow);
+				bool overflow = fx_atomicAdd(s_current + postsynaptic, weight);
+				bv_atomicSetPredicated(overflow, postsynaptic, s_overflow);
+#ifndef FIXPOINT_SATURATION
+				ASSERT(!overflow);
+#endif
 				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",
 						s_cycle, CURRENT_PARTITION, postsynaptic,
 						fx_tofloat(weight), (s_warpAddress[gwarp] - g_fcm) / WARP_SIZE);
@@ -176,10 +181,14 @@ gather( uint32_t cycle,
 
 	/* Write back to global memory The global memory roundtrip is so that the
 	 * gather and fire steps can be done in separate kernel invocations. */
-	copyCurrent(s_partitionSize, s_currentE,
-			incomingExcitatory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32));
-	copyCurrent(s_partitionSize, s_currentI,
-			incomingInhibitory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32));
+
+	float* g_currentE = incomingExcitatory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32);
+	float* g_currentI = incomingInhibitory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32);
+	for(unsigned bNeuron=0; bNeuron < s_partitionSize; bNeuron += THREADS_PER_BLOCK) {
+		unsigned neuron = bNeuron + threadIdx.x;
+		g_currentE[neuron] = s_currentE[neuron];
+		g_currentI[neuron] = s_currentI[neuron];
+	}
 }
 
 

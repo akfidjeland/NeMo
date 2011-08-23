@@ -15,42 +15,6 @@
 #include "fixedpoint.cu"
 
 
-/*! \brief Add input current for a particular neuron
- *
- * The input current is stored in shared memory in a fixed-point format. This
- * necessitates overflow detection, so that we can use saturating arithmetic.
- *
- * \param[in] neuron
- *		0-based index of the target neuron
- * \param[in] current
- *		current in mA in fixed-point format
- * \param s_currentE
- *		shared memory vector containing current from EPSPs for all neurons in partition
- * \param s_currentI
- *		shared memory vector containing current from IPSPs for all neurons in partition
- * \param[out] s_overflow
- *		bit vector indicating overflow status for all neurons in partition
- * \param[out] s_negative
- *		bit vector indicating the overflow sign for all neurons in partition
- *
- * \pre neuron < partition size
- * \pre all shared memory buffers have at least as many entries as partition size
- *
- * \todo add cross-reference to fixed-point format documentation
- */
-__device__
-void
-addCurrent(nidx_t neuron, fix_t current, fix_t s_current[], uint32_t s_overflow[])
-{
-	ASSERT(neuron < MAX_PARTITION_SIZE);
-	bool overflow = fx_atomicAdd(s_current + neuron, current);
-	bv_atomicSetPredicated(overflow, neuron, s_overflow);
-#ifndef FIXPOINT_SATURATION
-	ASSERT(!overflow);
-#endif
-}
-
-
 
 /*! \brief Add externally provided current stimulus
  *
@@ -101,26 +65,6 @@ addCurrentStimulus(
 
 
 
-/*! Copy per-neuron accumulated current between two memory areas
- *
- * \param[in] current_in per-neuron accumulated current (shared or global memory)
- * \param[out] current_out per-neuron accumulated current (shared or global memory)
- *
- * Global memory arguments must be offset to the appropriate partition.
- */
-__device__
-void
-copyCurrent(unsigned nNeurons, float* current_in, float* current_out)
-{
-	for(unsigned bNeuron=0; bNeuron < nNeurons; bNeuron += THREADS_PER_BLOCK) {
-		unsigned neuron = bNeuron + threadIdx.x;
-		current_out[neuron] = current_in[neuron];
-	}
-}
-
-
-
-
 /*
  * \param pcount
  *		partition count considering \em all neuron types. Note that for some
@@ -156,5 +100,7 @@ incomingInhibitory(float* g_base, unsigned pcount, unsigned partition, size_t pi
 {
 	return g_base + (pcount + partition) * pitch32;
 }
+
+
 
 #endif
