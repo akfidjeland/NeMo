@@ -54,7 +54,7 @@ gather( cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		param_t* d_globalParameters,
-		fix_t* d_current,
+		float* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
 		unsigned* d_gqFill);

@@ -44,7 +44,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		void setFiringStimulus(const std::vector<unsigned>& fstim);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
-		void setCurrentStimulus(const std::vector<fix_t>& current);
+		void setCurrentStimulus(const std::vector<float>& current);
 
 		/*! \copydoc nemo::SimulationBackend::initCurrentStimulus */
 		void initCurrentStimulus(size_t count);

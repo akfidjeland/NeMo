@@ -40,18 +40,11 @@
  */
 __device__
 void
-addCurrent(nidx_t neuron,
-		fix_t current,
-		fix_t* s_currentE,
-		fix_t* s_currentI,
-		uint32_t* s_overflow,
-		uint32_t* s_negative)
+addCurrent(nidx_t neuron, fix_t current, fix_t s_current[], uint32_t s_overflow[])
 {
 	ASSERT(neuron < MAX_PARTITION_SIZE);
-	fix_t *s_current = current >= 0 ? s_currentE : s_currentI;
 	bool overflow = fx_atomicAdd(s_current + neuron, current);
 	bv_atomicSetPredicated(overflow, neuron, s_overflow);
-	bv_atomicSetPredicated(overflow && fx_isNegative(current), neuron, s_negative);
 #ifndef FIXPOINT_SATURATION
 	ASSERT(!overflow);
 #endif
@@ -75,12 +68,6 @@ addCurrent(nidx_t neuron,
  *		If set to NULL, no input current will be delivered.
  * \param s_current
  *		shared memory vector containing current for all neurons in partition
- * \param s_overflow
- *		bit vector indicating overflow status for all neurons in partition.
- *		Entries here may already be set and are simply OR-ed with any new entries.
- * \param s_negative
- *		bit vector indicating the overflow sign for all neurons in partition
- *		Entries here may already be set and are simply OR-ed with any new entries.
  *
  * \pre neuron < size of current partition
  * \pre all shared memory buffers have at least as many entries as the size of
@@ -94,21 +81,18 @@ addCurrentStimulus(
 		unsigned partition,
 		unsigned psize,
 		size_t pitch,
-		const fix_t* g_current,
-		fix_t* s_current,
-		uint32_t* s_overflow,
-		uint32_t* s_negative)
+		const float* g_current,
+		float* s_current)
 {
 	if(g_current != NULL) {
 		for(unsigned nbase=0; nbase < psize; nbase += THREADS_PER_BLOCK) {
 			unsigned neuron = nbase + threadIdx.x;
 			unsigned pstart = partition * pitch;
-			fix_t stimulus = g_current[pstart + neuron];
-			addCurrent(neuron, stimulus, s_current, s_current, s_overflow, s_negative);
+			float stimulus = g_current[pstart + neuron];
+			s_current[neuron] += stimulus;
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 			DEBUG_MSG_SYNAPSE("c%u %u-%u: +%f (external)\n",
-					s_cycle, partition, neuron,
-					fx_tofloat(g_current[pstart + neuron]));
+					s_cycle, partition, neuron, g_current[pstart + neuron]);
 #endif
 		}
 		__syncthreads();
@@ -126,7 +110,7 @@ addCurrentStimulus(
  */
 __device__
 void
-copyCurrent(unsigned nNeurons, fix_t* current_in, fix_t* current_out)
+copyCurrent(unsigned nNeurons, float* current_in, float* current_out)
 {
 	for(unsigned bNeuron=0; bNeuron < nNeurons; bNeuron += THREADS_PER_BLOCK) {
 		unsigned neuron = bNeuron + threadIdx.x;
@@ -148,8 +132,8 @@ copyCurrent(unsigned nNeurons, fix_t* current_in, fix_t* current_out)
  * \return gmem pointer to accumulated incoming excitatory current
  */
 __device__
-fix_t*
-incomingExcitatory(fix_t* g_base, unsigned /* pcount */, unsigned partition, size_t pitch32)
+float*
+incomingExcitatory(float* g_base, unsigned /* pcount */, unsigned partition, size_t pitch32)
 {
 	return g_base + partition * pitch32;
 }
@@ -167,8 +151,8 @@ incomingExcitatory(fix_t* g_base, unsigned /* pcount */, unsigned partition, siz
  * \return gmem pointer to accumulated incoming inhbitory current
  */
 __device__
-fix_t*
-incomingInhibitory(fix_t* g_base, unsigned pcount, unsigned partition, size_t pitch32)
+float*
+incomingInhibitory(float* g_base, unsigned pcount, unsigned partition, size_t pitch32)
 {
 	return g_base + (pcount + partition) * pitch32;
 }

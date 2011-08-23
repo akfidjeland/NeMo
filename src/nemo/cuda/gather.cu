@@ -36,10 +36,6 @@
  *		Pointer to full global memory double-buffered global queue
  * \param[out] s_current
  *		per-neuron vector with accumulated current in fixed point format.
- * \param[out] s_overflow
- *		bit vector indicating overflow status for all neurons in partition.
- * \param[out] s_negative
- *		bit vector indicating the overflow sign for all neurons in partition
  */
 __device__
 void
@@ -48,18 +44,24 @@ gather( unsigned cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,
 		unsigned* g_gqFill,
-		fix_t* s_currentE,
-		fix_t* s_currentI,
-		uint32_t* s_overflow, // 1b per neuron overflow detection
-		uint32_t* s_negative) // ditto
+		float sf_currentE[],
+		float sf_currentI[])
 {
+	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
+	__shared__ uint32_t s_overflowE[S_BV_PITCH];
+	__shared__ uint32_t s_overflowI[S_BV_PITCH];
+
+	/* Accumulation is done using fixed-point, but the conversion back to
+	 * floating point is done in-place. */
+	fix_t* s_currentE = (fix_t*) sf_currentE;
+	fix_t* s_currentI = (fix_t*) sf_currentI;
+
 	//! \todo move init of current to here, so that we can ensure that it's zero
 	/* Update incoming current in-place in fixed-point format */
 	__shared__ unsigned s_incomingCount;
 
-	//! \todo declare bit vectors here instead
-	bv_clear(s_overflow);
-	bv_clear(s_negative);
+	bv_clear(s_overflowE);
+	bv_clear(s_overflowI);
 
 	if(threadIdx.x == 0) {
 		//! \todo use atomicExch here instead
@@ -74,7 +76,6 @@ gather( unsigned cycle,
 	 * memory. */
 #define GROUP_SIZE 128
 
-	//! \todo could this smem be re-used?
 	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
 
 	//! \todo rename variables here
@@ -118,8 +119,12 @@ gather( unsigned cycle,
 				weight = *((unsigned*)base + s_params.fcmPlaneSize);
 			}
 
+			bool excitatory = weight >= 0;
+			fix_t* s_current = excitatory ? s_currentE : s_currentI;
+			uint32_t* s_overflow = excitatory ? s_overflowE : s_overflowI;
+
 			if(weight != 0) {
-				addCurrent(postsynaptic, weight, s_currentE, s_currentI, s_overflow, s_negative);
+				addCurrent(postsynaptic, weight, s_current, s_overflow);
 				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",
 						s_cycle, CURRENT_PARTITION, postsynaptic,
 						fx_tofloat(weight), (s_warpAddress[gwarp] - g_fcm) / WARP_SIZE);
@@ -127,6 +132,9 @@ gather( unsigned cycle,
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
 	}
+
+	fx_arrSaturatedToFloat(s_overflowE, false, s_currentE, sf_currentE, s_params.fixedPointScale);
+	fx_arrSaturatedToFloat(s_overflowI,  true, s_currentI, sf_currentI, s_params.fixedPointScale);
 }
 
 
@@ -139,14 +147,10 @@ gather( uint32_t cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
 		unsigned* g_gqFill,
-		fix_t* g_current)
+		float* g_current)
 {
-	__shared__ fix_t s_currentE[MAX_PARTITION_SIZE];
-	__shared__ fix_t s_currentI[MAX_PARTITION_SIZE];
-
-	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
-	__shared__ uint32_t s_overflow[S_BV_PITCH];
-	__shared__ uint32_t s_negative[S_BV_PITCH];
+	__shared__ float s_currentE[MAX_PARTITION_SIZE];
+	__shared__ float s_currentI[MAX_PARTITION_SIZE];
 
 	__shared__ param_t s_params;
 
@@ -163,13 +167,12 @@ gather( uint32_t cycle,
 
 	for(int nBase=0; nBase < MAX_PARTITION_SIZE; nBase += THREADS_PER_BLOCK) {
 		unsigned neuron = nBase + threadIdx.x;
-		s_currentE[neuron] = 0U;
-		s_currentI[neuron] = 0U;
+		s_currentE[neuron] = 0.0f;
+		s_currentI[neuron] = 0.0f;
 	}
 	__syncthreads();
 
-	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill,
-			s_currentE, s_currentI, s_overflow, s_negative);
+	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill, s_currentE, s_currentI);
 
 	/* Write back to global memory The global memory roundtrip is so that the
 	 * gather and fire steps can be done in separate kernel invocations. */
@@ -189,7 +192,7 @@ gather( cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		param_t* d_params,
-		fix_t* d_current,
+		float* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
 		unsigned* d_gqFill)

@@ -19,7 +19,6 @@
 #include <bitvector.cu>
 #include <current.cu>
 #include <firing.cu>
-#include <fixedpoint.cu>
 #include <neurons.cu>
 #include <parameters.cu>
 #include <rng.cu>
@@ -150,7 +149,6 @@ updateNeurons(
 				 * all the fired neurons separately. This was found, however,
 				 * to slow down the fire step by 50%, due to extra required
 				 * synchronisation.  */
-				//! \todo could probably hard-code c
 				v = g_c[neuron];
 				u += g_d[neuron];
 
@@ -158,12 +156,7 @@ updateNeurons(
 				DEBUG_MSG("c%u ?+%u-%u fired (forced: %u)\n",
 						s_cycle, CURRENT_PARTITION, neuron, forceFiring);
 #endif
-
-				//! \todo consider *only* updating this here, and setting u and v separately
 				unsigned i = atomicAdd(s_nFired, 1);
-
-				/* can overwrite current as long as i < neuron. See notes below
-				 * on synchronisation and declaration of s_current/s_fired. */
 				s_fired[i] = neuron;
 			}
 
@@ -171,10 +164,6 @@ updateNeurons(
 			g_u1[neuron] = u;
 		}
 
-		/* synchronise to ensure accesses to s_fired and s_current (which use
-		 * the same underlying buffer) do not overlap. Even in the worst case
-		 * (all neurons firing) the write to s_fired will be at least one
-		 * before the first unconsumed s_current entry. */
 		__syncthreads();
 	}
 }
@@ -197,17 +186,13 @@ updateNeurons(
 		uint32_t* g_valid,
 		// firing stimulus
 		uint32_t* g_fstim,
-		fix_t* g_istim,
-		fix_t* g_current,
+		float* g_istim,
+		float* g_current,
 		uint32_t* g_firingOutput, // dense output, already offset to current cycle
 		unsigned* g_nFired,       // device-only buffer
 		nidx_dt* g_fired)         // device-only buffer, sparse output
 {
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
-
-	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
-	__shared__ uint32_t s_overflow[S_BV_PITCH];
-	__shared__ uint32_t s_negative[S_BV_PITCH];
 
 	__shared__ unsigned s_nFired;
 	__shared__ unsigned s_partitionSize;
@@ -227,38 +212,27 @@ updateNeurons(
 	__shared__ param_t s_params;
 	loadParameters(g_params, &s_params);
 
-	bv_clear(s_overflow);
-	bv_clear(s_negative);
-
-	__shared__ fix_t s_currentE[MAX_PARTITION_SIZE];
-	__shared__ fix_t s_currentI[MAX_PARTITION_SIZE];
-	copyCurrent(s_partitionSize,
-			incomingExcitatory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32),
-			s_currentE);
-	copyCurrent(s_partitionSize,
-			incomingInhibitory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32),
-			s_currentI);
-	__syncthreads();
+	float* g_currentE = incomingExcitatory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32);
+	float* g_currentI = incomingInhibitory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32);
 
 	/* Since we're just doing Dirac pulses in this model, just add up
 	 * excitatory and inhibitory contributions here. In a more refined model
 	 * these might be kept separate until the state update */
-	for(int nBase=0; nBase < MAX_PARTITION_SIZE; nBase += THREADS_PER_BLOCK) {
-		unsigned neuron = nBase + threadIdx.x;
-		s_currentE[neuron] += s_currentI[neuron];
+	__shared__ float s_current[MAX_PARTITION_SIZE];
+	for(unsigned bNeuron=0; bNeuron < s_partitionSize; bNeuron += THREADS_PER_BLOCK) {
+		unsigned neuron = bNeuron + threadIdx.x;
+		s_current[neuron] = g_currentE[neuron] + g_currentI[neuron];
 	}
 	__syncthreads();
-	fix_t* s_current = s_currentE;
 
-	addCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
-	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current, s_params.fixedPointScale);
+	addCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current);
 
 	/* The random input current might be better computed in a separate kernel,
 	 * so that the critical section in the MPI backend (i.e. the neuron update
 	 * kernel), is smaller. */
 	thalamicInput(globalPartitionCount, s_globalPartition,
 			s_partitionSize, s_params.pitch32,
-			gf_neuronParameters, g_nrng, (float*) s_current);
+			gf_neuronParameters, g_nrng, s_current);
 	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
@@ -276,7 +250,7 @@ updateNeurons(
 			gf_neuronParameters + CURRENT_PARTITION * s_params.pitch32,
 			gf_neuronState,
 			s_valid,
-			(float*) s_current,
+			s_current,
 			s_fstim,
 			&s_nFired,
 			s_fired);
@@ -306,8 +280,8 @@ cuda_update_neurons(
 		nrng_t d_nrng,
 		uint32_t* d_valid,
 		uint32_t* d_fstim,
-		fix_t* d_istim,
-		fix_t* d_current,
+		float* d_istim,
+		float* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,

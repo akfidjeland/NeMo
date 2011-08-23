@@ -131,7 +131,7 @@ Simulation::finalizeCurrentStimulus(size_t count)
 
 
 void
-Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
+Simulation::setCurrentStimulus(const std::vector<float>& current)
 {
 	if(m_currentExt.empty()) {
 		//! do we need to clear current?

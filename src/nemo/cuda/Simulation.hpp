@@ -207,7 +207,7 @@ class Simulation : public nemo::SimulationBackend
 		void setFiringStimulus(const std::vector<unsigned>& nidx);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
-		void setCurrentStimulus(const std::vector<fix_t>& current);
+		void setCurrentStimulus(const std::vector<float>& current);
 
 		/*! \copydoc nemo::SimulationBackend::initCurrentStimulus */
 		void initCurrentStimulus(size_t count);
@@ -309,8 +309,8 @@ class Simulation : public nemo::SimulationBackend
 
 		FiringStimulus m_firingStimulus;
 
-		NVector<fix_t> m_currentStimulus; // user-provided
-		NVector<fix_t> m_current;         // driven by simulation
+		NVector<float> m_currentStimulus; // user-provided
+		NVector<float> m_current;         // driven by simulation
 
 		/* The firing buffer keeps data for a certain duration. One bit is
 		 * required per neuron (regardless of whether or not it's firing */
@@ -344,7 +344,7 @@ class Simulation : public nemo::SimulationBackend
 
 		/* Device pointers to simulation stimulus. The stimulus may be set
 		 * separately from the step, hence member variables */
-		fix_t* md_istim;
+		float* md_istim;
 
 		void runKernel(cudaError_t);
 

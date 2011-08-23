@@ -90,7 +90,7 @@ class NEMO_BASE_DLL_PUBLIC SimulationBackend : public Simulation
 		 * 		the input current vector must have been constructed filled
 		 * 		taking into account the backend's own mapper.
 		 */
-		virtual void setCurrentStimulus(const std::vector<fix_t>& current) = 0;
+		virtual void setCurrentStimulus(const std::vector<float>& current) = 0;
 
 		/*! Perform the first of three parts of the simulation step. This includes
 		 *
