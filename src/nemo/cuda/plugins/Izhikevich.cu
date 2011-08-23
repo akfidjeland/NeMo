@@ -27,33 +27,6 @@
 #include "neuron_model.h"
 
 
-__device__
-void
-thalamicInput(
-		unsigned pcount,
-		unsigned partition,
-		size_t partitionSize,
-		size_t pitch,
-		float* g_nparam,    // not offset
-		nrng_t g_nrng,
-		float* s_current)   // correctly offset for this partition
-{
-	//! \todo make the partition offset in call (for consistency).
-	//! \todo make this call via a generic nvector function
-	float* g_sigma = g_nparam
-			+ PARAM_SIGMA * PARTITION_COUNT * pitch
-			+ CURRENT_PARTITION * pitch;
-
-	for(unsigned nbase=0; nbase < partitionSize; nbase += THREADS_PER_BLOCK) {
-		unsigned neuron = nbase + threadIdx.x;
-		float sigma = g_sigma[neuron];
-		if(neuron < partitionSize && sigma != 0.0f) {
-			s_current[neuron] += nrand(pcount, partition, neuron, g_nrng) * sigma;
-		}
-	}
-}
-
-
 
 /*! Update state of all neurons
  *
@@ -92,12 +65,17 @@ void
 updateNeurons(
 	uint32_t cycle,
 	const param_t& s_params,
+	unsigned globalPartitionCount,
+	unsigned s_globalPartition,
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
 	float* g_neuronState,
 	uint32_t* s_valid,   // bitvector for valid neurons
 	// input
-	float* s_current,    // input current
+	nrng_t g_nrng,
+	float* g_currentE,
+	float* g_currentI,
+	float* s_currentExt,    // external input current
 	// buffers
 	uint32_t* s_fstim,
 	// output
@@ -110,6 +88,8 @@ updateNeurons(
 	const float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
 	const float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
 	const float* g_d = g_neuronParameters + PARAM_D * neuronParametersSize;
+	const float* g_sigma = g_neuronParameters + PARAM_SIGMA * neuronParametersSize;
+
 	//! \todo avoid repeated computation of the same data here
 	const float* g_u0 = state<1, 2, STATE_U>(cycle, s_params.pitch32, g_neuronState);
 	const float* g_v0 = state<1, 2, STATE_V>(cycle, s_params.pitch32, g_neuronState);
@@ -127,7 +107,13 @@ updateNeurons(
 			float u = g_u0[neuron];
 			float a = g_a[neuron];
 			float b = g_b[neuron];
-			float I = s_current[neuron];
+
+			float I = g_currentE[neuron] + g_currentI[neuron] + s_currentExt[neuron];
+
+			float sigma = g_sigma[neuron];
+			if(sigma != 0.0f) {
+				I += nrand(globalPartitionCount, s_globalPartition, neuron, g_nrng) * sigma;
+			}
 
 			/* n sub-steps for numerical stability, with u held */
 			bool fired = false;
@@ -215,26 +201,8 @@ updateNeurons(
 	float* g_currentE = incomingExcitatory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32);
 	float* g_currentI = incomingInhibitory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32);
 
-	/* Since we're just doing Dirac pulses in this model, just add up
-	 * excitatory and inhibitory contributions here. In a more refined model
-	 * these might be kept separate until the state update */
 	__shared__ float s_current[MAX_PARTITION_SIZE];
 	loadCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current);
-
-	for(unsigned bNeuron=0; bNeuron < s_partitionSize; bNeuron += THREADS_PER_BLOCK) {
-		unsigned neuron = bNeuron + threadIdx.x;
-		s_current[neuron] += g_currentE[neuron] + g_currentI[neuron];
-	}
-	__syncthreads();
-
-
-	/* The random input current might be better computed in a separate kernel,
-	 * so that the critical section in the MPI backend (i.e. the neuron update
-	 * kernel), is smaller. */
-	thalamicInput(globalPartitionCount, s_globalPartition,
-			s_partitionSize, s_params.pitch32,
-			gf_neuronParameters, g_nrng, s_current);
-	__syncthreads();
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
 	loadFiringInput(s_globalPartition, s_params.pitch1, g_fstim, s_fstim);
@@ -246,13 +214,16 @@ updateNeurons(
 	updateNeurons(
 			cycle,
 			s_params,
+			globalPartitionCount,
+			s_globalPartition,
 			s_partitionSize,
 			//! \todo use consistent parameter passing scheme here
 			gf_neuronParameters + CURRENT_PARTITION * s_params.pitch32,
 			gf_neuronState,
 			s_valid,
-			s_current,
-			s_fstim,
+			g_nrng,
+			g_currentE, g_currentI,
+			s_current, s_fstim,
 			&s_nFired,
 			s_fired);
 
