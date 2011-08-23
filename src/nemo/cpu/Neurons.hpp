@@ -53,9 +53,9 @@ class Neurons
 		 * \post the firing stimulus buffer (\a fstim) is set to all false.
 		 */
 		void update(unsigned cycle, unsigned fbits,
-			fix_t currentEPSP[],
-			fix_t currentIPSP[],
-			fix_t currentExternal[],
+			float currentEPSP[],
+			float currentIPSP[],
+			float currentExternal[],
 			unsigned fstim[], uint64_t recentFiring[],
 			unsigned fired[], void* rcm);
 

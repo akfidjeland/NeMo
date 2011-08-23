@@ -18,7 +18,9 @@ extern "C" {
  * \param currentExternal externally (user-provided input current)
  * \param cycle current simulation cycle
  *
- * \post currentEPSP, currentIPSP and currentExternal contain all 0
+ * \post currentExternal contain all 0
+ *
+ * There is no need to clear currentEPSP and currentIPSP
  */
 typedef void cpu_update_neurons_t(
 		unsigned start, unsigned end,
@@ -28,9 +30,9 @@ typedef void cpu_update_neurons_t(
 		unsigned fbits,
 		unsigned fstim[],
 		RNG rng[],
-		fix_t currentEPSP[],
-		fix_t currentIPSP[],
-		fix_t currentExternal[],
+		float currentEPSP[],
+		float currentIPSP[],
+		float currentExternal[],
 		uint64_t recentFiring[],
 		unsigned fired[],
 		void* rcm_ptr);

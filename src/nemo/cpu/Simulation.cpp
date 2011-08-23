@@ -39,9 +39,11 @@ Simulation::Simulation(
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
-	m_currentE(m_neuronCount, 0),
-	m_currentI(m_neuronCount, 0),
-	m_currentExt(m_neuronCount, 0),
+	mfx_currentE(m_neuronCount, 0U),
+	m_currentE(m_neuronCount, 0.0f),
+	mfx_currentI(m_neuronCount, 0U),
+	m_currentI(m_neuronCount, 0.0),
+	m_currentExt(m_neuronCount, 0.0f),
 	m_fstim(m_neuronCount, 0)
 {
 	/* Contigous local neuron indices */
@@ -117,7 +119,7 @@ Simulation::initCurrentStimulus(size_t count)
 void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
-	m_currentExt[m_mapper.localIdx(neuron)] = fx_toFix(current, getFractionalBits());
+	m_currentExt[m_mapper.localIdx(neuron)] = current;
 }
 
 
@@ -232,6 +234,16 @@ Simulation::deliverSpikes()
 			deliverSpikesOne(source, delay);
 		}
 	}
+
+	/* convert current back to float */
+	unsigned fbits = getFractionalBits();
+#pragma omp parallel for default(shared)
+	for(unsigned n=0; n < m_neuronCount; n++) {
+		m_currentE[n] = fx_toFloat(mfx_currentE[n], fbits);
+		mfx_currentE[n] = 0U;
+		m_currentI[n] = fx_toFloat(mfx_currentI[n], fbits);
+		mfx_currentI[n] = 0U;
+	}
 }
 
 
@@ -243,7 +255,7 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 	for(unsigned s=0; s < row.len; ++s) {
 		const FAxonTerminal& terminal = row[s];
-		std::vector<fix_t>& current = terminal.weight >= 0 ? m_currentE : m_currentI;
+		std::vector<fix_t>& current = terminal.weight >= 0 ? mfx_currentE : mfx_currentI;
 		current.at(terminal.target) += terminal.weight;
 		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",
 				elapsedSimulation(),
