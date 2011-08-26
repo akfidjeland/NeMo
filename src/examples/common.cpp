@@ -15,7 +15,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 				boost::program_options::variables_map& vm, unsigned seconds)
 {
 
-	unsigned stdp = vm["stdp"].as<unsigned>();
+	unsigned stdpPeriod = vm["stdp-period"].as<unsigned>();
+	float stdpReward = vm["stdp-reward"].as<float>();
 	bool csv = vm.count("csv") != 0;
 	bool verbose = !csv;
 	bool provideFiringStimulus = vm.count("fstim") != 0;
@@ -39,8 +40,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms, ++t) {
 			sim->step();
 		}
-		if(stdp && t % stdp == 0) {
-			sim->applyStdp(1.0);
+		if(stdpPeriod && t % stdpPeriod == 0) {
+			sim->applyStdp(stdpReward);
 		}
 	}
 	if(verbose)
@@ -76,16 +77,16 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 
 			if(vprobe) {
 				/* Just read a single value. The whole neuron population will be synced */
-				float v = sim->getMembranePotential(0);
+				v = sim->getMembranePotential(0);
 			}
 		}
-		if(stdp && t % stdp == 0) {
-			sim->applyStdp(1.0);
+		if(stdpPeriod && t % stdpPeriod == 0) {
+			sim->applyStdp(stdpReward);
 		}
 	}
-	long int elapsedData = sim->elapsedWallclock();
+	long int elapsedWallclock = sim->elapsedWallclock();
 	if(verbose)
-		std::cout << "[" << elapsedData << "ms elapsed]";
+		std::cout << "[" << elapsedWallclock << "ms elapsed]";
 	if(verbose)
 		std::cout << std::endl;
 
@@ -94,9 +95,8 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 
 	/* Throughput is measured in terms of the number of spike arrivals per
 	 * wall-clock second */
-	unsigned long throughput = MS_PER_SECOND * narrivals / elapsedData;
-	double speedup = double(seconds*MS_PER_SECOND)/elapsedData;
-	double updates = double(MS_PER_SECOND*sim->elapsedSimulation())/elapsedData;
+	unsigned long throughput = MS_PER_SECOND * narrivals / elapsedWallclock;
+	double speedup = double(seconds*MS_PER_SECOND)/elapsedWallclock;
 
 	if(verbose) {
 		std::cout << "Total firings: " << nfired << std::endl;
@@ -111,13 +111,13 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 		std::string sep = ", ";
 		// raw data
 		std::cout << n << sep << m << sep << seconds*MS_PER_SECOND
-			<< sep << elapsedData << sep << stdp << sep << nfired;
+			<< sep << elapsedWallclock << sep << stdpPeriod << sep << nfired;
 		// derived data. Not strictly needed, at least if out-degree is fixed.
 		std::cout << sep << narrivals << sep << f << sep << speedup
 			<< sep << throughput/1000000 << std::endl;
 	}
 
-	return elapsedData;
+	return elapsedWallclock;
 }
 
 
@@ -168,7 +168,7 @@ setStandardStdpFunction(nemo::Configuration& conf)
 nemo::Configuration
 configuration(boost::program_options::variables_map& opts)
 {
-	bool stdp = opts["stdp"].as<unsigned>() != 0;
+	bool stdp = opts["stdp-period"].as<unsigned>() != 0;
 	bool log = opts["verbose"].as<unsigned>() >= 2;
 	bool cpu = opts.count("cpu") != 0;
 	bool cuda = opts.count("cuda") != 0;
@@ -210,7 +210,8 @@ commonOptions()
 	desc.add_options()
 		("help,h", "print this message")
 		("duration,t", po::value<unsigned>()->default_value(1000), "duration of simulation (ms)")
-		("stdp", po::value<unsigned>()->default_value(0), "STDP application period (ms). If 0 do not use STDP")
+		("stdp-period", po::value<unsigned>()->default_value(0), "STDP application period (ms). If 0 do not use STDP")
+		("stdp-reward", po::value<float>()->default_value(1.0), "STDP reward")
 		("cpu", "Use the CPU backend")
 		("cuda", "Use the CUDA backend (default device)")
 		("verbose,v", po::value<unsigned>()->default_value(0), "Set verbosity level")

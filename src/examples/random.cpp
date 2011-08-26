@@ -114,7 +114,7 @@ main(int argc, char* argv[])
 		unsigned ncount = vm["neurons"].as<unsigned>();
 		unsigned scount = vm["synapses"].as<unsigned>();
 		unsigned duration = vm["duration"].as<unsigned>();
-		unsigned stdp = vm["stdp"].as<unsigned>();
+		unsigned stdp = vm["stdp-period"].as<unsigned>();
 		unsigned verbose = vm["verbose"].as<unsigned>();
 		bool runBenchmark = vm.count("benchmark") != 0;
 
