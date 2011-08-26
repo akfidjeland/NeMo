@@ -50,8 +50,14 @@ Simulation::Simulation(
 	nidx_t l_idx = 0;
 
 	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+
 		/* Wrap in smart pointer to ensure the class is not copied */
 		m_mapper.insertTypeBase(type_id, l_idx);
+
+		if(net.neuronCount(type_id) == 0) {
+			continue;
+		}
+
 		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
 		l_idx += ns->size();
 		m_neurons.push_back(ns);
