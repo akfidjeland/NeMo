@@ -9,7 +9,7 @@
  * This network shows usage of libnemo and can be used for benchmarking
  * purposes.
  *
- * Author: Andreas K. Fidjelnad <andreas.fidjeland@imperial.ac.uk>
+ * Author: Andreas K. Fidjeland <andreas.fidjeland@imperial.ac.uk>
  * Date: March 2010
  */ 
 

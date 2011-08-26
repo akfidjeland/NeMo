@@ -132,15 +132,20 @@ Simulation::Simulation(
 	m_streamCompute(0),
 	m_streamCopy(0)
 {
-
 	size_t pitch1 = 0;
 	size_t pitch32 = 0;
+
 	/* Populate all neuron collections */
-	std::vector<unsigned> h_partitionSize; //MAX_PARTITION_COUNT, 0);
-	for(unsigned i=0, i_end=net.neuronTypeCount(); i < i_end; ++i) {
+	std::vector<unsigned> h_partitionSize;
+	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+
+		if(net.neuronCount(type_id) == 0) {
+			continue;
+		}
+
 		//! \todo could do mapping here to avoid two passes over neurons
 		/* Wrap in smart pointer to ensure the class is not copied */
-		boost::shared_ptr<Neurons> ns(new Neurons(net, i, m_mapper));
+		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
 		setPitch(ns->wordPitch32(), &pitch32);
 		setPitch(ns->wordPitch1(), &pitch1);
 		//! \todo verify contigous range
