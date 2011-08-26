@@ -328,14 +328,15 @@ runRing(unsigned ncount, nemo::Configuration conf)
 
 
 
-/* Run a regular ring network test, but with an additional population of
- * unconnected neurons of a different type.
+/* Run a regular ring network test, but with an additional variable-sized
+ * population of unconnected neurons of a different type.
  *
- * The additional poisson source neurons should not have any effect on the
+ * The additional Poisson source neurons should not have any effect on the
  * simulation but should expose errors related to mixing local/global partition
- * indices. */
+ * indices.
+ */
 void
-testNeuronTypeMixture(backend_t backend, bool izFirst)
+testNeuronTypeMixture(backend_t backend, unsigned szOthers, bool izFirst)
 {
 	const unsigned szRing = 1024;
 	boost::scoped_ptr<nemo::Network> net(new nemo::Network());
@@ -344,7 +345,7 @@ testNeuronTypeMixture(backend_t backend, bool izFirst)
 	}
 	unsigned poisson = net->addNeuronType("PoissonSource");
 	float p = 0.001f;
-	for(unsigned n=szRing; n<2*szRing; ++n) {
+	for(unsigned n=szRing; n<szRing+szOthers; ++n) {
 		net->addNeuron(poisson, n, 1, &p);
 	}
 	if(!izFirst) {
@@ -352,7 +353,9 @@ testNeuronTypeMixture(backend_t backend, bool izFirst)
 	}
 
 	nemo::Configuration conf = configuration(false, 1024, backend);
-	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+	boost::scoped_ptr<nemo::Simulation> sim;
+	BOOST_REQUIRE_NO_THROW(sim.reset(nemo::simulation(*net, conf)));
+
 	/* Stimulate a single neuron to get the ring going */
 	sim->step(std::vector<unsigned>(1, 0));
 
@@ -921,8 +924,12 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 BOOST_AUTO_TEST_SUITE(mix)
-	TEST_ALL_BACKENDS_N(IP, testNeuronTypeMixture, true)
-	TEST_ALL_BACKENDS_N(PI, testNeuronTypeMixture, false)
+	TEST_ALL_BACKENDS_N(IP, testNeuronTypeMixture, 1024, true)
+	TEST_ALL_BACKENDS_N(PI, testNeuronTypeMixture, 1024, false)
+	/* Verify that it's possible to add a neuron type and then simply ignore
+	 * it, with no ill effect */
+	TEST_ALL_BACKENDS_N(IP0, testNeuronTypeMixture, 0, true)
+	TEST_ALL_BACKENDS_N(PI0, testNeuronTypeMixture, 0, false)
 BOOST_AUTO_TEST_SUITE_END()
 
 /* Neuron-type specific tests */
