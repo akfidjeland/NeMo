@@ -440,6 +440,8 @@ Simulation::postfire()
 void
 Simulation::applyStdp(float reward)
 {
+	using boost::format;
+
 	if(!m_stdp) {
 		throw exception(NEMO_LOGIC_ERROR, "applyStdp called, but no STDP model specified");
 		return;
@@ -449,11 +451,19 @@ Simulation::applyStdp(float reward)
 		m_cm.clearStdpAccumulator();
 	} else  {
 		initLog();
+
+		unsigned fbits = m_cm.fractionalBits();
+		if(fx_toFix(reward, fbits) == 0U && reward != 0) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("STDP reward rounded down to zero. The smallest valid reward is %f")
+						% fx_toFloat(1U, fbits)));
+		}
+
 		::applyStdp(
 				m_streamCompute,
 				m_mapper.partitionCount(),
 				md_partitionSize.get(),
-				m_cm.fractionalBits(),
+				fbits,
 				md_params.get(),
 				m_cm.d_fcm(),
 				m_cm.d_rcm(),

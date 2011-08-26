@@ -241,10 +241,18 @@ ConnectivityMatrix::weight(const RSynapse& s, uint32_t sidx) const
 void
 ConnectivityMatrix::applyStdp(float reward)
 {
+	using boost::format;
+
 	if(!m_stdp) {
 		throw exception(NEMO_LOGIC_ERROR, "applyStdp called, but no STDP model specified");
 	}
 	fix_t fx_reward = fx_toFix(reward, m_fractionalBits);
+
+	if(fx_reward == 0U && reward != 0) {
+		throw exception(NEMO_INVALID_INPUT,
+				str(format("STDP reward rounded down to zero. The smallest valid reward is %f")
+					% fx_toFloat(1U, m_fractionalBits)));
+	}
 
 	if(fx_reward == 0) {
 		m_rcm.clearAccumulator();
