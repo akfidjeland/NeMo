@@ -40,8 +40,13 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 
 		virtual ~Simulation();
 
+		/*! Vector of neurons which fired during a particular simulation step */
 		typedef std::vector<unsigned> firing_output;
+
+		/*! Vector of neurons which should be forced to fire during a particular simulation step */
 		typedef std::vector<unsigned> firing_stimulus;
+
+		/*! Current stimulus specified as pairs of neuron index and input current */
 		typedef std::vector< std::pair<unsigned, float> > current_stimulus;
 
 		/*! Run simulation for a single cycle (1ms) without external stimulus */
