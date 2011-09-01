@@ -39,9 +39,9 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 	for(unsigned s=0; s < 5; ++s) {
 		for(unsigned ms = 0; ms < MS_PER_SECOND; ++ms, ++t) {
 			sim->step();
-		}
-		if(stdpPeriod && t % stdpPeriod == 0) {
-			sim->applyStdp(stdpReward);
+			if(stdpPeriod && t % stdpPeriod == 0) {
+				sim->applyStdp(stdpReward);
+			}
 		}
 	}
 	if(verbose)
@@ -79,9 +79,10 @@ benchmark(nemo::Simulation* sim, unsigned n, unsigned m,
 				/* Just read a single value. The whole neuron population will be synced */
 				v = sim->getMembranePotential(0);
 			}
-		}
-		if(stdpPeriod && t % stdpPeriod == 0) {
-			sim->applyStdp(stdpReward);
+
+			if(stdpPeriod && t % stdpPeriod == 0) {
+				sim->applyStdp(stdpReward);
+			}
 		}
 	}
 	long int elapsedWallclock = sim->elapsedWallclock();
