@@ -893,8 +893,35 @@ testInvalidNeuronType()
 }
 
 
+
+void
+testNoParamNeuronType()
+{
+	nemo::Network net;
+	unsigned rs = net.addNeuronType("IzhikevichRS");
+	float params[2] = { -13.0f, -65.0f };
+	for(unsigned n=0; n<1000; ++n) {
+		net.addNeuron(rs, n, 2, params);
+	}
+	// no synapses
+	nemo::Configuration conf;
+	conf.setCudaBackend();
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
+	for(unsigned t=0; t<100; ++t) {
+		sim->step();
+		const float u = sim->getNeuronState(100, 0);
+		const float v = sim->getNeuronState(100, 1);
+		BOOST_REQUIRE(!isnan(u));
+		BOOST_REQUIRE(!isnan(v));
+	}
+}
+
+
 BOOST_AUTO_TEST_SUITE(plugins)
 	BOOST_AUTO_TEST_CASE(invalid_type) { testInvalidNeuronType(); }
+#ifdef NEMO_CUDA_ENABLED
+	BOOST_AUTO_TEST_CASE(no_parameters) { testNoParamNeuronType(); }
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 
 
