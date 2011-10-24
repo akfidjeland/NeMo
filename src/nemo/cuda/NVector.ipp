@@ -20,6 +20,11 @@ NVector<T>::NVector(
 	m_pitch(0)
 {
 	size_t height = planes * partitionCount;
+	if(height == 0 || maxPartitionSize == 0) {
+		/* Empty array, leave this as null pointer and 0 size */
+		return;
+	}
+
 	size_t bytePitch = 0;
 	void* d_ptr = NULL;
 	d_mallocPitch(&d_ptr, &bytePitch, maxPartitionSize * sizeof(T), height, "NVector");
@@ -117,7 +122,9 @@ template<typename T>
 void
 NVector<T>::copyToDevice()
 {
-	memcpyToDevice(m_deviceData.get(), m_hostData.get(), m_planes * size());
+	if(!empty()) {
+		memcpyToDevice(m_deviceData.get(), m_hostData.get(), m_planes * size());
+	}
 }
 
 
