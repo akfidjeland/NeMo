@@ -129,4 +129,5 @@ Simulation.get_weights = get_weights
 Simulation.get_plastic = get_plastic
 
 
+__version__ = '@NEMO_VERSION@'
 __all__ = ['Network', 'Simulation', 'Configuration']
