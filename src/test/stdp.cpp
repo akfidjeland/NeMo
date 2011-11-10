@@ -332,16 +332,18 @@ void
 testInvalidDynamicLength(bool stdp)
 {
 	nemo::Configuration conf;
-	std::vector<float> pre  = standardStdpPre(1.0, 30);
-	std::vector<float> post = standardStdpPost(1.0, 30);
-	conf.setStdpFunction(pre, post, 0.01f,  1.0f, -0.01f, -1.0f);
+	if(stdp) {
+		std::vector<float> pre  = standardStdpPre(1.0, 31);
+		std::vector<float> post = standardStdpPost(1.0, 31);
+		conf.setStdpFunction(pre, post, 0.01f,  1.0f, -0.01f, -1.0f);
+	}
 
 	nemo::Network net;
 	unsigned iz = net.addNeuronType("Izhikevich");
 	float param[7] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 	net.addNeuron(iz, 0, 7, param);
 	net.addNeuron(iz, 1, 7, param);
-	net.addSynapse(0, 1, 32, 1.0, stdp);
+	net.addSynapse(0, 1, 34, 1.0, stdp);
 
 	if(stdp) {
 		BOOST_REQUIRE_THROW(nemo::simulation(net, conf), nemo::exception);
