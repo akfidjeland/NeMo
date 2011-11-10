@@ -274,6 +274,7 @@ cuda_update_neurons(
 	return cudaGetLastError();
 }
 
+cuda_update_neurons_t* test_update = &cuda_update_neurons;
 
 #include "default_init.c"
 

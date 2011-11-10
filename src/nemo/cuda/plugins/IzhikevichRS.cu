@@ -19,7 +19,6 @@
 #include <bitvector.cu>
 #include <current.cu>
 #include <firing.cu>
-#include <fixedpoint.cu>
 #include <neurons.cu>
 #include <parameters.cu>
 #include <rng.cu>
@@ -66,12 +65,16 @@ void
 updateNeurons(
 	uint32_t cycle,
 	const param_t& s_params,
+	unsigned globalPartitionCount,
+	unsigned s_globalPartition,
 	unsigned s_partitionSize,
 	float* g_neuronParameters,
 	float* g_neuronState,
 	uint32_t* s_valid,   // bitvector for valid neurons
 	// input
-	float* s_current,    // input current
+	float* g_currentE,
+	float* g_currentI,
+	float* s_currentExt,    // external input current
 	// buffers
 	uint32_t* s_fstim,
 	// output
@@ -94,7 +97,8 @@ updateNeurons(
 			float u = g_u0[neuron];
 			float a = 0.02f;
 			float b = 0.2f;
-			float I = s_current[neuron];
+
+			float I = g_currentE[neuron] + g_currentI[neuron] + s_currentExt[neuron];
 
 			/* n sub-steps for numerical stability, with u held */
 			bool fired = false;
@@ -136,10 +140,6 @@ updateNeurons(
 			g_u1[neuron] = u;
 		}
 
-		/* synchronise to ensure accesses to s_fired and s_current (which use
-		 * the same underlying buffer) do not overlap. Even in the worst case
-		 * (all neurons firing) the write to s_fired will be at least one
-		 * before the first unconsumed s_current entry. */
 		__syncthreads();
 	}
 }
@@ -158,21 +158,16 @@ updateNeurons(
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
-		nrng_t g_nrng,
 		uint32_t* g_valid,
 		// firing stimulus
 		uint32_t* g_fstim,
-		fix_t* g_istim,
-		fix_t* g_current,
+		float* g_istim,
+		float* g_current,
 		uint32_t* g_firingOutput, // dense output, already offset to current cycle
 		unsigned* g_nFired,       // device-only buffer
 		nidx_dt* g_fired)         // device-only buffer, sparse output
 {
 	__shared__ nidx_dt s_fired[MAX_PARTITION_SIZE];
-
-	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
-	__shared__ uint32_t s_overflow[S_BV_PITCH];
-	__shared__ uint32_t s_negative[S_BV_PITCH];
 
 	__shared__ unsigned s_nFired;
 	__shared__ unsigned s_partitionSize;
@@ -192,18 +187,11 @@ updateNeurons(
 	__shared__ param_t s_params;
 	loadParameters(g_params, &s_params);
 
-	bv_clear(s_overflow);
-	bv_clear(s_negative);
+	float* g_currentE = incomingExcitatory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32);
+	float* g_currentI = incomingInhibitory(g_current, globalPartitionCount, s_globalPartition, s_params.pitch32);
 
-	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
-	copyCurrent(s_partitionSize,
-			g_current + s_globalPartition * s_params.pitch32,
-			s_current);
-	__syncthreads();
-
-	addCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current, s_overflow, s_negative);
-	fx_arrSaturatedToFloat(s_overflow, s_negative, s_current, (float*) s_current, s_params.fixedPointScale);
-	__syncthreads();
+	__shared__ float s_current[MAX_PARTITION_SIZE];
+	loadCurrentStimulus(s_globalPartition, s_partitionSize, s_params.pitch32, g_istim, s_current);
 
 	__shared__ uint32_t s_fstim[S_BV_PITCH];
 	loadFiringInput(s_globalPartition, s_params.pitch1, g_fstim, s_fstim);
@@ -215,13 +203,15 @@ updateNeurons(
 	updateNeurons(
 			cycle,
 			s_params,
+			globalPartitionCount,
+			s_globalPartition,
 			s_partitionSize,
 			//! \todo use consistent parameter passing scheme here
 			gf_neuronParameters + CURRENT_PARTITION * s_params.pitch32,
 			gf_neuronState,
 			s_valid,
-			(float*) s_current,
-			s_fstim,
+			g_currentE, g_currentI,
+			s_current, s_fstim,
 			&s_nFired,
 			s_fired);
 
@@ -250,8 +240,8 @@ cuda_update_neurons(
 		nrng_t d_nrng,
 		uint32_t* d_valid,
 		uint32_t* d_fstim,
-		fix_t* d_istim,
-		fix_t* d_current,
+		float* d_istim,
+		float* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,
@@ -263,7 +253,7 @@ cuda_update_neurons(
 	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle, globalPartitionCount, basePartition,
 			d_partitionSize, d_params,
-			df_neuronParameters, df_neuronState, d_nrng, d_valid,
+			df_neuronParameters, df_neuronState, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus
 			d_current, // internal input current
@@ -272,6 +262,7 @@ cuda_update_neurons(
 	return cudaGetLastError();
 }
 
+cuda_update_neurons_t* test_update = &cuda_update_neurons;
 
 #include "default_init.c"
 
