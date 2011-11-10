@@ -120,27 +120,6 @@ runComparisions(nemo::Network* net)
 }
 
 
-void
-runBackendComparisions(nemo::Network* net)
-{
-	unsigned duration = 2; // seconds
-
-	/* simulations should produce repeatable results regardless of the backend
-	 * which is used */
-	//! \todo add test for stdp as well;
-	{
-		bool stdp_conf[1] = { false };
-
-		for(unsigned si=0; si < 1; ++si) {
-			nemo::Configuration conf1 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CPU);
-			nemo::Configuration conf2 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CUDA);
-			compareSimulations(net, conf1, net, conf2, duration, stdp_conf[si]);
-		}
-	}
-
-}
-
-
 
 //! \todo migrate to networks.cpp
 void
@@ -388,16 +367,6 @@ BOOST_AUTO_TEST_SUITE(ring_tests)
 		runRing(4000, conf); // ditto
 	}
 BOOST_AUTO_TEST_SUITE_END()
-
-
-#ifdef NEMO_CUDA_ENABLED
-BOOST_AUTO_TEST_CASE(compare_backends)
-{
-	nemo::Network* net = nemo::random::construct(4000, 1000, false);
-	runBackendComparisions(net);
-	delete net;
-}
-#endif
 
 
 
