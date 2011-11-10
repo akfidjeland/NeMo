@@ -106,7 +106,7 @@ fx_arrSaturatedToFloat(
 	/* If any accumulators overflow, clamp to max positive or minimum value */
 	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
 		unsigned nidx = nbase + threadIdx.x;
-#ifndef FIXPOINT_SATURATION
+#ifndef NEMO_WEIGHT_FIXED_POINT_SATURATION
 		s_float[nidx] = fx_tofloat(s_fix[nidx], scale);
 #else
 		bool overflow = bv_isSet(nidx, s_overflow);
