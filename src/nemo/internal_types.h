@@ -13,6 +13,7 @@
 #include "types.h"
 
 typedef int32_t fix_t;
+typedef int64_t wfix_t;  // 'wide' fixed-point type
 typedef unsigned nidx_t; // neuron index
 typedef unsigned sidx_t; // synapse index
 typedef unsigned delay_t;

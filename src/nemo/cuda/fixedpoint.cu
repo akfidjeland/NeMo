@@ -45,9 +45,9 @@ __device__
 fix_t
 fx_saturate(bool negative)
 {
-	fix_t bits = fix_t(1) << 31;
-	return negative ? bits : ~bits;
+	return negative ? fx_max : fx_min;
 }
+
 
 
 /*! Cast fixed-point to floating point, with saturation as indicated by the
