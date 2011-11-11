@@ -10,6 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
 #include "types.h"
 
 typedef int32_t fix_t;
