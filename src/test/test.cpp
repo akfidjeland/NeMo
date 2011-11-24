@@ -997,4 +997,5 @@ BOOST_AUTO_TEST_SUITE_END()
 #include "PoissonSource.cpp"
 #include "Input.cpp"
 #include "Kuramoto.cpp"
+#include "IF_curr_exp.cpp"
 
