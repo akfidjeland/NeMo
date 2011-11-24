@@ -125,7 +125,7 @@ gather( unsigned cycle,
 			if(weight != 0) {
 				bool overflow = fx_atomicAdd(s_current + postsynaptic, weight);
 				bv_atomicSetPredicated(overflow, postsynaptic, s_overflow);
-#ifndef FIXPOINT_SATURATION
+#ifndef NEMO_WEIGHT_FIXED_POINT_SATURATION
 				ASSERT(!overflow);
 #endif
 				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",

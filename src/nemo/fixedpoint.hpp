@@ -27,6 +27,13 @@ fx_toFloat(fix_t v, unsigned fractionalBits);
 
 
 
+/* Convert wide fixed-point to floating point */
+NEMO_BASE_DLL_PUBLIC
+float
+wfx_toFloat(wfix_t v, unsigned fractionalBits);
+
+
+
 inline
 #ifdef __CUDACC__
 __host__ __device__
@@ -37,5 +44,10 @@ fx_mul(fix_t a, fix_t b, unsigned fractionalBits)
 	int64_t r = int64_t(a) * int64_t(b);
 	return fix_t(r >> fractionalBits);
 }
+
+
+const fix_t fx_min =   fix_t(1) << 31;
+const fix_t fx_max = ~(fix_t(1) << 31);
+
 
 #endif

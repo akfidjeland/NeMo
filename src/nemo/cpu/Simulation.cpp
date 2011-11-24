@@ -245,9 +245,9 @@ Simulation::deliverSpikes()
 	unsigned fbits = getFractionalBits();
 #pragma omp parallel for default(shared)
 	for(unsigned n=0; n < m_neuronCount; n++) {
-		m_currentE[n] = fx_toFloat(mfx_currentE[n], fbits);
+		m_currentE[n] = wfx_toFloat(mfx_currentE[n], fbits);
 		mfx_currentE[n] = 0U;
-		m_currentI[n] = fx_toFloat(mfx_currentI[n], fbits);
+		m_currentI[n] = wfx_toFloat(mfx_currentI[n], fbits);
 		mfx_currentI[n] = 0U;
 	}
 }
@@ -261,7 +261,7 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 	for(unsigned s=0; s < row.len; ++s) {
 		const FAxonTerminal& terminal = row[s];
-		std::vector<fix_t>& current = terminal.weight >= 0 ? mfx_currentE : mfx_currentI;
+		std::vector<wfix_t>& current = terminal.weight >= 0 ? mfx_currentE : mfx_currentI;
 		current.at(terminal.target) += terminal.weight;
 		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",
 				elapsedSimulation(),

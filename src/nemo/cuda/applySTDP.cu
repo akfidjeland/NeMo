@@ -44,8 +44,6 @@ applyStdp(
 	weight_dt minInhibitoryWeight,
 	weight_dt maxInhibitoryWeight,
 	weight_dt reward)
-	/*! \note reverse connectivity addresses are found in constant memory,
-	 * while forward connectivity addresses are found in texture memory */
 {
 	__shared__ unsigned s_partitionSize;
 

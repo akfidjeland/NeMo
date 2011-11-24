@@ -69,6 +69,8 @@ class NVector
 		/*! \return number of words of data in each subvector, including padding */
 		size_t size() const;
 
+		bool empty() const { return size() == 0; }
+
 		/*! \return number of bytes of data in all vectors, including padding */
 		size_t bytes() const;
 		size_t d_allocated() const;

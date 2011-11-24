@@ -120,27 +120,6 @@ runComparisions(nemo::Network* net)
 }
 
 
-void
-runBackendComparisions(nemo::Network* net)
-{
-	unsigned duration = 2; // seconds
-
-	/* simulations should produce repeatable results regardless of the backend
-	 * which is used */
-	//! \todo add test for stdp as well;
-	{
-		bool stdp_conf[1] = { false };
-
-		for(unsigned si=0; si < 1; ++si) {
-			nemo::Configuration conf1 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CPU);
-			nemo::Configuration conf2 = configuration(stdp_conf[si], 1024, NEMO_BACKEND_CUDA);
-			compareSimulations(net, conf1, net, conf2, duration, stdp_conf[si]);
-		}
-	}
-
-}
-
-
 
 //! \todo migrate to networks.cpp
 void
@@ -373,6 +352,63 @@ testNeuronTypeMixture(backend_t backend, unsigned szOthers, bool izFirst)
 
 
 
+void
+testFixedPointSaturation(backend_t backend)
+{
+	nemo::Network net;
+
+	unsigned iz = net.addNeuronType("Izhikevich");
+
+	enum { INPUT0, INPUT1, OUTPUT_SAT, OUTPUT_REF, OUTPUT_WEAK, NCOUNT };
+
+	float params[7] = { 0.02f, 0.2f, -65.0f, 8.0f, 0.0f, -13.0f, -65.0f }; // RS neurons
+
+	for(unsigned n=0; n < NCOUNT; ++n) {
+		net.addNeuron(iz, n, 7, params);
+	}
+
+	nemo::Configuration conf = configuration(false, 1024, backend);
+
+	net.addSynapse(INPUT0, OUTPUT_REF, 1, 1024.0f, false);
+	net.addSynapse(INPUT1, OUTPUT_REF, 1, 1024.0f, false);
+	net.addSynapse(INPUT0, OUTPUT_WEAK, 1, 1000.0f, false);
+	net.addSynapse(INPUT1, OUTPUT_WEAK, 1, 1000.0f, false);
+	net.addSynapse(INPUT0, OUTPUT_SAT, 1, 1100.0f, false);
+	net.addSynapse(INPUT1, OUTPUT_SAT, 1, 1100.0f, false);
+
+	/* Now, stimulating both the input neurons should produce nearly the same
+	 * result in the reference and saturating output neurons, as the stronger
+	 * weights should saturate the very nearly the sum total of the 'middle
+	 * strength' weights. The output with weak weights should produce a
+	 * different result */
+
+	boost::scoped_ptr<nemo::Simulation> sim;
+	sim.reset(nemo::simulation(net, conf));
+
+	std::vector<unsigned> fstim;
+	fstim.push_back(INPUT0);
+	fstim.push_back(INPUT1);
+
+	std::vector<unsigned> fired;
+
+	fired = sim->step(fstim);
+	BOOST_REQUIRE_EQUAL(fired.size(), 2); // sanity checking
+	fired = sim->step();
+	BOOST_REQUIRE_EQUAL(fired.size(), 3); // sanity checking
+
+	/* Compare u here since it has a dependency on v before the firing, whereas
+	 * v does not */
+	float u_ref  = sim->getNeuronState(OUTPUT_REF, 0);
+	float u_weak = sim->getNeuronState(OUTPUT_WEAK, 0);
+	float u_sat  = sim->getNeuronState(OUTPUT_SAT, 0);
+
+	float eps = 0.00001f;
+	BOOST_REQUIRE(fabs(u_ref - u_weak) > eps);
+	BOOST_REQUIRE(fabs(u_ref - u_sat) < eps);
+}
+
+
+
 BOOST_AUTO_TEST_SUITE(ring_tests)
 	nemo::Configuration conf = configuration(false, 1024);
 	BOOST_AUTO_TEST_CASE(n1000) {
@@ -388,16 +424,6 @@ BOOST_AUTO_TEST_SUITE(ring_tests)
 		runRing(4000, conf); // ditto
 	}
 BOOST_AUTO_TEST_SUITE_END()
-
-
-#ifdef NEMO_CUDA_ENABLED
-BOOST_AUTO_TEST_CASE(compare_backends)
-{
-	nemo::Network* net = nemo::random::construct(4000, 1000, false);
-	runBackendComparisions(net);
-	delete net;
-}
-#endif
 
 
 
@@ -893,8 +919,35 @@ testInvalidNeuronType()
 }
 
 
+
+void
+testNoParamNeuronType()
+{
+	nemo::Network net;
+	unsigned rs = net.addNeuronType("IzhikevichRS");
+	float params[2] = { -13.0f, -65.0f };
+	for(unsigned n=0; n<1000; ++n) {
+		net.addNeuron(rs, n, 2, params);
+	}
+	// no synapses
+	nemo::Configuration conf;
+	conf.setCudaBackend();
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
+	for(unsigned t=0; t<100; ++t) {
+		sim->step();
+		const float u = sim->getNeuronState(100, 0);
+		const float v = sim->getNeuronState(100, 1);
+		BOOST_REQUIRE(!isnan(u));
+		BOOST_REQUIRE(!isnan(v));
+	}
+}
+
+
 BOOST_AUTO_TEST_SUITE(plugins)
 	BOOST_AUTO_TEST_CASE(invalid_type) { testInvalidNeuronType(); }
+#ifdef NEMO_CUDA_ENABLED
+	BOOST_AUTO_TEST_CASE(no_parameters) { testNoParamNeuronType(); }
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 
 
@@ -930,6 +983,13 @@ BOOST_AUTO_TEST_SUITE(mix)
 	 * it, with no ill effect */
 	TEST_ALL_BACKENDS_N(IP0, testNeuronTypeMixture, 0, true)
 	TEST_ALL_BACKENDS_N(PI0, testNeuronTypeMixture, 0, false)
+BOOST_AUTO_TEST_SUITE_END()
+
+
+BOOST_AUTO_TEST_SUITE(fixedpoint)
+#ifdef NEMO_WEIGHT_FIXED_POINT_SATURATION
+	TEST_ALL_BACKENDS(saturation, testFixedPointSaturation)
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 
 /* Neuron-type specific tests */
