@@ -10,6 +10,7 @@
  */
 
 #include <cmath>
+#include <ctime>
 #include <iostream>
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -58,6 +59,7 @@
 #endif
 
 typedef boost::mt19937 rng_t;
+typedef boost::variate_generator<rng_t&, boost::bernoulli_distribution<double> > brng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_real<double> > urng_t;
 typedef boost::variate_generator<rng_t&, boost::uniform_int<> > uirng_t;
 
@@ -100,6 +102,11 @@ sortAndCompare(std::vector<T> a, std::vector<T> b)
 void
 runComparisions(nemo::Network* net)
 {
+	/* No need to always test all these, so just skip some random proportion of
+	 * these */
+	rng_t rng;
+	rng.seed(std::time(0));
+	brng_t skip(rng, boost::bernoulli_distribution<double>(0.8));
 	unsigned duration = 2;
 
 	/* simulations should produce repeatable results both with the same
@@ -111,6 +118,9 @@ runComparisions(nemo::Network* net)
 		for(unsigned si=0; si < 2; ++si)
 		for(unsigned pi1=0; pi1 < 3; ++pi1) 
 		for(unsigned pi2=0; pi2 < 3; ++pi2) {
+			if(skip()) {
+				continue;
+			}
 			nemo::Configuration conf1 = configuration(stdp_conf[si], psize_conf[pi1]);
 			nemo::Configuration conf2 = configuration(stdp_conf[si], psize_conf[pi2]);
 			compareSimulations(net, conf1, net, conf2, duration, stdp_conf[si]);
