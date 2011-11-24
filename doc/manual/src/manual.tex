@@ -42,6 +42,12 @@
 
 \newcommand{\cpp}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
 
+% Math mode command
+\newcommand{\param}[2]{#1_{\text{#2}}}
+\newcommand{\vparam}[1]{\param{v}{#1}}
+\newcommand{\tauparam}[1]{\param{\tau}{#1}}
+\newcommand{\iparam}[1]{\param{I}{#1}}
+
 % rst2latex also sets this on inside the document
 \newlength{\locallinewidth}
 
@@ -240,7 +246,7 @@ Numerical integration & Euler with step size of 0.25ms \\
 \end{tabular}
 
 The Izhikevich neuron model 
-\cite{izhikevich2003simple_model}.
+\cite{izhikevich2003simple_model}
 consists of a two-dimensional system of ordinary differential equations defined by
 \begin{align}
 	\dot{v} & = 0.04v^2+5v+140-u+I    \label{eq:update_v} \\
@@ -271,6 +277,26 @@ In addition to the basic model parameters $a$--$d$ and state variables $u$ and $
 The input current is drawn from $\mathcal{N}(0, \sigma^2)$,
 	where $\sigma$ is set separately for each neuron.
 If $\sigma$ is set to zero, no input current is generated.
+
+\subsection{IF\_curr\_exp}
+\label{model:neuron:IF_curr_exp}
+
+\begin{tabular}{ll}
+Parameters      & $\vparam{rest}, \vparam{reset}, c_m, \tau_m, \tauparam{refrac}, \tauparam{synE}, \tauparam{synI}, \vparam{thresh}, \iparam{offset}$ \\
+State variables & $v, I_E, I_I$                                  \\
+Dynamics        & $\frac{dv}{dt} = (I_E + I_I + \iparam{offset}) / c_m + (\vparam{rest}-v)/\tau_m$ \\
+				& $\frac{dI_E}{dt} = -I_E/\tauparam{synE}$ \\
+				& $\frac{dI_I}{dt} = -I_E/\tauparam{synI}$ \\
+Fire            & $v \ge \vparam{thresh}$                           \\
+Reset           & $v\leftarrow \vparam{reset}$                      \\
+Refractory period & $\tauparam{refrac}$ \\
+Numerical integration & Euler \\
+\end{tabular}
+
+This integrate-and-fire neuron model with exponential decay implements the standard neuron model in PyNN with the same name.
+Time-related paramaters are expressed in terms of time steps (by default 1~ms).
+$I_E$ and $I_I$ are the incoming currents arising from exctatory and inhibitory PSPs resepectively.
+During the refractory period the voltage stays constant.
 
 \subsection{Poisson spike source}
 \label{model:neuron:poisson}
