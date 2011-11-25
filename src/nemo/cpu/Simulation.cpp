@@ -244,7 +244,7 @@ Simulation::deliverSpikes()
 	/* convert current back to float */
 	unsigned fbits = getFractionalBits();
 #pragma omp parallel for default(shared)
-	for(unsigned n=0; n < m_neuronCount; n++) {
+	for(int n=0; n < m_neuronCount; n++) {
 		m_currentE[n] = wfx_toFloat(mfx_currentE[n], fbits);
 		mfx_currentE[n] = 0U;
 		m_currentI[n] = wfx_toFloat(mfx_currentI[n], fbits);

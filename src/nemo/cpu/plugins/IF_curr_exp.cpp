@@ -1,8 +1,6 @@
 #ifndef NEMO_CPU_PLUGINS_IF_CURR_EXP
 #define NEMO_CPU_PLUGINS_IF_CURR_EXP
 
-#include <iostream>
-
 /* Copyright 2010 Imperial College London
  *
  * This file is part of NeMo.
@@ -14,6 +12,8 @@
 
 /*! \file IF_curr_exp.cpp Neuron update CPU kernel for current-based
  * exponential decay integrate-and-fire neurons. */
+
+#include <cassert>
 
 #include <nemo/fixedpoint.hpp>
 #include <nemo/plugins/IF_curr_exp.h>
@@ -68,10 +68,11 @@ cpu_update_neurons(
 	/* Each neuron has two indices: a local index (within the group containing
 	 * neurons of the same type) and a global index. */
 
-	unsigned nn = end-start;
+	int nn = end-start;
+	assert(nn >= 0);
 
 #pragma omp parallel for default(shared)
-	for(unsigned nl=0; nl < nn; nl++) {
+	for(int nl=0; nl < nn; nl++) {
 
 		unsigned ng = start + nl;
 

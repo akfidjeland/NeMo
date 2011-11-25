@@ -1,3 +1,4 @@
+#include <cassert>
 #include <nemo/fixedpoint.hpp>
 #include <nemo/plugins/Izhikevich.h>
 
@@ -46,10 +47,11 @@ cpu_update_neurons(
 	/* Each neuron has two indices: a local index (within the group containing
 	 * neurons of the same type) and a global index. */
 
-	unsigned nn = end-start;
+	int nn = end-start;
+	assert(nn >= 0);
 
 #pragma omp parallel for default(shared)
-	for(unsigned nl=0; nl < nn; nl++) {
+	for(int nl=0; nl < nn; nl++) {
 
 		unsigned ng = start + nl;
 
