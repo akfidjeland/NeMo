@@ -12,6 +12,8 @@
 #include <cmath>
 #include <ctime>
 #include <iostream>
+
+#include <boost/math/special_functions/fpclassify.hpp> // isnan
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/random.hpp>
@@ -105,7 +107,7 @@ runComparisions(nemo::Network* net)
 	/* No need to always test all these, so just skip some random proportion of
 	 * these */
 	rng_t rng;
-	rng.seed(std::time(0));
+	rng.seed(uint32_t(std::time(0)));
 	brng_t skip(rng, boost::bernoulli_distribution<double>(0.8));
 	unsigned duration = 2;
 
@@ -633,8 +635,8 @@ void testInvalidDynamicLength(bool stdp);
 BOOST_AUTO_TEST_SUITE(stdp);
 	TEST_ALL_BACKENDS_N(simple, testStdp, false, 1.0)
 	TEST_ALL_BACKENDS_N(noisy, testStdp, true, 1.0)
-	TEST_ALL_BACKENDS_N(simple_fractional_reward, testStdp, false, 0.8)
-	TEST_ALL_BACKENDS_N(noise_fractional_reward, testStdp, true, 0.9)
+	TEST_ALL_BACKENDS_N(simple_fractional_reward, testStdp, false, 0.8f)
+	TEST_ALL_BACKENDS_N(noise_fractional_reward, testStdp, true, 0.9f)
 	TEST_ALL_BACKENDS(invalid, testInvalidStdpUsage)
 	TEST_ALL_BACKENDS(all_static, testStdpWithAllStatic)
 	BOOST_AUTO_TEST_SUITE(configuration)
@@ -734,7 +736,7 @@ testSetNeuron(backend_t backend)
 	/* setNeuron should only succeed for existing neurons */
 	BOOST_REQUIRE_THROW(net.setNeuron(0, a, b, c, d, u, v, sigma), nemo::exception);
 
-	net.addNeuron(0, a, b, c-0.1, d, u, v-1.0, sigma);
+	net.addNeuron(0, a, b, c-0.1f, d, u, v-1.0f, sigma);
 
 	/* Invalid neuron */
 	BOOST_REQUIRE_THROW(net.getNeuronParameter(1, 0), nemo::exception);
@@ -744,7 +746,7 @@ testSetNeuron(backend_t backend)
 	BOOST_REQUIRE_THROW(net.getNeuronParameter(0, 5), nemo::exception);
 	BOOST_REQUIRE_THROW(net.getNeuronState(0, 2), nemo::exception);
 
-	float e = 0.1;
+	float e = 0.1f;
 	BOOST_REQUIRE_NO_THROW(net.setNeuron(0, a-e, b-e, c-e, d-e, u-e, v-e, sigma-e));
 	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 0), a-e);
 	BOOST_REQUIRE_EQUAL(net.getNeuronParameter(0, 1), b-e);
@@ -947,8 +949,8 @@ testNoParamNeuronType()
 		sim->step();
 		const float u = sim->getNeuronState(100, 0);
 		const float v = sim->getNeuronState(100, 1);
-		BOOST_REQUIRE(!isnan(u));
-		BOOST_REQUIRE(!isnan(v));
+		BOOST_REQUIRE(!boost::math::isnan(u));
+		BOOST_REQUIRE(!boost::math::isnan(v));
 	}
 }
 

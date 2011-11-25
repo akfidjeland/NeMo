@@ -13,7 +13,7 @@ testRate(backend_t backend, unsigned duration, bool otherNeurons)
 		createRing(&net, 1024, 1);
 	}
 	unsigned poisson = net.addNeuronType("PoissonSource");
-	float rate = 0.010;
+	float rate = 0.010f;
 	net.addNeuron(poisson, 0, 1, &rate);
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(net, conf));
 	unsigned nfired = 0;
@@ -21,7 +21,7 @@ testRate(backend_t backend, unsigned duration, bool otherNeurons)
 		const std::vector<unsigned>& fired = sim->step();
 		nfired += fired.size();
 	}
-	unsigned expected = abs(duration*rate);
+	unsigned expected = unsigned(fabsf(float(duration)*rate));
 	unsigned deviation = nfired - expected;
 	//! \todo use a proper statistical test over a large number of runs
 	BOOST_REQUIRE(nfired > 0);

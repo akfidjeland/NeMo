@@ -178,7 +178,7 @@ vectorDimension(int nrhs, const mxArray* prhs[], unsigned arglen[])
 	}
 
 	/* Verify remaining vectors */
-	for(; i < nrhs; ++i) {
+	for(size_t i_max = nrhs; i < i_max; ++i) {
 		arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
 		if(arglen[i] != dim && arglen[i] != 1) {
 			reportVectorDimensions(nrhs, prhs);

@@ -82,7 +82,7 @@ testUncoupled(backend_t backend)
 	const unsigned duration = 1000;
 	for(unsigned t=0; t<duration; ++t) {
 		sim->step();
-		phase = fmodf(phase + frequency, 2*M_PI);
+		phase = fmodf(phase + frequency, float(2*M_PI));
 		BOOST_REQUIRE_CLOSE(sim->getNeuronState(ncount/2, 0), phase, tolerance);
 	}
 }
@@ -109,10 +109,10 @@ testSimpleCoupled(backend_t backend)
 
 		//                       src      tgt
 		float k1 = freq[0] + sin(phase[0]-phase[1]);
-		float k2 = freq[0] + sin(phase[0]-(phase[1]+0.5*k1));
-		float k3 = freq[0] + sin(phase[0]-(phase[1]+0.5*k2));
+		float k2 = freq[0] + sin(phase[0]-(phase[1]+0.5f*k1));
+		float k3 = freq[0] + sin(phase[0]-(phase[1]+0.5f*k2));
 		float k4 = freq[0] + sin(phase[0]-(phase[1]+k3));
-		phase[1] += (k1+2.0*k2+2.0*k3+k4)/6.0;
+		phase[1] += (k1+2.0f*k2+2.0f*k3+k4)/6.0f;
 		phase[0] += freq[0];
 		
 		for(unsigned i=0; i<net.neuronCount(); ++i) {
@@ -170,10 +170,10 @@ testNto1(backend_t backend, unsigned ncount, bool noise)
 
 		/* Sum of weights is one */
 		float k1 = frequency + ncount * strength * sinf(phaseN-phase0);
-		float k2 = frequency + ncount * strength * sinf(phaseN-(phase0+0.5*k1));
-		float k3 = frequency + ncount * strength * sinf(phaseN-(phase0+0.5*k2));
+		float k2 = frequency + ncount * strength * sinf(phaseN-(phase0+0.5f*k1));
+		float k3 = frequency + ncount * strength * sinf(phaseN-(phase0+0.5f*k2));
 		float k4 = frequency + ncount * strength * sinf(phaseN-(phase0+k3));
-		phase0 += (k1+2.0*k2+2.0*k3+k4)/6.0;
+		phase0 += (k1+2.0f*k2+2.0*k3+k4)/6.0f;
 		phase0 = fmod(phase0, float(2*M_PI));
 		phaseN += frequency;
 		phaseN = fmod(phaseN, float(2*M_PI));
