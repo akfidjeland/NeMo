@@ -366,15 +366,18 @@ Simulation::resetTimer()
 
 
 
-std::string
+const char*
 deviceDescription()
 {
-	using boost::format;
+	/* Store a static string here so we can safely pass a char* rather than a
+	 * string object across DLL interface */
 #ifdef NEMO_CPU_OPENMP_ENABLED
-	return str(format("CPU backend (OpenMP, %u cores)") % omp_get_num_procs());
+	using boost::format;
+	static std::string descr = str(format("CPU backend (OpenMP, %u cores)") % omp_get_num_procs());
 #else
-	return "CPU backend (single-threaded)";
+	static std::string descr("CPU backend (single-threaded)");
 #endif
+	return descr.c_str();
 }
 
 

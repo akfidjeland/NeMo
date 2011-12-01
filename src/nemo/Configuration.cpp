@@ -169,7 +169,7 @@ Configuration::setBackendDescription()
 			m_impl->setBackendDescription(cudaDeviceDescription(m_impl->cudaDevice()));
 			break;
 		case NEMO_BACKEND_CPU :
-			m_impl->setBackendDescription(cpu::deviceDescription().c_str());
+			m_impl->setBackendDescription(cpu::deviceDescription());
 			break;
 		default :
 			throw std::runtime_error("Invalid backend selected");
