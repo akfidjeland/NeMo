@@ -1,10 +1,17 @@
 FIND_PACKAGE(OpenMP)
-SET(NEMO_CPU_OPENMP_ENABLED ${OPENMP_FOUND}
-	CACHE BOOL "Use OpenMP for parallelisation of the CPU backend")
+
 IF(OPENMP_FOUND)
+	# User may still choose to build without OpenMP support, for whatever reason.
+	# On MSVC OpenMP introduces additional dynamic library requirements.
+	OPTION(NEMO_CPU_OPENMP_ENABLED "Use OpenMP for parallelisation of the CPU backend" TRUE)
+ELSE(OPENMP_FOUND)
+	MESSAGE(WARNING "OpenMP not found. CPU backend will be compiled without")
+ENDIF(OPENMP_FOUND)
+
+IF(NEMO_CPU_OPENMP_ENABLED AND OPENMP_FOUND)
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-ENDIF(OPENMP_FOUND)
+ENDIF(NEMO_CPU_OPENMP_ENABLED AND OPENMP_FOUND)
 
 INCLUDE_DIRECTORIES(
 	${CMAKE_BINARY_DIR}/src  # for configuration files
