@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_CASE(mapping_tests_random)
 {
 	// only need to create the network once
-	boost::scoped_ptr<nemo::Network> net(nemo::random::construct(1000, 1000, true));
+	boost::scoped_ptr<nemo::Network> net(nemo::random::construct(1000, 1000, 1, true));
 	runComparisions(net.get());
 }
 #endif
@@ -615,7 +615,7 @@ void testInvalidStdpUsage(backend_t);
 void
 testStdpWithAllStatic(backend_t backend)
 {
-	boost::scoped_ptr<nemo::Network> net(nemo::random::construct(1000, 1000, false));
+	boost::scoped_ptr<nemo::Network> net(nemo::random::construct(1000, 1000, 1, false));
 	nemo::Configuration conf = configuration(true, 1024, backend);
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 	for(unsigned s=0; s<4; ++s) {
