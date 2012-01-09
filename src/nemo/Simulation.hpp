@@ -89,6 +89,21 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 					const firing_stimulus& fstim,
 					const current_stimulus& istim) = 0;
 
+#ifdef NEMO_BRIAN_ENABLED
+		/* Propagate spikes on GPU given firing
+		 *
+		 * This function is GPU-specific, and is intended for integration with
+		 * Brian.
+		 *
+		 * \param fired compact list of fired neurons
+		 * \param nfired number of fired neurons in \a fired
+		 * \return pointers to per-neuron accumulated weights, the first one
+		 * 		for excitatory, the second for inhbitiory weights.
+		 */
+		virtual std::pair<float*, float*> propagate(uint32_t* fired, unsigned nfired) = 0;
+#endif
+
+
 		/*! \name Modifying the network
 		 *
 		 * Neuron parameters and state variables can be modified during

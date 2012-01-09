@@ -227,6 +227,11 @@ class Simulation : public nemo::SimulationBackend
 		/*! \copydoc nemo::SimulationBackend::postfire */
 		void postfire();
 
+#ifdef NEMO_BRIAN_ENABLED
+		/*! \copydoc nemo::Simulation::propagate */
+		std::pair<float*, float*> propagate(uint32_t*, unsigned nfired);
+#endif
+
 		/*! \copydoc nemo::SimulationBackend::readFiring */
 		FiredList readFiring();
 

@@ -103,6 +103,15 @@ Simulation::fire()
 
 
 
+#ifdef NEMO_BRIAN_ENABLED
+std::pair<float*, float*>
+Simulation::propagate(uint32_t*, unsigned nfired)
+{
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "Brian-specific function Simulation::propagate not supported in the CPU backend");
+}
+#endif
+
+
 void
 Simulation::setFiringStimulus(const std::vector<unsigned>& fstim)
 {

@@ -442,6 +442,15 @@ Simulation::postfire()
 
 
 
+#ifdef NEMO_BRIAN_ENABLED
+std::pair<float*, float*>
+Simulation::propagate(uint32_t* d_fired, unsigned nfired)
+{
+	throw nemo::exception(NEMO_API_UNSUPPORTED, "Brian-specific function Simulation::propagate not supported in the CUDA backend");
+}
+#endif
+
+
 void
 Simulation::applyStdp(float reward)
 {
