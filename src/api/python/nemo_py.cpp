@@ -20,6 +20,21 @@
 
 #include "docstrings.h" // auto-generated
 
+#ifdef NEMO_BRIAN_ENABLED
+const char* SIMULATION_PROPAGATE_DOC =
+	"Propagate spikes on GPU given firing\n"
+	"\n"
+	"This function is intended purely for integration with Brian\n"
+	"\n"
+	"Inputs:\n"
+	"fired  -- compact list of fired neurons\n"
+	"nfired -- number of fired neurons\n"
+	"\n"
+	"Returns tuple of pointers to per-neuron accumulated weights, the first\n"
+	"one for excitatory, the second for inhbitiory weights.\n";
+#endif
+
+
 using namespace boost::python;
 
 
@@ -762,6 +777,9 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("step_f", step_f, return_internal_reference<1>())
 		.def("step_i", step_i, return_internal_reference<1>())
 		.def("step_fi", step_fi, return_internal_reference<1>())
+#ifdef NEMO_BRIAN_ENABLED
+		.def("propagate", &nemo::Simulation::propagate, SIMULATION_PROPAGATE_DOC)
+#endif
 		.def("apply_stdp", &nemo::Simulation::applyStdp, SIMULATION_APPLY_STDP_DOC)
 		.def("set_neuron", raw_function(set_neuron_va<nemo::Simulation>, 2), CONSTRUCTABLE_SET_NEURON_DOC)
 		.def("get_neuron_state", get_neuron_state<nemo::Simulation>, CONSTRUCTABLE_GET_NEURON_STATE_DOC)
