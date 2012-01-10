@@ -105,9 +105,25 @@ Simulation::fire()
 
 #ifdef NEMO_BRIAN_ENABLED
 std::pair<float*, float*>
-Simulation::propagate(uint32_t*, unsigned nfired)
+Simulation::propagate(uint32_t* fired, unsigned nfired)
 {
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "Brian-specific function Simulation::propagate not supported in the CPU backend");
+	//! \todo assert that STDP is not enabled
+
+	/* convert the input firing to the format required by deliverSpikes */
+#pragma omp parallel for default(shared)
+	for(unsigned n=0; n <= m_mapper.maxGlobalIdx(); ++n) {
+		m_recentFiring[n] <<= 1;
+	}
+
+#pragma omp parallel for default(shared)
+	for(unsigned i=0; i < nfired; ++i) {
+		uint32_t n = fired[i];
+		m_recentFiring[n] |= uint64_t(1);
+	}
+	deliverSpikes();
+	m_timer.step();
+
+	return std::make_pair<float*, float*>(&m_currentE[0], &m_currentI[0]);
 }
 #endif
 
