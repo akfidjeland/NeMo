@@ -103,4 +103,14 @@ void initLog();
 void flushLog();
 void endLog();
 
+#ifdef NEMO_BRIAN_ENABLED
+cudaError_t
+uncompact(cudaStream_t stream,
+		unsigned partitionCount,
+		param_t* d_params,
+		unsigned ncompact[],
+		unsigned sz_ncompact,
+		nidx_dt pcompact[]);
+#endif
+
 #endif

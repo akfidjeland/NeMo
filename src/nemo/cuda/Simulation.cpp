@@ -446,7 +446,15 @@ Simulation::postfire()
 std::pair<float*, float*>
 Simulation::propagate(uint32_t* d_fired, unsigned nfired)
 {
-	throw nemo::exception(NEMO_API_UNSUPPORTED, "Brian-specific function Simulation::propagate not supported in the CUDA backend");
+	assert_or_throw(!m_stdp, "Brian-specific function propagate only well-defined when STDP is not enabled");
+	assert_or_throw(m_streamCompute == 0, "Compute stream must be 0 (default stream) for Brian to integrate correctly");
+	runKernel(::uncompact(m_streamCompute, m_mapper.partitionCount(),
+				md_params.get(), d_fired, nfired, m_fired.deviceData()));
+	postfire();
+	prefire();
+	float* acc = m_current.deviceData();
+	return std::make_pair<float*, float*>(acc, acc+m_current.size());
+	/* Brian does its own neuron update */
 }
 #endif
 

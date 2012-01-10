@@ -24,3 +24,7 @@
 #include "scatter.cu"
 #include "stdp.cu"
 #include "applySTDP.cu"
+
+#ifdef NEMO_BRIAN_ENABLED
+#	include "uncompact.cu"
+#endif
