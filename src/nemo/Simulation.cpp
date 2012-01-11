@@ -27,12 +27,31 @@ Simulation::setNeuron(unsigned idx,
 }
 
 
+
+
+#ifdef NEMO_BRIAN_ENABLED
+
+/*! Convert a pointer to an int
+ *
+ * This is suitable for returning to Python, but is in generaly not safe, as an
+ * int might not be large enough.
+ */
+int
+intpointer(float* p)
+{
+	return int(reinterpret_cast<long>(p));
+}
+
+
+
 std::pair<int, int>
 Simulation::propagate(int fired, int nfired)
 {
 	std::pair<float*, float*> ret = propagate_raw(reinterpret_cast<uint32_t*>(fired), nfired);
-	return std::make_pair<int, int>(reinterpret_cast<int>(ret.first), reinterpret_cast<int>(ret.second));
+	return std::make_pair<int, int>(intpointer(ret.first), intpointer(ret.second));
 }
+
+#endif
 
 
 
