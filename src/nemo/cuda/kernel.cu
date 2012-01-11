@@ -26,5 +26,5 @@
 #include "applySTDP.cu"
 
 #ifdef NEMO_BRIAN_ENABLED
-#	include "uncompact.cu"
+#	include "compact.cu"
 #endif
