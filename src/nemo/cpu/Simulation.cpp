@@ -105,7 +105,7 @@ Simulation::fire()
 
 #ifdef NEMO_BRIAN_ENABLED
 std::pair<float*, float*>
-Simulation::propagate(uint32_t* fired, unsigned nfired)
+Simulation::propagate_raw(uint32_t* fired, int nfired)
 {
 	//! \todo assert that STDP is not enabled
 
@@ -116,7 +116,7 @@ Simulation::propagate(uint32_t* fired, unsigned nfired)
 	}
 
 #pragma omp parallel for default(shared)
-	for(unsigned i=0; i < nfired; ++i) {
+	for(int i=0; i < nfired; ++i) {
 		uint32_t n = fired[i];
 		m_recentFiring[n] |= uint64_t(1);
 	}

@@ -688,6 +688,15 @@ step_fi(nemo::Simulation& sim,
 }
 
 
+
+tuple
+propagate(nemo::Simulation& sim, int fired, int nfired)
+{
+	std::pair<int, int> ret = sim.propagate(fired, nfired);
+	return make_tuple(ret.first, ret.second);
+}
+
+
 void
 initializeConverters()
 {
@@ -778,7 +787,7 @@ BOOST_PYTHON_MODULE(_nemo)
 		.def("step_i", step_i, return_internal_reference<1>())
 		.def("step_fi", step_fi, return_internal_reference<1>())
 #ifdef NEMO_BRIAN_ENABLED
-		.def("propagate", &nemo::Simulation::propagate, SIMULATION_PROPAGATE_DOC)
+		.def("propagate", propagate, SIMULATION_PROPAGATE_DOC)
 #endif
 		.def("apply_stdp", &nemo::Simulation::applyStdp, SIMULATION_APPLY_STDP_DOC)
 		.def("set_neuron", raw_function(set_neuron_va<nemo::Simulation>, 2), CONSTRUCTABLE_SET_NEURON_DOC)

@@ -100,7 +100,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 		 * \return pointers to per-neuron accumulated weights, the first one
 		 * 		for excitatory, the second for inhbitiory weights.
 		 */
-		virtual std::pair<float*, float*> propagate(uint32_t* fired, unsigned nfired) = 0;
+		std::pair<int, int> propagate(int fired, int nfired);
 #endif
 
 
@@ -201,6 +201,10 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 		/* Disallow copying of Simulation object */
 		Simulation(const Simulation&);
 		Simulation& operator=(const Simulation&);
+
+#ifdef NEMO_BRIAN_ENABLED
+		virtual std::pair<float*, float*> propagate_raw(uint32_t* fired, int nfired) = 0;
+#endif
 
 };
 

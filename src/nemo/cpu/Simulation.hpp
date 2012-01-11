@@ -66,7 +66,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 #ifdef NEMO_BRIAN_ENABLED
 		/*! \copydoc nemo::Simulation::propagate */
-		std::pair<float*, float*> propagate(uint32_t*, unsigned nfired);
+		std::pair<float*, float*> propagate_raw(uint32_t*, int nfired);
 #endif
 
 		/*! \copydoc nemo::SimulationBackend::readFiring */

@@ -27,4 +27,13 @@ Simulation::setNeuron(unsigned idx,
 }
 
 
+std::pair<int, int>
+Simulation::propagate(int fired, int nfired)
+{
+	std::pair<float*, float*> ret = propagate_raw(reinterpret_cast<uint32_t*>(fired), nfired);
+	return std::make_pair<int, int>(reinterpret_cast<int>(ret.first), reinterpret_cast<int>(ret.second));
+}
+
+
+
 } // end namespace nemo
