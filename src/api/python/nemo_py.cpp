@@ -148,6 +148,7 @@ struct from_py_list_of_pairs
 
 
 
+//! \todo make this a more generic sequence converter
 /* Python list to std::vector convertor */
 template<typename T>
 struct from_py_list
@@ -210,7 +211,7 @@ struct from_py_list
 bool
 checkInputVector(PyObject* obj, unsigned &vectorLength)
 {
-	unsigned length = PyList_Check(obj) ? PyList_Size(obj) : 0;
+	unsigned length = PySequence_Check(obj) ? PySequence_Size(obj) : 0;
 	if(length > 0) {
 		if(vectorLength > 0 && length != vectorLength) {
 			throw std::invalid_argument("input vectors of different length");
@@ -236,10 +237,10 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 {
 	unsigned len = 0;
 
-	bool vectorSources = checkInputVector(sources, len);
-	bool vectorTargets = checkInputVector(targets, len);
-	bool vectorDelays = checkInputVector(delays, len);
-	bool vectorWeights = checkInputVector(weights, len);
+	bool vectorSources  = checkInputVector(sources, len);
+	bool vectorTargets  = checkInputVector(targets, len);
+	bool vectorDelays   = checkInputVector(delays, len);
+	bool vectorWeights  = checkInputVector(weights, len);
 	bool vectorPlastics = checkInputVector(plastics, len);
 
 	to_python_value<synapse_id&> get_id;
@@ -257,11 +258,11 @@ add_synapse(nemo::Network& net, PyObject* sources, PyObject* targets,
 		/* At least some inputs are vectors, so we need to return a list */
 		PyObject* list = PyList_New(len);
 		for(unsigned i=0; i != len; ++i) {
-			unsigned source = extract<unsigned>(vectorSources ? PyList_GetItem(sources, i) : sources);
-			unsigned target = extract<unsigned>(vectorTargets ? PyList_GetItem(targets, i) : targets);
-			unsigned delay = extract<unsigned>(vectorDelays ? PyList_GetItem(delays, i) : delays);
-			float weight = extract<float>(vectorWeights ? PyList_GetItem(weights, i) : weights);
-			unsigned char plastic = extract<unsigned char>(vectorPlastics ? PyList_GetItem(plastics, i) : plastics);
+			unsigned source = extract<unsigned>(vectorSources ? PySequence_GetItem(sources, i) : sources);
+			unsigned target = extract<unsigned>(vectorTargets ? PySequence_GetItem(targets, i) : targets);
+			unsigned delay = extract<unsigned>(vectorDelays ? PySequence_GetItem(delays, i) : delays);
+			float weight = extract<float>(vectorWeights ? PySequence_GetItem(weights, i) : weights);
+			unsigned char plastic = extract<unsigned char>(vectorPlastics ? PySequence_GetItem(plastics, i) : plastics);
 			PyList_SetItem(list, i, get_id(net.addSynapse(source, target, delay, weight, plastic)));
 		}
 		return list;
@@ -342,11 +343,11 @@ add_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 		for(unsigned i=0; i < vlen; ++i) {
 			/* Fill in the vector arguments */
 			if(vectorized[2]) {
-				neuron_index = extract<unsigned>(PyList_GetItem(objects[2], i));
+				neuron_index = extract<unsigned>(PySequence_GetItem(objects[2], i));
 			}
 			for(unsigned j=3; j<nargs; ++j) {
 				if(vectorized[j]) {
-					args[j] = extract<float>(PyList_GetItem(objects[j], i));
+					args[j] = extract<float>(PySequence_GetItem(objects[j], i));
 				}
 			}
 			net.addNeuron(neuron_type, neuron_index, nargs-3, &args[3]);
@@ -427,11 +428,11 @@ set_neuron_va(boost::python::tuple py_args, boost::python::dict /*kwargs*/)
 		for(unsigned i=0; i < vlen; ++i) {
 			/* Fill in the vector arguments */
 			if(vectorized[1]) {
-				neuron_index = extract<unsigned>(PyList_GetItem(objects[1], i));
+				neuron_index = extract<unsigned>(PySequence_GetItem(objects[1], i));
 			}
 			for(unsigned j=2; j<nargs; ++j) {
 				if(vectorized[j]) {
-					args[j] = extract<float>(PyList_GetItem(objects[j], i));
+					args[j] = extract<float>(PySequence_GetItem(objects[j], i));
 				}
 			}
 			net.setNeuron(neuron_index, nargs-2, &args[2]);
@@ -473,8 +474,8 @@ set_neuron_parameter(T& obj, PyObject* neurons, unsigned param, PyObject* values
 		obj.setNeuronParameter(extract<unsigned>(neurons), param, extract<float>(values));
 	} else {
 		for(unsigned i=0; i < len; ++i) {
-			unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
-			float value = extract<float>(PyList_GetItem(values, i));
+			unsigned neuron = extract<unsigned>(PySequence_GetItem(neurons, i));
+			float value = extract<float>(PySequence_GetItem(values, i));
 			obj.setNeuronParameter(neuron, param, value);
 		}
 	}
@@ -497,8 +498,8 @@ set_neuron_state(T& obj, PyObject* neurons, unsigned param, PyObject* values)
 		obj.setNeuronState(extract<unsigned>(neurons), param, extract<float>(values));
 	} else {
 		for(unsigned i=0; i < len; ++i) {
-			unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
-			float value = extract<float>(PyList_GetItem(values, i));
+			unsigned neuron = extract<unsigned>(PySequence_GetItem(neurons, i));
+			float value = extract<float>(PySequence_GetItem(values, i));
 			obj.setNeuronState(neuron, param, value);
 		}
 	}
@@ -510,13 +511,13 @@ template<class T>
 PyObject*
 get_neuron_parameter(T& obj, PyObject* neurons, unsigned param)
 {
-	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 0;
+	const Py_ssize_t len = PySequence_Check(neurons) ? PySequence_Size(neurons) : 0;
 	if(len == 0) {
 		return PyFloat_FromDouble(obj.getNeuronParameter(extract<unsigned>(neurons), param));
 	} else {
 		PyObject* list = PyList_New(len);
 		for(Py_ssize_t i=0; i < len; ++i) {
-			const unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			const unsigned neuron = extract<unsigned>(PySequence_GetItem(neurons, i));
 			const float val = obj.getNeuronParameter(neuron, param);
 			PyList_SetItem(list, i, PyFloat_FromDouble(val));
 		}
@@ -530,13 +531,13 @@ template<class T>
 PyObject*
 get_neuron_state(T& obj, PyObject* neurons, unsigned param)
 {
-	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 0;
+	const Py_ssize_t len = PySequence_Check(neurons) ? PySequence_Size(neurons) : 0;
 	if(len == 0) {
 		return PyFloat_FromDouble(obj.getNeuronState(extract<unsigned>(neurons), param));
 	} else {
 		PyObject* list = PyList_New(len);
 		for(Py_ssize_t i=0; i < len; ++i) {
-			const unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			const unsigned neuron = extract<unsigned>(PySequence_GetItem(neurons, i));
 			const float val = obj.getNeuronState(neuron, param);
 			PyList_SetItem(list, i, PyFloat_FromDouble(val));
 		}
@@ -550,13 +551,13 @@ get_neuron_state(T& obj, PyObject* neurons, unsigned param)
 PyObject*
 get_membrane_potential(nemo::Simulation& sim, PyObject* neurons)
 {
-	const Py_ssize_t len = PyList_Check(neurons) ? PyList_Size(neurons) : 0;
+	const Py_ssize_t len = PySequence_Check(neurons) ? PySequence_Size(neurons) : 0;
 	if(len == 0) {
 		return PyFloat_FromDouble(sim.getMembranePotential(extract<unsigned>(neurons)));
 	} else {
 		PyObject* list = PyList_New(len);
 		for(Py_ssize_t i=0; i < len; ++i) {
-			const unsigned neuron = extract<unsigned>(PyList_GetItem(neurons, i));
+			const unsigned neuron = extract<unsigned>(PySequence_GetItem(neurons, i));
 			const float val = sim.getMembranePotential(neuron);
 			PyList_SetItem(list, i, PyFloat_FromDouble(val));
 		}
