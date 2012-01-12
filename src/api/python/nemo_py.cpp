@@ -27,8 +27,9 @@ const char* SIMULATION_PROPAGATE_DOC =
 	"This function is intended purely for integration with Brian\n"
 	"\n"
 	"Inputs:\n"
-	"fired  -- compact list of fired neurons\n"
-	"nfired -- number of fired neurons\n"
+	"fired  -- device pointer non-compact list of fired neurons (on CUDA)\n"
+	"          or host pointer to compact list of fired neurons (on CPU)\n"
+	"nfired -- length of fired if on CPU\n"
 	"\n"
 	"Returns tuple of pointers to per-neuron accumulated weights, the first\n"
 	"one for excitatory, the second for inhbitiory weights.\n";
@@ -692,6 +693,7 @@ step_fi(nemo::Simulation& sim,
 
 #ifdef NEMO_BRIAN_ENABLED
 
+/*! \copydoc nemo::Simulation::propagate */
 tuple
 propagate(nemo::Simulation& sim, size_t fired, int nfired)
 {

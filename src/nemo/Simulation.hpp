@@ -91,15 +91,23 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 					const current_stimulus& istim) = 0;
 
 #ifdef NEMO_BRIAN_ENABLED
-		/* Propagate spikes on GPU given firing
+		/* Propagate spikes on given some firing
 		 *
-		 * This function is GPU-specific, and is intended for integration with
-		 * Brian.
+		 * This function is intended for integration with Brian.
+		 * The neuron state is unaffected by calls to \a propagate
 		 *
-		 * \param fired compact list of fired neurons
-		 * \param nfired number of fired neurons in \a fired
+		 * \param fired pointer (wrapped in size_t) which is either a
+		 * 		non-compact array of fired neurons stored on a CUDA device with
+		 * 		on uint32_t per neuron or a pointer ot a compact array of fired
+		 * 		neurons on the host.
+		 * \param nfired if \a fired points to host memory \a nfired is the
+		 * 		number of neurons in that array. If \a fired points to CUDA device
+		 * 		memory this argument is ignored, as the length of \a fired is
+		 * 		the implicitly the length of the index space used by NeMo.
 		 * \return pointers to per-neuron accumulated weights, the first one
-		 * 		for excitatory, the second for inhbitiory weights.
+		 * 		for excitatory, the second for inhbitiory weights. The pointer
+		 * 		is either to device or host memory, depending on the type of \a
+		 * 		fired.
 		 */
 		std::pair<size_t, size_t> propagate(size_t fired, int nfired);
 #endif
