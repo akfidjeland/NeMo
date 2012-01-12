@@ -689,16 +689,18 @@ step_fi(nemo::Simulation& sim,
 }
 
 
+
 #ifdef NEMO_BRIAN_ENABLED
 
 tuple
-propagate(nemo::Simulation& sim, int fired, int nfired)
+propagate(nemo::Simulation& sim, size_t fired, int nfired)
 {
-	std::pair<int, int> ret = sim.propagate(fired, nfired);
+	std::pair<size_t, size_t> ret = sim.propagate(fired, nfired);
 	return make_tuple(ret.first, ret.second);
 }
 
 #endif
+
 
 
 void

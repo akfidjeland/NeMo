@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <utility>
+#include <cstddef>
 #include <nemo/config.h>
 #include <nemo/types.h>
 #include <nemo/ReadableNetwork.hpp>
@@ -100,7 +101,7 @@ class NEMO_BASE_DLL_PUBLIC Simulation : public ReadableNetwork
 		 * \return pointers to per-neuron accumulated weights, the first one
 		 * 		for excitatory, the second for inhbitiory weights.
 		 */
-		std::pair<int, int> propagate(int fired, int nfired);
+		std::pair<size_t, size_t> propagate(size_t fired, int nfired);
 #endif
 
 
