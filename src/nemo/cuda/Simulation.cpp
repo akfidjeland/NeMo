@@ -88,26 +88,12 @@ void
 checkPitch(size_t found, size_t expected)
 {
 	using boost::format;
-	if(expected != 0 && expected != found) {
+	if(found != 0 && expected != found) {
 		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR,
 				str(format("Pitch mismatch in device memory allocation. Found %u, expected %u")
 					% found % expected));
 	}
 }
-
-
-
-void
-setPitch(size_t found, size_t* expected)
-{
-	if(*expected == 0) {
-		*expected = found;
-	} else {
-		checkPitch(found, *expected);
-	}
-}
-
-
 
 
 
@@ -132,8 +118,8 @@ Simulation::Simulation(
 	m_streamCompute(0),
 	m_streamCopy(0)
 {
-	size_t pitch1 = 0;
-	size_t pitch32 = 0;
+	size_t pitch1 = m_firingBuffer.wordPitch();
+	size_t pitch32 = m_current.wordPitch();
 
 	/* Populate all neuron collections */
 	std::vector<unsigned> h_partitionSize;
@@ -146,8 +132,8 @@ Simulation::Simulation(
 		//! \todo could do mapping here to avoid two passes over neurons
 		/* Wrap in smart pointer to ensure the class is not copied */
 		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
-		setPitch(ns->wordPitch32(), &pitch32);
-		setPitch(ns->wordPitch1(), &pitch1);
+		checkPitch(ns->wordPitch32(), pitch32);
+		checkPitch(ns->wordPitch1(), pitch1);
 		//! \todo verify contigous range
 		std::copy(ns->psize_begin(), ns->psize_end(), std::back_inserter(h_partitionSize));
 		m_neurons.push_back(ns);
