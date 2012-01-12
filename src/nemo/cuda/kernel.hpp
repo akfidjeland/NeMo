@@ -106,9 +106,11 @@ void endLog();
 #ifdef NEMO_BRIAN_ENABLED
 cudaError_t
 compact(cudaStream_t stream,
+		unsigned* d_partitionSize,
+		param_t* d_params,
 		unsigned partitionCount,
 		unsigned d_fired[],
-		unsigned nNeurons,
+		unsigned d_nFired[],
 		nidx_dt d_firedCompact[]);
 #endif
 

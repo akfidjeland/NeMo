@@ -433,9 +433,13 @@ std::pair<float*, float*>
 Simulation::propagate_raw(uint32_t* d_fired, int nfired)
 {
 	assert_or_throw(!m_stdp, "Brian-specific function propagate only well-defined when STDP is not enabled");
-	assert_or_throw(m_streamCompute == 0, "Compute stream must be 0 (default stream) for Brian to integrate correctly");
-	runKernel(::compact(m_streamCompute, m_mapper.partitionCount(),
-				d_fired, unsigned(nfired), m_fired.deviceData()));
+	runKernel(::compact(m_streamCompute,
+				md_partitionSize.get(),
+				md_params.get(),
+				m_mapper.partitionCount(),
+				d_fired,
+				md_nFired.get(),
+				m_fired.deviceData()));
 	postfire();
 	prefire();
 	float* acc = m_current.deviceData();
