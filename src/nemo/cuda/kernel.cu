@@ -12,6 +12,7 @@
 #include "kernel.cu_h"
 #include "log.cu_h"
 
+#include "delays.cu"
 #include "device_assert.cu"
 #include "bitvector.cu"
 #include "double_buffer.cu"

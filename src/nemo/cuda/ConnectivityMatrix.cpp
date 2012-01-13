@@ -22,6 +22,7 @@
 #include <nemo/synapse_indices.hpp>
 #include <nemo/construction/RCM.hpp>
 #include <nemo/cuda/construction/FcmIndex.hpp>
+#include <nemo/cuda/runtime/Delays.hpp>
 
 #include "exception.hpp"
 #include "fcm.cu_h"
@@ -107,6 +108,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	md_rcm = runtime::RCM(mapper.partitionCount(), h_rcm);
 
 	setDelays(fcm_index, &m_delays);
+	md_delays.reset(new runtime::Delays(mapper.partitionCount(), fcm_index));
 
 	m_outgoing = Outgoing(mapper.partitionCount(), fcm_index);
 	m_gq.allocate(mapper.partitionCount(), m_outgoing.maxIncomingWarps(), 1.0);
@@ -239,6 +241,7 @@ ConnectivityMatrix::printMemoryUsage(std::ostream& out) const
 	out << "\tforward matrix: " << (md_fcmAllocated / MEGA) << "MB\n";
 	out << "\treverse matrix: " << (md_rcm.d_allocated() / MEGA) << "MB\n";
 	out << "\tglobal queue: " << (m_gq.allocated() / MEGA) << "MB\n";
+	out << "\tdelays: " << md_delays->allocated() / MEGA << "MB\n";
 	out << "\toutgoing: " << (m_outgoing.allocated() / MEGA) << "MB\n" << std::endl;
 }
 
@@ -382,6 +385,7 @@ ConnectivityMatrix::d_allocated() const
 	return md_fcmAllocated
 		+ md_rcm.d_allocated()
 		+ m_gq.allocated()
+		+ md_delays->allocated()
 		+ m_outgoing.allocated();
 }
 
@@ -392,6 +396,22 @@ ConnectivityMatrix::setParameters(param_t* params) const
 {
 	m_outgoing.setParameters(params);
 	params->fcmPlaneSize = md_fcmPlaneSize;
+}
+
+
+
+delay_dt*
+ConnectivityMatrix::d_ndData() const
+{
+	return md_delays->d_data();
+}
+
+
+
+unsigned*
+ConnectivityMatrix::d_ndFill() const
+{
+	return md_delays->d_fill();
 }
 
 

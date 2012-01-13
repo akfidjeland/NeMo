@@ -391,7 +391,10 @@ Simulation::postfire()
 			// local spike delivery
 			m_lq.d_data(),
 			m_lq.d_fill(),
-			m_cm.delayBits().deviceData()));
+			m_cm.delayBits().deviceData(),
+			m_cm.d_ndData(),
+			m_cm.d_ndFill()
+		));
 
 	if(m_stdp) {
 		runKernel(::updateStdp(

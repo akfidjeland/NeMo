@@ -74,7 +74,9 @@ scatter(cudaStream_t stream,
 		unsigned* d_gqFill,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
-		uint64_t* d_delays);
+		uint64_t* d_delays,
+		delay_dt d_ndData[],
+		unsigned d_ndFill[]);
 
 
 cudaError_t

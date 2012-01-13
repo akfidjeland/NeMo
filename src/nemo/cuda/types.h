@@ -17,4 +17,6 @@ typedef uint32_t synapse_t;
  * poorer shared memory access patterns */
 typedef uint32_t nidx_dt;
 
+typedef uint16_t delay_dt;
+
 #endif
