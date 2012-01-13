@@ -103,7 +103,7 @@ Simulation::Simulation(
 	m_mapper(mapCompact(net, conf.cudaPartitionSize())),
 	m_conf(conf),
 	m_cm(net, conf, m_mapper),
-	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
+	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize(), std::max(1U, net.maxDelay())),
 	m_recentFiring(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingStimulus(m_mapper.partitionCount()),
 	m_currentStimulus(1, m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
@@ -144,7 +144,7 @@ Simulation::Simulation(
 	if(m_stdp) {
 		configureStdp();
 	}
-	param_t* d_params = setParameters(pitch1, pitch32);
+	param_t* d_params = setParameters(pitch1, pitch32, net.maxDelay());
 	resetTimer();
 
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
@@ -275,18 +275,13 @@ Simulation::d_allocated() const
 }
 
 
-/*! Set common pitches and check that all relevant arrays have the same pitch.
- *
- * The kernel uses a single pitch for all 64-, 32-, and 1-bit per-neuron data
- *
- * \param pitch1 pitch of 1-bit per-neuron data
- * \param pitch32 pitch of 32-bit per-neuron data
- */
 param_t*
-Simulation::setParameters(size_t pitch1, size_t pitch32)
+Simulation::setParameters(size_t pitch1, size_t pitch32, unsigned maxDelay)
 {
 	param_t params;
 
+	/* Need a max of at least 1 in order for local queue to be non-empty */
+	params.maxDelay = std::max(1U, maxDelay);
 	params.pitch1 = pitch1;
 	params.pitch32 = pitch32;
 	params.pitch64 = m_recentFiring.wordPitch();

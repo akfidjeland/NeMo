@@ -19,28 +19,34 @@ namespace nemo {
 	namespace cuda {
 
 
-LocalQueue::LocalQueue(size_t partitionCount, size_t partitionSize) :
+
+
+LocalQueue::LocalQueue(
+		size_t partitionCount,
+		size_t partitionSize,
+		unsigned maxDelay) :
 	mb_allocated(0)
 {
 	/* In the worst case all neurons have synapses at all delays and all
 	 * neurons constantly fire. In practice this will be approximately
-	 * 1024 x 64 x 4B = 256kB. A single partition requires MAX_DELAYS (64) such
-	 * entries for a total of 16MB. For 128 partitions we require 2GB of queue
-	 * space.
+	 * 1024 x 64 x 4B = 256kB. A single partition requires MAX_DELAYS (e.g. 64)
+	 * such entries for a total of 16MB. For 128 partitions we require 2GB of
+	 * queue space.
 	 *
 	 * The worst-case assumptions are pretty severe, however, so we should be
 	 * able to reduce this by a factor of ten, say.
 	 */
 	/*! \todo count the actual number of delay bits set for any partition. Use
 	 * this number instead of partitionSize * MAX_DELAY */
-	size_t width = ALIGN(partitionSize * MAX_DELAY, 32) * sizeof(lq_entry_t);
+	size_t width = ALIGN(partitionSize * maxDelay, 32) * sizeof(lq_entry_t);
 
 	/* We need one such queue for each partition and each delay. We can thus
 	 * end up with 8k separate queues. This could result in a total of 268MB
 	 * used for this queue alone. */
-	size_t height = partitionCount * MAX_DELAY;
+	size_t height = partitionCount * maxDelay;
 
-	/* allocate space for the queue fill */
+	/* allocate space for the queue fill. For simplicity we allocate this based
+	 * on the maximum possible delay, rather than the maximum actual delay. */
 	void* d_fill;
 	size_t len = height * sizeof(unsigned);
 	d_malloc(&d_fill, len, "local queue fill");

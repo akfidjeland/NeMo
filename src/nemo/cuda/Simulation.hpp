@@ -330,11 +330,18 @@ class Simulation : public nemo::SimulationBackend
 
 		/* Initialise the simulation-wide parameters on the device
 		 *
-		 * \return device pointer to reference
+		 * All kernels use a single pitch for all 64-, 32-, and 1-bit
+		 * per-neuron data This function sets these common pitches and also
+		 * checks that all relevant arrays have the same pitch.
 		 *
-		 * The device memory is handled by the class rather than the caller.
+		 * \param pitch1 pitch of 1-bit per-neuron data
+		 * \param pitch32 pitch of 32-bit per-neuron data
+		 * \param maxDelay maximum delay found in the network
+		 *
+		 * \return device pointer to parameters. The device memory is handled
+		 * 		by this class rather than the caller.
 		 */
-		param_t* setParameters(size_t pitch1, size_t pitch32);
+		param_t* setParameters(size_t pitch1, size_t pitch32, unsigned maxDelay);
 
 		/* Size of each partition, stored on the device in a single array. */
 		boost::shared_array<unsigned> md_partitionSize;

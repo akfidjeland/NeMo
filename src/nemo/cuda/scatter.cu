@@ -75,7 +75,7 @@ scatterLocal(
 	/* This shared memory vector is quite small, so no need to reuse */
 	__shared__ unsigned s_fill[MAX_DELAY];
 
-	lq_loadQueueFill(g_fill, s_fill);
+	lq_loadQueueFill(s_params.maxDelay, g_fill, s_fill);
 	__syncthreads();
 
 	/*! \todo do more than one neuron at a time. We can deal with
@@ -93,7 +93,7 @@ scatterLocal(
 
 		//! \todo handle MAX_DELAY > THREADS_PER_BLOCK
 		unsigned delay0 = threadIdx.x;
-		if(delay0 < MAX_DELAY) {
+		if(delay0 < s_params.maxDelay) {
 			bool delaySet = (delayBits >> uint64_t(delay0)) & 0x1;
 			if(delaySet) {
 				/* This write operation will almost certainly be non-coalesced.
@@ -101,13 +101,13 @@ scatterLocal(
 				 * per queue slot. 64 slots would require 64 x 32 x 4B = 8kB.
 				 * Managaging this data can be costly, however, as we need to
 				 * flush buffers as we go. */
-				lq_enque(neuron, cycle, delay0, s_fill, g_queue);
+				lq_enque(neuron, cycle, s_params.maxDelay, delay0, s_fill, g_queue);
 				DEBUG_MSG_SYNAPSE("c%u[local scatter]: enque n%u d%u\n", cycle, neuron, delay0+1);
 			}
 		}
 	}
 	__syncthreads();
-	lq_storeQueueFill(s_fill, g_fill);
+	lq_storeQueueFill(s_params.maxDelay, s_fill, g_fill);
 }
 
 
@@ -136,7 +136,7 @@ scatterGlobal(unsigned cycle,
 	__shared__ unsigned s_nLq;
 
 	if(threadIdx.x == 0) {
-		s_nLq = lq_getAndClearCurrentFill(cycle, g_lqFill);
+		s_nLq = lq_getAndClearCurrentFill(cycle, s_params.maxDelay, g_lqFill);
 	}
 	__syncthreads();
 
@@ -157,12 +157,12 @@ scatterGlobal(unsigned cycle,
 		 * outgoing lengths into shared memory */
 		if(iLq < s_nLq) {
 			ASSERT(iLq < c_lqPitch);
-			lq_entry_t entry = g_lq[lq_offset(cycle, 0) + iLq];
+			lq_entry_t entry = g_lq[lq_offset(cycle, s_params.maxDelay, 0) + iLq];
 #ifdef NEMO_CUDA_DEBUG_TRACE
 			s_lq[threadIdx.x] = entry;
 #endif
 			short delay0 = entry.y;
-			ASSERT(delay0 < MAX_DELAY);
+			ASSERT(delay0 < s_params.maxDelay);
 
 			short neuron = entry.x;
 			ASSERT(neuron < MAX_PARTITION_SIZE);
