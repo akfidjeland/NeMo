@@ -54,12 +54,12 @@ addExcitatoryNeuron(unsigned nidx, nemo::Network& net, float sigma=0.0f);
  * \param nstep number of indices between neurons
  */
 nemo::Network*
-createRing(unsigned ncount, unsigned n0=0, bool plastic=false, unsigned nstep=1);
+createRing(unsigned ncount, unsigned n0=0, bool plastic=false, unsigned nstep=1, unsigned delay=1);
 
 
 /*! Add a ring to an existing network */
 void
-createRing(nemo::Network*, unsigned ncount, unsigned n0=0, bool plastic=false, unsigned nstep=1);
+createRing(nemo::Network*, unsigned ncount, unsigned n0=0, bool plastic=false, unsigned nstep=1, unsigned delay=1);
 
 
 #endif

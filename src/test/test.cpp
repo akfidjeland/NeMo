@@ -298,12 +298,12 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 void
-runRing(unsigned ncount, nemo::Configuration conf)
+runRing(unsigned ncount, unsigned delay, nemo::Configuration conf)
 {
 	/* Make sure we go around the ring at least a couple of times */
 	const unsigned duration = ncount * 5 / 2;
 
-	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
+	boost::scoped_ptr<nemo::Network> net(createRing(ncount, 0, false, 1, delay));
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
 	/* Stimulate a single neuron to get the ring going */
@@ -311,8 +311,15 @@ runRing(unsigned ncount, nemo::Configuration conf)
 
 	for(unsigned ms=1; ms < duration; ++ms) {
 		const std::vector<unsigned>& fired = sim->step();
-		BOOST_CHECK_EQUAL(fired.size(), 1U);
-		BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
+		if(delay == 1) {
+			BOOST_CHECK_EQUAL(fired.size(), 1U);
+			BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
+		} else if(ms % delay == 0) {
+			BOOST_CHECK_EQUAL(fired.size(), 1U);
+			BOOST_REQUIRE_EQUAL(fired.front(), (ms / delay) % ncount);
+		} else {
+			BOOST_CHECK_EQUAL(fired.size(), 0U);
+		}
 	}
 }
 
@@ -424,16 +431,22 @@ testFixedPointSaturation(backend_t backend)
 BOOST_AUTO_TEST_SUITE(ring_tests)
 	nemo::Configuration conf = configuration(false, 1024);
 	BOOST_AUTO_TEST_CASE(n1000) {
-		runRing(1000, conf); // less than a single partition on CUDA backend
+		runRing(1000, 1, conf); // less than a single partition on CUDA backend
 	}
 	BOOST_AUTO_TEST_CASE(n1024) {
-		runRing(1024, conf); // exactly one partition on CUDA backend
+		runRing(1024, 1, conf); // exactly one partition on CUDA backend
 	}
 	BOOST_AUTO_TEST_CASE(n2000) {
-		runRing(2000, conf); // multiple partitions on CUDA backend
+		runRing(2000, 1, conf); // multiple partitions on CUDA backend
 	}
 	BOOST_AUTO_TEST_CASE(n4000) {
-		runRing(4000, conf); // ditto
+		runRing(4000, 1, conf); // ditto
+	}
+	BOOST_AUTO_TEST_CASE(n2000d20) {
+		runRing(2000, 20, conf); // ditto
+	}
+	BOOST_AUTO_TEST_CASE(n2000d80) {
+		runRing(2000, 80, conf); // ditto
 	}
 BOOST_AUTO_TEST_SUITE_END()
 
