@@ -1,13 +1,12 @@
 #include "Simulation.hpp"
 
 #include <cmath>
-#include <algorithm>
 
-
-#ifdef NEMO_CPU_MULTITHREADED
-#include <boost/thread.hpp>
-#endif
 #include <boost/format.hpp>
+
+#ifdef NEMO_CPU_OPENMP_ENABLED
+#include <omp.h>
+#endif
 
 #include <nemo/internals.hpp>
 #include <nemo/exception.hpp>
@@ -40,15 +39,25 @@ Simulation::Simulation(
 	m_fired(m_neuronCount, 0),
 	m_recentFiring(m_neuronCount, 0),
 	m_delays(m_neuronCount, 0),
-	m_current(m_neuronCount, 0),
+	mfx_currentE(m_neuronCount, 0U),
+	m_currentE(m_neuronCount, 0.0f),
+	mfx_currentI(m_neuronCount, 0U),
+	m_currentI(m_neuronCount, 0.0),
+	m_currentExt(m_neuronCount, 0.0f),
 	m_fstim(m_neuronCount, 0)
 {
 	/* Contigous local neuron indices */
 	nidx_t l_idx = 0;
 
 	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+
 		/* Wrap in smart pointer to ensure the class is not copied */
 		m_mapper.insertTypeBase(type_id, l_idx);
+
+		if(net.neuronCount(type_id) == 0) {
+			continue;
+		}
+
 		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
 		l_idx += ns->size();
 		m_neurons.push_back(ns);
@@ -60,27 +69,8 @@ Simulation::Simulation(
 		m_delays[source] = m_cm->delayBits(source);
 	}
 
-#ifdef NEMO_CPU_MULTITHREADED
-	initWorkers(m_neuronCount, conf.cpuThreadCount());
-#endif
 	resetTimer();
 }
-
-
-#ifdef NEMO_CPU_MULTITHREADED
-
-/* Allocate work to each thread */
-void
-Simulation::initWorkers(size_t neurons, unsigned threads)
-{
-	//! \todo log level of hardware concurrency
-	size_t jobSize = neurons / threads;
-	for(unsigned t=0; t < threads; ++t) {
-		m_workers.push_back(Worker(t, jobSize, neurons, this));
-	}
-}
-
-#endif
 
 
 
@@ -95,12 +85,13 @@ Simulation::getFractionalBits() const
 void
 Simulation::fire()
 {
-	current_vector_t& current = deliverSpikes();
+	deliverSpikes();
 	for(neuron_groups::const_iterator i = m_neurons.begin();
 			i != m_neurons.end(); ++i) {
 		(*i)->update(
 			m_timer.elapsedSimulation(), getFractionalBits(),
-			&current[0], &m_fstim[0], &m_recentFiring[0], &m_fired[0],
+			&m_currentE[0], &m_currentI[0], &m_currentExt[0],
+			&m_fstim[0], &m_recentFiring[0], &m_fired[0],
 			const_cast<void*>(static_cast<const void*>(m_cm->rcm())));
 	}
 
@@ -134,7 +125,7 @@ Simulation::initCurrentStimulus(size_t count)
 void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
-	m_current[m_mapper.localIdx(neuron)] = fx_toFix(current, getFractionalBits());
+	m_currentExt[m_mapper.localIdx(neuron)] = current;
 }
 
 
@@ -148,9 +139,9 @@ Simulation::finalizeCurrentStimulus(size_t count)
 
 
 void
-Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
+Simulation::setCurrentStimulus(const std::vector<float>& current)
 {
-	if(current.empty()) {
+	if(m_currentExt.empty()) {
 		//! do we need to clear current?
 		return;
 	}
@@ -230,7 +221,7 @@ Simulation::applyStdp(float reward)
 
 
 
-Simulation::current_vector_t&
+void
 Simulation::deliverSpikes()
 {
 	/* Ignore spikes outside of max delay. We keep these older spikes as they
@@ -250,7 +241,15 @@ Simulation::deliverSpikes()
 		}
 	}
 
-	return m_current;
+	/* convert current back to float */
+	unsigned fbits = getFractionalBits();
+#pragma omp parallel for default(shared)
+	for(int n=0; n < m_neuronCount; n++) {
+		m_currentE[n] = wfx_toFloat(mfx_currentE[n], fbits);
+		mfx_currentE[n] = 0U;
+		m_currentI[n] = wfx_toFloat(mfx_currentI[n], fbits);
+		mfx_currentI[n] = 0U;
+	}
 }
 
 
@@ -262,7 +261,8 @@ Simulation::deliverSpikesOne(nidx_t source, delay_t delay)
 
 	for(unsigned s=0; s < row.len; ++s) {
 		const FAxonTerminal& terminal = row[s];
-		m_current.at(terminal.target) += terminal.weight;
+		std::vector<wfix_t>& current = terminal.weight >= 0 ? mfx_currentE : mfx_currentI;
+		current.at(terminal.target) += terminal.weight;
 		LOG("c%lu: n%u -> n%u: %+f (delay %u)\n",
 				elapsedSimulation(),
 				m_mapper.globalIdx(source),
@@ -366,24 +366,18 @@ Simulation::resetTimer()
 
 
 
-void
-chooseHardwareConfiguration(nemo::ConfigurationImpl& conf, int threadCount)
+const char*
+deviceDescription()
 {
-	conf.setBackend(NEMO_BACKEND_CPU);
-	/*! \todo get processor name */
-#ifdef NEMO_CPU_MULTITHREADED
-	if(threadCount < 1) {
-		conf.setCpuThreadCount(std::max(1U, boost::thread::hardware_concurrency()));
-	} else {
-		conf.setCpuThreadCount(threadCount);
-	}
+	/* Store a static string here so we can safely pass a char* rather than a
+	 * string object across DLL interface */
+#ifdef NEMO_CPU_OPENMP_ENABLED
+	using boost::format;
+	static std::string descr = str(format("CPU backend (OpenMP, %u cores)") % omp_get_num_procs());
 #else
-	if(threadCount > 1) {
-		throw nemo::exception(NEMO_INVALID_INPUT, "nemo compiled without multithreading support.");
-	} else {
-		conf.setCpuThreadCount(1);
-	}
+	static std::string descr("CPU backend (single-threaded)");
 #endif
+	return descr.c_str();
 }
 
 

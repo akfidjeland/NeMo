@@ -36,10 +36,6 @@
  *		Pointer to full global memory double-buffered global queue
  * \param[out] s_current
  *		per-neuron vector with accumulated current in fixed point format.
- * \param[out] s_overflow
- *		bit vector indicating overflow status for all neurons in partition.
- * \param[out] s_negative
- *		bit vector indicating the overflow sign for all neurons in partition
  */
 __device__
 void
@@ -48,47 +44,51 @@ gather( unsigned cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,
 		unsigned* g_gqFill,
-		fix_t* s_current,
-		uint32_t* s_overflow, // 1b per neuron overflow detection
-		uint32_t* s_negative) // ditto
+		float sf_currentE[],
+		float sf_currentI[])
 {
-	//! \todo move init of current to here, so that we can ensure that it's zero
-	/* Update incoming current in-place in fixed-point format */
+	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
+	__shared__ uint32_t s_overflowE[S_BV_PITCH];
+	__shared__ uint32_t s_overflowI[S_BV_PITCH];
+
+	bv_clear(s_overflowE);
+	bv_clear(s_overflowI);
+
+	/* Accumulation is done using fixed-point, but the conversion back to
+	 * floating point is done in-place. */
+	fix_t* s_currentE = (fix_t*) sf_currentE;
+	fix_t* s_currentI = (fix_t*) sf_currentI;
+
+	for(int bNeuron=0; bNeuron < MAX_PARTITION_SIZE; bNeuron += THREADS_PER_BLOCK) {
+		unsigned neuron = bNeuron + threadIdx.x;
+		s_currentE[neuron] = 0U;
+		s_currentI[neuron] = 0U;
+	}
+	// __syncthreads();
+
 	__shared__ unsigned s_incomingCount;
-
-	//! \todo declare bit vectors here instead
-	bv_clear(s_overflow);
-	bv_clear(s_negative);
-
 	if(threadIdx.x == 0) {
-		//! \todo use atomicExch here instead
 		size_t addr = gq_fillOffset(CURRENT_PARTITION, readBuffer(cycle));
 		s_incomingCount = g_gqFill[addr];
 		g_gqFill[addr] = 0;
 	}
 	__syncthreads();
 
+	__shared__ synapse_t* s_warpAddress[THREADS_PER_BLOCK];
+
 	/* Process the incoming warps in fixed size groups */
-	/*! \note Could use THREADS_PER_BLOCK here, but we're bit low on shared
-	 * memory. */
-#define GROUP_SIZE 128
+	for(unsigned bGroup = 0; bGroup < s_incomingCount; bGroup += THREADS_PER_BLOCK) {
 
-	//! \todo could this smem be re-used?
-	__shared__ synapse_t* s_warpAddress[GROUP_SIZE];
+		unsigned group = bGroup + threadIdx.x;
 
-	//! \todo rename variables here
-	for(unsigned groupBase = 0; groupBase < s_incomingCount; groupBase += GROUP_SIZE) {
-
-		unsigned group = groupBase + threadIdx.x;
-
-		/* In each loop iteration we process /up to/ GROUP_SIZE warps. For the
-		 * last iteration of the outer loop we process fewer */
+		/* In each loop iteration we process /up to/ THREADS_PER_BLOCK warps.
+		 * For the last iteration of the outer loop we process fewer */
 		__shared__ unsigned s_groupSize;
 		if(threadIdx.x == 0) {
 			s_groupSize =
-				(groupBase + GROUP_SIZE) > s_incomingCount
-				? s_incomingCount % GROUP_SIZE
-				: GROUP_SIZE;
+				(bGroup + THREADS_PER_BLOCK) > s_incomingCount
+				? s_incomingCount % THREADS_PER_BLOCK
+				: THREADS_PER_BLOCK;
 			DEBUG_MSG_SYNAPSE("c%u: group size=%u, incoming=%u\n", cycle, s_groupSize, s_incomingCount);
 		}
 		__syncthreads();
@@ -114,11 +114,20 @@ gather( unsigned cycle,
 			/* only warps at the very end of the group are invalid here */
 			if(gwarp < s_groupSize) {
 				postsynaptic = *base;
+				ASSERT(postsynaptic < MAX_PARTITION_SIZE);
 				weight = *((unsigned*)base + s_params.fcmPlaneSize);
 			}
 
+			bool excitatory = weight >= 0;
+			fix_t* s_current = excitatory ? s_currentE : s_currentI;
+			uint32_t* s_overflow = excitatory ? s_overflowE : s_overflowI;
+
 			if(weight != 0) {
-				addCurrent(postsynaptic, weight, s_current, s_overflow, s_negative);
+				bool overflow = fx_atomicAdd(s_current + postsynaptic, weight);
+				bv_atomicSetPredicated(overflow, postsynaptic, s_overflow);
+#ifndef NEMO_WEIGHT_FIXED_POINT_SATURATION
+				ASSERT(!overflow);
+#endif
 				DEBUG_MSG_SYNAPSE("c%u p?n? -> p%un%u %+f [warp %u]\n",
 						s_cycle, CURRENT_PARTITION, postsynaptic,
 						fx_tofloat(weight), (s_warpAddress[gwarp] - g_fcm) / WARP_SIZE);
@@ -126,6 +135,9 @@ gather( unsigned cycle,
 		}
 		__syncthreads(); // to avoid overwriting s_groupSize
 	}
+
+	fx_arrSaturatedToFloat(s_overflowE, false, s_currentE, sf_currentE, s_params.fixedPointScale);
+	fx_arrSaturatedToFloat(s_overflowI,  true, s_currentI, sf_currentI, s_params.fixedPointScale);
 }
 
 
@@ -138,13 +150,10 @@ gather( uint32_t cycle,
 		synapse_t* g_fcm,
 		gq_entry_t* g_gqData,      // pitch = c_gqPitch
 		unsigned* g_gqFill,
-		fix_t* g_current)
+		float* g_current)
 {
-	__shared__ fix_t s_current[MAX_PARTITION_SIZE];
-
-	/* Per-neuron bit-vectors. See bitvector.cu for accessors */
-	__shared__ uint32_t s_overflow[S_BV_PITCH];
-	__shared__ uint32_t s_negative[S_BV_PITCH];
+	__shared__ float s_currentE[MAX_PARTITION_SIZE];
+	__shared__ float s_currentI[MAX_PARTITION_SIZE];
 
 	__shared__ param_t s_params;
 
@@ -159,16 +168,18 @@ gather( uint32_t cycle,
 	} // sync done in loadParameters
 	loadParameters(g_params, &s_params);
 
-	for(int i=0; i<DIV_CEIL(MAX_PARTITION_SIZE, THREADS_PER_BLOCK); ++i) {
-		s_current[i*THREADS_PER_BLOCK + threadIdx.x] = 0U;
-	}
-	__syncthreads();
-
-	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill, s_current, s_overflow, s_negative);
+	gather(cycle, s_params, g_fcm, g_gqData, g_gqFill, s_currentE, s_currentI);
 
 	/* Write back to global memory The global memory roundtrip is so that the
 	 * gather and fire steps can be done in separate kernel invocations. */
-	copyCurrent(s_partitionSize, s_current, g_current + CURRENT_PARTITION * s_params.pitch32);
+
+	float* g_currentE = incomingExcitatory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32);
+	float* g_currentI = incomingInhibitory(g_current, PARTITION_COUNT, CURRENT_PARTITION, s_params.pitch32);
+	for(unsigned bNeuron=0; bNeuron < s_partitionSize; bNeuron += THREADS_PER_BLOCK) {
+		unsigned neuron = bNeuron + threadIdx.x;
+		g_currentE[neuron] = s_currentE[neuron];
+		g_currentI[neuron] = s_currentI[neuron];
+	}
 }
 
 
@@ -181,7 +192,7 @@ gather( cudaStream_t stream,
 		unsigned partitionCount,
 		unsigned* d_partitionSize,
 		param_t* d_params,
-		fix_t* d_current,
+		float* d_current,
 		synapse_t* d_fcm,
 		gq_entry_t* d_gqData,
 		unsigned* d_gqFill)

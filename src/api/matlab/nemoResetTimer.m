@@ -4,5 +4,5 @@ function nemoResetTimer()
 % Synopsis:
 %   nemoResetTimer()
 %  
-    nemo_mex(uint32(16));
+    nemo_mex(uint32(17));
 end

@@ -1,5 +1,5 @@
-#ifndef NEMO_CUDA_PLUGINS_IZHIKEVICH_CU
-#define NEMO_CUDA_PLUGINS_IZHIKEVICH_CU
+#ifndef NEMO_CUDA_PLUGINS_IF_CURR_EXP_CU
+#define NEMO_CUDA_PLUGINS_IF_CURR_EXP_CU
 
 /* Copyright 2010 Imperial College London
  *
@@ -10,7 +10,8 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*! \file Izhikevich.cu Izhikevich neuron update kernel */
+/*! \file IF_curr_exp.cu Neuron update CUDA kernel for current-based
+ * exponential decay integrate-and-fire neurons. */
 
 #include <nemo/config.h>
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
@@ -21,22 +22,13 @@
 #include <firing.cu>
 #include <neurons.cu>
 #include <parameters.cu>
-#include <rng.cu>
 
-#include <nemo/plugins/Izhikevich.h>
+#include <nemo/plugins/IF_curr_exp.h>
 #include "neuron_model.h"
 
 
 
 /*! Update state of all neurons
- *
- * Update the state of all neurons in partition according to the equations in
- * Izhikevich's 2003 paper based on
- *
- * - the neuron parameters (a-d)
- * - the neuron state (u, v)
- * - input current (from other neurons, random input current, or externally provided)
- * - per-neuron specific firing stimulus
  *
  * The neuron state is updated using the Euler method.
  *
@@ -84,70 +76,76 @@ updateNeurons(
 {
 	//! \todo could set these in shared memory
 	size_t neuronParametersSize = PARTITION_COUNT * s_params.pitch32;
-	const float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
-	const float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
-	const float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
-	const float* g_d = g_neuronParameters + PARAM_D * neuronParametersSize;
-	const float* g_sigma = g_neuronParameters + PARAM_SIGMA * neuronParametersSize;
+
+	const float* g_v_rest     = g_neuronParameters + PARAM_V_REST     * neuronParametersSize;
+	const float* g_c_m        = g_neuronParameters + PARAM_C_M        * neuronParametersSize;
+	const float* g_tau_m      = g_neuronParameters + PARAM_TAU_M      * neuronParametersSize;
+	const float* g_tau_refrac = g_neuronParameters + PARAM_TAU_REFRAC * neuronParametersSize;
+	const float* g_tau_syn_E  = g_neuronParameters + PARAM_TAU_SYN_E  * neuronParametersSize;
+	const float* g_tau_syn_I  = g_neuronParameters + PARAM_TAU_SYN_I  * neuronParametersSize;
+	const float* g_I_offset   = g_neuronParameters + PARAM_I_OFFSET   * neuronParametersSize;
+	const float* g_v_reset    = g_neuronParameters + PARAM_V_RESET    * neuronParametersSize;
+	const float* g_v_thresh   = g_neuronParameters + PARAM_V_THRESH   * neuronParametersSize;
 
 	//! \todo avoid repeated computation of the same data here
-	const float* g_u0 = state<1, 2, STATE_U>(cycle, s_params.pitch32, g_neuronState);
-	const float* g_v0 = state<1, 2, STATE_V>(cycle, s_params.pitch32, g_neuronState);
-	float* g_u1 = state<1, 2, STATE_U>(cycle+1, s_params.pitch32, g_neuronState);
-	float* g_v1 = state<1, 2, STATE_V>(cycle+1, s_params.pitch32, g_neuronState);
+	const float* g_v0         = state<HISTORY_LENGTH, STATE_COUNT, STATE_V        >(cycle, s_params.pitch32, g_neuronState);
+	const float* g_Ie0        = state<HISTORY_LENGTH, STATE_COUNT, STATE_IE       >(cycle, s_params.pitch32, g_neuronState);
+	const float* g_Ii0        = state<HISTORY_LENGTH, STATE_COUNT, STATE_II       >(cycle, s_params.pitch32, g_neuronState);
+	const float* g_lastfired0 = state<HISTORY_LENGTH, STATE_COUNT, STATE_LASTFIRED>(cycle, s_params.pitch32, g_neuronState);
 
-	for(unsigned nbase=0; nbase < s_partitionSize; nbase += THREADS_PER_BLOCK) {
+	float* g_v1         = state<HISTORY_LENGTH, STATE_COUNT, STATE_V        >(cycle+1, s_params.pitch32, g_neuronState);
+	float* g_Ie1        = state<HISTORY_LENGTH, STATE_COUNT, STATE_IE       >(cycle+1, s_params.pitch32, g_neuronState);
+	float* g_Ii1        = state<HISTORY_LENGTH, STATE_COUNT, STATE_II       >(cycle+1, s_params.pitch32, g_neuronState);
+	float* g_lastfired1 = state<HISTORY_LENGTH, STATE_COUNT, STATE_LASTFIRED>(cycle+1, s_params.pitch32, g_neuronState);
 
-		unsigned neuron = nbase + threadIdx.x;
+	for(unsigned bNeuron=0; bNeuron < s_partitionSize; bNeuron += THREADS_PER_BLOCK) {
+
+		unsigned neuron = bNeuron + threadIdx.x;
 
 		/* if index space is contigous, no warp divergence here */
 		if(bv_isSet(neuron, s_valid)) {
 
+			//! \todo consider pre-multiplying g_tau_syn_E
+			float Ie = ((1.0f - 1.0f/g_tau_syn_E[neuron]) * g_Ie0[neuron]) + g_currentE[neuron];
+			float Ii = ((1.0f - 1.0f/g_tau_syn_I[neuron]) * g_Ii0[neuron]) + g_currentI[neuron];
+
+			/* Update the incoming currents */
+			float I = Ie + Ii + s_currentExt[neuron] + g_I_offset[neuron];
+
+			g_Ie1[neuron] = Ie;
+			g_Ii1[neuron] = Ii;
+
 			float v = g_v0[neuron];
-			float u = g_u0[neuron];
-			float a = g_a[neuron];
-			float b = g_b[neuron];
+			float lastfired = g_lastfired0[neuron];
+			bool refractory = lastfired <= g_tau_refrac[neuron];
+			lastfired += 1;
 
-			float I = g_currentE[neuron] + g_currentI[neuron] + s_currentExt[neuron];
-
-			float sigma = g_sigma[neuron];
-			if(sigma != 0.0f) {
-				I += nrand(globalPartitionCount, s_globalPartition, neuron, g_nrng) * sigma;
+			if(!refractory) {
+				float c_m = g_c_m[neuron];
+				float v_rest = g_v_rest[neuron];
+				float tau_m = g_tau_m[neuron];
+				//! \todo make integration step size a model parameter as well
+				v += I / c_m + (v_rest - v) / tau_m;
 			}
 
-			/* n sub-steps for numerical stability, with u held */
-			bool fired = false;
-			for(int j=0; j < 4; ++j) {
-				if(!fired) { 
-					v += 0.25f * ((0.04f*v + 5.0f) * v + 140.0f - u + I);
-					/*! \todo: could pre-multiply this with a, when initialising memory */
-					u += 0.25f * (a * ( b*v - u ));
-					fired = v >= 30.0f;
-				} 
-			}
+			/* Firing can be forced externally, even during refractory period */
 
-			bool forceFiring = bv_isSet(neuron, s_fstim); // (smem broadcast)
+			bool firedInternal = !refractory && v >= g_v_thresh[neuron];
+			bool firedExternal = bv_isSet(neuron, s_fstim); // (smem broadcast)
 
-			if(fired || forceFiring) {
-
-				/* Only a subset of the neurons fire and thus require c/d
-				 * fetched from global memory. One could therefore deal with
-				 * all the fired neurons separately. This was found, however,
-				 * to slow down the fire step by 50%, due to extra required
-				 * synchronisation.  */
-				v = g_c[neuron];
-				u += g_d[neuron];
-
+			if(firedInternal || firedExternal) {
+				v = g_v_reset[neuron];
+				lastfired = 1;
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 				DEBUG_MSG("c%u ?+%u-%u fired (forced: %u)\n",
-						s_cycle, CURRENT_PARTITION, neuron, forceFiring);
+						s_cycle, CURRENT_PARTITION, neuron, firedExternal);
 #endif
 				unsigned i = atomicAdd(s_nFired, 1);
 				s_fired[i] = neuron;
 			}
 
 			g_v1[neuron] = v;
-			g_u1[neuron] = u;
+			g_lastfired1[neuron] = lastfired;
 		}
 
 		__syncthreads();

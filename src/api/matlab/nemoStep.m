@@ -18,10 +18,10 @@ function fired = nemoStep(fstim, istim_nidx, istim_current)
 %	fired - A list of the neurons which fired this cycle
 %
     if nargin < 1
-        fired = nemo_mex(uint32(11), uint32(zeros(1, 0)), uint32(zeros(1, 0)), zeros(1, 0));
+        fired = nemo_mex(uint32(12), uint32(zeros(1, 0)), uint32(zeros(1, 0)), zeros(1, 0));
     elseif nargin < 2
-        fired = nemo_mex(uint32(11), uint32(fstim), uint32(zeros(1, 0)), zeros(1, 0));
+        fired = nemo_mex(uint32(12), uint32(fstim), uint32(zeros(1, 0)), zeros(1, 0));
     else
-        fired = nemo_mex(uint32(11), uint32(fstim), uint32(istim_nidx), istim_current);
+        fired = nemo_mex(uint32(12), uint32(fstim), uint32(istim_nidx), istim_current);
     end
 end

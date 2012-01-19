@@ -16,5 +16,5 @@ function source = nemoGetSynapseSource(synapse)
 % the appropriate number of times. If all input arguments are scalar,
 % the output is scalar. Otherwise the output has the same length as
 % the vector input arguments.
-    source = nemo_mex(uint32(26), uint64(synapse));
+    source = nemo_mex(uint32(27), uint64(synapse));
 end

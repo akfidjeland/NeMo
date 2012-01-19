@@ -45,9 +45,9 @@ __device__
 fix_t
 fx_saturate(bool negative)
 {
-	fix_t bits = fix_t(1) << 31;
-	return negative ? bits : ~bits;
+	return negative ? fx_max : fx_min;
 }
+
 
 
 /*! Cast fixed-point to floating point, with saturation as indicated by the
@@ -98,7 +98,7 @@ __device__
 void
 fx_arrSaturatedToFloat(
 		uint32_t* s_overflow, // bit-vector
-		uint32_t* s_negative, // bit-vector
+		bool negative,
 		fix_t* s_fix,
 		float* s_float,
 		unsigned scale)
@@ -106,11 +106,10 @@ fx_arrSaturatedToFloat(
 	/* If any accumulators overflow, clamp to max positive or minimum value */
 	for(unsigned nbase=0; nbase < MAX_PARTITION_SIZE; nbase += THREADS_PER_BLOCK) {
 		unsigned nidx = nbase + threadIdx.x;
-#ifndef FIXPOINT_SATURATION
+#ifndef NEMO_WEIGHT_FIXED_POINT_SATURATION
 		s_float[nidx] = fx_tofloat(s_fix[nidx], scale);
 #else
 		bool overflow = bv_isSet(nidx, s_overflow);
-		bool negative = bv_isSet(nidx, s_negative);
 		s_float[nidx] = fx_saturatedTofloat(s_fix[nidx], overflow, negative, scale);
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 		if(overflow) {

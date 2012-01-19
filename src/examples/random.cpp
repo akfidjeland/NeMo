@@ -61,12 +61,13 @@ addInhibitoryNeuron(nemo::Network* net, unsigned nidx, urng_t& param)
 
 
 nemo::Network*
-construct(unsigned ncount, unsigned scount, bool stdp)
+construct(unsigned ncount, unsigned scount, unsigned dmax, bool stdp)
 {
 	rng_t rng;
 	/* Neuron parameters and weights are partially randomised */
 	urng_t randomParameter(rng, boost::uniform_real<double>(0, 1));
 	uirng_t randomTarget(rng, boost::uniform_int<>(0, ncount-1));
+	uirng_t randomDelay(rng, boost::uniform_int<>(1, dmax));
 
 	nemo::Network* net = new nemo::Network();
 
@@ -74,7 +75,7 @@ construct(unsigned ncount, unsigned scount, bool stdp)
 		if(nidx < (ncount * 4) / 5) { // excitatory
 			addExcitatoryNeuron(net, nidx, randomParameter);
 			for(unsigned s = 0; s < scount; ++s) {
-				net->addSynapse(nidx, randomTarget(), 1U, 0.5f * float(randomParameter()), stdp);
+				net->addSynapse(nidx, randomTarget(), randomDelay(), 0.5f * float(randomParameter()), stdp);
 			}
 		} else { // inhibitory
 			addInhibitoryNeuron(net, nidx, randomParameter);
@@ -107,14 +108,16 @@ main(int argc, char* argv[])
 		desc.add_options()
 			("neurons,n", po::value<unsigned>()->default_value(1000), "number of neurons")
 			("synapses,m", po::value<unsigned>()->default_value(1000), "number of synapses per neuron")
+			("dmax,d", po::value<unsigned>()->default_value(1), "maximum excitatory delay,  where delays are uniform in range [1, dmax]")
 		;
 
 		po::variables_map vm = processOptions(argc, argv, desc);
 
 		unsigned ncount = vm["neurons"].as<unsigned>();
 		unsigned scount = vm["synapses"].as<unsigned>();
+		unsigned dmax = vm["dmax"].as<unsigned>();
 		unsigned duration = vm["duration"].as<unsigned>();
-		unsigned stdp = vm["stdp"].as<unsigned>();
+		unsigned stdp = vm["stdp-period"].as<unsigned>();
 		unsigned verbose = vm["verbose"].as<unsigned>();
 		bool runBenchmark = vm.count("benchmark") != 0;
 
@@ -129,7 +132,7 @@ main(int argc, char* argv[])
 		std::ostream& out = filename.empty() ? std::cout : file;
 
 		LOG(verbose, "Constructing network");
-		boost::scoped_ptr<nemo::Network> net(nemo::random::construct(ncount, scount, stdp != 0));
+		boost::scoped_ptr<nemo::Network> net(nemo::random::construct(ncount, scount, dmax, stdp != 0));
 		LOG(verbose, "Creating configuration");
 		nemo::Configuration conf = configuration(vm);
 		LOG(verbose, "Simulation will run on %s", conf.backendDescription());

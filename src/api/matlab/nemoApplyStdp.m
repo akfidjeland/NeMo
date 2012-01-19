@@ -7,5 +7,5 @@ function nemoApplyStdp(reward)
 % Inputs:
 %   reward  - Multiplier for the accumulated weight change
 %    
-    nemo_mex(uint32(12), double(reward));
+    nemo_mex(uint32(13), double(reward));
 end

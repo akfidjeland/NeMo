@@ -7,7 +7,6 @@
 #cmakedefine HAVE_LOG2
 #cmakedefine HAVE_POSIX_MEMALIGN
 #cmakedefine HAVE_CUPRINTF
-#cmakedefine CAN_SET_THREAD_AFFINITY
 #cmakedefine NEMO_MPI_ENABLED
 #cmakedefine NEMO_MPI_DEBUG_TRACE
 #cmakedefine NEMO_MPI_DEBUG_TIMING
@@ -17,7 +16,8 @@
 #cmakedefine NEMO_CUDA_DEBUG_TRACE @NEMO_CUDA_DEBUG_TRACE@
 #cmakedefine NEMO_CUDA_DEVICE_ASSERTIONS
 #cmakedefine NEMO_CPU_DEBUG_TRACE
-// #cmakedefine NEMO_CPU_MULTITHREADED
+#cmakedefine NEMO_CPU_OPENMP_ENABLED
+#cmakedefine NEMO_WEIGHT_FIXED_POINT_SATURATION
 
 #cmakedefine NEMO_VERSION "@NEMO_VERSION@"
 #if defined _WIN32 || defined __CYGWIN__

@@ -121,7 +121,7 @@ Simulation::Simulation(
 	m_recentFiring(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingStimulus(m_mapper.partitionCount()),
 	m_currentStimulus(1, m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
-	m_current(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
+	m_current(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingBuffer(m_mapper),
 	m_fired(1, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	md_nFired(d_array<unsigned>(m_mapper.partitionCount(), true, "Fired count")),
@@ -132,15 +132,20 @@ Simulation::Simulation(
 	m_streamCompute(0),
 	m_streamCopy(0)
 {
-
 	size_t pitch1 = 0;
 	size_t pitch32 = 0;
+
 	/* Populate all neuron collections */
-	std::vector<unsigned> h_partitionSize; //MAX_PARTITION_COUNT, 0);
-	for(unsigned i=0, i_end=net.neuronTypeCount(); i < i_end; ++i) {
+	std::vector<unsigned> h_partitionSize;
+	for(unsigned type_id=0, id_end=net.neuronTypeCount(); type_id < id_end; ++type_id) {
+
+		if(net.neuronCount(type_id) == 0) {
+			continue;
+		}
+
 		//! \todo could do mapping here to avoid two passes over neurons
 		/* Wrap in smart pointer to ensure the class is not copied */
-		boost::shared_ptr<Neurons> ns(new Neurons(net, i, m_mapper));
+		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
 		setPitch(ns->wordPitch32(), &pitch32);
 		setPitch(ns->wordPitch1(), &pitch1);
 		//! \todo verify contigous range
@@ -232,8 +237,7 @@ void
 Simulation::addCurrentStimulus(nidx_t neuron, float current)
 {
 	DeviceIdx dev = m_mapper.deviceIdx(neuron);
-	fix_t fx_current = fx_toFix(current, m_cm.fractionalBits());
-	m_currentStimulus.setNeuron(dev.partition, dev.neuron, fx_current);
+	m_currentStimulus.setNeuron(dev.partition, dev.neuron, current);
 }
 
 
@@ -253,7 +257,7 @@ Simulation::finalizeCurrentStimulus(size_t count)
 
 
 void
-Simulation::setCurrentStimulus(const std::vector<fix_t>& current)
+Simulation::setCurrentStimulus(const std::vector<float>& current)
 {
 	if(current.empty()) {
 		md_istim = NULL;
@@ -441,6 +445,8 @@ Simulation::postfire()
 void
 Simulation::applyStdp(float reward)
 {
+	using boost::format;
+
 	if(!m_stdp) {
 		throw exception(NEMO_LOGIC_ERROR, "applyStdp called, but no STDP model specified");
 		return;
@@ -450,11 +456,19 @@ Simulation::applyStdp(float reward)
 		m_cm.clearStdpAccumulator();
 	} else  {
 		initLog();
+
+		unsigned fbits = m_cm.fractionalBits();
+		if(fx_toFix(reward, fbits) == 0U && reward != 0) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("STDP reward rounded down to zero. The smallest valid reward is %f")
+						% fx_toFloat(1U, fbits)));
+		}
+
 		::applyStdp(
 				m_streamCompute,
 				m_mapper.partitionCount(),
 				md_partitionSize.get(),
-				m_cm.fractionalBits(),
+				fbits,
 				md_params.get(),
 				m_cm.d_fcm(),
 				m_cm.d_rcm(),

@@ -1,3 +1,4 @@
+#include <cassert>
 #include <nemo/fixedpoint.hpp>
 #include <nemo/plugins/Izhikevich.h>
 
@@ -18,7 +19,9 @@ cpu_update_neurons(
 		unsigned fbits,
 		unsigned fstim[],
 		RNG rng[],
-		fix_t current[],
+		float currentEPSP[],
+		float currentIPSP[],
+		float currentExternal[],
 		uint64_t recentFiring[],
 		unsigned fired[],
 		void* /* rcm */)
@@ -44,11 +47,20 @@ cpu_update_neurons(
 	/* Each neuron has two indices: a local index (within the group containing
 	 * neurons of the same type) and a global index. */
 
+	int nn = end-start;
+	assert(nn >= 0);
 
-	for(unsigned ng=start, nl=0U; ng < end; ng++, nl++) {
+#pragma omp parallel for default(shared)
+	for(int nl=0; nl < nn; nl++) {
 
-		float I = fx_toFloat(current[ng], fbits);
-		current[ng] = 0;
+		unsigned ng = start + nl;
+
+		float I = currentEPSP[ng] + currentIPSP[ng] + currentExternal[ng];
+
+		/* no need to clear current?PSP. */
+
+		//! \todo clear this outside kernel
+		currentExternal[ng] = 0.0f;
 
 		if(sigma[nl] != 0.0f) {
 			I += sigma[nl] * nrand(&rng[nl]);

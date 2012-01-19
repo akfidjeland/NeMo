@@ -9,7 +9,7 @@
  * This network shows usage of libnemo and can be used for benchmarking
  * purposes.
  *
- * Author: Andreas K. Fidjelnad <andreas.fidjeland@imperial.ac.uk>
+ * Author: Andreas K. Fidjeland <andreas.fidjeland@imperial.ac.uk>
  * Date: March 2010
  */ 
 
@@ -311,7 +311,7 @@ main(int argc, char* argv[])
 		unsigned pcount = vm["pcount"].as<unsigned>();
 		unsigned sigma = vm["sigma"].as<unsigned>();
 		unsigned m = vm["synapses"].as<unsigned>();
-		unsigned stdp = vm["stdp"].as<unsigned>();
+		unsigned stdp = vm["stdp-period"].as<unsigned>();
 		unsigned duration = vm["duration"].as<unsigned>();
 		unsigned verbose = vm["verbose"].as<unsigned>();
 		bool runBenchmark = vm.count("benchmark") != 0;

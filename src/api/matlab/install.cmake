@@ -8,6 +8,7 @@ nemoSetCudaBackend.m
 nemoSetStdpFunction.m
 nemoBackendDescription.m
 nemoSetWriteOnlySynapses.m
+nemoLogStdout.m
 nemoResetConfiguration.m
 nemoStep.m
 nemoApplyStdp.m

@@ -45,11 +45,18 @@ class Neurons
 
 		/*! Update the state of all neurons
 		 *
+		 * \param currentEPSP input current due to EPSPs
+		 * \param currentIPSP input current due to IPSPs
+		 * \param currentExternal externally (user-provided input current)
+		 *
 		 * \post the input current vector is set to all zero.
 		 * \post the firing stimulus buffer (\a fstim) is set to all false.
 		 */
 		void update(unsigned cycle, unsigned fbits,
-			fix_t current[], unsigned fstim[], uint64_t recentFiring[],
+			float currentEPSP[],
+			float currentIPSP[],
+			float currentExternal[],
+			unsigned fstim[], uint64_t recentFiring[],
 			unsigned fired[], void* rcm);
 
 		/*! Get a single state variable for a single neuron

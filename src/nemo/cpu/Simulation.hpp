@@ -22,7 +22,6 @@
 #include <nemo/RandomMapper.hpp>
 #include <nemo/Timer.hpp>
 
-#include "Worker.hpp"
 #include "Neurons.hpp"
 
 
@@ -45,7 +44,7 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		void setFiringStimulus(const std::vector<unsigned>& fstim);
 
 		/*! \copydoc nemo::SimulationBackend::setCurrentStimulus */
-		void setCurrentStimulus(const std::vector<fix_t>& current);
+		void setCurrentStimulus(const std::vector<float>& current);
 
 		/*! \copydoc nemo::SimulationBackend::initCurrentStimulus */
 		void initCurrentStimulus(size_t count);
@@ -137,8 +136,16 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 		boost::scoped_ptr<nemo::ConnectivityMatrix> m_cm;
 
-		/* accumulated current from incoming spikes for each neuron */
-		std::vector<fix_t> m_current;
+		/* Per-neuron accumulated current from EPSPs */
+		std::vector<wfix_t> mfx_currentE;
+		std::vector<float> m_currentE;
+
+		/* Per-neuron accumulated current from IPSPs */
+		std::vector<wfix_t> mfx_currentI;
+		std::vector<float> m_currentI;
+
+		/* Per-neuron user-provided input current */
+		std::vector<float> m_currentExt;
 
 		/*! firing stimulus (for a single cycle).
 		 *
@@ -147,21 +154,15 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 		 */
 		std::vector<unsigned> m_fstim;
 
-		/*! Deliver spikes due for delivery */
-		current_vector_t& deliverSpikes();
+		/*! Deliver spikes due for delivery.
+		 *
+		 * Updates m_currentE and m_currentI
+		 */
+		void deliverSpikes();
 
 		void setFiring();
 
 		FiringBuffer m_firingBuffer;
-
-#ifdef NEMO_CPU_MULTITHREADED
-
-		std::vector<Worker> m_workers;
-
-		void initWorkers(size_t neurons, unsigned threads);
-
-		friend class Worker;
-#endif
 
 		void deliverSpikesOne(nidx_t source, delay_t delay);
 
@@ -173,9 +174,9 @@ class NEMO_CPU_DLL_PUBLIC Simulation : public nemo::SimulationBackend
 
 
 
-/* If threadCount is -1, use default values */
 NEMO_CPU_DLL_PUBLIC
-void chooseHardwareConfiguration(nemo::ConfigurationImpl&, int threadCount = -1);
+const char* deviceDescription();
+
 
 	} // namespace cpu
 } // namespace nemo

@@ -61,6 +61,10 @@ state(unsigned cycle, size_t pitch, float* g_state)
  * This function is intended for random access to the neuron state, i.e.
  * accesses which cannot be coalesced.
  *
+ * \tparam H history length, which should be a power of two
+ * \tparam N number of state variables for the current neuron model
+ * \tparam V desired state variable
+ *
  * \param cycle
  *		Desired time-slot. This is not checked for validity. Generally H-1 or
  *		H-2 cycles worth of previous data are valid.

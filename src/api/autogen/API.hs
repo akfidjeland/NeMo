@@ -557,15 +557,10 @@ simulation =
 setCpuBackend =
     ApiFunction "setCpuBackend"
         "specify that the CPU backend should be used"
-        (Just
-            "Specify that the CPU backend should be used and optionally specify \
-            \the number of threads to use. If the default thread count of -1 is \
-            \used, the backend will choose a sensible value based on the available \
-            \hardware concurrency."
-        )
+        Nothing
         M.empty
         []
-        [   Optional (ApiArg "tcount" (Just "number of threads") (Scalar ApiInt)) "-1" ]
+        []
         [] False
 
 
@@ -635,8 +630,19 @@ resetConfiguration =
         [MEX]
         False
 
+logStdout =
+    ApiFunction
+        "logStdout"
+        "Switch on logging to standard output"
+        Nothing M.empty
+        []
+        []
+        []
+        False
+
+
 configuration = ApiModule "Configuration" "conf" (Just "Global configuration") defaultConstructor
-    [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription, setWriteOnlySynapses, resetConfiguration]
+    [setCpuBackend, setCudaBackend, setStdpFunction, backendDescription, setWriteOnlySynapses, logStdout, resetConfiguration]
     []
 
 

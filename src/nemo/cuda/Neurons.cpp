@@ -149,12 +149,14 @@ Neurons::wordPitch32() const
 {
 	size_t f_param_pitch = m_param.wordPitch();
 	size_t f_state_pitch = m_state.wordPitch();
+
 	if(f_param_pitch != f_state_pitch
 			&& f_param_pitch != 0
 			&& f_state_pitch != 0) {
 		throw nemo::exception(NEMO_LOGIC_ERROR, "State and parameter data have different pitches");
 	}
-	return f_param_pitch;
+	/* Either pitch is the same or one or both are zero */
+	return std::max(f_param_pitch, f_state_pitch);
 }
 
 
@@ -167,8 +169,8 @@ Neurons::update(
 		param_t* d_params,
 		unsigned* d_psize,
 		uint32_t* d_fstim,
-		fix_t* d_istim,
-		fix_t* d_current,
+		float* d_istim,
+		float* d_current,
 		uint32_t* d_fout,
 		unsigned* d_nFired,
 		nidx_dt* d_fired,

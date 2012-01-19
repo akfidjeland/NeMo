@@ -178,7 +178,7 @@ vectorDimension(int nrhs, const mxArray* prhs[], unsigned arglen[])
 	}
 
 	/* Verify remaining vectors */
-	for(; i < nrhs; ++i) {
+	for(size_t i_max = nrhs; i < i_max; ++i) {
 		arglen[i] = mxGetN(prhs[i]) * mxGetM(prhs[i]);
 		if(arglen[i] != dim && arglen[i] != 1) {
 			reportVectorDimensions(nrhs, prhs);
@@ -557,11 +557,9 @@ neuronCount(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void
 setCpuBackend(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    checkInputCount(nrhs, 1);
+    checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 0);
-    checkNemoStatus( 
-            nemo_set_cpu_backend(getConfiguration(), scalar<int,int32_t>(prhs[1])) 
-    );
+    checkNemoStatus(nemo_set_cpu_backend(getConfiguration()));
 }
 
 
@@ -596,6 +594,16 @@ setWriteOnlySynapses(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     checkInputCount(nrhs, 0);
     checkOutputCount(nlhs, 0);
     checkNemoStatus(nemo_set_write_only_synapses(getConfiguration()));
+}
+
+
+
+void
+logStdout(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
+{
+    checkInputCount(nrhs, 0);
+    checkOutputCount(nlhs, 0);
+    checkNemoStatus(nemo_log_stdout(getConfiguration()));
 }
 
 
@@ -1069,7 +1077,7 @@ getSynapsePlastic(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
 typedef void (*fn_ptr)(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
-#define FN_COUNT 31
+#define FN_COUNT 32
 fn_ptr fn_arr[FN_COUNT] = {
     addNeuronType,
     addNeuron,
@@ -1081,6 +1089,7 @@ fn_ptr fn_arr[FN_COUNT] = {
     setStdpFunction,
     backendDescription,
     setWriteOnlySynapses,
+    logStdout,
     resetConfiguration,
     step,
     applyStdp,

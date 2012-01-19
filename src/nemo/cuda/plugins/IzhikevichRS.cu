@@ -72,7 +72,6 @@ updateNeurons(
 	float* g_neuronState,
 	uint32_t* s_valid,   // bitvector for valid neurons
 	// input
-	nrng_t g_nrng,
 	float* g_currentE,
 	float* g_currentI,
 	float* s_currentExt,    // external input current
@@ -82,15 +81,6 @@ updateNeurons(
 	unsigned* s_nFired,
 	nidx_dt* s_fired)    // s_NIdx, so can handle /all/ neurons firing
 {
-	//! \todo could set these in shared memory
-	size_t neuronParametersSize = PARTITION_COUNT * s_params.pitch32;
-	const float* g_a = g_neuronParameters + PARAM_A * neuronParametersSize;
-	const float* g_b = g_neuronParameters + PARAM_B * neuronParametersSize;
-	const float* g_c = g_neuronParameters + PARAM_C * neuronParametersSize;
-	const float* g_d = g_neuronParameters + PARAM_D * neuronParametersSize;
-	const float* g_sigma = g_neuronParameters + PARAM_SIGMA * neuronParametersSize;
-
-	//! \todo avoid repeated computation of the same data here
 	const float* g_u0 = state<1, 2, STATE_U>(cycle, s_params.pitch32, g_neuronState);
 	const float* g_v0 = state<1, 2, STATE_V>(cycle, s_params.pitch32, g_neuronState);
 	float* g_u1 = state<1, 2, STATE_U>(cycle+1, s_params.pitch32, g_neuronState);
@@ -105,15 +95,10 @@ updateNeurons(
 
 			float v = g_v0[neuron];
 			float u = g_u0[neuron];
-			float a = g_a[neuron];
-			float b = g_b[neuron];
+			float a = 0.02f;
+			float b = 0.2f;
 
 			float I = g_currentE[neuron] + g_currentI[neuron] + s_currentExt[neuron];
-
-			float sigma = g_sigma[neuron];
-			if(sigma != 0.0f) {
-				I += nrand(globalPartitionCount, s_globalPartition, neuron, g_nrng) * sigma;
-			}
 
 			/* n sub-steps for numerical stability, with u held */
 			bool fired = false;
@@ -135,14 +120,19 @@ updateNeurons(
 				 * all the fired neurons separately. This was found, however,
 				 * to slow down the fire step by 50%, due to extra required
 				 * synchronisation.  */
-				v = g_c[neuron];
-				u += g_d[neuron];
+				v = -65.0f;
+				u += 8.0f;
 
 #ifdef NEMO_CUDA_PLUGIN_DEBUG_TRACE
 				DEBUG_MSG("c%u ?+%u-%u fired (forced: %u)\n",
 						s_cycle, CURRENT_PARTITION, neuron, forceFiring);
 #endif
+
+				//! \todo consider *only* updating this here, and setting u and v separately
 				unsigned i = atomicAdd(s_nFired, 1);
+
+				/* can overwrite current as long as i < neuron. See notes below
+				 * on synchronisation and declaration of s_current/s_fired. */
 				s_fired[i] = neuron;
 			}
 
@@ -168,7 +158,6 @@ updateNeurons(
 		// neuron state
 		float* gf_neuronParameters,
 		float* gf_neuronState,
-		nrng_t g_nrng,
 		uint32_t* g_valid,
 		// firing stimulus
 		uint32_t* g_fstim,
@@ -221,7 +210,6 @@ updateNeurons(
 			gf_neuronParameters + CURRENT_PARTITION * s_params.pitch32,
 			gf_neuronState,
 			s_valid,
-			g_nrng,
 			g_currentE, g_currentI,
 			s_current, s_fstim,
 			&s_nFired,
@@ -265,7 +253,7 @@ cuda_update_neurons(
 	updateNeurons<<<dimGrid, dimBlock, 0, stream>>>(
 			cycle, globalPartitionCount, basePartition,
 			d_partitionSize, d_params,
-			df_neuronParameters, df_neuronState, d_nrng, d_valid,
+			df_neuronParameters, df_neuronState, d_valid,
 			d_fstim,   // firing stimulus
 			d_istim,   // current stimulus
 			d_current, // internal input current

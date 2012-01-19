@@ -62,6 +62,8 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		 *
 		 * \param type
 		 * 		index of the neuron type, as returned by \a addNeuronType
+		 * \param idx
+		 * 		index of the neuron
 		 * \param nargs
 		 * 		length of \a args
 		 * \param args
@@ -100,6 +102,8 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		 * 		generates random input current drawn from an N(0,\a sigma)
 		 * 		distribution. If set to zero no random input current will be
 		 * 		generated.
+		 *
+ 		 * \deprecated in favour of the generic Network::addNeuron function
 		 */
 		void addNeuron(unsigned idx,
 				float a, float b, float c, float d,
@@ -107,8 +111,12 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 
 		/*! Set an existing neuron
 		 *
-		 * \param param floating point parameters of the neuron
-		 * \param state floating point state variables of the neuron
+		 * \param idx
+		 * 		index of the neuron, as used when calling \a addNeuron
+		 * \param nargs
+		 * 		length of \a args
+		 * \param args
+		 * 		parameters and state variables of the neuron (in that order)
 		 *
 		 * \pre The parameter and state arrays must have the dimensions
 		 * 		matching the neuron type specified when the neuron was first
@@ -119,6 +127,8 @@ class NEMO_BASE_DLL_PUBLIC Network : public ReadableNetwork
 		/*! Change parameters/state variables of a single existing Izhikevich-type neuron
 		 *
 		 * The parameters are the same as for \a nemo::Network::addNeuron
+		 *
+ 		 * \deprecated in favour of the generic nemo::Network::setNeuron function
 		 */
 		void setNeuron(unsigned idx,
 				float a, float b, float c, float d,

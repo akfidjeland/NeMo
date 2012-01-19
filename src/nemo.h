@@ -142,13 +142,7 @@ nemo_set_stdp_function(nemo_configuration_t,
 /*! \copydoc nemo::Configuration::setCpuBackend */
 NEMO_DLL_PUBLIC
 nemo_status_t
-nemo_set_cpu_backend(nemo_configuration_t, int thread_count);
-
-
-/*! \copydoc nemo::Configuration::cpuThreadCount */
-NEMO_DLL_PUBLIC
-nemo_status_t
-nemo_cpu_thread_count(nemo_configuration_t conf, int* thread_count);
+nemo_set_cpu_backend(nemo_configuration_t);
 
 
 /*! \copydoc nemo::Configuration::setCudaBackend */
@@ -216,7 +210,7 @@ void nemo_delete_network(nemo_network_t);
  * \param name
  * 		canonical name of the neuron type. The neuron type data is loaded from
  * 		a plugin configuration file of the same name.
- * \param[out]
+ * \param[out] neuron_type
  * 		index of the the neuron type, to be used when adding neurons.
  *
  * \see nemo_add_neuron
@@ -228,7 +222,9 @@ nemo_add_neuron_type(nemo_network_t,
 		unsigned* neuron_type);
 
 
-/*! \copydoc nemo::Network::addNeuron */
+/*! \brief Add a single Izhikevich neuron to the network
+ * \deprecated in favour of the generic nemo_add_neuron() function
+ */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_add_neuron_iz(nemo_network_t,
@@ -548,7 +544,7 @@ nemo_status_t
 nemo_get_synapse_plastic_s(nemo_simulation_t, synapse_id synapse, unsigned char* plastic);
 
 
-/*! \copydoc nemo_get_synapses_from_n */
+/*! \copydoc nemo_get_synapses_from_s */
 NEMO_DLL_PUBLIC
 nemo_status_t
 nemo_get_synapses_from_n(nemo_network_t, unsigned source, synapse_id *synapses[], size_t* len);
@@ -621,6 +617,7 @@ nemo_set_neuron_s(nemo_simulation_t, unsigned idx, unsigned nargs, float args[])
  * The neuron must already exist.
  *
  * \see nemo_add_neuron for parameters
+ * \deprecated in favour of the generic nemo_set_neuron_n() function
  */
 NEMO_DLL_PUBLIC
 nemo_status_t
@@ -635,6 +632,7 @@ nemo_set_neuron_iz_n(nemo_network_t net,
  * The neuron must already exist.
  *
  * \see nemo_add_neuron for parameters
+ * \deprecated in favour of the generic nemo_set_neuron_s() function
  */
 NEMO_DLL_PUBLIC
 nemo_status_t

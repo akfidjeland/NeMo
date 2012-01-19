@@ -13,10 +13,6 @@
 #include <nemo/internal_types.h>
 #include <nemo/config.h>
 
-#define NEW_RCM
-
-#define FIXPOINT_SATURATION
-
 #define THREADS_PER_BLOCK 256
 
 #define DELAY_BITS 6

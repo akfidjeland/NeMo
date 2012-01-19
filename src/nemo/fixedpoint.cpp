@@ -34,3 +34,16 @@ fx_toFloat(fix_t v, unsigned fractionalBits)
 {
 	return float(v) / float(1<<fractionalBits);
 }
+
+
+
+float
+wfx_toFloat(wfix_t v, unsigned fractionalBits)
+{
+#ifdef NEMO_WEIGHT_FIXED_POINT_SATURATION
+	//! \todo move to point of use. We then only need to perform one of these operations
+	v = std::min(v, wfix_t(fx_max));
+	v = std::max(v, wfix_t(fx_min));
+#endif
+	return float(v) / float(1<<fractionalBits);
+}
