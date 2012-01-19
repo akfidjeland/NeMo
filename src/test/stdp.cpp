@@ -345,9 +345,11 @@ testInvalidDynamicLength(bool stdp)
 	net.addNeuron(iz, 1, 7, param);
 	net.addSynapse(0, 1, 34, 1.0, stdp);
 
+	boost::scoped_ptr<nemo::Simulation> sim;
+
 	if(stdp) {
-		BOOST_REQUIRE_THROW(nemo::simulation(net, conf), nemo::exception);
+		BOOST_REQUIRE_THROW(sim.reset(nemo::simulation(net, conf)), nemo::exception);
 	} else {
-		BOOST_REQUIRE_NO_THROW(nemo::simulation(net, conf));
+		BOOST_REQUIRE_NO_THROW(sim.reset(nemo::simulation(net, conf)));
 	}
 }
