@@ -151,10 +151,9 @@ runSimple(unsigned startNeuron, unsigned neuronCount)
 		net.addNeuron(nidx, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f);
 	}
 	nemo::Configuration conf;
-	nemo::Simulation* sim = NULL;
-	BOOST_REQUIRE_NO_THROW(sim = nemo::simulation(net, conf));
+	boost::scoped_ptr<nemo::Simulation> sim;
+	BOOST_REQUIRE_NO_THROW(sim.reset(nemo::simulation(net, conf)));
 	BOOST_REQUIRE_NO_THROW(sim->step());
-	delete sim;
 }
 
 
@@ -390,9 +389,8 @@ BOOST_AUTO_TEST_SUITE_END()
 #ifdef NEMO_CUDA_ENABLED
 BOOST_AUTO_TEST_CASE(compare_backends)
 {
-	nemo::Network* net = nemo::random::construct(4000, 1000, false);
-	runBackendComparisions(net);
-	delete net;
+	boost::scoped_ptr<nemo::Network> net(nemo::random::construct(4000, 1000, false));
+	runBackendComparisions(net.get());
 }
 #endif
 
@@ -419,10 +417,9 @@ BOOST_AUTO_TEST_CASE(mapping_tests_torus)
 	bool logging = false;
 
 	// only need to create the network once
-	nemo::Network* net = nemo::torus::construct(pcount, m, true, sigma, logging);
+	boost::scoped_ptr<nemo::Network> net(nemo::torus::construct(pcount, m, true, sigma, logging));
 
-	runComparisions(net);
-	delete net;
+	runComparisions(net.get());
 }
 #endif
 
