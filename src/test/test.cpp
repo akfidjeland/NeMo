@@ -324,6 +324,42 @@ runRing(unsigned ncount, unsigned delay, nemo::Configuration conf)
 }
 
 
+/* Run two small non-overlapping rings with different delays */
+void
+runDoubleRing(nemo::Configuration conf)
+{
+	/* Make sure we go around the ring at least a couple of times */
+	const unsigned ncount = 512;
+	const unsigned duration = ncount * 5 / 2;
+
+	boost::scoped_ptr<nemo::Network> net(new nemo::Network);
+
+	createRing(net.get(), ncount, 0, false, 1, 1);
+	createRing(net.get(), ncount, ncount, false, 1, 2);
+
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+
+	/* Stimulate a single neuron in each ring to get them going */
+	std::vector<unsigned> fstim;
+	fstim.push_back(0);
+	fstim.push_back(ncount);
+
+	sim->step(fstim);
+
+	for(unsigned ms=1; ms < duration; ++ms) {
+		const std::vector<unsigned>& fired = sim->step();
+		if(ms % 2 == 0) {
+			BOOST_CHECK_EQUAL(fired.size(), 2U);
+			BOOST_REQUIRE_EQUAL(fired[0], ms % ncount);
+			BOOST_REQUIRE_EQUAL(fired[1], ncount + (ms / 2) % ncount);
+		} else {
+			BOOST_CHECK_EQUAL(fired.size(), 1U);
+			BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
+		}
+	}
+}
+
+
 
 
 /* Run a regular ring network test, but with an additional variable-sized
@@ -447,6 +483,9 @@ BOOST_AUTO_TEST_SUITE(ring_tests)
 	}
 	BOOST_AUTO_TEST_CASE(n2000d80) {
 		runRing(2000, 80, conf); // ditto
+	}
+	BOOST_AUTO_TEST_CASE(delays) {
+		runDoubleRing(conf);
 	}
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -681,7 +720,8 @@ testHighFiring(backend_t backend, bool stdp)
 	}
 
 	for(unsigned ms = 0; ms < 1000; ++ms) {
-		BOOST_REQUIRE_NO_THROW(sim->step(fstim));
+		// BOOST_REQUIRE_NO_THROW(sim->step(fstim));
+		sim->step(fstim);
 	}
 }
 
