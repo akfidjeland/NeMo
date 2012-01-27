@@ -156,9 +156,9 @@ class ConnectivityMatrix
 
 		void printMemoryUsage(std::ostream&) const;
 
-		delay_dt* d_ndData() const;
+		delay_dt* d_ndData() const { return md_delays->d_data(); }
 
-		unsigned* d_ndFill() const;
+		unsigned* d_ndFill() const { return md_delays->d_fill(); }
 
 		/*! Fill in all relevant fields in global parameters data structure */
 		void setParameters(param_t*) const;

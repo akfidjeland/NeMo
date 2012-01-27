@@ -381,20 +381,5 @@ ConnectivityMatrix::setParameters(param_t* params) const
 
 
 
-delay_dt*
-ConnectivityMatrix::d_ndData() const
-{
-	return md_delays->d_data();
-}
-
-
-
-unsigned*
-ConnectivityMatrix::d_ndFill() const
-{
-	return md_delays->d_fill();
-}
-
-
 	} // end namespace cuda
 } // end namespace nemo
