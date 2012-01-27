@@ -35,23 +35,6 @@ namespace nemo {
 	namespace cuda {
 
 
-void
-setDelays(const construction::FcmIndex& index, NVector<uint64_t>* delays)
-{
-	using namespace boost::tuples;
-
-	for(construction::FcmIndex::iterator i = index.begin(); i != index.end(); ++i) {
-		const construction::FcmIndex::index_key& k = i->first;
-		pidx_t p = get<0>(k);
-		nidx_t n = get<1>(k);
-		delay_t delay1 = get<2>(k);
-		uint64_t bits = delays->getNeuron(p, n);
-		bits |= (uint64_t(0x1) << uint64_t(delay1-1));
-		delays->setNeuron(p, n, bits);
-	}
-	delays->moveToDevice();
-}
-
 
 ConnectivityMatrix::ConnectivityMatrix(
 		const nemo::network::Generator& net,
@@ -62,7 +45,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 	mhf_weights(WARP_SIZE, 0),
 	md_fcmPlaneSize(0),
 	md_fcmAllocated(0),
-	m_delays(1, mapper.partitionCount(), mapper.partitionSize(), true, false),
 	m_fractionalBits(conf.fractionalBits()),
 	m_writeOnlySynapses(conf.writeOnlySynapses())
 {
@@ -107,7 +89,6 @@ ConnectivityMatrix::ConnectivityMatrix(
 
 	md_rcm = runtime::RCM(mapper.partitionCount(), h_rcm);
 
-	setDelays(fcm_index, &m_delays);
 	md_delays.reset(new runtime::Delays(mapper.partitionCount(), fcm_index));
 
 	m_outgoing = Outgoing(mapper.partitionCount(), fcm_index);

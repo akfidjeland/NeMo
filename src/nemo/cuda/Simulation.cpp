@@ -286,7 +286,6 @@ Simulation::setParameters(size_t pitch1, size_t pitch32, unsigned maxDelay)
 	params.pitch32 = pitch32;
 	params.pitch64 = m_recentFiring.wordPitch();
 	checkPitch(m_currentStimulus.wordPitch(), params.pitch32);
-	checkPitch(m_cm.delayBits().wordPitch(), params.pitch64);
 	checkPitch(m_firingBuffer.wordPitch(), params.pitch1);
 	checkPitch(m_firingStimulus.wordPitch(), params.pitch1);;
 
@@ -391,7 +390,6 @@ Simulation::postfire()
 			// local spike delivery
 			m_lq.d_data(),
 			m_lq.d_fill(),
-			m_cm.delayBits().deviceData(),
 			m_cm.d_ndData(),
 			m_cm.d_ndFill()
 		));

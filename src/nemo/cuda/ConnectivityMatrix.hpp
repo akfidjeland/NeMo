@@ -156,8 +156,6 @@ class ConnectivityMatrix
 
 		void printMemoryUsage(std::ostream&) const;
 
-		const NVector<uint64_t>& delayBits() const { return m_delays; }
-
 		delay_dt* d_ndData() const;
 
 		unsigned* d_ndFill() const;
@@ -198,10 +196,7 @@ class ConnectivityMatrix
 
 		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */
-		NVector<uint64_t> m_delays;
-
 		boost::scoped_ptr<runtime::Delays> md_delays;
-
 
 		/* For spike delivery we need to keep track of all target partitions
 		 * for each neuron */
