@@ -118,6 +118,8 @@ Simulation::Simulation(
 	m_streamCompute(0),
 	m_streamCopy(0)
 {
+	using boost::format;
+
 	size_t pitch1 = m_firingBuffer.wordPitch();
 	size_t pitch32 = m_current.wordPitch();
 
@@ -142,6 +144,11 @@ Simulation::Simulation(
 	memcpyToDevice(md_partitionSize.get(), h_partitionSize);
 
 	if(m_stdp) {
+		if(m_cm.maxDelay() > 64) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("The network has synapses with delay %ums. The CUDA backend supports a maximum of 64ms when STDP is used")
+							% m_cm.maxDelay()));
+		}
 		configureStdp();
 	}
 	param_t* d_params = setParameters(pitch1, pitch32, net.maxDelay());
