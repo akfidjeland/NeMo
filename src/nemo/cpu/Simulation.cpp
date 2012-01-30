@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include <boost/format.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 #ifdef NEMO_CPU_OPENMP_ENABLED
 #include <omp.h>
@@ -276,8 +277,9 @@ Simulation::deliverSpikes()
 
 	/* convert current back to float */
 	unsigned fbits = getFractionalBits();
+	int ncount = boost::numeric_cast<int, unsigned>(m_neuronCount);
 #pragma omp parallel for default(shared)
-	for(int n=0; n < m_neuronCount; n++) {
+	for(int n=0; n < ncount; n++) {
 		m_currentE[n] = wfx_toFloat(mfx_currentE[n], fbits);
 		mfx_currentE[n] = 0U;
 		m_currentI[n] = wfx_toFloat(mfx_currentI[n], fbits);
