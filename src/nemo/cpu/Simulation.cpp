@@ -46,6 +46,14 @@ Simulation::Simulation(
 	m_currentExt(m_neuronCount, 0.0f),
 	m_fstim(m_neuronCount, 0)
 {
+	using boost::format;
+
+	if(net.maxDelay() > 64) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("The network has synapses with delay %ums. The CPU backend supports a maximum of 64 ms")
+						% net.maxDelay()));
+	}
+
 	/* Contigous local neuron indices */
 	nidx_t l_idx = 0;
 
