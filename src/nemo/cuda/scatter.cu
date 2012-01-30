@@ -69,37 +69,46 @@ scatterLocal(
 		unsigned nFired,
 		const nidx_dt* s_fired,
 		delay_dt g_delays[],
-		unsigned g_delaysFill[],
+		unsigned g_ndFill[],
 		unsigned* g_fill,
 		lq_entry_t* g_queue)
 {
 	/* This shared memory vector is quite small, so no need to reuse */
+	//! \todo rename this since we're dealing with two types of fill
 	__shared__ unsigned s_fill[MAX_DELAY];
 
 	lq_loadQueueFill(s_params.maxDelay, g_fill, s_fill);
 	__syncthreads();
 
+
 	/*! \todo do more than one neuron at a time. We can deal with
 	 * THREADS_PER_BLOCK/MAX_DELAY per iteration. */
-	for(unsigned iFired = 0; iFired < nFired; iFired++) {
+	for(unsigned bFired = 0; bFired < nFired; bFired+=THREADS_PER_BLOCK) {
 
-		unsigned neuron = s_fired[iFired];
+		__shared__ unsigned s_ndFill[THREADS_PER_BLOCK];
 
-		//! \todo pre-load these instead
-		__shared__ unsigned s_nDelays;
-		if(threadIdx.x == 0) {
-			s_nDelays = nd_loadFill(neuron, g_delaysFill);
+		if(bFired + threadIdx.x < nFired) {
+			/* Non-coalesced load: */
+			s_ndFill[threadIdx.x] = nd_loadFill(s_fired[bFired + threadIdx.x], g_ndFill);
 		}
 		__syncthreads();
 
+		for(unsigned iFired = 0;
+				iFired < THREADS_PER_BLOCK && bFired + iFired < nFired;
+				++iFired) {
+
+		unsigned neuron = s_fired[bFired + iFired];
+
+		unsigned ndFill = s_ndFill[iFired];
+
 		__shared__ delay_dt s_delays[MAX_DELAY];
 
-		nd_loadDelays(neuron, s_nDelays, g_delays, s_delays);
+		nd_loadDelays(neuron, ndFill, g_delays, s_delays);
 		__syncthreads();
 
-		for(unsigned bDelay = 0; bDelay < s_nDelays; bDelay += THREADS_PER_BLOCK) {
+		for(unsigned bDelay = 0; bDelay < ndFill; bDelay += THREADS_PER_BLOCK) {
 			unsigned iDelay = bDelay + threadIdx.x;
-			if(iDelay < s_nDelays) {
+			if(iDelay < ndFill) {
 				/* This write operation will almost certainly be non-coalesced.
 				 * It would be possible to stage data in smem, e.g. one warp
 				 * per queue slot. 64 slots would require 64 x 32 x 4B = 8kB.
@@ -108,6 +117,7 @@ scatterLocal(
 				lq_enque(neuron, cycle, s_params.maxDelay, s_delays[iDelay], s_fill, g_queue);
 				DEBUG_MSG_SYNAPSE("c%u[local scatter]: enqueue n%u d%u\n", cycle, neuron, s_delays[iDelay]+1);
 			}
+		}
 		}
 	}
 	__syncthreads();
