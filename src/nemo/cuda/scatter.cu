@@ -58,7 +58,7 @@ loadSparseFiring(unsigned* g_nFired, size_t pitch32, nidx_dt* g_fired, unsigned*
  * \param nFired number of valid entries in s_fired
  * \param s_fired shared memory buffer containing the recently fired neurons
  * \param g_delays delay bits for each neuron
- * \param g_fill queue fill for local queue
+ * \param g_lqFill queue fill for local queue
  * \param g_queue global memory for the local queue
  */
 __device__
@@ -68,18 +68,16 @@ scatterLocal(
 		const param_t& s_params,
 		unsigned nFired,
 		const nidx_dt* s_fired,
-		delay_dt g_delays[],
 		unsigned g_ndFill[],
-		unsigned* g_fill,
-		lq_entry_t* g_queue)
+		delay_dt g_delays[],
+		unsigned g_lqFill[],
+		lq_entry_t g_queue[])
 {
 	/* This shared memory vector is quite small, so no need to reuse */
-	//! \todo rename this since we're dealing with two types of fill
-	__shared__ unsigned s_fill[MAX_DELAY];
+	__shared__ unsigned s_lqFill[MAX_DELAY];
 
-	lq_loadQueueFill(s_params.maxDelay, g_fill, s_fill);
+	lq_loadQueueFill(s_params.maxDelay, g_lqFill, s_lqFill);
 	__syncthreads();
-
 
 	/*! \todo do more than one neuron at a time. We can deal with
 	 * THREADS_PER_BLOCK/MAX_DELAY per iteration. */
@@ -97,31 +95,30 @@ scatterLocal(
 				iFired < THREADS_PER_BLOCK && bFired + iFired < nFired;
 				++iFired) {
 
-		unsigned neuron = s_fired[bFired + iFired];
+			__shared__ delay_dt s_delays[MAX_DELAY];
 
-		unsigned ndFill = s_ndFill[iFired];
+			unsigned neuron = s_fired[bFired + iFired];
+			unsigned ndFill = s_ndFill[iFired];
 
-		__shared__ delay_dt s_delays[MAX_DELAY];
+			nd_loadDelays(neuron, ndFill, g_delays, s_delays);
+			__syncthreads();
 
-		nd_loadDelays(neuron, ndFill, g_delays, s_delays);
-		__syncthreads();
-
-		for(unsigned bDelay = 0; bDelay < ndFill; bDelay += THREADS_PER_BLOCK) {
-			unsigned iDelay = bDelay + threadIdx.x;
-			if(iDelay < ndFill) {
-				/* This write operation will almost certainly be non-coalesced.
-				 * It would be possible to stage data in smem, e.g. one warp
-				 * per queue slot. 64 slots would require 64 x 32 x 4B = 8kB.
-				 * Managaging this data can be costly, however, as we need to
-				 * flush buffers as we go. */
-				lq_enque(neuron, cycle, s_params.maxDelay, s_delays[iDelay], s_fill, g_queue);
-				DEBUG_MSG_SYNAPSE("c%u[local scatter]: enqueue n%u d%u\n", cycle, neuron, s_delays[iDelay]+1);
+			for(unsigned bDelay = 0; bDelay < ndFill; bDelay += THREADS_PER_BLOCK) {
+				unsigned iDelay = bDelay + threadIdx.x;
+				if(iDelay < ndFill) {
+					/* This write operation will almost certainly be non-coalesced.
+					 * It would be possible to stage data in smem, e.g. one warp
+					 * per queue slot. 64 slots would require 64 x 32 x 4B = 8kB.
+					 * Managaging this data can be costly, however, as we need to
+					 * flush buffers as we go. */
+					lq_enque(neuron, cycle, s_params.maxDelay, s_delays[iDelay], s_lqFill, g_queue);
+					DEBUG_MSG_SYNAPSE("c%u[local scatter]: enqueue n%u d%u\n", cycle, neuron, s_delays[iDelay]+1);
+				}
 			}
-		}
 		}
 	}
 	__syncthreads();
-	lq_storeQueueFill(s_params.maxDelay, s_fill, g_fill);
+	lq_storeQueueFill(s_params.maxDelay, s_lqFill, g_lqFill);
 }
 
 
@@ -288,7 +285,7 @@ scatter(uint32_t cycle,
 
 	scatterLocal(cycle, s_params,
 			s_nFired, s_fired,
-			g_ndData, g_ndFill,
+			g_ndFill, g_ndData,
 			g_lqFill, g_lqData);
 
 	scatterGlobal(cycle,
