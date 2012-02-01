@@ -72,6 +72,14 @@ nemo_version()
 }
 
 
+
+void
+nemo_add_plugin_path(const char* dir)
+{
+	nemo::addPluginPath(std::string(dir));
+}
+
+
 nemo_status_t
 nemo_cuda_device_count(unsigned* count)
 {

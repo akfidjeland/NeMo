@@ -56,6 +56,13 @@ const char*
 version();
 
 
+
+/*! \copydoc nemo::Plugin:addPath */
+NEMO_DLL_PUBLIC
+void
+addPluginPath(const std::string& dir);
+
+
 }
 
 #endif

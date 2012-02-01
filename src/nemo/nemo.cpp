@@ -194,4 +194,12 @@ version()
 }
 
 
+
+void
+addPluginPath(const std::string& dir)
+{
+	Plugin::addPath(dir);
+}
+
+
 }

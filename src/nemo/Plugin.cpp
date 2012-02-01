@@ -25,6 +25,9 @@ const char* HOME_ENV_VAR = "HOME";
 namespace nemo {
 
 
+std::vector<boost::filesystem::path> Plugin::s_extraPaths;
+
+
 Plugin::Plugin(const std::string& name) :
 	m_handle(NULL)
 {
@@ -125,7 +128,7 @@ Plugin::setpath(const std::string& subdir)
 	using boost::format;
 	using namespace boost::filesystem;
 
-	std::vector<path> paths;
+	std::vector<path> paths = s_extraPaths;
 
 	path userPath = userDirectory() / subdir;
 	if(exists(userPath)) {
@@ -182,6 +185,21 @@ Plugin::function(const std::string& name) const
 		throw nemo::exception(NEMO_DL_ERROR, dl_error());
 	}
 	return fn;
+}
+
+
+
+void
+Plugin::addPath(const std::string& dir)
+{
+	using boost::format;
+
+	boost::filesystem::path path(dir);
+	if(!exists(path) && !is_directory(path)) {
+		throw nemo::exception(NEMO_DL_ERROR,
+				str(format("User-specified path %s could not be found") % dir));
+	}
+	s_extraPaths.push_back(path);
 }
 
 

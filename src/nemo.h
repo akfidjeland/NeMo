@@ -57,6 +57,11 @@ NEMO_DLL_PUBLIC
 const char* nemo_version();
 
 
+/*! \copydoc nemo::Plugin::addPath */
+NEMO_DLL_PUBLIC
+void nemo_add_plugin_path(const char* dir);
+
+
 //-----------------------------------------------------------------------------
 // HARDWARE CONFIGURATION
 //-----------------------------------------------------------------------------

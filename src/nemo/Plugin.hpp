@@ -74,6 +74,18 @@ class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 		 */
 		static boost::filesystem::path systemDirectory();
 
+		/*! Add a directory to the NeMo plugin search path
+		 *
+		 * \param dir name of a directory containing NeMo plugins
+		 *
+		 * Paths added manually are search before the default user and system
+		 * paths. If multiple paths are added, the most recently added path is
+		 * searched first.
+		 *
+		 * \throws nemo::exception if the directory is not found
+		 */
+		static void addPath(const std::string& dir);
+
 	private:
 
 		dl_handle m_handle;
@@ -86,6 +98,9 @@ class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 
 		/*! Load the library */
 		void load(const std::string& name);
+
+		/*! Additional paths where to look for plugins */
+		static std::vector<boost::filesystem::path> s_extraPaths;
 };
 
 }
