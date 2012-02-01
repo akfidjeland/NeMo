@@ -73,10 +73,11 @@ nemo_version()
 
 
 
-void
+nemo_status_t
 nemo_add_plugin_path(const char* dir)
 {
-	nemo::addPluginPath(std::string(dir));
+	CALL(nemo::addPluginPath(std::string(dir)));
+	return g_lastCallStatus;
 }
 
 

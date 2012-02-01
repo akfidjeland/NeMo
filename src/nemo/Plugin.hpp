@@ -78,7 +78,7 @@ class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 		 *
 		 * \param dir name of a directory containing NeMo plugins
 		 *
-		 * Paths added manually are search before the default user and system
+		 * Paths added manually are searched before the default user and system
 		 * paths. If multiple paths are added, the most recently added path is
 		 * searched first.
 		 *
