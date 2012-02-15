@@ -144,7 +144,13 @@ Plugin::setpath(const std::string& subdir)
 	using boost::format;
 	using namespace boost::filesystem;
 
-	std::vector<path> paths = s_extraPaths;
+	std::vector<path> paths;
+	for(path_iterator i = extraPaths_begin(); i != extraPaths_end(); ++i ) {
+		path extraPath = *i / subdir;
+		if(exists(extraPath)) {
+			paths.push_back(extraPath);
+		}
+	}
 
 	path userPath = userDirectory() / subdir;
 	if(exists(userPath)) {
