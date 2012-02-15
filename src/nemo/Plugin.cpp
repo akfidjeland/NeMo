@@ -122,6 +122,22 @@ Plugin::systemDirectory()
 
 
 
+Plugin::path_iterator
+Plugin::extraPaths_begin()
+{
+	return s_extraPaths.begin();
+}
+
+
+
+Plugin::path_iterator
+Plugin::extraPaths_end()
+{
+	return s_extraPaths.end();
+}
+
+
+
 void
 Plugin::setpath(const std::string& subdir)
 {

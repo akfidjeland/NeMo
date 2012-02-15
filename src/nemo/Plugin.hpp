@@ -86,6 +86,12 @@ class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 		 */
 		static void addPath(const std::string& dir);
 
+		typedef std::vector<boost::filesystem::path> path_collection;
+		typedef path_collection::const_iterator path_iterator;
+
+		static path_iterator extraPaths_begin();
+		static path_iterator extraPaths_end();
+
 	private:
 
 		dl_handle m_handle;

@@ -49,6 +49,13 @@ configurationFile(const std::string& name)
 	using boost::format;
 	using namespace boost::filesystem;
 
+	for(Plugin::path_iterator i = Plugin::extraPaths_begin(); i != Plugin::extraPaths_end(); ++i ) {
+		path extraPath = *i / (name + ".ini");
+		if(exists(extraPath)) {
+			return extraPath;
+		}
+	}
+
 	path userPath = Plugin::userDirectory() / (name + ".ini");
 	if(exists(userPath)) {
 		return userPath;
