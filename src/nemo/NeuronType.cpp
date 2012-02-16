@@ -8,7 +8,6 @@
  */
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/format.hpp>
 
@@ -125,6 +124,8 @@ NeuronType::parseConfigurationFile(const std::string& name)
 	;
 
 	fs::path filename = configurationFile(name);
+
+	m_pluginDir = filename.parent_path();
 
 	fs::fstream file(filename, std::ios::in);
 	if(!file.is_open()) {

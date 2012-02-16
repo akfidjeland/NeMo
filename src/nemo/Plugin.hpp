@@ -51,7 +51,7 @@ class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 		 * Plugins are always located in a subdirectory, as they are backend-specific.
 		 * There is one system plugin directory and one per-user system directory.
 		 */
-		Plugin(const std::string& name, const std::string& subdir);
+		Plugin(const boost::filesystem::path& dir, const std::string& name);
 
 		~Plugin();
 
@@ -100,11 +100,11 @@ class NEMO_BASE_DLL_PUBLIC Plugin : private boost::noncopyable
 		/*! Initialise the loader */
 		void init(const std::string& name);
 
-		/*! Set NeMo-specific search paths */
-		void setpath(const std::string& subdir);
-
-		/*! Load the library */
+		/*! Load the library, using standard search paths */
 		void load(const std::string& name);
+
+		/*! Load the library based on absolute path */
+		void load(const boost::filesystem::path& dir, const std::string& name);
 
 		/*! Additional paths where to look for plugins */
 		static std::set<boost::filesystem::path> s_extraPaths;

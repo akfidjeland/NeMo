@@ -11,6 +11,7 @@
  */
 
 #include <string>
+#include <boost/filesystem.hpp>
 #include <nemo/config.h>
 
 namespace nemo {
@@ -65,6 +66,8 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		bool usesRcmForward()  const { return m_rcmForward;  }
 		bool usesRcmWeights() const { return m_rcmWeights; }
 
+		const boost::filesystem::path& pluginDir() const { return m_pluginDir; }
+
 	private :
 
 		size_t m_nParam;
@@ -89,6 +92,9 @@ class NEMO_BASE_DLL_PUBLIC NeuronType
 		 * whole system, whereas the current state is available to some subset
 		 * of the system (e.g. a thread). */
 		unsigned m_stateHistory;
+
+		/*! Directory where .ini file was found */
+		boost::filesystem::path m_pluginDir;
 
 		void parseConfigurationFile(const std::string& name);
 };

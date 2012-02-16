@@ -42,13 +42,12 @@ Plugin::Plugin(const std::string& name) :
 
 
 
-Plugin::Plugin(const std::string& name, const std::string& subdir) :
+Plugin::Plugin(const boost::filesystem::path& dir, const std::string& name) :
 	m_handle(NULL)
 {
 	init(name);
 	try {
-		setpath(subdir);
-		load(name);
+		load(dir, name);
 	} catch(nemo::exception&) {
 		dl_exit();
 		throw;
@@ -190,6 +189,23 @@ Plugin::load(const std::string& name)
 {
 	using boost::format;
 	m_handle = dl_load(dl_libname(name).c_str());
+	if(m_handle == NULL) {
+		throw nemo::exception(NEMO_DL_ERROR,
+				str(format("Error when loading plugin %s: %s")
+					% dl_libname(name) % dl_error()));
+	}
+}
+
+
+
+void
+Plugin::load(const boost::filesystem::path& dir, const std::string& name)
+{
+	using boost::format;
+	using namespace boost::filesystem;
+
+	path fullpath = dir / path(dl_libname(name));
+	m_handle = dl_load(fullpath.string().c_str());
 	if(m_handle == NULL) {
 		throw nemo::exception(NEMO_DL_ERROR,
 				str(format("Error when loading plugin %s: %s")

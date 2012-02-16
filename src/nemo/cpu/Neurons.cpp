@@ -16,7 +16,7 @@ Neurons::Neurons(const nemo::network::Generator& net,
 	m_stateCurrent(0),
 	m_size(0),
 	m_rng(net.neuronCount(type_id)),
-	m_plugin(m_type.name(), "cpu"),
+	m_plugin(m_type.pluginDir() / "cpu", m_type.name()),
 	m_update_neurons((cpu_update_neurons_t*) m_plugin.function("cpu_update_neurons"))
 {
 	using namespace nemo::network;
