@@ -17,6 +17,7 @@
 #cmakedefine NEMO_CUDA_DEVICE_ASSERTIONS
 #cmakedefine NEMO_CPU_DEBUG_TRACE
 #cmakedefine NEMO_CPU_OPENMP_ENABLED
+#cmakedefine NEMO_BRIAN_ENABLED
 #cmakedefine NEMO_WEIGHT_FIXED_POINT_SATURATION
 
 #cmakedefine NEMO_VERSION "@NEMO_VERSION@"
@@ -129,8 +130,12 @@ const unsigned NEMO_MAX_NEURON_ARGS = 16;
 #if defined(_WIN32) && (defined(NEMO_BASE_EXPORTS) || defined(NEMO_CUDA_EXPORTS) || defined(NEMO_CPU_EXPORTS) || defined(NEMO_PLUGIN_EXPORTS) || defined(NEMO_EXPORTS))
 /* Suppress useless warning about DLL exporting of template classes */
 #pragma warning(disable:4251)
+
 /* Suppress warnings about the great evils of the standard libraries */
 #pragma warning(disable:4996)
+
+/* Suppress warnings about non dll-interface class used as base for dll-interface class */
+#pragma warning(disable:4725)
 #endif
 
 

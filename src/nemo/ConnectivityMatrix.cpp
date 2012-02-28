@@ -89,7 +89,7 @@ ConnectivityMatrix::ConnectivityMatrix(
 	//! \todo avoid two passes here
 	bool verifySources = true;
 	finalizeForward(mapper, verifySources);
-	m_rcm = runtime::RCM(m_racc);
+	m_rcm.reset(new runtime::RCM(m_racc));
 }
 
 
@@ -197,23 +197,23 @@ ConnectivityMatrix::accumulateStdp(const std::vector<uint64_t>& recentFiring)
 		return;
 	}
 
-	for(runtime::RCM::warp_iterator i = m_rcm.warp_begin();
-			i != m_rcm.warp_end(); i++) {
+	for(runtime::RCM::warp_iterator i = m_rcm->warp_begin();
+			i != m_rcm->warp_end(); i++) {
 
 		const nidx_t target = i->first;
 		const std::vector<size_t>& warps = i->second;
 
 		if(recentFiring[target] & m_stdp->postFireMask()) {
 
-			size_t remaining = m_rcm.indegree(target);
+			size_t remaining = m_rcm->indegree(target);
 
 			for(std::vector<size_t>::const_iterator wi = warps.begin();
 					wi != warps.end(); ++wi) {
 
-				const RSynapse* rdata_ptr = m_rcm.data(*wi);
-				fix_t* accumulator = m_rcm.accumulator(*wi);
+				const RSynapse* rdata_ptr = m_rcm->data(*wi);
+				fix_t* accumulator = m_rcm->accumulator(*wi);
 
-				for(unsigned s=0; s < m_rcm.WIDTH && remaining--; s++) {
+				for(unsigned s=0; s < m_rcm->WIDTH && remaining--; s++) {
 					const RSynapse& rdata = rdata_ptr[s];
 					uint64_t preFiring = recentFiring[rdata.source] >> rdata.delay;
 					fix_t w_diff = m_stdp->weightChange(preFiring, rdata.source, target);
@@ -255,24 +255,24 @@ ConnectivityMatrix::applyStdp(float reward)
 	}
 
 	if(fx_reward == 0) {
-		m_rcm.clearAccumulator();
+		m_rcm->clearAccumulator();
 	}
 
-	for(runtime::RCM::warp_iterator i = m_rcm.warp_begin();
-			i != m_rcm.warp_end(); i++) {
+	for(runtime::RCM::warp_iterator i = m_rcm->warp_begin();
+			i != m_rcm->warp_end(); i++) {
 
 		const nidx_t target = i->first;
 		const std::vector<size_t>& warps = i->second;
-		size_t remaining = m_rcm.indegree(target);
+		size_t remaining = m_rcm->indegree(target);
 
 		for(std::vector<size_t>::const_iterator wi = warps.begin();
 				wi != warps.end(); ++wi) {
 
-			const RSynapse* rdata_ptr = m_rcm.data(*wi);
-			const uint32_t* forward = m_rcm.forward(*wi);
-			fix_t* accumulator = m_rcm.accumulator(*wi);
+			const RSynapse* rdata_ptr = m_rcm->data(*wi);
+			const uint32_t* forward = m_rcm->forward(*wi);
+			fix_t* accumulator = m_rcm->accumulator(*wi);
 
-			for(unsigned s=0; s < m_rcm.WIDTH && remaining--; s++) {
+			for(unsigned s=0; s < m_rcm->WIDTH && remaining--; s++) {
 
 				const RSynapse& rsynapse = rdata_ptr[s];
 				fix_t* w_old = weight(rsynapse, forward[s]);

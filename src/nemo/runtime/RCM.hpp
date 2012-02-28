@@ -10,6 +10,7 @@
  * licence along with nemo. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/unordered_map.hpp>
 #include <nemo/construction/RCM.hpp>
 #include <nemo/types.hpp>
 
@@ -35,14 +36,12 @@ class NEMO_BASE_DLL_PUBLIC RCM
 
 		typedef warp_map::const_iterator warp_iterator;
 
-		RCM() { }
-
 		/*! Create a runtime RCM 
 		 *
 		 * The data in the constrution-time RCM are freed as a side effect. In
 		 * effect this class takes ownership of the underlying data
 		 */
-		RCM(construction_t& rcm);
+		explicit RCM(construction_t& rcm);
 
 		/*! Set accumulator field to all zero */
 		void clearAccumulator();

@@ -74,7 +74,8 @@ scatter(cudaStream_t stream,
 		unsigned* d_gqFill,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
-		uint64_t* d_delays);
+		delay_dt d_ndData[],
+		unsigned d_ndFill[]);
 
 
 cudaError_t
@@ -102,5 +103,16 @@ configureStdp(
 void initLog();
 void flushLog();
 void endLog();
+
+#ifdef NEMO_BRIAN_ENABLED
+cudaError_t
+compact(cudaStream_t stream,
+		unsigned* d_partitionSize,
+		param_t* d_params,
+		unsigned partitionCount,
+		unsigned d_fired[],
+		unsigned d_nFired[],
+		nidx_dt d_firedCompact[]);
+#endif
 
 #endif

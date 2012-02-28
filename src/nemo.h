@@ -57,6 +57,23 @@ NEMO_DLL_PUBLIC
 const char* nemo_version();
 
 
+/*! Add a directory to the NeMo plugin search path
+ *
+ * \param dir name of a directory containing NeMo plugins
+ *
+ * Paths added manually are searched before the default user and system
+ * paths. If multiple paths are added, the most recently added path is
+ * searched first.
+ *
+ * \return
+ * 		NEMO_OK only if the specified directory is found, return some other
+ * 		value otherwise.
+ */
+NEMO_DLL_PUBLIC
+nemo_status_t
+nemo_add_plugin_path(const char* dir);
+
+
 //-----------------------------------------------------------------------------
 // HARDWARE CONFIGURATION
 //-----------------------------------------------------------------------------

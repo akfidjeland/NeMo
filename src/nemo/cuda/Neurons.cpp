@@ -40,7 +40,7 @@ Neurons::Neurons(const network::Generator& net,
 	m_paramDirty(false),
 	m_stateDirty(false),
 	m_basePartition(mapper.typeBase(type_id)),
-	m_plugin(m_type.name(), "cuda"),
+	m_plugin(m_type.pluginDir() / "cuda", m_type.name()),
 	m_update_neurons((cuda_update_neurons_t*) m_plugin.function("cuda_update_neurons"))
 {
 	if(m_type.usesNormalRNG()) {

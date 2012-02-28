@@ -12,6 +12,7 @@
 #include "kernel.cu_h"
 #include "log.cu_h"
 
+#include "delays.cu"
 #include "device_assert.cu"
 #include "bitvector.cu"
 #include "double_buffer.cu"
@@ -24,3 +25,7 @@
 #include "scatter.cu"
 #include "stdp.cu"
 #include "applySTDP.cu"
+
+#ifdef NEMO_BRIAN_ENABLED
+#	include "compact.cu"
+#endif

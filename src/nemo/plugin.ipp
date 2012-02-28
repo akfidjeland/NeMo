@@ -27,12 +27,6 @@ const char* dl_error();
 /* Return function pointer to given symbol or NULL if there's an error. */
 void* dl_sym(dl_handle, const char* name);
 
-/*! Set plugin search path, returning success */
-bool dl_setsearchpath(const char* dir);
-
-/*! Append to plugin search path, returning success */
-bool dl_addsearchdir(const char* dir);
-
 /*! \return library name with any required extension */
 std::string dl_libname(std::string baseName);
 
@@ -79,18 +73,6 @@ void*
 dl_sym(dl_handle hdl, const char* name)
 {
 	return GetProcAddress(hdl, name);
-}
-
-bool
-dl_setsearchpath(const char* dir)
-{
-	return SetDllDirectory(dir) != 0;
-}
-
-bool
-dl_addsearchdir(const char* dir)
-{
-	return SetDllDirectory(dir) != 0;
 }
 
 std::string
@@ -143,18 +125,6 @@ void*
 dl_sym(dl_handle hdl, const char* name)
 {
 	return lt_dlsym(hdl, name);
-}
-
-bool
-dl_setsearchpath(const char* dir)
-{
-	return lt_dlsetsearchpath(dir) == 0;
-}
-
-bool
-dl_addsearchdir(const char* dir)
-{
-	return lt_dladdsearchdir(dir) == 0;
 }
 
 std::string

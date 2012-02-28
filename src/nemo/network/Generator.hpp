@@ -43,7 +43,7 @@ class NEMO_BASE_DLL_PUBLIC Generator
 		/*! \return number of neurons of a particular type */
 		virtual unsigned neuronCount(unsigned type) const = 0;
 
-		/*! \return maximum delay (in milliseconds) in the network */
+		/*! \return maximum delay (in time steps) in the network */
 		virtual unsigned maxDelay() const = 0;
 
 		virtual unsigned minNeuronIndex() const = 0;

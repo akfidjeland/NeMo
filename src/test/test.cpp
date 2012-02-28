@@ -297,12 +297,14 @@ BOOST_AUTO_TEST_SUITE_END()
 
 
 void
-runRing(unsigned ncount, nemo::Configuration conf)
+runRing(backend_t backend, unsigned ncount, unsigned delay)
 {
 	/* Make sure we go around the ring at least a couple of times */
 	const unsigned duration = ncount * 5 / 2;
 
-	boost::scoped_ptr<nemo::Network> net(createRing(ncount));
+	nemo::Configuration conf = configuration(false, 1024);
+	setBackend(backend, conf);
+	boost::scoped_ptr<nemo::Network> net(createRing(ncount, 0, false, 1, delay));
 	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
 
 	/* Stimulate a single neuron to get the ring going */
@@ -310,8 +312,54 @@ runRing(unsigned ncount, nemo::Configuration conf)
 
 	for(unsigned ms=1; ms < duration; ++ms) {
 		const std::vector<unsigned>& fired = sim->step();
-		BOOST_CHECK_EQUAL(fired.size(), 1U);
-		BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
+		if(delay == 1) {
+			BOOST_CHECK_EQUAL(fired.size(), 1U);
+			BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
+		} else if(ms % delay == 0) {
+			BOOST_CHECK_EQUAL(fired.size(), 1U);
+			BOOST_REQUIRE_EQUAL(fired.front(), (ms / delay) % ncount);
+		} else {
+			BOOST_CHECK_EQUAL(fired.size(), 0U);
+		}
+	}
+}
+
+
+/* Run two small non-overlapping rings with different delays */
+void
+runDoubleRing(backend_t backend)
+{
+	/* Make sure we go around the ring at least a couple of times */
+	const unsigned ncount = 512;
+	const unsigned duration = ncount * 5 / 2;
+
+	nemo::Configuration conf = configuration(false, 1024);
+	setBackend(backend, conf);
+
+	boost::scoped_ptr<nemo::Network> net(new nemo::Network);
+
+	createRing(net.get(), ncount, 0, false, 1, 1);
+	createRing(net.get(), ncount, ncount, false, 1, 2);
+
+	boost::scoped_ptr<nemo::Simulation> sim(nemo::simulation(*net, conf));
+
+	/* Stimulate a single neuron in each ring to get them going */
+	std::vector<unsigned> fstim;
+	fstim.push_back(0);
+	fstim.push_back(ncount);
+
+	sim->step(fstim);
+
+	for(unsigned ms=1; ms < duration; ++ms) {
+		const std::vector<unsigned>& fired = sim->step();
+		if(ms % 2 == 0) {
+			BOOST_CHECK_EQUAL(fired.size(), 2U);
+			BOOST_REQUIRE_EQUAL(fired[0], ms % ncount);
+			BOOST_REQUIRE_EQUAL(fired[1], ncount + (ms / 2) % ncount);
+		} else {
+			BOOST_CHECK_EQUAL(fired.size(), 1U);
+			BOOST_REQUIRE_EQUAL(fired.front(), ms % ncount);
+		}
 	}
 }
 
@@ -421,19 +469,19 @@ testFixedPointSaturation(backend_t backend)
 
 
 BOOST_AUTO_TEST_SUITE(ring_tests)
-	nemo::Configuration conf = configuration(false, 1024);
-	BOOST_AUTO_TEST_CASE(n1000) {
-		runRing(1000, conf); // less than a single partition on CUDA backend
-	}
-	BOOST_AUTO_TEST_CASE(n1024) {
-		runRing(1024, conf); // exactly one partition on CUDA backend
-	}
-	BOOST_AUTO_TEST_CASE(n2000) {
-		runRing(2000, conf); // multiple partitions on CUDA backend
-	}
-	BOOST_AUTO_TEST_CASE(n4000) {
-		runRing(4000, conf); // ditto
-	}
+	// less than a single partition on CUDA backend
+	TEST_ALL_BACKENDS_N(n1000, runRing, 1000, 1);
+
+	// exactly one partition on CUDA backend
+	TEST_ALL_BACKENDS_N(n1024, runRing, 1024, 1);
+
+	// multiple partitions on CUDA backend
+	TEST_ALL_BACKENDS_N(n2000, runRing, 2000, 1);
+
+	TEST_ALL_BACKENDS_N(n4000, runRing, 4000, 1); // ditto
+	TEST_ALL_BACKENDS_N(n2000d20, runRing, 2000, 20); // ditto
+	TEST_ALL_BACKENDS_N(n2000d80, runRing, 2000, 80); // ditto
+	TEST_ALL_BACKENDS(delays, runDoubleRing);
 BOOST_AUTO_TEST_SUITE_END()
 
 
@@ -666,7 +714,8 @@ testHighFiring(backend_t backend, bool stdp)
 	}
 
 	for(unsigned ms = 0; ms < 1000; ++ms) {
-		BOOST_REQUIRE_NO_THROW(sim->step(fstim));
+		// BOOST_REQUIRE_NO_THROW(sim->step(fstim));
+		sim->step(fstim);
 	}
 }
 

@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include <boost/format.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 #ifdef NEMO_CPU_OPENMP_ENABLED
 #include <omp.h>
@@ -46,6 +47,14 @@ Simulation::Simulation(
 	m_currentExt(m_neuronCount, 0.0f),
 	m_fstim(m_neuronCount, 0)
 {
+	using boost::format;
+
+	if(net.maxDelay() > 64) {
+		throw nemo::exception(NEMO_INVALID_INPUT,
+				str(format("The network has synapses with delay %ums. The CPU backend supports a maximum of 64 ms")
+						% net.maxDelay()));
+	}
+
 	/* Contigous local neuron indices */
 	nidx_t l_idx = 0;
 
@@ -101,6 +110,31 @@ Simulation::fire()
 	m_timer.step();
 }
 
+
+
+#ifdef NEMO_BRIAN_ENABLED
+std::pair<float*, float*>
+Simulation::propagate_raw(uint32_t* fired, int nfired)
+{
+	//! \todo assert that STDP is not enabled
+
+	/* convert the input firing to the format required by deliverSpikes */
+#pragma omp parallel for default(shared)
+	for(unsigned n=0; n <= m_mapper.maxGlobalIdx(); ++n) {
+		m_recentFiring[n] <<= 1;
+	}
+
+#pragma omp parallel for default(shared)
+	for(int i=0; i < nfired; ++i) {
+		uint32_t n = fired[i];
+		m_recentFiring[n] |= uint64_t(1);
+	}
+	deliverSpikes();
+	m_timer.step();
+
+	return std::make_pair<float*, float*>(&m_currentE[0], &m_currentI[0]);
+}
+#endif
 
 
 void
@@ -243,8 +277,9 @@ Simulation::deliverSpikes()
 
 	/* convert current back to float */
 	unsigned fbits = getFractionalBits();
+	int ncount = boost::numeric_cast<int, unsigned>(m_neuronCount);
 #pragma omp parallel for default(shared)
-	for(int n=0; n < m_neuronCount; n++) {
+	for(int n=0; n < ncount; n++) {
 		m_currentE[n] = wfx_toFloat(mfx_currentE[n], fbits);
 		mfx_currentE[n] = 0U;
 		m_currentI[n] = wfx_toFloat(mfx_currentI[n], fbits);

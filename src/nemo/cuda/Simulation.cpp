@@ -88,26 +88,12 @@ void
 checkPitch(size_t found, size_t expected)
 {
 	using boost::format;
-	if(expected != 0 && expected != found) {
+	if(found != 0 && expected != found) {
 		throw nemo::exception(NEMO_CUDA_MEMORY_ERROR,
 				str(format("Pitch mismatch in device memory allocation. Found %u, expected %u")
 					% found % expected));
 	}
 }
-
-
-
-void
-setPitch(size_t found, size_t* expected)
-{
-	if(*expected == 0) {
-		*expected = found;
-	} else {
-		checkPitch(found, *expected);
-	}
-}
-
-
 
 
 
@@ -117,7 +103,7 @@ Simulation::Simulation(
 	m_mapper(mapCompact(net, conf.cudaPartitionSize())),
 	m_conf(conf),
 	m_cm(net, conf, m_mapper),
-	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize()),
+	m_lq(m_mapper.partitionCount(), m_mapper.partitionSize(), std::max(1U, net.maxDelay())),
 	m_recentFiring(2, m_mapper.partitionCount(), m_mapper.partitionSize(), false, false),
 	m_firingStimulus(m_mapper.partitionCount()),
 	m_currentStimulus(1, m_mapper.partitionCount(), m_mapper.partitionSize(), true, true),
@@ -132,8 +118,10 @@ Simulation::Simulation(
 	m_streamCompute(0),
 	m_streamCopy(0)
 {
-	size_t pitch1 = 0;
-	size_t pitch32 = 0;
+	using boost::format;
+
+	size_t pitch1 = m_firingBuffer.wordPitch();
+	size_t pitch32 = m_current.wordPitch();
 
 	/* Populate all neuron collections */
 	std::vector<unsigned> h_partitionSize;
@@ -146,8 +134,8 @@ Simulation::Simulation(
 		//! \todo could do mapping here to avoid two passes over neurons
 		/* Wrap in smart pointer to ensure the class is not copied */
 		boost::shared_ptr<Neurons> ns(new Neurons(net, type_id, m_mapper));
-		setPitch(ns->wordPitch32(), &pitch32);
-		setPitch(ns->wordPitch1(), &pitch1);
+		checkPitch(ns->wordPitch32(), pitch32);
+		checkPitch(ns->wordPitch1(), pitch1);
 		//! \todo verify contigous range
 		std::copy(ns->psize_begin(), ns->psize_end(), std::back_inserter(h_partitionSize));
 		m_neurons.push_back(ns);
@@ -156,9 +144,14 @@ Simulation::Simulation(
 	memcpyToDevice(md_partitionSize.get(), h_partitionSize);
 
 	if(m_stdp) {
+		if(m_cm.maxDelay() > 64) {
+			throw nemo::exception(NEMO_INVALID_INPUT,
+					str(format("The network has synapses with delay %ums. The CUDA backend supports a maximum of 64ms when STDP is used")
+							% m_cm.maxDelay()));
+		}
 		configureStdp();
 	}
-	param_t* d_params = setParameters(pitch1, pitch32);
+	param_t* d_params = setParameters(pitch1, pitch32, net.maxDelay());
 	resetTimer();
 
 	CUDA_SAFE_CALL(cudaStreamCreate(&m_streamCompute));
@@ -289,23 +282,17 @@ Simulation::d_allocated() const
 }
 
 
-/*! Set common pitches and check that all relevant arrays have the same pitch.
- *
- * The kernel uses a single pitch for all 64-, 32-, and 1-bit per-neuron data
- *
- * \param pitch1 pitch of 1-bit per-neuron data
- * \param pitch32 pitch of 32-bit per-neuron data
- */
 param_t*
-Simulation::setParameters(size_t pitch1, size_t pitch32)
+Simulation::setParameters(size_t pitch1, size_t pitch32, unsigned maxDelay)
 {
 	param_t params;
 
+	/* Need a max of at least 1 in order for local queue to be non-empty */
+	params.maxDelay = std::max(1U, maxDelay);
 	params.pitch1 = pitch1;
 	params.pitch32 = pitch32;
 	params.pitch64 = m_recentFiring.wordPitch();
 	checkPitch(m_currentStimulus.wordPitch(), params.pitch32);
-	checkPitch(m_cm.delayBits().wordPitch(), params.pitch64);
 	checkPitch(m_firingBuffer.wordPitch(), params.pitch1);
 	checkPitch(m_firingStimulus.wordPitch(), params.pitch1);;
 
@@ -410,7 +397,9 @@ Simulation::postfire()
 			// local spike delivery
 			m_lq.d_data(),
 			m_lq.d_fill(),
-			m_cm.delayBits().deviceData()));
+			m_cm.d_ndData(),
+			m_cm.d_ndFill()
+		));
 
 	if(m_stdp) {
 		runKernel(::updateStdp(
@@ -440,6 +429,27 @@ Simulation::postfire()
 	m_timer.step();
 }
 
+
+
+#ifdef NEMO_BRIAN_ENABLED
+std::pair<float*, float*>
+Simulation::propagate_raw(uint32_t* d_fired, int nfired)
+{
+	assert_or_throw(!m_stdp, "Brian-specific function propagate only well-defined when STDP is not enabled");
+	runKernel(::compact(m_streamCompute,
+				md_partitionSize.get(),
+				md_params.get(),
+				m_mapper.partitionCount(),
+				d_fired,
+				md_nFired.get(),
+				m_fired.deviceData()));
+	postfire();
+	prefire();
+	float* acc = m_current.deviceData();
+	return std::make_pair<float*, float*>(acc, acc+m_current.size());
+	/* Brian does its own neuron update */
+}
+#endif
 
 
 void

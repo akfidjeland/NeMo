@@ -72,6 +72,15 @@ nemo_version()
 }
 
 
+
+nemo_status_t
+nemo_add_plugin_path(const char* dir)
+{
+	CALL(nemo::addPluginPath(std::string(dir)));
+	return g_lastCallStatus;
+}
+
+
 nemo_status_t
 nemo_cuda_device_count(unsigned* count)
 {

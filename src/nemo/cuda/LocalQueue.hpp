@@ -31,7 +31,7 @@ class LocalQueue
 	public :
 
 		/*! Allocate device data for queue and set it to empty */
-		LocalQueue(size_t partitionCount, size_t partitionSize); 
+		LocalQueue(size_t partitionCount, size_t partitionSize, unsigned maxDelay);
 
 		/*! \return device pointer to queue data */
 		lq_entry_t* d_data() const { return md_data.get(); }

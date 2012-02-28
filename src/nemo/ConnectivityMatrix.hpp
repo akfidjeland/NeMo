@@ -17,6 +17,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <nemo/config.h>
 #include <nemo/construction/RCM.hpp>
@@ -155,7 +156,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		uint64_t delayBits(nidx_t l_source) const { return m_delays.delayBits(l_source); }
 
 		/*! \return pointer to reverse connectivity matrix */
-		const runtime::RCM* rcm() const { return &m_rcm; }
+		const runtime::RCM* rcm() const { return m_rcm.get(); }
 
 	private:
 
@@ -175,7 +176,7 @@ class NEMO_BASE_DLL_PUBLIC ConnectivityMatrix
 		std::vector<Row> m_cm;
 		void finalizeForward(const mapper_t&, bool verifySources);
 
-		runtime::RCM m_rcm;
+		boost::scoped_ptr<runtime::RCM> m_rcm;
 
 		boost::optional<StdpProcess> m_stdp;
 

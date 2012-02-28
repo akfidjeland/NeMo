@@ -17,6 +17,7 @@
 __constant__ size_t c_lqPitch;
 
 
+
 __host__
 cudaError
 setLocalQueuePitch(size_t pitch)
@@ -30,46 +31,64 @@ setLocalQueuePitch(size_t pitch)
  * partition and the given slot. */
 __device__
 unsigned
-lq_globalFillOffset(unsigned slot)
+lq_globalFillOffset(unsigned slot, unsigned maxDelay)
 {
-	return CURRENT_PARTITION * MAX_DELAY + slot;
+	return CURRENT_PARTITION * maxDelay + slot;
 }
 
 
-/*! \return queue fill for the current partition slot due for delivery now, and
- * reset the relevant slot. */
+/*!
+ * \param cycle current simulation cycle
+ * \param maxDelay maximum delay in the network
+ * \param g_fill global memory containing the fill rate for each slot in the local queue.
+ *
+ * \return queue fill for the current partition slot due for delivery now, and
+ * 		reset the relevant slot.
+ *
+ * \see nemo::cuda::LocalQueue
+ */
 __device__
 unsigned
-lq_getAndClearCurrentFill(unsigned cycle, unsigned* g_fill)
+lq_getAndClearCurrentFill(unsigned cycle, unsigned maxDelay, unsigned* g_fill)
 {
-	return atomicExch(g_fill + lq_globalFillOffset(cycle % MAX_DELAY), 0); 
+	return atomicExch(g_fill + lq_globalFillOffset(cycle % maxDelay, maxDelay), 0);
 }
 
 
 
 /*! Load current queue fill from gmem to smem. 
  * 
- * \pre s_fill contains at least MAX_DELAY elements 
+ * \param maxDelay maximum delay in the network
+ * \param[in] g_fill
+ * \param[out] s_fill
+ *
+ * \pre s_fill has capacity for at least maxDelay elements
  */ 
 __device__
 void
-lq_loadQueueFill(unsigned* g_fill, unsigned* s_fill)
+lq_loadQueueFill(unsigned maxDelay, unsigned* g_fill, unsigned* s_fill)
 {
 	unsigned slot = threadIdx.x;
-	if(slot < MAX_DELAY) {
-		s_fill[slot] = g_fill[lq_globalFillOffset(slot)];
+	//! \todo this could be based on the actual max delay rather than the absolute maximum.
+	if(slot < maxDelay) {
+		s_fill[slot] = g_fill[lq_globalFillOffset(slot, maxDelay)];
 	}
 }
 
 
-/*! Store updated queue fill back to gmem */
+/*! Store updated queue fill back to gmem
+ *
+ * \param maxDelay maximum delay in the network
+ * \param[in] s_fill
+ * \param[out] s_fill
+ */
 __device__
 void
-lq_storeQueueFill(unsigned* s_fill, unsigned* g_fill)
+lq_storeQueueFill(unsigned maxDelay, unsigned* s_fill, unsigned* g_fill)
 {
 	unsigned slot = threadIdx.x;
-	if(slot < MAX_DELAY) {
-		g_fill[lq_globalFillOffset(slot)] = s_fill[slot];
+	if(slot < maxDelay) {
+		g_fill[lq_globalFillOffset(slot, maxDelay)] = s_fill[slot];
 	}
 }
 
@@ -78,9 +97,9 @@ lq_storeQueueFill(unsigned* s_fill, unsigned* g_fill)
 /*! \return the buffer number to use for the given delay, given current cycle */
 __device__
 unsigned
-lq_delaySlot(unsigned cycle, unsigned delay0)
+lq_delaySlot(unsigned cycle, unsigned maxDelay, unsigned delay0)
 {
-	return (cycle + delay0) % MAX_DELAY;
+	return (cycle + delay0) % maxDelay;
 }
 
 
@@ -88,10 +107,10 @@ lq_delaySlot(unsigned cycle, unsigned delay0)
  * partition/delay pair) given a precomputed slot number */
 __device__
 unsigned
-lq_offsetOfSlot(unsigned slot)
+lq_offsetOfSlot(unsigned maxDelay, unsigned slot)
 {
-	ASSERT(slot < MAX_DELAY);
-	return (CURRENT_PARTITION * MAX_DELAY + slot) * c_lqPitch;
+	ASSERT(slot < maxDelay);
+	return (CURRENT_PARTITION * maxDelay + slot) * c_lqPitch;
 }
 
 
@@ -99,9 +118,9 @@ lq_offsetOfSlot(unsigned slot)
  * partition and the given delay (relative to the current cycle). */
 __device__
 unsigned
-lq_offset(unsigned cycle, unsigned delay0)
+lq_offset(unsigned cycle, unsigned maxDelay, unsigned delay0)
 {
-	return lq_offsetOfSlot(lq_delaySlot(cycle, delay0));
+	return lq_offsetOfSlot(maxDelay, lq_delaySlot(cycle, maxDelay, delay0));
 }
 
 
@@ -116,18 +135,18 @@ lq_offset(unsigned cycle, unsigned delay0)
  */
 __device__
 unsigned
-lq_nextFree(unsigned cycle, delay_t delay0, unsigned* s_fill)
+lq_nextFree(unsigned cycle, unsigned maxDelay, delay_t delay0, unsigned* s_fill)
 {
 	/* The buffer should be sized such that we never overflow into the next
 	 * queue slot (or out of the queue altogether). However, even if this is
 	 * not the case the wrap-around in the atomic increment ensures that we
 	 * just overwrite our own firing data rather than someone elses */
-	unsigned delaySlot = lq_delaySlot(cycle, delay0);
-	ASSERT(delaySlot < MAX_DELAY);
-	ASSERT(lq_offsetOfSlot(delaySlot) < PARTITION_COUNT * MAX_DELAY * c_lqPitch);
+	unsigned delaySlot = lq_delaySlot(cycle, maxDelay, delay0);
+	ASSERT(delaySlot < maxDelay);
+	ASSERT(lq_offsetOfSlot(maxDelay, delaySlot) < PARTITION_COUNT * maxDelay * c_lqPitch);
 	unsigned next = atomicInc(s_fill + delaySlot, c_lqPitch-1);
 	ASSERT(next < c_lqPitch);
-	return lq_offsetOfSlot(delaySlot) + next;
+	return lq_offsetOfSlot(maxDelay, delaySlot) + next;
 }
 
 
@@ -140,11 +159,12 @@ __device__
 void
 lq_enque(nidx_dt neuron,
 		unsigned cycle,
+		unsigned maxDelay,
 		delay_t delay0,
 		unsigned* s_fill,
 		lq_entry_t* g_queue)
 {
-	g_queue[lq_nextFree(cycle, delay0, s_fill)] = make_short2(neuron, delay0);
+	g_queue[lq_nextFree(cycle, maxDelay, delay0, s_fill)] = make_short2(neuron, delay0);
 }
 
 #endif

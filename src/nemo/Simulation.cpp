@@ -27,4 +27,19 @@ Simulation::setNeuron(unsigned idx,
 }
 
 
+
+
+#ifdef NEMO_BRIAN_ENABLED
+
+std::pair<size_t, size_t>
+Simulation::propagate(size_t fired, int nfired)
+{
+	std::pair<float*, float*> ret = propagate_raw(reinterpret_cast<uint32_t*>(fired), nfired);
+	return std::make_pair<size_t, size_t>(size_t(ret.first), size_t(ret.second));
+}
+
+#endif
+
+
+
 } // end namespace nemo

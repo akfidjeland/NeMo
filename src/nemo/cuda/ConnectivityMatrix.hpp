@@ -17,13 +17,14 @@
 #include <vector>
 #include <deque>
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <nemo/types.hpp>
 #include <nemo/network/Generator.hpp>
-#include <nemo/cuda/construction/FcmIndex.hpp>
 #include <nemo/cuda/runtime/RCM.hpp>
+#include <nemo/cuda/runtime/Delays.hpp>
 
 #include "types.h"
 #include "kernel.cu_h"
@@ -41,6 +42,14 @@ namespace nemo {
 	namespace cuda {
 
 		class AxonTerminalAux;
+
+		namespace construction {
+			class FcmIndex;
+		}
+
+		namespace runtime {
+			class Delays;
+		}
 
 /*! \brief Connectivity matrix
  *
@@ -147,7 +156,9 @@ class ConnectivityMatrix
 
 		void printMemoryUsage(std::ostream&) const;
 
-		const NVector<uint64_t>& delayBits() const { return m_delays; }
+		delay_dt* d_ndData() const { return md_delays->d_data(); }
+
+		unsigned* d_ndFill() const { return md_delays->d_fill(); }
 
 		/*! Fill in all relevant fields in global parameters data structure */
 		void setParameters(param_t*) const;
@@ -185,7 +196,7 @@ class ConnectivityMatrix
 
 		/*! For each neuron, record the delays for which there are /any/
 		 * outgoing connections */
-		NVector<uint64_t> m_delays;
+		boost::scoped_ptr<runtime::Delays> md_delays;
 
 		/* For spike delivery we need to keep track of all target partitions
 		 * for each neuron */

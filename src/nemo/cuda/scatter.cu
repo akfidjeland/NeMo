@@ -58,7 +58,7 @@ loadSparseFiring(unsigned* g_nFired, size_t pitch32, nidx_dt* g_fired, unsigned*
  * \param nFired number of valid entries in s_fired
  * \param s_fired shared memory buffer containing the recently fired neurons
  * \param g_delays delay bits for each neuron
- * \param g_fill queue fill for local queue
+ * \param g_lqFill queue fill for local queue
  * \param g_queue global memory for the local queue
  */
 __device__
@@ -68,46 +68,57 @@ scatterLocal(
 		const param_t& s_params,
 		unsigned nFired,
 		const nidx_dt* s_fired,
-		uint64_t* g_delays,
-		unsigned* g_fill,
-		lq_entry_t* g_queue)
+		unsigned g_ndFill[],
+		delay_dt g_delays[],
+		unsigned g_lqFill[],
+		lq_entry_t g_queue[])
 {
 	/* This shared memory vector is quite small, so no need to reuse */
-	__shared__ unsigned s_fill[MAX_DELAY];
+	__shared__ unsigned s_lqFill[MAX_DELAY];
 
-	lq_loadQueueFill(g_fill, s_fill);
+	lq_loadQueueFill(s_params.maxDelay, g_lqFill, s_lqFill);
 	__syncthreads();
 
 	/*! \todo do more than one neuron at a time. We can deal with
 	 * THREADS_PER_BLOCK/MAX_DELAY per iteration. */
-	for(unsigned iFired = 0; iFired < nFired; iFired++) {
+	for(unsigned bFired = 0; bFired < nFired; bFired+=THREADS_PER_BLOCK) {
 
-		unsigned neuron = s_fired[iFired];
+		__shared__ unsigned s_ndFill[THREADS_PER_BLOCK];
 
-		__shared__ uint64_t delayBits;
-		/*! \todo could load more delay data in one go */
-		if(threadIdx.x == 0) {
-			delayBits = nv_load64(neuron, 0, s_params.pitch64, g_delays);
+		if(bFired + threadIdx.x < nFired) {
+			/* Non-coalesced load: */
+			s_ndFill[threadIdx.x] = nd_loadFill(s_fired[bFired + threadIdx.x], g_ndFill);
 		}
 		__syncthreads();
 
-		//! \todo handle MAX_DELAY > THREADS_PER_BLOCK
-		unsigned delay0 = threadIdx.x;
-		if(delay0 < MAX_DELAY) {
-			bool delaySet = (delayBits >> uint64_t(delay0)) & 0x1;
-			if(delaySet) {
-				/* This write operation will almost certainly be non-coalesced.
-				 * It would be possible to stage data in smem, e.g. one warp
-				 * per queue slot. 64 slots would require 64 x 32 x 4B = 8kB.
-				 * Managaging this data can be costly, however, as we need to
-				 * flush buffers as we go. */
-				lq_enque(neuron, cycle, delay0, s_fill, g_queue);
-				DEBUG_MSG_SYNAPSE("c%u[local scatter]: enque n%u d%u\n", cycle, neuron, delay0+1);
+		for(unsigned iFired = 0;
+				iFired < THREADS_PER_BLOCK && bFired + iFired < nFired;
+				++iFired) {
+
+			__shared__ delay_dt s_delays[MAX_DELAY];
+
+			unsigned neuron = s_fired[bFired + iFired];
+			unsigned ndFill = s_ndFill[iFired];
+
+			nd_loadDelays(neuron, ndFill, g_delays, s_delays);
+			__syncthreads();
+
+			for(unsigned bDelay = 0; bDelay < ndFill; bDelay += THREADS_PER_BLOCK) {
+				unsigned iDelay = bDelay + threadIdx.x;
+				if(iDelay < ndFill) {
+					/* This write operation will almost certainly be non-coalesced.
+					 * It would be possible to stage data in smem, e.g. one warp
+					 * per queue slot. 64 slots would require 64 x 32 x 4B = 8kB.
+					 * Managaging this data can be costly, however, as we need to
+					 * flush buffers as we go. */
+					lq_enque(neuron, cycle, s_params.maxDelay, s_delays[iDelay], s_lqFill, g_queue);
+					DEBUG_MSG_SYNAPSE("c%u[local scatter]: enqueue n%u d%u\n", cycle, neuron, s_delays[iDelay]+1);
+				}
 			}
 		}
 	}
 	__syncthreads();
-	lq_storeQueueFill(s_fill, g_fill);
+	lq_storeQueueFill(s_params.maxDelay, s_lqFill, g_lqFill);
 }
 
 
@@ -136,7 +147,7 @@ scatterGlobal(unsigned cycle,
 	__shared__ unsigned s_nLq;
 
 	if(threadIdx.x == 0) {
-		s_nLq = lq_getAndClearCurrentFill(cycle, g_lqFill);
+		s_nLq = lq_getAndClearCurrentFill(cycle, s_params.maxDelay, g_lqFill);
 	}
 	__syncthreads();
 
@@ -157,12 +168,12 @@ scatterGlobal(unsigned cycle,
 		 * outgoing lengths into shared memory */
 		if(iLq < s_nLq) {
 			ASSERT(iLq < c_lqPitch);
-			lq_entry_t entry = g_lq[lq_offset(cycle, 0) + iLq];
+			lq_entry_t entry = g_lq[lq_offset(cycle, s_params.maxDelay, 0) + iLq];
 #ifdef NEMO_CUDA_DEBUG_TRACE
 			s_lq[threadIdx.x] = entry;
 #endif
 			short delay0 = entry.y;
-			ASSERT(delay0 < MAX_DELAY);
+			ASSERT(delay0 < s_params.maxDelay);
 
 			short neuron = entry.x;
 			ASSERT(neuron < MAX_PARTITION_SIZE);
@@ -260,7 +271,8 @@ scatter(uint32_t cycle,
 		unsigned* g_gqFill,
 		lq_entry_t* g_lqData,      // pitch = c_lqPitch
 		unsigned* g_lqFill,
-		uint64_t* g_delays,        // pitch = c_pitch64
+		delay_dt g_ndData[],
+		unsigned g_ndFill[],
 		unsigned* g_nFired,        // device-only buffer.
 		nidx_dt* g_fired)          // device-only buffer, sparse output. pitch = c_pitch32.
 {
@@ -271,16 +283,17 @@ scatter(uint32_t cycle,
 	loadParameters(g_params, &s_params);
 	loadSparseFiring(g_nFired, s_params.pitch32, g_fired, &s_nFired, s_fired);
 
-	scatterLocal(cycle, s_params, s_nFired, s_fired, g_delays, g_lqFill, g_lqData);
+	scatterLocal(cycle, s_params,
+			s_nFired, s_fired,
+			g_ndFill, g_ndData,
+			g_lqFill, g_lqData);
 
 	scatterGlobal(cycle,
 			s_params,
-			g_lqFill,
-			g_lqData,
+			g_lqFill, g_lqData,
 			g_outgoingAddr,
 			g_outgoing,
-			g_gqFill,
-			g_gqData);
+			g_gqFill, g_gqData);
 }
 
 
@@ -299,7 +312,8 @@ scatter(cudaStream_t stream,
 		unsigned* d_gqFill,
 		lq_entry_t* d_lqData,
 		unsigned* d_lqFill,
-		uint64_t* d_delays)
+		delay_dt d_ndData[],
+		unsigned d_ndFill[])
 {
 	dim3 dimBlock(THREADS_PER_BLOCK);
 	dim3 dimGrid(partitionCount);
@@ -310,7 +324,8 @@ scatter(cudaStream_t stream,
 			// spike delivery
 			d_outgoingAddr, d_outgoing,
 			d_gqData, d_gqFill,
-			d_lqData, d_lqFill, d_delays,
+			d_lqData, d_lqFill, 
+			d_ndData, d_ndFill,
 			// firing data
 			d_nFired, d_fired);
 
