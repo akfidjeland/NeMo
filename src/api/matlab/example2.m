@@ -6,12 +6,12 @@
 % 800 excitatory neurons
 Ne = 800;
 re = rand(Ne,1);
-nemoAddNeuron(0:Ne-1, 0.02, 0.2, -65+15*re.^2, 8-6*re.^2, -65*0.2, -65, 5);
+nemoAddNeuron(0:Ne-1, 0.02, 0.2, -65+15*re.^2, 8-6*re.^2, 5, -65*0.2, -65);
 
 % 200 inhibitory neurons
 Ni = 200;
 ri = rand(Ni,1);
-nemoAddNeuron(Ne:Ne+Ni-1, 0.02+0.08*ri, 0.25-0.05*ri, -65, 2, -65*0.25-0.05*ri, -65, 2);
+nemoAddNeuron(Ne:Ne+Ni-1, 0.02+0.08*ri, 0.25-0.05*ri, -65, 2, 2, -65*(0.25-0.05*ri), -65);
 
 N = Ne + Ni;
 
